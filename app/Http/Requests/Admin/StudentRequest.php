@@ -4,7 +4,7 @@ namespace App\Http\Requests\Admin;
 
 use Illuminate\Foundation\Http\FormRequest;
 
-class AboutOpeningRequest extends FormRequest
+class StudentRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -17,16 +17,16 @@ class AboutOpeningRequest extends FormRequest
     /**
      * Get the validation rules that apply to the request.
      *
-     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array|string>
+     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
      */
     public function rules(): array
     {
         return [
-            'name' => 'required|string',
-            'position' => 'required|string',
-            'position_en' => 'required|string',
-            'description' => 'required|string',
-            'description_en' => 'required|string',
+            'user_id' => 'required|exists:users,id',
+            'name' => 'required|string|max:255',
+            'born_place' => 'required|string|max:255',
+            'birth_date' => 'required|date',
+            'gender' => 'required',
         ];
     }
 }

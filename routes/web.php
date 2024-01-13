@@ -7,6 +7,8 @@ use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\AdminController;
 use App\Http\Controllers\Admin\SchoolController;
 use App\Http\Controllers\Admin\ContactController;
+use App\Http\Controllers\Admin\Select2Controller;
+use App\Http\Controllers\Admin\StudentController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\TranslateController;
 use App\Http\Controllers\Admin\DisclaimerController;
@@ -46,6 +48,8 @@ Route::group(['middleware' => ['auth']], function () {
     Route::resource('user', UserController::class);
     Route::resource('school', SchoolController::class);
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+    Route::resource('student', StudentController::class);
+    Route::get('select2', [Select2Controller::class, 'index'])->name('select2');
     // home
     Route::resource('contact', ContactController::class, ['only' => ['index', 'store']])->names('contact');
     Route::group(['prefix' => 'information'], function () {

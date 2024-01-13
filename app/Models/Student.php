@@ -15,13 +15,9 @@ class Student extends Model
         'user_id',
         'name',
         'born_place',
-        'birht_date',
+        'birth_date',
         'gender',
         'saldo',
-    ];
-
-    protected $dates = [
-        'birth_date',
     ];
 
     public function user()

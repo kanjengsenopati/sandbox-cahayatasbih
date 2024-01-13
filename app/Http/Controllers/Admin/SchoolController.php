@@ -13,7 +13,7 @@ class SchoolController extends Controller
 
     public function __construct()
     {
-        // $this->middleware('permission:school');
+        $this->middleware('permission:school');
     }
     /**
      * Display a listing of the resource.

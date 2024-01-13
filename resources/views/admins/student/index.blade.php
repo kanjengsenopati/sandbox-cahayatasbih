@@ -1,4 +1,4 @@
-@extends('layouts.master', ['title' => 'Data User'])
+@extends('layouts.master', ['title' => 'Data Siswa'])
 @section('content')
 <div class="content d-flex flex-column flex-column-fluid" id="kt_content">
     <!--begin::Toolbar-->
@@ -10,7 +10,7 @@
                 data-kt-swapper-parent="{default: '#kt_content_container', 'lg': '#kt_toolbar_container'}"
                 class="page-title d-flex align-items-center flex-wrap me-3 mb-5 mb-lg-0">
                 <!--begin::Title-->
-                <h1 class="d-flex text-dark fw-bolder fs-3 align-items-center my-1"> Daftar User</h1>
+                <h1 class="d-flex text-dark fw-bolder fs-3 align-items-center my-1"> Daftar Siswa</h1>
                 <!--end::Title-->
                 <!--begin::Separator-->
                 <span class="h-20px border-gray-300 border-start mx-4"></span>
@@ -19,7 +19,7 @@
                 <ul class="breadcrumb breadcrumb-separatorless fw-bold fs-7 my-1">
                     <!--begin::Item-->
                     <li class="breadcrumb-item text-muted">
-                        <a href="{{ route('user.index') }}" class="text-muted text-hover-primary">User</a>
+                        <a href="{{ route('student.index') }}" class="text-muted text-hover-primary">Siswa</a>
                     </li>
                     <!--end::Item-->
                     <!--begin::Item-->
@@ -28,7 +28,7 @@
                     </li>
                     <!--end::Item-->
                     <!--begin::Item-->
-                    <li class="breadcrumb-item text-dark">List User</li>
+                    <li class="breadcrumb-item text-dark">List Siswa</li>
                     <!--end::Item-->
 
                 </ul>
@@ -48,17 +48,6 @@
                 <div
                     class="card-header d-flex align-items-end gap-5 flex-sm-row mb-5 justify-content-between border-0 pt-6">
                     <div class="d-flex flex-wrap justify-content-beetween gap-5">
-                        {{-- <div class="mb-0">
-                            <label class="form-label">Filter Tanggal</label>
-                            <div class="d-flex
-                                gap-4 align-items-end">
-                                <div id="dateRange" class="pull-right"
-                                    style="background: #fff; cursor: pointer; padding: 5px 10px; border: 1px solid #ccc;float: top;">
-                                    <i class="glyphicon glyphicon-calendar fa fa-calendar"></i>&nbsp;
-                                    <span></span> <b class="caret"></b>
-                                </div>
-                            </div>
-                        </div> --}}
                         <div class="mb-0">
 
                         </div>
@@ -69,7 +58,7 @@
                         </div>
                         <div>
                             <a type="a" class="btn btn-sm btn-primary" id="btn_add_permission"
-                                href="{{ route('user.create') }}">+ User</a>
+                                href="{{ route('student.create') }}">+ Siswa</a>
                         </div>
                     </div>
                     <!--end::Card title-->
@@ -79,17 +68,15 @@
                 <div class="card-body pt-0">
                     <!--begin::Table-->
                     <div class="table-responsive">
-                        <table id="table-user" class="table table-striped border rounded gy-5 gs-7">
+                        <table id="table-student" class="table table-striped border rounded gy-5 gs-7">
                             <thead>
                                 <tr class="fw-bolder fs-6 text-gray-800 border-bottom border-gray-200">
                                     <th width="3%">No</th>
-                                    <th class="w-10px pe-2">Avatar</th>
                                     <th>Nama</th>
-                                    <th>Email</th>
-                                    <th>No HP</th>
+                                    <th>Wali Siswa</th>
+                                    <th>TTL</th>
                                     <th>Gender</th>
                                     <th>Saldo</th>
-                                    <th>Status</th>
                                     <th class="text-center min-w-100px">Aksi</th>
                                 </tr>
                             </thead>
@@ -113,11 +100,11 @@
 
 <script>
     $(document).ready(() => {
-    var table = $('#table-user').DataTable({
+    var table = $('#table-student').DataTable({
     ordering: false,
     processing: true,
     serverSide: true,
-    ajax: "{{ route('user.index') }}",
+    ajax: "{{ route('student.index') }}",
     language: {
     "paginate": {
     "next": "<i class='fa fa-angle-right'>",
@@ -134,29 +121,19 @@
             return meta.row + meta.settings._iDisplayStart + 1;
             }
             },
-             {
-            data: 'avatar',
-            name: 'avatar',
-            render: function(data, type, row) {
-            if (data == null) {
-            return `<span class="symbol-label fs-2x fw-bold text-primary bg-light-primary">${row.name.charAt(0)}</span>`;
-            } else {
-            return `<img src="${data}" alt="image" class="h-50px w-50px rounded-circle" />`;
-            }
-            }
-            },
             {
             data: 'name',
             name: 'name',
             responsivePriority: -1,
             },
             {
-            data: 'email',
-            name: 'email'
+                data: 'user.name',
+                name: 'user.name',
+                responsivePriority: -1,
             },
             {
-            data: 'phone',
-            name: 'phone'
+            data: 'date_of_birth',
+            name: 'date_of_birth'
             },
             {
             data: 'gender',
@@ -182,23 +159,6 @@
             {
             data: 'saldo',
             name: 'saldo'
-            },
-            {
-            data: 'is_active',
-            name: 'is_active',
-            responsivePriority: -1,
-            render: function(data, type, row) {
-            let badgeClass = '';
-            let label = '';
-            if (data == true) {
-            badgeClass = 'badge-light-success';
-            label = 'Aktif';
-            } else {
-            badgeClass = 'badge-light-danger';
-            label = 'Nonaktif';
-            }
-            return `<span class="badge ${badgeClass}">${label}</span>`;
-            },
             },
             {
             data: 'action',
