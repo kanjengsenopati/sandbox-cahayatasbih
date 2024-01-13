@@ -104,7 +104,7 @@
                 @endcan
 
                 <div data-kt-menu-trigger="click"
-                    class="menu-item menu-accordion {{ request()->routeIs(['school.*']) ? 'show' : '' }}">
+                    class="menu-item menu-accordion {{ request()->routeIs(['school.*','academic-year.*']) ? 'show' : '' }}">
                     <span class="menu-link ">
                         <span class="menu-icon">
                             <i class="fa-solid fa-school" style="color: #ffffff;"></i>
@@ -123,11 +123,22 @@
                             </a>
                         </div>
                     </div>
+                    <div class="menu-sub menu-sub-accordion menu-active-bg">
+                        <div class="menu-item ">
+                            <a class="menu-link {{ request()->routeIs('academic-year.*') ? ' active' : '' }}"
+                                href="{{ route('academic-year.index') }}">
+                                <span class="menu-bullet">
+                                    <span class="bullet bullet-dot"></span>
+                                </span>
+                                <span class="menu-title">Data Tahun Ajaran</span>
+                            </a>
+                        </div>
+                    </div>
                 </div>
 
                 @can('user')
                 <div data-kt-menu-trigger="click"
-                    class="menu-item menu-accordion {{ request()->routeIs(['user.*']) ? 'show' : '' }}">
+                    class="menu-item menu-accordion {{ request()->routeIs(['user.*','student.*']) ? 'show' : '' }}">
                     <span class="menu-link ">
                         <span class="menu-icon">
                             <i class="fa-solid fa-user" style="color: #ffffff;"></i>
@@ -143,10 +154,19 @@
                                 <span class="menu-bullet">
                                     <span class="bullet bullet-dot"></span>
                                 </span>
-                                <span class="menu-title">Data User</span>
+                                <span class="menu-title">Data Wali Siswa</span>
                             </a>
                         </div>
                         @endcan
+                        <div class="menu-item ">
+                            <a class="menu-link {{ request()->routeIs('student.*') ? ' active' : '' }}"
+                                href="{{ route('student.index') }}">
+                                <span class="menu-bullet">
+                                    <span class="bullet bullet-dot"></span>
+                                </span>
+                                <span class="menu-title">Data Siswa</span>
+                            </a>
+                        </div>
                     </div>
                 </div>
                 @endcan

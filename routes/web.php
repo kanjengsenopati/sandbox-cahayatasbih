@@ -9,12 +9,14 @@ use App\Http\Controllers\Admin\SchoolController;
 use App\Http\Controllers\Admin\ContactController;
 use App\Http\Controllers\Admin\Select2Controller;
 use App\Http\Controllers\Admin\StudentController;
+use App\Http\Controllers\Admin\ClassroomController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\TranslateController;
 use App\Http\Controllers\Admin\DisclaimerController;
 use App\Http\Controllers\Admin\HomeSliderController;
 use App\Http\Controllers\Admin\PermissionController;
 use App\Http\Controllers\Admin\ImageUploadController;
+use App\Http\Controllers\Admin\AcademicYearController;
 use App\Http\Controllers\Admin\PrivacyPolicyController;
 use App\Http\Controllers\Admin\TermConditionController;
 
@@ -41,12 +43,18 @@ Route::get('translate', [TranslateController::class, 'index'])->name('translate'
 Route::post('translate_post', [TranslateController::class, 'translatePost'])->name('translate_post');
 Route::post('/upload-image', [ImageUploadController::class, 'upload'])->name('upload.image');
 //end auth
+
+// start status
+Route::post('/status/{id}', [AcademicYearController::class, 'status'])->name('academic-year.status');
+// end status
 Route::group(['middleware' => ['auth']], function () {
     Route::resource('permission', PermissionController::class, ['except' => ['show']]);
     Route::resource('role', RoleController::class);
     Route::resource('admin', AdminController::class);
     Route::resource('user', UserController::class);
     Route::resource('school', SchoolController::class);
+    Route::resource('classroom', ClassroomController::class, ['except' => ['index', 'show']]);
+    Route::resource('academic-year', AcademicYearController::class, ['except' => ['show']]);
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
     Route::resource('student', StudentController::class);
     Route::get('select2', [Select2Controller::class, 'index'])->name('select2');

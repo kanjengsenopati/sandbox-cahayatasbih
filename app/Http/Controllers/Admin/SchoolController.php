@@ -26,7 +26,9 @@ class SchoolController extends Controller
                 ->addColumn('action', function ($data) {
                     $actionEdit = route('school.edit', $data->id);
                     $actionDelete = route('school.destroy', $data->id);
+                    $actionShow = route('school.show', $data->id);
                     return "<div class='d-flex justify-content-center'>" .
+                        view('components.action.show', ['action' => $actionShow, 'label' => 'Kelas']) .
                         view('components.action.edit', ['action' => $actionEdit]) .
                         view('components.action.delete', ['action' => $actionDelete, 'id' => $data->id]) .
                         "</div>";
@@ -59,7 +61,22 @@ class SchoolController extends Controller
      */
     public function show(string $id)
     {
-        //
+        $school = School::findOrFail($id);
+        if (request()->ajax()) {
+            $data = $school->classroom()->latest()->get();
+            return DataTables::of($data)
+                ->addColumn('action', function ($data) {
+                    $actionEdit = route('classroom.edit', $data->id);
+                    $actionDelete = route('classroom.destroy', $data->id);
+                    return "<div class='d-flex justify-content-center'>" .
+                        view('components.action.edit', ['action' => $actionEdit]) .
+                        view('components.action.delete', ['action' => $actionDelete, 'id' => $data->id]) .
+                        "</div>";
+                })
+                ->rawColumns(['action'])
+                ->make(true);
+        }
+        return view('admins.school.classroom.index', compact('school'));
     }
 
     /**

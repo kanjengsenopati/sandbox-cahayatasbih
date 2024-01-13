@@ -68,51 +68,41 @@
 </script>
 <script>
     $(document).on('click', '.btn-status', function(e) {
-        var form = $("#" + e.target.dataset.id);
-        Swal.fire({
-            title: 'Ubah Status Data',
-            text: 'Anda yakin ingin mengubah status data ini ?',
-            icon: "question",
-            showCancelButton: true,
-            confirmButtonColor: 'success',
-            cancelButtonColor: 'primary',
-            confirmButtonText: 'Ubah',
-            cancelButtonText: 'Batal',
-        }).then((res) => {
-            if (res.isConfirmed) {
-                form.submit();
-                Swal.fire({
-                    title: 'loading...',
-                    text: 'Mohon tunggu sebentar',
-                    icon: 'info',
-                    showConfirmButton: false,
-                    allowOutsideClick: false,
-                    allowEscapeKey: false,
-                    allowEnterKey: false,
-                    onBeforeOpen: () => {
-                        Swal.showLoading()
-                    },
-                    timer: 2000,
-                })
-            } else {
-                return false;
-            }
-        });
-        return false;
-    })
+    e.preventDefault();
 
-    var images = document.querySelectorAll('img');
+    // var form = $("#" + e.target.dataset.id);
 
-    for (var i = 0; i < images.length; i++) {
-        replaceImage(images[i]);
+    var form = $(e.target).closest('form');
+    
+    if (form.length === 0) {
+    console.error('Form element not found.');
+    return;
     }
 
-    function replaceImage(imageElement) {
-        imageElement.onerror = function() {
-            imageElement.onerror = null;
-            imageElement.src = "{{ asset('assets/media/images/no-photos.png') }}";
-        };
+    console.log("Button clicked");
+    console.log("Form ID: " + e.target.dataset.id);
+    console.log("Form Element: ", form);
+
+    Swal.fire({
+    title: 'Ubah Status Data',
+    text: 'Apakah Anda yakin ingin mengubah status data ini?',
+    icon: "question",
+    showCancelButton: true,
+    confirmButtonColor: 'success',
+    cancelButtonColor: 'primary',
+    confirmButtonText: 'Ya',
+    cancelButtonText: 'Batal',
+    }).then((result) => {
+    console.log("Swal Result: ", result);
+
+    if (result.isConfirmed) {
+    console.log("Submitting form...");
+    form.submit();
+    } else {
+    console.log("Form submission cancelled.");
     }
+    });
+    });
 </script>
 @foreach (['success', 'error', 'warning', 'info'] as $message)
 @if (session($message))
