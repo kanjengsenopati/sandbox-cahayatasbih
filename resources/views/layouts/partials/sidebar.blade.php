@@ -103,6 +103,28 @@
                 </div>
                 @endcan
 
+                <div data-kt-menu-trigger="click"
+                    class="menu-item menu-accordion {{ request()->routeIs(['school.*']) ? 'show' : '' }}">
+                    <span class="menu-link ">
+                        <span class="menu-icon">
+                            <i class="fa-solid fa-school" style="color: #ffffff;"></i>
+                        </span>
+                        <span class="menu-title">Master Data</span>
+                        <span class="menu-arrow"></span>
+                    </span>
+                    <div class="menu-sub menu-sub-accordion menu-active-bg">
+                        <div class="menu-item ">
+                            <a class="menu-link {{ request()->routeIs('school.*') ? ' active' : '' }}"
+                                href="{{ route('school.index') }}">
+                                <span class="menu-bullet">
+                                    <span class="bullet bullet-dot"></span>
+                                </span>
+                                <span class="menu-title">Data Sekolah</span>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
                 @can('user')
                 <div data-kt-menu-trigger="click"
                     class="menu-item menu-accordion {{ request()->routeIs(['user.*']) ? 'show' : '' }}">

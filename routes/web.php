@@ -40,9 +40,9 @@ Route::post('translate_post', [TranslateController::class, 'translatePost'])->na
 Route::post('/upload-image', [ImageUploadController::class, 'upload'])->name('upload.image');
 //end auth
 Route::group(['middleware' => ['auth']], function () {
-    Route::resource('admin', AdminController::class);
     Route::resource('permission', PermissionController::class, ['except' => ['show']]);
     Route::resource('role', RoleController::class);
+    Route::resource('admin', AdminController::class);
     Route::resource('user', UserController::class);
     Route::resource('school', SchoolController::class);
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
