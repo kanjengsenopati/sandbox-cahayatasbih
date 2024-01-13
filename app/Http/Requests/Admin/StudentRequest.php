@@ -27,6 +27,10 @@ class StudentRequest extends FormRequest
             'born_place' => 'required|string|max:255',
             'birth_date' => 'required|date',
             'gender' => 'required',
+            'nisn' => 'required|string|max:255',
+            'avatar' => 'nullable|image|mimes:jpg,jpeg,png',
+            'school_id' => 'required|exists:schools,id',
+            'classroom_id' => 'required|exists:classrooms,id',
         ];
     }
 }

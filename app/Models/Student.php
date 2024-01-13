@@ -13,15 +13,29 @@ class Student extends Model
 
     protected $fillable = [
         'user_id',
+        'school_id',
+        'classroom_id',
         'name',
         'born_place',
         'birth_date',
         'gender',
         'saldo',
+        'nisn',
+        'avatar'
     ];
 
     public function user()
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function classroom()
+    {
+        return $this->belongsTo(Classroom::class);
+    }
+
+    public function school()
+    {
+        return $this->belongsTo(School::class);
     }
 }
