@@ -55,8 +55,6 @@ class StudentController extends Controller
         $data = $request->validated();
         if ($request->hasFile('avatar')) {
             $data['avatar'] = 'storage/' . $request->file('avatar')->store('images/avatar', 'public');
-        } else {
-            $data['avatar'] = 'assets/media/avatars/default_avatar.jpg';
         }
         Student::create($data);
         return redirect()->route('student.index')->with('success', 'Siswa berhasil ditambahkan');
@@ -89,7 +87,7 @@ class StudentController extends Controller
             file_exists($student->avatar) ? unlink($student->avatar) : '';
             $data['avatar'] = 'storage/' . $request->file('avatar')->store('images/avatar', 'public');
         }
-        $student->update($request->validated());
+        $student->update($data);
         return redirect()->route('student.index')->with('success', 'Siswa berhasil diubah');
     }
 
