@@ -9,6 +9,7 @@ use App\Http\Controllers\Admin\SchoolController;
 use App\Http\Controllers\Admin\ContactController;
 use App\Http\Controllers\Admin\Select2Controller;
 use App\Http\Controllers\Admin\StudentController;
+use App\Http\Controllers\Admin\TahfidzController;
 use App\Http\Controllers\Admin\ClassroomController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\TranslateController;
@@ -57,6 +58,7 @@ Route::group(['middleware' => ['auth']], function () {
     Route::resource('academic-year', AcademicYearController::class, ['except' => ['show']]);
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
     Route::resource('student', StudentController::class);
+    Route::resource('tahfidz', TahfidzController::class);
     Route::get('select2', [Select2Controller::class, 'index'])->name('select2');
     // home
     Route::resource('contact', ContactController::class, ['only' => ['index', 'store']])->names('contact');

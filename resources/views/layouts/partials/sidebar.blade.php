@@ -104,7 +104,7 @@
                 @endcan
 
                 <div data-kt-menu-trigger="click"
-                    class="menu-item menu-accordion {{ request()->routeIs(['school.*','academic-year.*']) ? 'show' : '' }}">
+                    class="menu-item menu-accordion {{ request()->routeIs(['school.*','academic-year.*','tahfidz.*']) ? 'show' : '' }}">
                     <span class="menu-link ">
                         <span class="menu-icon">
                             <i class="fa-solid fa-school" style="color: #ffffff;"></i>
@@ -131,6 +131,17 @@
                                     <span class="bullet bullet-dot"></span>
                                 </span>
                                 <span class="menu-title">Data Tahun Ajaran</span>
+                            </a>
+                        </div>
+                    </div>
+                    <div class="menu-sub menu-sub-accordion menu-active-bg">
+                        <div class="menu-item ">
+                            <a class="menu-link {{ request()->routeIs('tahfidz.*') ? ' active' : '' }}"
+                                href="{{ route('tahfidz.index') }}">
+                                <span class="menu-bullet">
+                                    <span class="bullet bullet-dot"></span>
+                                </span>
+                                <span class="menu-title">Data Tahfidz</span>
                             </a>
                         </div>
                     </div>
