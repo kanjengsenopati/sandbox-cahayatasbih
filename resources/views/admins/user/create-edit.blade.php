@@ -237,14 +237,6 @@
         maxlength: 255,
         email : true,
         },
-        password: {
-        required: true,
-        maxlength: 255,
-        },
-        password_confirmation: {
-        required: true,
-        equalTo: "#password",
-        },
         gender: {
         required: true,
         },
