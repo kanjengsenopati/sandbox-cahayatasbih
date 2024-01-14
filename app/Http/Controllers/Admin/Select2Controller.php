@@ -2,11 +2,12 @@
 
 namespace App\Http\Controllers\Admin;
 
-use App\Http\Controllers\Controller;
-use App\Models\Classroom;
-use App\Models\Student;
 use App\Models\User;
+use App\Models\Student;
+use App\Models\Classroom;
+use App\Models\CategoryItem;
 use Illuminate\Http\Request;
+use App\Http\Controllers\Controller;
 
 class Select2Controller extends Controller
 {
@@ -16,6 +17,7 @@ class Select2Controller extends Controller
             'USER' => $this->user($request),
             'STUDENT' => $this->student($request),
             'CLASSROOM_BY_SCHOOL' => $this->classroomBySchool($request),
+            'CATEGORY_ITEM' => $this->categoryItem($request),
         };
         return response()->json($data);
     }
@@ -30,6 +32,14 @@ class Select2Controller extends Controller
     public function student($request)
     {
         return Student::whereRaw('LOWER(name) like ?', ['%' . strtolower($request->search) . '%'])
+            ->take(10)
+            ->get();
+    }
+
+    public function categoryItem($request)
+    {
+        return CategoryItem::whereRaw('LOWER(name) like ?', ['%' . strtolower($request->search) . '%'])
+            ->orWhereRaw('LOWER(code) like ?', ['%' . strtolower($request->search) . '%'])
             ->take(10)
             ->get();
     }

@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Admin\AuthController;
+use App\Http\Controllers\Admin\ItemController;
 use App\Http\Controllers\Admin\RoleController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\AdminController;
@@ -18,6 +19,7 @@ use App\Http\Controllers\Admin\HomeSliderController;
 use App\Http\Controllers\Admin\PermissionController;
 use App\Http\Controllers\Admin\ImageUploadController;
 use App\Http\Controllers\Admin\AcademicYearController;
+use App\Http\Controllers\Admin\CategoryItemController;
 use App\Http\Controllers\Admin\PrivacyPolicyController;
 use App\Http\Controllers\Admin\TermConditionController;
 
@@ -59,6 +61,8 @@ Route::group(['middleware' => ['auth']], function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
     Route::resource('student', StudentController::class);
     Route::resource('tahfidz', TahfidzController::class);
+    Route::resource('category-item', CategoryItemController::class);
+    Route::resource('item', ItemController::class);
     Route::get('select2', [Select2Controller::class, 'index'])->name('select2');
     // home
     Route::resource('contact', ContactController::class, ['only' => ['index', 'store']])->names('contact');

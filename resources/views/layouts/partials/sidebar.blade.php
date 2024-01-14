@@ -182,6 +182,39 @@
                 </div>
                 @endcan
 
+                <div data-kt-menu-trigger="click"
+                    class="menu-item menu-accordion {{ request()->routeIs(['category-item.*','item.*']) ? 'show' : '' }}">
+                    <span class="menu-link ">
+                        <span class="menu-icon">
+                            <i class="fa-solid fa-box" style="color: #ffffff;"></i>
+                        </span>
+                        <span class="menu-title">Menu POS</span>
+                        <span class="menu-arrow"></span>
+                    </span>
+                    <div class="menu-sub menu-sub-accordion menu-active-bg">
+                        <div class="menu-item ">
+                            <a class="menu-link {{ request()->routeIs('category-item.*') ? ' active' : '' }}"
+                                href="{{ route('category-item.index') }}">
+                                <span class="menu-bullet">
+                                    <span class="bullet bullet-dot"></span>
+                                </span>
+                                <span class="menu-title">Kategori Barang</span>
+                            </a>
+                        </div>
+                    </div>
+                    <div class="menu-sub menu-sub-accordion menu-active-bg">
+                        <div class="menu-item ">
+                            <a class="menu-link {{ request()->routeIs('item.*') ? ' active' : '' }}"
+                                href="{{ route('item.index') }}">
+                                <span class="menu-bullet">
+                                    <span class="bullet bullet-dot"></span>
+                                </span>
+                                <span class="menu-title">Data Barang</span>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
             </div>
             <!--end::Menu-->
         </div>

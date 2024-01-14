@@ -1,4 +1,8 @@
-@extends('layouts.master', ['title' => 'Data Sekolah'])
+@extends('layouts.master', ['title' => 'Data Kategori Barang'])
+@push('css')
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" />
+
+@endpush
 @section('content')
 <!--begin::Content-->
 <div class="content d-flex flex-column flex-column-fluid" id="kt_content">
@@ -11,7 +15,7 @@
                 data-kt-swapper-parent="{default: '#kt_content_container', 'lg': '#kt_toolbar_container'}"
                 class="page-title d-flex align-items-center flex-wrap me-3 mb-5 mb-lg-0">
                 <!--begin::Title-->
-                <h1 class="d-flex text-dark fw-bolder fs-3 align-items-center my-1">Data Sekolah</h1>
+                <h1 class="d-flex text-dark fw-bolder fs-3 align-items-center my-1">Data Kategori Barang</h1>
                 <!--end::Title-->
                 <!--begin::Separator-->
                 <span class="h-20px border-gray-300 border-start mx-4"></span>
@@ -22,9 +26,9 @@
 
                     <!--end::Item-->
                     <!--begin::Item-->
-                    <a class="breadcrumb-item" href="{{ route('school.index') }}">
+                    <a class="breadcrumb-item" href="{{ route('category-item.index') }}">
                         <li class="text-muted">
-                            Sekolah
+                            Kategori Barang
                         </li>
                     </a>
                     <!--end::Item-->
@@ -35,7 +39,7 @@
                     <!--end::Item-->
                     <!--begin::Item-->
                     <li class="breadcrumb-item text-dark">
-                        {{ request()->routeIs('school.create') ? 'Tambah Sekolah' : 'Edit Sekolah' }}</li>
+                        {{ request()->routeIs('category-item.create') ? 'Tambah Kategori' : 'Edit Kategori' }}</li>
                     <!--end::Item-->
                 </ul>
                 <!--end::Breadcrumb-->
@@ -59,12 +63,17 @@
                     <!--begin::Contacts-->
                     <div class="card card-flush h-lg-100" id="kt_contacts_main">
                         <!--begin::Card header-->
-                        <div class="card-header pt-7" id="kt_chat_contacts_header">
+                        <div class="card-header pt-7 d-flex align-items-center justify-content-center"
+                            id="kt_chat_contacts_header" style="min-height: 150px;">
                             <!--begin::Card title-->
                             <div class="card-title">
-                                <h1 class="d-flex text-dark fw-bolder fs-3 align-items-center">{{
-                                    request()->routeIs('school.create') ? 'Tambah Sekolah' : 'Edit Sekolah' }}
-                                </h1>
+                                {{-- add animation category item here in image --}}
+                                <div class="animate__animated animate__bounceInDown">
+                                    <!-- Replace the placeholder image URL with your actual image URL or path -->
+                                    <img src="https://img.freepik.com/free-vector/checking-boxes-concept-illustration_114360-2465.jpg?w=740&t=st=1705256620~exp=1705257220~hmac=0f76539f956571bd6882d8a8fe199cb71acb836526ee15b64c5f888cf58165be"
+                                        alt="Category Item Image" class="img-fluid rounded"
+                                        style="max-width: 200px; height: auto;">
+                                </div>
                             </div>
                             <!--end::Card title-->
                         </div>
@@ -73,8 +82,8 @@
                         <div class="card-body pt-5">
                             <!--begin::Form-->
                             <x-alert.alert-validation />
-                            <form id="school"
-                                action="{{ request()->routeIs('school.create') ? route('school.store') : route('school.update', @$school->id) }}"
+                            <form id="category-item"
+                                action="{{ request()->routeIs('category-item.create') ? route('category-item.store') : route('category-item.update', @$categoryItem->id) }}"
                                 method="POST" enctype="multipart/form-data">
                                 @csrf
                                 <x-form.put-method />
@@ -82,15 +91,30 @@
                                 <div class="fv-row mb-7">
                                     <!--begin::Label-->
                                     <label class="fs-6 fw-bold form-label mt-3" for="name">
-                                        <span class="required">Nama Sekolah</span>
+                                        <span class="required">Nama Kategori</span>
                                         <i class="fas fa-exclamation-circle ms-1 fs-7" data-bs-toggle="tooltip"
-                                            title="Nama Sekolah"></i>
+                                            title="Masukkan Nama Kategori"></i>
                                     </label>
                                     <!--end::Label-->
                                     <!--begin::Input-->
-                                    <input type="text" class="form-control form-control-solid" name="name" id="name"
-                                        placeholder="Masukkan Nama Sekolah" value="{{ @$school->name ?? old('name') }}"
-                                        required />
+                                    <input type="text" name="name" id="name"
+                                        class="form-control form-control-solid mb-3 mb-lg-0" placeholder="Nama Kategori"
+                                        value="{{ old('name') ?? @$categoryItem->name }}" required />
+                                    <!--end::Input-->
+                                </div>
+
+                                <div class="fv-row mb-7">
+                                    <!--begin::Label-->
+                                    <label class="fs-6 fw-bold form-label mt-3" for="code">
+                                        <span class="required">Kode Kategori</span>
+                                        <i class="fas fa-exclamation-circle ms-1 fs-7" data-bs-toggle="tooltip"
+                                            title="Masukkan Kode Kategori Barang (Contoh: 01)"></i>
+                                    </label>
+                                    <!--end::Label-->
+                                    <!--begin::Input-->
+                                    <input type="text" name="code" id="code"
+                                        class="form-control form-control-solid mb-3 mb-lg-0" placeholder="Kode Kategori"
+                                        value="{{ old('code') ?? @$categoryItem->code }}" required />
                                     <!--end::Input-->
                                 </div>
                                 <!--end::Input group-->
@@ -100,7 +124,7 @@
                                 <!--begin::Action buttons-->
                                 <div class="d-flex justify-content-end">
                                     <!--begin::Button-->
-                                    <a href="{{ route('school.index') }}">
+                                    <a href="{{ route('category-item.index') }}">
                                         <button type="button" class="btn btn-sm btn-secondary me-3">Batal</button>
                                     </a>
                                     <!--end::Button-->
