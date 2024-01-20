@@ -59,4 +59,9 @@ class Admin extends Authenticatable
     {
         return $this->belongsTo(School::class);
     }
+
+    public function stockHistories(): HasMany
+    {
+        return $this->hasMany(StockHistory::class);
+    }
 }

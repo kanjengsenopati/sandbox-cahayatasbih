@@ -20,6 +20,7 @@ use App\Http\Controllers\Admin\PermissionController;
 use App\Http\Controllers\Admin\ImageUploadController;
 use App\Http\Controllers\Admin\AcademicYearController;
 use App\Http\Controllers\Admin\CategoryItemController;
+use App\Http\Controllers\Admin\StockHistoryController;
 use App\Http\Controllers\Admin\PrivacyPolicyController;
 use App\Http\Controllers\Admin\TermConditionController;
 
@@ -51,6 +52,7 @@ Route::post('/upload-image', [ImageUploadController::class, 'upload'])->name('up
 Route::post('/status/{id}', [AcademicYearController::class, 'status'])->name('academic-year.status');
 // end status
 Route::group(['middleware' => ['auth']], function () {
+    Route::get('select2', [Select2Controller::class, 'index'])->name('select2');
     Route::resource('permission', PermissionController::class, ['except' => ['show']]);
     Route::resource('role', RoleController::class);
     Route::resource('admin', AdminController::class);
@@ -63,7 +65,7 @@ Route::group(['middleware' => ['auth']], function () {
     Route::resource('tahfidz', TahfidzController::class);
     Route::resource('category-item', CategoryItemController::class);
     Route::resource('item', ItemController::class);
-    Route::get('select2', [Select2Controller::class, 'index'])->name('select2');
+    Route::resource('stock-history', StockHistoryController::class);
     // home
     Route::resource('contact', ContactController::class, ['only' => ['index', 'store']])->names('contact');
     Route::group(['prefix' => 'information'], function () {

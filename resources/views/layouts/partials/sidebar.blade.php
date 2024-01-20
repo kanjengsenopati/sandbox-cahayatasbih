@@ -183,7 +183,7 @@
                 @endcan
 
                 <div data-kt-menu-trigger="click"
-                    class="menu-item menu-accordion {{ request()->routeIs(['category-item.*','item.*']) ? 'show' : '' }}">
+                    class="menu-item menu-accordion {{ request()->routeIs(['category-item.*','item.*', 'stock-history.*']) ? 'show' : '' }}">
                     <span class="menu-link ">
                         <span class="menu-icon">
                             <i class="fa-solid fa-box" style="color: #ffffff;"></i>
@@ -210,6 +210,17 @@
                                     <span class="bullet bullet-dot"></span>
                                 </span>
                                 <span class="menu-title">Data Barang</span>
+                            </a>
+                        </div>
+                    </div>
+                    <div class="menu-sub menu-sub-accordion menu-active-bg">
+                        <div class="menu-item ">
+                            <a class="menu-link {{ request()->routeIs('stock-history.*') ? ' active' : '' }}"
+                                href="{{ route('stock-history.index') }}">
+                                <span class="menu-bullet">
+                                    <span class="bullet bullet-dot"></span>
+                                </span>
+                                <span class="menu-title">Data Stok</span>
                             </a>
                         </div>
                     </div>

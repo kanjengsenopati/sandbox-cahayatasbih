@@ -19,7 +19,8 @@ class ItemController extends Controller
             $data = Item::with('categoryItem')->get();
             return DataTables::of($data)
                 ->addColumn('status', function ($data) {
-                    return $data->is_active == 1 ? '<span class="badge badge-success">Aktif</span>' : '<span class="badge badge-danger">Tidak Aktif</span>';
+                    return $data->is_active == 1 ? '<span class="badge badge-success">Aktif</span>' :
+                        '<span class="badge badge-danger">Tidak Aktif</span>';
                 })
                 ->addColumn('action', function ($data) {
                     $actionEdit = route('item.edit', $data->id);
@@ -29,7 +30,7 @@ class ItemController extends Controller
                         view('components.action.delete', ['action' => $actionDelete, 'id' => $data->id]) .
                         "</div>";
                 })
-                ->rawColumns(['action', 'status'])
+                ->rawColumns(['action', 'status', 'summary_price'])
                 ->make(true);
         }
         return view('admins.item.index');

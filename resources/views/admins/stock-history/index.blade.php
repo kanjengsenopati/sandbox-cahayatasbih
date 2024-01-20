@@ -1,4 +1,4 @@
-@extends('layouts.master', ['title' => 'Data Barang'])
+@extends('layouts.master', ['title' => 'Data Riwayat Stok Barang'])
 @section('content')
 <div class="content d-flex flex-column flex-column-fluid" id="kt_content">
     <!--begin::Toolbar-->
@@ -10,7 +10,7 @@
                 data-kt-swapper-parent="{default: '#kt_content_container', 'lg': '#kt_toolbar_container'}"
                 class="page-title d-flex align-items-center flex-wrap me-3 mb-5 mb-lg-0">
                 <!--begin::Title-->
-                <h1 class="d-flex text-dark fw-bolder fs-3 align-items-center my-1">Data Barang</h1>
+                <h1 class="d-flex text-dark fw-bolder fs-3 align-items-center my-1">Data Riwayat Stok</h1>
                 <!--end::Title-->
                 <!--begin::Separator-->
                 <span class="h-20px border-gray-300 border-start mx-4"></span>
@@ -19,7 +19,7 @@
                 <ul class="breadcrumb breadcrumb-separatorless fw-bold fs-7 my-1">
                     <!--begin::Item-->
                     <li class="breadcrumb-item text-muted">
-                        <a href="{{ route('item.index') }}" class="text-muted text-hover-primary">Barang</a>
+                        <a href="{{ route('item.index') }}" class="text-dark text-hover-primary">Data Barang</a>
                     </li>
                     <!--end::Item-->
                     <!--begin::Item-->
@@ -28,7 +28,7 @@
                     </li>
                     <!--end::Item-->
                     <!--begin::Item-->
-                    <li class="breadcrumb-item text-dark">List Barang</li>
+                    <li class="breadcrumb-item text-dark">List Riwayat Stok Barang</li>
                     <!--end::Item-->
                 </ul>
                 <!--end::Breadcrumb-->
@@ -55,7 +55,7 @@
                     </div>
                     <div class="">
                         <a type="a" class="btn btn-sm btn-primary" id="btn_add_permission"
-                            href="{{ route('item.create') }}">+ Barang</a>
+                            href="{{ route('stock-history.create') }}">+ Stok</a>
                         <!--end::Primary button-->
                     </div>
                     <!--end::Card title-->
@@ -65,16 +65,15 @@
                 <div class="card-body pt-0">
                     <!--begin::Table-->
                     <div class="table-responsive">
-                        <table id="table-item" class="table align-middle table-row-dashed ">
+                        <table id="table-stock-history" class="table align-middle table-row-dashed ">
                             <thead>
                                 <tr class="text-start text-gray-400 fw-bolder fs-7 text-uppercase gs-0">
                                     <th style="width: 5%">No</th>
                                     <th class="min-w-100px" style="width: 22%">Kategori</th>
                                     <th class="min-w-100px" style="width: 22%">Kode Barang</th>
                                     <th class="min-w-100px" style="width: 22%">Nama Barang</th>
-                                    <th class="min-w-100px" style="width: 22%">Harga</th>
-                                    <th class="min-w-100px" style="width: 22%">Stok</th>
-                                    <th class="min-w-100px" style="width: 22%">Status</th>
+                                    <th class="min-w-100px" style="width: 22%">Jumlah</th>
+                                    <th class="min-w-100px" style="width: 22%">Admin</th>
                                     <th class="text-center min-w-100px" style="width: 22%">Aksi</th>
                                 </tr>
                             </thead>
@@ -97,11 +96,11 @@
 @push('js')
 <script>
     $(document).ready(() => {
-            var table = $('#table-item').DataTable({
+            var table = $('#table-stock-history').DataTable({
                 ordering: false,
                 processing: true,
                 serverSide: true,
-                ajax: "{{ route('item.index') }}",
+                ajax: "{{ route('stock-history.index') }}",
                 language: {
                     "paginate": {
                         "next": "<i class='fa fa-angle-right'>",
@@ -119,49 +118,32 @@
                         }
                     },
                     {
-                        data: 'category_item.name',
-                        name: 'category_item.name',
+                        data: 'item_category',
+                        name: 'item_category',
                         orderable: true,
                         searchable: true
                     },
                     {
-                        data: 'code',
-                        name: 'code',
+                        data: 'item.code',
+                        name: 'item.code',
                         orderable: true,
                         searchable: true
                     },
                     {
-                        data: 'name',
-                        name: 'name',
+                        data: 'item.name',
+                        name: 'item.name',
                         orderable: true,
                         searchable: true
                     },
                     {
-                    data: 'selling_price',
-                    name: 'selling_price',
-                    render: function (data, type, row, meta) {
-                    var sellingPriceFormatted = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(data);
-                    var priceFormatted = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(row.price);
-                    var profitFormatted = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(row.profit);
-                    
-                    return `<small><i>Harga Jual: ${sellingPriceFormatted}
-                            <hr>
-                            Harga Beli: ${priceFormatted}
-                            <hr>
-                            Laba: ${profitFormatted}
-                            <hr>
-                        </i></small>`;
-                    }
-                    },
-                    {
-                        data: 'stock',
-                        name: 'stock',
+                        data: 'quantity',
+                        name: 'quantity',
                         orderable: true,
                         searchable: true
                     },
                     {
-                        data: 'status',
-                        name: 'status',
+                        data: 'admin',
+                        name: 'admin',
                         orderable: true,
                         searchable: true
                     },

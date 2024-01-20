@@ -4,7 +4,7 @@ namespace App\Http\Requests\Admin;
 
 use Illuminate\Foundation\Http\FormRequest;
 
-class ItemRequest extends FormRequest
+class StockHistoryRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -22,14 +22,9 @@ class ItemRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name' => 'required|string|max:255',
-            'category_item_id' => 'required|exists:category_items,id',
-            'price' => 'required',
-            'stock' => 'required|integer',
-            'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
-            'code' => 'required|string|max:255',
-            'selling_price' => 'required',
-            'profit' => 'nullable',
+            'item_id' => ['required', 'exists:items,id'],
+            'quantity' => ['required', 'numeric', 'min:1'],
+            'type' => ['required', 'in:IN,OUT'],
         ];
     }
 }

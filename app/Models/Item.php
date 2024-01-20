@@ -17,6 +17,8 @@ class Item extends Model
         'name',
         'image',
         'price',
+        'selling_price',
+        'profit',
         'stock',
         'is_active',
     ];
