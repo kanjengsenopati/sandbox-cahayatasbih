@@ -2,13 +2,15 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Models\Item;
 use App\Models\User;
 use App\Models\Student;
+use App\Models\BillItem;
 use App\Models\Classroom;
+use App\Models\AcademicYear;
 use App\Models\CategoryItem;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
-use App\Models\Item;
 
 class Select2Controller extends Controller
 {
@@ -20,6 +22,8 @@ class Select2Controller extends Controller
             'CLASSROOM_BY_SCHOOL' => $this->classroomBySchool($request),
             'CATEGORY_ITEM' => $this->categoryItem($request),
             'ITEM' => $this->item($request),
+            'BILL_ITEM' => $this->billItem($request),
+            'ACADEMIC_YEAR' => $this->academicYear($request),
         };
         return response()->json($data);
     }
@@ -55,8 +59,22 @@ class Select2Controller extends Controller
             ->get();
     }
 
+    public function billItem($request)
+    {
+        return BillItem::whereRaw('LOWER(name) like ?', ['%' . strtolower($request->search) . '%'])
+            ->take(10)
+            ->get();
+    }
+
     public function classroomBySchool($request)
     {
         return Classroom::where('school_id', $request->school_id)->orderBy('name')->get();
+    }
+
+    public function academicYear($request)
+    {
+        return AcademicYear::whereRaw('LOWER(name) like ?', ['%' . strtolower($request->search) . '%'])
+            ->take(10)
+            ->get();
     }
 }

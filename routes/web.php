@@ -11,6 +11,8 @@ use App\Http\Controllers\Admin\ContactController;
 use App\Http\Controllers\Admin\Select2Controller;
 use App\Http\Controllers\Admin\StudentController;
 use App\Http\Controllers\Admin\TahfidzController;
+use App\Http\Controllers\Admin\BillItemController;
+use App\Http\Controllers\Admin\BillTypeController;
 use App\Http\Controllers\Admin\ClassroomController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\TranslateController;
@@ -18,6 +20,7 @@ use App\Http\Controllers\Admin\DisclaimerController;
 use App\Http\Controllers\Admin\HomeSliderController;
 use App\Http\Controllers\Admin\PermissionController;
 use App\Http\Controllers\Admin\ImageUploadController;
+use App\Http\Controllers\Admin\PaymentRateController;
 use App\Http\Controllers\Admin\AcademicYearController;
 use App\Http\Controllers\Admin\CategoryItemController;
 use App\Http\Controllers\Admin\StockHistoryController;
@@ -52,6 +55,8 @@ Route::post('/upload-image', [ImageUploadController::class, 'upload'])->name('up
 Route::post('/status/{id}', [AcademicYearController::class, 'status'])->name('academic-year.status');
 // end status
 Route::group(['middleware' => ['auth']], function () {
+    Route::get('payment-rate/get-classroom', [PaymentRateController::class, 'getClassroom'])
+        ->name('payment-rate.get-classroom');
     Route::get('select2', [Select2Controller::class, 'index'])->name('select2');
     Route::resource('permission', PermissionController::class, ['except' => ['show']]);
     Route::resource('role', RoleController::class);
@@ -66,6 +71,9 @@ Route::group(['middleware' => ['auth']], function () {
     Route::resource('category-item', CategoryItemController::class);
     Route::resource('item', ItemController::class);
     Route::resource('stock-history', StockHistoryController::class);
+    Route::resource('bill-item', BillItemController::class);
+    Route::resource('bill-type', BillTypeController::class);
+    Route::resource('payment-rate', PaymentRateController::class);
     // home
     Route::resource('contact', ContactController::class, ['only' => ['index', 'store']])->names('contact');
     Route::group(['prefix' => 'information'], function () {

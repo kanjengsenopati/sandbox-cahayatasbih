@@ -7,23 +7,22 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
-class Classroom extends Model
+class PaymentRateClassroom extends Model
 {
     use HasFactory, UuidTrait, SoftDeletes;
 
     protected $fillable = [
-        'name',
-        'school_id',
+        'payment_rate_id',
+        'classroom_id',
     ];
 
-
-    public function school()
+    public function paymentRate()
     {
-        return $this->belongsTo(School::class)->withTrashed();
+        return $this->belongsTo(PaymentRate::class);
     }
 
-    public function students()
+    public function classroom()
     {
-        return $this->hasMany(Student::class);
+        return $this->belongsTo(Classroom::class);
     }
 }

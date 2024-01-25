@@ -43,4 +43,9 @@ class Student extends Model
     {
         return $this->hasMany(Tahfidz::class)->withTrashed();
     }
+
+    public function bills()
+    {
+        return $this->hasMany(Bill::class)->withTrashed();
+    }
 }
