@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Admin\AuthController;
+use App\Http\Controllers\Admin\BillController;
 use App\Http\Controllers\Admin\ItemController;
 use App\Http\Controllers\Admin\RoleController;
 use App\Http\Controllers\Admin\UserController;
@@ -24,6 +25,7 @@ use App\Http\Controllers\Admin\PaymentRateController;
 use App\Http\Controllers\Admin\AcademicYearController;
 use App\Http\Controllers\Admin\CategoryItemController;
 use App\Http\Controllers\Admin\StockHistoryController;
+use App\Http\Controllers\Admin\PaymentMethodController;
 use App\Http\Controllers\Admin\PrivacyPolicyController;
 use App\Http\Controllers\Admin\TermConditionController;
 
@@ -74,6 +76,8 @@ Route::group(['middleware' => ['auth']], function () {
     Route::resource('bill-item', BillItemController::class);
     Route::resource('bill-type', BillTypeController::class);
     Route::resource('payment-rate', PaymentRateController::class);
+    Route::resource('bill', BillController::class);
+    Route::resource('payment-method', PaymentMethodController::class);
     // home
     Route::resource('contact', ContactController::class, ['only' => ['index', 'store']])->names('contact');
     Route::group(['prefix' => 'information'], function () {

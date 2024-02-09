@@ -12,7 +12,7 @@ $student = \App\Models\Student::find(@$value ?? 0);
 <script>
     $(document).ready(function(){
     $('#student_id').select2({
-        placeholder: "Pilih Wali Siswa",
+        placeholder: "Pilih Siswa",
         ajax: {
             url: "{{route('select2')}}",
             dataType: 'json',
@@ -28,7 +28,7 @@ $student = \App\Models\Student::find(@$value ?? 0);
                 return {
                 results:  $.map(data, function (item) {
                         return {
-                            text: item.name,
+                            text: item.nisn + ' - ' + item.name,
                             id: item.id
                         }
                     })

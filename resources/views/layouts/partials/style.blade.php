@@ -218,35 +218,37 @@
         }
     }
 </style> --}}
-
 <style>
-    /* Warna primary (teal) */
+    /* Font Inter */
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+    /* Warna primary (ungu) */
     .btn-primary {
         color: #fff;
-        background-color: #2FD5C5 !important;
-        border-color: #2FD5C5 !important;
+        background-color: #8a63d2 !important;
+        border-color: #8a63d2 !important;
     }
 
-    /* Warna tombol pagination yang aktif (teal) */
+    /* Warna tombol pagination yang aktif (ungu) */
     .paginate_button.page-item.active .page-link {
         color: #fff;
-        background-color: #2FD5C5 !important;
-        border-color: #2FD5C5 !important;
+        background-color: #8a63d2 !important;
+        border-color: #8a63d2 !important;
     }
 
-    /* Warna logo (teal dengan opacity) */
+    /* Warna logo (ungu dengan opacity) */
     .aside.aside-dark .aside-logo {
-        background-color: rgba(47, 213, 197, 0.8);
+        background-color: rgba(138, 99, 210, 0.8);
     }
 
-    /* Gradasi menu (teal dan hijau muda) */
+    /* Gradasi menu (ungu dan lavender) */
     .aside-menu {
-        background: linear-gradient(174.06deg, #2FD5C5 -14.74%, #C9E5C5 95.3%);
+        background: linear-gradient(174.06deg, #8a63d2 -14.74%, #d1c6f3 95.3%);
     }
 
-    /* Warna footer (teal dengan gradasi biru muda) */
+    /* Warna footer (ungu dengan gradasi lavender) */
     .aside-footer {
-        background-color: #C9E5C5;
+        background-color: #d1c6f3;
         color: #263238;
     }
 
@@ -263,16 +265,25 @@
         color: #9899ac;
     }
 
-    /* Warna background link pada sidebar gelap saat hover (teal) */
+    /* Warna background link pada sidebar gelap saat hover (ungu) */
     .aside-dark .menu .menu-item .menu-link:hover:not(.disabled):not(.active),
     .aside-dark .menu .menu-item.hover>.menu-link:not(.disabled):not(.active),
     .aside-dark .menu .menu-item .menu-link.active {
-        background-color: #2FD5C5 !important;
+        background-color: #8a63d2 !important;
     }
 
-    /* Scrollbar pada sidebar gelap (teal) */
+    /* Scrollbar pada sidebar gelap (ungu) */
     .aside-dark .hover-scroll-overlay-y {
-        scrollbar-color: #2FD5C5 transparent;
+        scrollbar-color: #8a63d2 transparent;
+    }
+
+    /* Font Inter untuk seluruh teks */
+    body,
+    button,
+    input,
+    select,
+    textarea {
+        font-family: 'Inter', sans-serif;
     }
 
     /* Ukuran font label tombol */

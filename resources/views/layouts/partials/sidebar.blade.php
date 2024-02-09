@@ -226,6 +226,74 @@
                     </div>
                 </div>
 
+                <div data-kt-menu-trigger="click"
+                    class="menu-item menu-accordion {{ request()->routeIs(['bill-item.*','bill-type.*','bill.*','payment-rate.*']) ? 'show' : '' }}">
+                    <span class="menu-link ">
+                        <span class="menu-icon">
+                            <i class="fa-solid fa-money-bill" style="color: #ffffff;"></i>
+                        </span>
+                        <span class="menu-title">Administrasi Siswa</span>
+                        <span class="menu-arrow"></span>
+                    </span>
+                    <div class="menu-sub menu-sub-accordion menu-active-bg">
+                        <div class="menu-item ">
+                            <a class="menu-link {{ request()->routeIs('bill-item.*') ? ' active' : '' }}"
+                                href="{{ route('bill-item.index') }}">
+                                <span class="menu-bullet">
+                                    <span class="bullet bullet-dot"></span>
+                                </span>
+                                <span class="menu-title">Item Bayar</span>
+                            </a>
+                        </div>
+                    </div>
+                    <div class="menu-sub menu-sub-accordion menu-active-bg">
+                        <div class="menu-item ">
+                            <a class="menu-link {{ request()->routeIs('bill-type.*') ? ' active' : '' }}"
+                                href="{{ route('bill-type.index') }}">
+                                <span class="menu-bullet">
+                                    <span class="bullet bullet-dot"></span>
+                                </span>
+                                <span class="menu-title">Jenis Bayar</span>
+                            </a>
+                        </div>
+                    </div>
+                    <div class="menu-sub menu-sub-accordion menu-active-bg">
+                        <div class="menu-item ">
+                            <a class="menu-link {{ request()->routeIs('bill.*') ? ' active' : '' }}"
+                                href="{{ route('bill.index') }}">
+                                <span class="menu-bullet">
+                                    <span class="bullet bullet-dot"></span>
+                                </span>
+                                <span class="menu-title">Tagihan</span>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <div data-kt-menu-trigger="click"
+                    class="menu-item menu-accordion {{ request()->routeIs(['payment-method.*']) ? 'show' : '' }}">
+                    <span class="menu-link ">
+                        <span class="menu-icon">
+                            <i class="fa-solid fa-gear" style="color: #ffffff;"></i>
+                        </span>
+                        <span class="menu-title">Menu Pengaturan</span>
+                        <span class="menu-arrow"></span>
+                    </span>
+                    <div class="menu-sub menu-sub-accordion menu-active-bg">
+                        @can('user')
+                        <div class="menu-item ">
+                            <a class="menu-link {{ request()->routeIs('payment-method.*') ? ' active' : '' }}"
+                                href="{{ route('payment-method.index') }}">
+                                <span class="menu-bullet">
+                                    <span class="bullet bullet-dot"></span>
+                                </span>
+                                <span class="menu-title">Data Metode Pembayaran</span>
+                            </a>
+                        </div>
+                        @endcan
+                    </div>
+                </div>
+
             </div>
             <!--end::Menu-->
         </div>

@@ -6,9 +6,13 @@ use App\Traits\UuidTrait;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Carbon\Carbon;
 
 class Bill extends Model
 {
+
+    const STATUS_UNPAID = 'UNPAID';
+    const STATUS_PAID = 'PAID';
     use HasFactory, UuidTrait, SoftDeletes;
 
     protected $fillable = [
@@ -23,6 +27,10 @@ class Bill extends Model
 
     protected $casts = [
         'amount' => 'integer',
+    ];
+
+    protected $appends = [
+        'translated_month',
     ];
 
     public function billType()
@@ -43,5 +51,10 @@ class Bill extends Model
     public function academicYear()
     {
         return $this->belongsTo(AcademicYear::class);
+    }
+
+    public function getTranslatedMonthAttribute()
+    {
+        return Carbon::createFromFormat('m', $this->month)->translatedFormat('F');
     }
 }
