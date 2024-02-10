@@ -38,7 +38,7 @@ class TransactionController extends Controller
             ]);
             // update bill status with loop in transaction details
             if ($status == Transaction::STATUS_PAID) {
-                foreach ($transaction->transaction_details as $detail) {
+                foreach ($transaction->transactionDetails as $detail) {
                     $detail->bill->update([
                         'status' => Bill::STATUS_PAID
                     ]);
