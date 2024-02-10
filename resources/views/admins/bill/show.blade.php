@@ -169,7 +169,9 @@
                                          'success' : 'danger' }} text-white px-3 py-1 rounded-1">{{
                                         @$monthly->total_unpaid == 0 ? 'Lunas' : 'Belum Lunas' }}</span></td>
                                 <td class="text-center">
-                                    <x-action.show :action="route('bill.show', $monthly->id)" label="Detail" />
+                                    <x-action.show
+                                        :action="route('bill.summary-bill', ['bill_type_id' => $monthly->id, 'student_id' => $student->id])"
+                                        label="Bayar" />
                                 </td>
                             </tr>
                             @endforeach
@@ -217,7 +219,9 @@
                                              'success' : 'danger' }} text-white px-3 py-1 rounded-1">{{
                                         @$other->total_unpaid == 0 ? 'Lunas' : 'Belum Lunas' }}</span></td>
                                 <td class="text-center">
-                                    <x-action.show :action="route('bill.show', $other->id)" label="Detail" />
+                                    <x-action.show
+                                        :action="route('bill.summary-bill', ['bill_type_id' => $other->id, 'student_id' => $student->id])"
+                                        label="Bayar" />
                                 </td>
                             </tr>
                             @endforeach

@@ -22,6 +22,7 @@ use App\Http\Controllers\Admin\HomeSliderController;
 use App\Http\Controllers\Admin\PermissionController;
 use App\Http\Controllers\Admin\ImageUploadController;
 use App\Http\Controllers\Admin\PaymentRateController;
+use App\Http\Controllers\Admin\TransactionController;
 use App\Http\Controllers\Admin\AcademicYearController;
 use App\Http\Controllers\Admin\CategoryItemController;
 use App\Http\Controllers\Admin\StockHistoryController;
@@ -57,6 +58,8 @@ Route::post('/upload-image', [ImageUploadController::class, 'upload'])->name('up
 Route::post('/status/{id}', [AcademicYearController::class, 'status'])->name('academic-year.status');
 // end status
 Route::group(['middleware' => ['auth']], function () {
+    Route::get('bill/get-bill-data', [BillController::class, 'getBillData'])->name('bill.get-bill-data');
+    Route::get('bill/summary-bill', [BillController::class, 'summaryBill'])->name('bill.summary-bill');
     Route::get('payment-rate/get-classroom', [PaymentRateController::class, 'getClassroom'])
         ->name('payment-rate.get-classroom');
     Route::get('select2', [Select2Controller::class, 'index'])->name('select2');
@@ -78,6 +81,7 @@ Route::group(['middleware' => ['auth']], function () {
     Route::resource('payment-rate', PaymentRateController::class);
     Route::resource('bill', BillController::class);
     Route::resource('payment-method', PaymentMethodController::class);
+    Route::resource('transaction', TransactionController::class);
     // home
     Route::resource('contact', ContactController::class, ['only' => ['index', 'store']])->names('contact');
     Route::group(['prefix' => 'information'], function () {

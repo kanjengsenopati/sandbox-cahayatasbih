@@ -57,4 +57,14 @@ class Bill extends Model
     {
         return Carbon::createFromFormat('m', $this->month)->translatedFormat('F');
     }
+
+    public function transactionDetails()
+    {
+        return $this->hasMany(TransactionDetail::class)->withTrashed();
+    }
+
+    public function transactions()
+    {
+        return $this->hasManyThrough(Transaction::class, TransactionDetail::class, 'bill_id', 'id', 'id', 'transaction_id');
+    }
 }

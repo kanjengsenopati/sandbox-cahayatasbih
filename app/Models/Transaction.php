@@ -34,8 +34,13 @@ class Transaction extends Model
         'xendit_fee'
     ];
 
-    public function transaction_details()
+    public function transactionDetails()
     {
         return $this->hasMany(TransactionDetail::class)->withTrashed();
+    }
+
+    public function paymentMethod()
+    {
+        return $this->belongsTo(PaymentMethod::class)->withTrashed();
     }
 }

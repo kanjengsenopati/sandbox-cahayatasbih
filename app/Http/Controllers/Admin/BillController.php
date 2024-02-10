@@ -7,10 +7,11 @@ use App\Models\User;
 use App\Models\Student;
 use App\Models\BillType;
 use Illuminate\Http\Request;
+use App\Models\PaymentMethod;
 use Yajra\DataTables\DataTables;
-use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\DB;
 
+use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Http;
 
 class BillController extends Controller
@@ -116,5 +117,74 @@ class BillController extends Controller
     public function destroy(string $id)
     {
         //
+    }
+
+    public function getBillData()
+    {
+
+        $id = request()->student_id;
+        $student = Student::findOrFail($id);
+
+        // Mengambil tagihan bulanan
+        $billMonth = BillType::with('billItem', 'academicYear')
+            ->where('type', BillType::TYPE_MONTHLY)
+            ->whereHas('bills', function ($query) use ($id) {
+                $query->where('student_id', $id);
+            })
+            ->latest()
+            ->get()
+            ->map(function ($item) use ($id) {
+                $item->total_unpaid = Bill::where('student_id', $id)
+                    ->where('bill_type_id', $item->id)
+                    ->where('status', Bill::STATUS_UNPAID)
+                    ->sum('amount');
+
+                $item->total_paid = Bill::where('student_id', $id)
+                    ->where('bill_type_id', $item->id)
+                    ->where('status', Bill::STATUS_PAID)
+                    ->sum('amount');
+
+                return $item;
+            });
+
+        // Mengambil tagihan lainnya
+        $billOthers = BillType::where('type', BillType::TYPE_OTHER)
+            ->whereHas('bills', function ($query) use ($id) {
+                $query->where('student_id', $id);
+            })
+            ->latest()
+            ->get()
+            ->map(function ($item) use ($id) {
+                $item->total_unpaid = Bill::where('student_id', $id)
+                    ->where('bill_type_id', $item->id)
+                    ->where('status', Bill::STATUS_UNPAID)
+                    ->sum('amount');
+                $item->total_paid = Bill::where('student_id', $id)
+                    ->where('bill_type_id', $item->id)
+                    ->where('status', Bill::STATUS_PAID)
+                    ->sum('amount');
+
+                return $item;
+            });
+
+
+        return view('admins.bill.show', compact('student', 'billMonth', 'billOthers'));
+    }
+
+    public function summaryBill()
+    {
+        $requestData = request()->only(['student_id', 'bill_type_id']);
+
+        $student = Student::findOrFail($requestData['student_id']);
+        $billType = BillType::findOrFail($requestData['bill_type_id']);
+
+        $bills = Bill::with('transactions')->where('student_id', $requestData['student_id'])
+            ->where('bill_type_id', $requestData['bill_type_id'])
+            ->orderBy('month', 'asc')
+            ->get();
+
+        $paymentMethods = PaymentMethod::latest()->get();
+
+        return view('admins.bill.summary', compact('student', 'billType', 'bills', 'paymentMethods'));
     }
 }

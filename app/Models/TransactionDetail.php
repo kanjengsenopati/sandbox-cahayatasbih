@@ -13,17 +13,16 @@ class TransactionDetail extends Model
 
     protected $fillable  = [
         'transaction_id',
-        'parentable_type',
-        'parentable_id',
+        'bill_id',
     ];
-
-    public function parent()
-    {
-        return $this->morphTo('parent', 'parentable_type', 'parentable_id')->withTrashed();
-    }
 
     public function transaction()
     {
         return $this->belongsTo(Transaction::class)->withTrashed();
+    }
+
+    public function bill()
+    {
+        return $this->belongsTo(Bill::class)->withTrashed();
     }
 }

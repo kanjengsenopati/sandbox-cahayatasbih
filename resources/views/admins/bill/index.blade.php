@@ -165,8 +165,8 @@
 
         $('#btn-cari').click(function () {
             var student_id = $('#student_id').val();
-            var url = "{{ route('bill.show', ':id') }}";
-            url = url.replace(':id', student_id);
+            var url = "{{ route('bill.get-bill-data') }}";
+            url = url + '?student_id=' + student_id;
 
             var button = $(this);
             changeButtonText(button);
