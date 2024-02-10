@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\Controller;
+use App\Models\Bill;
 use App\Services\TransactionService;
 
 class TransactionController extends Controller
@@ -36,8 +37,12 @@ class TransactionController extends Controller
                 'paid_at' => $status == Transaction::STATUS_PAID ? Carbon::now() : null
             ]);
             // update bill status with loop in transaction details
-            foreach ($transaction->transaction_details as $detail) {
-                TransactionService::changeStatusToPaid($detail->bill_id);
+            if ($status == Transaction::STATUS_PAID) {
+                foreach ($transaction->transaction_details as $detail) {
+                    $detail->bill->update([
+                        'status' => Bill::STATUS_PAID
+                    ]);
+                }
             }
 
             $transaction->refresh();
