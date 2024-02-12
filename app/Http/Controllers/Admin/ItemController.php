@@ -96,4 +96,37 @@ class ItemController extends Controller
         $item->delete();
         return redirect()->route('item.index')->with('success', 'Barang berhasil dihapus');
     }
+
+    public function searchItem(Request $request)
+    {
+        if ($request->type == 'CODE') {
+            return $this->searchItemCode($request);
+        } else {
+            return $this->searchItemName($request);
+        }
+    }
+
+    public function searchItemCode(Request $request)
+    {
+        $item = Item::whereCode($request->search)->whereIsActive(true)->first();
+        if (!$item) {
+            return $this->postSuccessResponse("Produk tidak ditemukan", null);
+        }
+        return $this->postSuccessResponse("Berhasil mengambil data", $item);
+    }
+
+    public function searchItemName(Request $request)
+    {
+        $searchTerm = strtolower($request->search);
+
+        $items = Item::where('is_active', true)
+            ->whereRaw('LOWER(name) LIKE ?', ['%' . $searchTerm . '%'])
+            ->get();
+
+        if ($items->isEmpty()) {
+            return $this->postSuccessResponse("Produk tidak ditemukan", null);
+        }
+
+        return $this->postSuccessResponse("Berhasil mengambil data", $items);
+    }
 }

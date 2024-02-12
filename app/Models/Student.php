@@ -21,7 +21,8 @@ class Student extends Model
         'gender',
         'saldo',
         'nisn',
-        'avatar'
+        'avatar',
+        'barcode',
     ];
 
     public function user()

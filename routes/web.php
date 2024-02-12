@@ -16,6 +16,7 @@ use App\Http\Controllers\Admin\BillItemController;
 use App\Http\Controllers\Admin\BillTypeController;
 use App\Http\Controllers\Admin\ClassroomController;
 use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\Admin\OrderItemController;
 use App\Http\Controllers\Admin\TranslateController;
 use App\Http\Controllers\Admin\DisclaimerController;
 use App\Http\Controllers\Admin\HomeSliderController;
@@ -76,6 +77,10 @@ Route::group(['middleware' => ['auth']], function () {
     Route::resource('category-item', CategoryItemController::class);
     Route::resource('item', ItemController::class);
     Route::resource('stock-history', StockHistoryController::class);
+    Route::post('order-item/search-student', [OrderItemController::class, 'getStudentByBarcode'])
+        ->name('order-item.search-student');
+    Route::post('item/search-item', [ItemController::class, 'searchItem'])->name('item.search-item');
+    Route::resource('order-item', OrderItemController::class);
     Route::resource('bill-item', BillItemController::class);
     Route::resource('bill-type', BillTypeController::class);
     Route::resource('payment-rate', PaymentRateController::class);
