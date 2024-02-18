@@ -27,6 +27,7 @@ class Bill extends Model
 
     protected $casts = [
         'amount' => 'integer',
+        'month' => 'integer',
     ];
 
     protected $appends = [

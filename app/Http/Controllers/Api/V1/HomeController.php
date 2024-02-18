@@ -19,4 +19,20 @@ class HomeController extends Controller
             'informations' => $informations
         ]);
     }
+
+    public function information()
+    {
+        $informations = Information::whereIsActive(true)->latest()->paginate(10);
+
+        return $this->postSuccessResponse("Berhasil Mengambil Data", $informations);
+    }
+
+    public function listStudent()
+    {
+        $students = Student::with('classroom', 'school')->where('user_id', auth()->user()->id)->latest()->get();
+
+        return $this->postSuccessResponse("Berhasil Mengambil Data", [
+            'students' => $students
+        ]);
+    }
 }

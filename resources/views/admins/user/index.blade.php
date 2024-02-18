@@ -88,7 +88,6 @@
                                     <th>Email</th>
                                     <th>No HP</th>
                                     <th>Gender</th>
-                                    <th>Saldo</th>
                                     <th>Status</th>
                                     <th class="text-center min-w-100px">Aksi</th>
                                 </tr>
@@ -178,10 +177,6 @@
             
             return `<span class="badge ${badgeClass}">${label}</span>`;
             },
-            },
-            {
-            data: 'saldo',
-            name: 'saldo'
             },
             {
             data: 'is_active',
