@@ -11,7 +11,7 @@ class HomeController extends Controller
 {
     public function index(Request $request)
     {
-        $student = Student::findOrfail($request->student_id);
+        $student = Student::with('classroom', 'school')->findOrfail($request->student_id);
         $informations = Information::whereIsActive(true)->latest()->limit(5)->get();
 
         return $this->postSuccessResponse("Berhasil Mengambil Data", [
