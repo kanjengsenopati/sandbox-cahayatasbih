@@ -22,6 +22,7 @@ use App\Http\Controllers\Admin\DisclaimerController;
 use App\Http\Controllers\Admin\HomeSliderController;
 use App\Http\Controllers\Admin\PermissionController;
 use App\Http\Controllers\Admin\ImageUploadController;
+use App\Http\Controllers\Admin\InformationController;
 use App\Http\Controllers\Admin\PaymentRateController;
 use App\Http\Controllers\Admin\TransactionController;
 use App\Http\Controllers\Admin\AcademicYearController;
@@ -30,6 +31,7 @@ use App\Http\Controllers\Admin\StockHistoryController;
 use App\Http\Controllers\Admin\PaymentMethodController;
 use App\Http\Controllers\Admin\PrivacyPolicyController;
 use App\Http\Controllers\Admin\TermConditionController;
+use App\Http\Controllers\Admin\InformationCategoryController;
 
 /*
 |--------------------------------------------------------------------------
@@ -87,6 +89,10 @@ Route::group(['middleware' => ['auth']], function () {
     Route::resource('bill', BillController::class);
     Route::resource('payment-method', PaymentMethodController::class);
     Route::resource('transaction', TransactionController::class);
+
+    // information
+    Route::resource('information-category', InformationCategoryController::class);
+    Route::resource('information', InformationController::class);
     // home
     Route::resource('contact', ContactController::class, ['only' => ['index', 'store']])->names('contact');
     Route::group(['prefix' => 'information'], function () {

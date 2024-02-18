@@ -1,6 +1,8 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Api\V1\AuthController;
+use App\Http\Controllers\Api\V1\HomeController;
 use App\Http\Controllers\Api\V1\TransactionController;
 
 // Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
@@ -10,10 +12,13 @@ Route::group(['prefix' => 'v1', 'middleware' => 'validate_api_key'], function ()
     // Route::get('/help', [HelpController::class, 'index']); //help
 
     Route::group(['prefix' => 'auth'], function () {
-        //end route auth
+        Route::post('login', [AuthController::class, 'phoneLogin']);
+        Route::post('logout', [AuthController::class, 'logout']);
     });
 
+
     Route::group(['middleware' => 'auth:api'], function () {
+        Route::get('home', [HomeController::class, 'index']);
     });
 });
 

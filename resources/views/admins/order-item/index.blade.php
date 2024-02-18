@@ -142,10 +142,7 @@
                                             <span class="svg-icon svg-icon-1 position-absolute ms-4">
 
                                             </span>
-                                            {{-- <input type="text" data-kt-ecommerce-edit-order-filter="search"
-                                                id="search-product-name"
-                                                class="form-control form-control-solid w-100 w-lg-70 ps-14"
-                                                placeholder="Masukkan Nama Barang" /> --}}
+
                                             <button type="button" class="btn btn-primary" data-bs-toggle="modal"
                                                 data-bs-target="#modalListProduct">
                                                 <i class="fas fa-search"></i>
@@ -307,6 +304,7 @@
 <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
 <script>
     var number = 1;
+    var totalPrice = 0;
 
     window.addEventListener('DOMContentLoaded', function () {
         focusOnFirstInput();
@@ -344,7 +342,7 @@
         } else {
             clearInput(searchProductInput);
             appendProductToTable(product);
-            updateTotalPrice(product.price);
+            updateTotalPrice(product.selling_price, 1);
         }
     }
 
@@ -386,7 +384,7 @@
                     <a class="text-gray-800 text-hover-primary fs-5 fw-bolder">${product.name}</a>
                     <div class="fw-bold fs-7">Harga: Rp. 
                         <span data-kt-ecommerce-edit-order-filter="price">
-                            ${product.price.toLocaleString('id-ID')}
+                            ${product.selling_price.toLocaleString('id-ID')}
                         </span>
                     </div>
                     <div class="text-muted fs-7">Stok: ${product.stock}</div>
@@ -397,8 +395,7 @@
         // Create td for total quantity
         var tdTotal = document.createElement('td');
         tdTotal.innerHTML = `
-            <input type="number" class="form-control form-control-solid w-100px" value="1" min="1" max="${product.stock}">`;
-        
+            <input type="number" class="form-control form-control-solid w-100px" value="1" min="1" max="${product.stock}" onchange="updateTotalPrice(${product.selling_price}, this.value)">`;
         tr.appendChild(tdTotal);
 
         // Create td for delete button
@@ -409,6 +406,7 @@
         deleteButton.addEventListener('click', function () {
             tr.remove();
             number--;
+            updateTotalPrice(-product.selling_price, -1);
         });
         tdDelete.appendChild(deleteButton);
         tr.appendChild(tdDelete);
@@ -418,11 +416,10 @@
         return tr;
     }
 
-    function updateTotalPrice(price) {
-        var totalPrice = document.getElementById('total-price');
-        var currentTotal = parseInt(totalPrice.innerHTML);
-        var totalPriceAfterAdding = currentTotal + price;
-        totalPrice.innerHTML = totalPriceAfterAdding;
+    function updateTotalPrice(price, quantity) {
+        totalPrice += price * quantity;
+        var totalPriceElement = document.getElementById('total-price');
+        totalPriceElement.textContent = totalPrice.toLocaleString('id-ID');
     }
 
     function handleError(error) {

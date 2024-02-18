@@ -305,6 +305,37 @@
                     </div>
                 </div>
 
+                <div data-kt-menu-trigger="click"
+                    class="menu-item menu-accordion {{ request()->routeIs(['information-category.*','information.*']) ? 'show' : '' }}">
+                    <span class="menu-link ">
+                        <span class="menu-icon">
+                            <i class="fa-solid fa-info" style="color: #ffffff;"></i>
+                        </span>
+                        <span class="menu-title">Menu Informasi</span>
+                        <span class="menu-arrow"></span>
+                    </span>
+                    <div class="menu-sub menu-sub-accordion menu-active-bg">
+                        <div class="menu-item ">
+                            <a class="menu-link {{ request()->routeIs('information-category.*') ? ' active' : '' }}"
+                                href="{{ route('information-category.index') }}">
+                                <span class="menu-bullet">
+                                    <span class="bullet bullet-dot"></span>
+                                </span>
+                                <span class="menu-title">Kategori Informasi</span>
+                            </a>
+                        </div>
+                        <div class="menu-item ">
+                            <a class="menu-link {{ request()->routeIs('information.*') ? ' active' : '' }}"
+                                href="{{ route('information.index') }}">
+                                <span class="menu-bullet">
+                                    <span class="bullet bullet-dot"></span>
+                                </span>
+                                <span class="menu-title">Data Informasi</span>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
             </div>
             <!--end::Menu-->
         </div>

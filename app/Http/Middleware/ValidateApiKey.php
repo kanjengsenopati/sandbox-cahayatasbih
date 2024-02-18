@@ -27,8 +27,8 @@ class ValidateApiKey
         }
 
         //auto logout ketika user di blokir
-        if($request->user()){
-            if(!$request->user()->active){
+        if ($request->user()) {
+            if (!$request->user()->is_active) {
                 $request->user()->token()->revoke();
             }
         }
