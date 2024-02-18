@@ -181,6 +181,27 @@
                     </div>
                 </div>
                 @endcan
+                <div data-kt-menu-trigger="click"
+                    class="menu-item menu-accordion {{ request()->routeIs(['student-achievement.*']) ? 'show' : '' }}">
+                    <span class="menu-link ">
+                        <span class="menu-icon">
+                            <i class="fa-solid fa-award" style="color: #ffffff;"></i>
+                        </span>
+                        <span class="menu-title">Menu Prestasi Siswa</span>
+                        <span class="menu-arrow"></span>
+                    </span>
+                    <div class="menu-sub menu-sub-accordion menu-active-bg">
+                        <div class="menu-item ">
+                            <a class="menu-link {{ request()->routeIs('student-achievement.*') ? ' active' : '' }}"
+                                href="{{ route('student-achievement.index') }}">
+                                <span class="menu-bullet">
+                                    <span class="bullet bullet-dot"></span>
+                                </span>
+                                <span class="menu-title">Prestasi Siswa</span>
+                            </a>
+                        </div>
+                    </div>
+                </div>
 
                 <div data-kt-menu-trigger="click"
                     class="menu-item menu-accordion {{ request()->routeIs(['category-item.*','item.*', 'stock-history.*','order-item.*']) ? 'show' : '' }}">
@@ -335,6 +356,8 @@
                         </div>
                     </div>
                 </div>
+
+
 
             </div>
             <!--end::Menu-->

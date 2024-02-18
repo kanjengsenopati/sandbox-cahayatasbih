@@ -24,4 +24,14 @@ class Tahfidz extends Model
     {
         return $this->belongsTo(Student::class)->withTrashed();
     }
+
+    public function getCreatedAtAttribute($value)
+    {
+        return date('Y-m-d H:i:s', strtotime($value));
+    }
+
+    public function getUpdatedAtAttribute($value)
+    {
+        return date('Y-m-d H:i:s', strtotime($value));
+    }
 }

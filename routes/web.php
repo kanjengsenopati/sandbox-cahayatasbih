@@ -31,6 +31,7 @@ use App\Http\Controllers\Admin\StockHistoryController;
 use App\Http\Controllers\Admin\PaymentMethodController;
 use App\Http\Controllers\Admin\PrivacyPolicyController;
 use App\Http\Controllers\Admin\TermConditionController;
+use App\Http\Controllers\Admin\StudentAchievementController;
 use App\Http\Controllers\Admin\InformationCategoryController;
 
 /*
@@ -93,6 +94,11 @@ Route::group(['middleware' => ['auth']], function () {
     // information
     Route::resource('information-category', InformationCategoryController::class);
     Route::resource('information', InformationController::class);
+
+    // student achievement
+    Route::get('student-achievement/get-classroom', [StudentAchievementController::class, 'getClassroom'])
+        ->name('student-achievement.get-classroom');
+    Route::resource('student-achievement', StudentAchievementController::class);
     // home
     Route::resource('contact', ContactController::class, ['only' => ['index', 'store']])->names('contact');
     Route::group(['prefix' => 'information'], function () {

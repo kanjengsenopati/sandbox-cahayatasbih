@@ -1,11 +1,13 @@
 <?php
 
+use Maatwebsite\Excel\Row;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\BillController;
 use App\Http\Controllers\Api\V1\HomeController;
+use App\Http\Controllers\Api\V1\StudentAchievementController;
+use App\Http\Controllers\Api\V1\TahfidzController;
 use App\Http\Controllers\Api\V1\TransactionController;
-use Maatwebsite\Excel\Row;
 
 // Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 //     return $request->user();
@@ -28,6 +30,17 @@ Route::group(['prefix' => 'v1', 'middleware' => 'validate_api_key'], function ()
         Route::group(['prefix' => 'bill'], function () {
             Route::get('/', [BillController::class, 'index']);
             Route::get('/{id}', [BillController::class, 'show']);
+        });
+
+        // start tahfidz
+        Route::group(['prefix' => 'tahfidz'], function () {
+            Route::get('/', [TahfidzController::class, 'index']);
+            Route::get('/{id}', [TahfidzController::class, 'show']);
+        });
+        // start student achievement
+        Route::group(['prefix' => 'student-achievement'], function () {
+            Route::get('/', [StudentAchievementController::class, 'index']);
+            Route::get('/{id}', [StudentAchievementController::class, 'show']);
         });
     });
 });
