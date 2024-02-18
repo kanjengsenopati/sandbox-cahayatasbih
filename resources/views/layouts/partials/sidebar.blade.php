@@ -182,7 +182,7 @@
                 </div>
                 @endcan
                 <div data-kt-menu-trigger="click"
-                    class="menu-item menu-accordion {{ request()->routeIs(['student-achievement.*']) ? 'show' : '' }}">
+                    class="menu-item menu-accordion {{ request()->routeIs(['student-achievement.*','student-counseling-score.*']) ? 'show' : '' }}">
                     <span class="menu-link ">
                         <span class="menu-icon">
                             <i class="fa-solid fa-award" style="color: #ffffff;"></i>
@@ -198,6 +198,17 @@
                                     <span class="bullet bullet-dot"></span>
                                 </span>
                                 <span class="menu-title">Prestasi Siswa</span>
+                            </a>
+                        </div>
+                    </div>
+                    <div class="menu-sub menu-sub-accordion menu-active-bg">
+                        <div class="menu-item ">
+                            <a class="menu-link {{ request()->routeIs('student-counseling-score.*') ? ' active' : '' }}"
+                                href="{{ route('student-counseling-score.index') }}">
+                                <span class="menu-bullet">
+                                    <span class="bullet bullet-dot"></span>
+                                </span>
+                                <span class="menu-title">Nilai Konseling</span>
                             </a>
                         </div>
                     </div>

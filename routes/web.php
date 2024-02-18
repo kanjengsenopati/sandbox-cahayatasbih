@@ -33,6 +33,7 @@ use App\Http\Controllers\Admin\PrivacyPolicyController;
 use App\Http\Controllers\Admin\TermConditionController;
 use App\Http\Controllers\Admin\StudentAchievementController;
 use App\Http\Controllers\Admin\InformationCategoryController;
+use App\Http\Controllers\Admin\StudentCounselingScoreController;
 
 /*
 |--------------------------------------------------------------------------
@@ -99,6 +100,9 @@ Route::group(['middleware' => ['auth']], function () {
     Route::get('student-achievement/get-classroom', [StudentAchievementController::class, 'getClassroom'])
         ->name('student-achievement.get-classroom');
     Route::resource('student-achievement', StudentAchievementController::class);
+
+    // student counseling score
+    Route::resource('student-counseling-score', StudentCounselingScoreController::class);
     // home
     Route::resource('contact', ContactController::class, ['only' => ['index', 'store']])->names('contact');
     Route::group(['prefix' => 'information'], function () {
