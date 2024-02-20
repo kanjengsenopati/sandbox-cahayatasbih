@@ -27,6 +27,7 @@ use App\Http\Controllers\Admin\PaymentRateController;
 use App\Http\Controllers\Admin\TransactionController;
 use App\Http\Controllers\Admin\AcademicYearController;
 use App\Http\Controllers\Admin\CategoryItemController;
+use App\Http\Controllers\Admin\SaldoHistoryController;
 use App\Http\Controllers\Admin\StockHistoryController;
 use App\Http\Controllers\Admin\PaymentMethodController;
 use App\Http\Controllers\Admin\PrivacyPolicyController;
@@ -109,6 +110,9 @@ Route::group(['middleware' => ['auth']], function () {
     // home
     Route::resource('contact', ContactController::class, ['only' => ['index', 'store']])->names('contact');
     Route::resource('application-setting', ApplicationSettingController::class, ['only' => ['index', 'store']])->names('application-setting');
+
+    // start saldo history
+    Route::resource('saldo-history', SaldoHistoryController::class);
 
     Route::group(['prefix' => 'information'], function () {
         Route::resource(

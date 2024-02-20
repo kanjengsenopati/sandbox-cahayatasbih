@@ -242,13 +242,16 @@
     }
 
     /* Gradasi menu (ungu dan lavender) */
-    .aside-menu {
+    /* .aside-menu {
         background: linear-gradient(174.06deg, #8a63d2 -14.74%, #d1c6f3 95.3%);
+    } */
+    .aside-menu {
+        background-color: #8a63d2;
     }
 
     /* Warna footer (ungu dengan gradasi lavender) */
     .aside-footer {
-        background-color: #d1c6f3;
+        background-color: #9979d3;
         color: #263238;
     }
 
