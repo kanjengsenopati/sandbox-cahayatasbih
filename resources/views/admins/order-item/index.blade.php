@@ -193,7 +193,6 @@
                                     <table class="table">
                                         <thead>
                                             <tr class="fw-bold fs-6 text-gray-800">
-                                                <th class="min-w-10px">No</th>
                                                 <th class="min-w-150px">Product</th>
                                                 <th class="min-w-100px">Quantity</th>
                                                 <th class="min-w-100px">Price</th>
@@ -325,6 +324,7 @@
 
     window.addEventListener('DOMContentLoaded', function () {
         focusOnFirstInput();
+        refreshProductList();
 
         var searchProductInput = document.getElementById('search-product');
         if (searchProductInput) {
@@ -404,7 +404,6 @@
     console.log(product);
     var tr = document.createElement('tr');
     tr.innerHTML = `
-    <td class="text-gray-800 fw-bolder d-block fs-7">${number}</td>
     <td>
         <div class="d-flex align-items-center" data-kt-ecommerce-edit-order-filter="product"
             data-kt-ecommerce-edit-order-id="product_${product.id}">
