@@ -12,7 +12,7 @@ class HomeController extends Controller
     public function index(Request $request)
     {
         $student = Student::with('classroom', 'school')->findOrfail($request->student_id);
-        $informations = Information::whereIsActive(true)->latest()->limit(5)->get();
+        $informations = Information::with('informationCategory')->whereIsActive(true)->latest()->limit(5)->get();
 
         return $this->postSuccessResponse("Berhasil Mengambil Data", [
             'student' => $student,
@@ -22,7 +22,7 @@ class HomeController extends Controller
 
     public function information()
     {
-        $informations = Information::whereIsActive(true)->latest()->paginate(10);
+        $informations = Information::with('informationCategory')->whereIsActive(true)->latest()->paginate(10);
 
         return $this->postSuccessResponse("Berhasil Mengambil Data", $informations);
     }
