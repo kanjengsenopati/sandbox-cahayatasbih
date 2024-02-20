@@ -3,9 +3,10 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Models\Item;
-use Illuminate\Http\Request;
-use App\Http\Controllers\Controller;
 use App\Models\Student;
+use Illuminate\Http\Request;
+use App\Models\PointOfSaleCart;
+use App\Http\Controllers\Controller;
 
 class OrderItemController extends Controller
 {
@@ -73,5 +74,56 @@ class OrderItemController extends Controller
             return $this->postSuccessResponse("Data siswa tidak ditemukan", null);
         }
         return $this->postSuccessResponse("Data siswa ditemukan", $student);
+    }
+
+    public function getCartData()
+    {
+        $carts = PointOfSaleCart::with('item')->where('admin_id', auth()->user()->id)->latest()->get();
+        return $this->postSuccessResponse("Data keranjang berhasil diambil", $carts);
+    }
+
+    public function addItemToCart(Request $request)
+    {
+        $item = Item::where('code', $request->code)->first();
+        if (!$item) {
+            return $this->failedResponse("Barang tidak ditemukan", null);
+        }
+        $cart = PointOfSaleCart::where('item_id', $item->id)->where('admin_id', auth()->user()->id)->first();
+        if ($cart) {
+            $cart->quantity += $request->quantity;
+            $cart->total = $cart->quantity * $cart->price;
+            $cart->save();
+            return $this->postSuccessResponse("Barang berhasil ditambahkan ke keranjang", $cart);
+        }
+        $cart = new PointOfSaleCart();
+        $cart->admin_id = auth()->user()->id;
+        $cart->item_id = $item->id;
+        $cart->quantity = $request->quantity;
+        $cart->price = $item->price;
+        $cart->total = $cart->quantity * $cart->price;
+        $cart->save();
+        return $this->postSuccessResponse("Barang berhasil ditambahkan ke keranjang", $cart);
+    }
+
+    public function deleteCart(Request $request)
+    {
+        $cart = PointOfSaleCart::where('id', $request->id)->where('admin_id', auth()->user()->id)->first();
+        if (!$cart) {
+            return $this->failedResponse("Data keranjang tidak ditemukan", null);
+        }
+        $cart->delete();
+        return $this->postSuccessResponse("Barang berhasil dihapus dari keranjang", null);
+    }
+
+    public function updateCartQuantity(Request $request)
+    {
+        $cart = PointOfSaleCart::where('id', $request->id)->where('admin_id', auth()->user()->id)->first();
+        if (!$cart) {
+            return $this->failedResponse("Data keranjang tidak ditemukan", null);
+        }
+        $cart->quantity = $request->quantity;
+        $cart->total = $cart->quantity * $cart->price;
+        $cart->save();
+        return $this->postSuccessResponse("Data keranjang berhasil diupdate", $cart);
     }
 }

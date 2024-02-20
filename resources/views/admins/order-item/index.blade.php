@@ -64,13 +64,14 @@
                         <div class="card-body pt-0">
                             <div class="d-flex flex-column gap-10">
                                 <!--begin::Input group-->
-                                <div class="fv-row">
+                                <div class="fv-row mb-3">
                                     <!--begin::Label-->
                                     <!--end::Label-->
                                     <!--begin::Auto-generated ID-->
-                                    <div class="fw-bolder fs-3">Total Harga : Rp.
-                                        <span id="total-price">0</span>
-                                    </div>
+                                    <label class="form-label">Total Pembayaran</label>
+                                    <input type="number" class="form-control form-control-solid" name="total_price"
+                                        placeholder="Total Pembayaran" id="total-price" disabled />
+
                                     <!--end::Input-->
                                 </div>
                                 <div class="fv-row">
@@ -161,9 +162,7 @@
                                     </div>
                                     <!--end::Selected products-->
                                     <!--begin::Total price-->
-                                    {{-- <div class="fw-bolder fs-4">Total Harga : Rp.
-                                        <span id="total-price">0</span>
-                                    </div> --}}
+
                                     <!--end::Total price-->
                                 </div>
                                 <!--end::Input group-->
@@ -190,12 +189,32 @@
                                 </div> --}}
                                 <!--end::Search products-->
                                 <!--begin::Table-->
-                                <table class="table align-middle table-row-dashed fs-6 gy-5" id="list-product">
+                                <div class="table-responsive">
+                                    <table class="table">
+                                        <thead>
+                                            <tr class="fw-bold fs-6 text-gray-800">
+                                                <th class="min-w-10px">No</th>
+                                                <th class="min-w-150px">Product</th>
+                                                <th class="min-w-100px">Quantity</th>
+                                                <th class="min-w-100px">Price</th>
+                                                <th class="min-w-100px">Total</th>
+                                                <th class="min-w-100px">Aksi</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="list-product">
+                                            <!--begin::Table row-->
+                                            <!--end::Table row-->
+                                        </tbody>
+                                    </table>
+                                </div>
+                                {{-- <table class="table align-middle table-row-dashed fs-6 gy-5" id="list-product">
                                     <!--begin::Table head-->
                                     <thead>
                                         <tr class="text-start text-gray-400 fw-bolder fs-7 text-uppercase gs-0">
                                             <th class="w-25px pe-2">No</th>
                                             <th class="min-w-200px" style="min-width: 25%">Product</th>
+                                            <th>Quantity</th>
+                                            <th>Harga</th>
                                             <th>Total</th>
                                             <th class="w-25px">Aksi</th>
                                         </tr>
@@ -208,7 +227,7 @@
                                         <!--end::Table row-->
                                     </tbody>
                                     <!--end::Table body-->
-                                </table>
+                                </table> --}}
                                 <!--end::Table-->
                             </div>
                         </div>
@@ -284,9 +303,7 @@
                         <!--end::Table head-->
                         <!--begin::Table body-->
                         <tbody class="fw-bold text-gray-600" id="list-product-name">
-                            <!--begin::Table row-->
-                            <!--begin::Table row-->
-                            <!--end::Table row-->
+
                         </tbody>
                         <!--end::Table body-->
                     </table>
@@ -341,9 +358,108 @@
             clearInput(searchProductInput);
         } else {
             clearInput(searchProductInput);
+            addProductToCart(product);
             appendProductToTable(product);
             updateTotalPrice(product.selling_price, 1);
         }
+    }
+
+    // add product to cart use axios
+    function addProductToCart(product) {
+        axios.post("{{ route('order-item.add-to-cart') }}", {
+            code: product.code,
+            quantity: 1
+        }).then(function (response) {
+            // if success, refresh table product #list-product
+            refreshProductList();
+            console.log(response);
+        }).catch(function (error) {
+            console.error(error);
+        });
+    }
+
+    // refresh product list table
+    function refreshProductList() {
+        axios.get("{{ route('order-item.get-cart') }}")
+            .then(function (response) {
+                var products = response.data.data;
+                var listProduct = document.getElementById('list-product');
+                // listProduct.innerHTML = ''; clear only td
+                while (listProduct.firstChild) {
+                    listProduct.removeChild(listProduct.firstChild);
+                }
+
+                if (products && products.length > 0) {
+                    products.forEach(function (product, index) {
+                        var tr = createTableRow(product);
+                        listProduct.appendChild(tr);
+                    });
+                }
+            }).catch(function (error) {
+                console.error(error);
+            });
+    }
+
+    function createTableRow(product) {
+    console.log(product);
+    var tr = document.createElement('tr');
+    tr.innerHTML = `
+    <td class="text-gray-800 fw-bolder d-block fs-7">${number}</td>
+    <td>
+        <div class="d-flex align-items-center" data-kt-ecommerce-edit-order-filter="product"
+            data-kt-ecommerce-edit-order-id="product_${product.id}">
+            <a class="symbol symbol-50px">
+                <span class="symbol-label" style="background-image:url(${product.item.image})"></span>
+            </a>
+            <div class="ms-5">
+                <a class="text-gray-800 text-hover-primary fs-5 fw-bolder">${product.item.name}</a>
+                <div class="text-muted fs-7">Stok: ${product.item.stock}</div>
+            </div>
+        </div>
+    </td>
+    <td>
+        <div class="d-flex justify-content-center align-items-center">
+           <a class="btn btn-icon btn-light-primary btn-sm me-2 decrement-btn"
+            onclick="updateCartQuantity('${product.id}', Math.max(1, ${product.quantity - 1}))">
+            <i class="fas fa-minus"></i>
+            </a>
+            <span class="quantity">${product.quantity}</span>
+            <a class="btn btn-icon btn-light-primary btn-sm ms-2 increment-btn"
+                onclick="updateCartQuantity('${product.id}', Math.min(${product.item.stock}, ${product.quantity + 1}))">
+                <i class="fas fa-plus"></i>
+            </a>
+            <input type="hidden" value="${product.id}">
+        </div>
+    </td>
+    <td>Rp. ${product.price.toLocaleString('id-ID')}</td>
+    <td>Rp. ${product.total.toLocaleString('id-ID')}</td>
+    <td>
+      <a class="btn btn-icon btn-light-danger btn-sm" onclick="deleteProductFromCart('${product.id}')">
+            <span class="svg-icon svg-icon-3"><i class="fas fa-trash"></i></span>
+        </a>
+    </td>`;
+    return tr;
+    }
+
+    function deleteProductFromCart(productId) {
+    axios.post("{{ route('order-item.delete-from-cart') }}", {
+    id: productId
+    }).then(function (response) {
+    refreshProductList();
+    }).catch(function (error) {
+    console.error(error);
+    });
+    }
+
+    function updateCartQuantity(productId, quantity) {
+        axios.post("{{ route('order-item.update-cart-quantity') }}", {
+            id: productId,
+            quantity: quantity
+        }).then(function (response) {
+            refreshProductList();
+        }).catch(function (error) {
+            console.error(error);
+        });
     }
 
     function showErrorAlert(message) {
@@ -364,67 +480,10 @@
         listProduct.appendChild(tr);
     }
 
-    function createTableRow(product) {
-        var tr = document.createElement('tr');
-
-        // Create td for number
-        var tdNo = document.createElement('td');
-        tdNo.innerHTML = `<span class="text-gray-800 fw-bolder d-block fs-7">${number}</span>`;
-        tr.appendChild(tdNo);
-
-        // Create td for product details
-        var tdProduct = document.createElement('td');
-        tdProduct.innerHTML = `
-            <div class="d-flex align-items-center" data-kt-ecommerce-edit-order-filter="product"
-                data-kt-ecommerce-edit-order-id="product_${product.id}">
-                <a class="symbol symbol-50px">
-                    <span class="symbol-label" style="background-image:url(${product.image})"></span>
-                </a>
-                <div class="ms-5">
-                    <a class="text-gray-800 text-hover-primary fs-5 fw-bolder">${product.name}</a>
-                    <div class="fw-bold fs-7">Harga: Rp. 
-                        <span data-kt-ecommerce-edit-order-filter="price">
-                            ${product.selling_price.toLocaleString('id-ID')}
-                        </span>
-                    </div>
-                    <div class="text-muted fs-7">Stok: ${product.stock}</div>
-                </div>
-            </div>`;
-        tr.appendChild(tdProduct);
-
-        // Create td for total quantity
-        var tdTotal = document.createElement('td');
-        tdTotal.innerHTML = `
-            <input type="number" class="form-control form-control-solid w-100px" value="1" min="1" max="${product.stock}" onchange="updateTotalPrice(${product.selling_price}, this.value)">`;
-        tr.appendChild(tdTotal);
-
-        // Create td for delete button
-        var tdDelete = document.createElement('td');
-        var deleteButton = document.createElement('button');
-        deleteButton.classList.add('btn', 'btn-icon', 'btn-light-danger', 'btn-sm', 'me-2');
-        deleteButton.innerHTML = `<span class="svg-icon svg-icon-3"><i class="fas fa-trash"></i></span>`;
-        deleteButton.addEventListener('click', function () {
-            tr.remove();
-            number--;
-            updateTotalPrice(-product.selling_price, -1);
-        });
-        tdDelete.appendChild(deleteButton);
-        tr.appendChild(tdDelete);
-
-        number++;
-
-        return tr;
-    }
-
-    function updateTotalPrice(price, quantity) {
-        totalPrice += price * quantity;
-        var totalPriceElement = document.getElementById('total-price');
-        totalPriceElement.textContent = totalPrice.toLocaleString('id-ID');
-    }
-
     function handleError(error) {
         console.error(error);
     }
+
 </script>
 <script>
     function updateProductList(products, listId) {

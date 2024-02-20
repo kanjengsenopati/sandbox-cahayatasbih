@@ -87,6 +87,11 @@ Route::group(['middleware' => ['auth']], function () {
     Route::resource('stock-history', StockHistoryController::class);
     Route::post('order-item/search-student', [OrderItemController::class, 'getStudentByBarcode'])
         ->name('order-item.search-student');
+    Route::get('order-item/get-cart', [OrderItemController::class, 'getCartData'])->name('order-item.get-cart');
+    Route::post('order-item/add-to-cart', [OrderItemController::class, 'addItemToCart'])->name('order-item.add-to-cart');
+    Route::post('order-item/update-cart-quantity', [OrderItemController::class, 'updateCartQuantity'])->name('order-item.update-cart-quantity');
+    Route::post('order-item/delete-from-cart', [OrderItemController::class, 'deleteCart'])
+        ->name('order-item.delete-from-cart');
     Route::post('item/search-item', [ItemController::class, 'searchItem'])->name('item.search-item');
     Route::resource('order-item', OrderItemController::class);
     Route::resource('bill-item', BillItemController::class);
