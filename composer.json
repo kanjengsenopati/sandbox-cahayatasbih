@@ -17,6 +17,7 @@
         "laravel/tinker": "^2.8",
         "livewire/livewire": "^2.12",
         "maatwebsite/excel": "^3.1",
+        "milon/barcode": "^10.0",
         "mjaschen/phpgeo": "^4.2",
         "simplesoftwareio/simple-qrcode": "^4.2",
         "spatie/laravel-activitylog": "^4.7",

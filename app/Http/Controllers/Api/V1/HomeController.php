@@ -31,8 +31,6 @@ class HomeController extends Controller
     {
         $students = Student::with('classroom', 'school')->where('user_id', auth()->user()->id)->latest()->get();
 
-        return $this->postSuccessResponse("Berhasil Mengambil Data", [
-            'students' => $students
-        ]);
+        return $this->postSuccessResponse("Berhasil Mengambil Data", $students);
     }
 }

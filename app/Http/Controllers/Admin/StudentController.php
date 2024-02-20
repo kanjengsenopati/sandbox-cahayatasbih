@@ -2,12 +2,16 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Models\School;
 use App\Models\Student;
 use Illuminate\Http\Request;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Yajra\DataTables\DataTables;
+use App\Models\ApplicationSetting;
 use App\Http\Controllers\Controller;
+
 use App\Http\Requests\Admin\StudentRequest;
-use App\Models\School;
+use SimpleSoftwareIO\QrCode\Facades\QrCode;
 
 class StudentController extends Controller
 {
@@ -99,5 +103,23 @@ class StudentController extends Controller
         file_exists($student->avatar) ? unlink($student->avatar) : '';
         $student->delete();
         return redirect()->route('student.index')->with('success', 'Siswa berhasil dihapus');
+    }
+
+    public function generateStudentCard($id)
+    {
+        $student = Student::findOrFail($id);
+        // generate student card here and return the file to download
+        $background = ApplicationSetting::first()->student_card_image;
+        $qrCode = QrCode::size(300)->generate($student->barcode);
+        // Convert the QR code to base64
+        $qrCodeBase64 = base64_encode($qrCode);
+        $pdf = PDF::loadView('admins.student-card.index', ['background' => $background, 'student' => $student, 'qrCode' => $qrCodeBase64])
+            ->setPaper('a4', 'landscape');
+
+        // Generate a random file name
+        $fileName = 'student_card_' . $student->id . '_' . uniqid() . '.pdf';
+
+        // Return the PDF file as a download response
+        return $pdf->stream($fileName);
     }
 }

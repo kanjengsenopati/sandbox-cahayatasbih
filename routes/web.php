@@ -31,6 +31,7 @@ use App\Http\Controllers\Admin\StockHistoryController;
 use App\Http\Controllers\Admin\PaymentMethodController;
 use App\Http\Controllers\Admin\PrivacyPolicyController;
 use App\Http\Controllers\Admin\TermConditionController;
+use App\Http\Controllers\Admin\ApplicationSettingController;
 use App\Http\Controllers\Admin\StudentAchievementController;
 use App\Http\Controllers\Admin\InformationCategoryController;
 use App\Http\Controllers\Admin\StudentCounselingScoreController;
@@ -63,6 +64,8 @@ Route::post('/upload-image', [ImageUploadController::class, 'upload'])->name('up
 Route::post('/status/{id}', [AcademicYearController::class, 'status'])->name('academic-year.status');
 // end status
 Route::group(['middleware' => ['auth']], function () {
+    Route::get('student/generate-student-card/{id}', [StudentController::class, 'generateStudentCard'])
+        ->name('student.generate-student-card');
     Route::get('bill/get-bill-data', [BillController::class, 'getBillData'])->name('bill.get-bill-data');
     Route::get('bill/summary-bill', [BillController::class, 'summaryBill'])->name('bill.summary-bill');
     Route::get('payment-rate/get-classroom', [PaymentRateController::class, 'getClassroom'])
@@ -105,6 +108,8 @@ Route::group(['middleware' => ['auth']], function () {
     Route::resource('student-counseling-score', StudentCounselingScoreController::class);
     // home
     Route::resource('contact', ContactController::class, ['only' => ['index', 'store']])->names('contact');
+    Route::resource('application-setting', ApplicationSettingController::class, ['only' => ['index', 'store']])->names('application-setting');
+
     Route::group(['prefix' => 'information'], function () {
         Route::resource(
             'privacy-policy',

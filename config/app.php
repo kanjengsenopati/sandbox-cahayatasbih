@@ -192,6 +192,7 @@ return [
         /*
          * Package Service Providers...
          */
+        Milon\Barcode\BarcodeServiceProvider::class,
 
 
         /*
@@ -222,7 +223,9 @@ return [
         'PDF' => Barryvdh\DomPDF\Facade::class,
         'GoogleTranslate' => Stichoza\GoogleTranslate\GoogleTranslate::class,
         // 'ImageOptimizer' => Spatie\LaravelImageOptimizer\ImageOptimizerFacade::class,
-        'Image' => Intervention\Image\Facades\Image::class
+        'Image' => Intervention\Image\Facades\Image::class,
+        'DNS1D' => Milon\Barcode\Facades\DNS1DFacade::class,
+        'DNS2D' => Milon\Barcode\Facades\DNS2DFacade::class,
     ])->toArray(),
 
 ];
