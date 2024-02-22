@@ -85,6 +85,9 @@ Route::group(['middleware' => ['auth']], function () {
     Route::resource('category-item', CategoryItemController::class);
     Route::resource('item', ItemController::class);
     Route::resource('stock-history', StockHistoryController::class);
+
+    Route::get('order-item/get-total-price', [OrderItemController::class, 'getTotalPrice'])
+        ->name('order-item.get-total-price');
     Route::post('order-item/search-student', [OrderItemController::class, 'getStudentByBarcode'])
         ->name('order-item.search-student');
     Route::get('order-item/get-cart', [OrderItemController::class, 'getCartData'])->name('order-item.get-cart');
@@ -94,6 +97,7 @@ Route::group(['middleware' => ['auth']], function () {
         ->name('order-item.delete-from-cart');
     Route::post('item/search-item', [ItemController::class, 'searchItem'])->name('item.search-item');
     Route::resource('order-item', OrderItemController::class);
+
     Route::resource('bill-item', BillItemController::class);
     Route::resource('bill-type', BillTypeController::class);
     Route::resource('payment-rate', PaymentRateController::class);

@@ -119,7 +119,7 @@ class ItemController extends Controller
     {
         $searchTerm = strtolower($request->search);
 
-        $items = Item::where('is_active', true)
+        $items = Item::whereIsActive(true)
             ->whereRaw('LOWER(name) LIKE ?', ['%' . $searchTerm . '%'])
             ->get();
 

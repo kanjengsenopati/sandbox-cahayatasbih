@@ -56,40 +56,82 @@
                         <!--begin::Card header-->
                         <div class="card-header">
                             <div class="card-title">
-                                <h2>Ringkasan</h2>
+                                <h2>Pembayaran</h2>
                             </div>
                         </div>
                         <!--end::Card header-->
                         <!--begin::Card body-->
                         <div class="card-body pt-0">
-                            <div class="d-flex flex-column gap-10">
+                            <div class="d-flex flex-column gap-6">
                                 <!--begin::Input group-->
-                                <div class="fv-row mb-3">
-                                    <!--begin::Label-->
-                                    <!--end::Label-->
-                                    <!--begin::Auto-generated ID-->
-                                    <label class="form-label">Total Pembayaran</label>
-                                    <input type="number" class="form-control form-control-solid" name="total_price"
-                                        placeholder="Total Pembayaran" id="total-price" disabled />
-
-                                    <!--end::Input-->
-                                </div>
                                 <div class="fv-row">
                                     <!--begin::Label-->
                                     <label class="form-label">Scan Kartu Santri</label>
                                     <!--end::Label-->
                                     <!--begin::Input-->
-                                    <input type="text" class="form-control form-control-solid" name="barcode"
-                                        placeholder="Masukkan ID Kartu Santri" type="password" id="scan-card" />
+                                    <div class="input-group">
+                                        <span class="input-group-text">
+                                            <i class="fas fa-id-card"></i>
+                                        </span>
+                                        <input class="form-control form-control-solid" name="barcode"
+                                            placeholder="Masukkan ID Kartu Santri" type="password" id="scan-card" />
+                                    </div>
                                     <!--end::Input-->
                                 </div>
+
                                 <!--end::Input group-->
                                 <!--begin::Input group-->
                                 <div class="fv-row">
                                     <!--begin::Student Info-->
-                                    <div id="student-info" class="fw-bold fs-5 mt-2">
+                                    <label class="form-label">Nama Santri</label>
+                                    <!--end::Label-->
+                                    <!--begin::Input-->
+                                    <input type="text" class="form-control form-control-solid" name="student_name"
+                                        id="student-name" placeholder="Nama Santri" disabled />
+                                    <!--end::Input-->
+                                </div>
+
+                                <div class="fv-row mb-3">
+                                    <!--begin::Label-->
+                                    <!--end::Label-->
+                                    <!--begin::Auto-generated ID-->
+                                    <label class="form-label">Total Pembayaran</label>
+                                    {{-- <input type="number" class="form-control form-control-solid" name="total_price"
+                                        placeholder="Total Pembayaran" disabled /> --}}
+                                    <input class="form-control" type="text" id="total-price" value="Rp. 0"
+                                        aria-label="Total Pembayaran" disabled readonly>
+
+                                    <!--end::Input-->
+                                </div>
+
+                                <div class="fv-row d-flex gap-3">
+                                    <!--begin::Label-->
+                                    <div class="col-6">
+                                        <label class="form-label">Saldo</label>
+                                        <!--end::Label-->
+                                        <!--begin::Input-->
+                                        <input type="text" class="form-control form-control-solid" name="saldo"
+                                            id="saldo" placeholder="Saldo" disabled />
                                     </div>
-                                    <!--end::Student Info-->
+                                    <div class="col-6">
+                                        <label class="form-label">Sisa</label>
+                                        <!--end::Label-->
+                                        <!--begin::Input-->
+                                        <input type="text" class="form-control form-control-solid"
+                                            name="remaining-saldo" id="remaining-saldo" placeholder="Kembalian"
+                                            disabled />
+                                    </div>
+                                    <!--end::Input-->
+                                </div>
+                                {{-- add button bayar --}}
+                                <div class="d-flex justify-content-end">
+                                    <button type="submit" id="kt_ecommerce_edit_order_submit"
+                                        class="btn btn-primary btn-md">
+                                        <span class="indicator-label">Bayar</span>
+                                        <span class="indicator-progress">Please wait...
+                                            <span
+                                                class="spinner-border spinner-border-sm align-middle ms-2"></span></span>
+                                    </button>
                                 </div>
                             </div>
                         </div>
@@ -105,7 +147,7 @@
                         <!--begin::Card header-->
                         <div class="card-header">
                             <div class="card-title">
-                                <h2>List Barang</h2>
+                                <h2>Keranjang</h2>
                             </div>
                         </div>
                         <!--end::Card header-->
@@ -147,7 +189,7 @@
                                             <button type="button" class="btn btn-primary" data-bs-toggle="modal"
                                                 data-bs-target="#modalListProduct">
                                                 <i class="fas fa-search"></i>
-                                                Pilih Barang
+                                                Cari Barang
                                             </button>
                                         </div>
                                     </div>
@@ -193,10 +235,10 @@
                                     <table class="table">
                                         <thead>
                                             <tr class="fw-bold fs-6 text-gray-800">
-                                                <th class="min-w-150px">Product</th>
-                                                <th class="min-w-100px">Quantity</th>
-                                                <th class="min-w-100px">Price</th>
-                                                <th class="min-w-100px">Total</th>
+                                                <th class="min-w-150px">Nama Barang</th>
+                                                <th class="min-w-100px">Jumlah</th>
+                                                <th class="min-w-100px">Harga</th>
+                                                <th class="min-w-100px">Total Harga</th>
                                                 <th class="min-w-100px">Aksi</th>
                                             </tr>
                                         </thead>
@@ -206,34 +248,13 @@
                                         </tbody>
                                     </table>
                                 </div>
-                                {{-- <table class="table align-middle table-row-dashed fs-6 gy-5" id="list-product">
-                                    <!--begin::Table head-->
-                                    <thead>
-                                        <tr class="text-start text-gray-400 fw-bolder fs-7 text-uppercase gs-0">
-                                            <th class="w-25px pe-2">No</th>
-                                            <th class="min-w-200px" style="min-width: 25%">Product</th>
-                                            <th>Quantity</th>
-                                            <th>Harga</th>
-                                            <th>Total</th>
-                                            <th class="w-25px">Aksi</th>
-                                        </tr>
-                                    </thead>
-                                    <!--end::Table head-->
-                                    <!--begin::Table body-->
-                                    <tbody class="fw-bold text-gray-600">
-                                        <!--begin::Table row-->
-                                        <!--begin::Table row-->
-                                        <!--end::Table row-->
-                                    </tbody>
-                                    <!--end::Table body-->
-                                </table> --}}
                                 <!--end::Table-->
                             </div>
                         </div>
                         <!--end::Card header-->
                     </div>
                     <!--end::Order details-->
-                    <div class="d-flex justify-content-end">
+                    {{-- <div class="d-flex justify-content-end">
                         <!--begin::Button-->
                         <a href="../../demo1/dist/apps/ecommerce/catalog/products.html"
                             id="kt_ecommerce_edit_order_cancel" class="btn btn-light me-5">Cancel</a>
@@ -245,7 +266,7 @@
                                 <span class="spinner-border spinner-border-sm align-middle ms-2"></span></span>
                         </button>
                         <!--end::Button-->
-                    </div>
+                    </div> --}}
                 </div>
                 <!--end::Main column-->
             </form>
@@ -293,8 +314,7 @@
                         <!--begin::Table head-->
                         <thead>
                             <tr class="text-start text-gray-400 fw-bolder fs-7 text-uppercase gs-0">
-                                <th class="w-25px pe-2">No</th>
-                                <th class="min-w-200px" style="min-width: 25%">Product</th>
+                                <th class="min-w-200px" style="min-width: 25%">Nama Barang</th>
                                 <th>Harga</th>
                                 <th class="w-25px">Aksi</th>
                             </tr>
@@ -360,7 +380,7 @@
             clearInput(searchProductInput);
             addProductToCart(product);
             appendProductToTable(product);
-            updateTotalPrice(product.selling_price, 1);
+            updateTotalPrice();
         }
     }
 
@@ -372,7 +392,6 @@
         }).then(function (response) {
             // if success, refresh table product #list-product
             refreshProductList();
-            console.log(response);
         }).catch(function (error) {
             console.error(error);
         });
@@ -395,6 +414,7 @@
                         listProduct.appendChild(tr);
                     });
                 }
+                updateTotalPrice();
             }).catch(function (error) {
                 console.error(error);
             });
@@ -479,6 +499,33 @@
         listProduct.appendChild(tr);
     }
 
+   function updateTotalPrice() {
+        axios.get("{{ route('order-item.get-total-price') }}")
+        .then(function (response) {
+        var totalPrice = response.data.data;
+        var totalPriceElement = document.getElementById('total-price');
+        // show in total price element with original format
+        totalPriceElement.value = `${totalPrice}`;
+        // update return value from student saldo - total price
+        var remainingSaldoElement = document.getElementById('remaining-saldo');
+        var saldoElement = document.getElementById('saldo');
+        // remove Rp. and replace . with empty string
+        saldo = parseInt(saldoElement.value.replace('Rp. ', '').replace('.', ''));
+        totalPayment = parseInt(totalPrice.replace('Rp. ', '').replace('.', ''));
+        // Check if saldo is not empty before calculating remaining saldo
+        if (saldo > 0) {
+        var remainingSaldo = saldo - totalPayment;
+        console.log(remainingSaldo);
+        remainingSaldoElement.value = `Rp. ${remainingSaldo.toLocaleString('id-ID')}`;
+        } else {
+        // If saldo is empty, set remaining saldo to 0
+        remainingSaldoElement.value = `Rp. 0`;
+        }
+        }).catch(function (error) {
+        console.error(error);
+        });
+        }
+
     function handleError(error) {
         console.error(error);
     }
@@ -492,11 +539,6 @@
         if (products && products.length > 0) {
             products.forEach(function (product, index) {
                 var tr = document.createElement('tr');
-
-                    // Create td for number
-                var tdNo = document.createElement('td');
-                tdNo.innerHTML = `<span class="text-gray-800 fw-bolder d-block fs-7">${number}</span>`;
-                tr.appendChild(tdNo);
 
                 // Create td for product details
                 var tdProduct = document.createElement('td');
@@ -524,7 +566,9 @@
                 button.classList.add('btn', 'btn-primary');
                 button.textContent = 'Pilih';
                 button.addEventListener('click', function () {
-                    addToProductList(product, listId);
+                    addProductToCart(product);
+                    appendProductToTable(product);
+                    updateTotalPrice();
                 });
                 tdAction.appendChild(button);
                 tr.appendChild(tdAction);
@@ -581,20 +625,22 @@
     }
 
     document.addEventListener('DOMContentLoaded', function () {
-        var searchProductNameInput = document.getElementById('search-product-name');
-        if (searchProductNameInput) {
-            searchProductNameInput.addEventListener('input', function (e) {
-                var search = e.target.value;
-                axios.post("{{ route('item.search-item') }}", {
-                    search: search,
-                    type: 'NAME'
-                }).then(function (response) {
-                    updateProductList(response.data.data, 'list-product-name');
-                }).catch(function (error) {
-                    console.error(error);
-                });
-            });
-        }
+    var searchProductNameInput = document.getElementById('search-product-name');
+    if (searchProductNameInput) {
+    searchProductNameInput.addEventListener('change', function (e) {
+    var search = e.target.value;
+    axios.post("{{ route('item.search-item') }}", {
+    search: search,
+    type: 'NAME'
+    }).then(function (response) {
+    updateProductList(response.data.data, 'list-product-name');
+    // clear input
+    e.target.value = '';
+    }).catch(function (error) {
+    console.error(error);
+    });
+    });
+    }
     });
 </script>
 <script>
@@ -606,23 +652,10 @@
         }).then(function (response) {
             var student = response.data.data;
             if (student) {
-                console.log(student);
-                var studentInfo = document.getElementById('student-info');
-               studentInfo.innerHTML = `
-                <div>
-                    <span class=fs-3">Santri:</span>
-                    <span class="fw-bold fs-5">${student.name}</span>
-                </div>
-                <div>
-                    <span class=fs-3">NISN:</span>
-                    <span class="fw-bold fs-5">${student.nisn}</span>
-                </div>
-                <div>
-                    <span class=fs-3">Kelas:</span>
-                    <span class="fw-bold fs-5">${student.classroom.name}</span>
-                </div>
-                `;
-
+                // replace name, saldo, and count saldo - total price
+                document.getElementById('student-name').value = student.name;
+                document.getElementById('saldo').value = 'Rp. ' + student.saldo.toLocaleString('id-ID');
+                updateTotalPrice();
                 // Clear input
                 e.target.value = '';
             } else {

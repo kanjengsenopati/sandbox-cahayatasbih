@@ -126,4 +126,11 @@ class OrderItemController extends Controller
         $cart->save();
         return $this->postSuccessResponse("Data keranjang berhasil diupdate", $cart);
     }
+
+    public function getTotalPrice()
+    {
+        $total = PointOfSaleCart::where('admin_id', auth()->user()->id)->sum('total');
+        $total = "Rp. " . number_format($total, 0, ',', '.');
+        return $this->getSuccessResponse($total);
+    }
 }
