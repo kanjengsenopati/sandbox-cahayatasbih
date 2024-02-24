@@ -18,6 +18,7 @@ use App\Http\Controllers\Admin\InformationCategoryController;
 use App\Http\Controllers\Admin\InformationController;
 use App\Http\Controllers\Admin\ItemController;
 use App\Http\Controllers\Admin\OrderItemController;
+use App\Http\Controllers\Admin\OrderItemHistoryController;
 use App\Http\Controllers\Admin\PaymentMethodController;
 use App\Http\Controllers\Admin\PaymentRateController;
 use App\Http\Controllers\Admin\PermissionController;
@@ -102,6 +103,7 @@ Route::group(['middleware' => ['auth']], function () {
     Route::post('order-item/delete-all-cart', [OrderItemController::class, 'deleteAllCart'])
         ->name('order-item.delete-all-cart');
     Route::resource('order-item', OrderItemController::class);
+    Route::resource('order-item-history', OrderItemHistoryController::class);
 
     Route::resource('bill-item', BillItemController::class);
     Route::resource('bill-type', BillTypeController::class);

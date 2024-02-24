@@ -249,7 +249,7 @@
                 </div>
 
                 <div data-kt-menu-trigger="click"
-                    class="menu-item menu-accordion {{ request()->routeIs(['category-item.*','item.*', 'stock-history.*','order-item.*']) ? 'show' : '' }}">
+                    class="menu-item menu-accordion {{ request()->routeIs(['category-item.*','item.*', 'stock-history.*','order-item.*', 'order-item-history.*']) ? 'show' : '' }}">
                     <span class="menu-link ">
                         <span class="menu-icon">
                             <i class="fa-solid fa-box" style="color: #ffffff;"></i>
@@ -298,6 +298,17 @@
                                     <span class="bullet bullet-dot"></span>
                                 </span>
                                 <span class="menu-title">Transaksi</span>
+                            </a>
+                        </div>
+                    </div>
+                    <div class="menu-sub menu-sub-accordion menu-active-bg">
+                        <div class="menu-item ">
+                            <a class="menu-link {{ request()->routeIs('order-item-history.*') ? ' active' : '' }}"
+                                href="{{ route('order-item-history.index') }}">
+                                <span class="menu-bullet">
+                                    <span class="bullet bullet-dot"></span>
+                                </span>
+                                <span class="menu-title">Riwayat Transaksi</span>
                             </a>
                         </div>
                     </div>

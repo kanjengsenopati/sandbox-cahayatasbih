@@ -24,14 +24,18 @@ class PointOfSaleTransaction extends Model
         'status',
     ];
 
+    protected $casts = [
+        'paid_at' => 'datetime',
+    ];
+
     public function student()
     {
-        return $this->belongsTo(Student::class);
+        return $this->belongsTo(Student::class)->withTrashed();
     }
 
-    public function admin()
+    public function cashier()
     {
-        return $this->belongsTo(User::class);
+        return $this->belongsTo(Admin::class, 'admin_id');
     }
 
     public function pointOfSaleTransactionDetails()

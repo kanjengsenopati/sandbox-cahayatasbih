@@ -64,4 +64,9 @@ class Admin extends Authenticatable
     {
         return $this->hasMany(StockHistory::class);
     }
+
+    public function pointOfSaleTransactions(): HasMany
+    {
+        return $this->hasMany(PointOfSaleTransaction::class);
+    }
 }
