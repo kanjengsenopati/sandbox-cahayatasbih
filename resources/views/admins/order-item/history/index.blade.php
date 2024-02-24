@@ -1,4 +1,4 @@
-@extends('layouts.master', ['title' => 'Data Riwayat Pembelian'])
+@extends('layouts.master', ['title' => 'Data Riwayat Pembelian', 'sidebar' => 'on'])
 @section('content')
 <div class="content d-flex flex-column flex-column-fluid" id="kt_content">
     <!--begin::Toolbar-->

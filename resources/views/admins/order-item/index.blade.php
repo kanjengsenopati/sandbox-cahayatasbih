@@ -1,4 +1,4 @@
-@extends('layouts.master', ['title' => 'Data Barang', 'sidebar' => 'on'])
+@extends('layouts.master', ['title' => 'Tambah Pembelian', 'sidebar' => 'on'])
 @push('css')
 <style>
     /* Loader styles */
@@ -41,7 +41,7 @@
                 <ul class="breadcrumb breadcrumb-separatorless fw-bold fs-7 my-1">
                     <!--begin::Item-->
                     <li class="breadcrumb-item text-muted">
-                        <a href="{{ route('item.index') }}" class="text-muted text-hover-primary">Barang</a>
+                        <a href="{{ route('item.index') }}" class="text-muted text-hover-primary">Transaksi</a>
                     </li>
                     <!--end::Item-->
                     <!--begin::Item-->
@@ -50,7 +50,7 @@
                     </li>
                     <!--end::Item-->
                     <!--begin::Item-->
-                    <li class="breadcrumb-item text-dark">List Barang</li>
+                    <li class="breadcrumb-item text-dark">Tambah Pembelian</li>
                     <!--end::Item-->
                 </ul>
                 <!--end::Breadcrumb-->
