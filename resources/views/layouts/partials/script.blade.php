@@ -113,7 +113,7 @@
                 icon: '{{ $message }}',
                 confirmButtonText: 'Baik',
                 customClass: {
-                    confirmButton: "btn fw-bold btn-success"
+                    confirmButton: "btn fw-bold btn-primary"
                 }
             })
 </script>

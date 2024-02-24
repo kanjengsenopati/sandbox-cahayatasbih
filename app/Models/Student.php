@@ -49,4 +49,9 @@ class Student extends Model
     {
         return $this->hasMany(Bill::class)->withTrashed();
     }
+
+    public function saldoHistories()
+    {
+        return $this->hasMany(SaldoHistory::class)->withTrashed();
+    }
 }

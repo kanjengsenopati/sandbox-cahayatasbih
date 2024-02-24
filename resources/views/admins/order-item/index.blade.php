@@ -1,4 +1,26 @@
-@extends('layouts.master', ['title' => 'Data Barang'])
+@extends('layouts.master', ['title' => 'Data Barang', 'sidebar' => 'on'])
+@push('css')
+<style>
+    /* Loader styles */
+    #page-loader {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(255, 255, 255, 0.8);
+        z-index: 9999;
+        display: none;
+    }
+
+    .loader {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+    }
+</style>
+@endpush
 @section('content')
 <div class="content d-flex flex-column flex-column-fluid" id="kt_content">
     <!--begin::Toolbar-->
@@ -47,8 +69,9 @@
         <!--begin::Container-->
         <div id="kt_content_container" class="container-xxl">
             <!--begin::Form-->
-            <form id="kt_ecommerce_edit_order_form" class="form d-flex flex-column flex-lg-row"
-                data-kt-redirect="../../demo1/dist/apps/ecommerce/sales/listing.html">
+            <form id="form-payment" class="form d-flex flex-column flex-lg-row" method="post"
+                action="{{ route('order-item.store') }}">
+                @csrf
                 <!--begin::Aside column-->
                 <div class="w-100 flex-lg-row-auto w-lg-300px mb-7 me-7 me-lg-10">
                     <!--begin::Order details-->
@@ -91,13 +114,11 @@
                                     <!--end::Input-->
                                 </div>
 
-                                <div class="fv-row mb-3">
+                                <div class="fv-row">
                                     <!--begin::Label-->
                                     <!--end::Label-->
                                     <!--begin::Auto-generated ID-->
                                     <label class="form-label">Total Pembayaran</label>
-                                    {{-- <input type="number" class="form-control form-control-solid" name="total_price"
-                                        placeholder="Total Pembayaran" disabled /> --}}
                                     <input class="form-control" type="text" id="total-price" value="Rp. 0"
                                         aria-label="Total Pembayaran" disabled readonly>
 
@@ -124,13 +145,9 @@
                                     <!--end::Input-->
                                 </div>
                                 {{-- add button bayar --}}
-                                <div class="d-flex justify-content-end">
-                                    <button type="submit" id="kt_ecommerce_edit_order_submit"
-                                        class="btn btn-primary btn-md">
+                                <div class="d-flex justify-content-center">
+                                    <button type="submit" id="btn-bayar" class=" btn btn-primary mt-3 w-100">
                                         <span class="indicator-label">Bayar</span>
-                                        <span class="indicator-progress">Please wait...
-                                            <span
-                                                class="spinner-border spinner-border-sm align-middle ms-2"></span></span>
                                     </button>
                                 </div>
                             </div>
@@ -146,22 +163,37 @@
                     <div class="card card-flush py-4">
                         <!--begin::Card header-->
                         <div class="card-header">
-                            <div class="card-title">
-                                <h2>Keranjang</h2>
+                            <div class="row align-items-center">
+                                <div class="col-md-3">
+                                    <div class="card-title">
+                                        <h2>Keranjang</h2>
+                                    </div>
+                                </div>
+                                <div class="col-md-9">
+                                    <div class="d-flex justify-content-end align-items-center">
+                                        <button type="button" class="btn btn-danger btn-sm me-2"
+                                            onclick="deleteAllProductFromCart()">
+                                            <i class="fas fa-trash"></i> Bersihkan Keranjang
+                                        </button>
+                                        <button type="button" class="btn btn-secondary btn-sm"
+                                            onclick="refreshProductList()">
+                                            <i class="fas fa-sync-alt"></i> Refresh
+                                        </button>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                         <!--end::Card header-->
                         <!--begin::Card body-->
                         <div class="card-body pt-0">
                             <div class="d-flex flex-column gap-10">
-
                                 <!--begin::Input group-->
                                 <div>
                                     <!--begin::Label-->
                                     <label class="form-label">Kasir : {{ Auth::user()->name ?? '' }}</label>
                                     <!--end::Label-->
                                     <!--begin::Search inputs-->
-                                    <div class="row mb-5">
+                                    <div class="row mb-3">
                                         <!-- Input for searching by product code -->
                                         <div class="col d-flex align-items-center position-relative mb-n7">
                                             <span class="svg-icon svg-icon-1 position-absolute ms-4">
@@ -195,41 +227,22 @@
                                     </div>
                                     <!--end::Search inputs-->
                                     <!--begin::Selected products-->
-                                    <div class="row row-cols-1 row-cols-xl-3 row-cols-md-2 border border-dashed rounded pt-3 pb-1 px-2 mb-5 mh-300px overflow-scroll"
+                                    {{-- <div
+                                        class="row row-cols-1 row-cols-xl-3 row-cols-md-2 border border-dashed rounded pt-3 pb-1 px-2 mb-5 mh-300px overflow-scroll"
                                         id="kt_ecommerce_edit_order_selected_products">
                                         <!--begin::Empty message-->
                                         <span class="w-100 text-muted">Cari barang berdasarkan kode pada kolom di
                                             atas</span>
                                         <!--end::Empty message-->
-                                    </div>
+                                    </div> --}}
                                     <!--end::Selected products-->
-                                    <!--begin::Total price-->
-
-                                    <!--end::Total price-->
                                 </div>
                                 <!--end::Input group-->
                                 <!--begin::Separator-->
                                 <div class="separator"></div>
                                 <!--end::Separator-->
                                 <!--begin::Search products-->
-                                {{-- <div class="d-flex align-items-center position-relative mb-n7">
-                                    <!--begin::Svg Icon | path: icons/duotune/general/gen021.svg-->
-                                    <span class="svg-icon svg-icon-1 position-absolute ms-4">
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"
-                                            viewBox="0 0 24 24" fill="none">
-                                            <rect opacity="0.5" x="17.0365" y="15.1223" width="8.15546" height="2"
-                                                rx="1" transform="rotate(45 17.0365 15.1223)" fill="currentColor" />
-                                            <path
-                                                d="M11 19C6.55556 19 3 15.4444 3 11C3 6.55556 6.55556 3 11 3C15.4444 3 19 6.55556 19 11C19 15.4444 15.4444 19 11 19ZM11 5C7.53333 5 5 7.53333 5 11C5 14.4667 7.53333 17 11 17C14.4667 17 17 14.4667 17 11C17 7.53333 14.4667 5 11 5Z"
-                                                fill="currentColor" />
-                                        </svg>
-                                    </span>
-                                    <!--end::Svg Icon-->
-                                    <input type="text" data-kt-ecommerce-edit-order-filter="search" id="search-product"
-                                        class="form-control form-control-solid w-100 w-lg-50 ps-14"
-                                        placeholder="Masukkan Kode Barang" />
-                                </div> --}}
-                                <!--end::Search products-->
+
                                 <!--begin::Table-->
                                 <div class="table-responsive">
                                     <table class="table">
@@ -243,6 +256,16 @@
                                             </tr>
                                         </thead>
                                         <tbody id="list-product">
+                                            <div id="product-loader"
+                                                style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(255, 255, 255, 0.5); display: none;">
+                                                <div class="loader text-center"
+                                                    style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);">
+                                                    <div class="spinner-border text-primary" role="status">
+                                                        <span class="visually-hidden">Loading...</span>
+                                                    </div>
+                                                    <div>Mohon tunggu ...</div>
+                                                </div>
+                                            </div>
                                             <!--begin::Table row-->
                                             <!--end::Table row-->
                                         </tbody>
@@ -254,19 +277,6 @@
                         <!--end::Card header-->
                     </div>
                     <!--end::Order details-->
-                    {{-- <div class="d-flex justify-content-end">
-                        <!--begin::Button-->
-                        <a href="../../demo1/dist/apps/ecommerce/catalog/products.html"
-                            id="kt_ecommerce_edit_order_cancel" class="btn btn-light me-5">Cancel</a>
-                        <!--end::Button-->
-                        <!--begin::Button-->
-                        <button type="submit" id="kt_ecommerce_edit_order_submit" class="btn btn-primary">
-                            <span class="indicator-label">Save Changes</span>
-                            <span class="indicator-progress">Please wait...
-                                <span class="spinner-border spinner-border-sm align-middle ms-2"></span></span>
-                        </button>
-                        <!--end::Button-->
-                    </div> --}}
                 </div>
                 <!--end::Main column-->
             </form>
@@ -397,31 +407,40 @@
         });
     }
 
-    // refresh product list table
     function refreshProductList() {
-        axios.get("{{ route('order-item.get-cart') }}")
-            .then(function (response) {
-                var products = response.data.data;
-                var listProduct = document.getElementById('list-product');
-                // listProduct.innerHTML = ''; clear only td
-                while (listProduct.firstChild) {
-                    listProduct.removeChild(listProduct.firstChild);
-                }
-
-                if (products && products.length > 0) {
-                    products.forEach(function (product, index) {
-                        var tr = createTableRow(product);
-                        listProduct.appendChild(tr);
-                    });
-                }
-                updateTotalPrice();
-            }).catch(function (error) {
-                console.error(error);
-            });
+    // Show loader
+    document.getElementById('product-loader').style.display = 'block';
+    
+    axios.get("{{ route('order-item.get-cart') }}")
+    .then(function (response) {
+    var products = response.data.data;
+    var listProduct = document.getElementById('list-product');
+    // Clear existing rows
+    listProduct.innerHTML = '';
+    
+    if (products && products.length > 0) {
+    products.forEach(function (product, index) {
+    var tr = createTableRow(product);
+    listProduct.appendChild(tr);
+    });
+    } else {
+    // Display message if no products found
+    var tr = document.createElement('tr');
+    tr.innerHTML = `<td colspan="5" class="text-center">Barang Masih Kosong</td>`;
+    listProduct.appendChild(tr);
+    }
+    updateTotalPrice();
+    
+    // Hide loader
+    document.getElementById('product-loader').style.display = 'none';
+    }).catch(function (error) {
+    console.error(error);
+    // Hide loader in case of error
+    document.getElementById('product-loader').style.display = 'none';
+    });
     }
 
     function createTableRow(product) {
-    console.log(product);
     var tr = document.createElement('tr');
     tr.innerHTML = `
     <td>
@@ -515,7 +534,6 @@
         // Check if saldo is not empty before calculating remaining saldo
         if (saldo > 0) {
         var remainingSaldo = saldo - totalPayment;
-        console.log(remainingSaldo);
         remainingSaldoElement.value = `Rp. ${remainingSaldo.toLocaleString('id-ID')}`;
         } else {
         // If saldo is empty, set remaining saldo to 0
@@ -525,6 +543,32 @@
         console.error(error);
         });
         }
+
+    function deleteAllProductFromCart() {
+        // Menampilkan SweetAlert konfirmasi sebelum menghapus
+        Swal.fire({
+        title: 'Yakin ingin menghapus semua barang?',
+        text: "Semua barang yang ada di keranjang akan dihapus dari keranjang!",
+        icon: 'warning',
+        showCancelButton: true,
+        // confirmButtonColor: red
+        confirmButtonColor: '#d33',
+        confirmButtonText: 'Ya, hapus semua!',
+        cancelButtonText: 'Batal'
+        }).then((result) => {
+        // Jika pengguna menekan tombol "Ya"
+        if (result.isConfirmed) {
+        // Mengirim permintaan AJAX untuk menghapus semua barang dari keranjang
+        axios.post("{{ route('order-item.delete-all-cart') }}")
+        .then(function (response) {
+        // Menjalankan fungsi refreshProductList() setelah penghapusan berhasil
+        refreshProductList();
+        }).catch(function (error) {
+        console.error(error);
+        });
+        }
+        });
+    }
 
     function handleError(error) {
         console.error(error);
@@ -655,6 +699,8 @@
                 // replace name, saldo, and count saldo - total price
                 document.getElementById('student-name').value = student.name;
                 document.getElementById('saldo').value = 'Rp. ' + student.saldo.toLocaleString('id-ID');
+                // add student id to form form-payment
+                document.getElementById('form-payment').insertAdjacentHTML('beforeend', `<input type="hidden" name="student_id" value="${student.id}">`);
                 updateTotalPrice();
                 // Clear input
                 e.target.value = '';
@@ -664,10 +710,13 @@
                     title: 'Santri tidak ditemukan',
                     text: 'ID Kartu Santri tidak ditemukan'
                 });
+                // Clear input
+                e.target.value = '';
             }
         }).catch(function (error) {
             console.error(error);
         });
     });
+
 </script>
 @endpush

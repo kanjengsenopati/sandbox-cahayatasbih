@@ -17,7 +17,7 @@ class ScheduleController extends Controller
     public function index()
     {
         if (request()->ajax()) {
-            $data = Schedule::with('school')->latest()->get();
+            $data = Schedule::with('school')->orderBy('date', 'desc')->get();
             return DataTables::of($data)
                 ->editColumn('type', function ($data) {
                     return $data->type == Schedule::TYPE_ALL ? '<span class="badge badge-success">Semua</span>' : '<span class="badge badge-primary">Sekolah</span>';
