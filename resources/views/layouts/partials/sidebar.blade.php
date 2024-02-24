@@ -205,7 +205,7 @@
 
 
                 <div data-kt-menu-trigger="click"
-                    class="menu-item menu-accordion {{ request()->routeIs(['student-achievement.*','student-counseling-score.*']) ? 'show' : '' }}">
+                    class="menu-item menu-accordion {{ request()->routeIs(['student-achievement.*','student-counseling-score.*','schedule.*']) ? 'show' : '' }}">
                     <span class="menu-link ">
                         <span class="menu-icon">
                             <i class="fa-solid fa-award" style="color: #ffffff;"></i>
@@ -232,6 +232,17 @@
                                     <span class="bullet bullet-dot"></span>
                                 </span>
                                 <span class="menu-title">Nilai Konseling</span>
+                            </a>
+                        </div>
+                    </div>
+                    <div class="menu-sub menu-sub-accordion menu-active-bg">
+                        <div class="menu-item ">
+                            <a class="menu-link {{ request()->routeIs('schedule.*') ? ' active' : '' }}"
+                                href="{{ route('schedule.index') }}">
+                                <span class="menu-bullet">
+                                    <span class="bullet bullet-dot"></span>
+                                </span>
+                                <span class="menu-title">Jadwal Agenda</span>
                             </a>
                         </div>
                     </div>

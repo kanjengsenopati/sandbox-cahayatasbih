@@ -1,14 +1,16 @@
 <?php
 
-use Maatwebsite\Excel\Row;
-use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\BillController;
 use App\Http\Controllers\Api\V1\HomeController;
-use App\Http\Controllers\Api\V1\TahfidzController;
-use App\Http\Controllers\Api\V1\TransactionController;
+use App\Http\Controllers\Api\V1\ScheduleController;
 use App\Http\Controllers\Api\V1\StudentAchievementController;
 use App\Http\Controllers\Api\V1\StudentCounselingScoreController;
+use App\Http\Controllers\Api\V1\TahfidzController;
+use App\Http\Controllers\Api\V1\TransactionController;
+use Illuminate\Support\Facades\Route;
+use Maatwebsite\Excel\Row;
+
 
 // Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 //     return $request->user();
@@ -46,6 +48,11 @@ Route::group(['prefix' => 'v1', 'middleware' => 'validate_api_key'], function ()
         // start student counseling score
         Route::group(['prefix' => 'student-counseling-score'], function () {
             Route::get('/', [StudentCounselingScoreController::class, 'index']);
+        });
+
+        // start schedule
+        Route::group(['prefix' => 'schedule'], function () {
+            Route::get('/', [ScheduleController::class, 'index']);
         });
     });
 });
