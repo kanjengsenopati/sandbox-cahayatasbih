@@ -359,7 +359,7 @@
                 </div>
 
                 <div data-kt-menu-trigger="click"
-                    class="menu-item menu-accordion {{ request()->routeIs(['payment-method.*']) ? 'show' : '' }}">
+                    class="menu-item menu-accordion {{ request()->routeIs(['payment-method.*','application-setting.*']) ? 'show' : '' }}">
                     <span class="menu-link ">
                         <span class="menu-icon">
                             <i class="fa-solid fa-gear" style="color: #ffffff;"></i>
@@ -368,7 +368,7 @@
                         <span class="menu-arrow"></span>
                     </span>
                     <div class="menu-sub menu-sub-accordion menu-active-bg">
-                        @can('user')
+
                         <div class="menu-item ">
                             <a class="menu-link {{ request()->routeIs('payment-method.*') ? ' active' : '' }}"
                                 href="{{ route('payment-method.index') }}">
@@ -378,7 +378,15 @@
                                 <span class="menu-title">Data Metode Pembayaran</span>
                             </a>
                         </div>
-                        @endcan
+                        <div class="menu-item ">
+                            <a class="menu-link {{ request()->routeIs('application-setting.*') ? ' active' : '' }}"
+                                href="{{ route('application-setting.index') }}">
+                                <span class="menu-bullet">
+                                    <span class="bullet bullet-dot"></span>
+                                </span>
+                                <span class="menu-title">Pengaturan Aplikasi</span>
+                            </a>
+                        </div>
                     </div>
                 </div>
 

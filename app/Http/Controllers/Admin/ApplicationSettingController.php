@@ -4,7 +4,9 @@ namespace App\Http\Controllers\Admin;
 
 use Illuminate\Http\Request;
 use App\Models\ApplicationSetting;
+use Illuminate\Console\Application;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Admin\ApplicationSettingRequest;
 
 class ApplicationSettingController extends Controller
 {
@@ -28,12 +30,9 @@ class ApplicationSettingController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(Request $request)
+    public function store(ApplicationSettingRequest $request)
     {
-        $data = $request->validate([
-            'payment_fee' => 'required|numeric',
-            'student_card_image' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
-        ]);
+        $data = $request->validated();
 
         if ($request->hasFile('student_card_image')) {
             $data['student_card_image'] = $this->storeStudentCardImage($request->file('student_card_image'));

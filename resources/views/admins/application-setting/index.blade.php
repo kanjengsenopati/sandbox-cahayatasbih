@@ -63,17 +63,88 @@
                                 enctype="multipart/form-data">
                                 @csrf
                                 <x-form.put-method />
+                                <div class="row mb-6">
+                                    <div class="col-6">
+                                        <!--begin::Label-->
+                                        <label class="fs-6 fw-bold form-label" for="payment_fee">
+                                            <span class="required">Fee Payment</span>
+                                            <i class="fas fa-exclamation-circle ms-1 fs-7" data-bs-toggle="tooltip"
+                                                title="Masukkan Fee Pembayaran"></i>
+                                        </label>
+                                        <input type="number" class="form-control form-control-solid" id="payment_fee"
+                                            name="payment_fee" placeholder="Masukkan Fee Pembayaran"
+                                            value="{{ @$applicationSetting->payment_fee ?? old('payment_fee') }}"
+                                            required />
+                                    </div>
+
+                                    <div class="col-6">
+                                        <label class="fs-6 fw-bold form-label" for="payment_expire_time">
+                                            <span class="required">Waktu Kadaluarsa Pembayaran</span>
+                                            <i class="fas fa-exclamation-circle ms-1 fs-7" data-bs-toggle="tooltip"
+                                                title="Masukkan Waktu Kadaluarsa Pembayaran"></i>
+                                        </label>
+                                        <input type="text" placeholder="hh:mm"
+                                            class="form-control form-control-solid time" id="payment_expire_time"
+                                            name="payment_expire_time"
+                                            placeholder="Masukkan Waktu Kadaluarsa Pembayaran"
+                                            value="{{ @$applicationSetting->payment_expire_time ?? old('payment_expire_time') }}"
+                                            required />
+                                    </div>
+
+                                    <!--end::Label-->
+                                    <!--begin::Input-->
+                                    <!--end::Input-->
+                                </div>
+
+                                <div class="row mb-6">
+                                    <div class="col-6">
+                                        <!--begin::Label-->
+                                        <label class="fs-6 fw-bold form-label" for="link_whatsapp">
+                                            <span class="required">Link Whatsapp Gateway</span>
+                                            <i class="fas fa-exclamation-circle ms-1 fs-7" data-bs-toggle="tooltip"
+                                                title="Masukkan Link Whatsapp Gateway"></i>
+                                        </label>
+                                        <input type="url" class="form-control form-control-solid" id="link_whatsapp"
+                                            name="link_whatsapp" placeholder="Masukkan Link Whatsapp Gateway"
+                                            value="{{ @$applicationSetting->link_whatsapp ?? old('link_whatsapp') }}"
+                                            required />
+                                        <!--end::Label-->
+                                        <!--begin::Input-->
+                                        <!--end::Input-->
+                                    </div>
+                                    <div class="col-6">
+                                        <label class="fs-6 fw-bold form-label" for="number_whatsapp">
+                                            <span class="required">Nomor Whatsapp</span>
+                                            <i class="fas fa-exclamation-circle ms-1 fs-7" data-bs-toggle="tooltip"
+                                                title="Masukkan Nomor Whatsapp Gateway"></i>
+                                        </label>
+                                        <input type="number" class="form-control form-control-solid"
+                                            id="number_whatsapp" name="number_whatsapp"
+                                            placeholder="Masukkan Nomor Whatsapp Gateway"
+                                            value="{{ @$applicationSetting->number_whatsapp ?? old('number_whatsapp') }}"
+                                            required />
+                                    </div>
+                                </div>
+
+
+                                {{-- <div class="fv-row mb-6">
+                                    <!--begin::Label-->
+
+                                    <!--end::Label-->
+                                    <!--begin::Input-->
+                                    <!--end::Input-->
+                                </div> --}}
+
                                 <div class="fv-row mb-6">
                                     <!--begin::Label-->
-                                    <label class="fs-6 fw-bold form-label" for="payment_fee">
-                                        <span class="required">Fee Payment</span>
+                                    <label class="fs-6 fw-bold form-label" for="device_id">
+                                        <span class="required">Device ID</span>
                                         <i class="fas fa-exclamation-circle ms-1 fs-7" data-bs-toggle="tooltip"
-                                            title="Masukkan Fee Pembayaran"></i>
+                                            title="Masukkan device id yang diperolah dari aplikasi whatsapp gateway"></i>
                                     </label>
-                                    <input type="number" class="form-control form-control-solid" id="payment_fee"
-                                        name="payment_fee" placeholder="Masukkan Fee Pembayaran"
-                                        value="{{ @$applicationSetting->payment_fee ?? old('payment_fee') }}"
-                                        required />
+                                    <input type="text" class="form-control form-control-solid" id="device_id"
+                                        name="device_id" placeholder="Masukkan Device ID"
+                                        value="{{ @$applicationSetting->device_id ?? old('device_id') }}" required />
                                     <!--end::Label-->
                                     <!--begin::Input-->
                                     <!--end::Input-->
@@ -124,3 +195,10 @@
 <!--end::Content-->
 <!--end::Wrapper-->
 @endsection
+@push('js')
+<script>
+    $('.time').mask('00:00', {
+        reverse: true
+        });
+</script>
+@endpush

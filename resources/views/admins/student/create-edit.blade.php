@@ -292,7 +292,9 @@
                                                 </span>
                                                 <!--end::Svg Icon-->
                                                 <div class="fs-2 fw-bolder" data-kt-countup="true"
-                                                    data-kt-countup-value="4500" data-kt-countup-prefix="Rp">0</div>
+                                                    data-kt-countup-value="{{
+                                                    $saldo['OUT'] }}" data-kt-countup-prefix="Rp">{{
+                                                    $saldo['OUT'] }}</div>
                                             </div>
                                             <!--end::Number-->
                                             <!--begin::Label-->
@@ -318,7 +320,11 @@
                                                 </span>
                                                 <!--end::Svg Icon-->
                                                 <div class="fs-2 fw-bolder" data-kt-countup="true"
-                                                    data-kt-countup-value="100" data-kt-countup-prefix="Rp">0</div>
+                                                    data-kt-countup-value="{{
+                                                    $saldo['IN']
+                                                    }}" data-kt-countup-prefix="Rp">{{
+                                                    $saldo['IN']
+                                                    }}</div>
                                             </div>
                                             <!--end::Number-->
                                             <!--begin::Label-->
@@ -332,23 +338,15 @@
                                             <!--begin::Number-->
                                             <div class="d-flex align-items-center">
                                                 <!--begin::Svg Icon | path: icons/duotune/arrows/arr066.svg-->
-                                                {{-- <span class="svg-icon svg-icon-3 svg-icon-success me-2">
-                                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"
-                                                        viewBox="0 0 24 24" fill="none">
-                                                        <rect opacity="0.5" x="13" y="6" width="13" height="2" rx="1"
-                                                            transform="rotate(90 13 6)" fill="currentColor" />
-                                                        <path
-                                                            d="M12.5657 8.56569L16.75 12.75C17.1642 13.1642 17.8358 13.1642 18.25 12.75C18.6642 12.3358 18.6642 11.6642 18.25 11.25L12.7071 5.70711C12.3166 5.31658 11.6834 5.31658 11.2929 5.70711L5.75 11.25C5.33579 11.6642 5.33579 12.3358 5.75 12.75C6.16421 13.1642 6.83579 13.1642 7.25 12.75L11.4343 8.56569C11.7467 8.25327 12.2533 8.25327 12.5657 8.56569Z"
-                                                            fill="currentColor" />
-                                                    </svg>
-                                                </span> --}}
+                                                {{-- add icon money --}}
+                                                <i class="fas fa-money-bill-wave fs-2 fw-bolder text-primary me-2"></i>
                                                 <!--end::Svg Icon-->
-                                                <div class="fs-2 fw-bolder" data-kt-countup="true"
-                                                    data-kt-countup-value="4500" data-kt-countup-prefix="Rp">0</div>
+                                                <div class="fs-2 fw-bolder">Rp{{ number_format($student->saldo) }}
+                                                </div>
                                             </div>
                                             <!--end::Number-->
                                             <!--begin::Label-->
-                                            <div class="fw-bold fs-6 text-gray-400">Total Saldo</div>
+                                            <div class="fw-bold fs-6 text-gray-400">Saldo Saat Ini</div>
                                             <!--end::Label-->
                                         </div>
                                         <!--end::Stat-->
@@ -534,6 +532,21 @@
                                 <!--begin::Input-->
                                 <input type="text" class="form-control form-control-solid" id="nisn" name="nisn"
                                     placeholder="Masukkan Nisn Siswa" value="{{ @$student->nisn ?? old('nisn') }}"
+                                    required />
+                                <!--end::Input-->
+                            </div>
+
+                            <div class="fv-row mb-6">
+                                <!--begin::Label-->
+                                <label class="fs-6 fw-bold form-label" for="birth_date">
+                                    <span class="required">NIS (Nomor Induk Santri)</span>
+                                    <i class="fas fa-exclamation-circle ms-1 fs-7" data-bs-toggle="tooltip"
+                                        title="Masukkan Nomor Induk Santri"></i>
+                                </label>
+                                <!--end::Label-->
+                                <!--begin::Input-->
+                                <input type="text" class="form-control form-control-solid" id="nis" name="nis"
+                                    placeholder="Masukkan Nis Siswa" value="{{ @$student->nis ?? old('nis') }}"
                                     required />
                                 <!--end::Input-->
                             </div>
@@ -753,7 +766,8 @@
                                 <!--begin::Content-->
                                 <div class="mb-3 mb-md-0 fw-bold">
                                     <h4 class="text-gray-900 fw-bolder">Secure Your Account</h4>
-                                    <div class="fs-6 text-gray-700 pe-7">Two-factor authentication adds an extra layer
+                                    <div class="fs-6 text-gray-700 pe-7">Two-factor authentication adds an extra
+                                        layer
                                         of
                                         security to your account. To log in, in addition you'll need to provide a 6
                                         digit
@@ -814,7 +828,8 @@
                                     <!--begin::Content-->
                                     <div class="fw-bold">
                                         <h4 class="text-gray-900 fw-bolder">You Are Deactivating Your Account</h4>
-                                        <div class="fs-6 text-gray-700">For extra security, this requires you to confirm
+                                        <div class="fs-6 text-gray-700">For extra security, this requires you to
+                                            confirm
                                             your email or phone number when you reset yousignr password.
                                             <br />
                                             <a class="fw-bolder" href="#">Learn more</a>
@@ -829,7 +844,8 @@
                             <div class="form-check form-check-solid fv-row">
                                 <input name="deactivate" class="form-check-input" type="checkbox" value=""
                                     id="deactivate" />
-                                <label class="form-check-label fw-bold ps-2 fs-6" for="deactivate">I confirm my account
+                                <label class="form-check-label fw-bold ps-2 fs-6" for="deactivate">I confirm my
+                                    account
                                     deactivation</label>
                             </div>
                             <!--end::Form input row-->

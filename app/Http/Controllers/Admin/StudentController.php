@@ -11,6 +11,7 @@ use App\Models\ApplicationSetting;
 use App\Http\Controllers\Controller;
 
 use App\Http\Requests\Admin\StudentRequest;
+use App\Models\SaldoHistory;
 use SimpleSoftwareIO\QrCode\Facades\QrCode;
 
 class StudentController extends Controller
@@ -23,6 +24,9 @@ class StudentController extends Controller
         if (request()->ajax()) {
             $data = Student::with('user')->latest()->get();
             return DataTables::of($data)
+                ->editColumn('saldo', function ($data) {
+                    return '<span class="badge bg-success">Rp ' . number_format($data->saldo, 0, ',', '.') . '</span>';
+                })
                 ->addColumn('date_of_birth', function ($data) {
                     $birthPlace = $data->born_place ? $data->born_place . ', ' : '';
                     $dateOfBirth = $data->birth_date ? date('d-m-Y', strtotime($data->birth_date)) : '';
@@ -36,7 +40,7 @@ class StudentController extends Controller
                         view('components.action.delete', ['action' => $actionDelete, 'id' => $data->id]) .
                         "</div>";
                 })
-                ->rawColumns(['action'])
+                ->rawColumns(['action', 'saldo'])
                 ->make(true);
         }
         return view('admins.student.index');
@@ -78,7 +82,13 @@ class StudentController extends Controller
     public function edit(Student $student)
     {
         $schools = School::orderBy('name')->get();
-        return view('admins.student.create-edit', compact('student', 'schools'));
+        $saldo = [
+            'IN' => SaldoHistory::where('student_id', $student->id)
+                ->where('type', SaldoHistory::TYPE_IN)->sum('amount'),
+            'OUT' => SaldoHistory::where('student_id', $student->id)
+                ->where('type', SaldoHistory::TYPE_OUT)->sum('amount')
+        ];
+        return view('admins.student.create-edit', compact('student', 'schools', 'saldo'));
     }
 
     /**

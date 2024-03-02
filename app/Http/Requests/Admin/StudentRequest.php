@@ -22,6 +22,7 @@ class StudentRequest extends FormRequest
     public function rules(): array
     {
         return [
+            'nis' => 'required|string|max:255', // Add 'nis' field to the validation rules
             'user_id' => 'required|exists:users,id',
             'name' => 'required|string|max:255',
             'born_place' => 'required|string|max:255',

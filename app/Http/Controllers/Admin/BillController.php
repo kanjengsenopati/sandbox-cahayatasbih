@@ -12,6 +12,7 @@ use Yajra\DataTables\DataTables;
 use Illuminate\Support\Facades\DB;
 
 use App\Http\Controllers\Controller;
+use App\Services\SendNotifWaService;
 use Illuminate\Support\Facades\Http;
 
 class BillController extends Controller

@@ -2,12 +2,14 @@
 
 namespace App\Http\Controllers\Admin;
 
-use App\Models\BillType;
-use Illuminate\Http\Request;
-use App\Http\Controllers\Controller;
-use App\Models\Classroom;
+use App\Models\User;
 use App\Models\School;
+use App\Models\BillType;
+use App\Models\Classroom;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use App\Http\Controllers\Controller;
+use App\Services\SendNotifWaService;
 
 class PaymentRateController extends Controller
 {
@@ -23,6 +25,7 @@ class PaymentRateController extends Controller
      */
     public function create()
     {
+
         $billType = BillType::findOrFail(request()->get('bill_type_id'));
         $schools = School::orderBy('name')->get();
         $classroomValue = [];
@@ -76,6 +79,14 @@ class PaymentRateController extends Controller
                 }
             }
             DB::commit();
+
+            // send notif to whatsapp to all student
+            // $message = "Halo, ada tagihan baru untuk bulan " . implode(', ', $months) . " sebesar Rp " . number_format($request->price, 0, ',', '.');
+            // foreach ($classrooms as $classroom) {
+            //     foreach ($classroom->students as $student) {
+            //         SendNotifWaService::sendMessage($student->phone, $message);
+            //     }
+            // }
 
             return redirect()->route('bill-type.index')->with('success', 'Tarif pembayaran berhasil ditambahkan');
         } catch (\Exception $e) {

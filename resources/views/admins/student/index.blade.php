@@ -72,6 +72,8 @@
                             <thead>
                                 <tr class="fw-bolder fs-6 text-gray-800 border-bottom border-gray-200">
                                     <th width="3%">No</th>
+                                    <th>NISN</th>
+                                    <th>NIS</th>
                                     <th>Nama</th>
                                     <th>Wali Siswa</th>
                                     <th>TTL</th>
@@ -122,6 +124,17 @@
             }
             },
             {
+            data: 'nisn',
+            name: 'nisn',
+            },
+            {
+                data: 'nis',
+                name: 'nis',
+                render: function(data, type, row) {
+                return data ? data : 'Belum diisi';
+                }
+            },
+            {
             data: 'name',
             name: 'name',
             responsivePriority: -1,
@@ -158,7 +171,7 @@
             },
             {
             data: 'saldo',
-            name: 'saldo'
+            name: 'saldo',
             },
             {
             data: 'action',

@@ -12,6 +12,8 @@ class Student extends Model
     use HasFactory, UuidTrait, SoftDeletes;
 
     protected $fillable = [
+        'nisn',
+        'nis',
         'user_id',
         'school_id',
         'classroom_id',
@@ -20,7 +22,6 @@ class Student extends Model
         'birth_date',
         'gender',
         'saldo',
-        'nisn',
         'avatar',
         'barcode',
     ];
