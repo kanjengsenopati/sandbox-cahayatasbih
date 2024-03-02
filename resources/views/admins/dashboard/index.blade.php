@@ -30,10 +30,9 @@
     </div>
     <!--end::Toolbar-->
     <!--begin::Post-->
-
     <!--end::Row-->
     <!--begin::Row-->
-    {{-- <div class="row gy-5 g-xl-10 mt-8 mx-4">
+    <div class="row gy-5 g-xl-10 mt-8 mx-4">
         <div class="col-xl-8">
             <div class="chart">
                 <div id="chart-line" class="chart-canvas" height="350px"></div>
@@ -46,7 +45,7 @@
                 <div class="card-body pt-2">
                     <div class="d-flex flex-stack">
                         <div class="text-gray-400 fw-bolder fs-7 text-end">
-                            <img src="{{ asset('assets/media/illustrations/dashboard/statistik1.jpg') }}"
+                            <img src="{{ asset('assets/media/illustrations/dashboard/dashboard-1.jpg') }}"
                                 class="mw-100 mh-200px" alt="">
                         </div>
                     </div>
@@ -56,7 +55,7 @@
                     <!--begin::Title-->
                     <h3 class="card-title align-items-start flex-column">
                         <span class="card-label fw-bolder text-gray-800">Statistik</span>
-                        <span class="text-gray-400 mt-1 fw-bold fs-6">{{ date('d F Y') }}</span>
+                        <span class="text-gray-400 mt-1 fw-bold fs-6" id="date-time"></span>
                     </h3>
 
                 </div>
@@ -79,11 +78,11 @@
                             <div class="me-5">
                                 <!--begin::Title-->
                                 <a href="#" class="text-gray-800 fw-bolder text-hover-primary fs-6">Total
-                                    Admin</a>
+                                    Siswa</a>
                                 <!--end::Title-->
                                 <!--begin::Desc-->
-                                <span class="text-gray-400 fw-bold fs-7 d-block text-start ps-0">Admin yang
-                                    terdaftar</span>
+                                <span class="text-gray-400 fw-bold fs-7 d-block text-start ps-0">Siswa yang
+                                    Aktif</span>
                                 <!--end::Desc-->
                             </div>
                             <!--end::Content-->
@@ -92,7 +91,7 @@
                         <!--begin::Wrapper-->
                         <div class="text-gray-400 fw-bolder fs-7 text-end">
                             <!--begin::Number-->
-                            <span class="text-gray-800 fw-bolder fs-6 d-block"></span>
+                            <span class="text-gray-800 fw-bolder fs-6 d-block">{{ $data['total_students'] ?? 0 }}</span>
                             <!--end::Number-->
                         </div>
                         <!--end::Wrapper-->
@@ -108,7 +107,7 @@
                             <!--begin::Symbol-->
                             <div class="symbol symbol-40px me-4">
                                 <span class="symbol-label">
-                                    <i class="fas fa-briefcase fs-1 p-0 text-gray-600"></i>
+                                    <i class="fas fa-chalkboard-teacher fs-1 p-0 text-gray-600"></i>
                                 </span>
                             </div>
                             <!--end::Symbol-->
@@ -116,11 +115,11 @@
                             <div class="me-5">
                                 <!--begin::Title-->
                                 <a href="#" class="text-gray-800 fw-bolder text-hover-primary fs-6">Total
-                                    Klien</a>
+                                    Kelas</a>
                                 <!--end::Title-->
                                 <!--begin::Desc-->
-                                <span class="text-gray-400 fw-bold fs-7 d-block text-start ps-0">Klien yang
-                                    terdaftar
+                                <span class="text-gray-400 fw-bold fs-7 d-block text-start ps-0">Kelas yang
+                                    Aktif</span>
                                 </span>
                                 <!--end::Desc-->
                             </div>
@@ -130,7 +129,7 @@
                         <!--begin::Wrapper-->
                         <div class="text-gray-400 fw-bolder fs-7 text-end">
                             <!--begin::Number-->
-                            <span class="text-gray-800 fw-bolder fs-6 d-block"></span>
+                            <span class="text-gray-800 fw-bolder fs-6 d-block">{{ $data['total_classes'] ?? 0 }}</span>
                             <!--end::Number-->
                         </div>
                         <!--end::Wrapper-->
@@ -140,7 +139,7 @@
                     <div class="separator separator-dashed my-5"></div>
                     <!--end::Separator-->
                     <!--begin::Item-->
-                    <div class="d-flex flex-stack">
+                    {{-- <div class="d-flex flex-stack">
                         <!--begin::Section-->
                         <div class="d-flex align-items-center me-5">
                             <!--begin::Symbol-->
@@ -171,7 +170,7 @@
                             <!--end::Number-->
                         </div>
                         <!--end::Wrapper-->
-                    </div>
+                    </div> --}}
                 </div>
 
                 <!--end::Body-->
@@ -185,7 +184,7 @@
         <!--end::Col-->
     </div>
     <!--end::Row-->
-    <div class="row gy-5 g-xl-10 mt-8 mx-4">
+    {{-- <div class="row gy-5 g-xl-10 mt-8 mx-4">
         <div class="col-xl-8">
             <div class="card">
 
@@ -474,3 +473,27 @@
 </div>
 <!--end::Container-->
 @endsection
+@push('js')
+<script>
+    // add date and time in #date-time
+        function dateTime() {
+            var date = new Date();
+            var day = date.getDate();
+            var month = date.getMonth() + 1;
+            var year = date.getFullYear();
+            var hours = date.getHours();
+            var minutes = date.getMinutes();
+            var seconds = date.getSeconds();
+            var ampm = hours >= 12 ? 'PM' : 'AM';
+            hours = hours % 12;
+            hours = hours ? hours : 12;
+            hours = hours < 10 ? '0' + hours : hours;
+            minutes = minutes < 10 ? '0' + minutes : minutes;
+            seconds = seconds < 10 ? '0' + seconds : seconds;
+            var strTime = hours + ':' + minutes + ':' + seconds + ' ' + ampm;
+            var fullDate = day + '/' + month + '/' + year + ' ' + strTime;
+            document.getElementById('date-time').innerHTML = fullDate;
+        }
+        setInterval(dateTime, 1000);
+</script>
+@endpush

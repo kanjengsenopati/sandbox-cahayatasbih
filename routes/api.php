@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\BillController;
 use App\Http\Controllers\Api\V1\HomeController;
+use App\Http\Controllers\Api\V1\SaldoController;
 use App\Http\Controllers\Api\V1\ScheduleController;
 use App\Http\Controllers\Api\V1\StudentAchievementController;
 use App\Http\Controllers\Api\V1\StudentCounselingScoreController;
@@ -32,7 +33,21 @@ Route::group(['prefix' => 'v1', 'middleware' => 'validate_api_key'], function ()
         // start api bill
         Route::group(['prefix' => 'bill'], function () {
             Route::get('/', [BillController::class, 'index']);
+            Route::get('/history', [BillController::class, 'history']);
             Route::get('/{id}', [BillController::class, 'show']);
+        });
+
+        // start api transaction
+        Route::group(['prefix' => 'transaction'], function () {
+            Route::get('payment-method', [TransactionController::class, 'listPaymentMethod']);
+            Route::post('/pay', [TransactionController::class, 'pay']);
+        });
+
+        // start saldo
+        Route::group(['prefix' => 'saldo'], function () {
+            Route::get('/', [SaldoController::class, 'index']);
+            Route::post('/block', [SaldoController::class, 'block']);
+            Route::post('/topup', [SaldoController::class, 'topup']);
         });
 
         // start tahfidz

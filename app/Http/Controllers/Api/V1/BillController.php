@@ -2,9 +2,10 @@
 
 namespace App\Http\Controllers\Api\V1;
 
-use App\Http\Controllers\Controller;
+use App\Models\Bill;
 use App\Models\BillType;
 use Illuminate\Http\Request;
+use App\Http\Controllers\Controller;
 
 class BillController extends Controller
 {
@@ -29,5 +30,21 @@ class BillController extends Controller
         }
 
         return $this->postSuccessResponse("Berhasil mengambil data", $billType);
+    }
+
+    public function history(Request $request)
+    {
+        $billTypes = BillType::whereHas('bills', function ($query) use ($request) {
+            $query->where('student_id', $request->student_id)
+                ->where('status', Bill::STATUS_PAID);
+        })
+            ->with(['bills' => function ($query) use ($request) {
+                $query->where('student_id', $request->student_id)
+                    ->where('status', Bill::STATUS_PAID);
+            }, 'billItem', 'academicYear'])
+            ->latest()
+            ->get();
+
+        return $this->getSuccessResponse($billTypes);
     }
 }

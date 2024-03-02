@@ -2,32 +2,61 @@
 
 namespace App\Services;
 
-use App\Models\ApplicationSetting;
+use Carbon\Carbon;
 use App\Models\Bill;
+use App\Models\User;
+use App\Models\Student;
 use App\Models\BillItem;
 use App\Models\GymClass;
-use App\Models\GymClassBundling;
-use App\Models\GymClassBundlingHistory;
-use App\Models\GymClassHistory;
+use Xendit\Configuration;
 use App\Models\Membership;
+use App\Models\Transaction;
+use App\Models\SaldoHistory;
+use Xendit\Invoice\InvoiceApi;
+use App\Models\GymClassHistory;
+use App\Models\GymClassBundling;
 use App\Models\MembershipHistory;
-use App\Models\PersonalTrainerPacketSession;
-use App\Models\PersonalTrainerPacketSessionHistory;
-use App\Models\User;
-use Carbon\Carbon;
+use App\Models\ApplicationSetting;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Mail;
+use App\Models\GymClassBundlingHistory;
 use Xendit\Invoice\CreateInvoiceRequest;
-use Xendit\Invoice\InvoiceApi;
-use Xendit\Configuration;
+use App\Models\PersonalTrainerPacketSession;
+use App\Models\PersonalTrainerPacketSessionHistory;
 
 class TransactionService
 {
-    public static function changeStatusToPaid($bill)
+    public static function changeStatusToPaid($transaction)
     {
-        Bill::findOrFail($bill)->update([
-            'status' => Bill::STATUS_PAID,
+        foreach ($transaction->transactionDetails as $detail) {
+            $detail->bill->update([
+                'status' => Bill::STATUS_PAID
+            ]);
+        }
+    }
+
+    public static function payWithBalance($student, $pay_amount, $transaction)
+    {
+        $student->update([
+            'saldo' => $student->saldo - $pay_amount
         ]);
+        // tambahin history
+        SaldoHistory::create([
+            'student_id' => $student->id,
+            'amount' => $pay_amount,
+            'type' => SaldoHistory::TYPE_OUT,
+            'description' => 'Pembayaran Tagihan Sebesar Rp.' . number_format($pay_amount, 0, ',', '.'),
+            'status' => SaldoHistory::STATUS_SUCCESS
+        ]);
+
+        // update transaction status
+        $transaction->update([
+            'status' => Transaction::STATUS_PAID,
+            'paid_at' => Carbon::now()
+        ]);
+
+        // update bill status with loop in transaction details
+        self::changeStatusToPaid($transaction);
     }
 
     public static function storeProgram($transaction)

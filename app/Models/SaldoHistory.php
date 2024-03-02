@@ -14,6 +14,8 @@ class SaldoHistory extends Model
     const STATUS_PENDING = 'PENDING';
     const STATUS_SUCCESS = 'SUCCESS';
     const STATUS_FAILED = 'FAILED';
+    const TYPE_BLOCK = "BLOCKED";
+    const TYPE_UNBLOCKED = "UNBLOCKED";
     use HasFactory, UuidTrait, SoftDeletes;
 
     protected $fillable = [

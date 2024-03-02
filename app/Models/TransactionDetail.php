@@ -14,6 +14,7 @@ class TransactionDetail extends Model
     protected $fillable  = [
         'transaction_id',
         'bill_id',
+        'saldo_history_id',
     ];
 
     public function transaction()

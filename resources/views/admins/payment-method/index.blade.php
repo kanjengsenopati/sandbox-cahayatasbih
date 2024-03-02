@@ -74,6 +74,7 @@
                                 <tr class="fw-bolder fs-6 text-gray-800 border-bottom border-gray-200">
                                     <th width="3%">No</th>
                                     <th class="min-w-100px">Nama Metode Pembayaran</th>
+                                    <th class="min-w-100px">Tipe</th>
                                     <th class="min-w-100px">Status</th>
                                     <th class="text-center min-w-100px">Aksi</th>
                                 </tr>
@@ -122,6 +123,10 @@
                 {
                     data: 'name',
                     name: 'name',
+                },
+                {
+                    data: 'type',
+                    name: 'type',
                 },
                 {
                     data: 'status',

@@ -13,6 +13,8 @@ class Transaction extends Model
     const STATUS_PAID = 'PAID';
     const STATUS_EXPIRED = 'EXPIRED';
     const STATUS_CANCELLED = 'CANCELLED';
+    const TYPE_BILL = 'BILL';
+    const TYPE_SALDO = 'SALDO';
     const STATUS = [
         self::STATUS_PENDING,
         self::STATUS_PAID,
@@ -31,7 +33,8 @@ class Transaction extends Model
         'status',
         'xendit_id',
         'payment_link',
-        'xendit_fee'
+        'xendit_fee',
+        'type',
     ];
 
     public function transactionDetails()

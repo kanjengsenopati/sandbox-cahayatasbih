@@ -6,6 +6,8 @@ use Carbon\Carbon;
 use App\Models\User;
 use App\Models\Client;
 use App\Models\Article;
+use App\Models\Student;
+use App\Models\Classroom;
 use Illuminate\Http\Request;
 use App\Models\HistoryDownload;
 use Yajra\DataTables\DataTables;
@@ -19,8 +21,13 @@ class DashboardController extends Controller
      */
     public function index()
     {
-        $total_admin = User::count();
-        return view('admins.dashboard.index', compact('total_admin'));
+        $total_students = Student::count();
+        $total_classes = Classroom::count();
+        $data = [
+            'total_students' => $total_students,
+            'total_classes' => $total_classes,
+        ];
+        return view('admins.dashboard.index', compact('data'));
     }
 
     /**

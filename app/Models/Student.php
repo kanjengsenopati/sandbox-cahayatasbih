@@ -24,6 +24,7 @@ class Student extends Model
         'saldo',
         'avatar',
         'barcode',
+        'is_blocked',
     ];
 
     public function user()

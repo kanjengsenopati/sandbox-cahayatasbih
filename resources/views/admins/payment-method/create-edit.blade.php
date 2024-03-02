@@ -85,6 +85,22 @@
 
                                 <div class="fv-row mb-6">
                                     <!--begin::Label-->
+                                    <label class="fs-6 fw-bold form-label" for="type">
+                                        <span class="required">Tipe Metode Pembayaran</span>
+                                        <i class="fas fa-exclamation-circle ms-1 fs-7" data-bs-toggle="tooltip"
+                                            title="Pilih Tipe Metode Pembayaran"></i>
+                                    </label>
+                                    <select class="form-select form-select-solid" id="type" name="type" required>
+                                        @foreach ($paymentMethodType as $key => $value)
+                                        <option value="{{ $key }}" {{ @$paymentMethod->type == $key ? 'selected' : ''
+                                            }}>
+                                            {{ $value }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+
+                                <div class="fv-row mb-6">
+                                    <!--begin::Label-->
                                     <label class="fs-6 fw-bold form-label" for="is_active">
                                         <span class="required">Status</span>
                                         <i class="fas fa-exclamation-circle ms-1 fs-7" data-bs-toggle="tooltip"

@@ -42,7 +42,8 @@ class PaymentMethodController extends Controller
      */
     public function create()
     {
-        return view('admins.payment-method.create-edit');
+        $paymentMethodType = (new PaymentMethod)->getTypeList();
+        return view('admins.payment-method.create-edit', compact('paymentMethodType'));
     }
 
     /**
@@ -68,7 +69,8 @@ class PaymentMethodController extends Controller
      */
     public function edit(PaymentMethod $paymentMethod)
     {
-        return view('admins.payment-method.create-edit', compact('paymentMethod'));
+        $paymentMethodType = (new PaymentMethod)->getTypeList();
+        return view('admins.payment-method.create-edit', compact('paymentMethod', 'paymentMethodType'));
     }
 
     /**

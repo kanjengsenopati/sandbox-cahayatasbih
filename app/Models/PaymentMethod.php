@@ -17,14 +17,27 @@ class PaymentMethod extends Model
     const AUTO_PAYMENT = 'd45cdddc-70c7-4787-bb0f-f83ab233b271';
     const CASH_PAYMENT = '72abbd5c-ee1b-4a1d-b327-4d61b9d0be9c';
     const SALDO_PAYMENT = 'ca513e57-fb61-4063-acb0-25595c6c8ea6';
+    const TYPE_BALANCE = 'BALANCE';
+    const TYPE_XENDIT = 'XENDIT';
+    const TYPE_CASH = 'CASH';
 
     protected $fillable = [
         'name',
+        'type',
         'is_active'
     ];
 
     public function transactions()
     {
         return $this->hasMany(Transaction::class)->withTrashed();
+    }
+
+    public function getTypeList()
+    {
+        return [
+            self::TYPE_BALANCE => 'Saldo',
+            self::TYPE_XENDIT => 'Otomatis',
+            self::TYPE_CASH => 'Tunai'
+        ];
     }
 }

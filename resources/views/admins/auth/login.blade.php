@@ -52,7 +52,7 @@
 <style>
     /* change primary color to green */
     .btn-primary {
-        background-color: #0BB783 !important;
+        background-color: rgb(199, 57, 255) !important;
         border-color: #0BB783 !important;
     }
 
@@ -72,7 +72,7 @@
     <div class="d-flex flex-column flex-root">
         <!--begin::Authentication - Sign-in -->
         <div class="d-flex w-100 flex-column flex-column-fluid bgi-position-y-bottom position-x-center bgi-no-repeat bgi-size-contain bgi-attachment-fixed"
-            style="background-image: url({{ asset('assets/media/bg/bg-login.jpg') }});background-size: cover;">
+            style="background-image: url({{ asset('assets/media/bg/login-1.png') }});background-size: cover;">
             <!--begin::Content-->
             <div class="d-flex flex-center flex-column flex-column-fluid p-10 pb-lg-20">
                 <!--begin::Logo-->
@@ -125,7 +125,7 @@
                         <div class="text-center">
                             <!--begin::Submit button-->
                             <button type="submit" id="kt_sign_in_submit" class="btn btn-lg btn-primary w-100 mb-5">
-                                <span class="indicator-label">Continue</span>
+                                <span class="indicator-label">Masuk sekarang</span>
                                 <span class="indicator-progress">Please wait...
                                     <span class="spinner-border spinner-border-sm align-middle ms-2"></span></span>
                             </button>
