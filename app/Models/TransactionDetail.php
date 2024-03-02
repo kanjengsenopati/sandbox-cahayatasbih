@@ -26,4 +26,9 @@ class TransactionDetail extends Model
     {
         return $this->belongsTo(Bill::class)->withTrashed();
     }
+
+    public function saldoHistory()
+    {
+        return $this->belongsTo(SaldoHistory::class)->withTrashed();
+    }
 }
