@@ -124,12 +124,13 @@ class TransactionController extends Controller
             // update bill status with loop in transaction details
             if ($status == Transaction::STATUS_PAID) {
                 if ($transaction->type == Transaction::TYPE_SALDO) {
+                    $student = Student::find($transaction->student_id);
+                    $student->update([
+                        'saldo' => $student->saldo + $transaction->pay_amount
+                    ]);
+                    // change status to saldo history
                     $transaction->transactionDetails->first()->saldoHistory->update([
                         'status' => SaldoHistory::STATUS_SUCCESS
-                    ]);
-                    // add saldo to users
-                    $transaction->student->update([
-                        'saldo' => $transaction->student->saldo + $transaction->pay_amount
                     ]);
                 }
             } else {
