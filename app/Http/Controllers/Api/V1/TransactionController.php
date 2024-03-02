@@ -127,6 +127,10 @@ class TransactionController extends Controller
                     $transaction->transactionDetails->first()->saldoHistory->update([
                         'status' => SaldoHistory::STATUS_SUCCESS
                     ]);
+                    // add saldo to users
+                    $transaction->student->update([
+                        'saldo' => $transaction->student->saldo + $transaction->pay_amount
+                    ]);
                 }
             } else {
                 foreach ($transaction->transactionDetails as $detail) {
