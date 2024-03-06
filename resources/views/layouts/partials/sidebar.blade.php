@@ -359,7 +359,7 @@
                 </div>
 
                 <div data-kt-menu-trigger="click"
-                    class="menu-item menu-accordion {{ request()->routeIs(['payment-method.*','application-setting.*']) ? 'show' : '' }}">
+                    class="menu-item menu-accordion {{ request()->routeIs(['payment-method.*','application-setting.*', 'help.*', 'app-information.*']) ? 'show' : '' }}">
                     <span class="menu-link ">
                         <span class="menu-icon">
                             <i class="fa-solid fa-gear" style="color: #ffffff;"></i>
@@ -385,6 +385,24 @@
                                     <span class="bullet bullet-dot"></span>
                                 </span>
                                 <span class="menu-title">Pengaturan Aplikasi</span>
+                            </a>
+                        </div>
+                        <div class="menu-item ">
+                            <a class="menu-link {{ request()->routeIs('help.*') ? ' active' : '' }}"
+                                href="{{ route('help.index') }}">
+                                <span class="menu-bullet">
+                                    <span class="bullet bullet-dot"></span>
+                                </span>
+                                <span class="menu-title">Kontak Bantuan</span>
+                            </a>
+                        </div>
+                        <div class="menu-item ">
+                            <a class="menu-link {{ request()->routeIs('app-information.*') ? ' active' : '' }}"
+                                href="{{ route('app-information.index') }}">
+                                <span class="menu-bullet">
+                                    <span class="bullet bullet-dot"></span>
+                                </span>
+                                <span class="menu-title">Informasi Aplikasi</span>
                             </a>
                         </div>
                     </div>

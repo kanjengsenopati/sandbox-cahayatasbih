@@ -1,17 +1,19 @@
 <?php
 
+use Maatwebsite\Excel\Row;
+use App\Models\Information;
+use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\BillController;
 use App\Http\Controllers\Api\V1\HomeController;
-use App\Http\Controllers\Api\V1\ProfileController;
 use App\Http\Controllers\Api\V1\SaldoController;
+use App\Http\Controllers\Api\V1\ProfileController;
+use App\Http\Controllers\Api\V1\TahfidzController;
 use App\Http\Controllers\Api\V1\ScheduleController;
+use App\Http\Controllers\Api\V1\InformationController;
+use App\Http\Controllers\Api\V1\TransactionController;
 use App\Http\Controllers\Api\V1\StudentAchievementController;
 use App\Http\Controllers\Api\V1\StudentCounselingScoreController;
-use App\Http\Controllers\Api\V1\TahfidzController;
-use App\Http\Controllers\Api\V1\TransactionController;
-use Illuminate\Support\Facades\Route;
-use Maatwebsite\Excel\Row;
 
 
 // Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
@@ -79,6 +81,10 @@ Route::group(['prefix' => 'v1', 'middleware' => 'validate_api_key'], function ()
             Route::post('update-profile', [ProfileController::class, 'updateProfile']);
             Route::post('change-password', [ProfileController::class, 'changePassword']);
         });
+    });
+    Route::group(['prefix' => 'information'], function () {
+        Route::get('/', [InformationController::class, 'index']);
+        Route::get('/help', [InformationController::class, 'help']);
     });
 });
 

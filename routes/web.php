@@ -1,43 +1,45 @@
 <?php
 
-use App\Http\Controllers\Admin\AcademicYearController;
-use App\Http\Controllers\Admin\AdminController;
-use App\Http\Controllers\Admin\ApplicationSettingController;
+use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Admin\AuthController;
 use App\Http\Controllers\Admin\BillController;
+use App\Http\Controllers\Admin\HelpController;
+use App\Http\Controllers\Admin\ItemController;
+use App\Http\Controllers\Admin\RoleController;
+use App\Http\Controllers\Admin\UserController;
+use App\Http\Controllers\Admin\AdminController;
+use App\Http\Controllers\Admin\SchoolController;
+use App\Http\Controllers\Admin\ContactController;
+use App\Http\Controllers\Admin\Select2Controller;
+use App\Http\Controllers\Admin\StudentController;
+use App\Http\Controllers\Admin\TahfidzController;
 use App\Http\Controllers\Admin\BillItemController;
 use App\Http\Controllers\Admin\BillTypeController;
-use App\Http\Controllers\Admin\CategoryItemController;
+use App\Http\Controllers\Admin\ScheduleController;
 use App\Http\Controllers\Admin\ClassroomController;
-use App\Http\Controllers\Admin\ContactController;
 use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\Admin\OrderItemController;
+use App\Http\Controllers\Admin\TranslateController;
 use App\Http\Controllers\Admin\DisclaimerController;
 use App\Http\Controllers\Admin\HomeSliderController;
-use App\Http\Controllers\Admin\ImageUploadController;
-use App\Http\Controllers\Admin\InformationCategoryController;
-use App\Http\Controllers\Admin\InformationController;
-use App\Http\Controllers\Admin\ItemController;
-use App\Http\Controllers\Admin\OrderItemController;
-use App\Http\Controllers\Admin\OrderItemHistoryController;
-use App\Http\Controllers\Admin\PaymentMethodController;
-use App\Http\Controllers\Admin\PaymentRateController;
 use App\Http\Controllers\Admin\PermissionController;
-use App\Http\Controllers\Admin\PrivacyPolicyController;
-use App\Http\Controllers\Admin\RoleController;
-use App\Http\Controllers\Admin\SaldoHistoryController;
-use App\Http\Controllers\Admin\ScheduleController;
-use App\Http\Controllers\Admin\SchoolController;
-use App\Http\Controllers\Admin\Select2Controller;
-use App\Http\Controllers\Admin\StockHistoryController;
-use App\Http\Controllers\Admin\StudentAchievementController;
-use App\Http\Controllers\Admin\StudentController;
-use App\Http\Controllers\Admin\StudentCounselingScoreController;
-use App\Http\Controllers\Admin\TahfidzController;
-use App\Http\Controllers\Admin\TermConditionController;
+use App\Http\Controllers\Admin\ImageUploadController;
+use App\Http\Controllers\Admin\InformationController;
+use App\Http\Controllers\Admin\PaymentRateController;
 use App\Http\Controllers\Admin\TransactionController;
-use App\Http\Controllers\Admin\TranslateController;
-use App\Http\Controllers\Admin\UserController;
-use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Admin\AcademicYearController;
+use App\Http\Controllers\Admin\CategoryItemController;
+use App\Http\Controllers\Admin\SaldoHistoryController;
+use App\Http\Controllers\Admin\StockHistoryController;
+use App\Http\Controllers\Admin\PaymentMethodController;
+use App\Http\Controllers\Admin\PrivacyPolicyController;
+use App\Http\Controllers\Admin\TermConditionController;
+use App\Http\Controllers\Admin\AppInformationController;
+use App\Http\Controllers\Admin\OrderItemHistoryController;
+use App\Http\Controllers\Admin\ApplicationSettingController;
+use App\Http\Controllers\Admin\StudentAchievementController;
+use App\Http\Controllers\Admin\InformationCategoryController;
+use App\Http\Controllers\Admin\StudentCounselingScoreController;
 
 
 /*
@@ -132,6 +134,9 @@ Route::group(['middleware' => ['auth']], function () {
 
     // start schedule
     Route::resource('schedule', ScheduleController::class);
+
+    Route::resource('help', HelpController::class);
+    Route::resource('app-information', AppInformationController::class, ['only' => ['index', 'store']])->names('app-information');
 
 
     Route::group(['prefix' => 'information'], function () {
