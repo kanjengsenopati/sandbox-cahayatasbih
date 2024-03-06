@@ -46,6 +46,16 @@ class SaldoController extends Controller
         ]);
     }
 
+    public function show($id)
+    {
+        $saldoHistory = SaldoHistory::with(
+            'pointOfSaleTransaction.pointOfSaleTransactionDetails.item',
+            'cashier',
+            'transaction_details'
+        )->findOrFail($id);
+        return $this->getSuccessResponse($saldoHistory);
+    }
+
     public function block(Request $request)
     {
         $student = Student::findOrFail($request->student_id);

@@ -33,9 +33,9 @@ class PointOfSaleTransaction extends Model
         return $this->belongsTo(Student::class)->withTrashed();
     }
 
-    public function cashier()
+    public function admin()
     {
-        return $this->belongsTo(Admin::class, 'admin_id');
+        return $this->belongsTo(Admin::class)->withTrashed();
     }
 
     public function pointOfSaleTransactionDetails()

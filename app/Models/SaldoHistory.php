@@ -28,6 +28,21 @@ class SaldoHistory extends Model
 
     public function student()
     {
-        return $this->belongsTo(Student::class);
+        return $this->belongsTo(Student::class)->withTrashed();
+    }
+
+    public function pointOfSaleTransaction()
+    {
+        return $this->hasOne(PointOfSaleTransaction::class)->withTrashed();
+    }
+
+    public function cashier()
+    {
+        return $this->belongsToMany(Admin::class, 'point_of_sale_transactions', 'saldo_history_id', 'admin_id');
+    }
+
+    public function transaction_details()
+    {
+        return $this->hasMany(TransactionDetail::class)->withTrashed();
     }
 }

@@ -46,6 +46,7 @@ Route::group(['prefix' => 'v1', 'middleware' => 'validate_api_key'], function ()
         // start saldo
         Route::group(['prefix' => 'saldo'], function () {
             Route::get('/', [SaldoController::class, 'index']);
+            Route::get('/{id}', [SaldoController::class, 'show']);
             Route::post('/block', [SaldoController::class, 'block']);
             Route::post('/topup', [SaldoController::class, 'topup']);
         });
