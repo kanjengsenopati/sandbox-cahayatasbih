@@ -19,9 +19,6 @@ class UserController extends Controller
         if (request()->ajax()) {
             $data = User::latest()->get();
             return DataTables::of($data)
-                ->editColumn('phone', function ($data) {
-                    return $data->phone ? '+62' . $data->phone : '-';
-                })
                 ->addColumn('action', function ($data) {
                     $actionEdit = route('user.edit', $data->id);
                     $actionDelete = route('user.destroy', $data->id);

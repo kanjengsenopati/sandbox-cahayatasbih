@@ -163,18 +163,14 @@
                                 <div class="fv-row mb-6">
                                     <!--begin::Label-->
                                     <label class="fs-6 fw-bold form-label" for="phone">
-                                        <span class="required">No Handphone</span>
+                                        <span class="required">No Handphone (Format: 08xxxx)</span>
                                         <i class="fas fa-exclamation-circle ms-1 fs-7" data-bs-toggle="tooltip"
                                             title="Masukkan No Handphone"></i>
                                     </label>
                                     <!--end::Label-->
                                     <!--begin::Input-->
-                                    <div class="input-group">
-                                        <span class="input-group-text rounded-start">+62</span>
-                                        <input type="number" class="form-control form-control-solid" id="phone"
-                                            name="phone" placeholder="Masukkan No Handphone"
-                                            value="{{ @$user->phone ?? old('phone') }}" />
-                                    </div>
+                                    <input type="number" class="form-control form-control-solid" id="phone" name="phone"
+                                        placeholder="Format: 08xxxx" value="{{ @$user->phone ?? old('phone') }}" />
                                     <!--end::Input-->
                                 </div>
                                 <div class="fv-row mb-6">
