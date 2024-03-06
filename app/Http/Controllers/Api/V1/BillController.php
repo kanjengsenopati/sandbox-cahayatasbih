@@ -44,6 +44,13 @@ class BillController extends Controller
             $query->orderBy('month', 'asc');
         },])->find($id);
 
+        // add total unpaid and total paid
+        $billType->total = $billType->bills->sum('amount');
+        $billType->total_unpaid = $billType->bills->where('status', Bill::STATUS_UNPAID)->sum('amount');
+        $billType->total_paid = $billType->bills->where('status', Bill::STATUS_PAID)->sum('amount');
+        // add status
+        $billType->status = $billType->bills->where('status', Bill::STATUS_UNPAID)->count() > 0 ? Bill::STATUS_UNPAID : Bill::STATUS_PAID;
+
         if (!$billType) {
             return $this->failedResponse("Data tidak ditemukan");
         }
