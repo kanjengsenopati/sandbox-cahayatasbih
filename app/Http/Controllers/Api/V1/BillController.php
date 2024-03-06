@@ -11,11 +11,30 @@ class BillController extends Controller
 {
     public function index(Request $request)
     {
-        $billTypes = BillType::whereHas('bills', function ($query) use ($request) {
-            $query->where('student_id', $request->student_id);
-        })->with('billItem', 'academicYear')->latest()->get();
+        $studentId = $request->student_id;
 
-        return $this->postSuccessResponse("Berhasil mengambil data", $billTypes);
+        $totalBill = Bill::where('student_id', $studentId)
+            ->where('status', Bill::STATUS_UNPAID)
+            ->sum('amount');
+
+        $billTypes = BillType::whereHas('bills', function ($query) use ($studentId) {
+            $query->where('student_id', $studentId);
+        })
+            ->with(['billItem', 'academicYear'])
+            ->latest()
+            ->get()
+            ->map(function ($billType) {
+                $billType->total_unpaid = $billType->bills->where('status', Bill::STATUS_UNPAID)->sum('amount');
+                $billType->total_paid = $billType->bills->where('status', Bill::STATUS_PAID)->sum('amount');
+                return $billType;
+            });
+
+        $data = [
+            'total_bill' => $totalBill,
+            'bill_types' => $billTypes,
+        ];
+
+        return $this->postSuccessResponse("Berhasil mengambil data", $data);
     }
 
     public function show(Request $request, $id)
