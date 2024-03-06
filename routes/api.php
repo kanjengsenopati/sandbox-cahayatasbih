@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\BillController;
 use App\Http\Controllers\Api\V1\HomeController;
+use App\Http\Controllers\Api\V1\ProfileController;
 use App\Http\Controllers\Api\V1\SaldoController;
 use App\Http\Controllers\Api\V1\ScheduleController;
 use App\Http\Controllers\Api\V1\StudentAchievementController;
@@ -69,6 +70,14 @@ Route::group(['prefix' => 'v1', 'middleware' => 'validate_api_key'], function ()
         // start schedule
         Route::group(['prefix' => 'schedule'], function () {
             Route::get('/', [ScheduleController::class, 'index']);
+        });
+
+        // start profile
+        Route::group(['prefix' => 'profile'], function () {
+            Route::get('/', [ProfileController::class, 'index']);
+            Route::post('update-avatar', [ProfileController::class, 'updateAvatar']);
+            Route::post('update-profile', [ProfileController::class, 'updateProfile']);
+            Route::post('change-password', [ProfileController::class, 'changePassword']);
         });
     });
 });
