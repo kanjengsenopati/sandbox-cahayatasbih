@@ -75,6 +75,7 @@
                                     <th class="min-w-100px" style="width: 22%">Jumlah</th>
                                     <th class="min-w-100px" style="width: 22%">Status</th>
                                     <th class="min-w-100px" style="width: 22%">Kasir</th>
+                                    <th class="min-w-100px" style="width: 22%">Aksi</th>
                                 </tr>
                             </thead>
                             <tbody class="text-gray-600 fw-bold"></tbody>
@@ -134,9 +135,13 @@
                         name: 'status'
                     },
                     {
-                        data: 'admin_id',
-                        name: 'admin_id'
+                        data: 'admin',
+                        name: 'admin'
                     },
+                    {
+                        data: 'action',
+                        name: 'action'
+                    }
                 ]
             });
 

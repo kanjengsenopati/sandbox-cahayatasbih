@@ -15,7 +15,7 @@ class OrderItemHistoryController extends Controller
     public function index()
     {
         if (request()->ajax()) {
-            $data = PointOfSaleTransaction::with('pointOfSaleTransactionDetails', 'student')->latest()->get();
+            $data = PointOfSaleTransaction::with('pointOfSaleTransactionDetails', 'student', 'admins')->latest()->get();
             return DataTables::of($data)
                 ->editColumn('pay_amount', function ($data) {
                     return 'Rp ' . number_format($data->pay_amount, 0, ',', '.');
@@ -32,10 +32,13 @@ class OrderItemHistoryController extends Controller
                 ->editColumn('paid_at', function ($data) {
                     $data->paid_at ? $data->paid_at->format('d F Y') : '-';
                 })
-                ->editColumn('admin_id', function ($data) {
-                    return $data->cashier ? $data->cashier->name : '-';
+                ->addColumn('admin', function ($data) {
+                    return $data->admins ? $data->admins->name : '-';
                 })
-                ->rawColumns(['status'])
+                ->addColumn('action', function ($data) {
+                    return '<a href="' . route('order-item-history.show', $data->id) . '" class="btn btn-primary btn-sm">Detail</a>';
+                })
+                ->rawColumns(['status', 'action'])
                 ->make(true);
         }
         return view('admins.order-item.history.index');

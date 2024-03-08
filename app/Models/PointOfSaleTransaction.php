@@ -2,10 +2,11 @@
 
 namespace App\Models;
 
+use App\Models\Admin;
 use App\Traits\UuidTrait;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class PointOfSaleTransaction extends Model
 {
@@ -33,9 +34,9 @@ class PointOfSaleTransaction extends Model
         return $this->belongsTo(Student::class)->withTrashed();
     }
 
-    public function admin()
+    public function admins()
     {
-        return $this->belongsTo(Admin::class)->withTrashed();
+        return $this->belongsTo(Admin::class, 'admin_id', 'id')->withTrashed();
     }
 
     public function pointOfSaleTransactionDetails()
