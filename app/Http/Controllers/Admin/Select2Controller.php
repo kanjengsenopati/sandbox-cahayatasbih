@@ -37,7 +37,8 @@ class Select2Controller extends Controller
 
     public function student($request)
     {
-        return Student::whereRaw('LOWER(name) like ?', ['%' . strtolower($request->search) . '%'])
+        return Student::hasSchoolPlace()
+            ->with('classroom.school')->whereRaw('LOWER(name) like ?', ['%' . strtolower($request->search) . '%'])
             ->take(10)
             ->get();
     }

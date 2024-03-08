@@ -73,6 +73,7 @@ class OrderItemController extends Controller
                 'amount' => $total,
                 'description' => 'Pembayaran Pembelian Barang Rp. ' . number_format($total, 0, ',', '.'),
                 'status' => 'SUCCESS',
+                'usage' => SaldoHistory::USAGE_POS,
             ]);
 
             // Save transaction data

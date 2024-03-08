@@ -32,7 +32,7 @@ class TransactionController extends Controller
         try {
             $paymentMethodType = PaymentMethod::find($request->payment_method_id)->type;
 
-            $transaction = $this->createTransaction($request);
+            $transaction = $this->createTransaction($request, $paymentMethodType);
 
             if ($paymentMethodType == PaymentMethod::TYPE_XENDIT) {
                 TransactionService::createInvoice($transaction);
@@ -45,7 +45,7 @@ class TransactionController extends Controller
                     return $this->failedResponse("Maaf Saldo Santri tidak mencukupi");
                 }
 
-                TransactionService::payWithBalance($student, $payAmount, $transaction);
+                TransactionService::payWithBalance($student, $payAmount, $transaction, $request);
             }
 
             DB::commit();
@@ -63,7 +63,7 @@ class TransactionController extends Controller
         }
     }
 
-    private function createTransaction(TransactionRequest $request)
+    private function createTransaction(TransactionRequest $request, $paymentMethodType)
     {
         $paymentCode = 'CHT-' . Str::random(3) . time();
 
@@ -84,7 +84,7 @@ class TransactionController extends Controller
             ]);
         }
 
-        if ($transaction->status == Transaction::STATUS_PAID) {
+        if ($transaction->status == Transaction::STATUS_PAID && $paymentMethodType == PaymentMethod::TYPE_XENDIT) {
             TransactionService::changeStatusToPaid($transaction);
         }
 

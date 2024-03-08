@@ -48,11 +48,12 @@ class SaldoController extends Controller
 
     public function show($id)
     {
-        $saldoHistory = SaldoHistory::with(
-            'pointOfSaleTransaction.pointOfSaleTransactionDetails.item',
-            'cashier',
-            'transaction_details'
-        )->findOrFail($id);
+        $saldoHistory = SaldoHistory::findOrFail($id);
+        if ($saldoHistory->usage == SaldoHistory::USAGE_BILL) {
+            $saldoHistory->load('transaction_details.bill');
+        } elseif ($saldoHistory->usage == SaldoHistory::USAGE_POS) {
+            $saldoHistory->load('pointOfSaleTransaction.pointOfSaleTransactionDetails.item');
+        }
         return $this->getSuccessResponse($saldoHistory);
     }
 
@@ -119,7 +120,8 @@ class SaldoController extends Controller
             'amount' => $request->amount,
             'type' => SaldoHistory::TYPE_IN,
             'status' => SaldoHistory::STATUS_PENDING,
-            'description' => "Topup Saldo sebesar Rp. " . number_format($request->amount, 0, ',', '.')
+            'description' => "Topup Saldo sebesar Rp. " . number_format($request->amount, 0, ',', '.'),
+            'usage' => SaldoHistory::USAGE_TOPUP
         ]);
     }
 

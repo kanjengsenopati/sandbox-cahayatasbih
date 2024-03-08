@@ -82,10 +82,71 @@
                                         @php
                                         $amount = @$bill->bills->where('month', $month)->first()->amount ?? 0;
                                         @endphp
-                                        <td>Rp
-                                            {{
-                                            number_format($amount, 0, ',', '.')
-                                            }}</td>
+                                        <td style="background-color: {{ $amount == 0 ? 'green' : 'red' }}">
+                                            <a href="#" data-bs-toggle="modal"
+                                                data-bs-target="#bayarKilat{{ $bill->id }}_{{ $month }}"> Rp {{
+                                                number_format($amount, 0, ',' , '.' ) }}</a>
+                                        </td>
+                                        {{-- modal --}}
+                                        <div class="modal fade" id="bayarKilat{{ $bill->id }}_{{ $month }}"
+                                            tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+                                            <div class="modal-dialog modal-dialog-centered">
+                                                <div class="modal-content">
+                                                    <div class="modal-header">
+                                                        <h5 class="modal-title" id="exampleModalLabel">Bayar Tagihan
+                                                        </h5>
+                                                        <button type="button" class="btn-close" data-bs-dismiss="modal"
+                                                            aria-label="Close"></button>
+                                                    </div>
+                                                    <div class="modal-body">
+                                                        <form action="{{ route('bill.store') }}" method="post">
+                                                            @csrf
+                                                            <div class="mb-3">
+                                                                <label for="recipient-name" class="col-form-label">Saldo
+                                                                    Siswa:</label>
+                                                                <input type="text" class="form-control" id="saldo"
+                                                                    name="saldo"
+                                                                    value="Rp {{ number_format($student->saldo, 0, ',', '.') }}"
+                                                                    readonly>
+                                                            </div>
+                                                            <div class="mb-3">
+                                                                <label for="recipient-name" class="col-form-label">Jenis
+                                                                    Tagihan:</label>
+                                                                <input type="text" class="form-control"
+                                                                    value="{{ @$bill->name .' - '. \Carbon\Carbon::create()->month($month)->translatedFormat('F') }}"
+                                                                    readonly>
+                                                            </div>
+                                                            <div class="mb-2">
+                                                                <label for="amount" class="col-form-label">Jumlah
+                                                                    Pembayaran:</label>
+                                                                <input type="text" class="form-control" id="amount"
+                                                                    name="amount"
+                                                                    value="Rp {{ number_format($amount, 0, ',', '.') }}">
+                                                            </div>
+                                                            <div class="mb-2">
+                                                                <label for="amount" class="col-form-label">Metode
+                                                                    Pembayaran:</label>
+                                                                <select class="form-select" name="payment_method"
+                                                                    required>
+                                                                    <option value="">Pilih Metode Pembayaran</option>
+                                                                    @if ($student->saldo > $amount)
+                                                                    <option value="BALANCE">Saldo</option>
+                                                                    @endif
+                                                                    <option value="CASH">Tunai</option>
+                                                                </select>
+                                                            </div>
+                                                            <div class="modal-footer">
+                                                                <button type="button" class="btn btn-secondary"
+                                                                    data-bs-dismiss="modal">Close</button>
+                                                                <button type="submit"
+                                                                    class="btn btn-primary">Bayar</button>
+                                                            </div>
+                                                        </form>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        {{-- end modal --}}
                                         @endforeach
                                     </tr>
                                     @endforeach
@@ -233,3 +294,23 @@
     </div>
 
 </div>
+<!--end::Accordion-->
+{{-- tambahkan modal bayar --}}
+
+@push('js')
+<script>
+    // on click bayar kilat
+   $(document).ready(function() {
+    // on click bayarKilat{{ $bill->id }}
+    $('#bayarKilat{{ $bill->id }}').on('show.bs.modal', function (event) {
+        var button = $(event.relatedTarget) // Button that triggered the modal
+        var recipient = button.data('whatever') // Extract info from data-* attributes
+        // If necessary, you could initiate an AJAX request here (and then do the updating in a callback).
+        // Update the modal's content. We'll use jQuery here, but you could use a data binding library or other methods instead.
+        var modal = $(this)
+        modal.find('.modal-title').text('New message to ' + recipient)
+        modal.find('.modal-body input').val(recipient)
+    })
+    });
+</script>
+@endpush

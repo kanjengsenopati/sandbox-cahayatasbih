@@ -3,9 +3,10 @@
 namespace App\Models;
 
 use App\Traits\UuidTrait;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class Student extends Model
 {
@@ -55,5 +56,13 @@ class Student extends Model
     public function saldoHistories()
     {
         return $this->hasMany(SaldoHistory::class)->withTrashed();
+    }
+
+    public function scopeHasSchoolPlace($query)
+    {
+        // if auth user have school_id, then use it
+        if (Auth::guard('web')->user()->school_id) {
+            return $query->whereSchoolId(Auth::guard('web')->user()->school_id);
+        }
     }
 }

@@ -35,18 +35,19 @@ class TransactionService
         }
     }
 
-    public static function payWithBalance($student, $pay_amount, $transaction)
+    public static function payWithBalance($student, $pay_amount, $transaction, $request)
     {
         $student->update([
             'saldo' => $student->saldo - $pay_amount
         ]);
         // tambahin history
-        SaldoHistory::create([
+        $saldoHistory = SaldoHistory::create([
             'student_id' => $student->id,
             'amount' => $pay_amount,
             'type' => SaldoHistory::TYPE_OUT,
             'description' => 'Pembayaran Tagihan Sebesar Rp.' . number_format($pay_amount, 0, ',', '.'),
-            'status' => SaldoHistory::STATUS_SUCCESS
+            'status' => SaldoHistory::STATUS_SUCCESS,
+            'usage' => SaldoHistory::USAGE_BILL
         ]);
 
         // update transaction status
@@ -55,8 +56,19 @@ class TransactionService
             'paid_at' => Carbon::now()
         ]);
 
+        // create transaction detail with saldo history
+        foreach ($request->bill_ids as $billId) {
+            $transaction->transactionDetails()->create([
+                'bill_id' => $billId,
+                'saldo_history_id' => $saldoHistory->id
+            ]);
+        }
+
         // update bill status with loop in transaction details
         self::changeStatusToPaid($transaction);
+
+        // update bill status with loop in transaction details
+        // self::changeStatusToPaid($transaction);
     }
 
     public static function storeProgram($transaction)

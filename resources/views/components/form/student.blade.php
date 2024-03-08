@@ -28,7 +28,7 @@ $student = \App\Models\Student::find(@$value ?? 0);
                 return {
                 results:  $.map(data, function (item) {
                         return {
-                            text: item.nisn + ' - ' + item.name,
+                            text: item.nisn + ' - ' + item.name + ' - ' + item.classroom?.name + ' - ' + item.classroom?.school?.name,
                             id: item.id
                         }
                     })

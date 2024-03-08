@@ -16,6 +16,9 @@ class SaldoHistory extends Model
     const STATUS_FAILED = 'FAILED';
     const TYPE_BLOCK = "BLOCKED";
     const TYPE_UNBLOCKED = "UNBLOCKED";
+    const USAGE_BILL = "BILL";
+    const USAGE_TOPUP = "TOPUP";
+    const USAGE_POS = "POS";
     use HasFactory, UuidTrait, SoftDeletes;
 
     protected $fillable = [
@@ -23,7 +26,8 @@ class SaldoHistory extends Model
         'type',
         'amount',
         'description',
-        'status'
+        'status',
+        'usage'
     ];
 
     public function student()
