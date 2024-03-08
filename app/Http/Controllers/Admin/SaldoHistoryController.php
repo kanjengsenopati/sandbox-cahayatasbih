@@ -79,6 +79,7 @@ class SaldoHistoryController extends Controller
             if ($data['type'] === 'OUT' && $student->saldo < $data['amount']) {
                 return redirect()->route('saldo-history.index')->with('error', 'Saldo tidak mencukupi');
             }
+            $data['usage'] = SaldoHistory::USAGE_TOPUP;
 
             // Update saldo and create description
             if ($data['type'] === 'IN') {
