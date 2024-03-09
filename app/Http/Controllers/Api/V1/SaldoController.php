@@ -50,7 +50,7 @@ class SaldoController extends Controller
     {
         $saldoHistory = SaldoHistory::findOrFail($id);
         if ($saldoHistory->usage == SaldoHistory::USAGE_BILL) {
-            $saldoHistory->load('transaction_details.bill');
+            $saldoHistory->load('transaction_details.bill.billType');
         } elseif ($saldoHistory->usage == SaldoHistory::USAGE_POS) {
             $saldoHistory->load('pointOfSaleTransaction.pointOfSaleTransactionDetails.item');
         }
