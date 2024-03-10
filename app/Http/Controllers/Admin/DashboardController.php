@@ -13,6 +13,7 @@ use App\Models\HistoryDownload;
 use Yajra\DataTables\DataTables;
 use App\Models\WhiteBlowingSystem;
 use App\Http\Controllers\Controller;
+use App\Models\Transaction;
 
 class DashboardController extends Controller
 {
@@ -27,7 +28,28 @@ class DashboardController extends Controller
             'total_students' => $total_students,
             'total_classes' => $total_classes,
         ];
-        return view('admins.dashboard.index', compact('data'));
+        // hitung total pemasukkan hari ini, bulan ini, tahun ini
+        $transactions = Transaction::where('status', Transaction::STATUS_PAID)->get();
+
+        $today = $transactions->where('created_at', '>=', now()->startOfDay())->where('created_at', '<=', now()->endOfDay());
+        $total_income_today = $today->sum('pay_amount');
+
+        $month = $transactions->where('created_at', '>=', now()->startOfMonth())->where('created_at', '<=', now()->endOfMonth());
+        $total_income_month = $month->sum('pay_amount');
+
+        $year = $transactions->where('created_at', '>=', now()->startOfYear())->where('created_at', '<=', now()->endOfYear());
+        $total_income_year = $year->sum('pay_amount');
+
+        $total = $transactions->sum('pay_amount');
+
+        $incomes = [
+            'today' => $total_income_today,
+            'month' => $total_income_month,
+            'year' => $total_income_year,
+            'total' => $total,
+        ];
+
+        return view('admins.dashboard.index', compact('data', 'incomes'));
     }
 
     /**

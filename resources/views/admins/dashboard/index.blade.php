@@ -35,7 +35,64 @@
     <div class="row gy-5 g-xl-10 mt-8 mx-4">
         <div class="col-xl-8">
             <div class="chart">
-                <div id="chart-line" class="chart-canvas" height="350px"></div>
+                {{-- <div id="chart-line" class="chart-canvas" height="350px"></div> --}}
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title align-items-start flex-column">
+                            <span class="card-label fw-bolder text-gray-800">Statistik Rekapitulasi Keuangan Saat
+                                Ini</span>
+                        </h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6 py-2">
+                                <div class="card bg-primary text-white">
+                                    <div class="card-body">
+                                        <h5 class="card-title text-center text-white">Hari Ini</h5>
+                                        <p class="card-text text-center">Rp. {{ number_format($incomes['today'], 0,
+                                            ',', '.')
+                                            }}</p>
+                                        <i class="fas fa-money-bill-wave fs-1 p-0 text-white"></i>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6 py-2">
+                                <div class="card bg-success text-white">
+                                    <div class="card-body">
+                                        <h5 class="card-title text-center text-white">Bulan Ini</h5>
+                                        <p class="card-text text-center">Rp. {{ number_format($incomes['month'], 0,
+                                            ',', '.')
+                                            }}</p>
+                                        <i class="fas fa-coins fs-1 p-0 text-white"></i>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6 py-2">
+                                <div class="card bg-danger text-white">
+                                    <div class="card-body">
+                                        <h5 class="card-title text-center text-white">Tahun Ini</h5>
+                                        <p class="card-text text-center">Rp. {{ number_format($incomes['year'], 0,
+                                            ',', '.')
+                                            }}</p>
+                                        <i class="fas fa-money-check-alt fs-1 p-0 text-white"></i>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6 py-2">
+                                <div class="card bg-warning text-dark">
+                                    <div class="card-body">
+                                        <h5 class="card-title text-center text-white">Total</h5>
+                                        <p class="card-text text-center text-white">Rp. {{
+                                            number_format($incomes['total'], 0,
+                                            ',', '.')
+                                            }}</p>
+                                        <i class="fas fa-hand-holding-usd fs-1 p-0 text-white"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
         <!--begin::Col-->
@@ -91,7 +148,8 @@
                         <!--begin::Wrapper-->
                         <div class="text-gray-400 fw-bolder fs-7 text-end">
                             <!--begin::Number-->
-                            <span class="text-gray-800 fw-bolder fs-6 d-block">{{ $data['total_students'] ?? 0 }}</span>
+                            <span class="text-gray-800 fw-bolder fs-6 d-block">{{ $data['total_students'] ?? 0
+                                }}</span>
                             <!--end::Number-->
                         </div>
                         <!--end::Wrapper-->
@@ -129,7 +187,8 @@
                         <!--begin::Wrapper-->
                         <div class="text-gray-400 fw-bolder fs-7 text-end">
                             <!--begin::Number-->
-                            <span class="text-gray-800 fw-bolder fs-6 d-block">{{ $data['total_classes'] ?? 0 }}</span>
+                            <span class="text-gray-800 fw-bolder fs-6 d-block">{{ $data['total_classes'] ?? 0
+                                }}</span>
                             <!--end::Number-->
                         </div>
                         <!--end::Wrapper-->
