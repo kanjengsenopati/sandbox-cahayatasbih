@@ -78,22 +78,31 @@
         }
 
         .barcode {
-            max-width: calc(100% - 20px);
-            /* Mengikuti lebar card dengan tambahan margin */
-            height: auto;
-            margin-top: 20px;
-            margin-left: 10px;
-            /* Tambahkan margin di samping barcode */
+            background-color: white;
+            /* Memberikan latar belakang putih */
+        }
+
+        .barcode img {
+            width: 100%;
+            /* Untuk memastikan barcode memenuhi lebar tabel */
+            max-width: 100%;
+            /* Untuk memastikan barcode tidak melebihi lebar tabel */
         }
 
         .student-photo {
+            width: 100px;
+            height: auto;
+            border-radius: 50%;
+            margin-right: 20px;
+        }
+
+        /* .student-photo {
             width: 100px;
             height: 100px;
             border-radius: 50%;
             margin-right: 20px;
             float: left;
-            /* Tambahkan properti float */
-        }
+        } */
 
         .student-info {
             overflow: hidden;
@@ -103,6 +112,12 @@
         .student-info p {
             margin: 0;
             /* Hapus margin bawaan */
+        }
+
+        .student-info {
+            font-family: "Arial", sans-serif;
+            /* Ganti dengan font yang diinginkan */
+            /* Tambahkan properti lain sesuai kebutuhan */
         }
     </style>
 </head>
@@ -122,33 +137,43 @@
                         </div>
                     </div>
                     <div class="card-content">
-                        <div class="row">
-                            <div class="col-6">
-                                <img src="{{ url('https://ui-avatars.com/api/?name=' . $student->name . '&color=7F9CF5&background=EBF4FF') }}"
-                                    alt="Foto Siswa" class="student-photo">
-                            </div>
-                            <div class="col-6 student-info">
-                                <!-- Tambahkan class student-info di sini -->
-                                <h3>Nama: {{ $student->name }}</h3>
-                                <h3>NIS: {{ $student->nisn }}</h3>
-                                <h3>Kelas: {{ $student->classroom->name }}</h3>
-                            </div>
-                        </div>
-                        <div class="row">
-                            <div class="col-12">
-                                <div class="justify-content-center">
-                                    <div class="mb-3 barcode">{!! DNS1D::getBarcodeHTML($student->nisn, 'C128', 1, 33)
-                                        !!}</div>
-                                    {{-- <img
-                                        src="data:image/png;base64, {!! base64_encode(QrCode::format('png')->size(75)->errorCorrection('H')->generate($student->nisn)) !!} "
-                                        alt="Barcode" class="barcode"> --}}
-                                    {{-- <img
-                                        src="https://barcode.tec-it.com/barcode.ashx?data={{ $student->barcode }}&code=Code128&dpi=96"
-                                        alt="Barcode" class="barcode"> --}}
-                                </div>
-                            </div>
-                        </div>
+                        <table class="table">
+                            <tr>
+                                <td colspan="4" class="text-center">
+                                    <h3>Kartu Santri Digital</h3>
+                                </td>
+                            <tr>
+                                <td rowspan="5">
+                                    @if($student->avatar)
+                                    <img src="{{ asset($student->avatar) }}" alt="Foto Siswa" class="student-photo">
+                                    @else
+                                    <img src="{{ url('https://ui-avatars.com/api/?name=' . $student->name . '&color=7F9CF5&background=EBF4FF') }}"
+                                        alt="Foto Siswa" class="student-photo">
+                                    @endif
+                                </td>
+                                <th>Nama</th>
+                                <td>: {{ $student->name }}</td>
+                            </tr>
+                            <tr>
+                                <th>NISN</th>
+                                <td>: {{ $student->nisn }}</td>
+                            </tr>
+                            <tr>
+                                <th>Kelas</th>
+                                <td>: {{ $student->classroom->name }}</td>
+                            </tr>
+                            <tr>
+                                <th>Sekolah</th>
+                                <td>: {{ $student->school->name }}</td>
+                            </tr>
+                            <tr>
+                                <td colspan="3" class="barcode text-center">
+                                    {!! DNS1D::getBarcodeHTML($student->barcode, 'C128', 1, 33) !!}
+                                </td>
+                            </tr>
+                        </table>
                     </div>
+
                 </div>
             </div>
         </div>

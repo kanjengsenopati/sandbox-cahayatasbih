@@ -35,9 +35,11 @@ class StudentController extends Controller
                 ->addColumn('action', function ($data) {
                     $actionEdit = route('student.edit', $data->id);
                     $actionDelete = route('student.destroy', $data->id);
+                    $actionPrint = route('student.generate-student-card', $data->id);
                     return "<div class='d-flex justify-content-center'>" .
                         view('components.action.edit', ['action' => $actionEdit]) .
                         view('components.action.delete', ['action' => $actionDelete, 'id' => $data->id]) .
+                        view('components.action.qr-code', ['action' => $actionPrint, 'label' => 'Cetak Kartu']) .
                         "</div>";
                 })
                 ->rawColumns(['action', 'saldo'])

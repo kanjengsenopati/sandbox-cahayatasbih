@@ -76,50 +76,6 @@ class AuthController extends Controller
     }
 
 
-    public function register(RegisterRequest $request)
-    {
-        // Check if user is already registered with Apple ID, email, or phone
-        $existingUser = $this->checkExistingUser($request->apple_id, 'apple_id', 'Apple ID');
-        if ($existingUser) {
-            return $this->failedResponse($existingUser);
-        }
-
-        $existingUser = $this->checkExistingUser($request->email, 'email', 'Email');
-        if ($existingUser) {
-            return $this->failedResponse($existingUser);
-        }
-
-        $existingUser = $this->checkExistingUser($request->phone, 'phone', 'Nomor telepon');
-        if ($existingUser) {
-            return $this->failedResponse($existingUser);
-        }
-
-        // Create a new user and handle FCM token update
-        $user = User::create($request->validated());
-        $this->update_fcm_token($request->fcm_token, $request->firebase_uid, $user->id);
-
-        return $this->postSuccessResponse(
-            'Berhasil Mendaftar!',
-            [
-                'user'   => $user,
-                'token'  => $user->createToken('nest-gym')->accessToken
-            ]
-        );
-    }
-
-    private function checkExistingUser($value, $column, $errorMessage)
-    {
-        if ($value) {
-            $user = User::where($column, $value)->first();
-            if ($user) {
-                return "$errorMessage sudah terdaftar. Silahkan login menggunakan $errorMessage anda.";
-            }
-        }
-
-        return null;
-    }
-
-
     public function update_fcm_token($fcm_token, $user_id)
     {
         if ($fcm_token) {
@@ -130,6 +86,12 @@ class AuthController extends Controller
             }
             User::find($user_id)->update($dataToUpdate);
         }
+    }
+
+    public function updateFcm()
+    {
+        $this->update_fcm_token(request('fcm_token'), Auth::id());
+        return $this->postSuccessResponse('Fcm Token berhasil diupdate');
     }
 
 

@@ -91,7 +91,6 @@ class BillController extends Controller
                 return $item;
             });
 
-
         return view('admins.bill.show', compact('student', 'billMonth', 'billOthers'));
     }
 
