@@ -26,6 +26,11 @@ class Student extends Model
         'avatar',
         'barcode',
         'is_blocked',
+        'daily_limit',
+    ];
+
+    protected $casts = [
+        'daily_limit' => 'integer',
     ];
 
     public function user()
@@ -58,11 +63,25 @@ class Student extends Model
         return $this->hasMany(SaldoHistory::class)->withTrashed();
     }
 
+    public function pointOfSaleTransactions()
+    {
+        return $this->hasMany(PointOfSaleTransaction::class)->withTrashed();
+    }
+
     public function scopeHasSchoolPlace($query)
     {
         // if auth user have school_id, then use it
         if (Auth::guard('web')->user()->school_id) {
             return $query->whereSchoolId(Auth::guard('web')->user()->school_id);
         }
+    }
+
+    // count total shopping this day
+    public function getTotalShoppingTodayAttribute()
+    {
+        return $this->pointOfSaleTransactions()
+            ->whereDate('paid_at', now())
+            ->where('status', PointOfSaleTransaction::STATUS_SUCCESS)
+            ->sum('pay_amount') ?? 0;
     }
 }

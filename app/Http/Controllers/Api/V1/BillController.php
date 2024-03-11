@@ -23,9 +23,13 @@ class BillController extends Controller
             ->with(['billItem', 'academicYear'])
             ->latest()
             ->get()
-            ->map(function ($billType) {
-                $billType->total_unpaid = $billType->bills->where('status', Bill::STATUS_UNPAID)->sum('amount');
-                $billType->total_paid = $billType->bills->where('status', Bill::STATUS_PAID)->sum('amount');
+            ->map(function ($billType) use ($request) {
+                $billType->total_unpaid = $billType->bills->where('status', Bill::STATUS_UNPAID)
+                    ->where('student_id', $request->student_id)->sum('amount');
+                $billType->total_paid = $billType->bills->where('status', Bill::STATUS_PAID)
+                    ->where('student_id', $request->student_id)->sum('amount');
+                $billType->status = $billType->bills->where('status', Bill::STATUS_UNPAID)
+                    ->where('student_id', $request->student_id)->count() > 0 ? Bill::STATUS_UNPAID : Bill::STATUS_PAID;
                 return $billType;
             });
 
@@ -51,6 +55,11 @@ class BillController extends Controller
         // add status
         $billType->status = $billType->bills->where('status', Bill::STATUS_UNPAID)->count() > 0 ? Bill::STATUS_UNPAID : Bill::STATUS_PAID;
 
+        // add relation with bill.transactions
+        $billType->bills->map(function ($bill) {
+            $bill->transactions;
+            return $bill;
+        });
         if (!$billType) {
             return $this->failedResponse("Data tidak ditemukan");
         }

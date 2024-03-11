@@ -10,6 +10,7 @@ use App\Models\SaldoHistory;
 use Illuminate\Http\Request;
 use App\Models\PaymentMethod;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Api\V1\SettLimitRequest;
 use App\Services\TransactionService;
 use App\Http\Requests\Api\V1\TopupSaldoRequest;
 use Illuminate\Support\Facades\DB;
@@ -147,5 +148,14 @@ class SaldoController extends Controller
         $transaction->transactionDetails()->create([
             'saldo_history_id' => $saldoHistory->id,
         ]);
+    }
+
+    public function settLimit(SettLimitRequest $request)
+    {
+        $student = Student::findOrFail($request->student_id);
+        $student->daily_limit = $request->daily_limit;
+        $student->save();
+
+        return $this->postSuccessResponse("Berhasil mengubah limit saldo", $student);
     }
 }

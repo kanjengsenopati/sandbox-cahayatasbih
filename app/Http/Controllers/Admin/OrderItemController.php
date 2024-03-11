@@ -62,6 +62,21 @@ class OrderItemController extends Controller
                 return redirect()->back()->with('error', 'Saldo siswa tidak mencukupi');
             }
 
+            // check if student is blocked
+            if ($student->is_blocked) {
+                return redirect()->back()->with('error', 'Saldo Siswa Masih Diblokir');
+            }
+
+            // Check if student has reached the daily limit
+            $totalThisDay = PointOfSaleTransaction::where('student_id', $student->id)
+                ->whereDate('paid_at', now())
+                ->where('status', PointOfSaleTransaction::STATUS_SUCCESS)
+                ->sum('pay_amount') ?? 0;
+
+            if ($student->daily_limit < $totalThisDay + $total) {
+                return redirect()->back()->with('error', 'Maaf, Siswa telah mencapai batas transaksi harian');
+            }
+
             // Deduct student's balance
             $student->saldo -= $total;
             $student->save();

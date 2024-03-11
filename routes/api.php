@@ -53,6 +53,7 @@ Route::group(['prefix' => 'v1', 'middleware' => 'validate_api_key'], function ()
             Route::get('/{id}', [SaldoController::class, 'show']);
             Route::post('/block', [SaldoController::class, 'block']);
             Route::post('/topup', [SaldoController::class, 'topup']);
+            Route::post('/sett-limit', [SaldoController::class, 'settLimit']);
         });
 
         // start tahfidz
