@@ -2,17 +2,18 @@
 
 namespace App\Http\Controllers\Admin;
 
+use Carbon\Carbon;
+use App\Models\Student;
 use App\Models\SaldoHistory;
 use Illuminate\Http\Request;
+use App\Models\SavingHistory;
 use Yajra\DataTables\DataTables;
-use App\Http\Controllers\Controller;
-use App\Http\Requests\Admin\SaldoHistoryRequest;
-use App\Models\Student;
-use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use App\Http\Controllers\Controller;
+use App\Http\Requests\Admin\SavingHistoryRequest;
 
-class SaldoHistoryController extends Controller
+class SavingHistoryController extends Controller
 {
     /**
      * Display a listing of the resource.
@@ -20,19 +21,24 @@ class SaldoHistoryController extends Controller
     public function index()
     {
         if (request()->ajax()) {
-            $data = SaldoHistory::with('student')->latest()->get();
+            $data = SavingHistory::with('student')->latest()->get();
             return DataTables::of($data)
+                ->editColumn('date', function ($data) {
+                    Carbon::setLocale('id'); // Set locale to Indonesian
+                    return Carbon::parse($data->created_at)
+                        ->translatedFormat('d F Y'); // Format tanggal dalam bahasa Indonesia
+                })
                 ->editColumn('amount', function ($data) {
                     if ($data->type === 'IN') {
-                        return '<span class="badge bg-success">+' . $data->amount . '</span>';
+                        return '<span class="badge bg-success">+' . number_format($data->amount, 0, ',', '.') . '</span>';
                     } else {
-                        return '<span class="badge bg-danger">-' . $data->amount . '</span>';
+                        return '<span class="badge bg-danger">-' . number_format($data->amount, 0, ',', '.') . '</span>';
                     }
                 })
                 ->editColumn('status', function ($data) {
-                    if ($data->status === SaldoHistory::STATUS_SUCCESS) {
+                    if ($data->status === SavingHistory::STATUS_SUCCESS) {
                         return '<span class="badge bg-success">' . $data->status . '</span>';
-                    } elseif ($data->status === SaldoHistory::STATUS_PENDING) {
+                    } elseif ($data->status === SavingHistory::STATUS_PENDING) {
                         return '<span class="badge bg-warning">' . $data->status . '</span>';
                     } else {
                         return '<span class="badge bg-danger">' . $data->status . '</span>';
@@ -41,7 +47,7 @@ class SaldoHistoryController extends Controller
                 ->rawColumns(['amount', 'status'])
                 ->make(true);
         }
-        return view('admins.saldo-history.index');
+        return view('admins.saving-history.index');
     }
 
     /**
@@ -49,16 +55,15 @@ class SaldoHistoryController extends Controller
      */
     public function create()
     {
-        return view('admins.saldo-history.create-edit');
+        return view('admins.saving-history.create-edit');
     }
 
     /**
      * Store a newly created resource in storage.
      */
-
-    public function store(SaldoHistoryRequest $request)
+    public function store(SavingHistoryRequest $request)
     {
-        // Start a database transaction
+
         DB::beginTransaction();
 
         try {
@@ -68,41 +73,38 @@ class SaldoHistoryController extends Controller
             $student = Student::findOrFail($data['student_id']);
 
             // Check if saldo deduction exceeds user's saldo
-            if ($data['type'] === 'OUT' && $student->saldo < $data['amount']) {
-                return redirect()->route('saldo-history.index')->with('error', 'Saldo tidak mencukupi');
+            if ($data['type'] === 'OUT' && $student->saving < $data['amount']) {
+                return redirect()->route('saving-history.index')->with('error', 'Tabungan tidak mencukupi');
             }
-            $data['usage'] = SaldoHistory::USAGE_TOPUP;
 
             // Update saldo and create description
             if ($data['type'] === 'IN') {
-                $student->saldo += $data['amount'];
-                $description = 'Saldo ditambahkan sebesar ' . $data['amount'] . ' oleh ' . auth()->user()->name;
+                $student->saving += $data['amount'];
+                $description = 'Tabungan ditambahkan sebesar ' . $data['amount'] . ' oleh ' . auth()->user()->name;
             } else {
-                $student->saldo -= $data['amount'];
-                $description = 'Saldo dikurangi sebesar ' . $data['amount'] . ' oleh ' . auth()->user()->name;
+                $student->saving -= $data['amount'];
+                $description = 'Tabungan dikurangi sebesar ' . $data['amount'] . ' oleh ' . auth()->user()->name;
             }
             $student->save();
 
             // Create saldo history
             $data['description'] = $description;
-            $data['status'] = SaldoHistory::STATUS_SUCCESS;
-            SaldoHistory::create($data);
+            $data['status'] = SavingHistory::STATUS_SUCCESS;
+            $data['admin_id'] = auth()->id();
+            SavingHistory::create($data);
 
             // Commit the transaction
             DB::commit();
 
-            return redirect()->route('saldo-history.index')->with('success', 'Penyesuaian saldo berhasil');
+            return redirect()->route('saving-history.index')->with('success', 'Tabungan berhasil ditambahkan');
         } catch (\Exception $e) {
             // If an exception occurs, rollback the transaction
             Log::error($e->getMessage());
             DB::rollBack();
 
-            // You can handle the exception here (e.g., log it, display an error message, etc.)
-            return redirect()->route('saldo-history.index')->with('error', $e->getMessage());
+            return redirect()->route('saving-history.index')->with('error', 'Tabungan gagal ditambahkan');
         }
     }
-
-
 
     /**
      * Display the specified resource.
@@ -115,19 +117,17 @@ class SaldoHistoryController extends Controller
     /**
      * Show the form for editing the specified resource.
      */
-    public function edit(SaldoHistory $saldoHistory)
+    public function edit(string $id)
     {
-        return view('admins.saldo-history.create-edit', compact('saldoHistory'));
+        //
     }
 
     /**
      * Update the specified resource in storage.
      */
-    public function update(SaldoHistoryRequest $request, SaldoHistory $saldoHistory)
+    public function update(Request $request, string $id)
     {
-        $data = $request->validated();
-        $saldoHistory->update($data);
-        return redirect()->route('saldo-history.index')->with('success', 'Saldo History berhasil diubah');
+        //
     }
 
     /**

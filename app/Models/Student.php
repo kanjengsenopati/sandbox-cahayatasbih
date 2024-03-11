@@ -27,6 +27,7 @@ class Student extends Model
         'barcode',
         'is_blocked',
         'daily_limit',
+        'saving',
     ];
 
     protected $casts = [
@@ -66,6 +67,11 @@ class Student extends Model
     public function pointOfSaleTransactions()
     {
         return $this->hasMany(PointOfSaleTransaction::class)->withTrashed();
+    }
+
+    public function savingHistories()
+    {
+        return $this->hasMany(SavingHistory::class)->withTrashed();
     }
 
     public function scopeHasSchoolPlace($query)

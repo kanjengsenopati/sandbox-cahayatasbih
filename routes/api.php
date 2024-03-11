@@ -11,6 +11,7 @@ use App\Http\Controllers\Api\V1\ProfileController;
 use App\Http\Controllers\Api\V1\TahfidzController;
 use App\Http\Controllers\Api\V1\ScheduleController;
 use App\Http\Controllers\Api\V1\InformationController;
+use App\Http\Controllers\Api\V1\SavingController;
 use App\Http\Controllers\Api\V1\TransactionController;
 use App\Http\Controllers\Api\V1\StudentAchievementController;
 use App\Http\Controllers\Api\V1\StudentCounselingScoreController;
@@ -54,6 +55,13 @@ Route::group(['prefix' => 'v1', 'middleware' => 'validate_api_key'], function ()
             Route::post('/block', [SaldoController::class, 'block']);
             Route::post('/topup', [SaldoController::class, 'topup']);
             Route::post('/sett-limit', [SaldoController::class, 'settLimit']);
+        });
+
+        // start saving
+        Route::group(['prefix' => 'saving'], function () {
+            Route::get('/', [SavingController::class, 'index']);
+            Route::post('/topup', [SavingController::class, 'topupSaving']);
+            Route::post('/withdraw', [SavingController::class, 'withdrawSaving']);
         });
 
         // start tahfidz

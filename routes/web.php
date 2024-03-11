@@ -33,6 +33,7 @@ use App\Http\Controllers\Admin\SaldoHistoryController;
 use App\Http\Controllers\Admin\StockHistoryController;
 use App\Http\Controllers\Admin\PaymentMethodController;
 use App\Http\Controllers\Admin\PrivacyPolicyController;
+use App\Http\Controllers\Admin\SavingHistoryController;
 use App\Http\Controllers\Admin\TermConditionController;
 use App\Http\Controllers\Admin\AppInformationController;
 use App\Http\Controllers\Admin\OrderItemHistoryController;
@@ -131,6 +132,7 @@ Route::group(['middleware' => ['auth']], function () {
 
     // start saldo history
     Route::resource('saldo-history', SaldoHistoryController::class);
+    Route::resource('saving-history', SavingHistoryController::class);
 
     // start schedule
     Route::resource('schedule', ScheduleController::class);
