@@ -182,7 +182,7 @@
                 </div>
                 @endcan
                 <div data-kt-menu-trigger="click"
-                    class="menu-item menu-accordion {{ request()->routeIs(['saldo-history.*']) ? 'show' : '' }}">
+                    class="menu-item menu-accordion {{ request()->routeIs(['saldo-history.*','saving-history.*']) ? 'show' : '' }}">
                     <span class="menu-link ">
                         <span class="menu-icon">
                             <i class="fa-solid fa-dollar-sign" style="color: #ffffff;"></i>
@@ -198,6 +198,15 @@
                                     <span class="bullet bullet-dot"></span>
                                 </span>
                                 <span class="menu-title">Riwayat Saldo</span>
+                            </a>
+                        </div>
+                        <div class="menu-item ">
+                            <a class="menu-link {{ request()->routeIs('saving-history.*') ? ' active' : '' }}"
+                                href="{{ route('saving-history.index') }}">
+                                <span class="menu-bullet">
+                                    <span class="bullet bullet-dot"></span>
+                                </span>
+                                <span class="menu-title">Riwayat Tabungan</span>
                             </a>
                         </div>
                     </div>
