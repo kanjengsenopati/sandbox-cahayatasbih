@@ -121,7 +121,8 @@ class TransactionController extends Controller
                 'status' => $status,
                 'paid_at' => $status == Transaction::STATUS_PAID ? Carbon::now() : null
             ]);
-            // update bill status with loop in transaction details
+            $transaction->refresh();
+
             if ($status == Transaction::STATUS_PAID) {
                 if ($transaction->type == Transaction::TYPE_SALDO) {
                     $student = Student::find($transaction->student_id);
@@ -132,36 +133,15 @@ class TransactionController extends Controller
                     $transaction->transactionDetails->first()->saldoHistory->update([
                         'status' => SaldoHistory::STATUS_SUCCESS
                     ]);
-                }
-            } elseif ($transaction->type == Transaction::TYPE_BILL && $status == Transaction::STATUS_PAID) {
-                foreach ($transaction->transactionDetails as $detail) {
-                    $detail->bill->update([
-                        'status' => Bill::STATUS_PAID
-                    ]);
+                } else {
+                    foreach ($transaction->transactionDetails as $detail) {
+                        $detail->bill->update([
+                            'status' => Bill::STATUS_PAID
+                        ]);
+                    }
                 }
             }
 
-            // if ($status == Transaction::STATUS_PAID) {
-            //         if ($transaction->type == Transaction::TYPE_SALDO) {
-            //             $student = Student::find($transaction->student_id);
-            //             $student->update([
-            //                 'saldo' => $student->saldo + $transaction->pay_amount
-            //             ]);
-            //             // change status to saldo history
-            //             $transaction->transactionDetails->first()->saldoHistory->update([
-            //                 'status' => SaldoHistory::STATUS_SUCCESS
-            //             ]);
-            //         }
-            //     } elseif ($transaction->type == Transaction::TYPE_BILL) {
-            //     foreach ($transaction->transactionDetails as $detail) {
-            //         $detail->bill->update([
-            //             'status' => Bill::STATUS_PAID
-            //         ]);
-            //         }
-            //     }
-            // }
-
-            $transaction->refresh();
             DB::commit();
             return $this->postSuccessResponse('Callback berhasil diterima', ['transaction' => $transaction]);
         } catch (\Throwable $th) {
