@@ -20,6 +20,10 @@ class BillController extends Controller
         $billTypes = BillType::whereHas('bills', function ($query) use ($studentId) {
             $query->where('student_id', $studentId);
         })
+            ->whereDoesntHave('bills', function ($query) use ($studentId) {
+                $query->where('student_id', $studentId);
+                $query->where('status', '!=', Bill::STATUS_UNPAID);
+            })
             ->with(['billItem', 'academicYear'])
             ->latest()
             ->get()
@@ -79,6 +83,10 @@ class BillController extends Controller
             $query->where('student_id', $studentId);
             $query->where('status', Bill::STATUS_PAID);
         })
+            ->whereDoesntHave('bills', function ($query) use ($studentId) {
+                $query->where('student_id', $studentId);
+                $query->where('status', '!=', Bill::STATUS_PAID);
+            })
             ->with(['billItem', 'academicYear'])
             ->latest()
             ->get()
