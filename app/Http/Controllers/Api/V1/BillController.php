@@ -69,17 +69,34 @@ class BillController extends Controller
 
     public function history(Request $request)
     {
-        $billTypes = BillType::whereHas('bills', function ($query) use ($request) {
-            $query->where('student_id', $request->student_id)
-                ->where('status', Bill::STATUS_PAID);
-        })
-            ->with(['bills' => function ($query) use ($request) {
-                $query->where('student_id', $request->student_id)
-                    ->where('status', Bill::STATUS_PAID);
-            }, 'billItem', 'academicYear'])
-            ->latest()
-            ->get();
+        $studentId = $request->student_id;
 
-        return $this->getSuccessResponse($billTypes);
+        $totalBill = Bill::where('student_id', $studentId)
+            ->where('status', Bill::STATUS_PAID)
+            ->sum('amount');
+
+        $billTypes = BillType::whereHas('bills', function ($query) use ($studentId) {
+            $query->where('student_id', $studentId);
+            $query->where('status', Bill::STATUS_PAID);
+        })
+            ->with(['billItem', 'academicYear'])
+            ->latest()
+            ->get()
+            ->map(function ($billType) use ($request) {
+                $billType->total_unpaid = $billType->bills->where('status', Bill::STATUS_UNPAID)
+                    ->where('student_id', $request->student_id)->sum('amount');
+                $billType->total_paid = $billType->bills->where('status', Bill::STATUS_PAID)
+                    ->where('student_id', $request->student_id)->sum('amount');
+                $billType->status = $billType->bills->where('status', Bill::STATUS_UNPAID)
+                    ->where('student_id', $request->student_id)->count() > 0 ? Bill::STATUS_UNPAID : Bill::STATUS_PAID;
+                return $billType;
+            });
+
+        $data = [
+            'total_bill' => $totalBill,
+            'bill_types' => $billTypes,
+        ];
+
+        return $this->postSuccessResponse("Berhasil mengambil data", $data);
     }
 }

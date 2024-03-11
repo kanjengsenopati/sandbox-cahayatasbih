@@ -133,7 +133,10 @@ class TransactionController extends Controller
                         'status' => SaldoHistory::STATUS_SUCCESS
                     ]);
                 }
-            } else {
+            } elseif ($transaction->type == Transaction::TYPE_BILL) {
+                dd(
+                    $transaction->type
+                );
                 foreach ($transaction->transactionDetails as $detail) {
                     $detail->bill->update([
                         'status' => Bill::STATUS_PAID
