@@ -48,45 +48,59 @@
                             <div class="col-md-6 py-2">
                                 <div class="card bg-primary text-white">
                                     <div class="card-body">
-                                        <h5 class="card-title text-center text-white">Hari Ini</h5>
-                                        <p class="card-text text-center">Rp. {{ number_format($incomes['today'], 0,
-                                            ',', '.')
-                                            }}</p>
-                                        <i class="fas fa-money-bill-wave fs-1 p-0 text-white"></i>
+                                        <div class="d-flex justify-content-center">
+                                            <i class="fas fa-money-bill-wave fs-1 p-0 text-white"></i>&nbsp;
+                                            <h5 class="card-title text-center text-white">Hari Ini</h5>
+                                        </div>
+                                        <br>
+                                        <p class="card-text text-center" style="font-size: 24px;">Rp. {{
+                                            number_format($incomes['today'], 0, ',',
+                                            '.') }}</p>
                                     </div>
                                 </div>
                             </div>
                             <div class="col-md-6 py-2">
                                 <div class="card bg-success text-white">
                                     <div class="card-body">
-                                        <h5 class="card-title text-center text-white">Bulan Ini</h5>
-                                        <p class="card-text text-center">Rp. {{ number_format($incomes['month'], 0,
+                                        <div class="d-flex justify-content-center">
+                                            <i class="fas fa-coins fs-1 p-0 text-white"></i>&nbsp;
+                                            <h5 class="card-title text-center text-white">Bulan Ini</h5>
+                                        </div>
+                                        <br>
+                                        <p class="card-text text-center" style="font-size: 24px;">Rp. {{
+                                            number_format($incomes['month'], 0,
                                             ',', '.')
                                             }}</p>
-                                        <i class="fas fa-coins fs-1 p-0 text-white"></i>
                                     </div>
                                 </div>
                             </div>
                             <div class="col-md-6 py-2">
                                 <div class="card bg-danger text-white">
                                     <div class="card-body">
-                                        <h5 class="card-title text-center text-white">Tahun Ini</h5>
-                                        <p class="card-text text-center">Rp. {{ number_format($incomes['year'], 0,
+                                        <div class="d-flex justify-content-center">
+                                            <i class="fas fa-money-check-alt fs-1 p-0 text-white"></i>&nbsp;
+                                            <h5 class="card-title text-center text-white">Tahun Ini</h5>
+                                        </div>
+                                        <br>
+                                        <p class="card-text text-center" style="font-size: 24px;">Rp. {{
+                                            number_format($incomes['year'], 0,
                                             ',', '.')
                                             }}</p>
-                                        <i class="fas fa-money-check-alt fs-1 p-0 text-white"></i>
                                     </div>
                                 </div>
                             </div>
                             <div class="col-md-6 py-2">
                                 <div class="card bg-warning text-dark">
                                     <div class="card-body">
-                                        <h5 class="card-title text-center text-white">Total</h5>
-                                        <p class="card-text text-center text-white">Rp. {{
+                                        <div class="d-flex justify-content-center">
+                                            <i class="fas fa-hand-holding-usd fs-1 p-0 text-white"></i>&nbsp;
+                                            <h5 class="card-title text-center text-white">Total</h5>
+                                        </div>
+                                        <br>
+                                        <p class="card-text text-center text-white" style="font-size: 24px;">Rp. {{
                                             number_format($incomes['total'], 0,
                                             ',', '.')
                                             }}</p>
-                                        <i class="fas fa-hand-holding-usd fs-1 p-0 text-white"></i>
                                     </div>
                                 </div>
                             </div>
