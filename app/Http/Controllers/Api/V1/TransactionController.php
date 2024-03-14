@@ -4,17 +4,18 @@ namespace App\Http\Controllers\Api\V1;
 
 use Carbon\Carbon;
 use App\Models\Bill;
+use App\Models\Student;
 use App\Models\Transaction;
 use Illuminate\Support\Str;
+use App\Models\SaldoHistory;
 use Illuminate\Http\Request;
 use App\Models\PaymentMethod;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\Controller;
-use App\Http\Requests\Api\V1\TransactionRequest;
-use App\Models\SaldoHistory;
-use App\Models\Student;
 use App\Services\TransactionService;
+use App\Jobs\SendToPushNotificationJob;
+use App\Http\Requests\Api\V1\TransactionRequest;
 
 class TransactionController extends Controller
 {
@@ -96,7 +97,12 @@ class TransactionController extends Controller
         return Bill::whereIn('id', $billIds)->sum('amount');
     }
 
-
+    private function dispatchNotifications($transaction)
+    {
+        $title = 'Yeay!, Pembayaran Berhasil';
+        $body = 'Pembayaran di Pondok Pesantren Cahaya Tasbih berhasil! Nikmati pengalaman tanpa hambatan. Terima kasih atas kepercayaan Anda.';
+        dispatch(new SendToPushNotificationJob($title, $body, $transaction->user, $transaction));
+    }
 
     public function callbackXendit(Request $request)
     {
@@ -140,6 +146,7 @@ class TransactionController extends Controller
                         ]);
                     }
                 }
+                $this->dispatchNotifications($transaction);
             }
 
             DB::commit();
