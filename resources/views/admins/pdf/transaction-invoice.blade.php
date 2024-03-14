@@ -210,7 +210,7 @@
                                 <td>
                                     <strong>{{ $data->student?->name }}</strong> <br />
                                     {{ $data->student?->classroom?->name }} <br />
-                                    {{ $data->user?->classroom?->school?->name }}
+                                    {{ $data->student?->classroom?->school?->name }}
                                 </td>
                             </tr>
                         </table>
