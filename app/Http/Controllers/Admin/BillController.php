@@ -178,10 +178,23 @@ class BillController extends Controller
         $student = Student::findOrFail($requestData['student_id']);
         $billType = BillType::findOrFail($requestData['bill_type_id']);
 
+        $billType->load(['bills' => function ($query) use ($student, $billType) {
+            $query->where('student_id', $student->id)->where('bill_type_id', $billType->id);
+        }]);
+
+        $totalBill = $billType->bills->sum('amount');
+        $totalPaid = $billType->bills->where('status', Bill::STATUS_PAID)->sum('amount');
+        $totalUnpaid = $billType->bills->where('status', Bill::STATUS_UNPAID)->sum('amount');
+
+        $billType->total_bill = $totalBill ?? 0;
+        $billType->total_paid = $totalPaid ?? 0;
+        $billType->total_unpaid = $totalUnpaid ?? 0;
+
         $bills = Bill::with('transactions')->where('student_id', $requestData['student_id'])
             ->where('bill_type_id', $requestData['bill_type_id'])
             ->orderBy('month', 'asc')
             ->get();
+
 
         $paymentMethods = PaymentMethod::latest()->get();
 

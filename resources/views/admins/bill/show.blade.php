@@ -69,83 +69,91 @@
                                         <th class="min-w-125px">{{
                                             \Carbon\Carbon::create()->month($month)->translatedFormat('F') }}</th>
                                         @endforeach
-
                                     </tr>
                                 </thead>
                                 <tbody>
                                     @foreach ($billMonth as $bill)
                                     <tr>
                                         <td>{{ $loop->iteration }}</td>
-                                        <td>{{ @$bill->name }}</td>
-                                        <td>Rp {{ number_format(@$bill->total_unpaid, 0, ',', '.') }}</td>
+                                        <td>{{ $bill->name }}</td>
+                                        <td>Rp {{ number_format($bill->total_unpaid, 0, ',', '.') }}</td>
                                         @foreach (range(1, 12) as $month)
                                         @php
-                                        $amount = @$bill->bills->where('month', $month)->where('status',
-                                        'UNPAID')->first()->amount ?? 0;
+                                        $billDetail = $bill->bills->where('month', $month)->where('student_id',
+                                        $student->id)->first();
+                                        $amount = $billDetail ? $billDetail->amount : 0;
+                                        $statusColor = $billDetail && $billDetail->status == 'PAID' ? 'green' : 'red';
+                                        $modalId = "bayarKilat{$bill->id}_{$month}";
+                                        $showModal = $billDetail && $billDetail->status != 'PAID';
                                         @endphp
-                                        <td style="background-color: {{ $amount == 0 ? 'green' : 'red' }}">
-                                            <a href="#" data-bs-toggle="modal"
-                                                data-bs-target="#bayarKilat{{ $bill->id }}_{{ $month }}"> Rp {{
-                                                number_format($amount, 0, ',' , '.' ) }}</a>
-                                        </td>
-                                        <div class="modal fade" id="bayarKilat{{ $bill->id }}_{{ $month }}"
-                                            tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
-                                            <div class="modal-dialog modal-dialog-centered">
-                                                <div class="modal-content">
-                                                    <div class="modal-header">
-                                                        <h5 class="modal-title" id="exampleModalLabel">Bayar Tagihan
-                                                        </h5>
-                                                        <button type="button" class="btn-close" data-bs-dismiss="modal"
-                                                            aria-label="Close"></button>
-                                                    </div>
-                                                    <div class="modal-body">
-                                                        <form action="{{ route('bill.store') }}" method="post">
-                                                            @csrf
-                                                            <div class="mb-3">
-                                                                <label for="recipient-name" class="col-form-label">Saldo
-                                                                    Siswa:</label>
-                                                                <input type="text" class="form-control" id="saldo"
-                                                                    name="saldo"
-                                                                    value="Rp {{ number_format($student->saldo, 0, ',', '.') }}"
-                                                                    readonly>
-                                                            </div>
-                                                            <div class="mb-3">
-                                                                <label for="recipient-name" class="col-form-label">Jenis
-                                                                    Tagihan:</label>
-                                                                <input type="text" class="form-control"
-                                                                    value="{{ @$bill->name .' - '. \Carbon\Carbon::create()->month($month)->translatedFormat('F') }}"
-                                                                    readonly>
-                                                            </div>
-                                                            <div class="mb-2">
-                                                                <label for="amount" class="col-form-label">Jumlah
-                                                                    Pembayaran:</label>
-                                                                <input type="text" class="form-control" id="amount"
-                                                                    name="amount"
-                                                                    value="Rp {{ number_format($amount, 0, ',', '.') }}">
-                                                            </div>
-                                                            <div class="mb-2">
-                                                                <label for="amount" class="col-form-label">Metode
-                                                                    Pembayaran:</label>
-                                                                <select class="form-select" name="payment_method"
-                                                                    required>
-                                                                    <option value="">Pilih Metode Pembayaran</option>
-                                                                    @if ($student->saldo > $amount)
-                                                                    <option value="BALANCE">Saldo</option>
-                                                                    @endif
-                                                                    <option value="CASH">Tunai</option>
-                                                                </select>
-                                                            </div>
-                                                            <div class="modal-footer">
-                                                                <button type="button" class="btn btn-secondary"
-                                                                    data-bs-dismiss="modal">Close</button>
-                                                                <button type="submit"
-                                                                    class="btn btn-primary">Bayar</button>
-                                                            </div>
-                                                        </form>
+                                        <td style="background-color: {{ $statusColor }}">
+                                            @if($showModal)
+                                            <a href="#" data-bs-toggle="modal" data-bs-target="#{{ $modalId }}"> Rp {{
+                                                number_format($amount, 0,
+                                                ',', '.') }}</a>
+                                            <div class="modal fade" id="{{ $modalId }}" tabindex="-1"
+                                                aria-labelledby="exampleModalLabel" aria-hidden="true">
+                                                <div class="modal-dialog modal-dialog-centered">
+                                                    <div class="modal-content">
+                                                        <div class="modal-header">
+                                                            <h5 class="modal-title" id="exampleModalLabel">Bayar Tagihan
+                                                            </h5>
+                                                            <button type="button" class="btn-close"
+                                                                data-bs-dismiss="modal" aria-label="Close"></button>
+                                                        </div>
+                                                        <div class="modal-body">
+                                                            <form action="{{ route('bill.store') }}" method="post">
+                                                                @csrf
+                                                                <div class="mb-3">
+                                                                    <label for="saldo" class="form-label">Saldo
+                                                                        Siswa:</label>
+                                                                    <input type="text" class="form-control" id="saldo"
+                                                                        name="saldo"
+                                                                        value="Rp {{ number_format($student->saldo, 0, ',', '.') }}"
+                                                                        readonly>
+                                                                </div>
+                                                                <div class="mb-3">
+                                                                    <label for="jenis-tagihan" class="form-label">Jenis
+                                                                        Tagihan:</label>
+                                                                    <input type="text" class="form-control"
+                                                                        value="{{ $bill->name }} - {{ \Carbon\Carbon::create()->month($month)->translatedFormat('F') }}"
+                                                                        readonly>
+                                                                </div>
+                                                                <div class="mb-3">
+                                                                    <label for="amount" class="form-label">Jumlah
+                                                                        Pembayaran:</label>
+                                                                    <input type="text" class="form-control" id="amount"
+                                                                        name="amount"
+                                                                        value="Rp {{ number_format($amount, 0, ',', '.') }}">
+                                                                </div>
+                                                                <div class="mb-3">
+                                                                    <label for="payment_method"
+                                                                        class="form-label">Metode Pembayaran:</label>
+                                                                    <select class="form-select" name="payment_method"
+                                                                        required>
+                                                                        <option value="">Pilih Metode Pembayaran
+                                                                        </option>
+                                                                        @if ($student->saldo > $amount)
+                                                                        <option value="BALANCE">Saldo</option>
+                                                                        @endif
+                                                                        <option value="CASH">Tunai</option>
+                                                                    </select>
+                                                                </div>
+                                                                <div class="modal-footer">
+                                                                    <button type="button" class="btn btn-secondary"
+                                                                        data-bs-dismiss="modal">Close</button>
+                                                                    <button type="submit"
+                                                                        class="btn btn-primary">Bayar</button>
+                                                                </div>
+                                                            </form>
+                                                        </div>
                                                     </div>
                                                 </div>
                                             </div>
-                                        </div>
+                                            @else
+                                            <span>Rp {{ number_format($amount, 0, ',', '.') }}</span>
+                                            @endif
+                                        </td>
                                         @endforeach
                                     </tr>
                                     @endforeach
@@ -169,15 +177,89 @@
                                 </thead>
                                 <tbody>
                                     @foreach ($billOthers as $bill)
+
                                     <tr>
                                         <td>{{ $loop->iteration }}</td>
                                         <td>{{ @$bill->name }}</td>
                                         <td>Rp {{ number_format(@$bill->total_unpaid, 0, ',', '.') }}</td>
                                         @foreach (range(1, 12) as $month)
                                         @php
-                                        $amount = @$bill->bills->where('month', $month)->first()->amount ?? 0;
+                                        $billDetail = $bill->bills->where('month', $month)->where('student_id',
+                                        $student->id)->first();
+                                        $amount = $billDetail ? $billDetail->amount : 0;
+                                        $statusColor = $billDetail && $billDetail->status == 'PAID' ? 'green' : 'red';
+                                        $modalId = "bayarKilat{$bill->id}_{$month}";
+                                        $showModal = $billDetail && $billDetail->status != 'PAID';
                                         @endphp
-                                        <td>Rp {{ number_format($amount, 0, ',', '.') }}</td>
+                                        <td style="background-color: {{ $billDetail ? $statusColor : '' }}">
+                                            @if($showModal)
+                                            <a href="#" data-bs-toggle="modal" data-bs-target="#{{ $modalId }}">{{
+                                                $billDetail ? 'Rp ' . number_format($amount, 0, ',', '.') : 'Belum Ada'
+                                                }}</a>
+                                            <div class="modal fade" id="{{ $modalId }}" tabindex="-1"
+                                                aria-labelledby="exampleModalLabel" aria-hidden="true">
+                                                <div class="modal-dialog modal-dialog-centered">
+                                                    <div class="modal-content">
+                                                        <div class="modal-header">
+                                                            <h5 class="modal-title" id="exampleModalLabel">Bayar Tagihan
+                                                            </h5>
+                                                            <button type="button" class="btn-close"
+                                                                data-bs-dismiss="modal" aria-label="Close"></button>
+                                                        </div>
+                                                        <div class="modal-body">
+                                                            <form action="{{ route('bill.store') }}" method="post">
+                                                                @csrf
+                                                                <div class="mb-3">
+                                                                    <label for="saldo" class="form-label">Saldo
+                                                                        Siswa:</label>
+                                                                    <input type="text" class="form-control" id="saldo"
+                                                                        name="saldo"
+                                                                        value="Rp {{ number_format($student->saldo, 0, ',', '.') }}"
+                                                                        readonly>
+                                                                </div>
+                                                                <div class="mb-3">
+                                                                    <label for="jenis-tagihan" class="form-label">Jenis
+                                                                        Tagihan:</label>
+                                                                    <input type="text" class="form-control"
+                                                                        value="{{ $bill->name }} - {{ \Carbon\Carbon::create()->month($month)->translatedFormat('F') }}"
+                                                                        readonly>
+                                                                </div>
+                                                                <div class="mb-3">
+                                                                    <label for="amount" class="form-label">Jumlah
+                                                                        Pembayaran:</label>
+                                                                    <input type="text" class="form-control" id="amount"
+                                                                        name="amount"
+                                                                        value="Rp {{ number_format($amount, 0, ',', '.') }}">
+                                                                </div>
+                                                                <div class="mb-3">
+                                                                    <label for="payment_method"
+                                                                        class="form-label">Metode Pembayaran:</label>
+                                                                    <select class="form-select" name="payment_method"
+                                                                        required>
+                                                                        <option value="">Pilih Metode Pembayaran
+                                                                        </option>
+                                                                        @if ($student->saldo > $amount)
+                                                                        <option value="BALANCE">Saldo</option>
+                                                                        @endif
+                                                                        <option value="CASH">Tunai</option>
+                                                                    </select>
+                                                                </div>
+                                                                <div class="modal-footer">
+                                                                    <button type="button" class="btn btn-secondary"
+                                                                        data-bs-dismiss="modal">Close</button>
+                                                                    <button type="submit"
+                                                                        class="btn btn-primary">Bayar</button>
+                                                                </div>
+                                                            </form>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            @else
+                                            {{ $billDetail ? 'Rp ' . number_format($amount, 0, ',', '.') : 'Belum Ada'
+                                            }}
+                                            @endif
+                                        </td>
                                         @endforeach
                                     </tr>
                                     @endforeach

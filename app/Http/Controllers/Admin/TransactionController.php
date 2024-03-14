@@ -7,6 +7,7 @@ use App\Models\Transaction;
 use Illuminate\Support\Str;
 use Illuminate\Http\Request;
 use App\Models\PaymentMethod;
+use Barryvdh\DomPDF\Facade\Pdf;
 use App\Models\TransactionDetail;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -21,7 +22,8 @@ class TransactionController extends Controller
      */
     public function index()
     {
-        //
+        $transactions = Transaction::with('student', 'transactionDetails.bill')->latest()->get();
+        return view('admin.transaction.index', compact('transactions'));
     }
 
     /**
@@ -107,5 +109,17 @@ class TransactionController extends Controller
     public function destroy(string $id)
     {
         //
+    }
+
+
+    public function invoice($id)
+    {
+        $data = Transaction::findOrFail($id);
+
+        // tampilkan data tanpa download
+        // return view('admins.pdf.transaction-invoice', compact('data'));
+        // $date = date('d/m/Y', strtotime($data->start_date)) . " - " . date('d/m/Y', strtotime($data->end_date));
+        $pdf = Pdf::loadView('admins.pdf.transaction-invoice', compact('data'));
+        return $pdf->stream("Invoice {$data->payment_code}" . '.pdf');
     }
 }

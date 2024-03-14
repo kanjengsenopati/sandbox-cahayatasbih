@@ -46,4 +46,9 @@ class Transaction extends Model
     {
         return $this->belongsTo(PaymentMethod::class)->withTrashed();
     }
+
+    public function student()
+    {
+        return $this->belongsTo(Student::class)->withTrashed();
+    }
 }

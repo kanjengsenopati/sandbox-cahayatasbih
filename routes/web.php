@@ -140,6 +140,7 @@ Route::group(['middleware' => ['auth']], function () {
     Route::resource('help', HelpController::class);
     Route::resource('app-information', AppInformationController::class, ['only' => ['index', 'store']])->names('app-information');
 
+    Route::get('transaction/invoice/{id}', [TransactionController::class, 'invoice'])->name('transaction.invoice');
 
     Route::group(['prefix' => 'information'], function () {
         Route::resource(
