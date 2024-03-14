@@ -186,7 +186,7 @@
             <table width="100%" cellspacing="0" cellpadding="0">
                 <tr>
                     <td>
-                        <img src="{{ asset('assets/media/logos/logo-full.png') }}" width="80" alt="" />
+                        <img src="{{ asset('assets/media/logos/logo-full.png') }}" width="200" alt="" />
                     </td>
                     <td align="right">
                         <h1>INVOICE</h1>
@@ -197,7 +197,7 @@
             <table width="100%" cellspacing="0" cellpadding="0" class="mt-4">
                 <tr>
                     <td width="50%">
-                        <strong class="text-sm">KEPADA</strong>
+                        <strong class="text-sm">Informasi Transaksi</strong>
                         <table width="100%">
                             <tr>
                                 <td style="white-space: nowrap" width="15%" class="text-muted">Tanggal Pembelian</td>
@@ -302,11 +302,10 @@
             </table>
             <table width="100%" class="mt-5">
                 <tr>
-                    <td width="50%" style="font-weight: 600; font-size: 14px;">
+                    <td width="50%">
                         Invoice ini sah dan telah diproses secara otomatis oleh sistem kami.<br>
                         Jangan ragu untuk menghubungi <a href="https://cahayatasbih.or.id/" target="_blank"
-                            class="text-primary text-decoration-none"
-                            style="font-weight: 600; color: #4D0C7A;">Puskominfo PPTQ Cahaya
+                            class="text-primary text-decoration-none" style="font-weight: 600;">Puskominfo PPTQ Cahaya
                             Tasbih</a> jika Anda membutuhkan bantuan lebih lanjut.
                     </td>
                     <td width="50%" align="right" style="vertical-align: bottom">
