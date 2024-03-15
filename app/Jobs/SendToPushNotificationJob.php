@@ -3,6 +3,7 @@
 namespace App\Jobs;
 
 use App\Models\Notification;
+use App\Services\NotificationService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Queue\SerializesModels;
@@ -38,27 +39,6 @@ class SendToPushNotificationJob implements ShouldQueue
      */
     public function handle(): void
     {
-        try {
-            $messaging = app('firebase.messaging');
-            $this->payload ? $type = get_class($this->payload) : $type = null;
-            $this->payload ? $this->payload['notification_type'] =  str_replace('App\\Models\\', '', $type) : null;
-            $data = [
-                'title' => $this->title,
-                'body'  => $this->body,
-                'payload'  => $this->payload,
-                'type'      => str_replace('App\\Models\\', '', $type),
-                'reference_id'  => $this->payload?->id,
-                'user_id' => $this->user->id
-            ];
-            Notification::create($data);
-            if ($this->user->fcm_token) {
-                $message = CloudMessage::withTarget('token', $this->user->fcm_token)
-                    ->withNotification($data)
-                    ->withData($data);
-                $messaging->send($message);
-            }
-        } catch (\Throwable $th) {
-            Log::error($th->getMessage());
-        }
+        NotificationService::sendTo($this->title, $this->body, $this->user, $this->payload, $this->image);
     }
 }

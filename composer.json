@@ -19,6 +19,7 @@
         "maatwebsite/excel": "^3.1",
         "milon/barcode": "^10.0",
         "mjaschen/phpgeo": "^4.2",
+        "opcodesio/log-viewer": "^3.6",
         "simplesoftwareio/simple-qrcode": "^4.2",
         "spatie/laravel-activitylog": "^4.7",
         "spatie/laravel-image-optimizer": "^1.7",

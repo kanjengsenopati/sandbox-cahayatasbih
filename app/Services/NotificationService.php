@@ -63,16 +63,14 @@ class NotificationService
             // Convert $payload to a string representation if it's an array
             $payloadString = is_array($payload) ? json_encode($payload) : $payload;
 
-            $type = $payload ? get_class($payload) : null;
-
-            $payload['notification_type'] = str_replace('App\\Models\\', '', $type);
+            $type = $payload ? class_basename($payload) : null;
 
             $data = [
                 'title'      => $title,
                 'body'       => $body,
                 'payload'    => $payloadString,
-                'type'       => str_replace('App\\Models\\', '', $type),
-                'reference_id'  => $payload->id,
+                'type'       => $type ? str_replace('App\\Models\\', '', $type) : null,
+                'reference_id'  => $payload ? $payload->id : null,
                 'channel_id' => 'id.cahayatasbih.app',
                 'user_id'    => $user->id,
             ];
@@ -82,12 +80,16 @@ class NotificationService
                     ->withNotification($data)
                     ->withData($data);
 
-                return $messaging->send($message);
-            } else {
-                return false;
+                $messaging->send($message);
             }
+
+            // Simpan riwayat notifikasi
+            Notification::create($data);
+
+            return true;
         } catch (\Throwable $th) {
-            return $th;
+            Log::error($th);
+            return false;
         }
     }
 
@@ -133,39 +135,32 @@ class NotificationService
         }
     }
 
-    public static function sendSome($title, $body, $user, $payload = null, $image = null)
+    public static function sendSome($title, $body, $users, $payload = null, $image = null)
     {
         try {
-
-
             $messaging = app('firebase.messaging');
             $data = [];
 
-            foreach ($user as $value) {
+            foreach ($users as $user) {
+                $type = $payload ? class_basename($payload) : 'Notification';
 
-                $notif = Notification::create($value);
-                if ($payload) {
-                    $type = get_class($payload);
-                    $payload['notification_type'] =  str_replace('App\\Models\\', '', $type);
-                } else {
-                    $type = 'Notification';
-                }
                 $item = [
-                    'title'         => $title,
-                    'body'          => $body,
-                    'user_id'       => $value->id,
-                    'payload'       => $payload,
-                    'type'          => str_replace('App\\Models\\', '', $type),
-                    'reference_id'  => $payload ? $payload->id : $notif->id,
-                    'channel_id'    => 'com.cancreative.ess_ksp',
-                    'created_at'    => now()->toDateTimeString(),
-                    'updated_at'    => now()->toDateTimeString(),
+                    'id' => (string) Str::uuid(),
+                    'title' => $title,
+                    'body' => $body,
+                    'user_id' => $user->id,
+                    'payload' => $payload,
+                    'type' => $type,
+                    'reference_id' => $payload ? $payload->id : null,
+                    // 'channel_id' => 'id.cahayatasbih.app',
+                    'created_at' => now()->toDateTimeString(),
+                    'updated_at' => now()->toDateTimeString(),
                 ];
 
                 $data[] = $item;
 
-                if ($value->fcm_token) {
-                    $message = CloudMessage::withTarget('token', $value->fcm_token)
+                if ($user->fcm_token) {
+                    $message = CloudMessage::withTarget('token', $user->fcm_token)
                         ->withNotification($item)
                         ->withData($item);
 
@@ -175,9 +170,10 @@ class NotificationService
 
             $chunks = array_chunk($data, 5000);
 
-            // foreach ($chunks as $value) {
-            //     Notification::insert($value);
-            // }
+            foreach ($chunks as $chunk) {
+                // Simpan riwayat notifikasi
+                Notification::insert($chunk);
+            }
 
             return $messaging;
         } catch (\Exception $e) {
@@ -185,8 +181,6 @@ class NotificationService
             return null;
         }
     }
-
-
 
     public static function sendToTrainer($title, $body, $trainer, $payload = null, $image = null)
     {

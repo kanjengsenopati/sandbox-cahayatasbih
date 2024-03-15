@@ -8,12 +8,14 @@ use App\Models\Client;
 use App\Models\Article;
 use App\Models\Student;
 use App\Models\Classroom;
+use App\Models\Transaction;
 use Illuminate\Http\Request;
 use App\Models\HistoryDownload;
 use Yajra\DataTables\DataTables;
 use App\Models\WhiteBlowingSystem;
+use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\Controller;
-use App\Models\Transaction;
+use App\Services\NotificationService;
 
 class DashboardController extends Controller
 {
@@ -22,6 +24,15 @@ class DashboardController extends Controller
      */
     public function index()
     {
+        // try {
+        //     $data = Transaction::where('status', Transaction::STATUS_PAID)->first();
+        //     $title = 'Hallo Kak';
+        //     $message = 'Ini adalah notifikasi';
+        //     $users = User::where('name', 'like', '%dian%')->first();
+        //     NotificationService::sendTo($title, $message, $users, $data);
+        // } catch (\Exception $e) {
+        //     Log::error('Error sending notification: ' . $e->getMessage());
+        // }
         $total_students = Student::count();
         $total_classes = Classroom::count();
         $data = [
