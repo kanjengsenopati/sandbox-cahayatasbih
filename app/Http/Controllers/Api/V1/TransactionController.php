@@ -18,6 +18,7 @@ use App\Services\TransactionService;
 use App\Jobs\SendToPushNotificationJob;
 use App\Jobs\SendToWhatsappNotificationJob;
 use App\Http\Requests\Api\V1\TransactionRequest;
+use App\Models\SavingHistory;
 
 class TransactionController extends Controller
 {
@@ -149,6 +150,12 @@ class TransactionController extends Controller
                     $transaction->transactionDetails->first()->saldoHistory->update([
                         'status' => SaldoHistory::STATUS_SUCCESS
                     ]);
+                } elseif ($transaction->type == Transaction::TYPE_SAVING) {
+                    foreach ($transaction->transactionDetails as $detail) {
+                        $detail->savingHistory->update([
+                            'status' => SavingHistory::STATUS_SUCCESS
+                        ]);
+                    }
                 } else {
                     foreach ($transaction->transactionDetails as $detail) {
                         $detail->bill->update([

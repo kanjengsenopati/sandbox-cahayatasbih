@@ -60,7 +60,7 @@ Route::group(['prefix' => 'v1', 'middleware' => 'validate_api_key'], function ()
         // start saving
         Route::group(['prefix' => 'saving'], function () {
             Route::get('/', [SavingController::class, 'index']);
-            Route::post('/topup', [SavingController::class, 'topupSaving']);
+            Route::post('/topup', [SavingController::class, 'topup']);
             Route::post('/withdraw', [SavingController::class, 'withdrawSaving']);
         });
 

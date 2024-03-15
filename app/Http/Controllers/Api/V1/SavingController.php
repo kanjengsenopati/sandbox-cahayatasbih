@@ -91,6 +91,7 @@ class SavingController extends Controller
     private function createSavingHistory($request)
     {
         return SavingHistory::create([
+            'date' => Carbon::now()->format('Y-m-d'), // 'date' => '2021-08-01
             'student_id' => $request->student_id,
             'amount' => $request->amount,
             'type' => SavingHistory::TYPE_IN,
