@@ -29,7 +29,7 @@ class SendToWhatsappNotificationJob implements ShouldQueue
         $this->number = $number;
         $this->message = $message;
         $this->deviceId = ApplicationSetting::latest()->value('device_id');
-        $this->url = ApplicationSetting::latest()->value('link_whatsapp');
+        $this->url = ApplicationSetting::latest()->value('link_whatsapp') . '/send';
     }
 
     /**
