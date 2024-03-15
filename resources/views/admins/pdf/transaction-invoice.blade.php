@@ -241,6 +241,25 @@
                     </tr>
                     @endforeach
                 </tbody>
+                @elseif ($data->type == 'SAVING')
+                <thead>
+                    <th>Nama Pembayaran</th>
+                    <th class="text-end">Jumlah</th>
+                    <th class="text-end">Keterangan</th>
+                </thead>
+                <tbody>
+                    @foreach ($data->transactionDetails as $transaction_detail)
+                    <tr>
+                        <td class="text-primary" width="50%">
+                            <span>Tabungan</span>
+                        </td>
+                        <td align="right">Rp. {{ number_format($transaction_detail->savingHistory->amount, 0, ',', '.')
+                            }}
+                        </td>
+                        <td align="right">{{ $transaction_detail->savingHistory->description ?? '' }}</td>
+                    </tr>
+                    @endforeach
+                </tbody>
                 @elseif ($data->type == 'BILL')
                 <thead>
                     <th>
