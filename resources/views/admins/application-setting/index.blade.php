@@ -67,14 +67,49 @@
                                     <div class="col-6">
                                         <!--begin::Label-->
                                         <label class="fs-6 fw-bold form-label" for="payment_fee">
-                                            <span class="required">Fee Payment</span>
+                                            <span class="required">Fee Xendit</span>
                                             <i class="fas fa-exclamation-circle ms-1 fs-7" data-bs-toggle="tooltip"
                                                 title="Masukkan Fee Pembayaran"></i>
                                         </label>
-                                        <input type="number" class="form-control form-control-solid" id="payment_fee"
-                                            name="payment_fee" placeholder="Masukkan Fee Pembayaran"
-                                            value="{{ @$applicationSetting->payment_fee ?? old('payment_fee') }}"
-                                            required />
+                                        <div class="input-group">
+                                            <span class="input-group-text">Rp</span>
+                                            <input type="number" class="form-control form-control-solid"
+                                                id="payment_fee" name="payment_fee" placeholder="Masukkan Fee Xendit"
+                                                value="{{ @$applicationSetting->payment_fee ?? old('payment_fee') }}"
+                                                required />
+                                        </div>
+                                    </div>
+                                    <div class="col-6">
+                                        <!--begin::Label-->
+                                        <label class="fs-6 fw-bold form-label" for="bill_fee">
+                                            <span class="required">Fee Tagihan</span>
+                                            <i class="fas fa-exclamation-circle ms-1 fs-7" data-bs-toggle="tooltip"
+                                                title="Masukkan Fee Pembayaran"></i>
+                                        </label>
+                                        <div class="input-group">
+                                            <span class="input-group-text">Rp</span>
+                                            <input type="number" class="form-control form-control-solid" id="bill_fee"
+                                                name="bill_fee" placeholder="Masukkan Fee Tagihan"
+                                                value="{{ @$applicationSetting->bill_fee ?? old('bill_fee') }}"
+                                                required />
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="row mb-6">
+                                    <div class="col-6">
+                                        <!--begin::Label-->
+                                        <label class="fs-6 fw-bold form-label" for="saldo_fee">
+                                            <span class="required">Fee Saldo</span>
+                                            <i class="fas fa-exclamation-circle ms-1 fs-7" data-bs-toggle="tooltip"
+                                                title="Masukkan Fee Pembayaran"></i>
+                                        </label>
+                                        <div class="input-group">
+                                            <input type="number" class="form-control form-control-solid" id="saldo_fee"
+                                                name="saldo_fee" placeholder="Masukkan Fee Saldo"
+                                                value="{{ @$applicationSetting->saldo_fee ?? old('saldo_fee') }}"
+                                                required />
+                                            <span class="input-group-text">%</span>
+                                        </div>
                                     </div>
 
                                     <div class="col-6">
@@ -91,10 +126,11 @@
                                             required />
                                     </div>
 
-                                    <!--end::Label-->
-                                    <!--begin::Input-->
-                                    <!--end::Input-->
                                 </div>
+
+                                <!--end::Label-->
+                                <!--begin::Input-->
+
 
                                 <div class="row mb-6">
                                     <div class="col-6">
@@ -126,28 +162,37 @@
                                     </div>
                                 </div>
 
-
-                                {{-- <div class="fv-row mb-6">
+                                <div class="row mb-6">
                                     <!--begin::Label-->
-
-                                    <!--end::Label-->
-                                    <!--begin::Input-->
-                                    <!--end::Input-->
-                                </div> --}}
-
-                                <div class="fv-row mb-6">
-                                    <!--begin::Label-->
-                                    <label class="fs-6 fw-bold form-label" for="device_id">
-                                        <span class="required">Device ID</span>
-                                        <i class="fas fa-exclamation-circle ms-1 fs-7" data-bs-toggle="tooltip"
-                                            title="Masukkan device id yang diperolah dari aplikasi whatsapp gateway"></i>
-                                    </label>
-                                    <input type="text" class="form-control form-control-solid" id="device_id"
-                                        name="device_id" placeholder="Masukkan Device ID"
-                                        value="{{ @$applicationSetting->device_id ?? old('device_id') }}" required />
-                                    <!--end::Label-->
-                                    <!--begin::Input-->
-                                    <!--end::Input-->
+                                    <div class="col-6">
+                                        <label class="fs-6 fw-bold form-label" for="api_key">
+                                            <span class="required">Status Device ID</span>
+                                            {{-- add info text with color red or green --}}
+                                            <i class="fas fa-exclamation-circle ms-1 fs-7" data-bs-toggle="tooltip"
+                                                title="Status Device ID"></i>
+                                        </label>
+                                        {{-- no input only info --}}
+                                        <div class="form-control form-control-solid">
+                                            <span
+                                                class="badge badge-{{ @$applicationSetting->whatsapp_status ? 'success' : 'danger' }}">
+                                                {{ @$applicationSetting->whatsapp_status ? 'Aktif' : 'Tidak Aktif' }}
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <div class="col-6">
+                                        <label class="fs-6 fw-bold form-label" for="device_id">
+                                            <span class="required">Device ID</span>
+                                            <i class="fas fa-exclamation-circle ms-1 fs-7" data-bs-toggle="tooltip"
+                                                title="Masukkan device id yang diperolah dari aplikasi whatsapp gateway"></i>
+                                        </label>
+                                        <input type="text" class="form-control form-control-solid" id="device_id"
+                                            name="device_id" placeholder="Masukkan Device ID"
+                                            value="{{ @$applicationSetting->device_id ?? old('device_id') }}"
+                                            required />
+                                        <!--end::Label-->
+                                        <!--begin::Input-->
+                                        <!--end::Input-->
+                                    </div>
                                 </div>
 
                                 <div class="fv-row mb-6">

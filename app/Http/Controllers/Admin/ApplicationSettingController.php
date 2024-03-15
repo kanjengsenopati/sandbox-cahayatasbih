@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use App\Models\ApplicationSetting;
 use Illuminate\Console\Application;
 use App\Http\Controllers\Controller;
+use Illuminate\Support\Facades\Http;
 use App\Http\Requests\Admin\ApplicationSettingRequest;
 
 class ApplicationSettingController extends Controller

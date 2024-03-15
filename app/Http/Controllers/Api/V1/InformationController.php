@@ -6,6 +6,7 @@ use App\Models\Help;
 use Illuminate\Http\Request;
 use App\Models\AppInformation;
 use App\Http\Controllers\Controller;
+use App\Models\ApplicationSetting;
 
 class InformationController extends Controller
 {
@@ -20,5 +21,11 @@ class InformationController extends Controller
     {
         $helps = Help::latest()->get();
         return $this->getSuccessResponse($helps);
+    }
+
+    public function appSetting()
+    {
+        $applicationSetting = ApplicationSetting::latest()->first();
+        return $this->getSuccessResponse($applicationSetting);
     }
 }

@@ -95,6 +95,7 @@ Route::group(['prefix' => 'v1', 'middleware' => 'validate_api_key'], function ()
     Route::group(['prefix' => 'information'], function () {
         Route::get('/', [InformationController::class, 'index']);
         Route::get('/help', [InformationController::class, 'help']);
+        Route::get('app-setting', [InformationController::class, 'appSetting']);
     });
 });
 

@@ -3,9 +3,10 @@
 namespace App\Models;
 
 use App\Traits\UuidTrait;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class ApplicationSetting extends Model
 {
@@ -18,5 +19,26 @@ class ApplicationSetting extends Model
         'link_whatsapp',
         'number_whatsapp',
         'device_id',
+        'bill_fee',
+        'saldo_fee',
     ];
+
+    protected $appends = [
+        'whatsapp_status'
+    ];
+
+    public function getWhatsappStatusAttribute()
+    {
+        $device_id = $this->device_id;
+        $link = $this->link_whatsapp;
+        if ($device_id) {
+            $url = $link . 'statusDevice?device_id=' . $device_id;
+            // add header to get data from api
+            $response = Http::withHeaders([
+                'Accept' => 'application/json',
+            ])->get($url);
+            return $response->json()['status'];
+        }
+        return null;
+    }
 }

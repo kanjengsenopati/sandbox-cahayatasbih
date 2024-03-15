@@ -28,6 +28,8 @@ class ApplicationSettingRequest extends FormRequest
             'device_id' => 'required',
             'payment_fee' => 'required|numeric',
             'student_card_image' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
+            'bill_fee' => 'required|numeric',
+            'saldo_fee' => 'required|numeric',
         ];
     }
 }
