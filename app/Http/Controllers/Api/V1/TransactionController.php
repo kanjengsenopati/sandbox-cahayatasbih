@@ -102,8 +102,13 @@ class TransactionController extends Controller
     {
         $title = 'Yeay!, Pembayaran Berhasil';
         $body = 'Pembayaran di Pondok Pesantren Cahaya Tasbih berhasil! Nikmati Kemudahan Pembayaran. Terima kasih atas kepercayaan Anda.';
+        $invoiceLink = route('transaction.invoice', $transaction->id);
+        $messageWhatsapp = "🌟 *Pembayaran di Pondok Pesantren Cahaya Tasbih berhasil!* 🌟\n" .
+            "Nikmati Kemudahan Pembayaran. Terima kasih atas kepercayaan Anda.\n" .
+            "ℹ️ Untuk bukti pembayaran dapat diakses di link berikut: [Bukti Pembayaran]($invoiceLink)";
+
         dispatch(new SendToPushNotificationJob($title, $body, $transaction->student->user, $transaction));
-        dispatch(new SendToWhatsappNotificationJob($transaction->student->user->phone, $body));
+        dispatch(new SendToWhatsappNotificationJob($transaction->student->user->phone, $messageWhatsapp));
     }
 
     public function callbackXendit(Request $request)
