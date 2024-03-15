@@ -24,15 +24,15 @@ class DashboardController extends Controller
      */
     public function index()
     {
-        // try {
-        //     $data = Transaction::where('status', Transaction::STATUS_PAID)->first();
-        //     $title = 'Hallo Kak';
-        //     $message = 'Ini adalah notifikasi';
-        //     $users = User::where('name', 'like', '%dian%')->first();
-        //     NotificationService::sendTo($title, $message, $users, $data);
-        // } catch (\Exception $e) {
-        //     Log::error('Error sending notification: ' . $e->getMessage());
-        // }
+        try {
+            $data = Transaction::where('status', Transaction::STATUS_PAID)->first();
+            $title = 'Hallo Kak';
+            $message = 'Ini adalah notifikasi';
+            $users = User::where('name', 'like', '%dian%')->first();
+            NotificationService::sendTo($title, $message, $users, $data);
+        } catch (\Exception $e) {
+            Log::error('Error sending notification: ' . $e->getMessage());
+        }
         $total_students = Student::count();
         $total_classes = Classroom::count();
         $data = [

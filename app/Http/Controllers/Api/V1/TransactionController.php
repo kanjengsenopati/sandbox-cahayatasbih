@@ -100,8 +100,8 @@ class TransactionController extends Controller
     private function dispatchNotifications($transaction)
     {
         $title = 'Yeay!, Pembayaran Berhasil';
-        $body = 'Pembayaran di Pondok Pesantren Cahaya Tasbih berhasil! Nikmati pengalaman tanpa hambatan. Terima kasih atas kepercayaan Anda.';
-        dispatch(new SendToPushNotificationJob($title, $body, $transaction->user, $transaction));
+        $body = 'Pembayaran di Pondok Pesantren Cahaya Tasbih berhasil! Nikmati Kemudahan Pembayaran. Terima kasih atas kepercayaan Anda.';
+        dispatch(new SendToPushNotificationJob($title, $body, $transaction->student->user, $transaction));
     }
 
     public function callbackXendit(Request $request)
