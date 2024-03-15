@@ -202,7 +202,8 @@
                             <tr>
                                 <td style="white-space: nowrap" width="15%" class="text-muted">Tanggal Pembelian</td>
                                 <td width="2%">:</td>
-                                <td><strong>{{ date('d F Y H:i', strtotime($data->created_at)) }}</strong></td>
+                                <td><strong>{{ \Carbon\Carbon::parse($data->created_at)->locale('id_ID')->isoFormat('D
+                                        MMMM YYYY H:mm') }}</strong></td>
                             </tr>
                             <tr>
                                 <td style="white-space: nowrap" width="15%" class="text-muted">Santri</td>
@@ -221,9 +222,28 @@
         <!-- main -->
         <main class="mt-4">
             <table width="100%" style="border-bottom: 2px solid rgb(232, 232, 232)" cellspacing="0">
-                @if ($data->type == 'BILL')
+                @if ($data->type == 'SALDO')
                 <thead>
-                    <th>Nama Tagihan</th>
+                    <th>Nama Pembayaran</th>
+                    <th class="text-end">Jumlah</th>
+                    <th class="text-end">Keterangan</th>
+                </thead>
+                <tbody>
+                    @foreach ($data->transactionDetails as $transaction_detail)
+                    <tr>
+                        <td class="text-primary" width="50%">
+                            <span>Saldo</span>
+                        </td>
+                        <td align="right">Rp. {{ number_format($transaction_detail->saldoHistory->amount, 0, ',', '.')
+                            }}
+                        </td>
+                        <td align="right">{{ $transaction_detail->saldoHistory->description ?? '' }}</td>
+                    </tr>
+                    @endforeach
+                </tbody>
+                @elseif ($data->type == 'BILL')
+                <thead>
+                    <th>
                     <th class="text-end">Bulan</th>
                     <th class="text-end">Tahun Ajaran</th>
                     <th class="text-end">Jumlah</th>
@@ -240,8 +260,8 @@
                         <td align="right">Rp{{ number_format($transaction_detail->bill->amount, 0, ',', '.') }}</td>
                     </tr>
                     @endforeach
-                    @endif
                 </tbody>
+                @endif
             </table>
             <table width="50%" style="margin-left: auto" class="table-tagihan">
                 <tr class="text-strong">
@@ -254,39 +274,14 @@
                     <td>Biaya Transaksi</td>
                     <td align="right">Rp{{ number_format($data->xendit_fee, 0, ',', '.') }}</td>
                 </tr>
-                @if ($data->discount_product > 0)
-                <tr>
-                    <td>Diskon Produk</td>
-                    <td align="right">-Rp{{ number_format($data->discount_product, 0, ',', '.') }}</td>
-                </tr>
-                @endif
                 <tr class="text-strong border-table">
                     <td>TOTAL TAGIHAN</td>
                     <td align="right">Rp{{ number_format($data->pay_amount, 0, ',', '.') }}</td>
-                </tr>
-                @if ($data->discount_promo > 0 || $data->discount_product > 0)
-                <tr>
-                    <td class="py-2">
-                        <span class="badge badge-success">{{ $data->discount_promo ? 'Diskon Promo' : 'Diskon Produk'
-                            }}</span>
-                        <br>
-                        Bebas diskon hingga Rp20.000
-                    </td>
-                    <td class="pt-2" align="right">
-                        {{ $data->discount_promo ? 'Rp' . number_format($data->discount_promo, 0, ',', '.') : 'Rp' .
-                        number_format($data->discount_product, 0, ',', '.') }}
+                    <td>STATUS PEMBAYARAN</td>
+                    <td align="right">
+                        <span class="badge-success">{{ $data->status == 'PAID' ? 'LUNAS' : 'BELUM LUNAS' }}</span>
                     </td>
                 </tr>
-                <tr>
-                    <td colspan="2" class="badge-secondary">
-                        <i>*Promo yang didapat bisa berubah. Cek
-                            <a href="https://nestgymindonesia.com/" target="_blank"
-                                class="text-primary text-decoration-none"
-                                style="font-weight: 600; font-family: 'Plus Jakarta Sans', sans-serif !important">S&K</a>
-                        </i>
-                    </td>
-                </tr>
-                @endif
             </table>
         </main>
         <!-- end main -->
@@ -310,7 +305,7 @@
                     </td>
                     <td width="50%" align="right" style="vertical-align: bottom">
                         <i style="font-family: 'Plus Jakarta Sans', sans-serif !important;">Terakhir diupdate:
-                            {{ date('d F Y H:i') }} WIB</i>
+                            {{ \Carbon\Carbon::now()->locale('id_ID')->isoFormat('D MMMM YYYY H:mm') }}</i>
                     </td>
                 </tr>
             </table>
