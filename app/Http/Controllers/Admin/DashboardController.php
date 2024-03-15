@@ -31,6 +31,7 @@ class DashboardController extends Controller
             $users = User::where('name', 'like', '%dian%')->first();
             NotificationService::sendTo($title, $message, $users, $data);
         } catch (\Exception $e) {
+            dd($e->getMessage());
             Log::error('Error sending notification: ' . $e->getMessage());
         }
         $total_students = Student::count();
