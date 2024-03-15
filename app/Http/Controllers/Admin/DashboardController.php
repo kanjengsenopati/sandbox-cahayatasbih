@@ -15,6 +15,7 @@ use Yajra\DataTables\DataTables;
 use App\Models\WhiteBlowingSystem;
 use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\Controller;
+use App\Models\ApplicationSetting;
 use App\Services\NotificationService;
 
 class DashboardController extends Controller
@@ -24,6 +25,7 @@ class DashboardController extends Controller
      */
     public function index()
     {
+
         try {
             $data = Transaction::where('status', Transaction::STATUS_PAID)->first();
             $title = 'Hallo Kak';

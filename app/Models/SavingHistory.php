@@ -36,4 +36,9 @@ class SavingHistory extends Model
     {
         return $this->belongsTo(Admin::class)->withTrashed();
     }
+
+    public function transactionDetail()
+    {
+        return $this->hasOne(TransactionDetail::class);
+    }
 }

@@ -15,6 +15,7 @@ class TransactionDetail extends Model
         'transaction_id',
         'bill_id',
         'saldo_history_id',
+        'saving_history_id',
     ];
 
     public function transaction()
@@ -30,5 +31,10 @@ class TransactionDetail extends Model
     public function saldoHistory()
     {
         return $this->belongsTo(SaldoHistory::class)->withTrashed();
+    }
+
+    public function savingHistory()
+    {
+        return $this->belongsTo(SavingHistory::class)->withTrashed();
     }
 }

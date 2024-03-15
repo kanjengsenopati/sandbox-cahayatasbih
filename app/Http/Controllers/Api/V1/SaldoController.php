@@ -9,12 +9,13 @@ use Illuminate\Support\Str;
 use App\Models\SaldoHistory;
 use Illuminate\Http\Request;
 use App\Models\PaymentMethod;
-use App\Http\Controllers\Controller;
-use App\Http\Requests\Api\V1\SettLimitRequest;
-use App\Services\TransactionService;
-use App\Http\Requests\Api\V1\TopupSaldoRequest;
+use App\Models\ApplicationSetting;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use App\Http\Controllers\Controller;
+use App\Services\TransactionService;
+use App\Http\Requests\Api\V1\SettLimitRequest;
+use App\Http\Requests\Api\V1\TopupSaldoRequest;
 
 class SaldoController extends Controller
 {
@@ -130,11 +131,12 @@ class SaldoController extends Controller
 
     private function createTransaction(TopupSaldoRequest $request, $paymentCode)
     {
+        $expiryTimeInMinutes = ApplicationSetting::latest()->first()->getPaymentExpireTimeInMinutesAttribute();
         $transactionData = [
             'pay_amount' => $request->amount,
             'payment_code' => $paymentCode,
             'student_id' => $request->student_id,
-            'expiry_time' => Carbon::now()->addDay(),
+            'expiry_time' => Carbon::now()->addMinutes($expiryTimeInMinutes),
             'status' => Transaction::STATUS_PENDING,
             'paid_at' => null,
             'type' => Transaction::TYPE_SALDO,

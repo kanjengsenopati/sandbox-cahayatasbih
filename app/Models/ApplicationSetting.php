@@ -41,4 +41,13 @@ class ApplicationSetting extends Model
         }
         return null;
     }
+
+    public function getPaymentExpireTimeInMinutesAttribute(): int
+    {
+        // Explode the time string to get hours and minutes
+        [$hours, $minutes] = explode(':', $this->attributes['payment_expire_time']);
+
+        // Konversi jam ke menit dan tambahkan dengan menit, lalu kembalikan jumlah total menit
+        return ($hours * 60) + $minutes;
+    }
 }

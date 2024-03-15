@@ -10,13 +10,14 @@ use Illuminate\Support\Str;
 use App\Models\SaldoHistory;
 use Illuminate\Http\Request;
 use App\Models\PaymentMethod;
+use App\Models\ApplicationSetting;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\Controller;
 use App\Services\TransactionService;
 use App\Jobs\SendToPushNotificationJob;
-use App\Http\Requests\Api\V1\TransactionRequest;
 use App\Jobs\SendToWhatsappNotificationJob;
+use App\Http\Requests\Api\V1\TransactionRequest;
 
 class TransactionController extends Controller
 {
@@ -67,13 +68,15 @@ class TransactionController extends Controller
 
     private function createTransaction(TransactionRequest $request, $paymentMethodType)
     {
+
+        $expiryTimeInMinutes = ApplicationSetting::latest()->first()->getPaymentExpireTimeInMinutesAttribute();
         $paymentCode = 'CHT-' . Str::random(3) . time();
 
         $transactionData = [
             'pay_amount' => $this->getTotalPayAmount($request->bill_ids),
             'payment_code' => $paymentCode,
             'student_id' => $request->student_id,
-            'expiry_time' => Carbon::now()->addDay(),
+            'expiry_time' => Carbon::now()->addMinutes($expiryTimeInMinutes),
             'status' => Transaction::STATUS_PENDING,
             'paid_at' => null,
         ];
