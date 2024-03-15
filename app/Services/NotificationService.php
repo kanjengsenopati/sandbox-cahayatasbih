@@ -66,12 +66,13 @@ class NotificationService
             $type = $payload ? class_basename($payload) : null;
 
             $data = [
+                'id' => (string) Str::uuid(),
                 'title'      => $title,
                 'body'       => $body,
                 'payload'    => $payloadString,
                 'type'       => $type ? str_replace('App\\Models\\', '', $type) : null,
                 'reference_id'  => $payload ? $payload->id : null,
-                'channel_id' => 'id.cahayatasbih.app',
+                // 'channel_id' => 'id.cahayatasbih.app',
                 'user_id'    => $user->id,
             ];
 
