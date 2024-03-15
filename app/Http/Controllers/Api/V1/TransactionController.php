@@ -16,6 +16,7 @@ use App\Http\Controllers\Controller;
 use App\Services\TransactionService;
 use App\Jobs\SendToPushNotificationJob;
 use App\Http\Requests\Api\V1\TransactionRequest;
+use App\Jobs\SendToWhatsappNotificationJob;
 
 class TransactionController extends Controller
 {
@@ -102,6 +103,7 @@ class TransactionController extends Controller
         $title = 'Yeay!, Pembayaran Berhasil';
         $body = 'Pembayaran di Pondok Pesantren Cahaya Tasbih berhasil! Nikmati Kemudahan Pembayaran. Terima kasih atas kepercayaan Anda.';
         dispatch(new SendToPushNotificationJob($title, $body, $transaction->student->user, $transaction));
+        dispatch(new SendToWhatsappNotificationJob($transaction->student->user->phone, $body));
     }
 
     public function callbackXendit(Request $request)
