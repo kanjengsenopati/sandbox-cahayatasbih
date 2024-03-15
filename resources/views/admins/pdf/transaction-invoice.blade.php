@@ -274,13 +274,15 @@
                     <td>Biaya Transaksi</td>
                     <td align="right">Rp{{ number_format($data->xendit_fee, 0, ',', '.') }}</td>
                 </tr>
-                <td>STATUS PEMBAYARAN</td>
-                <td align="right">
-                    <span class="badge-success">{{ $data->status == 'PAID' ? 'LUNAS' : 'BELUM LUNAS' }}</span>
-                </td>
                 <tr class="text-strong border-table">
                     <td>TOTAL TAGIHAN</td>
                     <td align="right">Rp{{ number_format($data->pay_amount, 0, ',', '.') }}</td>
+                </tr>
+                <tr class="text-strong">
+                    <td>STATUS PEMBAYARAN</td>
+                    <td align="right">
+                        <span class="badge-success">{{ $data->status == 'PAID' ? 'LUNAS' : 'BELUM LUNAS' }}</span>
+                    </td>
                 </tr>
             </table>
         </main>
