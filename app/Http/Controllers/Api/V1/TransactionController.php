@@ -40,7 +40,7 @@ class TransactionController extends Controller
             $transaction = TransactionService::createTransaction($request, $paymentMethodType);
 
             if ($paymentMethodType == PaymentMethod::TYPE_XENDIT) {
-                TransactionService::createInvoice($transaction);
+                TransactionService::createInvoice($transaction, $request);
             } elseif ($paymentMethodType == PaymentMethod::TYPE_BALANCE) {
                 $payAmount = $transaction->pay_amount;
                 $student = Student::find($request->student_id);

@@ -99,9 +99,8 @@ class SaldoController extends Controller
 
             $this->createTransactionDetail($transaction, $saldoHistory);
 
-            TransactionService::createInvoice($transaction);
-
             if ($paymentMethodType == PaymentMethod::TYPE_XENDIT) {
+                TransactionService::createInvoice($transaction, $request);
                 $response = $this->postSuccessResponse("Berhasil melakukan transaksi pembayaran", $transaction->payment_link);
             } else {
                 $response = $this->postSuccessResponse('Berhasil Membayar Tagihan', ['transaction' => $transaction]);
@@ -131,9 +130,10 @@ class SaldoController extends Controller
 
     private function createTransaction(TopupSaldoRequest $request, $paymentCode)
     {
-        $expiryTimeInMinutes = ApplicationSetting::latest()->first()->getPaymentExpireTimeInMinutesAttribute();
+        $appSetting = ApplicationSetting::latest()->first();
+        $expiryTimeInMinutes = $appSetting->getPaymentExpireTimeInMinutesAttribute();
         $transactionData = [
-            'pay_amount' => $request->amount,
+            'pay_amount' => $request->amount + $appSetting->payment_fee + ($request->amount * $appSetting->saldo_fee / 100),
             'payment_code' => $paymentCode,
             'student_id' => $request->student_id,
             'expiry_time' => Carbon::now()->addMinutes($expiryTimeInMinutes),
