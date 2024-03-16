@@ -24,7 +24,7 @@ class ForgotPasswordController extends Controller
         $this->saveToken($request, $token);
         // 3. Kirim token ke nomor telepon user
         $this->sendToken($request, $token);
-        return response()->json(['message' => 'Token dikirim ke nomor telepon Anda']);
+        return $this->postSuccessResponse("Kode berhasil dikirim", null);
     }
 
     private function generateToken()
@@ -34,28 +34,37 @@ class ForgotPasswordController extends Controller
 
     private function saveToken($request, $token)
     {
-        DB::table('password_reset_tokens')->insert([
-            'phone' => $request->phone,
-            'token' => $token,
-            'created_at' => now()
-        ]);
+        $tokenData = DB::table('password_reset_tokens')->where('phone', $request->phone)->first();
+
+        // Lakukan operasi update atau insert dengan menggunakan method ternary
+        return $tokenData ?
+            DB::table('password_reset_tokens')
+            ->where('phone', $request->phone)
+            ->update(['token' => $token, 'created_at' => now()]) :
+            DB::table('password_reset_tokens')->insert([
+                'phone' => $request->phone,
+                'token' => $token, 'created_at' => now()
+            ]);
     }
+
 
     private function sendToken($request, $token)
     {
         // Kirim pesan WhatsApp menggunakan job yang di-dispatch
-        $message = "Assalamualaikum, Anda telah meminta reset kata sandi. " .
-            "Berikut adalah kode reset kata sandi Anda: " . $token . ". " .
+        $message = "🔒 *Reset Password*\n" .
+            "Assalamualaikum, Anda telah meminta reset kata sandi. " .
+            "Berikut adalah kode reset kata sandi Anda: *{$token}*. " .
             "Silakan masukkan kode ini untuk melanjutkan proses reset kata sandi.";
 
         // Tambahkan footer
-        $footer = "\n\nTerima kasih,\nPPTQ Cahaya Tasbih";
+        $footer = "\n\n*Terima kasih,*\n*PPTQ Cahaya Tasbih*";
 
         // Gabungkan pesan dengan footer
         $fullMessage = $message . $footer;
 
         dispatch(new SendToWhatsappNotificationJob($request->phone, $fullMessage));
     }
+
 
     public function matchToken(Request $request)
     {
