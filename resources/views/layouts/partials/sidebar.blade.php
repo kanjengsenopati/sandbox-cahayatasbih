@@ -400,8 +400,9 @@
                     </div>
                 </div>
 
-                <div data-kt-menu-trigger="click"
-                    class="menu-item menu-accordion {{ request()->routeIs(['payment-method.*','application-setting.*', 'help.*', 'app-information.*']) ? 'show' : '' }}">
+                <div data-kt-menu-trigger="click" class="menu-item menu-accordion {{ request()->routeIs([
+                    'payment-method.*', 'application-setting.*', 'help.*',
+                     'app-information.*', 'application-menu.*']) ? 'show' : '' }}">
                     <span class="menu-link ">
                         <span class="menu-icon">
                             <i class="fa-solid fa-gear" style="color: #ffffff;"></i>
@@ -427,6 +428,15 @@
                                     <span class="bullet bullet-dot"></span>
                                 </span>
                                 <span class="menu-title">Pengaturan Aplikasi</span>
+                            </a>
+                        </div>
+                        <div class="menu-item ">
+                            <a class="menu-link {{ request()->routeIs('application-menu.*') ? ' active' : '' }}"
+                                href="{{ route('application-menu.index') }}">
+                                <span class="menu-bullet">
+                                    <span class="bullet bullet-dot"></span>
+                                </span>
+                                <span class="menu-title">Menu Aplikasi</span>
                             </a>
                         </div>
                         <div class="menu-item ">
