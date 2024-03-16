@@ -91,7 +91,7 @@ class ForgotPasswordController extends Controller
         $this->validate($request, [
             'phone' => 'required|numeric|exists:users,phone',
             'token' => 'required',
-            'password' => 'required|min:6|confirmed'
+            'password' => 'required',
         ]);
         // 1. Ambil data token
         $tokenData = DB::table('password_reset_tokens')
