@@ -23,8 +23,27 @@ class Item extends Model
         'is_active',
     ];
 
+    protected $appends = [
+        'total_selling'
+    ];
+
+    public function getTotalSellingAttribute()
+    {
+        return PointOfSaleTransactionDetail::where('item_id', $this->id)->sum('quantity');
+    }
+
     public function categoryItem()
     {
-        return $this->belongsTo(CategoryItem::class);
+        return $this->belongsTo(CategoryItem::class)->withTrashed();
+    }
+
+    public function stockHistories()
+    {
+        return $this->hasMany(StockHistory::class);
+    }
+
+    public function pointOfSaleTransactionDetails()
+    {
+        return $this->hasMany(PointOfSaleTransactionDetail::class)->withTrashed();
     }
 }

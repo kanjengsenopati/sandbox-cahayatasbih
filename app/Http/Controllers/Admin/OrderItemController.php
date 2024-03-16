@@ -8,13 +8,76 @@ use App\Models\SaldoHistory;
 use Illuminate\Http\Request;
 use App\Models\PaymentMethod;
 use App\Models\PointOfSaleCart;
+use Yajra\DataTables\DataTables;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\Controller;
 use App\Models\PointOfSaleTransaction;
+use App\Models\PointOfSaleTransactionDetail;
 
 class OrderItemController extends Controller
 {
+
+    public function dashboard()
+    {
+        $totalTransaction = PointOfSaleTransaction::where('status', PointOfSaleTransaction::STATUS_SUCCESS)->count();
+        $totalProfit = PointOfSaleTransactionDetail::whereHas('pointOfSaleTransaction', function ($query) {
+            $query->where('status', PointOfSaleTransaction::STATUS_SUCCESS);
+        })->sum('total');
+        $totalSellingProduct = PointOfSaleTransactionDetail::whereHas('pointOfSaleTransaction', function ($query) {
+            $query->where('status', PointOfSaleTransaction::STATUS_SUCCESS);
+        })->sum('quantity');
+        $totalItemAvailable = Item::where('stock', '>', 0)->where('is_active', true)->count();
+        $totalItem = Item::where('is_active', true)->count();
+        $totalStudent = Student::count();
+
+        $statistic = [
+            'totalTransaction' => $totalTransaction,
+            'totalProfit' => $totalProfit,
+            'totalSellingProduct' => $totalSellingProduct,
+            'totalItemAvailable' => $totalItemAvailable,
+            'totalItem' => $totalItem,
+            'totalStudent' => $totalStudent,
+        ];
+
+        if (request()->ajax()) {
+            return $this->getItemsDataTable();
+        }
+
+        return view('admins.pos.dashboard', compact('statistic'));
+    }
+
+    private function getItemsDataTable()
+    {
+        $data = Item::where('is_active', true)->with('categoryItem')->get()->sortByDesc('total_selling');
+
+        return DataTables::of($data)
+            ->addColumn('status', function ($data) {
+                return $data->is_active == 1 ? '<span class="badge badge-success">Aktif</span>' :
+                    '<span class="badge badge-danger">Tidak Aktif</span>';
+            })
+            ->addColumn('category', function ($data) {
+                return $data->categoryItem->name;
+            })
+            ->addColumn('total_selling', function ($data) {
+                return $data->total_selling;
+            })
+            ->editColumn('price', function ($data) {
+                return 'Rp. ' . number_format($data->price, 0, ',', '.');
+            })
+            ->addColumn('action', function ($data) {
+                $actionEdit = route('item.edit', $data->id);
+                $actionDelete = route('item.destroy', $data->id);
+                return "<div class='d-flex justify-content-center'>" .
+                    view('components.action.edit', ['action' => $actionEdit]) .
+                    view('components.action.delete', ['action' => $actionDelete, 'id' => $data->id]) .
+                    "</div>";
+            })
+            ->rawColumns(['action', 'status', 'total_selling'])
+            ->make(true);
+    }
+
+
     /**
      * Display a listing of the resource.
      */

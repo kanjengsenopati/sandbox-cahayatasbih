@@ -93,6 +93,7 @@ Route::group(['middleware' => ['auth']], function () {
     Route::resource('stock-history', StockHistoryController::class);
 
     // Start POS
+    Route::get('pos/dashboard', [OrderItemController::class, 'dashboard'])->name('pos.dashboard');
     Route::get('order-item/get-total-price', [OrderItemController::class, 'getTotalPrice'])
         ->name('order-item.get-total-price');
     Route::post('order-item/search-student', [OrderItemController::class, 'getStudentByBarcode'])
@@ -152,7 +153,6 @@ Route::group(['middleware' => ['auth']], function () {
             TermConditionController::class,
             ['only' => ['index', 'store']]
         )->names('term-condition');
-        Route::resource('disclaimer', DisclaimerController::class, ['only' => ['index', 'store']])->names('disclaimer');
     });
 });
 Route::get('transaction/invoice/{id}', [TransactionController::class, 'invoice'])->name('transaction.invoice');

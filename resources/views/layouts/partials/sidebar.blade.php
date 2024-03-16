@@ -212,7 +212,6 @@
                     </div>
                 </div>
 
-
                 <div data-kt-menu-trigger="click"
                     class="menu-item menu-accordion {{ request()->routeIs(['student-achievement.*','student-counseling-score.*','schedule.*']) ? 'show' : '' }}">
                     <span class="menu-link ">
@@ -258,7 +257,7 @@
                 </div>
 
                 <div data-kt-menu-trigger="click"
-                    class="menu-item menu-accordion {{ request()->routeIs(['category-item.*','item.*', 'stock-history.*','order-item.*', 'order-item-history.*']) ? 'show' : '' }}">
+                    class="menu-item menu-accordion {{ request()->routeIs(['category-item.*','item.*', 'stock-history.*','order-item.*', 'order-item-history.*','pos.dashboard']) ? 'show' : '' }}">
                     <span class="menu-link ">
                         <span class="menu-icon">
                             <i class="fa-solid fa-box" style="color: #ffffff;"></i>
@@ -268,38 +267,14 @@
                     </span>
                     <div class="menu-sub menu-sub-accordion menu-active-bg">
                         <div class="menu-item ">
-                            <a class="menu-link {{ request()->routeIs('category-item.*') ? ' active' : '' }}"
-                                href="{{ route('category-item.index') }}">
+                            <a class="menu-link {{ request()->routeIs('pos.dashboard') ? ' active' : '' }}"
+                                href="{{ route('pos.dashboard') }}">
                                 <span class="menu-bullet">
                                     <span class="bullet bullet-dot"></span>
                                 </span>
-                                <span class="menu-title">Kategori Barang</span>
+                                <span class="menu-title">Dashboard POS</span>
                             </a>
                         </div>
-                    </div>
-                    <div class="menu-sub menu-sub-accordion menu-active-bg">
-                        <div class="menu-item ">
-                            <a class="menu-link {{ request()->routeIs('item.*') ? ' active' : '' }}"
-                                href="{{ route('item.index') }}">
-                                <span class="menu-bullet">
-                                    <span class="bullet bullet-dot"></span>
-                                </span>
-                                <span class="menu-title">Data Barang</span>
-                            </a>
-                        </div>
-                    </div>
-                    <div class="menu-sub menu-sub-accordion menu-active-bg">
-                        <div class="menu-item ">
-                            <a class="menu-link {{ request()->routeIs('stock-history.*') ? ' active' : '' }}"
-                                href="{{ route('stock-history.index') }}">
-                                <span class="menu-bullet">
-                                    <span class="bullet bullet-dot"></span>
-                                </span>
-                                <span class="menu-title">Data Stok</span>
-                            </a>
-                        </div>
-                    </div>
-                    <div class="menu-sub menu-sub-accordion menu-active-bg">
                         <div class="menu-item ">
                             <a class="menu-link {{ request()->routeIs('order-item.*') ? ' active' : '' }}"
                                 href="{{ route('order-item.index') }}">
@@ -309,8 +284,6 @@
                                 <span class="menu-title">Transaksi</span>
                             </a>
                         </div>
-                    </div>
-                    <div class="menu-sub menu-sub-accordion menu-active-bg">
                         <div class="menu-item ">
                             <a class="menu-link {{ request()->routeIs('order-item-history.*') ? ' active' : '' }}"
                                 href="{{ route('order-item-history.index') }}">
@@ -318,6 +291,33 @@
                                     <span class="bullet bullet-dot"></span>
                                 </span>
                                 <span class="menu-title">Riwayat Transaksi</span>
+                            </a>
+                        </div>
+                        <div class="menu-item ">
+                            <a class="menu-link {{ request()->routeIs('category-item.*') ? ' active' : '' }}"
+                                href="{{ route('category-item.index') }}">
+                                <span class="menu-bullet">
+                                    <span class="bullet bullet-dot"></span>
+                                </span>
+                                <span class="menu-title">Kategori Barang</span>
+                            </a>
+                        </div>
+                        <div class="menu-item ">
+                            <a class="menu-link {{ request()->routeIs('item.*') ? ' active' : '' }}"
+                                href="{{ route('item.index') }}">
+                                <span class="menu-bullet">
+                                    <span class="bullet bullet-dot"></span>
+                                </span>
+                                <span class="menu-title">Data Barang</span>
+                            </a>
+                        </div>
+                        <div class="menu-item ">
+                            <a class="menu-link {{ request()->routeIs('stock-history.*') ? ' active' : '' }}"
+                                href="{{ route('stock-history.index') }}">
+                                <span class="menu-bullet">
+                                    <span class="bullet bullet-dot"></span>
+                                </span>
+                                <span class="menu-title">Data Stok</span>
                             </a>
                         </div>
                     </div>
