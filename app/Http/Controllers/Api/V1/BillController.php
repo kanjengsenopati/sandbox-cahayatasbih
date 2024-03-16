@@ -19,11 +19,8 @@ class BillController extends Controller
 
         $billTypes = BillType::whereHas('bills', function ($query) use ($studentId) {
             $query->where('student_id', $studentId);
+            $query->where('status', Bill::STATUS_UNPAID);
         })
-            ->whereDoesntHave('bills', function ($query) use ($studentId) {
-                $query->where('student_id', $studentId);
-                $query->where('status', '!=', Bill::STATUS_UNPAID);
-            })
             ->with(['billItem', 'academicYear'])
             ->latest()
             ->get()
