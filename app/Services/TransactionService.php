@@ -97,7 +97,7 @@ class TransactionService
         $invoice = self::sendCreateInvoiceRequest($invoiceData);
 
         // Updating transaction data
-        self::updateTransactionData($transaction, $appSetting, $expiredTimeInMinutes, $invoice);
+        self::updateTransactionData($transaction, $invoice, $expiredTimeInMinutes);
 
         // Refreshing transaction
         $transaction->refresh();
@@ -107,7 +107,8 @@ class TransactionService
 
     private static function prepareInvoiceData($transaction, $appSetting, $expiredTimeInMinutes)
     {
-        $amount = $transaction->pay_amount + $appSetting->payment_fee + $appSetting->bill_fee;
+        $app_fee = $transaction->type == Transaction::TYPE_BILL ? $appSetting->bill_fee : ($transaction->pay_amount * $appSetting->saldo_fee / 100);
+        $amount = $transaction->pay_amount + $app_fee + $appSetting->payment_fee;
 
         return [
             'external_id' => $transaction->payment_code,
@@ -127,8 +128,10 @@ class TransactionService
         return $apiInstance->createInvoice(new CreateInvoiceRequest($invoiceData));
     }
 
-    private static function updateTransactionData($transaction, $appSetting, $expiredTimeInMinutes, $invoice)
+    private static function updateTransactionData($transaction, $invoice, $expiredTimeInMinutes)
     {
+        $appSetting = ApplicationSetting::latest()->first();
+
         $transaction->update([
             'xendit_fee' => $appSetting->payment_fee,
             'app_fee' => $transaction->type == Transaction::TYPE_BILL ? $appSetting->bill_fee : ($transaction->pay_amount * $appSetting->saldo_fee / 100),
@@ -137,36 +140,6 @@ class TransactionService
             'payment_link' => $invoice['invoice_url']
         ]);
     }
-
-
-    // public static function createInvoice($transaction, $request)
-    // {
-    //     $appSetting = ApplicationSetting::latest()->first();
-    //     $expiredTimeInMinutes = $appSetting->getPaymentExpireTimeInMinutesAttribute();
-    //     Configuration::setXenditKey(env('XENDIT_API_KEY'));
-    //     $apiInstance = new InvoiceApi();
-    //     $createInvoice = new CreateInvoiceRequest([
-    //         'external_id' => $transaction->payment_code,
-    //         'description' => 'Transaksi ' . $transaction->payment_code,
-    //         'amount' => $transaction->pay_amount + $appSetting->payment_fee + ($transaction->type == Transaction::TYPE_BILL ? $appSetting->bill_fee : ($request->amount * $appSetting->saldo_fee / 100)),
-    //         'invoice_duration' => $expiredTimeInMinutes * 60,
-    //         'currency' => 'IDR',
-    //         'reminder_time' => 1,
-    //         'payer_email' => env('XENDIT_PAYER_EMAIL'),
-    //         'local' => 'id'
-    //     ]);
-    //     $invoice = $apiInstance->createInvoice($createInvoice);
-    //     $transaction->update([
-    //         'xendit_fee' => $appSetting->payment_fee,
-    //         'app_fee' => $transaction->type == Transaction::TYPE_BILL ? $appSetting->bill_fee : ($request->amount * $appSetting->saldo_fee / 100),
-    //         'xendit_id' => $invoice['id'],
-    //         'expiry_time' => Carbon::now()->addMinutes($expiredTimeInMinutes),
-    //         'payment_link' => $invoice['invoice_url']
-    //     ]);
-
-    //     $transaction->refresh();
-    //     return $invoice;
-    // }
 
     public static function createTransaction($request, $paymentMethodType)
     {
