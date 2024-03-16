@@ -5,6 +5,7 @@ use App\Models\Information;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\BillController;
+use App\Http\Controllers\Api\V1\ForgotPasswordController;
 use App\Http\Controllers\Api\V1\HomeController;
 use App\Http\Controllers\Api\V1\SaldoController;
 use App\Http\Controllers\Api\V1\SavingController;
@@ -104,7 +105,18 @@ Route::group(['prefix' => 'v1', 'middleware' => 'validate_api_key'], function ()
         Route::get('/help', [InformationController::class, 'help']);
         Route::get('app-setting', [InformationController::class, 'appSetting']);
     });
+    // start forgot password
+    Route::group(
+        ['prefix' => 'forgot-password'],
+        function () {
+            Route::get('request-token', [ForgotPasswordController::class, 'requestToken']);
+            Route::post('match-token', [ForgotPasswordController::class, 'matchToken']);
+            Route::post('reset-password', [ForgotPasswordController::class, 'resetPassword']);
+        }
+    );
 });
+
+
 
 Route::group(['middleware' => 'xendit'], function () {
     Route::post('callback-xendit', [TransactionController::class, 'callbackXendit']);
