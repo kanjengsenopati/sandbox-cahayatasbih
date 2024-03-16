@@ -40,7 +40,7 @@ class TransactionController extends Controller
             $transaction = TransactionService::createTransaction($request, $paymentMethodType);
 
             if ($paymentMethodType == PaymentMethod::TYPE_XENDIT) {
-                TransactionService::createInvoice($transaction, $request);
+                TransactionService::createInvoice($transaction);
             } elseif ($paymentMethodType == PaymentMethod::TYPE_BALANCE) {
                 $payAmount = $transaction->pay_amount;
                 $student = Student::find($request->student_id);
@@ -62,7 +62,7 @@ class TransactionController extends Controller
             }
         } catch (\Throwable $th) {
             DB::rollBack();
-            Log::error($th->getMessage());
+            Log::error($th);
             return $this->failedResponse("Gagal melakukan transaksi pembayaran");
         }
     }

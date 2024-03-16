@@ -133,7 +133,7 @@ class SaldoController extends Controller
         $appSetting = ApplicationSetting::latest()->first();
         $expiryTimeInMinutes = $appSetting->getPaymentExpireTimeInMinutesAttribute();
         $transactionData = [
-            'pay_amount' => $request->amount + $appSetting->payment_fee + ($request->amount * $appSetting->saldo_fee / 100),
+            'pay_amount' => $request->amount,
             'payment_code' => $paymentCode,
             'student_id' => $request->student_id,
             'expiry_time' => Carbon::now()->addMinutes($expiryTimeInMinutes),

@@ -81,7 +81,7 @@ class TransactionService
         self::changeStatusToPaid($transaction);
     }
 
-    public static function createInvoice($transaction, $request)
+    public static function createInvoice($transaction)
     {
         // Fetching application settings
         $appSetting = ApplicationSetting::latest()->first();
@@ -93,7 +93,7 @@ class TransactionService
         Configuration::setXenditKey(env('XENDIT_API_KEY'));
 
         // Creating Xendit Invoice
-        $invoiceData = self::prepareInvoiceData($transaction, $request, $appSetting, $expiredTimeInMinutes);
+        $invoiceData = self::prepareInvoiceData($transaction, $appSetting, $expiredTimeInMinutes);
         $invoice = self::sendCreateInvoiceRequest($invoiceData);
 
         // Updating transaction data
@@ -105,10 +105,9 @@ class TransactionService
         return $invoice;
     }
 
-    private static function prepareInvoiceData($transaction, $request, $appSetting, $expiredTimeInMinutes)
+    private static function prepareInvoiceData($transaction, $appSetting, $expiredTimeInMinutes)
     {
-        $amount = $transaction->pay_amount + $appSetting->payment_fee +
-            ($transaction->type == Transaction::TYPE_BILL ? $appSetting->bill_fee : ($request->amount * $appSetting->saldo_fee / 100));
+        $amount = $transaction->pay_amount + $appSetting->payment_fee + $appSetting->bill_fee;
 
         return [
             'external_id' => $transaction->payment_code,
@@ -132,7 +131,7 @@ class TransactionService
     {
         $transaction->update([
             'xendit_fee' => $appSetting->payment_fee,
-            'app_fee' => $transaction->type == Transaction::TYPE_BILL ? $appSetting->bill_fee : ($request->amount * $appSetting->saldo_fee / 100),
+            'app_fee' => $transaction->type == Transaction::TYPE_BILL ? $appSetting->bill_fee : ($transaction->pay_amount * $appSetting->saldo_fee / 100),
             'xendit_id' => $invoice['id'],
             'expiry_time' => Carbon::now()->addMinutes($expiredTimeInMinutes),
             'payment_link' => $invoice['invoice_url']
