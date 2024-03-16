@@ -123,4 +123,10 @@ class SavingController extends Controller
             'saving_history_id' => $savingHistory->id
         ]);
     }
+
+    public function show($id)
+    {
+        $saldoHistory = SavingHistory::with('student', 'admin', 'transactionDetail.transaction')->findOrFail($id);
+        return $this->getSuccessResponse($saldoHistory);
+    }
 }

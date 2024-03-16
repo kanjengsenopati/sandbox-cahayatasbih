@@ -61,7 +61,7 @@ Route::group(['prefix' => 'v1', 'middleware' => 'validate_api_key'], function ()
         Route::group(['prefix' => 'saving'], function () {
             Route::get('/', [SavingController::class, 'index']);
             Route::post('/topup', [SavingController::class, 'topup']);
-            Route::post('/withdraw', [SavingController::class, 'withdrawSaving']);
+            Route::get('/{id}', [SavingController::class, 'show']);
         });
 
         // start tahfidz
