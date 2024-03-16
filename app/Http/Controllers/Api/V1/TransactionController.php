@@ -156,6 +156,11 @@ class TransactionController extends Controller
                             'status' => SavingHistory::STATUS_SUCCESS
                         ]);
                     }
+
+                    $student = Student::find($transaction->student_id);
+                    $student->update([
+                        'saving' => $student->saving + $transaction->pay_amount
+                    ]);
                 } else {
                     foreach ($transaction->transactionDetails as $detail) {
                         $detail->bill->update([
