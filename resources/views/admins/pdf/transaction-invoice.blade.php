@@ -285,7 +285,14 @@
             <table width="50%" style="margin-left: auto" class="table-tagihan">
                 <tr class="text-strong">
                     <td>SUB TOTAL</td>
-                    <td align="right">Rp{{ number_format($data->transactionDetails->sum('bill.amount'), 0, ',', '.') }}
+                    <td align="right">
+                        @if ($data->type == 'BILL')
+                        Rp{{ number_format($data->transactionDetails->sum('bill.amount'), 0, ',', '.') }}
+                        @elseif ($data->type == 'SAVING')
+                        Rp{{ number_format($data->transactionDetails->sum('savingHistory.amount'), 0, ',', '.') }}
+                        @elseif ($data->type == 'SALDO')
+                        Rp{{ number_format($data->transactionDetails->sum('saldoHistory.amount'), 0, ',', '.') }}
+                        @endif
                     </td>
                 </tr>
 
@@ -293,9 +300,14 @@
                     <td>Biaya Transaksi</td>
                     <td align="right">Rp{{ number_format($data->xendit_fee, 0, ',', '.') }}</td>
                 </tr>
+                <tr>
+                    <td>Biaya Aplikasi</td>
+                    <td align="right">Rp{{ number_format($data->app_fee, 0, ',', '.') }}</td>
+                </tr>
                 <tr class="text-strong border-table">
                     <td>TOTAL TAGIHAN</td>
-                    <td align="right">Rp{{ number_format($data->pay_amount, 0, ',', '.') }}</td>
+                    @php $total = $data->pay_amount + $data->xendit_fee + $data->app_fee; @endphp
+                    <td align="right">Rp{{ number_format($total, 0, ',', '.') }}</td>
                 </tr>
                 <tr class="text-strong">
                     <td>STATUS PEMBAYARAN</td>
