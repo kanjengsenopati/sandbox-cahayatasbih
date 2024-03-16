@@ -6,6 +6,7 @@ use App\Models\StudyGrade;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use App\Models\Classroom;
+use App\Models\Semester;
 
 class StudyGradeController extends Controller
 {
@@ -40,5 +41,11 @@ class StudyGradeController extends Controller
             $query->where('student_id', $student_id);
         })->get();
         return $this->getSuccessResponse($classroom);
+    }
+
+    public function listSemester()
+    {
+        $semester = Semester::orderBy('order', 'asc')->get();
+        return $this->getSuccessResponse($semester);
     }
 }

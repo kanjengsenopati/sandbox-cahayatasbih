@@ -90,6 +90,7 @@ Route::group(['prefix' => 'v1', 'middleware' => 'validate_api_key'], function ()
         Route::group(['prefix' => 'study-grade'], function () {
             Route::get('/', [StudyGradeController::class, 'index']);
             Route::get('/list-classroom', [StudyGradeController::class, 'listClassroom']);
+            Route::get('list-semester', [StudyGradeController::class, 'listSemester']);
         });
 
         // start profile
