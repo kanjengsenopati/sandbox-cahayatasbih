@@ -8,6 +8,7 @@ use App\Http\Controllers\Admin\ItemController;
 use App\Http\Controllers\Admin\RoleController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\AdminController;
+use App\Http\Controllers\Admin\StudyController;
 use App\Http\Controllers\Admin\SchoolController;
 use App\Http\Controllers\Admin\ContactController;
 use App\Http\Controllers\Admin\Select2Controller;
@@ -16,6 +17,7 @@ use App\Http\Controllers\Admin\TahfidzController;
 use App\Http\Controllers\Admin\BillItemController;
 use App\Http\Controllers\Admin\BillTypeController;
 use App\Http\Controllers\Admin\ScheduleController;
+use App\Http\Controllers\Admin\SemesterController;
 use App\Http\Controllers\Admin\ClassroomController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\OrderItemController;
@@ -41,7 +43,7 @@ use App\Http\Controllers\Admin\ApplicationSettingController;
 use App\Http\Controllers\Admin\StudentAchievementController;
 use App\Http\Controllers\Admin\InformationCategoryController;
 use App\Http\Controllers\Admin\StudentCounselingScoreController;
-
+use App\Http\Controllers\Admin\StudyGradeController;
 
 /*
 |--------------------------------------------------------------------------
@@ -141,6 +143,10 @@ Route::group(['middleware' => ['auth']], function () {
     Route::resource('help', HelpController::class);
     Route::resource('app-information', AppInformationController::class, ['only' => ['index', 'store']])->names('app-information');
 
+    // start study
+    Route::resource('study', StudyController::class);
+    Route::resource('semester', SemesterController::class);
+    Route::resource('study-grade', StudyGradeController::class);
 
     Route::group(['prefix' => 'information'], function () {
         Route::resource(

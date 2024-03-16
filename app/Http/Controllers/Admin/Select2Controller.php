@@ -4,8 +4,10 @@ namespace App\Http\Controllers\Admin;
 
 use App\Models\Item;
 use App\Models\User;
+use App\Models\Study;
 use App\Models\Student;
 use App\Models\BillItem;
+use App\Models\Semester;
 use App\Models\Classroom;
 use App\Models\AcademicYear;
 use App\Models\CategoryItem;
@@ -24,6 +26,8 @@ class Select2Controller extends Controller
             'ITEM' => $this->item($request),
             'BILL_ITEM' => $this->billItem($request),
             'ACADEMIC_YEAR' => $this->academicYear($request),
+            'STUDY' => $this->study($request),
+            'SEMESTER' => $this->semester($request),
         };
         return response()->json($data);
     }
@@ -75,6 +79,21 @@ class Select2Controller extends Controller
     public function academicYear($request)
     {
         return AcademicYear::whereRaw('LOWER(name) like ?', ['%' . strtolower($request->search) . '%'])
+            ->take(10)
+            ->get();
+    }
+
+    public function study($request)
+    {
+        return Study::whereRaw('LOWER(name) like ?', ['%' . strtolower($request->search) . '%'])
+            ->take(10)
+            ->get();
+    }
+
+    public function semester($request)
+    {
+        return Semester::whereRaw('LOWER(name) like ?', ['%' . strtolower($request->search) . '%'])
+            ->orderBy('order')
             ->take(10)
             ->get();
     }

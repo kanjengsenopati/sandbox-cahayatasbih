@@ -7,11 +7,12 @@ use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\BillController;
 use App\Http\Controllers\Api\V1\HomeController;
 use App\Http\Controllers\Api\V1\SaldoController;
+use App\Http\Controllers\Api\V1\SavingController;
 use App\Http\Controllers\Api\V1\ProfileController;
 use App\Http\Controllers\Api\V1\TahfidzController;
 use App\Http\Controllers\Api\V1\ScheduleController;
+use App\Http\Controllers\Api\V1\StudyGradeController;
 use App\Http\Controllers\Api\V1\InformationController;
-use App\Http\Controllers\Api\V1\SavingController;
 use App\Http\Controllers\Api\V1\TransactionController;
 use App\Http\Controllers\Api\V1\StudentAchievementController;
 use App\Http\Controllers\Api\V1\StudentCounselingScoreController;
@@ -82,6 +83,12 @@ Route::group(['prefix' => 'v1', 'middleware' => 'validate_api_key'], function ()
         // start schedule
         Route::group(['prefix' => 'schedule'], function () {
             Route::get('/', [ScheduleController::class, 'index']);
+        });
+
+        // start study-grade
+        Route::group(['prefix' => 'study-grade'], function () {
+            Route::get('/', [StudyGradeController::class, 'index']);
+            Route::get('/list-classroom', [StudyGradeController::class, 'listClassroom']);
         });
 
         // start profile

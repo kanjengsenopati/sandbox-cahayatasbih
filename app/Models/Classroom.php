@@ -26,4 +26,9 @@ class Classroom extends Model
     {
         return $this->hasMany(Student::class);
     }
+
+    public function studyGrades()
+    {
+        return $this->hasMany(StudyGrade::class);
+    }
 }
