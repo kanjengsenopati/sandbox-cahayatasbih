@@ -10,15 +10,16 @@ use Illuminate\Support\Str;
 use App\Models\SaldoHistory;
 use Illuminate\Http\Request;
 use App\Models\PaymentMethod;
+use App\Models\SavingHistory;
 use App\Models\ApplicationSetting;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\Controller;
+use App\Services\SendNotifWaService;
 use App\Services\TransactionService;
 use App\Jobs\SendToPushNotificationJob;
 use App\Jobs\SendToWhatsappNotificationJob;
 use App\Http\Requests\Api\V1\TransactionRequest;
-use App\Models\SavingHistory;
 
 class TransactionController extends Controller
 {
@@ -105,12 +106,8 @@ class TransactionController extends Controller
     private function dispatchNotifications($transaction)
     {
         $title = 'Yeay!, Pembayaran Berhasil';
-        $body = 'Pembayaran di Pondok Pesantren Cahaya Tasbih berhasil! Nikmati Kemudahan Pembayaran. Terima kasih atas kepercayaan Anda.';
-        $invoiceLink = route('transaction.invoice', $transaction->id);
-        $messageWhatsapp = "🌟 *Pembayaran di Pondok Pesantren Cahaya Tasbih berhasil!* 🌟\n" .
-            "Nikmati Kemudahan Pembayaran. Terima kasih atas kepercayaan Anda.\n" .
-            "ℹ️ Untuk bukti pembayaran dapat diakses di link berikut: [Bukti Pembayaran]($invoiceLink)";
-
+        $body = 'Pembayaran di Pondok Pesantren Cahaya Tasbih berhasil! Terima kasih telah membayar tagihan';
+        $messageWhatsapp = SendNotifWaService::sendMessageBillNotification($transaction);
         dispatch(new SendToPushNotificationJob($title, $body, $transaction->student->user, $transaction));
         dispatch(new SendToWhatsappNotificationJob($transaction->student->user->phone, $messageWhatsapp));
     }

@@ -15,8 +15,10 @@ use Yajra\DataTables\DataTables;
 use App\Models\WhiteBlowingSystem;
 use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\Controller;
+use App\Jobs\SendToWhatsappNotificationJob;
 use App\Models\ApplicationSetting;
 use App\Services\NotificationService;
+use App\Services\SendNotifWaService;
 
 class DashboardController extends Controller
 {
@@ -27,7 +29,9 @@ class DashboardController extends Controller
     {
 
         try {
-            $data = Transaction::where('status', Transaction::STATUS_PAID)->first();
+            $data = Transaction::where('status', Transaction::STATUS_PAID)->where('type', Transaction::TYPE_BILL)->latest()->first();
+            // $message = SendNotifWaService::sendPaymentBillNotification($data);
+            // SendToWhatsappNotificationJob::dispatch($data->student->user->phone, $message);
             $title = 'Hallo Kak';
             $message = 'Ini adalah notifikasi';
             $users = User::where('name', 'like', '%dian%')->first();
