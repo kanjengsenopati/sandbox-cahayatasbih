@@ -25,6 +25,7 @@ use App\Http\Controllers\Admin\TranslateController;
 use App\Http\Controllers\Admin\DisclaimerController;
 use App\Http\Controllers\Admin\HomeSliderController;
 use App\Http\Controllers\Admin\PermissionController;
+use App\Http\Controllers\Admin\StudyGradeController;
 use App\Http\Controllers\Admin\ImageUploadController;
 use App\Http\Controllers\Admin\InformationController;
 use App\Http\Controllers\Admin\PaymentRateController;
@@ -38,12 +39,12 @@ use App\Http\Controllers\Admin\PrivacyPolicyController;
 use App\Http\Controllers\Admin\SavingHistoryController;
 use App\Http\Controllers\Admin\TermConditionController;
 use App\Http\Controllers\Admin\AppInformationController;
+use App\Http\Controllers\Admin\ApplicationMenuController;
 use App\Http\Controllers\Admin\OrderItemHistoryController;
 use App\Http\Controllers\Admin\ApplicationSettingController;
 use App\Http\Controllers\Admin\StudentAchievementController;
 use App\Http\Controllers\Admin\InformationCategoryController;
 use App\Http\Controllers\Admin\StudentCounselingScoreController;
-use App\Http\Controllers\Admin\StudyGradeController;
 
 /*
 |--------------------------------------------------------------------------
@@ -147,6 +148,8 @@ Route::group(['middleware' => ['auth']], function () {
     Route::resource('study', StudyController::class);
     Route::resource('semester', SemesterController::class);
     Route::resource('study-grade', StudyGradeController::class);
+    Route::post('application-menu/status/{id}', [ApplicationMenuController::class, 'status'])->name('application-menu.status');
+    Route::resource('application-menu', ApplicationMenuController::class);
 
     Route::group(['prefix' => 'information'], function () {
         Route::resource(

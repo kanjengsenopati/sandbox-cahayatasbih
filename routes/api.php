@@ -5,7 +5,6 @@ use App\Models\Information;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\BillController;
-use App\Http\Controllers\Api\V1\ForgotPasswordController;
 use App\Http\Controllers\Api\V1\HomeController;
 use App\Http\Controllers\Api\V1\SaldoController;
 use App\Http\Controllers\Api\V1\SavingController;
@@ -15,6 +14,8 @@ use App\Http\Controllers\Api\V1\ScheduleController;
 use App\Http\Controllers\Api\V1\StudyGradeController;
 use App\Http\Controllers\Api\V1\InformationController;
 use App\Http\Controllers\Api\V1\TransactionController;
+use App\Http\Controllers\Api\V1\ForgotPasswordController;
+use App\Http\Controllers\Api\V1\ApplicationMenuController;
 use App\Http\Controllers\Api\V1\StudentAchievementController;
 use App\Http\Controllers\Api\V1\StudentCounselingScoreController;
 
@@ -106,6 +107,12 @@ Route::group(['prefix' => 'v1', 'middleware' => 'validate_api_key'], function ()
         Route::get('/help', [InformationController::class, 'help']);
         Route::get('app-setting', [InformationController::class, 'appSetting']);
     });
+
+    // start application menu
+    Route::group(['prefix' => 'application-menu'], function () {
+        Route::get('/', [ApplicationMenuController::class, 'index']);
+    });
+
     // start forgot password
     Route::group(
         ['prefix' => 'forgot-password'],
