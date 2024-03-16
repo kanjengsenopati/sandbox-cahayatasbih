@@ -11,7 +11,9 @@ use App\Models\GymClass;
 use Xendit\Configuration;
 use App\Models\Membership;
 use App\Models\Transaction;
+use Illuminate\Support\Str;
 use App\Models\SaldoHistory;
+use App\Models\PaymentMethod;
 use Xendit\Invoice\InvoiceApi;
 use App\Models\GymClassHistory;
 use App\Models\GymClassBundling;
@@ -66,58 +68,30 @@ class TransactionService
 
         // update bill status with loop in transaction details
         self::changeStatusToPaid($transaction);
-
-        // update bill status with loop in transaction details
-        // self::changeStatusToPaid($transaction);
     }
 
-    public static function storeProgram($transaction)
+    public static function payWithCash($transaction)
     {
-        foreach ($transaction->transaction_details ?? [] as $transactionDetail) {
-            match ($transactionDetail->parentable_type) {
-                Membership::class => MembershipHistory::create([
-                    'transaction_detail_id' => $transactionDetail->id,
-                    'user_id' => $transaction->user_id,
-                    'membership_id' => $transactionDetail->parentable_id,
-                    'gym_place_id' => $transactionDetail->parent->gym_place_id,
-                    'is_active' => true,
-                    'start_active_date' => Carbon::now(),
-                    'remaining_session' => $transactionDetail->parent->total_session,
-                    'expiry_date' => $transactionDetail->parent->is_lifetime ? null : Carbon::now()->addDays($transactionDetail->parent->period),
-                    'is_active' => true
-                ]),
-                GymClass::class => GymClassHistory::create([
-                    'transaction_detail_id' => $transactionDetail->id,
-                    'user_id' => $transaction->user_id,
-                    'gym_class_id' => $transactionDetail->parentable_id,
-                    'is_active' => true
-                ]),
-                GymClassBundling::class => self::storeBundling($transactionDetail),
-                PersonalTrainerPacketSession::class => PersonalTrainerPacketSessionHistory::create([
-                    'transaction_detail_id' => $transactionDetail->id,
-                    'user_id' => $transaction->user_id,
-                    'personal_trainer_packet_session_id' => $transactionDetail->parentable_id,
-                    'personal_trainer_id' => $transactionDetail->personal_trainer_id,
-                    'is_active' => true,
-                    'start_active_date' => Carbon::now(),
-                    'expiry_date' => Carbon::now()->addDays($transactionDetail->parent->training_period),
-                    'is_active' => true,
-                    'remaining_session' => $transactionDetail->parent->total_session
-                ]),
-                default => null
-            };
-        }
+        $transaction->update([
+            'status' => Transaction::STATUS_PAID,
+            'paid_at' => Carbon::now(),
+            'admin_id' => Auth::id()
+        ]);
+
+        self::changeStatusToPaid($transaction);
     }
 
     public static function createInvoice($transaction)
     {
+        $appSetting = ApplicationSetting::latest()->first();
+        $expiredTimeInMinutes = $appSetting->getPaymentExpireTimeInMinutesAttribute();
         Configuration::setXenditKey(env('XENDIT_API_KEY'));
         $apiInstance = new InvoiceApi();
         $createInvoice = new CreateInvoiceRequest([
             'external_id' => $transaction->payment_code,
             'description' => 'Transaksi ' . $transaction->payment_code,
             'amount' => $transaction->pay_amount,
-            'invoice_duration' => 18000,
+            'invoice_duration' => $expiredTimeInMinutes * 60,
             'currency' => 'IDR',
             'reminder_time' => 1,
             'payer_email' => env('XENDIT_PAYER_EMAIL'),
@@ -125,8 +99,10 @@ class TransactionService
         ]);
         $invoice = $apiInstance->createInvoice($createInvoice);
         $transaction->update([
+            'xendit_fee' => $appSetting->payment_fee,
+            'app_fee' => $transaction->type == Transaction::TYPE_BILL ? $appSetting->bill_fee : ($transaction->pay_amount * $appSetting->saldo_fee / 100),
             'xendit_id' => $invoice['id'],
-            'expiry_time' => Carbon::now()->addSeconds(18000),
+            'expiry_time' => Carbon::now()->addMinutes($expiredTimeInMinutes),
             'payment_link' => $invoice['invoice_url']
         ]);
 
@@ -134,43 +110,38 @@ class TransactionService
         return $invoice;
     }
 
-
-
-    public static function storeBundling($transactionDetail)
+    public static function createTransaction($request, $paymentMethodType)
     {
-        GymClassBundlingHistory::create([
-            'transaction_detail_id' => $transactionDetail->id,
-            'user_id' => $transactionDetail->transaction->user_id,
-            'gym_class_bundling_id' => $transactionDetail->parentable_id,
-            'is_active' => true,
-            'start_active_date' => Carbon::now(),
-            'expiry_date' => Carbon::now()->addDays($transactionDetail->parent->period),
-            'is_active' => true,
-            'personal_trainer_expiry_date' => Carbon::now()->addDays($transactionDetail->parent->period_personal_trainer),
-            'personal_trainer_remaining_session' => $transactionDetail->parent->total_session,
-            'personal_trainer_id' => $transactionDetail->personal_trainer_id
-        ]);
-        PersonalTrainerPacketSessionHistory::create([
-            'transaction_detail_id' => $transactionDetail->id,
-            'user_id' => $transactionDetail->transaction->user_id,
-            'gym_class_bundling_id' => $transactionDetail->parentable_id,
-            'is_active' => true,
-            'start_active_date' => Carbon::now(),
-            'expiry_date' => Carbon::now()->addDays($transactionDetail->parent->period_personal_trainer),
-            'is_active' => true,
-            'remaining_session' => $transactionDetail->parent->total_session,
-            'personal_trainer_id' => $transactionDetail->personal_trainer_id
-        ]);
-        MembershipHistory::create([
-            'transaction_detail_id' => $transactionDetail->id,
-            'user_id' => $transactionDetail->transaction->user_id,
-            'membership_id' => $transactionDetail->parentable_id,
-            'gym_place_id' => $transactionDetail->parent->gym_place_id,
-            'gym_class_bundling_id' => $transactionDetail->parentable_id,
-            'is_active' => true,
-            'start_active_date' => Carbon::now(),
-            'remaining_session' => null,
-            'expiry_date' => Carbon::now()->addDays($transactionDetail->parent->period),
-        ]);
+        $expiryTimeInMinutes = ApplicationSetting::latest()->first()->getPaymentExpireTimeInMinutesAttribute();
+        $paymentCode = 'CHT-' . Str::random(3) . time();
+
+        $transactionData = [
+            'pay_amount' => self::getTotalPayAmount($request->bill_ids),
+            'payment_code' => $paymentCode,
+            'student_id' => $request->student_id,
+            'expiry_time' => Carbon::now()->addMinutes($expiryTimeInMinutes),
+            'status' => Transaction::STATUS_PENDING,
+            'paid_at' => null,
+        ];
+
+        $transaction = Transaction::create(array_merge($transactionData, $request->validated()));
+
+        foreach ($request->bill_ids as $billId) {
+            $transaction->transactionDetails()->create([
+                'bill_id' => $billId,
+            ]);
+        }
+
+        if ($transaction->status == Transaction::STATUS_PAID && $paymentMethodType == PaymentMethod::TYPE_XENDIT) {
+            TransactionService::changeStatusToPaid($transaction);
+        }
+
+        return $transaction;
+    }
+
+    public static function getTotalPayAmount($billIds)
+    {
+
+        return Bill::whereIn('id', $billIds)->sum('amount');
     }
 }

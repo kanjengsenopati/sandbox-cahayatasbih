@@ -116,7 +116,7 @@
                                                                     <label for="jenis-tagihan" class="form-label">Jenis
                                                                         Tagihan:</label>
                                                                     <input type="text" class="form-control"
-                                                                        value="{{ $bill->name }} - {{ \Carbon\Carbon::create()->month($month)->translatedFormat('F') }}"
+                                                                        value="{{ $bill->name }} - {{ \Carbon\Carbon::create()->month($month)->translatedFormat('F') }} - {{ $bill->academicYear->name }}"
                                                                         readonly>
                                                                 </div>
                                                                 <div class="mb-3">
@@ -221,7 +221,7 @@
                                                                     <label for="jenis-tagihan" class="form-label">Jenis
                                                                         Tagihan:</label>
                                                                     <input type="text" class="form-control"
-                                                                        value="{{ $bill->name }} - {{ \Carbon\Carbon::create()->month($month)->translatedFormat('F') }}"
+                                                                        value="{{ $bill->name }} - {{ \Carbon\Carbon::create()->month($month)->translatedFormat('F') }} - {{ $bill->academicYear->name }}"
                                                                         readonly>
                                                                 </div>
                                                                 <div class="mb-3">

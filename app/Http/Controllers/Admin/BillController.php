@@ -11,8 +11,10 @@ use App\Models\PaymentMethod;
 use Yajra\DataTables\DataTables;
 use Illuminate\Support\Facades\DB;
 
+use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\Controller;
 use App\Services\SendNotifWaService;
+use App\Services\TransactionService;
 use Illuminate\Support\Facades\Http;
 
 class BillController extends Controller
@@ -38,7 +40,35 @@ class BillController extends Controller
      */
     public function store(Request $request)
     {
-        //
+        DB::beginTransaction();
+
+        try {
+            $paymentMethodType = PaymentMethod::find($request->payment_method_id)->type;
+
+            $transaction = TransactionService::createTransaction($request, $paymentMethodType);
+
+            if ($paymentMethodType == PaymentMethod::TYPE_XENDIT) {
+                TransactionService::createInvoice($transaction);
+            } elseif ($paymentMethodType == PaymentMethod::TYPE_BALANCE) {
+                $payAmount = $transaction->pay_amount;
+                $student = Student::find($request->student_id);
+
+                if ($student->saldo < $payAmount) {
+                    DB::rollBack();
+                    return redirect()->back()->with('error', "Maaf Saldo Santri tidak mencukupi");
+                }
+
+                TransactionService::payWithBalance($student, $payAmount, $transaction, $request);
+            } elseif ($paymentMethodType == PaymentMethod::TYPE_CASH) {
+                TransactionService::payWithCash($transaction);
+            }
+
+            DB::commit();
+        } catch (\Throwable $th) {
+            DB::rollBack();
+            Log::error($th->getMessage());
+            return $this->failedResponse("Gagal melakukan transaksi pembayaran");
+        }
     }
 
     /**

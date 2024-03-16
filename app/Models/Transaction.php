@@ -36,6 +36,8 @@ class Transaction extends Model
         'payment_link',
         'xendit_fee',
         'type',
+        'app_fee',
+        'admin_id'
     ];
 
     public function transactionDetails()
@@ -51,5 +53,10 @@ class Transaction extends Model
     public function student()
     {
         return $this->belongsTo(Student::class)->withTrashed();
+    }
+
+    public function admin()
+    {
+        return $this->belongsTo(User::class, 'admin_id')->withTrashed();
     }
 }
