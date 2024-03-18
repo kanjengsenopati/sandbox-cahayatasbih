@@ -35,7 +35,7 @@ Route::group(['prefix' => 'v1', 'middleware' => 'validate_api_key'], function ()
     Route::group(['middleware' => 'auth:api'], function () {
         Route::post('update-fcm-token', [AuthController::class, 'updateFcm']);
         Route::get('home', [HomeController::class, 'index']);
-        Route::get('information', [HomeController::class, 'information']);
+        Route::get('bank-information', [HomeController::class, 'information']);
         Route::get('list-student', [HomeController::class, 'listStudent']);
 
         // start api bill
@@ -102,8 +102,8 @@ Route::group(['prefix' => 'v1', 'middleware' => 'validate_api_key'], function ()
             Route::post('change-password', [ProfileController::class, 'changePassword']);
         });
     });
+    Route::get('app-information', [InformationController::class, 'index']);
     Route::group(['prefix' => 'information'], function () {
-        Route::get('/', [InformationController::class, 'index']);
         Route::get('/help', [InformationController::class, 'help']);
         Route::get('app-setting', [InformationController::class, 'appSetting']);
     });
