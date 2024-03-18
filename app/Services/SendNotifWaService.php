@@ -57,12 +57,12 @@ class SendNotifWaService
                 }
                 break;
             case Transaction::TYPE_SAVING:
-                $message .= "4. Pembayaran : *Tabungan Santri\n*";
+                $message .= "4. Pembayaran : *Tabungan Santri*\n";
                 $message .= "5. Total Pembayaran : *Rp." . number_format($transaction->pay_amount, 0, ',', '.') . "*\n";
                 $message .= "6. Tabungan Terkini : *Rp." . number_format($student->saving, 0, ',', '.') . "*\n";
                 break;
             case Transaction::TYPE_SALDO:
-                $message .= "4. Transaksi : *Saldo Santri\n*";
+                $message .= "4. Transaksi : *Saldo Santri*\n";
                 $message .= "5. Nominal : *Rp." . number_format($transaction->pay_amount, 0, ',', '.') . "*\n";
                 $message .= "6. Saldo Terkini : *Rp." . number_format($student->saldo, 0, ',', '.') . "*\n";
                 break;
@@ -76,9 +76,9 @@ class SendNotifWaService
         $message .= "--------------------------------\n";
         $message .= "Link Kuitansi Digital : *" . route('transaction.invoice', $transaction->id) . "*\n";
         $message .= "--------------------------------\n";
-        $message .= "Note : Transaksi Berhasil dan Kuitansi digital dapat diakses melalui link di atas\n";
+        $message .= "Note : _Transaksi Berhasil dan Kuitansi digital dapat diakses melalui link di atas_\n";
         $message .= "Wassalamualaikum Wr. Wb.\n";
-        $message .= "PPTQ CAHAYA TASBIH";
+        $message .= "*PPTQ CAHAYA TASBIH*";
 
         return $message;
     }

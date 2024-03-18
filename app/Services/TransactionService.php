@@ -21,8 +21,10 @@ use App\Models\MembershipHistory;
 use App\Models\ApplicationSetting;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Mail;
+use App\Jobs\SendToPushNotificationJob;
 use App\Models\GymClassBundlingHistory;
 use Xendit\Invoice\CreateInvoiceRequest;
+use App\Jobs\SendToWhatsappNotificationJob;
 use App\Models\PersonalTrainerPacketSession;
 use App\Models\PersonalTrainerPacketSessionHistory;
 
@@ -174,5 +176,14 @@ class TransactionService
     public static function getTotalPayAmount($billIds)
     {
         return Bill::whereIn('id', $billIds)->sum('amount');
+    }
+
+    public static function dispatchNotifications($transaction)
+    {
+        $title = 'Yeay!, Pembayaran Berhasil';
+        $body = 'Pembayaran di Pondok Pesantren Cahaya Tasbih berhasil! Terima kasih telah membayar tagihan';
+        $messageWhatsapp = SendNotifWaService::sendMessageBillNotification($transaction);
+        dispatch(new SendToPushNotificationJob($title, $body, $transaction->student->user, $transaction));
+        dispatch(new SendToWhatsappNotificationJob($transaction->student->user->phone, $messageWhatsapp));
     }
 }

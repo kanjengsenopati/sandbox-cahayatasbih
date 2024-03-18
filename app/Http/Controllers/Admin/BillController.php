@@ -13,6 +13,8 @@ use Illuminate\Support\Facades\DB;
 
 use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Admin\BillPaymentRequest;
+use App\Models\Transaction;
 use App\Services\SendNotifWaService;
 use App\Services\TransactionService;
 use Illuminate\Support\Facades\Http;
@@ -38,12 +40,12 @@ class BillController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(Request $request)
+    public function store(BillPaymentRequest $request)
     {
         DB::beginTransaction();
 
         try {
-            $paymentMethodType = PaymentMethod::find($request->payment_method_id)->type;
+            $paymentMethodType = $request->payment_method;
 
             $transaction = TransactionService::createTransaction($request, $paymentMethodType);
 
@@ -64,10 +66,15 @@ class BillController extends Controller
             }
 
             DB::commit();
+            if ($transaction->status == Transaction::STATUS_PAID) {
+                TransactionService::dispatchNotifications($transaction);
+            }
+            return redirect()->back()->with('success', "Transaksi pembayaran berhasil");
         } catch (\Throwable $th) {
             DB::rollBack();
-            Log::error($th->getMessage());
-            return $this->failedResponse("Gagal melakukan transaksi pembayaran");
+            dd($th);
+            Log::error($th);
+            return redirect()->back()->with('error', "Transaksi pembayaran gagal");
         }
     }
 
@@ -120,7 +127,6 @@ class BillController extends Controller
 
                 return $item;
             });
-
         return view('admins.bill.show', compact('student', 'billMonth', 'billOthers'));
     }
 

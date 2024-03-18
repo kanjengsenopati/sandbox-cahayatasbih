@@ -140,6 +140,10 @@
                                                                         <option value="CASH">Tunai</option>
                                                                     </select>
                                                                 </div>
+                                                                <input type="hidden" name="bill_ids[]"
+                                                                    value="{{ $bill->id }}">
+                                                                <input type="hidden" name="student_id"
+                                                                    value="{{ $student->id }}">
                                                                 <div class="modal-footer">
                                                                     <button type="button" class="btn btn-secondary"
                                                                         data-bs-dismiss="modal">Close</button>
