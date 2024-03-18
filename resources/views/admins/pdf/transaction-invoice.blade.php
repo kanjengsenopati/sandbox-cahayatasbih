@@ -330,6 +330,7 @@
                     <td width="50%" align="right">
                         <strong>Petugas :</strong> <br /> {{ $data->admin->name ?? '' }}
                     </td>
+                    @endif
                 </tr>
             </table>
             <table width="100%" class="mt-5">
