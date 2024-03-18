@@ -22,7 +22,6 @@ class BillPaymentRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'payment_method_id' => 'required|exists:payment_methods,id',
             'student_id' => 'required|exists:students,id',
             'bill_ids' => 'required|array',
         ];

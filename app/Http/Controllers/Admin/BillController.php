@@ -48,7 +48,6 @@ class BillController extends Controller
             $paymentMethodType = $request->payment_method;
 
             $transaction = TransactionService::createTransaction($request, $paymentMethodType);
-
             if ($paymentMethodType == PaymentMethod::TYPE_XENDIT) {
                 TransactionService::createInvoice($transaction);
             } elseif ($paymentMethodType == PaymentMethod::TYPE_BALANCE) {
@@ -62,18 +61,20 @@ class BillController extends Controller
 
                 TransactionService::payWithBalance($student, $payAmount, $transaction, $request);
             } elseif ($paymentMethodType == PaymentMethod::TYPE_CASH) {
+                $transaction->update(['payment_method_id' => PaymentMethod::where('type', $paymentMethodType)
+                    ->first()->id]);
                 TransactionService::payWithCash($transaction);
             }
 
-            DB::commit();
             if ($transaction->status == Transaction::STATUS_PAID) {
                 TransactionService::dispatchNotifications($transaction);
             }
+            DB::commit();
             return redirect()->back()->with('success', "Transaksi pembayaran berhasil");
         } catch (\Throwable $th) {
             DB::rollBack();
-            dd($th);
             Log::error($th);
+            dd($th);
             return redirect()->back()->with('error', "Transaksi pembayaran gagal");
         }
     }

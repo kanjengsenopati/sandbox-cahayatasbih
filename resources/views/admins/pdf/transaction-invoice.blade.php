@@ -326,6 +326,10 @@
                         Metode Pembayaran: <br />
                         <strong>{{ $data->paymentMethod->name }}</strong>
                     </td>
+                    @if($data->admin_id)
+                    <td width="50%" align="right">
+                        <strong>Petugas :</strong> <br /> {{ $data->admin->name ?? '' }}
+                    </td>
                 </tr>
             </table>
             <table width="100%" class="mt-5">

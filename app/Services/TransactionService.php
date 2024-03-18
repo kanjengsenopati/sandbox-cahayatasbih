@@ -33,11 +33,14 @@ class TransactionService
     public static function changeStatusToPaid($transaction)
     {
         foreach ($transaction->transactionDetails as $detail) {
-            $detail->bill->update([
-                'status' => Bill::STATUS_PAID
-            ]);
+            if ($detail->bill !== null) {
+                $detail->bill->update([
+                    'status' => Bill::STATUS_PAID
+                ]);
+            }
         }
     }
+
 
     public static function payWithBalance($student, $pay_amount, $transaction, $request)
     {
@@ -77,7 +80,8 @@ class TransactionService
         $transaction->update([
             'status' => Transaction::STATUS_PAID,
             'paid_at' => Carbon::now(),
-            'admin_id' => Auth::id()
+            'admin_id' => Auth::id(),
+            'type' => Transaction::TYPE_BILL
         ]);
 
         self::changeStatusToPaid($transaction);

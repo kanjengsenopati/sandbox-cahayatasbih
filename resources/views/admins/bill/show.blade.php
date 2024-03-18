@@ -141,7 +141,7 @@
                                                                     </select>
                                                                 </div>
                                                                 <input type="hidden" name="bill_ids[]"
-                                                                    value="{{ $bill->id }}">
+                                                                    value="{{ $billDetail->id }}">
                                                                 <input type="hidden" name="student_id"
                                                                     value="{{ $student->id }}">
                                                                 <div class="modal-footer">
