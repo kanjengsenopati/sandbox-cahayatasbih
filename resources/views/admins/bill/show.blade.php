@@ -82,15 +82,16 @@
                                         $billDetail = $bill->bills->where('month', $month)->where('student_id',
                                         $student->id)->first();
                                         $amount = $billDetail ? $billDetail->amount : 0;
-                                        $statusColor = $billDetail && $billDetail->status == 'PAID' ? 'green' : 'red';
+                                        $statusColor = $billDetail && $billDetail->status == 'PAID' ? 'rgba(0, 255, 0,
+                                        1)' : 'rgba(255, 0, 0, 1)';
                                         $modalId = "bayarKilat{$bill->id}_{$month}";
                                         $showModal = $billDetail && $billDetail->status != 'PAID';
                                         @endphp
                                         <td style="background-color: {{ $statusColor }}">
                                             @if($showModal)
-                                            <a href="#" data-bs-toggle="modal" data-bs-target="#{{ $modalId }}"> Rp {{
-                                                number_format($amount, 0,
-                                                ',', '.') }}</a>
+                                            <a href="#" data-bs-toggle="modal" data-bs-target="#{{ $modalId }}"
+                                                style="color: white;"> Rp {{ number_format($amount,
+                                                0, ',', '.') }}</a>
                                             <div class="modal fade" id="{{ $modalId }}" tabindex="-1"
                                                 aria-labelledby="exampleModalLabel" aria-hidden="true">
                                                 <div class="modal-dialog modal-dialog-centered">
@@ -151,7 +152,8 @@
                                                 </div>
                                             </div>
                                             @else
-                                            <span>Rp {{ number_format($amount, 0, ',', '.') }}</span>
+                                            <span style="color: white;">Rp {{ number_format($amount, 0, ',', '.')
+                                                }}</span>
                                             @endif
                                         </td>
                                         @endforeach
@@ -187,7 +189,8 @@
                                         $billDetail = $bill->bills->where('month', $month)->where('student_id',
                                         $student->id)->first();
                                         $amount = $billDetail ? $billDetail->amount : 0;
-                                        $statusColor = $billDetail && $billDetail->status == 'PAID' ? 'green' : 'red';
+                                        $statusColor = $billDetail && $billDetail->status == 'PAID' ? 'rgba(0, 255, 0,
+                                        1)' : 'rgba(255, 0, 0, 1)';
                                         $modalId = "bayarKilat{$bill->id}_{$month}";
                                         $showModal = $billDetail && $billDetail->status != 'PAID';
                                         @endphp
