@@ -44,6 +44,7 @@ use App\Http\Controllers\Admin\OrderItemHistoryController;
 use App\Http\Controllers\Admin\ApplicationSettingController;
 use App\Http\Controllers\Admin\StudentAchievementController;
 use App\Http\Controllers\Admin\InformationCategoryController;
+use App\Http\Controllers\Admin\ReportBillController;
 use App\Http\Controllers\Admin\StudentCounselingScoreController;
 
 /*
@@ -150,6 +151,12 @@ Route::group(['middleware' => ['auth']], function () {
     Route::resource('study-grade', StudyGradeController::class);
     Route::post('application-menu/status/{id}', [ApplicationMenuController::class, 'status'])->name('application-menu.status');
     Route::resource('application-menu', ApplicationMenuController::class);
+
+    // start report menu
+    Route::get('report-bill/get-classroom', [ReportBillController::class, 'getClassroom'])
+        ->name('report-bill.get-classroom');
+    Route::get('report-bill/get-data', [ReportBillController::class, 'getData'])->name('report-bill.get-data');
+    Route::resource('report-bill', ReportBillController::class, ['only' => ['index', 'show']])->names('report-bill');
 
     Route::group(['prefix' => 'information'], function () {
         Route::resource(

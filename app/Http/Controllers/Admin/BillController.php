@@ -6,18 +6,19 @@ use App\Models\Bill;
 use App\Models\User;
 use App\Models\Student;
 use App\Models\BillType;
+use App\Models\Transaction;
 use Illuminate\Http\Request;
 use App\Models\PaymentMethod;
 use Yajra\DataTables\DataTables;
-use Illuminate\Support\Facades\DB;
 
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\Controller;
-use App\Http\Requests\Admin\BillPaymentRequest;
-use App\Models\Transaction;
 use App\Services\SendNotifWaService;
 use App\Services\TransactionService;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Http;
+use App\Http\Requests\Admin\BillPaymentRequest;
 
 class BillController extends Controller
 {
@@ -58,7 +59,11 @@ class BillController extends Controller
                     DB::rollBack();
                     return redirect()->back()->with('error', "Maaf Saldo Santri tidak mencukupi");
                 }
-
+                $transaction->update([
+                    'payment_method_id' => PaymentMethod::where('type', $paymentMethodType)
+                        ->first()->id,
+                    'admin_id' => Auth::id(),
+                ]);
                 TransactionService::payWithBalance($student, $payAmount, $transaction, $request);
             } elseif ($paymentMethodType == PaymentMethod::TYPE_CASH) {
                 $transaction->update(['payment_method_id' => PaymentMethod::where('type', $paymentMethodType)

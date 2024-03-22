@@ -400,6 +400,29 @@
                     </div>
                 </div>
 
+                <div data-kt-menu-trigger="click"
+                    class="menu-item menu-accordion {{ request()->routeIs(['report-bill.*']) ? 'show' : '' }}">
+                    <span class="menu-link ">
+                        <span class="menu-icon">
+                            <i class="fa-solid fa-file" style="color: #ffffff;"></i>
+                        </span>
+                        <span class="menu-title">Laporan</span>
+                        <span class="menu-arrow"></span>
+                    </span>
+
+                    <div class="menu-sub menu-sub-accordion menu-active-bg">
+                        <div class="menu-item ">
+                            <a class="menu-link {{ request()->routeIs('report-bill.*') ? ' active' : '' }}"
+                                href="{{ route('report-bill.index') }}">
+                                <span class="menu-bullet">
+                                    <span class="bullet bullet-dot"></span>
+                                </span>
+                                <span class="menu-title">Tagihan</span>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
                 <div data-kt-menu-trigger="click" class="menu-item menu-accordion {{ request()->routeIs([
                     'payment-method.*', 'application-setting.*', 'help.*',
                      'app-information.*', 'application-menu.*']) ? 'show' : '' }}">
@@ -490,9 +513,6 @@
                         </div>
                     </div>
                 </div>
-
-
-
             </div>
             <!--end::Menu-->
         </div>

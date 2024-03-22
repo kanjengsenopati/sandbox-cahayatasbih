@@ -297,7 +297,7 @@
                             <tr class="text-start text-gray-400 fw-bolder fs-7 text-uppercase gs-0">
                                 <th style="width: 5%">No</th>
                                 <th class="min-w-125px">Tahun Ajaran</th>
-                                <th class="min-w-125px">Pos Bayar</th>
+                                {{-- <th class="min-w-125px">Pos Bayar</th> --}}
                                 <th class="min-w-125px">Jenis Pembayaran</th>
                                 <th class="min-w-125px">Jumlah</th>
                                 <th class="min-w-125px">Dibayar</th>
@@ -310,7 +310,7 @@
                             <tr>
                                 <td>{{ $loop->iteration }}</td>
                                 <td>{{ @$monthly->academicYear->name }}</td>
-                                <td>{{ @$monthly->billItem->name }}</td>
+                                {{-- <td>{{ @$monthly->billItem->name }}</td> --}}
                                 <td>{{ @$monthly->name }}</td>
                                 <td>Rp {{ number_format(@$monthly->total_unpaid, 0, ',', '.') }}</td>
                                 <td>Rp {{ number_format(@$monthly->total_paid, 0, ',', '.') }}</td>
@@ -347,7 +347,7 @@
                             <tr class="text-start text-gray-400 fw-bolder fs-7 text-uppercase gs-0">
                                 <th style="width: 5%">No</th>
                                 <th class="min-w-125px">Tahun Ajaran</th>
-                                <th class="min-w-125px">Pos Bayar</th>
+                                {{-- <th class="min-w-125px">Pos Bayar</th> --}}
                                 <th class="min-w-125px">Jenis Pembayaran</th>
                                 <th class="min-w-125px">Jumlah</th>
                                 <th class="min-w-125px">Dibayar</th>
@@ -360,7 +360,7 @@
                             <tr>
                                 <td>{{ $loop->iteration }}</td>
                                 <td>{{ @$other->academicYear->name }}</td>
-                                <td>{{ @$other->billItem->name }}</td>
+                                {{-- <td>{{ @$other->billItem->name }}</td> --}}
                                 <td>{{ @$other->name }}</td>
                                 <td>Rp {{ number_format(@$other->total_unpaid, 0, ',', '.') }}</td>
                                 <td>Rp {{ number_format(@$other->total_paid, 0, ',', '.') }}</td>

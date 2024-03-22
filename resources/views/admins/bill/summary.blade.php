@@ -119,15 +119,15 @@
                                                 </tr>
                                                 <tr>
                                                     <td class="fw-bold">Total Tagihan :</td>
-                                                    <td>Rp. {{ $billType['total_bill'] ?? '' }}</td>
+                                                    <td>Rp. {{ number_format($billType['total_bill']) ?? '' }}</td>
                                                 </tr>
                                                 <tr>
                                                     <td class="fw-bold">Total Dibayar :</td>
-                                                    <td>Rp. {{ $billType['total_paid'] ?? '' }}</td>
+                                                    <td>Rp. {{ number_format($billType['total_paid']) ?? '' }}</td>
                                                 </tr>
                                                 <tr>
                                                     <td class="fw-bold">Sisa Tagihan :</td>
-                                                    <td>Rp. {{ $billType['total_unpaid'] ?? '' }}</td>
+                                                    <td>Rp. {{ number_format($billType['total_unpaid']) ?? '' }}</td>
                                                 </tr>
                                             </tbody>
                                         </table>
@@ -171,9 +171,10 @@
                                     <!--begin::Table head-->
                                     <thead>
                                         <tr class="text-start text-muted fw-bolder fs-7 text-uppercase gs-0">
+                                            <th style="width: 5%;">No</th>
                                             <th class="min-w-125px">Bulan</th>
                                             <th class="min-w-125px">Tagihan</th>
-                                            <th class="min-w-125px">Tanggal Bayar</th>
+                                            {{-- <th class="min-w-125px">Tanggal Bayar</th> --}}
                                             <th class="min-w-125px">Metode Pembayaran</th>
                                             <th class="min-w-125px">Aksi</th>
                                         </tr>
@@ -182,66 +183,64 @@
                                     <!--begin::Table body-->
                                     <tbody class="text-gray-600">
                                         @foreach (range(1, 12) as $month)
+
                                         <tr>
-                                            <th class="min-w-125px">
-                                                {{
-                                                \Carbon\Carbon::create()->month($month)->translatedFormat('F')
-                                                }}
-                                            </th>
-                                            @php
-                                            $billForMonth = $bills->where('month', $month)->first();
-                                            $amount = $billForMonth ? number_format($billForMonth->amount, 0,
-                                            ',',
-                                            '.') : 0;
-                                            @endphp
-                                            <input type="hidden" id="bill_id" name="bill_id"
-                                                value="{{ $billForMonth->id ?? '' }}" />
-                                            <input type="hidden" id="pay_amount" name="pay_amount"
-                                                value="{{ $billForMonth->amount ?? '' }}" />
-                                            <input type="hidden" id="student_id" name="student_id"
-                                                value="{{ $student->id ?? '' }}" />
-                                            <td>Rp {{ $amount ?? '' }}</td>
-                                            <td>
-                                                @if ($billForMonth && $billForMonth->status == 'PAID')
-                                                <span class="badge badge-light-success">
-                                                    {{ $billForMonth->transactions?->first()->paid_at
-                                                    ?? '' }}
-                                                </span>
-                                                @elseif ($billForMonth)
-                                                <input type="datetime-local" class="form-control date-input" name="date"
-                                                    value="{{ now()->format('Y-m-d\TH:i') }}" />
-                                            </td>
-                                            @endif
-                                            <td>
-                                                @if ($billForMonth && $billForMonth->status == 'PAID')
-                                                <span class="badge badge-light-success">
+                                            <form action="{{ route('bill.store') }}" method="post" class="form-bayar"
+                                                enctype="multipart/form-data">
+                                                @csrf
+                                                <td>{{ $loop->iteration }}</td>
+                                                <th class="min-w-125px">
                                                     {{
-                                                    $billForMonth->transactions?->first()->paymentMethod?->name
-                                                    ?? ''
+                                                    \Carbon\Carbon::create()->month($month)->translatedFormat('F')
                                                     }}
-                                                </span>
-                                                @elseif ($billForMonth)
-                                                <select name="payment_method_id"
-                                                    class="form-select payment-method-select">
-                                                    @foreach($paymentMethods as $paymentMethod)
-                                                    <option value="{{ $paymentMethod->id }}">
-                                                        {{ $paymentMethod->name }}
-                                                    </option>
-                                                    @endforeach
-                                                </select>
-                                                @endif
-                                            </td>
-                                            <td>
-                                                @if ($billForMonth && $billForMonth->status == 'PAID')
-                                                <span class="badge badge-light-success">Sudah Dibayar</span>
-                                                @elseif ($billForMonth && $billForMonth->status == 'UNPAID' &&
-                                                $billForMonth?->transactions?->first()?->payment_link)
-                                                <a href="{{ $billForMonth?->transactions?->first()?->payment_link }}"
-                                                    class="btn btn-primary">Ke Halaman Pembayaran</a>
-                                                @elseif ($billForMonth)
-                                                <button type="button" class="btn btn-primary bayar-btn">Bayar</button>
-                                                @endif
-                                            </td>
+                                                </th>
+                                                @php
+                                                $billForMonth = $bills->where('month', $month)->first();
+                                                $amount = $billForMonth ? number_format($billForMonth->amount, 0,
+                                                ',',
+                                                '.') : 0;
+                                                @endphp
+                                                <input type="hidden" name="bill_ids[]"
+                                                    value="{{ $billForMonth->id ?? '' }}">
+                                                <input type="hidden" name="pay_amount"
+                                                    value="{{ $billForMonth->amount ?? '' }}">
+                                                <input type="hidden" name="student_id" value="{{ $student->id ?? '' }}">
+                                                <td>Rp {{ $amount ?? '' }}</td>
+                                                <td>
+                                                    @if ($billForMonth && $billForMonth->status == 'PAID')
+                                                    <span class="badge badge-light-success">
+                                                        {{
+                                                        $billForMonth->transactions?->first()->paymentMethod?->name
+                                                        ?? ''
+                                                        }}
+                                                    </span>
+                                                    @elseif ($billForMonth)
+                                                    <select class="form-select payment-method-select"
+                                                        name="payment_method" required>
+                                                        <option value="">Metode Pembayaran
+                                                        </option>
+                                                        @if ($student->saldo > $amount)
+                                                        <option value="BALANCE">Saldo</option>
+                                                        @endif
+                                                        <option value="CASH">Tunai</option>
+                                                    </select>
+                                                    @endif
+                                                </td>
+                                                <td>
+                                                    @if ($billForMonth && $billForMonth->status == 'PAID')
+                                                    <span class="badge badge-light-success">Dibayar {{
+                                                        $billForMonth->transactions?->first()->paid_at
+                                                        ?? '' }}</span>
+                                                    @elseif ($billForMonth && $billForMonth->status == 'UNPAID' &&
+                                                    $billForMonth?->transactions?->first()?->payment_link)
+                                                    <a href="{{ $billForMonth?->transactions?->first()?->payment_link }}"
+                                                        class="btn btn-primary">Ke Halaman Pembayaran</a>
+                                                    @elseif ($billForMonth)
+                                                    <button onclick="disableButton(this)"
+                                                        class="btn btn-primary btn-bayar">Bayar</button>
+                                                    @endif
+                                                </td>
+                                            </form>
                                         </tr>
                                         @endforeach
                                     </tbody>
@@ -258,14 +257,6 @@
 
                     <!--end::Form-->
                 </div>
-                <!--end::Content-->
-                <!--begin::Sidebar-->
-                {{-- <div class="flex-column flex-lg-row-auto w-100 w-lg-250px w-xl-300px mb-10 order-1 order-lg-2">
-                    <!--begin::Card-->
-
-                    <!--end::Card-->
-                </div> --}}
-                <!--end::Sidebar-->
             </div>
             <!--end::Layout-->
             <!--begin::Modals-->
@@ -276,68 +267,12 @@
 </div>
 @endsection
 @push('js')
-<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
 <script>
-    document.addEventListener("DOMContentLoaded", function() {
-        const bayarButtons = document.querySelectorAll('.bayar-btn');
-        bayarButtons.forEach(function(button) {
-            button.addEventListener('click', function(event) {
-                const row = event.target.closest('tr');
-                const dateInput = row.querySelector('.date-input');
-                const paymentMethodSelect = row.querySelector('.payment-method-select');
-                const billId = row.querySelector('#bill_id').value;
-                const payAmount = row.querySelector('#pay_amount').value;
-
-                const loaderHtml = '<div class="spinner-border spinner-border-sm" role="status"><span class="visually-hidden">Loading...</span></div>';
-                
-                // Add loader to the button
-                button.innerHTML = loaderHtml + ' Mohon tunggu sebentar';
-                button.disabled = true; // Disable button during processing
-
-                const formData = new FormData();
-                formData.append('date', dateInput.value);
-                formData.append('payment_method_id', paymentMethodSelect.value);
-                formData.append('bill_id', billId);
-                formData.append('pay_amount', payAmount);
-                formData.append('student_id', row.querySelector('#student_id').value);
-
-                axios.post("{{ route('transaction.store') }}", formData, {
-                    headers: {
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
-                        'Content-Type': 'multipart/form-data', // Set content type to multipart/form-data
-                        'Accept': 'application/json'
-                    }
-                })
-                .then(response => {
-                    // Log response data to console
-                    console.log(response.data);
-
-                    // Check if payment is successful
-                    if (response.data) {
-                        // If payment method is a certain type, redirect to payment link
-                        if (response.data.data) {
-                            window.location.href = response.data.data;
-                        } else {
-                            Swal.fire({
-                                icon: 'success',
-                                title: 'Pembayaran Berhasil',
-                                showConfirmButton: false,
-                                timer: 1500
-                            }).then(() => {
-                                window.location.reload();
-                            });
-                        }
-                    } else {
-                        // Handle unsuccessful payment
-                        console.error('Error:', response.data.message);
-                    }
-                })
-                .catch(error => {
-                    // Handle errors
-                    console.error('Error:', error);
-                });
-            });
-        });
-    });
+    // disable button dan submit form dan beri loading
+    function disableButton(el) {
+        el.disabled = true;
+        el.innerHTML = 'Loading...';
+        el.form.submit();
+    }
 </script>
 @endpush
