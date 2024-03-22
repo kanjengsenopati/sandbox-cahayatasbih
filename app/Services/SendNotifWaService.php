@@ -100,9 +100,9 @@ class SendNotifWaService
         foreach ($billTypes as $billType) {
             $message .= "--------------------------------\n";
             $message .= "Tagihan : *" . $billType->name . "*\n";
-            $message .= "Total Tagihan : *Rp." . number_format($billType->bill->where('student_id', $student->id)
+            $message .= "Total Tagihan : *Rp." . number_format($billType->bills->where('student_id', $student->id)
                 ->sum('amount'), 0, ',', '.') . "*\n";
-            $message .= "Total Kekurangan: *Rp." . number_format($billType->bill
+            $message .= "Total Kekurangan: *Rp." . number_format($billType->bills
                 ->where('student_id', $student->id)->where('status', Bill::STATUS_UNPAID)
                 ->sum('amount'), 0, ',', '.') . "*\n";
         }
