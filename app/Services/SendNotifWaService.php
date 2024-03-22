@@ -2,9 +2,10 @@
 
 namespace App\Services;
 
+use App\Models\Bill;
 use GuzzleHttp\Client;
-use App\Models\ApplicationSetting;
 use App\Models\Transaction;
+use App\Models\ApplicationSetting;
 
 class SendNotifWaService
 {
@@ -77,6 +78,38 @@ class SendNotifWaService
         $message .= "Link Kuitansi Digital : *" . route('transaction.invoice', $transaction->id) . "*\n";
         $message .= "--------------------------------\n";
         $message .= "Note : _Transaksi Berhasil dan Kuitansi digital dapat diakses melalui link di atas_\n";
+        $message .= "Wassalamualaikum Wr. Wb.\n";
+        $message .= "*PPTQ CAHAYA TASBIH*";
+
+        return $message;
+    }
+
+
+    public static function sendMessageUnpaidNotification($student, $billTypes)
+    {
+        $parentStudent = $student->user;
+
+        $message = "Assalamualaikum Bapak/Ibu " . $parentStudent->name . ",\n";
+        $message .= "Anda memiliki tagihan yang belum terbayar\n";
+        $message .= "--------------------------------\n";
+        $message .= "1. NIS : *" . $student->nis . "*\n";
+        $message .= "2. NISN : *" . $student->nisn . "*\n";
+        $message .= "3. Nama Santri : *" . $student->name . "*\n";
+        $message .= "4. Kelas : *" . $student->classroom->name . "*\n";
+
+        foreach ($billTypes as $billType) {
+            $message .= "--------------------------------\n";
+            $message .= "Tagihan : *" . $billType->name . "*\n";
+            $message .= "Total Tagihan : *Rp." . number_format($billType->bill->where('student_id', $student->id)
+                ->sum('amount'), 0, ',', '.') . "*\n";
+            $message .= "Total Kekurangan: *Rp." . number_format($billType->bill
+                ->where('student_id', $student->id)->where('status', Bill::STATUS_UNPAID)
+                ->sum('amount'), 0, ',', '.') . "*\n";
+        }
+        $message .= "--------------------------------\n";
+        $message .= "Mohon segera melakukan pembayaran\n";
+        $message .= "--------------------------------\n";
+        $message .= "Note : _Jika sudah melakukan pembayaran, abaikan pesan ini_\n";
         $message .= "Wassalamualaikum Wr. Wb.\n";
         $message .= "*PPTQ CAHAYA TASBIH*";
 

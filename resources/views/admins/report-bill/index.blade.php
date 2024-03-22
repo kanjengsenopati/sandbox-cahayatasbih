@@ -150,7 +150,8 @@
 
                     <!-- Add Button for WA Blast -->
                     <div class="text-center mt-3">
-                        <button class="btn btn-success" onclick="sendWABlast()"><i class="bi bi-whatsapp"></i> Kirim
+                        <button class="btn btn-success" id="send-blast-notif"><i class="bi bi-whatsapp"></i>
+                            Kirim
                             Notif
                             Tagihan WA</button>
                     </div>
@@ -246,6 +247,40 @@
     event.preventDefault(); // Mencegah aksi default saat submit
     searchData();
     });
+
+    // Send Bill Notif on click send-blast-notif
+    $('#send-blast-notif').on('click', function() {
+        // get all user selected
+        var school_id = $('#filter_school_id').val();
+        var classroom_id = $('#filter_classroom_id').val();
+        var academic_year_id = $('#filter_academic_year_id').val();
+        var bill_type_id = $('#filter_bill_type_id').val();
+        var status = $('#filter_status').val();
+
+
+        // send data to form use ajax
+        $.ajax({
+        url: "{{ route('report-bill.send-bill-notification') }}",
+        type: "POST",
+        data: {
+        _token: "{{ csrf_token() }}", // Add CSRF token here
+        school_id: school_id,
+        classroom_id: classroom_id,
+        academic_year_id: academic_year_id,
+        bill_type_id: bill_type_id,
+        status: status
+        },
+        success: function(response) {
+        console.log(response);
+        if (response.status == 'success') {
+        toastr.success(response.message);
+        } else {
+        toastr.error(response.message);
+        }
+        }
+        });
     });
+});
+
 </script>
 @endpush

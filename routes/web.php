@@ -153,6 +153,8 @@ Route::group(['middleware' => ['auth']], function () {
     Route::resource('application-menu', ApplicationMenuController::class);
 
     // start report menu
+    Route::post('report-bill/send-bill-notification', [ReportBillController::class, 'sendBillNotification'])
+        ->name('report-bill.send-bill-notification');
     Route::get('report-bill/get-classroom', [ReportBillController::class, 'getClassroom'])
         ->name('report-bill.get-classroom');
     Route::get('report-bill/get-data', [ReportBillController::class, 'getData'])->name('report-bill.get-data');

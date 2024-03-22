@@ -12,6 +12,7 @@ use Illuminate\Http\Request;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Yajra\DataTables\DataTables;
 use App\Http\Controllers\Controller;
+use App\Jobs\SendBillWhatsappNotificationJob;
 
 class ReportBillController extends Controller
 {
@@ -126,5 +127,36 @@ class ReportBillController extends Controller
                 ->rawColumns(['action'])
                 ->make(true);
         }
+    }
+
+    public function sendBillNotification(Request $request)
+    {
+        $data = Student::with('classroom', 'school', 'bills')
+            ->whereHas('bills', function ($query) {
+                $query->where('status', Bill::STATUS_UNPAID);
+            })
+            ->when(request()->school_id, function ($query) {
+                $query->where('school_id', request()->school_id);
+            })
+            ->when(request()->classroom_id, function ($query) {
+                $query->where('classroom_id', request()->classroom_id);
+            })
+            ->when(request()->academic_year_id, function ($query) {
+                $query->whereHas('bills', function ($query) {
+                    $query->where('academic_year_id', request()->academic_year_id);
+                });
+            })
+            ->when(request()->bill_type_id, function ($query) {
+                $query->whereHas('bills', function ($query) {
+                    $query->where('bill_type_id', request()->bill_type_id);
+                });
+            })
+            ->orderBy('name', 'asc')
+            ->get();
+        $billTypes = BillType::whereHas('bills.student', function ($query) use ($data) {
+            $query->whereIn('student_id', $data->pluck('id')->toArray());
+        })->get();
+        dispatch(new SendBillWhatsappNotificationJob($data, $billTypes));
+        return $this->getSuccessResponse($data);
     }
 }
