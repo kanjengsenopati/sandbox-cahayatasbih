@@ -199,11 +199,11 @@
                     <td width="50%">
                         <strong class="text-sm">Informasi Siswa</strong>
                         <table width="100%">
-                            <tr>
+                            {{-- <tr>
                                 <td style="white-space: nowrap" width="15%" class="text-muted">Tanggal Pembelian</td>
                                 <td width="2%">:</td>
                                 <td><strong></strong></td>
-                            </tr>
+                            </tr> --}}
                             <tr>
                                 <td style="white-space: nowrap" width="15%" class="text-muted">Siswa</td>
                                 <td width="2%">:</td>
