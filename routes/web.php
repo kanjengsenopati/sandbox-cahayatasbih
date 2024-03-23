@@ -72,7 +72,7 @@ Route::prefix('wali')->group(function () {
     Route::post('register', [WaliAuthController::class, 'store']);
 
     Route::middleware('wali')->group(function () {
-        Route::resource('dashboard', WaliDashboardController::class)->names('wali.dashboard');
+        Route::get('dashboard', [WaliDashboardController::class, 'index'])->name('wali.dashboard');
     });
 });
 

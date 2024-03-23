@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Bill;
 use GuzzleHttp\Client;
+use App\Models\BillType;
 use App\Models\Transaction;
 use App\Models\ApplicationSetting;
 
@@ -90,25 +91,42 @@ class SendNotifWaService
         $parentStudent = $student->user;
 
         $message = "Assalamualaikum Bapak/Ibu " . $parentStudent->name . ",\n";
-        $message .= "Anda memiliki tagihan yang belum terbayar\n";
+        $message .= "Anda memiliki Kewajiban Administrasi Keuangan yang belum terbayar, sebagai berikut:\n";
         $message .= "--------------------------------\n";
         $message .= "1. NIS : *" . $student->nis . "*\n";
-        $message .= "2. NISN : *" . $student->nisn . "*\n";
-        $message .= "3. Nama Santri : *" . $student->name . "*\n";
-        $message .= "4. Kelas : *" . $student->classroom->name . "*\n";
+        $message .= "2. Nama Santri : *" . $student->name . "*\n";
+        $message .= "3. Kelas : *" . $student->classroom->name . "*\n";
 
         $must_pay = 0;
         foreach ($billTypes as $billType) {
-            $total_unpaid = $billType->bills
-                ->where('student_id', $student->id)->where('status', Bill::STATUS_UNPAID)
-                ->sum('amount');
-            $must_pay += $total_unpaid;
-            $message .= "--------------------------------\n";
-            $message .= "Tagihan : *" . $billType->name . "*\n";
-            $message .= "Total Tagihan : *Rp." . number_format($billType->bills->where('student_id', $student->id)
-                ->sum('amount'), 0, ',', '.') . "*\n";
-            $message .= "Total Kekurangan: *Rp." . number_format($total_unpaid, 0, ',', '.') . "*\n";
-            $message .= "Status Pembayaran : *" . ($total_unpaid > 0 ? 'Belum Lunas' : 'Lunas') . "*\n";
+            if ($billType->type == BillType::TYPE_OTHER) {
+                $total_unpaid = $billType->bills
+                    ->where('student_id', $student->id)->where('status', Bill::STATUS_UNPAID)
+                    ->sum('amount');
+                $must_pay += $total_unpaid;
+                $message .= "--------------------------------\n";
+                $message .= "Tagihan : *" . $billType->name . "*\n";
+                $message .= "Total Tagihan : *Rp." . number_format($billType->bills->where('student_id', $student->id)
+                    ->sum('amount'), 0, ',', '.') . "*\n";
+                $message .= "Total Kekurangan: *Rp." . number_format($total_unpaid, 0, ',', '.') . "*\n";
+                $message .= "Status Pembayaran : *" . ($total_unpaid > 0 ? 'Belum Lunas' : 'Lunas') . "*\n";
+            } else {
+                $thisMonthInInteger = intval(date('n'));
+                $unpaidBills = $billType->bills()
+                    ->where('student_id', $student->id)
+                    ->where('status', Bill::STATUS_UNPAID)
+                    ->where('month', '<=', $thisMonthInInteger)
+                    ->get();
+
+                $totalUnpaid = $unpaidBills->sum('amount');
+                $listMonth = $unpaidBills->pluck('translated_month')->toArray();
+
+                $must_pay += $totalUnpaid;
+                $message .= "Tagihan : *" . $billType->name . ' ' . $billType->academicYear->name . "*\n";
+                $message .= "Bulan : *" . implode(', ', $listMonth) . "*\n";
+                $message .= "Jumlah Tagihan: *Rp." . number_format($totalUnpaid, 0, ',', '.') . "*\n";
+                $message .= "Status Pembayaran : *" . ($totalUnpaid > 0 ? 'Belum Lunas' : 'Lunas') . "*\n";
+            }
         }
         $message .= "\n";
         $message .= "--------------------------------\n";

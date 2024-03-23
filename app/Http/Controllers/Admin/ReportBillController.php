@@ -156,8 +156,12 @@ class ReportBillController extends Controller
         $data = $query->get();
         $studentIds = $data->pluck('id');
 
-        $billTypes = BillType::whereHas('bills.student', function ($query) use ($studentIds) {
-            $query->whereIn('student_id', $studentIds);
+
+        $thisMonthInInteger = intval(date('n'));
+        $billTypes = BillType::whereHas('bills.student', function ($query) use ($studentIds, $thisMonthInInteger) {
+            $query->whereIn('student_id', $studentIds)
+                ->where('status', Bill::STATUS_UNPAID)
+                ->where('month', '<=', $thisMonthInInteger);
         })->get();
 
         dispatch(new SendBillWhatsappNotificationJob($data, $billTypes));

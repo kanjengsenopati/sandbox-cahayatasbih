@@ -20,6 +20,6 @@ class WaliMiddleware
             return $next($request);
         }
 
-        return redirect()->route('login.wali');
+        return redirect()->route('wali.login');
     }
 }
