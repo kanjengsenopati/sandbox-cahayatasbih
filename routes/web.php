@@ -5,6 +5,7 @@ use App\Http\Controllers\Admin\AuthController;
 use App\Http\Controllers\Admin\BillController;
 use App\Http\Controllers\Admin\HelpController;
 use App\Http\Controllers\Admin\ItemController;
+use App\Http\Controllers\Admin\PpdbController;
 use App\Http\Controllers\Admin\RoleController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\AdminController;
@@ -16,6 +17,7 @@ use App\Http\Controllers\Admin\StudentController;
 use App\Http\Controllers\Admin\TahfidzController;
 use App\Http\Controllers\Admin\BillItemController;
 use App\Http\Controllers\Admin\BillTypeController;
+use App\Http\Controllers\Admin\PpdbTypeController;
 use App\Http\Controllers\Admin\ScheduleController;
 use App\Http\Controllers\Admin\SemesterController;
 use App\Http\Controllers\Admin\ClassroomController;
@@ -25,6 +27,7 @@ use App\Http\Controllers\Admin\TranslateController;
 use App\Http\Controllers\Admin\DisclaimerController;
 use App\Http\Controllers\Admin\HomeSliderController;
 use App\Http\Controllers\Admin\PermissionController;
+use App\Http\Controllers\Admin\ReportBillController;
 use App\Http\Controllers\Admin\StudyGradeController;
 use App\Http\Controllers\Admin\ImageUploadController;
 use App\Http\Controllers\Admin\InformationController;
@@ -44,8 +47,9 @@ use App\Http\Controllers\Admin\OrderItemHistoryController;
 use App\Http\Controllers\Admin\ApplicationSettingController;
 use App\Http\Controllers\Admin\StudentAchievementController;
 use App\Http\Controllers\Admin\InformationCategoryController;
-use App\Http\Controllers\Admin\ReportBillController;
 use App\Http\Controllers\Admin\StudentCounselingScoreController;
+use App\Http\Controllers\User\WaliAuthController;
+use App\Http\Controllers\User\WaliDashboardController;
 
 /*
 |--------------------------------------------------------------------------
@@ -57,6 +61,23 @@ use App\Http\Controllers\Admin\StudentCounselingScoreController;
 | be assigned to the "web" middleware group. Make something great!
 |
 */
+// start wali santri
+// add route group prefix and middleware
+
+Route::prefix('wali')->group(function () {
+    Route::get('login', [WaliAuthController::class, 'index'])->name('wali.login');
+    Route::post('login', [WaliAuthController::class, 'authenticate'])->name('wali.authenticate');
+    Route::post('logout', [WaliAuthController::class, 'logout'])->name('wali.logout');
+    Route::get('register', [WaliAuthController::class, 'register'])->name('wali.register');
+    Route::post('register', [WaliAuthController::class, 'store']);
+
+    Route::middleware('wali')->group(function () {
+        Route::resource('dashboard', WaliDashboardController::class)->names('wali.dashboard');
+    });
+});
+
+
+
 
 Route::get('/', function () {
     return view('admins.auth.login');
@@ -68,7 +89,6 @@ Route::post('/login', [AuthController::class, 'authenticate'])->name('authentica
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 Route::get('translate', [TranslateController::class, 'index'])->name('translate');
 Route::post('translate_post', [TranslateController::class, 'translatePost'])->name('translate_post');
-Route::post('/upload-image', [ImageUploadController::class, 'upload'])->name('upload.image');
 //end auth
 
 // start status
@@ -160,12 +180,11 @@ Route::group(['middleware' => ['auth']], function () {
     Route::get('report-bill/get-data', [ReportBillController::class, 'getData'])->name('report-bill.get-data');
     Route::resource('report-bill', ReportBillController::class, ['only' => ['index', 'show']])->names('report-bill');
 
+    // start ppdb
+    Route::resource('ppdb-type', PpdbTypeController::class);
+    Route::resource('ppdb', PpdbController::class, ['except' => ['show']]);
+
     Route::group(['prefix' => 'information'], function () {
-        Route::resource(
-            'privacy-policy',
-            PrivacyPolicyController::class,
-            ['only' => ['index', 'store']]
-        )->names('privacy-policy');
         Route::resource(
             'term-condition',
             TermConditionController::class,
@@ -173,4 +192,6 @@ Route::group(['middleware' => ['auth']], function () {
         )->names('term-condition');
     });
 });
+
+
 Route::get('transaction/invoice/{id}', [TransactionController::class, 'invoice'])->name('transaction.invoice');
