@@ -131,32 +131,37 @@ class ReportBillController extends Controller
 
     public function sendBillNotification(Request $request)
     {
-        $data = Student::with('classroom', 'school', 'bills')
+        $query = Student::with('classroom', 'school', 'bills')
             ->whereHas('bills', function ($query) {
                 $query->where('status', Bill::STATUS_UNPAID);
             })
-            ->when(request()->school_id, function ($query) {
-                $query->where('school_id', request()->school_id);
+            ->when($request->school_id, function ($query) use ($request) {
+                $query->where('school_id', $request->school_id);
             })
-            ->when(request()->classroom_id, function ($query) {
-                $query->where('classroom_id', request()->classroom_id);
+            ->when($request->classroom_id, function ($query) use ($request) {
+                $query->where('classroom_id', $request->classroom_id);
             })
-            ->when(request()->academic_year_id, function ($query) {
-                $query->whereHas('bills', function ($query) {
-                    $query->where('academic_year_id', request()->academic_year_id);
+            ->when($request->academic_year_id, function ($query) use ($request) {
+                $query->whereHas('bills', function ($query) use ($request) {
+                    $query->where('academic_year_id', $request->academic_year_id);
                 });
             })
-            ->when(request()->bill_type_id, function ($query) {
-                $query->whereHas('bills', function ($query) {
-                    $query->where('bill_type_id', request()->bill_type_id);
+            ->when($request->bill_type_id, function ($query) use ($request) {
+                $query->whereHas('bills', function ($query) use ($request) {
+                    $query->where('bill_type_id', $request->bill_type_id);
                 });
             })
-            ->orderBy('name', 'asc')
-            ->get();
-        $billTypes = BillType::whereHas('bills.student', function ($query) use ($data) {
-            $query->whereIn('student_id', $data->pluck('id')->toArray());
+            ->orderBy('name', 'asc');
+
+        $data = $query->get();
+        $studentIds = $data->pluck('id');
+
+        $billTypes = BillType::whereHas('bills.student', function ($query) use ($studentIds) {
+            $query->whereIn('student_id', $studentIds);
         })->get();
+
         dispatch(new SendBillWhatsappNotificationJob($data, $billTypes));
-        return $this->getSuccessResponse($data);
+
+        return $this->postSuccessResponse("Berhasil mengirimkan notifikasi tagihan", null);
     }
 }

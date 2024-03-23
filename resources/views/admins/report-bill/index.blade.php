@@ -151,9 +151,12 @@
                     <!-- Add Button for WA Blast -->
                     <div class="text-center mt-3">
                         <button class="btn btn-success" id="send-blast-notif"><i class="bi bi-whatsapp"></i>
-                            Kirim
-                            Notif
-                            Tagihan WA</button>
+                            <span class="indicator-label" id="buttonText">Kirim
+                                Notif
+                                Tagihan WA</span>
+                            <span class="indicator-progress d-none">Please wait...
+                                <span class="spinner-border spinner-border-sm align-middle ms-2"></span>
+                            </span></button>
                     </div>
                 </div>
                 <!--end::Card body-->
@@ -248,38 +251,59 @@
     searchData();
     });
 
-    // Send Bill Notif on click send-blast-notif
-    $('#send-blast-notif').on('click', function() {
-        // get all user selected
-        var school_id = $('#filter_school_id').val();
-        var classroom_id = $('#filter_classroom_id').val();
-        var academic_year_id = $('#filter_academic_year_id').val();
-        var bill_type_id = $('#filter_bill_type_id').val();
-        var status = $('#filter_status').val();
+ // Send Bill Notif on click send-blast-notif
+$('#send-blast-notif').on('click', function() {
+var button = $(this);
+changeButtonText(button, true); // Change button text and disable button
+// get data filter
+var school_id = $('#filter_school_id').val();
+var classroom_id = $('#filter_classroom_id').val();
+var academic_year_id = $('#filter_academic_year_id').val();
+var bill_type_id = $('#filter_bill_type_id').val();
+var status = $('#filter_status').val();
 
+// send data to form use ajax
+$.ajax({
+url: "{{ route('report-bill.send-bill-notification') }}",
+type: "POST",
+data: {
+_token: "{{ csrf_token() }}", // Add CSRF token here
+school_id: school_id,
+classroom_id: classroom_id,
+academic_year_id: academic_year_id,
+bill_type_id: bill_type_id,
+status: status
+},
+success: function(response) {
+if (response.code == 200) {
+toastr.success("Berhasil mengirim notifikasi tagihan ke WhatsApp");
+} else {
+toastr.error(response.message);
+}
+},
+error: function(xhr, status, error) {
+toastr.error("Terjadi kesalahan saat mengirim notifikasi: " + error);
+},
+complete: function() {
+changeButtonText(button, false); // Restore button text and enable button
+}
+});
+});
 
-        // send data to form use ajax
-        $.ajax({
-        url: "{{ route('report-bill.send-bill-notification') }}",
-        type: "POST",
-        data: {
-        _token: "{{ csrf_token() }}", // Add CSRF token here
-        school_id: school_id,
-        classroom_id: classroom_id,
-        academic_year_id: academic_year_id,
-        bill_type_id: bill_type_id,
-        status: status
-        },
-        success: function(response) {
-        console.log(response);
-        if (response.status == 'success') {
-        toastr.success(response.message);
-        } else {
-        toastr.error(response.message);
-        }
-        }
-        });
-    });
+function changeButtonText(button, sending) {
+var buttonText = button.find('.indicator-label');
+var indicatorProgress = button.find('.indicator-progress');
+
+if (sending) {
+buttonText.text('Mengirim Notifikasi...');
+button.attr('disabled', true);
+indicatorProgress.removeClass('d-none');
+} else {
+buttonText.text('Kirim Notif Tagihan WA');
+button.removeAttr('disabled');
+indicatorProgress.addClass('d-none');
+}
+}
 });
 
 </script>

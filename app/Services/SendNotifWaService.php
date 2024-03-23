@@ -97,7 +97,6 @@ class SendNotifWaService
         $message .= "3. Nama Santri : *" . $student->name . "*\n";
         $message .= "4. Kelas : *" . $student->classroom->name . "*\n";
 
-
         $must_pay = 0;
         foreach ($billTypes as $billType) {
             $total_unpaid = $billType->bills
@@ -109,8 +108,9 @@ class SendNotifWaService
             $message .= "Total Tagihan : *Rp." . number_format($billType->bills->where('student_id', $student->id)
                 ->sum('amount'), 0, ',', '.') . "*\n";
             $message .= "Total Kekurangan: *Rp." . number_format($total_unpaid, 0, ',', '.') . "*\n";
-            $message .= "Status Pembayaran : *" . $total_unpaid > 0 ? 'Belum Lunas' : 'Lunas' . "*\n";
+            $message .= "Status Pembayaran : *" . ($total_unpaid > 0 ? 'Belum Lunas' : 'Lunas') . "*\n";
         }
+        $message .= "\n";
         $message .= "--------------------------------\n";
         $message .= "Total Kekurangan : *Rp." . number_format($must_pay, 0, ',', '.') . "*\n";
         $message .= "--------------------------------\n";
