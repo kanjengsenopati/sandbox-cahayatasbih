@@ -47,7 +47,7 @@
                         <!--begin::Menu wrapper-->
                         <div class="cursor-pointer symbol symbol-30px symbol-md-40px" data-kt-menu-trigger="click"
                             data-kt-menu-attach="parent" data-kt-menu-placement="bottom-end">
-                            <img src="{{ asset(auth()->user()->avatar ?? 'assets/media/avatars/150-26.jpg') }}"
+                            <img src="{{ asset(auth('wali')->user()->avatar ?? 'assets/media/avatars/150-26.jpg') }}"
                                 alt="user" />
                         </div>
                         <!--begin::Menu-->
@@ -59,18 +59,18 @@
                                     <!--begin::Avatar-->
                                     <div class="symbol symbol-50px me-5">
                                         <img alt="Logo"
-                                            src="{{ asset(auth()->user()->avatar ?? 'assets/media/avatars/150-26.jpg') }}" />
+                                            src="{{ asset(auth('wali')->user()->avatar ?? 'assets/media/avatars/150-26.jpg') }}" />
                                     </div>
                                     <!--end::Avatar-->
                                     <!--begin::Username-->
                                     <div class="d-flex flex-column">
                                         <div class="fw-bolder d-flex align-items-center fs-5">
-                                            {{ auth()->user()->name ?? 'User' }}
+                                            {{ auth('wali')->user()->name ?? 'User' }}
                                             <span
                                                 class="badge badge-light-success fw-bolder fs-8 px-2 py-1 ms-2"></span>
                                         </div>
                                         <a href="#" class="fw-bold text-muted text-hover-primary fs-7">{{
-                                            auth()->user()?->roles?->first()?->name ?? 'Admin' }}</a>
+                                            auth('wali')->user()->phone ?? '' }}</a>
                                     </div>
                                     <!--end::Username-->
                                 </div>

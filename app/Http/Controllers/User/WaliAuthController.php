@@ -2,10 +2,12 @@
 
 namespace App\Http\Controllers\User;
 
+use App\Models\User;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Auth;
 use App\Http\Requests\User\AuthRequest;
+use App\Http\Requests\User\WaliRegisterRequest;
 
 class WaliAuthController extends Controller
 {
@@ -33,5 +35,27 @@ class WaliAuthController extends Controller
     {
         Auth::guard('wali')->logout();
         return redirect('/wali/login');
+    }
+
+    public function register()
+    {
+        return view('users.auth.register');
+    }
+
+    public function store(WaliRegisterRequest $request)
+    {
+        $userData = $request->validated();
+
+        // Hash the password
+        $userData['password'] = bcrypt($userData['password']);
+
+        // Set a default avatar
+        $userData['avatar'] = 'assets/media/avatars/default_avatar.jpg';
+
+        // Create the user
+        User::create($userData);
+
+        // Redirect with success message
+        return redirect()->route('wali.login')->with('success', 'Registrasi berhasil, silakan login');
     }
 }

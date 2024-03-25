@@ -70,7 +70,7 @@ Route::prefix('wali')->group(function () {
     Route::post('login', [WaliAuthController::class, 'authenticate'])->name('wali.authenticate');
     Route::post('logout', [WaliAuthController::class, 'logout'])->name('wali.logout');
     Route::get('register', [WaliAuthController::class, 'register'])->name('wali.register');
-    Route::post('register', [WaliAuthController::class, 'store']);
+    Route::post('register', [WaliAuthController::class, 'store'])->name('wali.register.store');
 
     Route::middleware('wali')->group(function () {
         Route::get('dashboard', [WaliDashboardController::class, 'index'])->name('wali.dashboard');

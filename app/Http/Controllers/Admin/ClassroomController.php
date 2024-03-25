@@ -58,7 +58,7 @@ class ClassroomController extends Controller
     {
         $data = $request->validated();
         $classroom->update($data);
-        return redirect()->route('school.show', $data['school_id'])->with('success', 'Kelas berhasil diperbarui');
+        return redirect()->route('school.show', $classroom->school_id)->with('success', 'Kelas berhasil diperbarui');
     }
 
     /**

@@ -51,7 +51,7 @@
                 <div class="card-header d-flex align-items-center justify-content-between border-0 pt-6">
                     <!--begin::Card title-->
                     <div class="card-title">
-                        <h3 class="text-dark">Laporan Tagihan Pembayaran</h3>
+                        <h3 class="text-dark">Data PPDB Yang Sedang Berlangsung</h3>
                     </div>
                     <!--end::Card title-->
                 </div>
