@@ -48,17 +48,12 @@
                 <div
                     class="card-header d-flex align-items-end gap-5 flex-sm-row mb-5 justify-content-between border-0 pt-6">
                     <div class="d-flex flex-wrap justify-content-beetween gap-5">
-                        {{-- <div class="mb-0">
-                            <label class="form-label">Filter Tanggal</label>
-                            <div class="d-flex
-                                gap-4 align-items-end">
-                                <div id="dateRange" class="pull-right"
-                                    style="background: #fff; cursor: pointer; padding: 5px 10px; border: 1px solid #ccc;float: top;">
-                                    <i class="glyphicon glyphicon-calendar fa fa-calendar"></i>&nbsp;
-                                    <span></span> <b class="caret"></b>
-                                </div>
-                            </div>
-                        </div> --}}
+                        <div class="mb-0">
+                            <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal"
+                                data-bs-target="#modalImport">
+                                + Import Data
+                            </button>
+                        </div>
                         <div class="mb-0">
 
                         </div>
@@ -69,7 +64,7 @@
                         </div>
                         <div>
                             <a type="a" class="btn btn-sm btn-primary" id="btn_add_permission"
-                                href="{{ route('user.create') }}">+ User</a>
+                                href="{{ route('user.create') }}">+ Wali Santri</a>
                         </div>
                     </div>
                     <!--end::Card title-->
@@ -107,9 +102,38 @@
     </div>
     <!--end::Post-->
 </div>
+<!--end::Content-->
+<div class="modal fade" id="modalImport" tabindex="-1" aria-labelledby="modalImportLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form action="{{ route('user.import') }}" method="POST" enctype="multipart/form-data">
+                @csrf
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modalImportLabel">Import Data Wali Santri</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="file" class="form-label">File Excel</label>
+                        <input class="form-control" type="file" name="file" id="file">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    {{-- add button donload template in left --}}
+                    <div class="me-auto">
+                        <a href="assets\media\template\import\Template Import Data Wali Santri.xlsx"
+                            class="btn btn-light-primary"><i class="fa fa-download"></i> Template</a>
+                    </div>
+
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                    <button type="submit" class="btn btn-primary">Import</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
 @endsection
 @push('js')
-
 <script>
     $(document).ready(() => {
     var table = $('#table-user').DataTable({

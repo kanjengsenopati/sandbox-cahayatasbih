@@ -50,6 +50,7 @@ use App\Http\Controllers\Admin\InformationCategoryController;
 use App\Http\Controllers\Admin\StudentCounselingScoreController;
 use App\Http\Controllers\User\WaliAuthController;
 use App\Http\Controllers\User\WaliDashboardController;
+use App\Http\Controllers\User\WaliPpdbController;
 
 /*
 |--------------------------------------------------------------------------
@@ -73,6 +74,7 @@ Route::prefix('wali')->group(function () {
 
     Route::middleware('wali')->group(function () {
         Route::get('dashboard', [WaliDashboardController::class, 'index'])->name('wali.dashboard');
+        Route::resource('ppdb', WaliPpdbController::class)->names('wali.ppdb');
     });
 });
 
@@ -105,6 +107,7 @@ Route::group(['middleware' => ['auth']], function () {
     Route::resource('permission', PermissionController::class, ['except' => ['show']]);
     Route::resource('role', RoleController::class);
     Route::resource('admin', AdminController::class);
+    Route::post('user/import', [UserController::class, 'import'])->name('user.import');
     Route::resource('user', UserController::class);
     Route::resource('school', SchoolController::class);
     Route::resource('classroom', ClassroomController::class, ['except' => ['index', 'show']]);

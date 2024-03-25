@@ -4,8 +4,12 @@ namespace App\Http\Controllers\Admin;
 
 use App\Models\User;
 use Illuminate\Http\Request;
+use App\Imports\UserImportData;
 use Yajra\DataTables\DataTables;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\Controller;
+use Maatwebsite\Excel\Facades\Excel;
 use App\Http\Requests\Admin\UserRequest;
 
 class UserController extends Controller
@@ -97,5 +101,29 @@ class UserController extends Controller
         file_exists($user->avatar) ? unlink($user->avatar) : '';
         $user->delete();
         return redirect()->route('user.index')->with('success', 'Berhasil menghapus data user');
+    }
+
+    /**
+     * Remove the specified resource from storage.
+     */
+
+    public function import(Request $request)
+    {
+        try {
+            $request->validate([
+                'file' => 'required|mimes:xls,xlsx'
+            ]);
+
+            return DB::transaction(function () use ($request) {
+                Excel::import(new UserImportData, $request->file('file'));
+                return redirect()->route('user.index')->with('success', 'Data berhasil diimport');
+            });
+        } catch (\Exception $e) {
+            // Log the exception
+            Log::error('Import failed: ' . $e->getMessage());
+
+            // Return with an error message or handle the exception as needed
+            return redirect()->back()->with('error', 'Data gagal diimport');
+        }
     }
 }
