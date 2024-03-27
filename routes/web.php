@@ -48,9 +48,11 @@ use App\Http\Controllers\Admin\ApplicationSettingController;
 use App\Http\Controllers\Admin\StudentAchievementController;
 use App\Http\Controllers\Admin\InformationCategoryController;
 use App\Http\Controllers\Admin\StudentCounselingScoreController;
+use App\Http\Controllers\User\PpdbHistoryController;
 use App\Http\Controllers\User\WaliAuthController;
 use App\Http\Controllers\User\WaliDashboardController;
 use App\Http\Controllers\User\WaliPpdbController;
+use App\Http\Controllers\User\WaliSettingLimitSaldoController;
 
 /*
 |--------------------------------------------------------------------------
@@ -75,6 +77,10 @@ Route::prefix('wali')->group(function () {
     Route::middleware('wali')->group(function () {
         Route::get('dashboard', [WaliDashboardController::class, 'index'])->name('wali.dashboard');
         Route::resource('ppdb', WaliPpdbController::class)->names('wali.ppdb');
+        Route::get('ppdb-history/pay/{id}', [PpdbHistoryController::class, 'pay'])->name('wali.ppdb-history.pay');
+        Route::resource('ppdb-history', PpdbHistoryController::class)->names('wali.ppdb-history');
+        Route::resource('setting-limit-saldo', WaliSettingLimitSaldoController::class)
+            ->names('wali.setting-limit-saldo');
     });
 });
 

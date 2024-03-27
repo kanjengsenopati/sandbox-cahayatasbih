@@ -1,4 +1,4 @@
-@extends('layouts.master', ['title' => 'Tipe PPDB'])
+@extends('layouts.user', ['title' => 'Setting Limit Saldo'])
 @section('content')
 <div class="content d-flex flex-column flex-column-fluid" id="kt_content">
     <!--begin::Toolbar-->
@@ -10,7 +10,7 @@
                 data-kt-swapper-parent="{default: '#kt_content_container', 'lg': '#kt_toolbar_container'}"
                 class="page-title d-flex align-items-center flex-wrap me-3 mb-5 mb-lg-0">
                 <!--begin::Title-->
-                <h1 class="d-flex text-dark fw-bolder fs-3 align-items-center my-1">PPDB</h1>
+                <h1 class="d-flex text-dark fw-bolder fs-3 align-items-center my-1">Setting Limit Saldo</h1>
                 <!--end::Title-->
                 <!--begin::Separator-->
                 <span class="h-20px border-gray-300 border-start mx-4"></span>
@@ -19,7 +19,7 @@
                 <ul class="breadcrumb breadcrumb-separatorless fw-bold fs-7 my-1">
                     <!--begin::Item-->
                     <li class="breadcrumb-item text-muted">
-                        <a href="{{ route('ppdb-type.index') }}" class="text-muted text-hover-primary">Tipe PPDB</a>
+                        <a href="{{ route('wali.dashboard') }}" class="text-muted text-hover-primary">Dashboard</a>
                     </li>
                     <!--end::Item-->
                     <!--begin::Item-->
@@ -28,7 +28,7 @@
                     </li>
                     <!--end::Item-->
                     <!--begin::Item-->
-                    <li class="breadcrumb-item text-dark">Data Tipe PPDB</li>
+                    <li class="breadcrumb-item text-dark">Setting Limit Saldo</li>
                     <!--end::Item-->
                 </ul>
                 <!--end::Breadcrumb-->
@@ -53,11 +53,6 @@
                     <div class="card-title">
                         {{-- <h3 class="text-dark">Sekolah</h3> --}}
                     </div>
-                    <div class="">
-                        <a type="a" class="btn btn-sm btn-primary" id="btn_add_permission"
-                            href="{{ route('ppdb-type.create') }}">+ Tipe PPDB</a>
-                        <!--end::Primary button-->
-                    </div>
                     <!--end::Card title-->
                 </div>
                 <!--end::Card header-->
@@ -65,13 +60,15 @@
                 <div class="card-body pt-0">
                     <!--begin::Table-->
                     <div class="table-responsive">
-                        <table id="table-ppdb-type" class="table align-middle table-row-dashed ">
+                        <table id="table-academic-year" class="table align-middle table-row-dashed ">
                             <thead>
                                 <tr class="text-start text-gray-400 fw-bolder fs-7 text-uppercase gs-0">
                                     <th style="width: 5%">No</th>
-                                    <th>Nama</th>
-                                    <th>Tipe</th>
-                                    <th>Status</th>
+                                    <th>Santri</th>
+                                    <th>Kelas</th>
+                                    <th>Sekolah</th>
+                                    <th>Saldo</th>
+                                    <th>Limit Saldo</th>
                                     <th class="text-center min-w-100px" style="width: 22%">Aksi</th>
                                 </tr>
                             </thead>
@@ -94,47 +91,56 @@
 @push('js')
 <script>
     $(document).ready(() => {
-        var tablePPdbType = $('#table-ppdb-type').DataTable({
-            ordering: false,
-            processing: true,
-            serverSide: true,
-            ajax: "{{ route('ppdb-type.index') }}",
-            language: {
-                "paginate": {
-                    "next": "<i class='fa fa-angle-right'></i>",
-                    "previous": "<i class='fa fa-angle-left'></i>"
+            var table = $('#table-academic-year').DataTable({
+                ordering: false,
+                processing: true,
+                serverSide: true,
+                ajax: "{{ route('wali.setting-limit-saldo.index') }}",
+                language: {
+                    "paginate": {
+                        "next": "<i class='fa fa-angle-right'>",
+                        "previous": "<i class='fa fa-angle-left'>"
+                    },
+                    "loadingRecords": "Loading...",
+                    "processing": "Processing...",
                 },
-                "loadingRecords": "Loading...",
-                "processing": "Processing...",
-            },
-            columns: [{
-                    "data": null,
-                    "sortable": false,
-                    "searchable": false,
-                    render: function(data, type, row, meta) {
-                        return meta.row + meta.settings._iDisplayStart + 1;
-                    }
-                },
-                {
-                    data: 'name',
-                    name: 'name'
-                },
-                {
-                    data: 'type',
-                    name: 'type',
-                },
-                {
-                    data: 'status',
-                    name: 'status'
-                },
-                {
-                    data: 'action',
-                    name: 'action',
-                    orderable: true,
-                    searchable: true
-                },
-            ]
-        });
-    });
+                columns: [{
+                        "data": null,
+                        "sortable": false,
+                        "searchable": false,
+                        render: function(data, type, row, meta) {
+                            return meta.row + meta.settings._iDisplayStart + 1;
+                        }
+                    },
+                     {
+                        data: 'name',
+                        name: 'name'
+                    },
+                    {
+                        data: 'classroom.name',
+                        name: 'classroom.name'
+                    },
+                    {
+                        data: 'classroom.school.name',
+                        name: 'classroom.school.name'
+                    },
+                    {
+                        data: 'saldo',
+                        name: 'saldo'
+                    },
+                    {
+                        data: 'daily_limit',
+                        name: 'daily_limit'
+                    },
+                    {
+                        data: 'action',
+                        name: 'action',
+                        orderable: true,
+                        searchable: true
+                    },
+                ]
+            });
+
+        })
 </script>
 @endpush

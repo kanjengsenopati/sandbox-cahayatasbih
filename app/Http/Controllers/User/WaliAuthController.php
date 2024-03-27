@@ -20,14 +20,15 @@ class WaliAuthController extends Controller
     {
         if (Auth::guard('wali')->attempt($request->validated(), $request->remember)) {
             if (Auth::guard('wali')->user()->is_active) {
-                return redirect()->intended('/wali/dashboard');
+                return redirect()->route('wali.dashboard')
+                    ->with('success', 'Selamat datang ' . Auth::guard('wali')->user()->name);
             } else {
                 Auth::guard('wali')->logout();
                 return back()->with(['warning' => 'Maaf akun tidak aktif / diblokir, silakan hubungi administrator !!'])->withInput($request->only('email'));
             }
         } else {
-            return back()->with(['warning' => 'Maaf Nomor atau password tidak sesuai'])
-                ->withInput($request->only('phone'));
+            return redirect()->back()->with('error', 'Nomor Hp atau password salah')
+                ->withInput($request->only('phone', 'remember'));
         }
     }
 

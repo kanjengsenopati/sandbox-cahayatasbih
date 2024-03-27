@@ -55,53 +55,59 @@
                         <span class="menu-title">Dashboard</span>
                     </a>
                 </div>
-                {{-- @can('admin', 'permission', 'role')
                 <div data-kt-menu-trigger="click"
-                    class="menu-item menu-accordion {{ request()->routeIs(['admin.*', 'role.*', 'permission.*']) ? 'show' : '' }}">
+                    class="menu-item menu-accordion {{ request()->routeIs(['wali.ppdb.*','wali.ppdb-history.*']) ? 'show' : '' }}">
                     <span class="menu-link ">
                         <span class="menu-icon">
-                            <i class="fa-solid fa-user-shield" style="color: #ffffff;"></i>
+                            <i class=" fa-solid fa-user" style="color: #ffffff;"></i>
                         </span>
-                        <span class="menu-title">Menu Admin</span>
+                        <span class="menu-title">Menu PPDB</span>
                         <span class="menu-arrow"></span>
                     </span>
                     <div class="menu-sub menu-sub-accordion menu-active-bg">
-                        @can('permission')
                         <div class="menu-item ">
-                            <a class="menu-link {{ request()->routeIs('permission.*') ? ' active' : '' }}"
-                                href="{{ route('permission.index') }}">
+                            <a class="menu-link {{ request()->routeIs('wali.ppdb.*') ? ' active' : '' }}"
+                                href="{{ route('wali.ppdb.index') }}">
                                 <span class="menu-bullet">
                                     <span class="bullet bullet-dot"></span>
                                 </span>
-                                <span class="menu-title">Permission</span>
+                                <span class="menu-title">Pendaftaran PPDB</span>
                             </a>
                         </div>
-                        @endcan
-                        @can('role')
                         <div class="menu-item">
-                            <a class="menu-link {{ request()->routeIs('role.*') ? ' active' : '' }}"
-                                href="{{ route('role.index') }}">
+                            <a class="menu-link {{ request()->routeIs('wali.ppdb-history.*') ? ' active' : '' }}"
+                                href="{{ route('wali.ppdb-history.index') }}">
                                 <span class="menu-bullet">
                                     <span class="bullet bullet-dot"></span>
                                 </span>
-                                <span class="menu-title">Role</span>
+                                <span class="menu-title">Riwayat PPDB</span>
                             </a>
                         </div>
-                        @endcan
-                        @can('admin')
-                        <div class="menu-item">
-                            <a class="menu-link {{ request()->routeIs('admin.*') ? ' active' : '' }}"
-                                href="{{ route('admin.index') }}">
-                                <span class="menu-bullet">
-                                    <span class="bullet bullet-dot"></span>
-                                </span>
-                                <span class="menu-title">Admin</span>
-                            </a>
-                        </div>
-                        @endcan
+
                     </div>
                 </div>
-                @endcan --}}
+
+                <div data-kt-menu-trigger="click"
+                    class="menu-item menu-accordion {{ request()->routeIs(['wali.setting-limit-saldo.*']) ? 'show' : '' }}">
+                    <span class="menu-link ">
+                        <span class="menu-icon">
+                            <i class="fa-solid fa-dollar-sign" style="color: #ffffff;"></i>
+                        </span>
+                        <span class="menu-title">Menu Saldo</span>
+                        <span class="menu-arrow"></span>
+                    </span>
+                    <div class="menu-sub menu-sub-accordion menu-active-bg">
+                        <div class="menu-item ">
+                            <a class="menu-link {{ request()->routeIs('wali.setting-limit-saldo.*') ? ' active' : '' }}"
+                                href="{{ route('wali.setting-limit-saldo.index') }}">
+                                <span class="menu-bullet">
+                                    <span class="bullet bullet-dot"></span>
+                                </span>
+                                <span class="menu-title">Setting Limit Transaksi</span>
+                            </a>
+                        </div>
+                    </div>
+                </div>
 
                 {{-- <div data-kt-menu-trigger="click" class="menu-item menu-accordion {{ request()->routeIs(['school.*',
                     'academic-year.*','tahfidz.*','semester.*','study.*','study-grade.*']) ? 'show' : '' }}">
@@ -245,49 +251,7 @@
                     </div>
                 </div>
 
-                <div data-kt-menu-trigger="click"
-                    class="menu-item menu-accordion {{ request()->routeIs(['student-achievement.*','student-counseling-score.*','schedule.*']) ? 'show' : '' }}">
-                    <span class="menu-link ">
-                        <span class="menu-icon">
-                            <i class="fa-solid fa-award" style="color: #ffffff;"></i>
-                        </span>
-                        <span class="menu-title">Menu Prestasi Siswa</span>
-                        <span class="menu-arrow"></span>
-                    </span>
-                    <div class="menu-sub menu-sub-accordion menu-active-bg">
-                        <div class="menu-item ">
-                            <a class="menu-link {{ request()->routeIs('student-achievement.*') ? ' active' : '' }}"
-                                href="{{ route('student-achievement.index') }}">
-                                <span class="menu-bullet">
-                                    <span class="bullet bullet-dot"></span>
-                                </span>
-                                <span class="menu-title">Prestasi Siswa</span>
-                            </a>
-                        </div>
-                    </div>
-                    <div class="menu-sub menu-sub-accordion menu-active-bg">
-                        <div class="menu-item ">
-                            <a class="menu-link {{ request()->routeIs('student-counseling-score.*') ? ' active' : '' }}"
-                                href="{{ route('student-counseling-score.index') }}">
-                                <span class="menu-bullet">
-                                    <span class="bullet bullet-dot"></span>
-                                </span>
-                                <span class="menu-title">Nilai Konseling</span>
-                            </a>
-                        </div>
-                    </div>
-                    <div class="menu-sub menu-sub-accordion menu-active-bg">
-                        <div class="menu-item ">
-                            <a class="menu-link {{ request()->routeIs('schedule.*') ? ' active' : '' }}"
-                                href="{{ route('schedule.index') }}">
-                                <span class="menu-bullet">
-                                    <span class="bullet bullet-dot"></span>
-                                </span>
-                                <span class="menu-title">Jadwal Agenda</span>
-                            </a>
-                        </div>
-                    </div>
-                </div>
+
 
                 <div data-kt-menu-trigger="click"
                     class="menu-item menu-accordion {{ request()->routeIs(['category-item.*','item.*', 'stock-history.*','order-item.*', 'order-item-history.*','pos.dashboard']) ? 'show' : '' }}">

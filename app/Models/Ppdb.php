@@ -22,7 +22,8 @@ class Ppdb extends Model
         'description',
         'image',
         'slug',
-        'is_active'
+        'is_active',
+        'register_fee',
     ];
 
     public function ppdbType()

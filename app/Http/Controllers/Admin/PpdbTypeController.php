@@ -22,6 +22,10 @@ class PpdbTypeController extends Controller
                         '<span class="badge badge-danger">Nonaktif</span>
                     ';
                 })
+                ->editColumn('type', function ($data) {
+                    return $data->type == PpdbType::TYPE_JAMAAH ? '<span class="badge badge-primary">Jamaah</span>' :
+                        '<span class="badge badge-secondary">Non Jamaah</span>';
+                })
                 ->addColumn('action', function ($data) {
                     $actionEdit = route('ppdb-type.edit', $data->id);
                     $actionDelete = route('ppdb-type.destroy', $data->id);

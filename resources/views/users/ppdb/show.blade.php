@@ -65,12 +65,6 @@
                             <!--begin::Image-->
                             <img class="w-100 card-rounded" src="{{ asset($ppdb->image) }}" alt="" />
                             <!--end::Image-->
-                            <!--begin::Links-->
-                            {{-- <div class="overlay-layer card-rounded bg-dark bg-opacity-25">
-                                <a href="{{ route('wali.ppdb.create') }}"
-                                    class="btn btn-primary btn-sm btn-active-primary">Daftar</a>
-                            </div> --}}
-                            <!--end::Links-->
                         </div>
                         <!--end::Container-->
                     </div>
@@ -84,7 +78,7 @@
                     <!--end::Description-->
                     <!--begin::Daftar Button (Responsive)-->
                     <div class="text-center">
-                        <a href="{{ route('wali.ppdb.create') }}"
+                        <a href="{{ route('wali.ppdb.create',['ppdb_id' => $ppdb->id]) }}"
                             class="btn btn-primary btn-lg btn-active-primary">Daftar Sekarang</a>
                     </div>
                     <!--end::Daftar Button-->

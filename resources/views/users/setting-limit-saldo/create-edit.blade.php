@@ -1,4 +1,4 @@
-@extends('layouts.master', ['title' => 'Data Tipe PPDB'])
+@extends('layouts.user', ['title' => 'Setting Limit Saldo'])
 @section('content')
 <!--begin::Content-->
 <div class="content d-flex flex-column flex-column-fluid" id="kt_content">
@@ -11,7 +11,7 @@
                 data-kt-swapper-parent="{default: '#kt_content_container', 'lg': '#kt_toolbar_container'}"
                 class="page-title d-flex align-items-center flex-wrap me-3 mb-5 mb-lg-0">
                 <!--begin::Title-->
-                <h1 class="d-flex text-dark fw-bolder fs-3 align-items-center my-1">Data Tipe PPDB</h1>
+                <h1 class="d-flex text-dark fw-bolder fs-3 align-items-center my-1">Setting Limit Saldo</h1>
                 <!--end::Title-->
                 <!--begin::Separator-->
                 <span class="h-20px border-gray-300 border-start mx-4"></span>
@@ -22,10 +22,7 @@
 
                     <!--end::Item-->
                     <!--begin::Item-->
-                    <a class="breadcrumb-item" href="{{ route('ppdb-type.index') }}">
-                        <li class="text-muted">
-                            Tipe PPDB
-                        </li>
+                    <a class="breadcrumb-item" href="{{ route('wali.dashboard') }}">Dashboard</a>
                     </a>
                     <!--end::Item-->
                     <!--begin::Item-->
@@ -35,7 +32,8 @@
                     <!--end::Item-->
                     <!--begin::Item-->
                     <li class="breadcrumb-item text-dark">
-                        {{ request()->routeIs('ppdb-type.create') ? 'Tambah Tipe' : 'Edit Tipe' }}</li>
+                        Setting Limit Saldo
+                    </li>
                     <!--end::Item-->
                 </ul>
                 <!--end::Breadcrumb-->
@@ -58,76 +56,51 @@
                 <div class="col-xl-12">
                     <!--begin::Contacts-->
                     <div class="card card-flush h-lg-100" id="kt_contacts_main">
-                        <!--begin::Card header-->
-                        <div class="card-header pt-7" id="kt_chat_contacts_header">
-                            <!--begin::Card title-->
-                            <div class="card-title">
-                                <h1 class="d-flex text-dark fw-bolder fs-3 align-items-center">{{
-                                    request()->routeIs('ppdb-type.create') ? 'Tambah Tipe' : 'Edit Tipe' }}
-                                </h1>
-                            </div>
-                            <!--end::Card title-->
-                        </div>
-                        <!--end::Card header-->
                         <!--begin::Card body-->
                         <div class="card-body pt-5">
                             <!--begin::Form-->
                             <x-alert.alert-validation />
-                            <form id="ppdb-type"
-                                action="{{ request()->routeIs('ppdb-type.create') ? route('ppdb-type.store') : route('ppdb-type.update', @$ppdbType->id)}}"
-                                method="POST" enctype="multipart/form-data">
+                            <form id="academic-year" method="POST"
+                                action="{{ route('wali.setting-limit-saldo.update', $student->id) }}"
+                                enctype="multipart/form-data">
                                 @csrf
-                                <x-form.put-method />
+                                @method('PUT')
                                 <!--begin::Input group-->
                                 <div class="fv-row mb-7">
                                     <!--begin::Label-->
                                     <label class="fs-6 fw-bold form-label mt-3" for="name">
-                                        <span class="required">Nama Tipe PPDB</span>
-                                        <i class="fas fa-exclamation-circle ms-1 fs-7" data-bs-toggle="tooltip"
-                                            title="Nama Tipe PPDB"></i>
+                                        <span class="required">Nama Siswa</span>
                                     </label>
                                     <!--end::Label-->
                                     <!--begin::Input-->
-                                    <input type="text" class="form-control form-control-solid" name="name" id="name"
-                                        placeholder="Contoh: Jamaah" value="{{ @$ppdbType->name ?? old('name') }}"
-                                        required />
+                                    <input type="text" class="form-control form-control-lg form-control-solid" id="name"
+                                        name="name" value="{{ $student->name }}" readonly />
                                     <!--end::Input-->
                                 </div>
 
                                 <div class="fv-row mb-7">
                                     <!--begin::Label-->
-                                    <label class="fs-6 fw-bold form-label mt-3" for="is_active">
-                                        <span class="required">Tipe PPDB</span>
-                                        <i class="fas fa-exclamation-circle ms-1 fs-7" data-bs-toggle="tooltip"
-                                            title="Status Tipe PPDB"></i>
+                                    <label class="fs-6 fw-bold form-label mt-3" for="name">
+                                        <span class="required">Saldo Siswa</span>
                                     </label>
                                     <!--end::Label-->
                                     <!--begin::Input-->
-                                    <select name="type" id="type" class="form-control form-control-solid">
-                                        <option value="NON_JAMAAH" {{ @$ppdbType->type == 'NON_JAMAAH' ? 'selected' : ''
-                                            }}>
-                                            Non Jamaah </option>
-                                        <option value="JAMAAH" {{ @$ppdbType->type == 'JAMAAH' ? 'selected' : '' }}>
-                                    </select>
+                                    <input type="text" class="form-control form-control-lg form-control-solid" id="name"
+                                        name="name" value="{{ number_format($student->saldo) }}" readonly />
                                     <!--end::Input-->
                                 </div>
 
                                 <div class="fv-row mb-7">
                                     <!--begin::Label-->
-                                    <label class="fs-6 fw-bold form-label mt-3" for="is_active">
-                                        <span class="required">Status</span>
-                                        <i class="fas fa-exclamation-circle ms-1 fs-7" data-bs-toggle="tooltip"
-                                            title="Status Tipe PPDB"></i>
+                                    <label class="fs-6 fw-bold form-label mt-3" for="daily_limit">
+                                        <span class="required">Limit Transaksi Harian</span>
                                     </label>
                                     <!--end::Label-->
                                     <!--begin::Input-->
-                                    <select name="is_active" id="is_active" class="form-control form-control-solid">
-                                        <option value="1" {{ @$ppdbType->is_active == true ? 'selected' : '' }}>Aktif
-                                        </option>
-                                        <option value="0" {{ @$ppdbType->is_active == false ? 'selected' : '' }}>Tidak
-                                            Aktif
-                                        </option>
-                                    </select>
+                                    <input type="text"
+                                        class="form-control form-control-lg form-control-solid input-money"
+                                        id="daily_limit" name="daily_limit"
+                                        value="{{ number_format($student->daily_limit) }}" required />
                                     <!--end::Input-->
                                 </div>
                                 <!--end::Input group-->
@@ -137,7 +110,7 @@
                                 <!--begin::Action buttons-->
                                 <div class="d-flex justify-content-end">
                                     <!--begin::Button-->
-                                    <a href="{{ route('ppdb-type.index') }}">
+                                    <a href="{{ route('wali.setting-limit-saldo.index') }}">
                                         <button type="button" class="btn btn-sm btn-secondary me-3">Batal</button>
                                     </a>
                                     <!--end::Button-->
