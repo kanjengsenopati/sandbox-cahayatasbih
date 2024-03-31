@@ -123,6 +123,7 @@ Route::group(['middleware' => ['auth']], function () {
     Route::resource('classroom', ClassroomController::class, ['except' => ['index', 'show']]);
     Route::resource('academic-year', AcademicYearController::class, ['except' => ['show']]);
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+    Route::get('student/school/{id}', [StudentController::class, 'getClassrooms'])->name('student.get-classroom');
     Route::resource('student', StudentController::class);
     Route::resource('tahfidz', TahfidzController::class);
     Route::resource('category-item', CategoryItemController::class);

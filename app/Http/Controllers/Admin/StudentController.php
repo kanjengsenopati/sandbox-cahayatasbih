@@ -9,8 +9,8 @@ use Barryvdh\DomPDF\Facade\Pdf;
 use Yajra\DataTables\DataTables;
 use App\Models\ApplicationSetting;
 use App\Http\Controllers\Controller;
-
 use App\Http\Requests\Admin\StudentRequest;
+use App\Models\Classroom;
 use App\Models\SaldoHistory;
 use SimpleSoftwareIO\QrCode\Facades\QrCode;
 
@@ -22,15 +22,25 @@ class StudentController extends Controller
     public function index()
     {
         if (request()->ajax()) {
-            $data = Student::with('user')->latest()->get();
+            $data = Student::with('user', 'classroom.school')
+                ->when(request('school_id'), function ($query) {
+                    $query->whereHas('classroom', function ($query) {
+                        $query->where('school_id', request('school_id'));
+                    });
+                })
+                ->when(request('classroom_id'), function ($query) {
+                    $query->where('classroom_id', request('classroom_id'));
+                })
+                ->latest()->get();
             return DataTables::of($data)
                 ->editColumn('saldo', function ($data) {
                     return '<span class="badge bg-success">Rp ' . number_format($data->saldo, 0, ',', '.') . '</span>';
                 })
-                ->addColumn('date_of_birth', function ($data) {
-                    $birthPlace = $data->born_place ? $data->born_place . ', ' : '';
-                    $dateOfBirth = $data->birth_date ? date('d-m-Y', strtotime($data->birth_date)) : '';
-                    return $birthPlace . $dateOfBirth;
+                ->addColumn('classroom', function ($data) {
+                    return $data->classroom->name ?? 'Belum ada kelas';
+                })
+                ->addColumn('school', function ($data) {
+                    return $data->classroom->school->name ?? 'Belum ada sekolah';
                 })
                 ->addColumn('action', function ($data) {
                     $actionEdit = route('student.edit', $data->id);
@@ -42,10 +52,11 @@ class StudentController extends Controller
                         view('components.action.qr-code', ['action' => $actionPrint, 'label' => 'Cetak Kartu']) .
                         "</div>";
                 })
-                ->rawColumns(['action', 'saldo'])
+                ->rawColumns(['action', 'saldo', 'classroom', 'school'])
                 ->make(true);
         }
-        return view('admins.student.index');
+        $schools = School::orderBy('name')->get();
+        return view('admins.student.index', compact('schools'));
     }
 
     /**
@@ -125,7 +136,10 @@ class StudentController extends Controller
         $qrCode = QrCode::size(300)->generate($student->barcode);
         // Convert the QR code to base64
         $qrCodeBase64 = base64_encode($qrCode);
-        $pdf = PDF::loadView('admins.student-card.index', ['background' => $background, 'student' => $student, 'qrCode' => $qrCodeBase64])
+        $pdf = PDF::loadView('admins.student-card.index', [
+            'background' => $background,
+            'student' => $student, 'qrCode' => $qrCodeBase64
+        ])
             ->setPaper('a4', 'landscape');
 
         // Generate a random file name
@@ -133,5 +147,11 @@ class StudentController extends Controller
 
         // Return the PDF file as a download response
         return $pdf->stream($fileName);
+    }
+
+    public function getClassrooms($id)
+    {
+        $classrooms = Classroom::where('school_id', $id)->orderBy('name')->get();
+        return response()->json($classrooms);
     }
 }

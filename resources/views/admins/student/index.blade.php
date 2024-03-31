@@ -45,11 +45,35 @@
             <!--begin::Card-->
             <div class="card">
                 <!--begin::Card header-->
-                <div
+                {{-- <div
                     class="card-header d-flex align-items-end gap-5 flex-sm-row mb-5 justify-content-between border-0 pt-6">
                     <div class="d-flex flex-wrap justify-content-beetween gap-5">
                         <div class="mb-0">
-
+                            <div class="d-flex flex-wrap gap-5">
+                                <div class="d-flex flex-wrap gap-5">
+                                    <label for="filter_school" class="form-label fw-bold">UPT</label>
+                                    <select class="form-select" id="filter_school">
+                                        <option value="">Semua UPT</option>
+                                        @foreach ($schools as $school)
+                                        <option value="{{ $school->id }}">{{ $school->name }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                                <div class="d-flex flex-wrap gap-5">
+                                    <label for="filter_class" class="form-label fw-bold">Kelas</label>
+                                    <select class="form-select" id="filter_class">
+                                        <option value="">Semua Kelas</option>
+                                    </select>
+                                </div>
+                                <div class="d-flex flex-wrap gap-5">
+                                    <label for="filter_class" class="form-label fw-bold">Status</label>
+                                    <select class="form-select" id="filter_class">
+                                        <option value="">Semua Status</option>
+                                        <option value="1">Aktif</option>
+                                        <option value="0">Tidak Aktif</option>
+                                    </select>
+                                </div>
+                            </div>
                         </div>
                     </div>
                     <div class="mt-4 gap-2 d-flex justify-content-beetween align-items-end">
@@ -62,6 +86,43 @@
                         </div>
                     </div>
                     <!--end::Card title-->
+                </div> --}}
+                <div
+                    class="card-header d-flex align-items-end gap-5 flex-sm-row mb-5 justify-content-between border-0 pt-6">
+                    <div class="d-flex flex-wrap justify-content-between gap-5">
+                        <div class="mb-3">
+                            <label for="filter_school" class="form-label fw-bold">UPT</label>
+                            <select class="form-select" id="filter_school">
+                                <option value="">Semua UPT</option>
+                                @foreach ($schools as $school)
+                                <option value="{{ $school->id }}">{{ $school->name }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="filter_class" class="form-label fw-bold">Kelas</label>
+                            <select class="form-select" id="filter_class">
+                                <option value="">Semua Kelas</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label for="filter_status" class="form-label fw-bold">Status</label>
+                            <select class="form-select" id="filter_status">
+                                <option value="">Semua Status</option>
+                                <option value="1">Aktif</option>
+                                <option value="0">Tidak Aktif</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="d-flex flex-column flex-sm-row align-items-end">
+                        <div class="me-sm-3 mb-3 mb-sm-0">
+                            <!-- Leave this empty for spacing -->
+                        </div>
+                        <div>
+                            <a type="button" class="btn btn-sm btn-primary" id="btn_add_permission"
+                                href="{{ route('student.create') }}">+ Siswa</a>
+                        </div>
+                    </div>
                 </div>
                 <!--end::Card header-->
                 <!--begin::Card body-->
@@ -71,13 +132,12 @@
                         <table id="table-student" class="table table-striped border rounded gy-5 gs-7">
                             <thead>
                                 <tr class="fw-bolder fs-6 text-gray-800 border-bottom border-gray-200">
-                                    <th width="3%">No</th>
-                                    <th>NISN</th>
+                                    <th style="width: 3%">No</th>
                                     <th>NIS</th>
                                     <th>Nama</th>
                                     <th>Wali Siswa</th>
-                                    <th>TTL</th>
-                                    <th>Gender</th>
+                                    <th>UPT</th>
+                                    <th>Kelas</th>
                                     <th>Saldo</th>
                                     <th class="text-center min-w-100px">Aksi</th>
                                 </tr>
@@ -99,90 +159,96 @@
 </div>
 @endsection
 @push('js')
-
 <script>
     $(document).ready(() => {
-    var table = $('#table-student').DataTable({
-    ordering: false,
-    processing: true,
-    serverSide: true,
-    ajax: "{{ route('student.index') }}",
-    language: {
-    "paginate": {
-    "next": "<i class='fa fa-angle-right'>",
-        "previous": "<i class='fa fa-angle-left'>"
-            },
-            "loadingRecords": "Loading...",
-            "processing": "Processing...",
-            },
-            columns: [{
-            "data": null,
-            "sortable": false,
-            "searchable": false,
-            render: function(data, type, row, meta) {
-            return meta.row + meta.settings._iDisplayStart + 1;
-            }
-            },
-            {
-            data: 'nisn',
-            name: 'nisn',
-            },
-            {
-                data: 'nis',
-                name: 'nis',
-                render: function(data, type, row) {
-                return data ? data : 'Belum diisi';
+        // Initialize DataTable
+        var table = $('#table-student').DataTable({
+            ordering: false,
+            processing: true,
+            serverSide: true,
+            ajax: {
+                url: '{{ route('student.index') }}',
+                data: function(d) {
+                    d.school_id = $('#filter_school').val();
+                    d.classroom_id = $('#filter_class').val();
+                    d.status = $('#filter_status').val();
                 }
             },
-            {
-            data: 'name',
-            name: 'name',
-            responsivePriority: -1,
+            language: {
+                "paginate": {
+                    "next": "<i class='fa fa-angle-right'></i>",
+                    "previous": "<i class='fa fa-angle-left'></i>"
+                },
+                "loadingRecords": "Loading...",
+                "processing": "Processing...",
             },
-            {
-                data: 'user.name',
-                name: 'user.name',
-                responsivePriority: -1,
-            },
-            {
-            data: 'date_of_birth',
-            name: 'date_of_birth'
-            },
-            {
-            data: 'gender',
-            name: 'gender',
-            render: function(data, type, row) {
-            let badgeClass = '';
-            let label = '';
-            
-            if (data == 'L') {
-            badgeClass = 'badge-light-primary';
-            label = 'Laki-laki';
-            } else if (data == 'P') {
-            badgeClass = 'badge-light-danger';
-            label = 'Perempuan';
-            } else {
-            badgeClass = 'badge-light-warning';
-            label = 'Tidak diketahui';
-            }
-            
-            return `<span class="badge ${badgeClass}">${label}</span>`;
-            },
-            },
-            {
-            data: 'saldo',
-            name: 'saldo',
-            },
-            {
-            data: 'action',
-            name: 'action',
-            orderable: true,
-            searchable: true,
-            responsivePriority: -1,
-            },
+            columns: [
+                {
+                    "data": null,
+                    "sortable": false,
+                    "searchable": false,
+                    render: function(data, type, row, meta) {
+                        return meta.row + meta.settings._iDisplayStart + 1;
+                    }
+                },
+                {
+                    data: 'nis',
+                    name: 'nis',
+                    render: function(data, type, row) {
+                        return data ? data : 'Belum diisi';
+                    }
+                },
+                {
+                    data: 'name',
+                    name: 'name',
+                    responsivePriority: -1,
+                },
+                {
+                    data: 'user.name',
+                    name: 'user.name',
+                    responsivePriority: -1,
+                },
+                {
+                    data: 'school',
+                    name: 'school',
+                },
+                {
+                    data: 'classroom',
+                    name: 'classroom',
+                },
+                {
+                    data: 'saldo',
+                    name: 'saldo',
+                },
+                {
+                    data: 'action',
+                    name: 'action',
+                    orderable: true,
+                    searchable: true,
+                    responsivePriority: -1,
+                },
             ]
+        });
+
+        // Populate filter_class on school change
+        $('#filter_school').on('change', function() {
+            var school_id = $(this).val();
+            var url = "{{ route('student.get-classroom', ':id') }}".replace(':id', school_id);
+
+            $.get(url, function(data) {
+                $('#filter_class').html('<option value="">Semua Kelas</option>');
+                if (data.length > 0) {
+                    $.each(data, function(index, value) {
+                        $('#filter_class').append('<option value="' + value.id + '">' + value.name + '</option>');
+                    });
+                }
             });
-                
-                })
+        });
+
+        // Reload DataTable on filter change
+        $('#filter_school, #filter_class, #filter_status').on('change', function() {
+            table.ajax.reload();
+        });
+    });
 </script>
 @endpush
