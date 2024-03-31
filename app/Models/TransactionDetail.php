@@ -16,6 +16,7 @@ class TransactionDetail extends Model
         'bill_id',
         'saldo_history_id',
         'saving_history_id',
+        'ppdb_registration_id',
     ];
 
     public function transaction()
@@ -36,5 +37,10 @@ class TransactionDetail extends Model
     public function savingHistory()
     {
         return $this->belongsTo(SavingHistory::class)->withTrashed();
+    }
+
+    public function ppdbRegistration()
+    {
+        return $this->belongsTo(PpdbRegistration::class)->withTrashed();
     }
 }

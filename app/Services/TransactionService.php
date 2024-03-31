@@ -190,4 +190,34 @@ class TransactionService
         dispatch(new SendToPushNotificationJob($title, $body, $transaction->student->user, $transaction));
         dispatch(new SendToWhatsappNotificationJob($transaction->student->user->phone, $messageWhatsapp));
     }
+
+    public static function createPaymentPpdb($request, $paymentMethodType)
+    {
+        $appSetting = ApplicationSetting::latest()->first();
+        $expiryTimeInMinutes = $appSetting->getPaymentExpireTimeInMinutesAttribute();
+        $paymentCode = 'CHT-' . Str::random(3) . time();
+
+        $transactionData = [
+            'pay_amount' => self::getTotalPayAmount($request->bill_ids),
+            'payment_code' => $paymentCode,
+            'student_id' => $request->student_id,
+            'expiry_time' => Carbon::now()->addMinutes($expiryTimeInMinutes),
+            'status' => Transaction::STATUS_PENDING,
+            'paid_at' => null,
+        ];
+
+        $transaction = Transaction::create(array_merge($transactionData, $request->validated()));
+
+        foreach ($request->bill_ids as $billId) {
+            $transaction->transactionDetails()->create([
+                'bill_id' => $billId,
+            ]);
+        }
+
+        if ($transaction->status == Transaction::STATUS_PAID && $paymentMethodType == PaymentMethod::TYPE_XENDIT) {
+            TransactionService::changeStatusToPaid($transaction);
+        }
+
+        return $transaction;
+    }
 }

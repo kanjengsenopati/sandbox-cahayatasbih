@@ -17,6 +17,7 @@ use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\Controller;
 use App\Jobs\SendToWhatsappNotificationJob;
 use App\Models\ApplicationSetting;
+use App\Models\School;
 use App\Services\NotificationService;
 use App\Services\SendNotifWaService;
 
@@ -42,20 +43,25 @@ class DashboardController extends Controller
         }
         $total_students = Student::count();
         $total_classes = Classroom::count();
+        $total_schools = School::count();
         $data = [
             'total_students' => $total_students,
             'total_classes' => $total_classes,
+            'total_schools' => $total_schools,
         ];
         // hitung total pemasukkan hari ini, bulan ini, tahun ini
         $transactions = Transaction::where('status', Transaction::STATUS_PAID)->get();
 
-        $today = $transactions->where('created_at', '>=', now()->startOfDay())->where('created_at', '<=', now()->endOfDay());
+        $today = $transactions->where('created_at', '>=', now()->startOfDay())
+            ->where('created_at', '<=', now()->endOfDay());
         $total_income_today = $today->sum('pay_amount');
 
-        $month = $transactions->where('created_at', '>=', now()->startOfMonth())->where('created_at', '<=', now()->endOfMonth());
+        $month = $transactions->where('created_at', '>=', now()->startOfMonth())
+            ->where('created_at', '<=', now()->endOfMonth());
         $total_income_month = $month->sum('pay_amount');
 
-        $year = $transactions->where('created_at', '>=', now()->startOfYear())->where('created_at', '<=', now()->endOfYear());
+        $year = $transactions->where('created_at', '>=', now()->startOfYear())
+            ->where('created_at', '<=', now()->endOfYear());
         $total_income_year = $year->sum('pay_amount');
 
         $total = $transactions->sum('pay_amount');

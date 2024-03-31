@@ -79,7 +79,6 @@ class BillController extends Controller
         } catch (\Throwable $th) {
             DB::rollBack();
             Log::error($th);
-            dd($th);
             return redirect()->back()->with('error', "Transaksi pembayaran gagal");
         }
     }

@@ -212,25 +212,25 @@
                     <div class="separator separator-dashed my-5"></div>
                     <!--end::Separator-->
                     <!--begin::Item-->
-                    {{-- <div class="d-flex flex-stack">
+                    <div class="d-flex flex-stack">
                         <!--begin::Section-->
                         <div class="d-flex align-items-center me-5">
                             <!--begin::Symbol-->
                             <div class="symbol symbol-40px me-4">
                                 <span class="symbol-label">
-                                    <i class="fas fa-download fs-1 p-0 text-gray-600"></i>
+                                    <i class="fas fa-school fs-1 p-0 text-gray-600"></i>
                                 </span>
                             </div>
                             <!--end::Symbol-->
                             <!--begin::Content-->
                             <div class="me-5">
                                 <!--begin::Title-->
-                                <a href="#" class="text-gray-800 fw-bolder text-hover-primary fs-6">Total Download
+                                <a href="#" class="text-gray-800 fw-bolder text-hover-primary fs-6">Total UPT
                                 </a>
                                 <!--end::Title-->
                                 <!--begin::Desc-->
-                                <span class="text-gray-400 fw-bold fs-7 d-block text-start ps-0">Total Download
-                                    Etika dan SOP</span>
+                                <span class="text-gray-400 fw-bold fs-7 d-block text-start ps-0">Total UPT yang
+                                    aktif</span>
                                 <!--end::Desc-->
                             </div>
                             <!--end::Content-->
@@ -239,11 +239,12 @@
                         <!--begin::Wrapper-->
                         <div class="text-gray-400 fw-bolder fs-7 text-end">
                             <!--begin::Number-->
-                            <span class="text-gray-800 fw-bolder fs-6 d-block"></span>
+                            <span class="text-gray-800 fw-bolder fs-6 d-block">{{ $data['total_schools'] ?? 0
+                                }}</span>
                             <!--end::Number-->
                         </div>
                         <!--end::Wrapper-->
-                    </div> --}}
+                    </div>
                 </div>
 
                 <!--end::Body-->

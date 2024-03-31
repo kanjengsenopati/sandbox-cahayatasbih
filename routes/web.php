@@ -53,6 +53,7 @@ use App\Http\Controllers\User\WaliAuthController;
 use App\Http\Controllers\User\WaliDashboardController;
 use App\Http\Controllers\User\WaliPpdbController;
 use App\Http\Controllers\User\WaliSettingLimitSaldoController;
+use Maatwebsite\Excel\Row;
 
 /*
 |--------------------------------------------------------------------------
@@ -68,6 +69,9 @@ use App\Http\Controllers\User\WaliSettingLimitSaldoController;
 // add route group prefix and middleware
 
 Route::prefix('wali')->group(function () {
+    Route::get('/', function () {
+        return view('users.auth.login');
+    });
     Route::get('login', [WaliAuthController::class, 'index'])->name('wali.login');
     Route::post('login', [WaliAuthController::class, 'authenticate'])->name('wali.authenticate');
     Route::post('logout', [WaliAuthController::class, 'logout'])->name('wali.logout');

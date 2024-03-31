@@ -2,15 +2,18 @@
 
 namespace App\Http\Controllers\User;
 
-use App\Http\Controllers\Controller;
-use App\Http\Requests\User\WaliPpdbRequest;
 use App\Models\Ppdb;
-use App\Models\PpdbRegistration;
 use App\Models\PpdbType;
+use App\Models\Transaction;
 use Illuminate\Http\Request;
+use App\Models\PaymentMethod;
+use App\Models\PpdbRegistration;
 
-use Illuminate\Support\Facades\DB; // Add this line at the top
 use Illuminate\Support\Facades\Log;
+use App\Http\Controllers\Controller;
+use App\Services\TransactionService;
+use App\Http\Requests\User\WaliPpdbRequest;
+use Illuminate\Support\Facades\DB; // Add this line at the top
 
 class WaliPpdbController extends Controller
 {
@@ -63,6 +66,17 @@ class WaliPpdbController extends Controller
             $ppdbRegistration->ppdbStudents()->create($data);
             $ppdbRegistration->ppdbParents()->create($data);
 
+            // create transaction
+            $paymentMethodType = PaymentMethod::where('type', PaymentMethod::TYPE_XENDIT)->firstOrFail();
+
+            $transaction = TransactionService::createTransaction($request, $paymentMethodType);
+            if ($paymentMethodType == PaymentMethod::TYPE_XENDIT) {
+                TransactionService::createInvoice($transaction);
+            }
+
+            if ($transaction->status == Transaction::STATUS_PAID) {
+                TransactionService::dispatchNotifications($transaction);
+            }
             DB::commit();
 
             return redirect()->route('wali.ppdb.index')

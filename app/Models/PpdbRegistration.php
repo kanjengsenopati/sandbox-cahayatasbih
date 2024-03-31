@@ -48,6 +48,11 @@ class PpdbRegistration extends Model
         return $this->hasMany(PpdbParent::class)->withTrashed();
     }
 
+    public function transactionDetails()
+    {
+        return $this->hasMany(TransactionDetail::class)->withTrashed();
+    }
+
     public function getTranslatedStatusAttribute()
     {
         switch ($this->status) {

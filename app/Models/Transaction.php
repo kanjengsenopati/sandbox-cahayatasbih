@@ -16,6 +16,7 @@ class Transaction extends Model
     const TYPE_BILL = 'BILL';
     const TYPE_SALDO = 'SALDO';
     const TYPE_SAVING = 'SAVING';
+    const TYPE_PPDB = 'PPDB';
     const STATUS = [
         self::STATUS_PENDING,
         self::STATUS_PAID,
