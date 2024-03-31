@@ -31,6 +31,9 @@ class StudentController extends Controller
                 ->when(request('classroom_id'), function ($query) {
                     $query->where('classroom_id', request('classroom_id'));
                 })
+                ->when(request('status'), function ($query) {
+                    $query->where('status', request('status'));
+                })
                 ->latest()->get();
             return DataTables::of($data)
                 ->editColumn('saldo', function ($data) {
@@ -42,6 +45,22 @@ class StudentController extends Controller
                 ->addColumn('school', function ($data) {
                     return $data->classroom->school->name ?? 'Belum ada sekolah';
                 })
+                ->addColumn('status', function ($data) {
+                    switch ($data->status) {
+                        case 'ACTIVE':
+                            return '<span class="badge bg-success">Aktif</span>';
+                        case 'INACTIVE':
+                            return '<span class="badge bg-danger">Tidak Aktif</span>';
+                        case 'GRADUATED':
+                            return '<span class="badge bg-warning">Lulus</span>';
+                        case 'TRANSFERRED':
+                            return '<span class="badge bg-info">Pindah</span>';
+                        case 'DROPPED_OUT':
+                            return '<span class="badge bg-secondary">Keluar</span>';
+                        default:
+                            return '<span class="badge bg-secondary">Tidak Diketahui</span>';
+                    }
+                })
                 ->addColumn('action', function ($data) {
                     $actionEdit = route('student.edit', $data->id);
                     $actionDelete = route('student.destroy', $data->id);
@@ -52,7 +71,7 @@ class StudentController extends Controller
                         view('components.action.qr-code', ['action' => $actionPrint, 'label' => 'Cetak Kartu']) .
                         "</div>";
                 })
-                ->rawColumns(['action', 'saldo', 'classroom', 'school'])
+                ->rawColumns(['action', 'saldo', 'classroom', 'school', 'status'])
                 ->make(true);
         }
         $schools = School::orderBy('name')->get();
@@ -99,7 +118,7 @@ class StudentController extends Controller
             'IN' => SaldoHistory::where('student_id', $student->id)
                 ->where('type', SaldoHistory::TYPE_IN)->sum('amount'),
             'OUT' => SaldoHistory::where('student_id', $student->id)
-                ->where('type', SaldoHistory::TYPE_OUT)->sum('amount')
+                ->where('type', SaldoHistory::TYPE_OUT)->sum('amount'),
         ];
         return view('admins.student.create-edit', compact('student', 'schools', 'saldo'));
     }

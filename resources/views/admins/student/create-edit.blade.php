@@ -438,165 +438,173 @@
                     <div class="card-body border-top p-9">
                         <!--begin::Input group-->
                         <x-alert.alert-validation />
-                        <form id="student" action="{{ request()->routeIs('student.create') ? route('student.store')
-                            : route('student.update', $student->id) }}" method="POST" enctype="multipart/form-data">
+                        <form id="student"
+                            action="{{ request()->routeIs('student.create') ? route('student.store') : route('student.update', $student->id) }}"
+                            method="POST" enctype="multipart/form-data">
                             @csrf
                             <x-form.put-method />
-                            <div class="fv-row mb-6">
-                                <x-form.image-upload label="Foto Siswa" name="avatar"
-                                    :value="@$student->avatar ?? null" />
-                            </div>
-                            <div class="fv-row mb-6">
-                                <!--begin::Label-->
-                                <label class="fs-6 fw-bold form-label" for="user_id">
-                                    <span class="required">Nama Wali Siswa</span>
-                                    <i class="fas fa-exclamation-circle ms-1 fs-7" data-bs-toggle="tooltip"
-                                        title="Pilih Nama Wali Siswa"></i>
-                                </label>
-                                <x-form.user :value="@$student->user_id" class="form-control form-control-solid" />
-                                <!--end::Label-->
-                                <!--begin::Input-->
-                                <!--end::Input-->
-                            </div>
-                            <div class="fv-row mb-6">
-                                <!--begin::Label-->
-                                <label class="fs-6 fw-bold form-label" for="name">
-                                    <span class="required">Nama Siswa</span>
-                                    <i class="fas fa-exclamation-circle ms-1 fs-7" data-bs-toggle="tooltip"
-                                        title="masukkan nama siswa"></i>
-                                </label>
-                                <!--end::Label-->
-                                <!--begin::Input-->
-                                <input type="text" class="form-control form-control-solid" id="name" name="name"
-                                    placeholder="Masukkan Nama Siswa" value="{{ @$student->name ?? old('name') }}"
-                                    required />
-                                <!--end::Input-->
-                            </div>
-                            <div class="fv-row mb-6">
-                                <!--begin::Label-->
-                                <label class="fs-6 fw-bold form-label" for="gender">
-                                    <span class="required">Jenis Kelamin</span>
-                                    <i class="fas fa-exclamation-circle ms-1 fs-7" data-bs-toggle="tooltip"
-                                        title="Jenis Kelamin Siswa"></i>
-                                </label>
-                                <!--end::Label-->
-                                <!--begin::Input-->
-                                <select name="gender" class="form-select form-select-solid" id="gender"
-                                    data-control="select2" data-placeholder="Pilih Jenis Kelamin"
-                                    data-allow-clear="true" data-hide-search="true">
-                                    <option value="L" {{ @$user->gender == 'L' ? 'selected' : '' }}> Laki-Laki
-                                    </option>
-                                    <option value="P" {{ @$user->gender == 'P' ? 'selected' : '' }}> Perempuan
-                                    </option>
-                                </select>
-                                <!--end::Input-->
-                            </div>
-                            <div class="fv-row mb-6">
-                                <!--begin::Label-->
-                                <label class="fs-6 fw-bold form-label" for="born_place">
-                                    <span class="required">Tempat Lahir</span>
-                                    <i class="fas fa-exclamation-circle ms-1 fs-7" data-bs-toggle="tooltip"
-                                        title="Masukkan Tempat Lahir"></i>
-                                </label>
-                                <!--end::Label-->
-                                <!--begin::Input-->
-                                <input type="text" class="form-control form-control-solid" id="born_place"
-                                    name="born_place" placeholder="Masukkan Tempat Lahir"
-                                    value="{{ @$student->born_place ?? old('born_place') }}" required />
-                                <!--end::Input-->
-                            </div>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <!-- First Column -->
+                                    <div class="fv-row mb-6">
+                                        <x-form.image-upload label="Foto Siswa" name="avatar"
+                                            :value="@$student->avatar ?? null" />
+                                    </div>
+                                    <div class="fv-row mb-6">
+                                        <label class="fs-6 fw-bold form-label" for="user_id">
+                                            <span class="required">Nama Wali Siswa</span>
+                                            <i class="fas fa-exclamation-circle ms-1 fs-7" data-bs-toggle="tooltip"
+                                                title="Pilih Nama Wali Siswa"></i>
+                                        </label>
+                                        <x-form.user :value="@$student->user_id"
+                                            class="form-control form-control-solid" />
+                                    </div>
+                                    <div class="fv-row mb-6">
+                                        <label class="fs-6 fw-bold form-label" for="gender">
+                                            <span class="required">Jenis Kelamin</span>
+                                            <i class="fas fa-exclamation-circle ms-1 fs-7" data-bs-toggle="tooltip"
+                                                title="Jenis Kelamin Siswa"></i>
+                                        </label>
+                                        <select name="gender" class="form-select form-select-solid" id="gender"
+                                            data-control="select2" data-placeholder="Pilih Jenis Kelamin"
+                                            data-allow-clear="true" data-hide-search="true">
+                                            <option value="L" {{ @$user->gender == 'L' ? 'selected' : '' }}> Laki-Laki
+                                            </option>
+                                            <option value="P" {{ @$user->gender == 'P' ? 'selected' : '' }}> Perempuan
+                                            </option>
+                                        </select>
+                                    </div>
+                                    <div class="fv-row mb-6">
+                                        <label class="fs-6 fw-bold form-label" for="born_place">
+                                            <span class="required">Tempat Lahir</span>
+                                            <i class="fas fa-exclamation-circle ms-1 fs-7" data-bs-toggle="tooltip"
+                                                title="Masukkan Tempat Lahir"></i>
+                                        </label>
+                                        <input type="text" class="form-control form-control-solid" id="born_place"
+                                            name="born_place" placeholder="Masukkan Tempat Lahir"
+                                            value="{{ @$student->born_place ?? old('born_place') }}" required />
+                                    </div>
+                                    <div class="fv-row mb-6">
+                                        <label class="fs-6 fw-bold form-label" for="status">
+                                            <span class="required">Status</span>
+                                            <i class="fas fa-exclamation-circle ms-1 fs-7" data-bs-toggle="tooltip"
+                                                title="Status Siswa"></i>
+                                        </label>
+                                        <select name="status" class="form-select form-select-solid" id="status"
+                                            data-control="select2" data-placeholder="Pilih Status"
+                                            data-allow-clear="true" data-hide-search="true">
+                                            <option value="ACTIVE" {{ @$student->status == "ACTIVE" ? 'selected' : ''
+                                                }}>
+                                                Aktif </option>
+                                            <option value="INACTIVE" {{ @$student->status == "INACTIVE" ? 'selected' :
+                                                ''
+                                                }}>
+                                                Tidak Aktif </option>
+                                            <option value="GRADUATED" {{ @$student->status == "GRADUATED" ? 'selected' :
+                                                '' }}>
+                                                Lulus </option>
+                                            <option value="DROPPED_OUT" {{ @$student->status == "DROPPED_OUT" ?
+                                                'selected' :
+                                                '' }}>
+                                                Keluar </option>
+                                            <option value="TRANSFERRED" {{ @$student->status == "TRANSFERRED" ?
+                                                'selected' :
+                                                '' }}>
+                                                Pindah </option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <!-- Second Column -->
+                                    <div class="fv-row mb-6">
+                                        <label class="fs-6 fw-bold form-label" for="name">
+                                            <span class="required">Nama Siswa</span>
+                                            <i class="fas fa-exclamation-circle ms-1 fs-7" data-bs-toggle="tooltip"
+                                                title="masukkan nama siswa"></i>
+                                        </label>
+                                        <input type="text" class="form-control form-control-solid" id="name" name="name"
+                                            placeholder="Masukkan Nama Siswa"
+                                            value="{{ @$student->name ?? old('name') }}" required />
+                                    </div>
+                                    <div class="fv-row mb-6">
+                                        <label class="fs-6 fw-bold form-label" for="birth_date">
+                                            <span class="required">Tanggal Lahir</span>
+                                            <i class="fas fa-exclamation-circle ms-1 fs-7" data-bs-toggle="tooltip"
+                                                title="Masukkan Tanggal Lahir Siswa"></i>
+                                        </label>
+                                        <input type="date" class="form-control form-control-solid" id="birth_date"
+                                            name="birth_date" placeholder="Masukkan Tanggal Lahir Siswa"
+                                            value="{{ @$student->birth_date ?? old('birth_date') }}" required />
+                                    </div>
+                                    <div class="fv-row mb-6">
+                                        <label class="fs-6 fw-bold form-label" for="nisn">
+                                            <span class="required">NISN (Nomor Induk Siswa Nasional)</span>
+                                            <i class="fas fa-exclamation-circle ms-1 fs-7" data-bs-toggle="tooltip"
+                                                title="Masukkan Nisn Siswa"></i>
+                                        </label>
+                                        <input type="text" class="form-control form-control-solid" id="nisn" name="nisn"
+                                            placeholder="Masukkan Nisn Siswa"
+                                            value="{{ @$student->nisn ?? old('nisn') }}" required />
+                                    </div>
+                                    <div class="fv-row mb-6">
+                                        <label class="fs-6 fw-bold form-label" for="nis">
+                                            <span class="required">NIS (Nomor Induk Santri)</span>
+                                            <i class="fas fa-exclamation-circle ms-1 fs-7" data-bs-toggle="tooltip"
+                                                title="Masukkan Nomor Induk Santri"></i>
+                                        </label>
+                                        <input type="text" class="form-control form-control-solid" id="nis" name="nis"
+                                            placeholder="Masukkan Nis Siswa" value="{{ @$student->nis ?? old('nis') }}"
+                                            required />
+                                    </div>
+                                    <div class="fv-row mb-6">
+                                        <label class="fs-6 fw-bold form-label" for="school_id">
+                                            <span class="required">Sekolah</span>
+                                            <i class="fas fa-exclamation-circle ms-1 fs-7" data-bs-toggle="tooltip"
+                                                title="Pilih Sekolah yang akan di daftarkan"></i>
+                                        </label>
+                                        <select name="school_id" class="form-select form-select-solid" id="school_id"
+                                            data-control="select2" data-allow-clear="true" data-hide-search="true">
+                                            <option value="">Pilih Sekolah</option>
+                                            @foreach ($schools as $school)
+                                            <option value="{{ $school->id }}" {{ @$student->school_id == $school->id ?
+                                                'selected' : '' }}>
+                                                {{ $school->name }}</option>
+                                            @endforeach
+                                        </select>
+                                    </div>
+                                    <div class="fv-row mb-6">
+                                        <label class="fs-6 fw-bold form-label" for="school_id">
+                                            <span class="required">Kelas</span>
+                                            <i class="fas fa-exclamation-circle ms-1 fs-7" data-bs-toggle="tooltip"
+                                                title="Pilih kelas yang akan di daftarkan"></i>
+                                        </label>
+                                        {{-- get classroom_id by school_id --}}
+                                        <select name="classroom_id" class="form-select form-select-solid"
+                                            id="classroom_id" data-control="select2" data-allow-clear="true"
+                                            data-hide-search="true">
+                                            <option value="{{ @$student->classroom_id }}" selected>{{
+                                                @$student->classroom->name ?? 'Pilih
+                                                Kelas' }}</option>
+                                        </select>
+                                    </div>
 
-                            <div class="fv-row mb-6">
-                                <!--begin::Label-->
-                                <label class="fs-6 fw-bold form-label" for="birth_date">
-                                    <span class="required">Tanggal Lahir</span>
-                                    <i class="fas fa-exclamation-circle ms-1 fs-7" data-bs-toggle="tooltip"
-                                        title="Masukkan Tanggal Lahir Siswa"></i>
-                                </label>
-                                <!--end::Label-->
-                                <!--begin::Input-->
-                                <input type="date" class="form-control form-control-solid" id="birth_date"
-                                    name="birth_date" placeholder="Masukkan Tanggal Lahir Siswa"
-                                    value="{{ @$student->birth_date ?? old('birth_date') }}" required />
-                                <!--end::Input-->
+                                    <div class="fv-row mb-6">
+                                        <label class="fs-6 fw-bold form-label" for="address">
+                                            <span class="required">Alamat</span>
+                                            <i class="fas fa-exclamation-circle ms-1 fs-7" data-bs-toggle="tooltip"
+                                                title="Masukkan Alamat Siswa"></i>
+                                        </label>
+                                        <textarea class="form-control form-control-solid" id="address" name="address"
+                                            placeholder="Masukkan Alamat Siswa"
+                                            required>{{ @$student->address ?? old('address') }}</textarea>
+                                    </div>
+                                </div>
                             </div>
-
-                            <div class="fv-row mb-6">
-                                <!--begin::Label-->
-                                <label class="fs-6 fw-bold form-label" for="birth_date">
-                                    <span class="required">NISN (Nomor Induk Siswa Nasional)</span>
-                                    <i class="fas fa-exclamation-circle ms-1 fs-7" data-bs-toggle="tooltip"
-                                        title="Masukkan Nisn Siswa"></i>
-                                </label>
-                                <!--end::Label-->
-                                <!--begin::Input-->
-                                <input type="text" class="form-control form-control-solid" id="nisn" name="nisn"
-                                    placeholder="Masukkan Nisn Siswa" value="{{ @$student->nisn ?? old('nisn') }}"
-                                    required />
-                                <!--end::Input-->
-                            </div>
-
-                            <div class="fv-row mb-6">
-                                <!--begin::Label-->
-                                <label class="fs-6 fw-bold form-label" for="birth_date">
-                                    <span class="required">NIS (Nomor Induk Santri)</span>
-                                    <i class="fas fa-exclamation-circle ms-1 fs-7" data-bs-toggle="tooltip"
-                                        title="Masukkan Nomor Induk Santri"></i>
-                                </label>
-                                <!--end::Label-->
-                                <!--begin::Input-->
-                                <input type="text" class="form-control form-control-solid" id="nis" name="nis"
-                                    placeholder="Masukkan Nis Siswa" value="{{ @$student->nis ?? old('nis') }}"
-                                    required />
-                                <!--end::Input-->
-                            </div>
-
-                            <div class="fv-row mb-6">
-                                <!--begin::Label-->
-                                <label class="fs-6 fw-bold form-label" for="school_id">
-                                    <span class="required">Sekolah</span>
-                                    <i class="fas fa-exclamation-circle ms-1 fs-7" data-bs-toggle="tooltip"
-                                        title="Pilih Sekolah yang akan di daftarkan"></i>
-                                </label>
-                                <!--end::Label-->
-                                <!--begin::Input-->
-                                <select name="school_id" class="form-select form-select-solid" id="school_id"
-                                    data-control="select2" data-allow-clear="true" data-hide-search="true">
-                                    <option value="">Pilih Sekolah</option>
-                                    @foreach ($schools as $school)
-                                    <option value="{{ $school->id }}" {{ @$student->school_id == $school->id ?
-                                        'selected' : '' }}>
-                                        {{ $school->name }}</option>
-                                    @endforeach
-                                </select>
-                                <!--end::Input-->
-                            </div>
-
-                            <div class="fv-row mb-6">
-                                <!--begin::Label-->
-                                <label class="fs-6 fw-bold form-label" for="school_id">
-                                    <span class="required">Kelas</span>
-                                    <i class="fas fa-exclamation-circle ms-1 fs-7" data-bs-toggle="tooltip"
-                                        title="Pilih kelas yang akan di daftarkan"></i>
-                                </label>
-                                <!--end::Label-->
-                                <!--begin::Input-->
-                                {{-- get classroom_id by school_id --}}
-                                <select name="classroom_id" class="form-select form-select-solid" id="classroom_id"
-                                    data-control="select2" data-allow-clear="true" data-hide-search="true">
-                                    <option value="{{ @$student->classroom_id }}" selected>
-                                        {{ @$student->classroom->name ?? 'Pilih Kelas' }}</option>
-                                </select>
-                                <!--end::Input-->
-                            </div>
-
                             <!--end::Input group-->
                             <!--begin::Separator-->
-                            <div class="separator mb-6">
-                            </div>
+                            <div class="separator mb-6"></div>
                             <!--end::Separator-->
-
-                            <!--end::Input group-->
+                        </form>
                     </div>
                     <!--end::Card body-->
                     <!--begin::Actions-->

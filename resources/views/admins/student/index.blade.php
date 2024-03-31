@@ -45,48 +45,6 @@
             <!--begin::Card-->
             <div class="card">
                 <!--begin::Card header-->
-                {{-- <div
-                    class="card-header d-flex align-items-end gap-5 flex-sm-row mb-5 justify-content-between border-0 pt-6">
-                    <div class="d-flex flex-wrap justify-content-beetween gap-5">
-                        <div class="mb-0">
-                            <div class="d-flex flex-wrap gap-5">
-                                <div class="d-flex flex-wrap gap-5">
-                                    <label for="filter_school" class="form-label fw-bold">UPT</label>
-                                    <select class="form-select" id="filter_school">
-                                        <option value="">Semua UPT</option>
-                                        @foreach ($schools as $school)
-                                        <option value="{{ $school->id }}">{{ $school->name }}</option>
-                                        @endforeach
-                                    </select>
-                                </div>
-                                <div class="d-flex flex-wrap gap-5">
-                                    <label for="filter_class" class="form-label fw-bold">Kelas</label>
-                                    <select class="form-select" id="filter_class">
-                                        <option value="">Semua Kelas</option>
-                                    </select>
-                                </div>
-                                <div class="d-flex flex-wrap gap-5">
-                                    <label for="filter_class" class="form-label fw-bold">Status</label>
-                                    <select class="form-select" id="filter_class">
-                                        <option value="">Semua Status</option>
-                                        <option value="1">Aktif</option>
-                                        <option value="0">Tidak Aktif</option>
-                                    </select>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="mt-4 gap-2 d-flex justify-content-beetween align-items-end">
-                        <div>
-
-                        </div>
-                        <div>
-                            <a type="a" class="btn btn-sm btn-primary" id="btn_add_permission"
-                                href="{{ route('student.create') }}">+ Siswa</a>
-                        </div>
-                    </div>
-                    <!--end::Card title-->
-                </div> --}}
                 <div
                     class="card-header d-flex align-items-end gap-5 flex-sm-row mb-5 justify-content-between border-0 pt-6">
                     <div class="d-flex flex-wrap justify-content-between gap-5">
@@ -109,8 +67,11 @@
                             <label for="filter_status" class="form-label fw-bold">Status</label>
                             <select class="form-select" id="filter_status">
                                 <option value="">Semua Status</option>
-                                <option value="1">Aktif</option>
-                                <option value="0">Tidak Aktif</option>
+                                <option value="ACTIVE">Aktif</option>
+                                <option value="INACTIVE">Tidak Aktif</option>
+                                <option value="GRADUATED">Lulus</option>
+                                <option value="DROPPED_OUT">Drop Out</option>
+                                <option value="TRANSFERRED">Pindah</option>
                             </select>
                         </div>
                     </div>
@@ -139,6 +100,7 @@
                                     <th>UPT</th>
                                     <th>Kelas</th>
                                     <th>Saldo</th>
+                                    <th>Status</th>
                                     <th class="text-center min-w-100px">Aksi</th>
                                 </tr>
                             </thead>
@@ -219,6 +181,11 @@
                 {
                     data: 'saldo',
                     name: 'saldo',
+                },
+                {
+                    data: 'status',
+                    name: 'status',
+                  
                 },
                 {
                     data: 'action',

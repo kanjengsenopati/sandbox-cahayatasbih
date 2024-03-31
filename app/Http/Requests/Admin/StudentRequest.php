@@ -32,6 +32,8 @@ class StudentRequest extends FormRequest
             'avatar' => 'nullable|image|mimes:jpg,jpeg,png',
             'school_id' => 'required|exists:schools,id',
             'classroom_id' => 'required|exists:classrooms,id',
+            'status' => 'required',
+            'address' => 'nullable|string',
         ];
     }
 }

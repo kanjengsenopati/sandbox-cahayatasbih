@@ -10,6 +10,11 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class Student extends Model
 {
+    const STATUS_ACTIVE = "ACTIVE";
+    const STATUS_INACTIVE = "INACTIVE";
+    const STATUS_GRADUATED = "GRADUATED";
+    const STATUS_TRANSFERRED = "TRANSFERRED";
+    const STATUS_DROPPED_OUT = "DROPPED_OUT";
     use HasFactory, UuidTrait, SoftDeletes;
 
     protected $fillable = [
@@ -28,6 +33,8 @@ class Student extends Model
         'is_blocked',
         'daily_limit',
         'saving',
+        'status',
+        'address',
     ];
 
     protected $casts = [
@@ -89,5 +96,16 @@ class Student extends Model
             ->whereDate('paid_at', now())
             ->where('status', PointOfSaleTransaction::STATUS_SUCCESS)
             ->sum('pay_amount') ?? 0;
+    }
+
+    public function getListStatusAttribute()
+    {
+        return [
+            self::STATUS_ACTIVE => 'Aktif',
+            self::STATUS_INACTIVE => 'Tidak Aktif',
+            self::STATUS_GRADUATED => 'Lulus',
+            self::STATUS_TRANSFERRED => 'Pindah',
+            self::STATUS_DROPPED_OUT => 'Keluar',
+        ];
     }
 }
