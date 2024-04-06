@@ -77,7 +77,10 @@
                     </div>
                     <div class="d-flex flex-column flex-sm-row align-items-end">
                         <div class="me-sm-3 mb-3 mb-sm-0">
-                            <!-- Leave this empty for spacing -->
+                            <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal"
+                                data-bs-target="#modalImport">
+                                + Import Data
+                            </button>
                         </div>
                         <div>
                             <a type="button" class="btn btn-sm btn-primary" id="btn_add_permission"
@@ -118,6 +121,34 @@
         <!--end::Container-->
     </div>
     <!--end::Post-->
+</div>
+
+<div class="modal fade" id="modalImport" tabindex="-1" aria-labelledby="modalImportLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form action="{{ route('student.import') }}" method="POST" enctype="multipart/form-data">
+                @csrf
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modalImportLabel">Import Data Santri</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="file" class="form-label">File Excel</label>
+                        <input class="form-control" type="file" name="file" id="file">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <div class="me-auto">
+                        <a href="assets\media\template\import\Template Import Data Santri.xlsx"
+                            class="btn btn-light-primary"><i class="fa fa-download"></i> Template</a>
+                    </div>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                    <button type="submit" class="btn btn-primary">Import</button>
+                </div>
+            </form>
+        </div>
+    </div>
 </div>
 @endsection
 @push('js')

@@ -4,14 +4,18 @@ namespace App\Http\Controllers\Admin;
 
 use App\Models\School;
 use App\Models\Student;
+use App\Models\Classroom;
+use App\Models\SaldoHistory;
 use Illuminate\Http\Request;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Yajra\DataTables\DataTables;
+use App\Imports\StudentImportData;
 use App\Models\ApplicationSetting;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\Controller;
+use Maatwebsite\Excel\Facades\Excel;
 use App\Http\Requests\Admin\StudentRequest;
-use App\Models\Classroom;
-use App\Models\SaldoHistory;
 use SimpleSoftwareIO\QrCode\Facades\QrCode;
 
 class StudentController extends Controller
@@ -172,5 +176,25 @@ class StudentController extends Controller
     {
         $classrooms = Classroom::where('school_id', $id)->orderBy('name')->get();
         return response()->json($classrooms);
+    }
+
+    public function import(Request $request)
+    {
+        try {
+            $request->validate([
+                'file' => 'required|mimes:xls,xlsx'
+            ]);
+
+            return DB::transaction(function () use ($request) {
+                Excel::import(new StudentImportData, $request->file('file'));
+                return redirect()->route('student.index')->with('success', 'Data berhasil diimpor');
+            });
+        } catch (\Exception $e) {
+            // Log the exception
+            Log::error('Import failed: ' . $e->getMessage());
+
+            // Return with an error message or handle the exception as needed
+            return redirect()->route('student.index')->with('error', 'Terjadi kesalahan dalam mengimpor data');
+        }
     }
 }
