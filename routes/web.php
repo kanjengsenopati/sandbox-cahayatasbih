@@ -1,5 +1,6 @@
 <?php
 
+use Maatwebsite\Excel\Row;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Admin\AuthController;
 use App\Http\Controllers\Admin\BillController;
@@ -15,6 +16,8 @@ use App\Http\Controllers\Admin\ContactController;
 use App\Http\Controllers\Admin\Select2Controller;
 use App\Http\Controllers\Admin\StudentController;
 use App\Http\Controllers\Admin\TahfidzController;
+use App\Http\Controllers\User\WaliAuthController;
+use App\Http\Controllers\User\WaliPpdbController;
 use App\Http\Controllers\Admin\BillItemController;
 use App\Http\Controllers\Admin\BillTypeController;
 use App\Http\Controllers\Admin\PpdbTypeController;
@@ -29,6 +32,7 @@ use App\Http\Controllers\Admin\HomeSliderController;
 use App\Http\Controllers\Admin\PermissionController;
 use App\Http\Controllers\Admin\ReportBillController;
 use App\Http\Controllers\Admin\StudyGradeController;
+use App\Http\Controllers\User\PpdbHistoryController;
 use App\Http\Controllers\Admin\ImageUploadController;
 use App\Http\Controllers\Admin\InformationController;
 use App\Http\Controllers\Admin\PaymentRateController;
@@ -37,23 +41,21 @@ use App\Http\Controllers\Admin\AcademicYearController;
 use App\Http\Controllers\Admin\CategoryItemController;
 use App\Http\Controllers\Admin\SaldoHistoryController;
 use App\Http\Controllers\Admin\StockHistoryController;
+use App\Http\Controllers\User\WaliDashboardController;
 use App\Http\Controllers\Admin\PaymentMethodController;
 use App\Http\Controllers\Admin\PrivacyPolicyController;
 use App\Http\Controllers\Admin\SavingHistoryController;
 use App\Http\Controllers\Admin\TermConditionController;
 use App\Http\Controllers\Admin\AppInformationController;
+use App\Http\Controllers\Admin\MenuNavigationController;
 use App\Http\Controllers\Admin\ApplicationMenuController;
 use App\Http\Controllers\Admin\OrderItemHistoryController;
+use App\Http\Controllers\Admin\SubMenuNavigationController;
 use App\Http\Controllers\Admin\ApplicationSettingController;
 use App\Http\Controllers\Admin\StudentAchievementController;
 use App\Http\Controllers\Admin\InformationCategoryController;
-use App\Http\Controllers\Admin\StudentCounselingScoreController;
-use App\Http\Controllers\User\PpdbHistoryController;
-use App\Http\Controllers\User\WaliAuthController;
-use App\Http\Controllers\User\WaliDashboardController;
-use App\Http\Controllers\User\WaliPpdbController;
 use App\Http\Controllers\User\WaliSettingLimitSaldoController;
-use Maatwebsite\Excel\Row;
+use App\Http\Controllers\Admin\StudentCounselingScoreController;
 
 /*
 |--------------------------------------------------------------------------
@@ -198,6 +200,8 @@ Route::group(['middleware' => ['auth']], function () {
     // start ppdb
     Route::resource('ppdb-type', PpdbTypeController::class);
     Route::resource('ppdb', PpdbController::class, ['except' => ['show']]);
+    Route::resource('menu-navigation', MenuNavigationController::class);
+    Route::resource('submenu-navigation', SubMenuNavigationController::class);
 
     Route::group(['prefix' => 'information'], function () {
         Route::resource(
