@@ -88,7 +88,7 @@
                             <div class="col-md-6 col-lg-3">
                                 <label for="filter_bill_type_id" class="form-label">Tagihan</label>
                                 <select name="bill_type_id" class="form-select select2" id="filter_bill_type_id">
-                                    <option value="">Pilih Tagihan</option>
+                                    <option value="">Semua Tagihan</option>
                                     @foreach ($billTypes as $billType)
                                     <option value="{{ $billType->id }}">{{ $billType->name }}</option>
                                     @endforeach

@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Traits\UuidTrait;
+use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -107,5 +108,14 @@ class Student extends Model
             self::STATUS_TRANSFERRED => 'Pindah',
             self::STATUS_DROPPED_OUT => 'Keluar',
         ];
+    }
+
+    // on create generate barcode
+    public static function boot()
+    {
+        parent::boot();
+        static::creating(function ($model) {
+            $model->barcode = Str::random(17);
+        });
     }
 }
