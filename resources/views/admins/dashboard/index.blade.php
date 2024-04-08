@@ -33,541 +33,340 @@
     <!--end::Row-->
     <!--begin::Row-->
     <div class="row gy-5 g-xl-10 mt-8 mx-4">
-        <div class="col-xl-8">
-            <div class="chart">
-                {{-- <div id="chart-line" class="chart-canvas" height="350px"></div> --}}
-                <div class="card">
-                    <div class="card-header">
-                        <h3 class="card-title align-items-start flex-column">
-                            <span class="card-label fw-bolder text-gray-800">Statistik Rekapitulasi Keuangan Saat
-                                Ini</span>
-                        </h3>
+        <div class="col-xl-12">
+
+            <div class="card mb-4">
+                <div class="row gx-3 gy-3">
+                    <div class="col-lg-3 col-md-6 py-2">
+                        <div class="card bg-primary text-white h-100">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-center">
+                                    <i class="fas fa-user-group fs-1 p-0 text-white"></i>&nbsp;
+                                    <h5 class="card-title text-center text-white">Total Wali Santri</h5>
+                                </div>
+                                <br>
+                                <p class="card-text text-center" style="font-size: 20px;">{{ $data['total_parents'] ??
+                                    0 }}</p>
+                            </div>
+                        </div>
                     </div>
-                    <div class="card-body">
-                        <div class="row">
-                            <div class="col-md-6 py-2">
-                                <div class="card bg-primary text-white">
-                                    <div class="card-body">
-                                        <div class="d-flex justify-content-center">
-                                            <i class="fas fa-money-bill-wave fs-1 p-0 text-white"></i>&nbsp;
-                                            <h5 class="card-title text-center text-white">Hari Ini</h5>
-                                        </div>
-                                        <br>
-                                        <p class="card-text text-center" style="font-size: 24px;">Rp. {{
-                                            number_format($incomes['today'], 0, ',',
-                                            '.') }}</p>
-                                    </div>
+                    <div class="col-lg-3 col-md-6 py-2">
+                        <div class="card bg-primary text-white h-100">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-center">
+                                    <i class="fas fa-users fs-1 p-0 text-white"></i>&nbsp;
+                                    <h5 class="card-title text-center text-white">Total Siswa Aktif</h5>
                                 </div>
+                                <br>
+                                <p class="card-text text-center" style="font-size: 20px;">{{ $data['total_students'] ??
+                                    0 }}</p>
                             </div>
-                            <div class="col-md-6 py-2">
-                                <div class="card bg-success text-white">
-                                    <div class="card-body">
-                                        <div class="d-flex justify-content-center">
-                                            <i class="fas fa-coins fs-1 p-0 text-white"></i>&nbsp;
-                                            <h5 class="card-title text-center text-white">Bulan Ini</h5>
-                                        </div>
-                                        <br>
-                                        <p class="card-text text-center" style="font-size: 24px;">Rp. {{
-                                            number_format($incomes['month'], 0,
-                                            ',', '.')
-                                            }}</p>
-                                    </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-3 col-md-6 py-2">
+                        <div class="card bg-primary text-white h-100">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-center">
+                                    <i class="fas fa-users fs-1 p-0 text-white"></i>&nbsp;
+                                    <h5 class="card-title text-center text-white">Total Santri Aktif</h5>
                                 </div>
+                                <br>
+                                <p class="card-text text-center" style="font-size: 20px;">{{ $totalSantriAktif ?? 0 }}
+                                </p>
                             </div>
-                            <div class="col-md-6 py-2">
-                                <div class="card bg-danger text-white">
-                                    <div class="card-body">
-                                        <div class="d-flex justify-content-center">
-                                            <i class="fas fa-money-check-alt fs-1 p-0 text-white"></i>&nbsp;
-                                            <h5 class="card-title text-center text-white">Tahun Ini</h5>
-                                        </div>
-                                        <br>
-                                        <p class="card-text text-center" style="font-size: 24px;">Rp. {{
-                                            number_format($incomes['year'], 0,
-                                            ',', '.')
-                                            }}</p>
-                                    </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-3 col-md-6 py-2">
+                        <div class="card bg-primary text-white h-100">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-center">
+                                    <i class="fas fa-users fs-1 p-0 text-white"></i>&nbsp;
+                                    <h5 class="card-title text-center text-white">Total Santri Keluar</h5>
                                 </div>
-                            </div>
-                            <div class="col-md-6 py-2">
-                                <div class="card bg-warning text-dark">
-                                    <div class="card-body">
-                                        <div class="d-flex justify-content-center">
-                                            <i class="fas fa-hand-holding-usd fs-1 p-0 text-white"></i>&nbsp;
-                                            <h5 class="card-title text-center text-white">Total</h5>
-                                        </div>
-                                        <br>
-                                        <p class="card-text text-center text-white" style="font-size: 24px;">Rp. {{
-                                            number_format($incomes['total'], 0,
-                                            ',', '.')
-                                            }}</p>
-                                    </div>
-                                </div>
+                                <br>
+                                <p class="card-text text-center" style="font-size: 20px;">{{ $totalSantriKeluar ?? 0 }}
+                                </p>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
-        </div>
-        <!--begin::Col-->
-        <div class="col-xl-4">
-            <!--begin::List widget 11-->
-            <div class="card card-flush h-xl-100">
-                <div class="card-body pt-2">
-                    <div class="d-flex flex-stack">
-                        <div class="text-gray-400 fw-bolder fs-7 text-end">
-                            <img src="{{ asset('assets/media/illustrations/dashboard/dashboard-1.jpg') }}"
-                                class="mw-100 mh-200px" alt="">
-                        </div>
-                    </div>
-                </div>
-                <!--begin::Header-->
-                <div class="card-header pt-7 mb-3">
-                    <!--begin::Title-->
+
+            <div class="card mb-4">
+                <div class="card-header">
                     <h3 class="card-title align-items-start flex-column">
-                        <span class="card-label fw-bolder text-gray-800">Statistik</span>
-                        <span class="text-gray-400 mt-1 fw-bold fs-6" id="date-time"></span>
+                        <span class="card-label fw-bolder text-gray-800">REKAP KEUANGAN PEMBAYARAN</span>
                     </h3>
-
                 </div>
-                <!--end::Header-->
-                <!--begin::Body-->
-                <div class="card-body pt-4">
-                    <!--begin::Item-->
-                    <div class="d-flex flex-stack">
-
-                        <!--begin::Section-->
-                        <div class="d-flex align-items-center me-5">
-                            <!--begin::Symbol-->
-                            <div class="symbol symbol-40px me-4">
-                                <span class="symbol-label">
-                                    <i class="fas fa-user fs-1 p-0 text-gray-600"></i>
-                                </span>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-lg-3 col-md-6 py-2">
+                            <div class="card bg-primary text-white h-100">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-center">
+                                        <i class="fas fa-money-bill-wave fs-1 p-0 text-white"></i>&nbsp;
+                                        <h5 class="card-title text-center text-white">Hari Ini</h5>
+                                    </div>
+                                    <br>
+                                    <p class="card-text text-center" style="font-size: 20px;">Rp. {{
+                                        number_format($incomes['today'], 0, ',', '.') }}</p>
+                                </div>
                             </div>
-                            <!--end::Symbol-->
-                            <!--begin::Content-->
-                            <div class="me-5">
-                                <!--begin::Title-->
-                                <a href="#" class="text-gray-800 fw-bolder text-hover-primary fs-6">Total
-                                    Siswa</a>
-                                <!--end::Title-->
-                                <!--begin::Desc-->
-                                <span class="text-gray-400 fw-bold fs-7 d-block text-start ps-0">Siswa yang
-                                    Aktif</span>
-                                <!--end::Desc-->
+                        </div>
+                        <div class="col-lg-3 col-md-6 py-2">
+                            <div class="card bg-success text-white h-100">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-center">
+                                        <i class="fas fa-coins fs-1 p-0 text-white"></i>&nbsp;
+                                        <h5 class="card-title text-center text-white">Bulan Ini</h5>
+                                    </div>
+                                    <br>
+                                    <p class="card-text text-center" style="font-size: 20px;">Rp. 1,200,000</p>
+                                    <div class="progress">
+                                        <div class="progress-bar" role="progressbar" style="width: 12%;"
+                                            aria-valuenow="12" aria-valuemin="0" aria-valuemax="100">12%
+                                        </div>
+                                    </div>
+                                    <p class="text-center mt-3">12% dari target bulanan (Rp. 10.000.000)</p>
+                                </div>
                             </div>
-                            <!--end::Content-->
                         </div>
-                        <!--end::Section-->
-                        <!--begin::Wrapper-->
-                        <div class="text-gray-400 fw-bolder fs-7 text-end">
-                            <!--begin::Number-->
-                            <span class="text-gray-800 fw-bolder fs-6 d-block">{{ $data['total_students'] ?? 0
-                                }}</span>
-                            <!--end::Number-->
-                        </div>
-                        <!--end::Wrapper-->
-                    </div>
-                    <!--end::Item-->
-                    <!--begin::Separator-->
-                    <div class="separator separator-dashed my-5"></div>
-                    <!--end::Separator-->
-                    <!--begin::Item-->
-                    <div class="d-flex flex-stack">
-                        <!--begin::Section-->
-                        <div class="d-flex align-items-center me-5">
-                            <!--begin::Symbol-->
-                            <div class="symbol symbol-40px me-4">
-                                <span class="symbol-label">
-                                    <i class="fas fa-chalkboard-teacher fs-1 p-0 text-gray-600"></i>
-                                </span>
+                        <div class="col-lg-3 col-md-6 py-2">
+                            <div class="card bg-danger text-white h-100">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-center">
+                                        <i class="fas fa-money-check-alt fs-1 p-0 text-white"></i>&nbsp;
+                                        <h5 class="card-title text-center text-white">Tahun Ini</h5>
+                                    </div>
+                                    <br>
+                                    <p class="card-text text-center" style="font-size: 20px;">Rp. 7,800,000</p>
+                                    <div class="progress">
+                                        <div class="progress-bar" role="progressbar" style="width: 78%;"
+                                            aria-valuenow="78" aria-valuemin="0" aria-valuemax="100">78%
+                                        </div>
+                                    </div>
+                                    <p class="text-center mt-3">78% dari target tahunan (Rp. 10.000.000)</p>
+                                </div>
                             </div>
-                            <!--end::Symbol-->
-                            <!--begin::Content-->
-                            <div class="me-5">
-                                <!--begin::Title-->
-                                <a href="#" class="text-gray-800 fw-bolder text-hover-primary fs-6">Total
-                                    Kelas</a>
-                                <!--end::Title-->
-                                <!--begin::Desc-->
-                                <span class="text-gray-400 fw-bold fs-7 d-block text-start ps-0">Kelas yang
-                                    Aktif</span>
-                                </span>
-                                <!--end::Desc-->
+                        </div>
+                        <div class="col-lg-3 col-md-6 py-2">
+                            <div class="card bg-warning text-dark h-100">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-center">
+                                        <i class="fas fa-hand-holding-usd fs-1 p-0 text-white"></i>&nbsp;
+                                        <h5 class="card-title text-center text-white">Total</h5>
+                                    </div>
+                                    <br>
+                                    <p class="card-text text-center text-white" style="font-size: 20px;">Rp. {{
+                                        number_format($incomes['total'], 0, ',', '.') }}</p>
+                                </div>
                             </div>
-                            <!--end::Content-->
                         </div>
-                        <!--end::Section-->
-                        <!--begin::Wrapper-->
-                        <div class="text-gray-400 fw-bolder fs-7 text-end">
-                            <!--begin::Number-->
-                            <span class="text-gray-800 fw-bolder fs-6 d-block">{{ $data['total_classes'] ?? 0
-                                }}</span>
-                            <!--end::Number-->
-                        </div>
-                        <!--end::Wrapper-->
-                    </div>
-                    <!--end::Item-->
-                    <!--begin::Separator-->
-                    <div class="separator separator-dashed my-5"></div>
-                    <!--end::Separator-->
-                    <!--begin::Item-->
-                    <div class="d-flex flex-stack">
-                        <!--begin::Section-->
-                        <div class="d-flex align-items-center me-5">
-                            <!--begin::Symbol-->
-                            <div class="symbol symbol-40px me-4">
-                                <span class="symbol-label">
-                                    <i class="fas fa-school fs-1 p-0 text-gray-600"></i>
-                                </span>
-                            </div>
-                            <!--end::Symbol-->
-                            <!--begin::Content-->
-                            <div class="me-5">
-                                <!--begin::Title-->
-                                <a href="#" class="text-gray-800 fw-bolder text-hover-primary fs-6">Total UPT
-                                </a>
-                                <!--end::Title-->
-                                <!--begin::Desc-->
-                                <span class="text-gray-400 fw-bold fs-7 d-block text-start ps-0">Total UPT yang
-                                    aktif</span>
-                                <!--end::Desc-->
-                            </div>
-                            <!--end::Content-->
-                        </div>
-                        <!--end::Section-->
-                        <!--begin::Wrapper-->
-                        <div class="text-gray-400 fw-bolder fs-7 text-end">
-                            <!--begin::Number-->
-                            <span class="text-gray-800 fw-bolder fs-6 d-block">{{ $data['total_schools'] ?? 0
-                                }}</span>
-                            <!--end::Number-->
-                        </div>
-                        <!--end::Wrapper-->
                     </div>
                 </div>
-
-                <!--end::Body-->
             </div>
-            <!--end::List widget 11-->
 
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h3 class="card-title align-items-start flex-column">
+                        <span class="card-label fw-bolder text-gray-800">REKAP KEUANGAN KOPERASI</span>
+                    </h3>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-lg-3 col-md-6 py-2">
+                            <div class="card bg-primary text-white h-100">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-center">
+                                        <i class="fas fa-money-bill-wave fs-1 p-0 text-white"></i>&nbsp;
+                                        <h5 class="card-title text-center text-white">Hari Ini</h5>
+                                    </div>
+                                    <br>
+                                    <p class="card-text text-center" style="font-size: 20px;">Rp. {{
+                                        number_format($incomes['today'], 0, ',', '.') }}</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-lg-3 col-md-6 py-2">
+                            <div class="card bg-success text-white h-100">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-center">
+                                        <i class="fas fa-coins fs-1 p-0 text-white"></i>&nbsp;
+                                        <h5 class="card-title text-center text-white">Bulan Ini</h5>
+                                    </div>
+                                    <br>
+                                    <p class="card-text text-center" style="font-size: 20px;">Rp. 1,200,000</p>
+                                    <div class="progress">
+                                        <div class="progress-bar" role="progressbar" style="width: 12%;"
+                                            aria-valuenow="12" aria-valuemin="0" aria-valuemax="100">12%
+                                        </div>
+                                    </div>
+                                    <p class="text-center mt-3">12% dari target bulanan (Rp. 10.000.000)</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-lg-3 col-md-6 py-2">
+                            <div class="card bg-danger text-white h-100">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-center">
+                                        <i class="fas fa-money-check-alt fs-1 p-0 text-white"></i>&nbsp;
+                                        <h5 class="card-title text-center text-white">Tahun Ini</h5>
+                                    </div>
+                                    <br>
+                                    <p class="card-text text-center" style="font-size: 20px;">Rp. 7,800,000</p>
+                                    <div class="progress">
+                                        <div class="progress-bar" role="progressbar" style="width: 78%;"
+                                            aria-valuenow="78" aria-valuemin="0" aria-valuemax="100">78%
+                                        </div>
+                                    </div>
+                                    <p class="text-center mt-3">78% dari target tahunan (Rp. 10.000.000)</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-lg-3 col-md-6 py-2">
+                            <div class="card bg-warning text-dark h-100">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-center">
+                                        <i class="fas fa-hand-holding-usd fs-1 p-0 text-white"></i>&nbsp;
+                                        <h5 class="card-title text-center text-white">Total</h5>
+                                    </div>
+                                    <br>
+                                    <p class="card-text text-center text-white" style="font-size: 20px;">Rp. {{
+                                        number_format($incomes['total'], 0, ',', '.') }}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card mb-4">
+                <div class="card-body">
+                    <div class="row">
+                        <div id="revenue-bill" style="width: 800px; height: 400px;"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-body">
+                    <div class="row">
+                        <div id="container" style="width: 800px; height: 400px;"></div>
+                    </div>
+                </div>
+            </div>
         </div>
-        <!--end::Col-->
-        <!--begin::Col-->
-
-        <!--end::Col-->
     </div>
     <!--end::Row-->
-    {{-- <div class="row gy-5 g-xl-10 mt-8 mx-4">
-        <div class="col-xl-8">
-            <div class="card">
-
-                <!--begin::Card header-->
-                <div class="card-header d-flex align-items-center justify-content-start border-0 pt-6">
-                    <!--begin::Card title-->
-                    <span class="card-title fw-bolder text-dark fs-3">Pelaporan WBS Terbaru</span>
-                </div>
-                <div class="card-body pt-0">
-                    <!--begin::Table-->
-                    <div class="table-responsive">
-                        <table id="table-user" class="table table-striped border rounded gy-5 gs-7">
-                            <thead>
-                                <tr class="fw-bolder fs-6 text-gray-800 px-7">
-                                    <th width="3%">No</th>
-                                    <th width="20%">Kode Pelaporan</th>
-                                    <th width="20%">Kategori</th>
-                                    <th>Status</th>
-                                    <th>Pelapor</th>
-                                    <th width="10%" class="text-center"> Aksi</th>
-                                </tr>
-                            </thead>
-                            <tbody></tbody>
-                        </table>
-                    </div>
-                    <!--end::Table-->
-                </div>
-            </div>
-        </div>
-        <!--begin::Col-->
-        <div class="col-xl-4">
-            <!--begin::List widget 11-->
-            <div class="card card-flush h-xl-100">
-                <!--begin::Header-->
-
-                <div class="card-header pt-7 mb-3">
-                    <!--begin::Title-->
-                    <h3 class="card-title align-items-start flex-column">
-                        <span class="card-label fw-bolder text-gray-800">Statistik WBS </span>
-                        <span class="text-gray-400 mt-1 fw-bold fs-6"></span>
-                    </h3>
-
-                </div>
-                <!--end::Header-->
-                <!--begin::Body-->
-                <div class="card-body pt-4">
-                    <!--begin::Item-->
-                    <div class="d-flex flex-stack">
-
-                        <!--begin::Section-->
-                        <div class="d-flex align-items-center me-5">
-                            <!--begin::Symbol-->
-                            <div class="symbol symbol-40px me-4">
-                                <span class="symbol-label">
-                                    <i class="fas fa-envelope-open-text fs-1 p-0 text-gray-600"></i>
-                                </span>
-                            </div>
-                            <!--end::Symbol-->
-                            <!--begin::Content-->
-                            <div class="me-5">
-                                <!--begin::Title-->
-                                <a href="#" class="text-gray-800 fw-bolder text-hover-primary fs-6">Total
-                                    Diterima</a>
-                                <!--end::Title-->
-                                <!--begin::Desc-->
-                                <span class="text-gray-400 fw-bold fs-7 d-block text-start ps-0">Pelaporan yang
-                                    diterima</span>
-                                <!--end::Desc-->
-                            </div>
-                            <!--end::Content-->
-                        </div>
-                        <!--end::Section-->
-                        <!--begin::Wrapper-->
-                        <div class="text-gray-400 fw-bolder fs-7 text-end">
-                            <!--begin::Number-->
-                            <span class="text-gray-800 fw-bolder fs-6 d-block"></span>
-                            <!--end::Number-->
-                        </div>
-                        <!--end::Wrapper-->
-                    </div>
-                    <!--end::Item-->
-                    <!--begin::Separator-->
-                    <div class="separator separator-dashed my-5"></div>
-                    <!--end::Separator-->
-                    <!--begin::Item-->
-                    <div class="d-flex flex-stack">
-                        <!--begin::Section-->
-                        <div class="d-flex align-items-center me-5">
-                            <!--begin::Symbol-->
-                            <div class="symbol symbol-40px me-4">
-                                <span class="symbol-label">
-                                    <i class="fas fa-user-check fs-1 p-0 text-gray-600"></i>
-                                </span>
-                            </div>
-                            <!--end::Symbol-->
-                            <!--begin::Content-->
-                            <div class="me-5">
-                                <!--begin::Title-->
-                                <a href="#" class="text-gray-800 fw-bolder text-hover-primary fs-6">Total
-                                    Verifikasi </a>
-                                <!--end::Title-->
-                                <!--begin::Desc-->
-                                <span class="text-gray-400 fw-bold fs-7 d-block text-start ps-0">Pelaporan yang
-                                    diverifikasi
-                                </span>
-                                <!--end::Desc-->
-                            </div>
-                            <!--end::Content-->
-                        </div>
-                        <!--end::Section-->
-                        <!--begin::Wrapper-->
-                        <div class="text-gray-400 fw-bolder fs-7 text-end">
-                            <!--begin::Number-->
-                            <span class="text-gray-800 fw-bolder fs-6 d-block">
-                            </span>
-                            <!--end::Number-->
-                        </div>
-                        <!--end::Wrapper-->
-                    </div>
-                    <!--end::Item-->
-                    <!--begin::Separator-->
-                    <div class="separator separator-dashed my-5"></div>
-                    <!--end::Separator-->
-                    <!--begin::Item-->
-                    <div class="d-flex flex-stack">
-                        <!--begin::Section-->
-                        <div class="d-flex align-items-center me-5">
-                            <!--begin::Symbol-->
-                            <div class="symbol symbol-40px me-4">
-                                <span class="symbol-label">
-                                    <i class="fas fa-magnifying-glass-arrow-right fs-1 p-0 text-gray-600"></i>
-                                </span>
-                            </div>
-                            <!--end::Symbol-->
-                            <!--begin::Content-->
-                            <div class="me-5">
-                                <!--begin::Title-->
-                                <a href="#" class="text-gray-800 fw-bolder text-hover-primary fs-6">Total
-                                    Investigasi </a>
-                                <!--end::Title-->
-                                <!--begin::Desc-->
-                                <span class="text-gray-400 fw-bold fs-7 d-block text-start ps-0">Pelaporan yang
-                                    diinvestigasi</span>
-                                <!--end::Desc-->
-                            </div>
-                            <!--end::Content-->
-                        </div>
-                        <!--end::Section-->
-                        <!--begin::Wrapper-->
-                        <div class="text-gray-400 fw-bolder fs-7 text-end">
-                            <!--begin::Number-->
-                            <span class="text-gray-800 fw-bolder fs-6 d-block"></span>
-                            <!--end::Number-->
-                        </div>
-                        <!--end::Wrapper-->
-                    </div>
-                    <!--end::Item-->
-
-                    <!--end::Item-->
-                    <!--begin::Separator-->
-                    <div class="separator separator-dashed my-5"></div>
-                    <!--end::Separator-->
-                    <!--begin::Item-->
-                    <!--begin::Item-->
-                    <div class="d-flex flex-stack">
-                        <!--begin::Section-->
-                        <div class="d-flex align-items-center me-5">
-                            <!--begin::Symbol-->
-                            <div class="symbol symbol-40px me-4">
-                                <span class="symbol-label">
-                                    <i class="fas fa-solid fa-rotate fs-1 p-0 text-gray-600"></i>
-                                </span>
-                            </div>
-                            <!--end::Symbol-->
-                            <!--begin::Content-->
-                            <div class="me-5">
-                                <!--begin::Title-->
-                                <a href="#" class="text-gray-800 fw-bolder text-hover-primary fs-6">Total
-                                    Dalam
-                                    Proses </a>
-                                <!--end::Title-->
-                                <!--begin::Desc-->
-                                <span class="text-gray-400 fw-bold fs-7 d-block text-start ps-0">Pelaporan Dalam
-                                    Proses
-                                </span>
-                                <!--end::Desc-->
-                            </div>
-                            <!--end::Content-->
-                        </div>
-                        <!--end::Section-->
-                        <!--begin::Wrapper-->
-                        <div class="text-gray-400 fw-bolder fs-7 text-end">
-                            <!--begin::Number-->
-                            <span class="text-gray-800 fw-bolder fs-6 d-block"></span>
-                            <!--end::Number-->
-                        </div>
-                        <!--end::Wrapper-->
-                    </div>
-                    <!--end::Item-->
-                    <div class="separator separator-dashed my-5"></div>
-                    <!--end::Separator-->
-                    <!--begin::Item-->
-                    <!--begin::Item-->
-                    <div class="d-flex flex-stack">
-                        <!--begin::Section-->
-                        <div class="d-flex align-items-center me-5">
-                            <!--begin::Symbol-->
-                            <div class="symbol symbol-40px me-4">
-                                <span class="symbol-label">
-                                    <i class="fas fa-circle-check fs-1 p-0 text-gray-600"></i>
-                                </span>
-                            </div>
-                            <!--end::Symbol-->
-                            <!--begin::Content-->
-                            <div class="me-5">
-                                <!--begin::Title-->
-                                <a href="#" class="text-gray-800 fw-bolder text-hover-primary fs-6">Total
-                                    Tindakan Selesai</a>
-                                <!--end::Title-->
-                                <!--begin::Desc-->
-                                <span class="text-gray-400 fw-bold fs-7 d-block text-start ps-0">Tindakan Korekftif
-                                    Selesai
-                                </span>
-                                <!--end::Desc-->
-                            </div>
-                            <!--end::Content-->
-                        </div>
-                        <!--end::Section-->
-                        <!--begin::Wrapper-->
-                        <div class="text-gray-400 fw-bolder fs-7 text-end">
-                            <!--begin::Number-->
-                            <span class="text-gray-800 fw-bolder fs-6 d-block"></span>
-                            <!--end::Number-->
-                        </div>
-                        <!--end::Wrapper-->
-                    </div>
-                    <!--end::Item-->
-                    <div class="separator separator-dashed my-5"></div>
-                    <!--end::Separator-->
-                    <!--begin::Item-->
-                    <!--begin::Item-->
-                    <div class="d-flex flex-stack">
-                        <!--begin::Section-->
-                        <div class="d-flex align-items-center me-5">
-                            <!--begin::Symbol-->
-                            <div class="symbol symbol-40px me-4">
-                                <span class="symbol-label">
-                                    <i class="fas fa-envelope-circle-check fs-1 p-0 text-gray-600"></i>
-                                </span>
-                            </div>
-                            <!--end::Symbol-->
-                            <!--begin::Content-->
-                            <div class="me-5">
-                                <!--begin::Title-->
-                                <a href="#" class="text-gray-800 fw-bolder text-hover-primary fs-6">Total
-                                    Selesai</a>
-                                <!--end::Title-->
-                                <!--begin::Desc-->
-                                <span class="text-gray-400 fw-bold fs-7 d-block text-start ps-0">Laporan Selesai
-                                </span>
-                                <!--end::Desc-->
-                            </div>
-                            <!--end::Content-->
-                        </div>
-                        <!--end::Section-->
-                        <!--begin::Wrapper-->
-                        <div class="text-gray-400 fw-bolder fs-7 text-end">
-                            <!--begin::Number-->
-                            <span class="text-gray-800 fw-bolder fs-6 d-block"></span>
-                            <!--end::Number-->
-                        </div>
-                        <!--end::Wrapper-->
-                    </div>
-                </div>
-
-                <!--end::Body-->
-            </div>
-            <!--end::List widget 11-->
-
-        </div>
-        <!--end::Col-->
-        <!--begin::Col-->
-
-        <!--end::Col-->
-    </div> --}}
 </div>
-<!--end::Container-->
+<!--end::revenue-bill-->
 @endsection
 @push('js')
+<script src="https://code.highcharts.com/highcharts.js"></script>
 <script>
-    // add date and time in #date-time
-        function dateTime() {
-            var date = new Date();
-            var day = date.getDate();
-            var month = date.getMonth() + 1;
-            var year = date.getFullYear();
-            var hours = date.getHours();
-            var minutes = date.getMinutes();
-            var seconds = date.getSeconds();
-            var ampm = hours >= 12 ? 'PM' : 'AM';
-            hours = hours % 12;
-            hours = hours ? hours : 12;
-            hours = hours < 10 ? '0' + hours : hours;
-            minutes = minutes < 10 ? '0' + minutes : minutes;
-            seconds = seconds < 10 ? '0' + seconds : seconds;
-            var strTime = hours + ':' + minutes + ':' + seconds + ' ' + ampm;
-            var fullDate = day + '/' + month + '/' + year + ' ' + strTime;
-            document.getElementById('date-time').innerHTML = fullDate;
-        }
-        setInterval(dateTime, 1000);
+    // Data pemasukan pembayaran untuk setiap bulan dan jenis sekolah
+    var data = {
+        categories: ['Januari', 'Februari', 'Maret', 'April', 'Mei'], // Kategori bulan
+        smp: [5000000, 6000000, 5500000, 5800000, 6200000], // Data pemasukan untuk SMP
+        ma: [4500000, 5500000, 5000000, 5300000, 5700000], // Data pemasukan untuk MA
+        pondok: [5500000, 6500000, 6000000, 6300000, 6700000] // Data pemasukan untuk Pondok
+    };
+
+    // Konfigurasi grafik batang
+    var options = {
+        chart: {
+            type: 'bar' // Tipe grafik batang
+        },
+        title: {
+            text: 'Grafik Pemasukan Pembayaran' // Judul grafik
+        },
+        xAxis: {
+            categories: data.categories, // Kategori sumbu x (bulan)
+            title: {
+                text: 'Bulan' // Label sumbu x
+            }
+        },
+        yAxis: {
+            title: {
+                text: 'Nominal (Rp)' // Label sumbu y
+            }
+        },
+        legend: {
+            align: 'right', // Penempatan legenda di samping kanan
+            verticalAlign: 'middle', // Penempatan legenda di tengah
+            layout: 'vertical' // Tata letak legenda vertikal
+        },
+        plotOptions: {
+            series: {
+                stacking: 'normal' // Mengaktifkan tumpukan data
+            }
+        },
+        series: [{
+            name: 'SMP',
+            data: data.smp // Data pemasukan untuk SMP
+        }, {
+            name: 'MA',
+            data: data.ma // Data pemasukan untuk MA
+        }, {
+            name: 'Pondok',
+            data: data.pondok // Data pemasukan untuk Pondok
+        }]
+    };
+
+    // Membuat grafik dengan menggunakan Highcharts
+    Highcharts.chart('revenue-bill', options);
+</script>
+<script>
+    // Data omzet dan profit koperasi untuk setiap bulan
+    var dataOmzetProfit = [
+        { month: 'Januari', omzet: 10000000, profit: 5000000 },
+        { month: 'Februari', omzet: 12000000, profit: 6000000 },
+        { month: 'Maret', omzet: 11000000, profit: 5500000 },
+        { month: 'April', omzet: 11500000, profit: 5750000 },
+        { month: 'Mei', omzet: 12500000, profit: 6250000 }
+    ];
+
+    // Konfigurasi grafik omzet dan profit koperasi
+    var options = {
+        chart: {
+            type: 'column' // Tipe grafik kolom
+        },
+        title: {
+            text: 'Grafik Omzet dan Profit Koperasi' // Judul grafik
+        },
+        xAxis: {
+            categories: dataOmzetProfit.map(item => item.month), // Kategori sumbu x (bulan)
+            title: {
+                text: 'Bulan' // Label sumbu x
+            }
+        },
+        yAxis: [{
+            title: {
+                text: 'Omzet (Rp)' // Label sumbu y untuk omzet
+            }
+        }, {
+            title: {
+                text: 'Profit (Rp)' // Label sumbu y untuk profit
+            },
+            opposite: true // Menampilkan sumbu y profit di sebelah kanan
+        }],
+        legend: {
+            align: 'right', // Penempatan legenda di samping kanan
+            verticalAlign: 'middle', // Penempatan legenda di tengah
+            layout: 'vertical' // Tata letak legenda vertikal
+        },
+        series: [{
+            name: 'Omzet',
+            data: dataOmzetProfit.map(item => item.omzet), // Data omzet
+            yAxis: 0 // Menggunakan sumbu y pertama (kiri)
+        }, {
+            name: 'Profit',
+            data: dataOmzetProfit.map(item => item.profit), // Data profit
+            yAxis: 1 // Menggunakan sumbu y kedua (kanan)
+        }]
+    };
+
+    // Membuat grafik dengan menggunakan Highcharts
+    Highcharts.chart('container', options);
 </script>
 @endpush

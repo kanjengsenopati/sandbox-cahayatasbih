@@ -55,53 +55,45 @@
                         <span class="menu-title">Dashboard</span>
                     </a>
                 </div>
-                @can('admin', 'permission', 'role')
+                {{-- @php
+                $menuNavigations = \App\Models\MenuNavigation::with(['subMenuNavigation' => function ($query) {
+                $query->where('is_active', 1)->orderBy('order', 'asc');
+                }])->where('is_active', 1)->orderBy('order', 'asc')->get();
+                @endphp
+
+                @foreach ($menuNavigations as $menuNavigation)
+                @php
+                $listPermissions = $menuNavigation->subMenuNavigation->pluck('permission')->toArray();
+                @endphp
+
+                @can($listPermissions)
                 <div data-kt-menu-trigger="click"
-                    class="menu-item menu-accordion {{ request()->routeIs(['admin.*', 'role.*', 'permission.*']) ? 'show' : '' }}">
+                    class="menu-item menu-accordion {{ request()->routeIs($listPermissions) ? 'show' : '' }}">
                     <span class="menu-link ">
                         <span class="menu-icon">
-                            <i class="fa-solid fa-user-shield" style="color: #ffffff;"></i>
+                            <i class="fa-solid {{ $menuNavigation->icon ?? '' }}" style="color: #ffffff;"></i>
                         </span>
-                        <span class="menu-title">Menu Admin</span>
+                        <span class="menu-title">{{ $menuNavigation->name ?? '' }}</span>
                         <span class="menu-arrow"></span>
                     </span>
                     <div class="menu-sub menu-sub-accordion menu-active-bg">
-                        @can('permission')
-                        <div class="menu-item ">
-                            <a class="menu-link {{ request()->routeIs('permission.*') ? ' active' : '' }}"
-                                href="{{ route('permission.index') }}">
-                                <span class="menu-bullet">
-                                    <span class="bullet bullet-dot"></span>
-                                </span>
-                                <span class="menu-title">Permission</span>
-                            </a>
-                        </div>
-                        @endcan
-                        @can('role')
+                        @foreach ($menuNavigation->subMenuNavigation as $subMenuNavigation)
+                        @can($subMenuNavigation->permission)
                         <div class="menu-item">
-                            <a class="menu-link {{ request()->routeIs('role.*') ? ' active' : '' }}"
-                                href="{{ route('role.index') }}">
+                            <a class="menu-link {{ request()->routeIs($subMenuNavigation->url) ? ' active' : '' }}"
+                                href="{{ url($subMenuNavigation->url) }}">
                                 <span class="menu-bullet">
                                     <span class="bullet bullet-dot"></span>
                                 </span>
-                                <span class="menu-title">Role</span>
+                                <span class="menu-title">{{ $subMenuNavigation->name ?? '' }}</span>
                             </a>
                         </div>
                         @endcan
-                        @can('admin')
-                        <div class="menu-item">
-                            <a class="menu-link {{ request()->routeIs('admin.*') ? ' active' : '' }}"
-                                href="{{ route('admin.index') }}">
-                                <span class="menu-bullet">
-                                    <span class="bullet bullet-dot"></span>
-                                </span>
-                                <span class="menu-title">Admin</span>
-                            </a>
-                        </div>
-                        @endcan
+                        @endforeach
                     </div>
                 </div>
                 @endcan
+                @endforeach --}}
 
                 <div data-kt-menu-trigger="click" class="menu-item menu-accordion {{ request()->routeIs(['school.*',
                     'academic-year.*','tahfidz.*','semester.*','study.*','study-grade.*']) ? 'show' : '' }}">

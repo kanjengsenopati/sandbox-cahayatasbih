@@ -25,6 +25,7 @@ class SubMenuNavigationRequest extends FormRequest
             'name' => ['required', 'string', 'max:255'],
             'url' => ['required', 'string', 'max:255'],
             'order' => ['required', 'integer'],
+            'permission' => ['nullable', 'string', 'max:255'],
         ];
     }
 }

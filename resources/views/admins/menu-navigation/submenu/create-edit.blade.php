@@ -120,6 +120,20 @@
                                         required />
                                     <!--end::Input-->
                                 </div>
+                                <div class="fv-row mb-7">
+                                    <!--begin::Label-->
+                                    <label class="fs-6 fw-bold form-label mt-3" for="permission">
+                                        <span class="required">Permission</span>
+                                        <i class="fas fa-exclamation-circle ms-1 fs-7" data-bs-toggle="tooltip"
+                                            title="Masukkan Permission"></i>
+                                    </label>
+                                    <!--end::Label-->
+                                    <!--begin::Input-->
+                                    <input type="text" class="form-control form-control-solid" name="permission"
+                                        id="permission" placeholder="Masukkan Permission"
+                                        value="{{ @$subMenuNavigation->permission }}" required />
+                                    <!--end::Input-->
+                                </div>
                                 <!--end::Input group-->
                                 <!--begin::Separator-->
                                 <div class="separator mb-6"></div>

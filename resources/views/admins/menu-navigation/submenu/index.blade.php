@@ -74,6 +74,7 @@
                                     <th>Nama</th>
                                     <th>Urutan</th>
                                     <th>Url</th>
+                                    <th>Permission</th>
                                     <th class="text-center min-w-100px" style="width: 22%">Aksi</th>
                                 </tr>
                             </thead>
@@ -128,6 +129,10 @@
                     {
                         data: 'url',
                         name: 'url'
+                    },
+                    {
+                        data: 'permission',
+                        name: 'permission'
                     },
                     {
                         data: 'action',

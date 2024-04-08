@@ -29,28 +29,25 @@ class DashboardController extends Controller
     public function index()
     {
 
-        try {
-            $data = Transaction::where('status', Transaction::STATUS_PAID)->where('type', Transaction::TYPE_BILL)->latest()->first();
-            // $message = SendNotifWaService::sendPaymentBillNotification($data);
-            // SendToWhatsappNotificationJob::dispatch($data->student->user->phone, $message);
-            $title = 'Hallo Kak';
-            $message = 'Ini adalah notifikasi';
-            $users = User::where('name', 'like', '%dian%')->first();
-            NotificationService::sendTo($title, $message, $users, $data);
-        } catch (\Exception $e) {
-            dd($e->getMessage());
-            Log::error('Error sending notification: ' . $e->getMessage());
-        }
+        // try {
+        //     $data = Transaction::where('status', Transaction::STATUS_PAID)->where('type', Transaction::TYPE_BILL)->latest()->first();
+        //     $title = 'Hallo Kak';
+        //     $message = 'Ini adalah notifikasi';
+        //     $users = User::where('name', 'like', '%dian%')->first();
+        //     NotificationService::sendTo($title, $message, $users, $data);
+        // } catch (\Exception $e) {
+        //     dd($e->getMessage());
+        //     Log::error('Error sending notification: ' . $e->getMessage());
+        // }
+        $total_parents = User::where('is_active', 1)->count();
         $total_students = Student::count();
-        $total_classes = Classroom::count();
-        $total_schools = School::count();
         $data = [
+            'total_parents' => $total_parents,
             'total_students' => $total_students,
-            'total_classes' => $total_classes,
-            'total_schools' => $total_schools,
         ];
         // hitung total pemasukkan hari ini, bulan ini, tahun ini
-        $transactions = Transaction::where('status', Transaction::STATUS_PAID)->get();
+        $transactions = Transaction::where('status', Transaction::STATUS_PAID)
+            ->whereIn('type', [Transaction::TYPE_BILL, Transaction::TYPE_PPDB])->get();
 
         $today = $transactions->where('created_at', '>=', now()->startOfDay())
             ->where('created_at', '<=', now()->endOfDay());

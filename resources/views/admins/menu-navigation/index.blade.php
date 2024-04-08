@@ -73,6 +73,7 @@
                                     <th>Nama</th>
                                     <th>Ikon</th>
                                     <th>Urutan</th>
+                                    <th>Permission</th>
                                     <th class="text-center min-w-100px" style="width: 22%">Aksi</th>
                                 </tr>
                             </thead>
@@ -127,6 +128,10 @@
                     {
                         data: 'order',
                         name: 'order'
+                    },
+                    {
+                        data: 'permission',
+                        name: 'permission'
                     },
                     {
                         data: 'action',

@@ -17,6 +17,7 @@ class SubMenuNavigation extends Model
         'url',
         'order',
         'is_active',
+        'permission',
     ];
 
 

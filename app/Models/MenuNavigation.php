@@ -16,6 +16,7 @@ class MenuNavigation extends Model
         'icon',
         'order', // Add this line (1/2)
         'is_active',
+        'permission',
     ];
 
 
