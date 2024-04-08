@@ -28,17 +28,9 @@ class DashboardController extends Controller
      */
     public function index()
     {
-
-        // try {
-        //     $data = Transaction::where('status', Transaction::STATUS_PAID)->where('type', Transaction::TYPE_BILL)->latest()->first();
-        //     $title = 'Hallo Kak';
-        //     $message = 'Ini adalah notifikasi';
-        //     $users = User::where('name', 'like', '%dian%')->first();
-        //     NotificationService::sendTo($title, $message, $users, $data);
-        // } catch (\Exception $e) {
-        //     dd($e->getMessage());
-        //     Log::error('Error sending notification: ' . $e->getMessage());
-        // }
+        $setting = ApplicationSetting::first();
+        $targetMonth = $setting->target_month;
+        $targetYear = $setting->target_year;
         $total_parents = User::where('is_active', 1)->count();
         $total_students = Student::count();
         $data = [
@@ -56,18 +48,27 @@ class DashboardController extends Controller
         $month = $transactions->where('created_at', '>=', now()->startOfMonth())
             ->where('created_at', '<=', now()->endOfMonth());
         $total_income_month = $month->sum('pay_amount');
+        // count total percentage to targetMonth
+        $incomePercentageMonth = ($total_income_month / $targetMonth) * 100;
 
         $year = $transactions->where('created_at', '>=', now()->startOfYear())
             ->where('created_at', '<=', now()->endOfYear());
         $total_income_year = $year->sum('pay_amount');
+
+        // count total percentage to targetYear
+        $incomePercentageYear = ($total_income_year / $targetYear) * 100;
 
         $total = $transactions->sum('pay_amount');
 
         $incomes = [
             'today' => $total_income_today,
             'month' => $total_income_month,
+            'incomePercentageMonth' => $incomePercentageMonth,
             'year' => $total_income_year,
+            'incomePercentageYear' => $incomePercentageYear,
             'total' => $total,
+            'targetMonth' => $targetMonth,
+            'targetYear' => $targetYear,
         ];
 
         return view('admins.dashboard.index', compact('data', 'incomes'));

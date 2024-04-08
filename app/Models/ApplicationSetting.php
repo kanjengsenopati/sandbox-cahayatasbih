@@ -21,6 +21,8 @@ class ApplicationSetting extends Model
         'device_id',
         'bill_fee',
         'saldo_fee',
+        'target_month',
+        'target_year',
     ];
 
     protected $appends = [

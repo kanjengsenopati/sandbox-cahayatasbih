@@ -121,13 +121,20 @@
                                         <h5 class="card-title text-center text-white">Bulan Ini</h5>
                                     </div>
                                     <br>
-                                    <p class="card-text text-center" style="font-size: 20px;">Rp. 1,200,000</p>
+                                    <p class="card-text text-center" style="font-size: 20px;">Rp. {{
+                                        number_format($incomes['month'], 0, ',', '.') }}</p>
                                     <div class="progress">
-                                        <div class="progress-bar" role="progressbar" style="width: 12%;"
-                                            aria-valuenow="12" aria-valuemin="0" aria-valuemax="100">12%
+                                        <div class="progress-bar" role="progressbar"
+                                            style="width: {{ $incomes['incomePercentageMonth'] ?? 0 }}%;"
+                                            aria-valuenow="{{ $incomes['incomePercentageMonth'] ?? 0 }}"
+                                            aria-valuemin="0" aria-valuemax="100">{{
+                                            $incomes['incomePercentageMonth'] ?? 0 }}%
                                         </div>
                                     </div>
-                                    <p class="text-center mt-3">12% dari target bulanan (Rp. 10.000.000)</p>
+                                    <p class="text-center mt-3">{{
+                                        $incomes['incomePercentageMonth'] ?? 0 }}% dari target bulanan (Rp. {{
+                                        number_format($incomes['targetMonth'], 0, ',', '.') }})
+                                    </p>
                                 </div>
                             </div>
                         </div>
@@ -139,13 +146,20 @@
                                         <h5 class="card-title text-center text-white">Tahun Ini</h5>
                                     </div>
                                     <br>
-                                    <p class="card-text text-center" style="font-size: 20px;">Rp. 7,800,000</p>
+                                    <p class="card-text text-center" style="font-size: 20px;">Rp. {{
+                                        number_format($incomes['year'], 0, ',', '.') }}</p>
                                     <div class="progress">
-                                        <div class="progress-bar" role="progressbar" style="width: 78%;"
-                                            aria-valuenow="78" aria-valuemin="0" aria-valuemax="100">78%
+                                        <div class="progress-bar" role="progressbar" style="width: {{
+                                            $incomes['incomePercentageYear'] ?? 0 }}%;"
+                                            aria-valuenow="{{ $incomes['incomePercentageYear'] ?? 0 }}"
+                                            aria-valuemin="0" aria-valuemax="100">{{
+                                            $incomes['incomePercentageYear'] ?? 0 }}%
                                         </div>
                                     </div>
-                                    <p class="text-center mt-3">78% dari target tahunan (Rp. 10.000.000)</p>
+                                    <p class="text-center mt-3">{{
+                                        $incomes['incomePercentageYear'] ?? 0 }}% dari target tahunan (Rp. {{
+                                        number_format($incomes['targetYear'], 0, ',', '.') }})
+                                    </p>
                                 </div>
                             </div>
                         </div>
@@ -196,12 +210,7 @@
                                     </div>
                                     <br>
                                     <p class="card-text text-center" style="font-size: 20px;">Rp. 1,200,000</p>
-                                    <div class="progress">
-                                        <div class="progress-bar" role="progressbar" style="width: 12%;"
-                                            aria-valuenow="12" aria-valuemin="0" aria-valuemax="100">12%
-                                        </div>
-                                    </div>
-                                    <p class="text-center mt-3">12% dari target bulanan (Rp. 10.000.000)</p>
+
                                 </div>
                             </div>
                         </div>
@@ -214,12 +223,7 @@
                                     </div>
                                     <br>
                                     <p class="card-text text-center" style="font-size: 20px;">Rp. 7,800,000</p>
-                                    <div class="progress">
-                                        <div class="progress-bar" role="progressbar" style="width: 78%;"
-                                            aria-valuenow="78" aria-valuemin="0" aria-valuemax="100">78%
-                                        </div>
-                                    </div>
-                                    <p class="text-center mt-3">78% dari target tahunan (Rp. 10.000.000)</p>
+
                                 </div>
                             </div>
                         </div>

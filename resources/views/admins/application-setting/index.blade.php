@@ -125,12 +125,42 @@
                                             value="{{ @$applicationSetting->payment_expire_time ?? old('payment_expire_time') }}"
                                             required />
                                     </div>
-
                                 </div>
 
-                                <!--end::Label-->
-                                <!--begin::Input-->
-
+                                <div class="row mb-6">
+                                    <div class="col-6">
+                                        <!--begin::Label-->
+                                        <label class="fs-6 fw-bold form-label" for="target_month">
+                                            <span class="required">Target Bulanan</span>
+                                            <i class="fas fa-exclamation-circle ms-1 fs-7" data-bs-toggle="tooltip"
+                                                title="Masukkan Target Bulanan"></i>
+                                        </label>
+                                        <div class="input-group">
+                                            <span class="input-group-text">Rp</span>
+                                            <input type="text" class="form-control form-control-solid input-money"
+                                                id="target_month" name="target_month"
+                                                placeholder="Masukkan Target Pembayaran Bulanan"
+                                                value="{{ @$applicationSetting->target_month ?? old('target_month') }}"
+                                                required />
+                                        </div>
+                                    </div>
+                                    <div class="col-6">
+                                        <!--begin::Label-->
+                                        <label class="fs-6 fw-bold form-label" for="target_year">
+                                            <span class="required">Target Tahunan</span>
+                                            <i class="fas fa-exclamation-circle ms-1 fs-7" data-bs-toggle="tooltip"
+                                                title="Masukkan Target Tahunan"></i>
+                                        </label>
+                                        <div class="input-group">
+                                            <span class="input-group-text">Rp</span>
+                                            <input type="text" class="form-control form-control-solid input-money"
+                                                id="target_year" name="target_year"
+                                                placeholder="Masukkan Target Pembayaran Tahunan"
+                                                value="{{ @$applicationSetting->target_year ?? old('target_year') }}"
+                                                required />
+                                        </div>
+                                    </div>
+                                </div>
 
                                 <div class="row mb-6">
                                     <div class="col-6">
