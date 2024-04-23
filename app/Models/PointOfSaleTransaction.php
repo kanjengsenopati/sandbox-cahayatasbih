@@ -23,6 +23,7 @@ class PointOfSaleTransaction extends Model
         'pay_amount',
         'paid_at',
         'status',
+        'profit',
     ];
 
     protected $casts = [

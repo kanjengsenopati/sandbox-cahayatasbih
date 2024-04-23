@@ -197,7 +197,7 @@
                                     </div>
                                     <br>
                                     <p class="card-text text-center" style="font-size: 20px;">Rp. {{
-                                        number_format($incomes['today'], 0, ',', '.') }}</p>
+                                        number_format($incomesCashier['today'], 0, ',', '.') }}</p>
                                 </div>
                             </div>
                         </div>
@@ -209,7 +209,8 @@
                                         <h5 class="card-title text-center text-white">Bulan Ini</h5>
                                     </div>
                                     <br>
-                                    <p class="card-text text-center" style="font-size: 20px;">Rp. 1,200,000</p>
+                                    <p class="card-text text-center" style="font-size: 20px;">Rp. {{
+                                        number_format($incomesCashier['month'], 0, ',', '.') }}</p>
 
                                 </div>
                             </div>
@@ -222,7 +223,8 @@
                                         <h5 class="card-title text-center text-white">Tahun Ini</h5>
                                     </div>
                                     <br>
-                                    <p class="card-text text-center" style="font-size: 20px;">Rp. 7,800,000</p>
+                                    <p class="card-text text-center" style="font-size: 20px;">Rp. {{
+                                        number_format($incomesCashier['year'], 0, ',', '.') }}</p>
 
                                 </div>
                             </div>
@@ -236,7 +238,7 @@
                                     </div>
                                     <br>
                                     <p class="card-text text-center text-white" style="font-size: 20px;">Rp. {{
-                                        number_format($incomes['total'], 0, ',', '.') }}</p>
+                                        number_format($incomesCashier['total'], 0, ',', '.') }}</p>
                                 </div>
                             </div>
                         </div>
@@ -268,13 +270,10 @@
 @push('js')
 <script src="https://code.highcharts.com/highcharts.js"></script>
 <script>
-    // Data pemasukan pembayaran untuk setiap bulan dan jenis sekolah
-    var data = {
-        categories: ['Januari', 'Februari', 'Maret', 'April', 'Mei'], // Kategori bulan
-        smp: [5000000, 6000000, 5500000, 5800000, 6200000], // Data pemasukan untuk SMP
-        ma: [4500000, 5500000, 5000000, 5300000, 5700000], // Data pemasukan untuk MA
-        pondok: [5500000, 6500000, 6000000, 6300000, 6700000] // Data pemasukan untuk Pondok
-    };
+    var categories = @json($chartIncomesCategories);
+    var smp = @json($chartIncomesSmp);
+    var ma = @json($chartIncomesMa);
+    var pondok = @json($chartIncomesPondok);
 
     // Konfigurasi grafik batang
     var options = {
@@ -285,7 +284,7 @@
             text: 'Grafik Pemasukan Pembayaran' // Judul grafik
         },
         xAxis: {
-            categories: data.categories, // Kategori sumbu x (bulan)
+           categories: categories, // Kategori sumbu x (bulan)
             title: {
                 text: 'Bulan' // Label sumbu x
             }
@@ -305,16 +304,11 @@
                 stacking: 'normal' // Mengaktifkan tumpukan data
             }
         },
-        series: [{
-            name: 'SMP',
-            data: data.smp // Data pemasukan untuk SMP
-        }, {
-            name: 'MA',
-            data: data.ma // Data pemasukan untuk MA
-        }, {
-            name: 'Pondok',
-            data: data.pondok // Data pemasukan untuk Pondok
-        }]
+        series: [
+            { name: 'SMP', data: smp }, // Data pemasukan SMP
+            { name: 'MA', data: ma }, // Data pemasukan MA
+            { name: 'Pondok', data: pondok } // Data pemasukan Pondok
+        ]
     };
 
     // Membuat grafik dengan menggunakan Highcharts
@@ -322,13 +316,10 @@
 </script>
 <script>
     // Data omzet dan profit koperasi untuk setiap bulan
-    var dataOmzetProfit = [
-        { month: 'Januari', omzet: 10000000, profit: 5000000 },
-        { month: 'Februari', omzet: 12000000, profit: 6000000 },
-        { month: 'Maret', omzet: 11000000, profit: 5500000 },
-        { month: 'April', omzet: 11500000, profit: 5750000 },
-        { month: 'Mei', omzet: 12500000, profit: 6250000 }
-    ];
+    var omzet = @json($chartCashierOmzet);
+    var profit = @json($chartCashierProfit);
+    console.log(omzet);
+    console.log(profit);
 
     // Konfigurasi grafik omzet dan profit koperasi
     var options = {
@@ -339,10 +330,10 @@
             text: 'Grafik Omzet dan Profit Koperasi' // Judul grafik
         },
         xAxis: {
-            categories: dataOmzetProfit.map(item => item.month), // Kategori sumbu x (bulan)
-            title: {
-                text: 'Bulan' // Label sumbu x
-            }
+        categories: categories, // Kategori sumbu x (bulan)
+        title: {
+        text: 'Bulan' // Label sumbu x
+        }
         },
         yAxis: [{
             title: {
@@ -359,15 +350,10 @@
             verticalAlign: 'middle', // Penempatan legenda di tengah
             layout: 'vertical' // Tata letak legenda vertikal
         },
-        series: [{
-            name: 'Omzet',
-            data: dataOmzetProfit.map(item => item.omzet), // Data omzet
-            yAxis: 0 // Menggunakan sumbu y pertama (kiri)
-        }, {
-            name: 'Profit',
-            data: dataOmzetProfit.map(item => item.profit), // Data profit
-            yAxis: 1 // Menggunakan sumbu y kedua (kanan)
-        }]
+       series: [
+    { name: 'Omzet', data: omzet }, // Data omzet
+    { name: 'Profit', data: profit } // Data profit
+    ]
     };
 
     // Membuat grafik dengan menggunakan Highcharts

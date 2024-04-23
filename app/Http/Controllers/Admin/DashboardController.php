@@ -17,6 +17,7 @@ use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\Controller;
 use App\Jobs\SendToWhatsappNotificationJob;
 use App\Models\ApplicationSetting;
+use App\Models\PointOfSaleTransaction;
 use App\Models\School;
 use App\Services\NotificationService;
 use App\Services\SendNotifWaService;
@@ -71,7 +72,95 @@ class DashboardController extends Controller
             'targetYear' => $targetYear,
         ];
 
-        return view('admins.dashboard.index', compact('data', 'incomes'));
+        $year = request('year', now()->year);
+        $chartIncomesCategories = collect(range(1, 12))->map(function ($month) use ($year) {
+            return Carbon::create($year, $month, 1)->locale('id')->monthName;
+        })->toArray();
+
+        $chartIncomesSmp = collect(range(1, 12))->map(function ($month) use ($year) {
+            return intval(Transaction::whereHas('student.classroom.school', function ($query) {
+                $query->where('type', School::TYPE_SMP);
+            })
+                ->whereYear('created_at', $year)
+                ->whereMonth('created_at', $month)
+                ->where('status', Transaction::STATUS_PAID)
+                ->whereIn('type', [Transaction::TYPE_BILL, Transaction::TYPE_PPDB])
+                ->sum('pay_amount'));
+        })->toArray();
+
+        $chartIncomesMa = collect(range(1, 12))->map(function ($month) use ($year) {
+            return intval(Transaction::whereHas('student.classroom.school', function ($query) {
+                $query->where('type', School::TYPE_MA);
+            })
+                ->whereYear('created_at', $year)
+                ->whereMonth('created_at', $month)
+                ->where('status', Transaction::STATUS_PAID)
+                ->whereIn('type', [Transaction::TYPE_BILL, Transaction::TYPE_PPDB])
+                ->sum('pay_amount'));
+        })->toArray();
+
+        $chartIncomesPondok = collect(range(1, 12))->map(function ($month) use ($year) {
+            return intval(Transaction::whereHas('student.classroom.school', function ($query) {
+                $query->where('type', School::TYPE_PONDOK);
+            })
+                ->whereYear('created_at', $year)
+                ->whereMonth('created_at', $month)
+                ->where('status', Transaction::STATUS_PAID)
+                ->whereIn('type', [Transaction::TYPE_BILL, Transaction::TYPE_PPDB])
+                ->sum('pay_amount'));
+        })->toArray();
+
+        $cashierToday = $incomeCashier = PointOfSaleTransaction::where('status', PointOfSaleTransaction::STATUS_SUCCESS)
+            ->where('created_at', '>=', now()->startOfDay())
+            ->where('created_at', '<=', now()->endOfDay());
+        $total_income_cashier_today = $cashierToday->sum('pay_amount');
+
+        $cashierMonth = $incomeCashier = PointOfSaleTransaction::where('status', PointOfSaleTransaction::STATUS_SUCCESS)
+            ->where('created_at', '>=', now()->startOfMonth())
+            ->where('created_at', '<=', now()->endOfMonth());
+        $total_income_cashier_month = $cashierMonth->sum('pay_amount');
+
+        $cashierYear = $incomeCashier = PointOfSaleTransaction::where('status', PointOfSaleTransaction::STATUS_SUCCESS)
+            ->where('created_at', '>=', now()->startOfYear())
+            ->where('created_at', '<=', now()->endOfYear());
+        $total_income_cashier_year = $cashierYear->sum('pay_amount');
+
+        $total_cashier = $incomeCashier = PointOfSaleTransaction::where('status', PointOfSaleTransaction::STATUS_SUCCESS)
+            ->sum('pay_amount');
+
+        $incomesCashier = [
+            'today' => $total_income_cashier_today,
+            'month' => $total_income_cashier_month,
+            'year' => $total_income_cashier_year,
+            'total' => $total_cashier,
+        ];
+
+        $chartCashierOmzet = collect(range(1, 12))->map(function ($month) use ($year) {
+            return intval(PointOfSaleTransaction::whereYear('created_at', $year)
+                ->whereMonth('created_at', $month)
+                ->where('status', PointOfSaleTransaction::STATUS_SUCCESS)
+                ->sum('pay_amount'));
+        })->toArray();
+
+        $chartCashierProfit = collect(range(1, 12))->map(function ($month) use ($year) {
+            return intval(PointOfSaleTransaction::whereYear('created_at', $year)
+                ->whereMonth('created_at', $month)
+                ->where('status', PointOfSaleTransaction::STATUS_SUCCESS)
+                ->sum('profit'));
+        })->toArray();
+
+
+        return view('admins.dashboard.index', compact(
+            'data',
+            'incomes',
+            'chartIncomesCategories',
+            'chartIncomesSmp',
+            'chartIncomesMa',
+            'chartIncomesPondok',
+            'incomesCashier',
+            'chartCashierOmzet',
+            'chartCashierProfit'
+        ));
     }
 
     /**

@@ -9,6 +9,9 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class School extends Model
 {
+    const TYPE_SMP = 'SMP';
+    const TYPE_MA = 'MA';
+    const TYPE_PONDOK = 'PONDOK';
     use HasFactory, UuidTrait, SoftDeletes;
 
     protected $fillable = [
