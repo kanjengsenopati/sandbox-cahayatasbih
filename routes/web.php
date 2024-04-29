@@ -202,6 +202,7 @@ Route::group(['middleware' => ['auth']], function () {
 
     // start report student
     Route::get('report-student', [ReportStudentController::class, 'index'])->name('report-student.index');
+    Route::get('report-student/export', [ReportStudentController::class, 'export'])->name('report-student.export');
     // Route::get('report-student/search-student', [ReportStudentController::class, 'searchStudent'])
     //     ->name('report-student.search-student');
 

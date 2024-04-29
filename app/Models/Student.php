@@ -42,6 +42,10 @@ class Student extends Model
         'daily_limit' => 'integer',
     ];
 
+    protected $appends = [
+        'translated_status',
+    ];
+
     public function user()
     {
         return $this->belongsTo(User::class);
@@ -108,6 +112,11 @@ class Student extends Model
             self::STATUS_TRANSFERRED => 'Pindah',
             self::STATUS_DROPPED_OUT => 'Keluar',
         ];
+    }
+
+    public function getTranslatedStatusAttribute()
+    {
+        return $this->list_status[$this->status] ?? '-';
     }
 
     // on create generate barcode

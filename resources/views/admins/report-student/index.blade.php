@@ -49,56 +49,79 @@
             <!--begin::Card-->
             <div class="card mb-5">
                 <!--begin::Card header-->
-                <div class="card-header d-flex align-items-center justify-content-between border-0 pt-6">
-                    <!--begin::Card title-->
-                    <div class="card-title">
-                        <h3 class="text-dark">Laporan Siswa</h3>
+                <div
+                    class="card-header d-flex align-items-end gap-5 flex-sm-row mb-5 justify-content-between border-0 pt-6">
+                    <div class="d-flex flex-wrap justify-content-beetween gap-5">
+                        {{-- <div class="mb-0">
+                            <label class="form-label">Filter Tanggal</label>
+                            <div class="d-flex
+                                                gap-4 align-items-end">
+                                <div id="dateRange" class="pull-right"
+                                    style="background: #fff; cursor: pointer; padding: 5px 10px; border: 1px solid #ccc;float: top;">
+                                    <i class="glyphicon glyphicon-calendar fa fa-calendar"></i>&nbsp;
+                                    <span></span> <b class="caret"></b>
+                                </div>
+                            </div>
+                        </div> --}}
+                        <div class="mb-0">
+                            <form action="{{ route('report-student.export') }}" id="form-filter" method="get">
+                                <input type="text" hidden id="type" name="type" required>
+                                <div class="d-flex flex-wrap gap-4 align-items-end">
+                                    <div>
+                                        <label class="form-label">UPT</label>
+                                        <select name="school_id" class="form-select" id="filter_school_id">
+                                            <option value="">Pilih Pendidikan</option>
+                                            @foreach ($schools as $school)
+                                            <option value="{{ $school->id }}">{{ $school->name }}</option>
+                                            @endforeach
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="form-label">Kelas</label>
+                                        <select name="classroom_id" class="form-select" id="filter_classroom_id">
+                                            <option value="">Pilih Kelas</option>
+                                        </select>
+                                    </div>
+                                    <!--begin::Export dropdown-->
+                                    <button type="button" class="btn btn-sm btn-primary" data-kt-menu-trigger="click"
+                                        data-kt-menu-placement="bottom-end">
+                                        <i class="ki-duotone fa fa-caret-down fs-2"><span class="path1"></span><span
+                                                class="path2"></span></i>
+                                        Export Report
+                                    </button>
+                                    <!--begin::Menu-->
+                                    <div id="kt_datatable_example_export_menu"
+                                        class="menu menu-sub menu-sub-dropdown menu-column menu-rounded menu-gray-600 menu-state-bg-light-primary fw-semibold fs-7 w-200px py-4"
+                                        data-kt-menu="true">
+                                        <!--begin::Menu item-->
+                                        <div class="menu-item px-3">
+                                            <a type="button" class="menu-link btn-export px-3" data-type="xlsx">
+                                                Export as Excel
+                                            </a>
+                                        </div>
+                                        <!--end::Menu item-->
+                                        <!--begin::Menu item-->
+                                        <div class="menu-item px-3">
+                                            <a type="button" class="menu-link btn-export px-3" data-type="csv">
+                                                Export as CSV
+                                            </a>
+                                        </div>
+                                        <!--end::Menu item-->
+                                    </div>
+                                    <!--end::Menu-->
+                                    <!--end::Export dropdown-->
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                    <div class="mt-4 gap-2 d-flex justify-content-beetween align-items-end">
+
                     </div>
                     <!--end::Card title-->
                 </div>
                 <!--end::Card header-->
                 <!--begin::Card body-->
                 <div class="card-body">
-                    <form id="filter_form" method="GET">
-                        <div class="row g-3">
-                            <div class="col-md-6 col-lg-3">
-                                <label for="filter_school_id" class="form-label">UPT</label>
-                                <select name="school_id" class="form-select" id="filter_school_id">
-                                    <option value="">Pilih Pendidikan</option>
-                                    @foreach ($schools as $school)
-                                    <option value="{{ $school->id }}">{{ $school->name }}</option>
-                                    @endforeach
-                                </select>
-                            </div>
-                            <div class="col-md-6 col-lg-3">
-                                <label for="filter_classroom_id" class="form-label">Kelas</label>
-                                <select name="classroom_id" class="form-select" id="filter_classroom_id">
-                                    <option value="">Pilih Kelas</option>
-                                </select>
-                            </div>
-
-                            {{-- <div class="col-md-6 col-lg-3">
-                                <label for="filter_bill_type_id" class="form-label">Tagihan</label>
-                                <select name="bill_type_id" class="form-select select2" id="filter_bill_type_id">
-                                    <option value="">Semua Tagihan</option>
-                                    @foreach ($billTypes as $billType)
-                                    <option value="{{ $billType->id }}">{{ $billType->name }}</option>
-                                    @endforeach
-                                </select>
-                            </div> --}}
-                            {{-- <div class="col-md-6 col-lg-3">
-                                <label for="filter_status" class="form-label">Status</label>
-                                <select class="form-select" id="filter_status" name="status">
-                                    <option value="">Pilih Status</option>
-                                    <option value="PAID">Lunas</option>
-                                    <option value="UNPAID">Belum Lunas</option>
-                                </select>
-                            </div> --}}
-                            <div class="col-md-6 col-lg-3 align-self-end">
-                                <button onclick="searchData()" class="btn btn-primary">Tampilkan</button>
-                            </div>
-                        </div>
-                    </form>
                 </div>
                 <!--end::Card body-->
             </div>
@@ -113,9 +136,6 @@
                         {{-- <h3 class="text-dark">Sekolah</h3> --}}
                     </div>
                     <div class="">
-                        {{-- <a type="a" class="btn btn-sm btn-primary" id="btn_add_permission"
-                            href="{{ route('report-bill.create') }}">+ Sekolah</a> --}}
-                        <!--end::Primary button-->
                     </div>
                     <!--end::Card title-->
                 </div>
@@ -139,17 +159,6 @@
                         </table>
                     </div>
                     <!--end::Table-->
-
-                    <!-- Add Button for WA Blast -->
-                    {{-- <div class="text-center mt-3">
-                        <button class="btn btn-success" id="send-blast-notif"><i class="bi bi-whatsapp"></i>
-                            <span class="indicator-label" id="buttonText">Kirim
-                                Notif
-                                Tagihan WA</span>
-                            <span class="indicator-progress d-none">Please wait...
-                                <span class="spinner-border spinner-border-sm align-middle ms-2"></span>
-                            </span></button>
-                    </div> --}}
                 </div>
                 <!--end::Card body-->
             </div>
@@ -163,6 +172,8 @@
 </div>
 @endsection
 @push('js')
+<script type="text/javascript" src="https://cdn.jsdelivr.net/momentjs/latest/moment.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/locale/id.min.js"></script>
 <script>
     // onchange school_id get data classrom on school
         $('#filter_school_id').on('change', function() {
@@ -245,7 +256,15 @@
         searchData();
     });
 
-       });
+    // Export Report
+    $('.btn-export').on('click', function() {
+        var type = $(this).data('type');
+        $('#type').val(type);
+        $('#school_id').val($('#filter_school_id').val());
+        $('#classroom_id').val($('#filter_classroom_id').val());
+        $('#form-filter').submit();
+    });
+    });
 
 </script>
 @endpush
