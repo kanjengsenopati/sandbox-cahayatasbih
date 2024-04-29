@@ -54,6 +54,7 @@ use App\Http\Controllers\Admin\SubMenuNavigationController;
 use App\Http\Controllers\Admin\ApplicationSettingController;
 use App\Http\Controllers\Admin\StudentAchievementController;
 use App\Http\Controllers\Admin\InformationCategoryController;
+use App\Http\Controllers\Admin\ReportStudentController;
 use App\Http\Controllers\User\WaliSettingLimitSaldoController;
 use App\Http\Controllers\Admin\StudentCounselingScoreController;
 
@@ -170,7 +171,8 @@ Route::group(['middleware' => ['auth']], function () {
     Route::resource('student-counseling-score', StudentCounselingScoreController::class);
     // home
     Route::resource('contact', ContactController::class, ['only' => ['index', 'store']])->names('contact');
-    Route::resource('application-setting', ApplicationSettingController::class, ['only' => ['index', 'store']])->names('application-setting');
+    Route::resource('application-setting', ApplicationSettingController::class, ['only' => ['index', 'store']])
+        ->names('application-setting');
 
     // start saldo history
     Route::resource('saldo-history', SaldoHistoryController::class);
@@ -189,13 +191,20 @@ Route::group(['middleware' => ['auth']], function () {
     Route::post('application-menu/status/{id}', [ApplicationMenuController::class, 'status'])->name('application-menu.status');
     Route::resource('application-menu', ApplicationMenuController::class);
 
-    // start report menu
+    // start report bill
     Route::post('report-bill/send-bill-notification', [ReportBillController::class, 'sendBillNotification'])
         ->name('report-bill.send-bill-notification');
     Route::get('report-bill/get-classroom', [ReportBillController::class, 'getClassroom'])
         ->name('report-bill.get-classroom');
     Route::get('report-bill/get-data', [ReportBillController::class, 'getData'])->name('report-bill.get-data');
     Route::resource('report-bill', ReportBillController::class, ['only' => ['index', 'show']])->names('report-bill');
+    // end report bill
+
+    // start report student
+    Route::get('report-student', [ReportStudentController::class, 'index'])->name('report-student.index');
+    // Route::get('report-student/search-student', [ReportStudentController::class, 'searchStudent'])
+    //     ->name('report-student.search-student');
+
 
     // start ppdb
     Route::resource('ppdb-type', PpdbTypeController::class);

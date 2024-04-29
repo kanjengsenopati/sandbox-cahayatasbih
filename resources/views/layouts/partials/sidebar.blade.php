@@ -55,48 +55,152 @@
                         <span class="menu-title">Dashboard</span>
                     </a>
                 </div>
-                {{-- @php
-                $menuNavigations = \App\Models\MenuNavigation::with(['subMenuNavigation' => function ($query) {
-                $query->where('is_active', 1)->orderBy('order', 'asc');
-                }])->where('is_active', 1)->orderBy('order', 'asc')->get();
-                @endphp
 
-                @foreach ($menuNavigations as $menuNavigation)
-                @php
-                $listPermissions = $menuNavigation->subMenuNavigation->pluck('permission')->toArray();
-                @endphp
-
-                @can($listPermissions)
-                <div data-kt-menu-trigger="click"
-                    class="menu-item menu-accordion {{ request()->routeIs($listPermissions) ? 'show' : '' }}">
+                @canany(['permission', 'role', 'information-category', 'information', 'payment-method',
+                'application-setting',
+                'application-menu', 'help', 'app-information', 'bill-item', 'bill-type'])
+                <div data-kt-menu-trigger="click" class="menu-item menu-accordion {{ request()->routeIs(['permission.*', 'role.*', 'information-category.*',
+                    'information.*', 'payment-method.*', 'application-setting.*', 'application-menu.*', 'help.*',
+                    'app-information.*', 'bill-item.*', 'bill-type.*']) ? 'show' : '' }}">
                     <span class="menu-link ">
                         <span class="menu-icon">
-                            <i class="fa-solid {{ $menuNavigation->icon ?? '' }}" style="color: #ffffff;"></i>
+                            <i class="fa-solid fa-cog" style="color: #ffffff;"></i>
                         </span>
-                        <span class="menu-title">{{ $menuNavigation->name ?? '' }}</span>
+                        <span class="menu-title">Menu Pengaturan</span>
                         <span class="menu-arrow"></span>
                     </span>
                     <div class="menu-sub menu-sub-accordion menu-active-bg">
-                        @foreach ($menuNavigation->subMenuNavigation as $subMenuNavigation)
-                        @can($subMenuNavigation->permission)
-                        <div class="menu-item">
-                            <a class="menu-link {{ request()->routeIs($subMenuNavigation->url) ? ' active' : '' }}"
-                                href="{{ url($subMenuNavigation->url) }}">
+                        @can('permission')
+                        <div class="menu-item ">
+                            <a class="menu-link {{ request()->routeIs('permission.*') ? ' active' : '' }}"
+                                href="{{ route('permission.index') }}">
                                 <span class="menu-bullet">
                                     <span class="bullet bullet-dot"></span>
                                 </span>
-                                <span class="menu-title">{{ $subMenuNavigation->name ?? '' }}</span>
+                                <span class="menu-title">Permission</span>
                             </a>
                         </div>
                         @endcan
-                        @endforeach
+                        @can('role')
+                        <div class="menu-item ">
+                            <a class="menu-link {{ request()->routeIs('role.*') ? ' active' : '' }}"
+                                href="{{ route('role.index') }}">
+                                <span class="menu-bullet">
+                                    <span class="bullet bullet-dot"></span>
+                                </span>
+                                <span class="menu-title">Role</span>
+                            </a>
+                        </div>
+                        @endcan
+                        @can('information-category')
+                        <div class="menu-item ">
+                            <a class="menu-link {{ request()->routeIs('information-category.*') ? ' active' : '' }}"
+                                href="{{ route('information-category.index') }}">
+                                <span class="menu-bullet">
+                                    <span class="bullet bullet-dot"></span>
+                                </span>
+                                <span class="menu-title">Kategori Informasi</span>
+                            </a>
+                        </div>
+                        @endcan
+                        @can('information')
+                        <div class="menu-item ">
+                            <a class="menu-link {{ request()->routeIs('information.*') ? ' active' : '' }}"
+                                href="{{ route('information.index') }}">
+                                <span class="menu-bullet">
+                                    <span class="bullet bullet-dot"></span>
+                                </span>
+                                <span class="menu-title">Informasi</span>
+                            </a>
+                        </div>
+                        @endcan
+                        @can('payment-method')
+                        <div class="menu-item ">
+                            <a class="menu-link {{ request()->routeIs('payment-method.*') ? ' active' : '' }}"
+                                href="{{ route('payment-method.index') }}">
+                                <span class="menu-bullet">
+                                    <span class="bullet bullet-dot"></span>
+                                </span>
+                                <span class="menu-title">Data Metode Pembayaran</span>
+                            </a>
+                        </div>
+                        @endcan
+                        @can('application-setting')
+                        <div class="menu-item ">
+                            <a class="menu-link {{ request()->routeIs('application-setting.*') ? ' active' : '' }}"
+                                href="{{ route('application-setting.index') }}">
+                                <span class="menu-bullet">
+                                    <span class="bullet bullet-dot"></span>
+                                </span>
+                                <span class="menu-title">Pengaturan Aplikasi</span>
+                            </a>
+                        </div>
+                        @endcan
+                        @can('application-menu')
+                        <div class="menu-item ">
+                            <a class="menu-link {{ request()->routeIs('application-menu.*') ? ' active' : '' }}"
+                                href="{{ route('application-menu.index') }}">
+                                <span class="menu-bullet">
+                                    <span class="bullet bullet-dot"></span>
+                                </span>
+                                <span class="menu-title">Menu Aplikasi</span>
+                            </a>
+                        </div>
+                        @endcan
+                        @can('help')
+                        <div class="menu-item ">
+                            <a class="menu-link {{ request()->routeIs('help.*') ? ' active' : '' }}"
+                                href="{{ route('help.index') }}">
+                                <span class="menu-bullet">
+                                    <span class="bullet bullet-dot"></span>
+                                </span>
+                                <span class="menu-title">Kontak Bantuan</span>
+                            </a>
+                        </div>
+                        @endcan
+                        @can('app-information')
+                        <div class="menu-item ">
+                            <a class="menu-link {{ request()->routeIs('app-information.*') ? ' active' : '' }}"
+                                href="{{ route('app-information.index') }}">
+                                <span class="menu-bullet">
+                                    <span class="bullet bullet-dot"></span>
+                                </span>
+                                <span class="menu-title">Informasi Aplikasi</span>
+                            </a>
+                        </div>
+                        @endcan
+                        @can('bill-item')
+                        <div class="menu-item ">
+                            <a class="menu-link {{ request()->routeIs('bill-item.*') ? ' active' : '' }}"
+                                href="{{ route('bill-item.index') }}">
+                                <span class="menu-bullet">
+                                    <span class="bullet bullet-dot"></span>
+                                </span>
+                                <span class="menu-title">Item Bayar</span>
+                            </a>
+                        </div>
+                        @endcan
+                        @can('bill-type')
+                        <div class="menu-item ">
+                            <a class="menu-link {{ request()->routeIs('bill-type.*') ? ' active' : '' }}"
+                                href="{{ route('bill-type.index') }}">
+                                <span class="menu-bullet">
+                                    <span class="bullet bullet-dot"></span>
+                                </span>
+                                <span class="menu-title">Jenis Bayar</span>
+                            </a>
+                        </div>
+                        @endcan
                     </div>
                 </div>
-                @endcan
-                @endforeach --}}
+                @endcanany
 
-                <div data-kt-menu-trigger="click" class="menu-item menu-accordion {{ request()->routeIs(['school.*',
-                    'academic-year.*','tahfidz.*','semester.*','study.*','study-grade.*']) ? 'show' : '' }}">
+                @canany(['school', 'academic-year', 'semester', 'study','user', 'student',
+                'category-item', 'item', 'stock-history'])
+                <div data-kt-menu-trigger="click" class="menu-item menu-accordion {{ request()->routeIs(['
+                    school.*', 'academic-year.*', 'semester.*', 'study.*',
+                    'user.*', 'student.*',
+                      'category-item.*', 'item.*', 'stock-history.*']) ? 'show' : '' }}">
                     <span class="menu-link ">
                         <span class="menu-icon">
                             <i class="fa-solid fa-school" style="color: #ffffff;"></i>
@@ -105,6 +209,7 @@
                         <span class="menu-arrow"></span>
                     </span>
                     <div class="menu-sub menu-sub-accordion menu-active-bg">
+                        @can('school')
                         <div class="menu-item ">
                             <a class="menu-link {{ request()->routeIs('school.*') ? ' active' : '' }}"
                                 href="{{ route('school.index') }}">
@@ -114,8 +219,8 @@
                                 <span class="menu-title">Data Sekolah</span>
                             </a>
                         </div>
-                    </div>
-                    <div class="menu-sub menu-sub-accordion menu-active-bg">
+                        @endcan
+                        @can('academic-year')
                         <div class="menu-item ">
                             <a class="menu-link {{ request()->routeIs('academic-year.*') ? ' active' : '' }}"
                                 href="{{ route('academic-year.index') }}">
@@ -125,8 +230,8 @@
                                 <span class="menu-title">Data Tahun Ajaran</span>
                             </a>
                         </div>
-                    </div>
-                    <div class="menu-sub menu-sub-accordion menu-active-bg">
+                        @endcan
+                        @can('semester')
                         <div class="menu-item ">
                             <a class="menu-link {{ request()->routeIs('semester.*') ? ' active' : '' }}"
                                 href="{{ route('semester.index') }}">
@@ -136,8 +241,8 @@
                                 <span class="menu-title">Data Semester</span>
                             </a>
                         </div>
-                    </div>
-                    <div class="menu-sub menu-sub-accordion menu-active-bg">
+                        @endcan
+                        @can('study')
                         <div class="menu-item ">
                             <a class="menu-link {{ request()->routeIs('study.*') ? ' active' : '' }}"
                                 href="{{ route('study.index') }}">
@@ -147,42 +252,8 @@
                                 <span class="menu-title">Data Mata Pelajaran</span>
                             </a>
                         </div>
-                    </div>
-                    <div class="menu-sub menu-sub-accordion menu-active-bg">
-                        <div class="menu-item ">
-                            <a class="menu-link {{ request()->routeIs('study-grade.*') ? ' active' : '' }}"
-                                href="{{ route('study-grade.index') }}">
-                                <span class="menu-bullet">
-                                    <span class="bullet bullet-dot"></span>
-                                </span>
-                                <span class="menu-title">Data Nilai Pelajaran</span>
-                            </a>
-                        </div>
-                    </div>
-                    <div class="menu-sub menu-sub-accordion menu-active-bg">
-                        <div class="menu-item ">
-                            <a class="menu-link {{ request()->routeIs('tahfidz.*') ? ' active' : '' }}"
-                                href="{{ route('tahfidz.index') }}">
-                                <span class="menu-bullet">
-                                    <span class="bullet bullet-dot"></span>
-                                </span>
-                                <span class="menu-title">Data Tahfidz</span>
-                            </a>
-                        </div>
-                    </div>
-                </div>
+                        @endcan
 
-                @can('user')
-                <div data-kt-menu-trigger="click"
-                    class="menu-item menu-accordion {{ request()->routeIs(['user.*','student.*']) ? 'show' : '' }}">
-                    <span class="menu-link ">
-                        <span class="menu-icon">
-                            <i class="fa-solid fa-user" style="color: #ffffff;"></i>
-                        </span>
-                        <span class="menu-title">Menu User</span>
-                        <span class="menu-arrow"></span>
-                    </span>
-                    <div class="menu-sub menu-sub-accordion menu-active-bg">
                         @can('user')
                         <div class="menu-item ">
                             <a class="menu-link {{ request()->routeIs('user.*') ? ' active' : '' }}"
@@ -194,7 +265,8 @@
                             </a>
                         </div>
                         @endcan
-                        <div class="menu-item ">
+                        @can('student')
+                        <div class="menu-item">
                             <a class="menu-link {{ request()->routeIs('student.*') ? ' active' : '' }}"
                                 href="{{ route('student.index') }}">
                                 <span class="menu-bullet">
@@ -203,122 +275,9 @@
                                 <span class="menu-title">Data Siswa</span>
                             </a>
                         </div>
-                    </div>
-                </div>
-                @endcan
-                <div data-kt-menu-trigger="click"
-                    class="menu-item menu-accordion {{ request()->routeIs(['saldo-history.*','saving-history.*']) ? 'show' : '' }}">
-                    <span class="menu-link ">
-                        <span class="menu-icon">
-                            <i class="fa-solid fa-dollar-sign" style="color: #ffffff;"></i>
-                        </span>
-                        <span class="menu-title">Menu Saldo</span>
-                        <span class="menu-arrow"></span>
-                    </span>
-                    <div class="menu-sub menu-sub-accordion menu-active-bg">
-                        <div class="menu-item ">
-                            <a class="menu-link {{ request()->routeIs('saldo-history.*') ? ' active' : '' }}"
-                                href="{{ route('saldo-history.index') }}">
-                                <span class="menu-bullet">
-                                    <span class="bullet bullet-dot"></span>
-                                </span>
-                                <span class="menu-title">Riwayat Saldo</span>
-                            </a>
-                        </div>
-                        <div class="menu-item ">
-                            <a class="menu-link {{ request()->routeIs('saving-history.*') ? ' active' : '' }}"
-                                href="{{ route('saving-history.index') }}">
-                                <span class="menu-bullet">
-                                    <span class="bullet bullet-dot"></span>
-                                </span>
-                                <span class="menu-title">Riwayat Tabungan</span>
-                            </a>
-                        </div>
-                    </div>
-                </div>
-
-                <div data-kt-menu-trigger="click"
-                    class="menu-item menu-accordion {{ request()->routeIs(['student-achievement.*','student-counseling-score.*','schedule.*']) ? 'show' : '' }}">
-                    <span class="menu-link ">
-                        <span class="menu-icon">
-                            <i class="fa-solid fa-award" style="color: #ffffff;"></i>
-                        </span>
-                        <span class="menu-title">Menu Prestasi Siswa</span>
-                        <span class="menu-arrow"></span>
-                    </span>
-                    <div class="menu-sub menu-sub-accordion menu-active-bg">
-                        <div class="menu-item ">
-                            <a class="menu-link {{ request()->routeIs('student-achievement.*') ? ' active' : '' }}"
-                                href="{{ route('student-achievement.index') }}">
-                                <span class="menu-bullet">
-                                    <span class="bullet bullet-dot"></span>
-                                </span>
-                                <span class="menu-title">Prestasi Siswa</span>
-                            </a>
-                        </div>
-                    </div>
-                    <div class="menu-sub menu-sub-accordion menu-active-bg">
-                        <div class="menu-item ">
-                            <a class="menu-link {{ request()->routeIs('student-counseling-score.*') ? ' active' : '' }}"
-                                href="{{ route('student-counseling-score.index') }}">
-                                <span class="menu-bullet">
-                                    <span class="bullet bullet-dot"></span>
-                                </span>
-                                <span class="menu-title">Nilai Konseling</span>
-                            </a>
-                        </div>
-                    </div>
-                    <div class="menu-sub menu-sub-accordion menu-active-bg">
-                        <div class="menu-item ">
-                            <a class="menu-link {{ request()->routeIs('schedule.*') ? ' active' : '' }}"
-                                href="{{ route('schedule.index') }}">
-                                <span class="menu-bullet">
-                                    <span class="bullet bullet-dot"></span>
-                                </span>
-                                <span class="menu-title">Jadwal Agenda</span>
-                            </a>
-                        </div>
-                    </div>
-                </div>
-
-                <div data-kt-menu-trigger="click"
-                    class="menu-item menu-accordion {{ request()->routeIs(['category-item.*','item.*', 'stock-history.*','order-item.*', 'order-item-history.*','pos.dashboard']) ? 'show' : '' }}">
-                    <span class="menu-link ">
-                        <span class="menu-icon">
-                            <i class="fa-solid fa-box" style="color: #ffffff;"></i>
-                        </span>
-                        <span class="menu-title">Menu POS</span>
-                        <span class="menu-arrow"></span>
-                    </span>
-                    <div class="menu-sub menu-sub-accordion menu-active-bg">
-                        <div class="menu-item ">
-                            <a class="menu-link {{ request()->routeIs('pos.dashboard') ? ' active' : '' }}"
-                                href="{{ route('pos.dashboard') }}">
-                                <span class="menu-bullet">
-                                    <span class="bullet bullet-dot"></span>
-                                </span>
-                                <span class="menu-title">Dashboard POS</span>
-                            </a>
-                        </div>
-                        <div class="menu-item ">
-                            <a class="menu-link {{ request()->routeIs('order-item.*') ? ' active' : '' }}"
-                                href="{{ route('order-item.index') }}">
-                                <span class="menu-bullet">
-                                    <span class="bullet bullet-dot"></span>
-                                </span>
-                                <span class="menu-title">Transaksi</span>
-                            </a>
-                        </div>
-                        <div class="menu-item ">
-                            <a class="menu-link {{ request()->routeIs('order-item-history.*') ? ' active' : '' }}"
-                                href="{{ route('order-item-history.index') }}">
-                                <span class="menu-bullet">
-                                    <span class="bullet bullet-dot"></span>
-                                </span>
-                                <span class="menu-title">Riwayat Transaksi</span>
-                            </a>
-                        </div>
-                        <div class="menu-item ">
+                        @endcan
+                        @can('category-item')
+                        <div class="menu-item">
                             <a class="menu-link {{ request()->routeIs('category-item.*') ? ' active' : '' }}"
                                 href="{{ route('category-item.index') }}">
                                 <span class="menu-bullet">
@@ -327,6 +286,8 @@
                                 <span class="menu-title">Kategori Barang</span>
                             </a>
                         </div>
+                        @endcan
+                        @can('item')
                         <div class="menu-item ">
                             <a class="menu-link {{ request()->routeIs('item.*') ? ' active' : '' }}"
                                 href="{{ route('item.index') }}">
@@ -336,61 +297,140 @@
                                 <span class="menu-title">Data Barang</span>
                             </a>
                         </div>
+                        @endcan
+                        @can('stock-history')
                         <div class="menu-item ">
                             <a class="menu-link {{ request()->routeIs('stock-history.*') ? ' active' : '' }}"
                                 href="{{ route('stock-history.index') }}">
                                 <span class="menu-bullet">
                                     <span class="bullet bullet-dot"></span>
                                 </span>
-                                <span class="menu-title">Data Stok</span>
+                                <span class="menu-title">Inventori Barang</span>
                             </a>
                         </div>
+                        @endcan
                     </div>
                 </div>
+                @endcanany
 
-                <div data-kt-menu-trigger="click"
-                    class="menu-item menu-accordion {{ request()->routeIs(['bill-item.*','bill-type.*','bill.*','payment-rate.*']) ? 'show' : '' }}">
-                    <span class="menu-link ">
-                        <span class="menu-icon">
-                            <i class="fa-solid fa-money-bill" style="color: #ffffff;"></i>
+                @canany(['bill', 'saldo-history', 'saving-history', 'order-item', 'order-item-history', 'study-grade',
+                'tahfidz', 'student-counseling-score', 'schedule'])
+                <div data-kt-menu-trigger="click" class="menu-item menu-accordion {{ request()->routeIs(['
+                    bill.*', 'saldo-history.*', 'saving-history.*', 'order-item.*', 'order-item-history.*', 'study-grade.*',
+                    'tahfidz.*', 'student-counseling-score.*', 'schedule.*']) ? 'show' : '' }}">
+                    <span class=" menu-link ">
+                        <span class=" menu-icon">
+                            <i class="fa-solid fa-edit" style="color: #ffffff;"></i>
                         </span>
-                        <span class="menu-title">Administrasi Siswa</span>
+                        <span class="menu-title">Entri Data</span>
                         <span class="menu-arrow"></span>
                     </span>
                     <div class="menu-sub menu-sub-accordion menu-active-bg">
+                        @can('bill')
+                        <div class="menu-sub menu-sub-accordion menu-active-bg">
+                            <div class="menu-item ">
+                                <a class="menu-link {{ request()->routeIs('bill.*') ? ' active' : '' }}"
+                                    href="{{ route('bill.index') }}">
+                                    <span class="menu-bullet">
+                                        <span class="bullet bullet-dot"></span>
+                                    </span>
+                                    <span class="menu-title">Tagihan</span>
+                                </a>
+                            </div>
+                        </div>
+                        @endcan
+                        @can('saldo-history')
                         <div class="menu-item ">
-                            <a class="menu-link {{ request()->routeIs('bill-item.*') ? ' active' : '' }}"
-                                href="{{ route('bill-item.index') }}">
+                            <a class="menu-link {{ request()->routeIs('saldo-history.*') ? ' active' : '' }}"
+                                href="{{ route('saldo-history.index') }}">
                                 <span class="menu-bullet">
                                     <span class="bullet bullet-dot"></span>
                                 </span>
-                                <span class="menu-title">Item Bayar</span>
+                                <span class="menu-title">Saldo Santri</span>
                             </a>
                         </div>
-                    </div>
-                    <div class="menu-sub menu-sub-accordion menu-active-bg">
+                        @endcan
+                        @can('saving-history')
                         <div class="menu-item ">
-                            <a class="menu-link {{ request()->routeIs('bill-type.*') ? ' active' : '' }}"
-                                href="{{ route('bill-type.index') }}">
+                            <a class="menu-link {{ request()->routeIs('saving-history.*') ? ' active' : '' }}"
+                                href="{{ route('saving-history.index') }}">
                                 <span class="menu-bullet">
                                     <span class="bullet bullet-dot"></span>
                                 </span>
-                                <span class="menu-title">Jenis Bayar</span>
+                                <span class="menu-title">Tabungan Santri</span>
                             </a>
                         </div>
-                    </div>
-                    <div class="menu-sub menu-sub-accordion menu-active-bg">
+                        @endcan
+                        @can('order-item')
                         <div class="menu-item ">
-                            <a class="menu-link {{ request()->routeIs('bill.*') ? ' active' : '' }}"
-                                href="{{ route('bill.index') }}">
+                            <a class="menu-link {{ request()->routeIs('order-item.*') ? ' active' : '' }}"
+                                href="{{ route('order-item.index') }}">
                                 <span class="menu-bullet">
                                     <span class="bullet bullet-dot"></span>
                                 </span>
-                                <span class="menu-title">Tagihan</span>
+                                <span class="menu-title">POS Kasir</span>
                             </a>
                         </div>
+                        @endcan
+                        @can('order-item-history')
+                        <div class="menu-item ">
+                            <a class="menu-link {{ request()->routeIs('order-item-history.*') ? ' active' : '' }}"
+                                href="{{ route('order-item-history.index') }}">
+                                <span class="menu-bullet">
+                                    <span class="bullet bullet-dot"></span>
+                                </span>
+                                <span class="menu-title">Riwayat Transaksi</span>
+                            </a>
+                        </div>
+                        @endcan
+                        @can('study-grade')
+                        <div class="menu-item ">
+                            <a class="menu-link {{ request()->routeIs('study-grade.*') ? ' active' : '' }}"
+                                href="{{ route('study-grade.index') }}">
+                                <span class="menu-bullet">
+                                    <span class="bullet bullet-dot"></span>
+                                </span>
+                                <span class="menu-title">Nilai Pelajaran</span>
+                            </a>
+                        </div>
+                        @endcan
+                        @can('tahfidz')
+                        <div class="menu-item ">
+                            <a class="menu-link {{ request()->routeIs('tahfidz.*') ? ' active' : '' }}"
+                                href="{{ route('tahfidz.index') }}">
+                                <span class="menu-bullet">
+                                    <span class="bullet bullet-dot"></span>
+                                </span>
+                                <span class="menu-title">Tahfidz</span>
+                            </a>
+                        </div>
+                        @endcan
+                        @can('student-counseling-score')
+                        <div class="menu-item ">
+                            <a class="menu-link {{ request()->routeIs('student-counseling-score.*') ? ' active' : '' }}"
+                                href="{{ route('student-counseling-score.index') }}">
+                                <span class="menu-bullet">
+                                    <span class="bullet bullet-dot"></span>
+                                </span>
+                                <span class="menu-title">Perilaku Santri</span>
+                            </a>
+                        </div>
+                        @endcan
+                        @can('schedule')
+                        <div class="menu-item ">
+                            <a class="menu-link {{ request()->routeIs('schedule.*') ? ' active' : '' }}"
+                                href="{{ route('schedule.index') }}">
+                                <span class="menu-bullet">
+                                    <span class="bullet bullet-dot"></span>
+                                </span>
+                                <span class="menu-title">Jadwal Agenda</span>
+                            </a>
+                        </div>
+                        @endcan
                     </div>
                 </div>
+                @endcanany
+
 
                 <div data-kt-menu-trigger="click"
                     class="menu-item menu-accordion {{ request()->routeIs(['report-bill.*']) ? 'show' : '' }}">
@@ -415,96 +455,6 @@
                     </div>
                 </div>
 
-                <div data-kt-menu-trigger="click" class="menu-item menu-accordion {{ request()->routeIs([
-                    'payment-method.*', 'application-setting.*', 'help.*',
-                     'app-information.*', 'application-menu.*']) ? 'show' : '' }}">
-                    <span class="menu-link ">
-                        <span class="menu-icon">
-                            <i class="fa-solid fa-gear" style="color: #ffffff;"></i>
-                        </span>
-                        <span class="menu-title">Menu Pengaturan</span>
-                        <span class="menu-arrow"></span>
-                    </span>
-                    <div class="menu-sub menu-sub-accordion menu-active-bg">
-
-                        <div class="menu-item ">
-                            <a class="menu-link {{ request()->routeIs('payment-method.*') ? ' active' : '' }}"
-                                href="{{ route('payment-method.index') }}">
-                                <span class="menu-bullet">
-                                    <span class="bullet bullet-dot"></span>
-                                </span>
-                                <span class="menu-title">Data Metode Pembayaran</span>
-                            </a>
-                        </div>
-                        <div class="menu-item ">
-                            <a class="menu-link {{ request()->routeIs('application-setting.*') ? ' active' : '' }}"
-                                href="{{ route('application-setting.index') }}">
-                                <span class="menu-bullet">
-                                    <span class="bullet bullet-dot"></span>
-                                </span>
-                                <span class="menu-title">Pengaturan Aplikasi</span>
-                            </a>
-                        </div>
-                        <div class="menu-item ">
-                            <a class="menu-link {{ request()->routeIs('application-menu.*') ? ' active' : '' }}"
-                                href="{{ route('application-menu.index') }}">
-                                <span class="menu-bullet">
-                                    <span class="bullet bullet-dot"></span>
-                                </span>
-                                <span class="menu-title">Menu Aplikasi</span>
-                            </a>
-                        </div>
-                        <div class="menu-item ">
-                            <a class="menu-link {{ request()->routeIs('help.*') ? ' active' : '' }}"
-                                href="{{ route('help.index') }}">
-                                <span class="menu-bullet">
-                                    <span class="bullet bullet-dot"></span>
-                                </span>
-                                <span class="menu-title">Kontak Bantuan</span>
-                            </a>
-                        </div>
-                        <div class="menu-item ">
-                            <a class="menu-link {{ request()->routeIs('app-information.*') ? ' active' : '' }}"
-                                href="{{ route('app-information.index') }}">
-                                <span class="menu-bullet">
-                                    <span class="bullet bullet-dot"></span>
-                                </span>
-                                <span class="menu-title">Informasi Aplikasi</span>
-                            </a>
-                        </div>
-                    </div>
-                </div>
-
-                <div data-kt-menu-trigger="click"
-                    class="menu-item menu-accordion {{ request()->routeIs(['information-category.*','information.*']) ? 'show' : '' }}">
-                    <span class="menu-link ">
-                        <span class="menu-icon">
-                            <i class="fa-solid fa-info" style="color: #ffffff;"></i>
-                        </span>
-                        <span class="menu-title">Menu Informasi</span>
-                        <span class="menu-arrow"></span>
-                    </span>
-                    <div class="menu-sub menu-sub-accordion menu-active-bg">
-                        <div class="menu-item ">
-                            <a class="menu-link {{ request()->routeIs('information-category.*') ? ' active' : '' }}"
-                                href="{{ route('information-category.index') }}">
-                                <span class="menu-bullet">
-                                    <span class="bullet bullet-dot"></span>
-                                </span>
-                                <span class="menu-title">Kategori Informasi</span>
-                            </a>
-                        </div>
-                        <div class="menu-item ">
-                            <a class="menu-link {{ request()->routeIs('information.*') ? ' active' : '' }}"
-                                href="{{ route('information.index') }}">
-                                <span class="menu-bullet">
-                                    <span class="bullet bullet-dot"></span>
-                                </span>
-                                <span class="menu-title">Data Informasi</span>
-                            </a>
-                        </div>
-                    </div>
-                </div>
             </div>
             <!--end::Menu-->
         </div>
