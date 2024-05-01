@@ -433,7 +433,7 @@
 
 
                 <div data-kt-menu-trigger="click" class="menu-item menu-accordion {{ request()->routeIs(['report-bill.*', 'report-student.*','report-tahfidz.*',
-                    'report-student-counseling-score.*']) ? 'show' : '' }}">
+                    'report-student-counseling-score.*', 'report-app-fee.*']) ? 'show' : '' }}">
                     <span class="menu-link ">
                         <span class="menu-icon">
                             <i class="fa-solid fa-file" style="color: #ffffff;"></i>
@@ -477,6 +477,15 @@
                                     <span class="bullet bullet-dot"></span>
                                 </span>
                                 <span class="menu-title">Perilaku Siswa</span>
+                            </a>
+                        </div>
+                        <div class="menu-item">
+                            <a class="menu-link {{ request()->routeIs('report-app-fee.*') ? ' active' : '' }}"
+                                href="{{ route('report-app-fee.index') }}">
+                                <span class="menu-bullet">
+                                    <span class="bullet bullet-dot"></span>
+                                </span>
+                                <span class="menu-title">Biaya Aplikasi</span>
                             </a>
                         </div>
                     </div>
