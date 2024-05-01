@@ -44,6 +44,8 @@ use App\Http\Controllers\Admin\StockHistoryController;
 use App\Http\Controllers\User\WaliDashboardController;
 use App\Http\Controllers\Admin\PaymentMethodController;
 use App\Http\Controllers\Admin\PrivacyPolicyController;
+use App\Http\Controllers\Admin\ReportStudentController;
+use App\Http\Controllers\Admin\ReportTahfidzController;
 use App\Http\Controllers\Admin\SavingHistoryController;
 use App\Http\Controllers\Admin\TermConditionController;
 use App\Http\Controllers\Admin\AppInformationController;
@@ -54,9 +56,10 @@ use App\Http\Controllers\Admin\SubMenuNavigationController;
 use App\Http\Controllers\Admin\ApplicationSettingController;
 use App\Http\Controllers\Admin\StudentAchievementController;
 use App\Http\Controllers\Admin\InformationCategoryController;
-use App\Http\Controllers\Admin\ReportStudentController;
+use App\Http\Controllers\Admin\ReportAppFeeController;
 use App\Http\Controllers\User\WaliSettingLimitSaldoController;
 use App\Http\Controllers\Admin\StudentCounselingScoreController;
+use App\Http\Controllers\Admin\ReportStudentCounselingScoreController;
 
 /*
 |--------------------------------------------------------------------------
@@ -203,6 +206,13 @@ Route::group(['middleware' => ['auth']], function () {
     // start report student
     Route::get('report-student', [ReportStudentController::class, 'index'])->name('report-student.index');
     Route::get('report-student/export', [ReportStudentController::class, 'export'])->name('report-student.export');
+    Route::get('report-tahfidz', [ReportTahfidzController::class, 'index'])->name('report-tahfidz.index');
+    Route::get('report-tahfidz/export', [ReportTahfidzController::class, 'export'])->name('report-tahfidz.export');
+    Route::get('report-student-counseling-score', [ReportStudentCounselingScoreController::class, 'index'])
+        ->name('report-student-counseling-score.index');
+    Route::get('report-student-counseling-score/export', [ReportStudentCounselingScoreController::class, 'export'])
+        ->name('report-student-counseling-score.export');
+    Route::get('report-app-fee', [ReportAppFeeController::class, 'index'])->name('report-app-fee.index');
     // Route::get('report-student/search-student', [ReportStudentController::class, 'searchStudent'])
     //     ->name('report-student.search-student');
 

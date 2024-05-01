@@ -1,4 +1,4 @@
-@extends('layouts.master', ['title' => 'Laporan Tahfidz'])
+@extends('layouts.master', ['title' => 'Laporan Perilaku Siswa'])
 @section('content')
 <div class="content d-flex flex-column flex-column-fluid" id="kt_content">
     <!--begin::Toolbar-->
@@ -19,8 +19,9 @@
                 <ul class="breadcrumb breadcrumb-separatorless fw-bold fs-7 my-1">
                     <!--begin::Item-->
                     <li class="breadcrumb-item text-muted">
-                        <a href="{{ route('report-student.index') }}" class="text-muted text-hover-primary">Laporan
-                            Siswa</a>
+                        <a href="{{ route('report-student-counseling-score.index') }}"
+                            class="text-muted text-hover-primary">Laporan
+                            Perilaku Siswa</a>
                     </li>
                     <!--end::Item-->
                     <!--begin::Item-->
@@ -29,7 +30,7 @@
                     </li>
                     <!--end::Item-->
                     <!--begin::Item-->
-                    <li class="breadcrumb-item text-dark">Data Siswa</li>
+                    <li class="breadcrumb-item text-dark">Data Perilaku Siswa</li>
                     <!--end::Item-->
                 </ul>
                 <!--end::Breadcrumb-->
@@ -64,7 +65,8 @@
                             </div>
                         </div> --}}
                         <div class="mb-0">
-                            <form action="{{ route('report-student.export') }}" id="form-filter" method="get">
+                            <form action="{{ route('report-student-counseling-score.export') }}" id="form-filter"
+                                method="get">
                                 <input type="text" hidden id="type" name="type" required>
                                 <div class="d-flex flex-wrap gap-4 align-items-end">
                                     <div>
@@ -148,11 +150,17 @@
                             <thead>
                                 <tr class="text-start text-gray-400 fw-bolder fs-7 text-uppercase gs-0">
                                     <th style="width: 5%">No</th>
-                                    <th>NIS</th>
-                                    <th>NISN</th>
-                                    <th>Nama Siswa</th>
+                                    {{-- <th>NIS</th>
+                                    <th>Nama Siswa</th> --}}
+                                    <th>Tahun Ajaran</th>
                                     <th>Kelas</th>
-                                    <th class="text-center min-w-100px" style="width: 22%">Aksi</th>
+                                    <th>Semester</th>
+                                    <th>Siswa</th>
+                                    <th>Skor</th>
+                                    <th>Pelanggaran</th>
+                                    <th>Tindakan</th>
+                                    <th>Catatan</th>
+                                    {{-- <th class="text-center min-w-100px" style="width: 22%">Aksi</th> --}}
                                 </tr>
                             </thead>
                             <tbody class="text-gray-600 fw-bold"></tbody>
@@ -206,7 +214,7 @@
     processing: true,
     serverSide: true,
     ajax: {
-    url: "{{ route('report-student.index') }}",
+    url: "{{ route('report-student-counseling-score.index') }}",
     data: function(d) {
     // Mengambil data filter dari elemen formulir
     d.school_id = $('#filter_school_id').val();
@@ -222,16 +230,55 @@
     return meta.row + meta.settings._iDisplayStart + 1;
     }
     },
-    { data: 'nis', name: 'nis' },
-    { data: 'nisn', name: 'nisn' },
-    { data: 'name', name: 'name' },
-    { data: 'classroom.name', name: 'classroom.name' },
-    {
-    data: 'action',
-    name: 'action',
-    orderable: false,
-    searchable: false
-    }
+   {
+        data: 'academic_year.name',
+        name: 'academic_year.name',
+        orderable: true,
+        searchable: true,
+        responsivePriority: -1,
+        },
+        {
+        data: 'student.classroom.name',
+        name: 'student.classroom.name',
+        orderable: true,
+        searchable: true,
+        },
+        {
+        data: 'semester',
+        name: 'semester',
+        orderable: true,
+        searchable: true,
+        },
+        {
+        data: 'student.name',
+        name: 'student.name',
+        orderable: true,
+        searchable: true,
+        },
+        {
+        data: 'score',
+        name: 'score',
+        orderable: true,
+        searchable: true,
+        },
+        {
+        data: 'violation',
+        name: 'violation',
+        orderable: true,
+        searchable: true,
+        },
+        {
+        data: 'action',
+        name: 'action',
+        orderable: true,
+        searchable: true,
+        },
+        {
+        data: 'note',
+        name: 'note',
+        orderable: true,
+        searchable: true,
+        },
     ]
     });
     

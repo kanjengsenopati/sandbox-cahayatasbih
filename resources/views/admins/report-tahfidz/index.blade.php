@@ -19,8 +19,8 @@
                 <ul class="breadcrumb breadcrumb-separatorless fw-bold fs-7 my-1">
                     <!--begin::Item-->
                     <li class="breadcrumb-item text-muted">
-                        <a href="{{ route('report-student.index') }}" class="text-muted text-hover-primary">Laporan
-                            Siswa</a>
+                        <a href="{{ route('report-tahfidz.index') }}" class="text-muted text-hover-primary">Laporan
+                            Tahfidz</a>
                     </li>
                     <!--end::Item-->
                     <!--begin::Item-->
@@ -29,7 +29,7 @@
                     </li>
                     <!--end::Item-->
                     <!--begin::Item-->
-                    <li class="breadcrumb-item text-dark">Data Siswa</li>
+                    <li class="breadcrumb-item text-dark">Data Tahfidz</li>
                     <!--end::Item-->
                 </ul>
                 <!--end::Breadcrumb-->
@@ -64,7 +64,7 @@
                             </div>
                         </div> --}}
                         <div class="mb-0">
-                            <form action="{{ route('report-student.export') }}" id="form-filter" method="get">
+                            <form action="{{ route('report-tahfidz.export') }}" id="form-filter" method="get">
                                 <input type="text" hidden id="type" name="type" required>
                                 <div class="d-flex flex-wrap gap-4 align-items-end">
                                     <div>
@@ -148,11 +148,14 @@
                             <thead>
                                 <tr class="text-start text-gray-400 fw-bolder fs-7 text-uppercase gs-0">
                                     <th style="width: 5%">No</th>
+                                    <th>Tanggal</th>
                                     <th>NIS</th>
-                                    <th>NISN</th>
                                     <th>Nama Siswa</th>
-                                    <th>Kelas</th>
-                                    <th class="text-center min-w-100px" style="width: 22%">Aksi</th>
+                                    <th>Jumlah Halaman</th>
+                                    <th>Keterangan</th>
+                                    <th>Feedback</th>
+                                    <th>Link</th>
+                                    {{-- <th class="text-center min-w-100px" style="width: 22%">Aksi</th> --}}
                                 </tr>
                             </thead>
                             <tbody class="text-gray-600 fw-bold"></tbody>
@@ -206,7 +209,7 @@
     processing: true,
     serverSide: true,
     ajax: {
-    url: "{{ route('report-student.index') }}",
+    url: "{{ route('report-tahfidz.index') }}",
     data: function(d) {
     // Mengambil data filter dari elemen formulir
     d.school_id = $('#filter_school_id').val();
@@ -222,16 +225,20 @@
     return meta.row + meta.settings._iDisplayStart + 1;
     }
     },
-    { data: 'nis', name: 'nis' },
-    { data: 'nisn', name: 'nisn' },
-    { data: 'name', name: 'name' },
-    { data: 'classroom.name', name: 'classroom.name' },
     {
-    data: 'action',
-    name: 'action',
-    orderable: false,
-    searchable: false
-    }
+        data: 'deposit_date',
+        name: 'deposit_date'
+    },
+    { data: 'student.nis', name: 'student.nis' },
+    { data: 'student.name', name: 'student.name',
+        responsivePriority: -1,
+    },
+    { data: 'number_of_pages', name: 'number_of_pages' },
+    { data: 'note', name: 'note' },
+    { data: 'feedback', name: 'feedback' },
+    { data: 'link', name: 'link',
+        responsivePriority: -1,
+     },
     ]
     });
     

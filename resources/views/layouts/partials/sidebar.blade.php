@@ -432,8 +432,8 @@
                 @endcanany
 
 
-                <div data-kt-menu-trigger="click"
-                    class="menu-item menu-accordion {{ request()->routeIs(['report-bill.*']) ? 'show' : '' }}">
+                <div data-kt-menu-trigger="click" class="menu-item menu-accordion {{ request()->routeIs(['report-bill.*', 'report-student.*','report-tahfidz.*',
+                    'report-student-counseling-score.*']) ? 'show' : '' }}">
                     <span class="menu-link ">
                         <span class="menu-icon">
                             <i class="fa-solid fa-file" style="color: #ffffff;"></i>
@@ -450,6 +450,33 @@
                                     <span class="bullet bullet-dot"></span>
                                 </span>
                                 <span class="menu-title">Tagihan</span>
+                            </a>
+                        </div>
+                        <div class="menu-item ">
+                            <a class="menu-link {{ request()->routeIs('report-student.*') ? ' active' : '' }}"
+                                href="{{ route('report-student.index') }}">
+                                <span class="menu-bullet">
+                                    <span class="bullet bullet-dot"></span>
+                                </span>
+                                <span class="menu-title">Siswa</span>
+                            </a>
+                        </div>
+                        <div class="menu-item ">
+                            <a class="menu-link {{ request()->routeIs('report-tahfidz.*') ? ' active' : '' }}"
+                                href="{{ route('report-tahfidz.index') }}">
+                                <span class="menu-bullet">
+                                    <span class="bullet bullet-dot"></span>
+                                </span>
+                                <span class="menu-title">Tahfidz</span>
+                            </a>
+                        </div>
+                        <div class="menu-item">
+                            <a class="menu-link {{ request()->routeIs('report-student-counseling-score.*') ? ' active' : '' }}"
+                                href="{{ route('report-student-counseling-score.index') }}">
+                                <span class="menu-bullet">
+                                    <span class="bullet bullet-dot"></span>
+                                </span>
+                                <span class="menu-title">Perilaku Siswa</span>
                             </a>
                         </div>
                     </div>
