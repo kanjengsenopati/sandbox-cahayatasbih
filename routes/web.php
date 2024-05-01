@@ -57,6 +57,7 @@ use App\Http\Controllers\Admin\ApplicationSettingController;
 use App\Http\Controllers\Admin\StudentAchievementController;
 use App\Http\Controllers\Admin\InformationCategoryController;
 use App\Http\Controllers\Admin\ReportAppFeeController;
+use App\Http\Controllers\Admin\ReportSaldoController;
 use App\Http\Controllers\User\WaliSettingLimitSaldoController;
 use App\Http\Controllers\Admin\StudentCounselingScoreController;
 use App\Http\Controllers\Admin\ReportStudentCounselingScoreController;
@@ -213,6 +214,8 @@ Route::group(['middleware' => ['auth']], function () {
     Route::get('report-student-counseling-score/export', [ReportStudentCounselingScoreController::class, 'export'])
         ->name('report-student-counseling-score.export');
     Route::get('report-app-fee', [ReportAppFeeController::class, 'index'])->name('report-app-fee.index');
+    Route::get('report-saldo', [ReportSaldoController::class, 'index'])->name('report-saldo.index');
+    Route::get('report-saldo/export', [ReportSaldoController::class, 'export'])->name('report-saldo.export');
     // Route::get('report-student/search-student', [ReportStudentController::class, 'searchStudent'])
     //     ->name('report-student.search-student');
 

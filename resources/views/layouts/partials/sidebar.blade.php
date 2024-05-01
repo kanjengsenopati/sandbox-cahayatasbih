@@ -433,7 +433,8 @@
 
 
                 <div data-kt-menu-trigger="click" class="menu-item menu-accordion {{ request()->routeIs(['report-bill.*', 'report-student.*','report-tahfidz.*',
-                    'report-student-counseling-score.*', 'report-app-fee.*']) ? 'show' : '' }}">
+                    'report-student-counseling-score.*', 'report-app-fee.*',
+                    'report-saldo.*']) ? 'show' : '' }}">
                     <span class="menu-link ">
                         <span class="menu-icon">
                             <i class="fa-solid fa-file" style="color: #ffffff;"></i>
@@ -480,12 +481,21 @@
                             </a>
                         </div>
                         <div class="menu-item">
+                            <a class="menu-link {{ request()->routeIs('report-saldo.*') ? ' active' : '' }}"
+                                href="{{ route('report-saldo.index') }}">
+                                <span class="menu-bullet">
+                                    <span class="bullet bullet-dot"></span>
+                                </span>
+                                <span class="menu-title">Saldo Santri</span>
+                            </a>
+                        </div>
+                        <div class="menu-item">
                             <a class="menu-link {{ request()->routeIs('report-app-fee.*') ? ' active' : '' }}"
                                 href="{{ route('report-app-fee.index') }}">
                                 <span class="menu-bullet">
                                     <span class="bullet bullet-dot"></span>
                                 </span>
-                                <span class="menu-title">Biaya Aplikasi</span>
+                                <span class="menu-title">Fee Aplikasi</span>
                             </a>
                         </div>
                     </div>
