@@ -431,10 +431,9 @@
                 </div>
                 @endcanany
 
-
                 <div data-kt-menu-trigger="click" class="menu-item menu-accordion {{ request()->routeIs(['report-bill.*', 'report-student.*','report-tahfidz.*',
                     'report-student-counseling-score.*', 'report-app-fee.*',
-                    'report-saldo.*']) ? 'show' : '' }}">
+                    'report-saldo.*', 'report-study-grade.*']) ? 'show' : '' }}">
                     <span class="menu-link ">
                         <span class="menu-icon">
                             <i class="fa-solid fa-file" style="color: #ffffff;"></i>
@@ -460,6 +459,15 @@
                                     <span class="bullet bullet-dot"></span>
                                 </span>
                                 <span class="menu-title">Siswa</span>
+                            </a>
+                        </div>
+                        <div class="menu-item ">
+                            <a class="menu-link {{ request()->routeIs('report-study-grade.*') ? ' active' : '' }}"
+                                href="{{ route('report-study-grade.index') }}">
+                                <span class="menu-bullet">
+                                    <span class="bullet bullet-dot"></span>
+                                </span>
+                                <span class="menu-title">Raport Nilai Akademik</span>
                             </a>
                         </div>
                         <div class="menu-item ">

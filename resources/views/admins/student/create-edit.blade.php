@@ -604,7 +604,7 @@
                             <!--begin::Separator-->
                             <div class="separator mb-6"></div>
                             <!--end::Separator-->
-                        </form>
+
                     </div>
                     <!--end::Card body-->
                     <!--begin::Actions-->
@@ -882,53 +882,53 @@
 @endsection
 @push('js')
 <script>
-    $(document).ready(function () {
-        $('#student').validate({
-       rules: {
-        user_id: {
-        required: true,
-        },
-        name: {
-        required: true,
-        maxlength: 255,
-        },
-        gender: {
-        required: true,
-        },
-        born_place: {
-        required: true,
-        maxlength: 255,
-        },
-        birth_date: {
-        required: true,
-        },
-        },
-        messages: {
-        user_id: {
-        required: "Wali Siswa harus dipilih",
-        },
-        name: {
-        required: "Nama Siswa harus diisi",
-        maxlength: "Nama maksimal 255 karakter",
-        },
-        gender: {
-        required: "Jenis Kelamin harus diisi",
-        },
-        born_place: {
-        required: "Tempat Lahir harus diisi",
-        maxlength: "Tempat Lahir maksimal 255 karakter",
-        },
-        birth_date: {
-        required: "Tanggal Lahir harus diisi",
-        },
-        },
-        errorElement: "div",
-        errorPlacement: function (error, element) {
-        error.addClass("invalid-feedback");
-        element.closest(".fv-row").append(error);
-        },
-        });
-    });
+    // $(document).ready(function () {
+    //     $('#student').validate({
+    //    rules: {
+    //     user_id: {
+    //     required: true,
+    //     },
+    //     name: {
+    //     required: true,
+    //     maxlength: 255,
+    //     },
+    //     gender: {
+    //     required: true,
+    //     },
+    //     born_place: {
+    //     required: true,
+    //     maxlength: 255,
+    //     },
+    //     birth_date: {
+    //     required: true,
+    //     },
+    //     },
+    //     messages: {
+    //     user_id: {
+    //     required: "Wali Siswa harus dipilih",
+    //     },
+    //     name: {
+    //     required: "Nama Siswa harus diisi",
+    //     maxlength: "Nama maksimal 255 karakter",
+    //     },
+    //     gender: {
+    //     required: "Jenis Kelamin harus diisi",
+    //     },
+    //     born_place: {
+    //     required: "Tempat Lahir harus diisi",
+    //     maxlength: "Tempat Lahir maksimal 255 karakter",
+    //     },
+    //     birth_date: {
+    //     required: "Tanggal Lahir harus diisi",
+    //     },
+    //     },
+    //     errorElement: "div",
+    //     errorPlacement: function (error, element) {
+    //     error.addClass("invalid-feedback");
+    //     element.closest(".fv-row").append(error);
+    //     },
+    //     });
+    // });
 
     $('#school_id').on('change', function () {
         var school_id = $(this).val();
