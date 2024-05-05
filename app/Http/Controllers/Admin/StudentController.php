@@ -109,7 +109,14 @@ class StudentController extends Controller
      */
     public function show(string $id)
     {
-        //
+        $student = Student::with('user', 'classroom.school')->findOrFail($id);
+        $saldo = [
+            'IN' => SaldoHistory::where('student_id', $student->id)
+                ->where('type', SaldoHistory::TYPE_IN)->sum('amount'),
+            'OUT' => SaldoHistory::where('student_id', $student->id)
+                ->where('type', SaldoHistory::TYPE_OUT)->sum('amount'),
+        ];
+        return view('admins.student.show', compact('student', 'saldo'));
     }
 
     /**

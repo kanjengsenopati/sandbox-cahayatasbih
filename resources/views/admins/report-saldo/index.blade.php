@@ -208,15 +208,15 @@
             });
         });
 
-       $(document).ready(function() {
-    // Inisialisasi DataTables
+   $(document).ready(function() {
+    // Initialize DataTables
     var table = $('#table-saldo').DataTable({
     processing: true,
     serverSide: true,
     ajax: {
     url: "{{ route('report-saldo.index') }}",
     data: function(d) {
-    // Mengambil data filter dari elemen formulir
+    // Get filter data from form elements
     d.school_id = $('#filter_school_id').val();
     d.classroom_id = $('#filter_classroom_id').val();
     d.status = $('#filter_status').val();
@@ -228,6 +228,7 @@
     sortable: false,
     searchable: false,
     render: function(data, type, row, meta) {
+    // Render serial number
     return meta.row + meta.settings._iDisplayStart + 1;
     }
     },
@@ -237,33 +238,32 @@
     orderable: true,
     searchable: true
     },
-{
-data: 'student.name',
-name: 'student.name',
-orderable: true,
-searchable: true
-},
-{
-data: 'amount',
-name: 'amount',
-orderable: true,
-searchable: true
-},
-{
-data: 'status',
-name: 'status',
-orderable: true,
-searchable: true
-},
-{
-data: 'description',
-name: 'description',
-orderable: true,
-searchable: true
-},
+    {
+    data: 'student.name',
+    name: 'student.name',
+    orderable: true,
+    searchable: true
+    },
+    {
+    data: 'amount',
+    name: 'amount',
+    orderable: true,
+    searchable: true
+    },
+    {
+    data: 'status',
+    name: 'status',
+    orderable: true,
+    searchable: true
+    },
+    {
+    data: 'description',
+    name: 'description',
+    orderable: true,
+    searchable: true
+    }
     ]
     });
-    
     // Fungsi untuk memperbarui data tabel saat melakukan pencarian
     function searchData() {
         table.ajax.reload();
@@ -281,7 +281,7 @@ searchable: true
     });
 
     // onchange school_id and classroom_id reload datatable
-    $('#filter_school_id, #filter_classroom_id', '#filter_status').on('change', function() {
+    $('#filter_school_id, #filter_classroom_id, #filter_status').on('change', function() {
         searchData();
     });
 

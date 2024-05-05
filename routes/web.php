@@ -52,6 +52,7 @@ use App\Http\Controllers\Admin\ReportTahfidzController;
 use App\Http\Controllers\Admin\SavingHistoryController;
 use App\Http\Controllers\Admin\TermConditionController;
 use App\Http\Controllers\Admin\AppInformationController;
+use App\Http\Controllers\Admin\GradePromotionController;
 use App\Http\Controllers\Admin\MenuNavigationController;
 use App\Http\Controllers\Admin\ApplicationMenuController;
 use App\Http\Controllers\Admin\OrderItemHistoryController;
@@ -224,6 +225,8 @@ Route::group(['middleware' => ['auth']], function () {
     Route::get('report-user/export', [ReportUserController::class, 'export'])->name('report-user.export');
     // Route::get('report-student/search-student', [ReportStudentController::class, 'searchStudent'])
     //     ->name('report-student.search-student');
+
+    Route::resource('grade-promotion', GradePromotionController::class, ['only' => ['index', 'store']]);
 
 
     // start ppdb

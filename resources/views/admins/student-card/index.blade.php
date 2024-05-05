@@ -152,19 +152,19 @@
                                     @endif
                                 </td>
                                 <th>Nama</th>
-                                <td>: {{ $student->name }}</td>
+                                <td>: {{ $student->name ?? '' }}</td>
                             </tr>
                             <tr>
-                                <th>NISN</th>
-                                <td>: {{ $student->nisn }}</td>
+                                <th>NIS</th>
+                                <td>: {{ $student->nis ?? '' }}</td>
                             </tr>
                             <tr>
                                 <th>Kelas</th>
-                                <td>: {{ $student->classroom->name }}</td>
+                                <td>: {{ $student->classroom?->name ?? '' }}</td>
                             </tr>
                             <tr>
                                 <th>Sekolah</th>
-                                <td>: {{ $student->school->name }}</td>
+                                <td>: {{ $student->classroom?->school?->name ?? '' }}</td>
                             </tr>
                             <tr>
                                 <td colspan="3" class="barcode text-center">

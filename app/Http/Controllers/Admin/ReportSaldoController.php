@@ -17,23 +17,22 @@ class ReportSaldoController extends Controller
     {
         if (request()->ajax()) {
             $data = SaldoHistory::with('student.classroom.school')
-                ->when(request()->school_id, function ($query) {
-                    $query->whereHas('student', function ($query) {
-                        $query->whereHas('classroom', function ($query) {
-                            $query->where('school_id', request()->school_id);
-                        });
-                    })
-                        ->when(request()->classroom_id, function ($query) {
-                            $query->whereHas('student', function ($query) {
-                                $query->where('classroom_id', request()->classroom_id);
-                            });
-                        });
+                ->when(request()->filled('school_id'), function ($query) {
+                    $query->whereHas('student.classroom', function ($query) {
+                        $query->where('school_id', request()->school_id);
+                    });
                 })
-                ->when(request()->status, function ($query) {
+                ->when(request()->filled('classroom_id'), function ($query) {
+                    $query->whereHas('student', function ($query) {
+                        $query->where('classroom_id', request()->classroom_id);
+                    });
+                })
+                ->when(request()->filled('status'), function ($query) {
                     $query->where('status', request()->status);
                 })
                 ->latest()
                 ->get();
+
             return DataTables::of($data)
                 ->editColumn('amount', function ($data) {
                     if ($data->type === 'IN') {

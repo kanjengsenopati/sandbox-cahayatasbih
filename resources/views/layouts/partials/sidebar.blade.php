@@ -200,7 +200,7 @@
                 <div data-kt-menu-trigger="click" class="menu-item menu-accordion {{ request()->routeIs(['
                     school.*', 'academic-year.*', 'semester.*', 'study.*',
                     'user.*', 'student.*',
-                      'category-item.*', 'item.*', 'stock-history.*']) ? 'show' : '' }}">
+                      'category-item.*', 'item.*', 'stock-history.*', 'grade-promotion.*']) ? 'show' : '' }}">
                     <span class="menu-link ">
                         <span class="menu-icon">
                             <i class="fa-solid fa-school" style="color: #ffffff;"></i>
@@ -273,6 +273,17 @@
                                     <span class="bullet bullet-dot"></span>
                                 </span>
                                 <span class="menu-title">Data Siswa</span>
+                            </a>
+                        </div>
+                        @endcan
+                        @can('grade-promotion')
+                        <div class="menu-item">
+                            <a class="menu-link {{ request()->routeIs('grade-promotion.*') ? ' active' : '' }}"
+                                href="{{ route('grade-promotion.index') }}">
+                                <span class="menu-bullet">
+                                    <span class="bullet bullet-dot"></span>
+                                </span>
+                                <span class="menu-title">Data Kenaikan Kelas</span>
                             </a>
                         </div>
                         @endcan

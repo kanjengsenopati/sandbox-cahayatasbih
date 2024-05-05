@@ -116,8 +116,13 @@ class OrderItemController extends Controller
                 return redirect()->back()->with('error', 'Keranjang masih kosong');
             }
 
-            // Calculate total
+            // Calculate total omzet
             $total = $carts->sum('total');
+
+            // calculate total profit on all cart from $cart->item->profit
+            $totalProfit = $carts->sum(function ($cart) {
+                return $cart->item->profit * $cart->quantity;
+            });
 
             // Get student data
             $student = Student::findOrFail($request->student_id);
@@ -154,6 +159,7 @@ class OrderItemController extends Controller
                 'usage' => SaldoHistory::USAGE_POS,
             ]);
 
+
             // Save transaction data
             $transaction = PointOfSaleTransaction::create([
                 'student_id' => $request->student_id,
@@ -163,6 +169,7 @@ class OrderItemController extends Controller
                 'paid_at' => now(),
                 'status' => PointOfSaleTransaction::STATUS_SUCCESS,
                 'saldo_history_id' => $history->id,
+                'profit' => $totalProfit,
             ]);
 
             // Add transaction details
