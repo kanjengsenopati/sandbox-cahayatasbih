@@ -100,7 +100,8 @@ class WaliPpdbController extends Controller
 
             // send notification to whatsapp
             $message = SendNotifWaService::sendMessageUnpaidPpdb($ppdbRegistration);
-            dispatch(SendToWhatsappNotificationJob::class, $ppdbRegistration->user->phone, $message);
+
+            dispatch(new SendToWhatsappNotificationJob($ppdbRegistration->user->phone, $message));
 
             DB::commit();
 
