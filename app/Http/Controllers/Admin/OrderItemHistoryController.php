@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use Yajra\DataTables\DataTables;
 use App\Http\Controllers\Controller;
 use App\Models\PointOfSaleTransaction;
+use App\Models\PointOfSaleTransactionDetail;
 
 class OrderItemHistoryController extends Controller
 {
@@ -65,7 +66,19 @@ class OrderItemHistoryController extends Controller
      */
     public function show(string $id)
     {
-        //
+        if (request()->ajax()) {
+            $order = PointOfSaleTransactionDetail::with('pointOfSaleTransaction', 'item')->where('point_of_sale_transaction_id', $id)->get();
+            return DataTables::of($order)
+                ->editColumn('price', function ($data) {
+                    return 'Rp ' . number_format($data->price, 0, ',', '.');
+                })
+                ->editColumn('total_price', function ($data) {
+                    return 'Rp ' . number_format($data->total_price, 0, ',', '.');
+                })
+                ->make(true);
+        }
+        $order = PointOfSaleTransaction::with('pointOfSaleTransactionDetails', 'student', 'admins')->findOrFail($id);
+        return view('admins.order-item.history.show', compact('order'));
     }
 
     /**

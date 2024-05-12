@@ -27,6 +27,7 @@ use Xendit\Invoice\CreateInvoiceRequest;
 use App\Jobs\SendToWhatsappNotificationJob;
 use App\Models\PersonalTrainerPacketSession;
 use App\Models\PersonalTrainerPacketSessionHistory;
+use App\Models\TransactionDetail;
 
 class TransactionService
 {
@@ -191,28 +192,31 @@ class TransactionService
         dispatch(new SendToWhatsappNotificationJob($transaction->student->user->phone, $messageWhatsapp));
     }
 
-    public static function createPaymentPpdb($request, $paymentMethodType)
+    public static function createPaymentPpdb($request, $paymentMethodType, $registerFee, $ppdbRegistration)
     {
         $appSetting = ApplicationSetting::latest()->first();
         $expiryTimeInMinutes = $appSetting->getPaymentExpireTimeInMinutesAttribute();
-        $paymentCode = 'CHT-' . Str::random(3) . time();
+        $paymentCode = 'PPDB-' . Str::random(2) . time();
+        // get total pay amount from register fee + payment_fee + bill_fee
+        $payAmount = $registerFee + $appSetting->payment_fee + $appSetting->bill_fee;
 
-        $transactionData = [
-            'pay_amount' => self::getTotalPayAmount($request->bill_ids),
+        $transaction = Transaction::create([
+            'payment_method_id' => $paymentMethodType->id,
+            'pay_amount' => $payAmount,
             'payment_code' => $paymentCode,
-            'student_id' => $request->student_id,
             'expiry_time' => Carbon::now()->addMinutes($expiryTimeInMinutes),
             'status' => Transaction::STATUS_PENDING,
             'paid_at' => null,
-        ];
+            'type' => 'PPDB',
+            'user_id' => auth('wali')->user()->id,
+            'xendit_fee' => $appSetting->payment_fee,
+            'app_fee' => $appSetting->bill_fee,
+        ]);
 
-        $transaction = Transaction::create(array_merge($transactionData, $request->validated()));
-
-        foreach ($request->bill_ids as $billId) {
-            $transaction->transactionDetails()->create([
-                'bill_id' => $billId,
-            ]);
-        }
+        TransactionDetail::create([
+            'transaction_id' => $transaction->id,
+            'ppdb_registration_id' => $ppdbRegistration->id,
+        ]);
 
         if ($transaction->status == Transaction::STATUS_PAID && $paymentMethodType == PaymentMethod::TYPE_XENDIT) {
             TransactionService::changeStatusToPaid($transaction);

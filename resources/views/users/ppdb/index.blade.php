@@ -150,8 +150,8 @@
                                     <td>{{ $ppdb->academicYear->name }}</td>
                                     <td>{{ $ppdb->capacity ?? '0' }} Orang</td>
                                     <td class="text-center">
-                                        <a href="{{ route('wali.ppdb.show', $ppdb->id) }}"
-                                            class="btn btn-sm btn-primary">Detail</a>
+                                        <button class="btn btn-sm btn-primary"
+                                            onclick="showPPDBModal('{{ $ppdb->name }}', '{{ $ppdb->ppdbType->name }} - {{ $ppdb->academicYear->name }} - {{ $ppdb->school->name }}', '{{ asset($ppdb->image) }}', '{{ $ppdb->description }}', '{{ route('wali.ppdb.create',['ppdb_id' => $ppdb->id]) }}')">Detail</button>
                                     </td>
                                 </tr>
                                 @empty
@@ -179,4 +179,40 @@
     </div>
     <!--end::Post-->
 </div>
+
+<!-- Modal -->
+<div class="modal fade" id="ppdbModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="exampleModalLabel">Detail PPDB</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <!-- Konten modal disini -->
+                <h3 class="fs-2hx text-dark mb-5" id="ppdbName"></h3>
+                <div class="fs-5 text-muted fw-bold" id="ppdbInfo"></div>
+                <div id="ppdbImageContainer">
+                    <img class="w-100 card-rounded" id="ppdbImage" src="" alt="" />
+                </div>
+                <div class="fs-5 fw-bold text-gray-600" id="ppdbDescription"></div>
+                <div class="text-center">
+                    <a href="#" id="ppdbLink" class="btn btn-primary btn-lg btn-active-primary">Daftar Sekarang</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 @endsection
+@push('js')
+<script>
+    function showPPDBModal(name, info, image, description, link) {
+            $('#ppdbName').text(name);
+            $('#ppdbInfo').text(info);
+            $('#ppdbImage').attr('src', image);
+            $('#ppdbDescription').html(description);
+            $('#ppdbLink').attr('href', link);
+            $('#ppdbModal').modal('show');
+        }
+</script>
+@endpush

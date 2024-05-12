@@ -40,54 +40,47 @@
     </div>
     <!--end::Toolbar-->
     <!--begin::Post-->
-    <div class="post d-flex flex-column-fluid">
+    <div class="post d-flex flex-column-fluid" id="kt_post">
         <!--begin::Container-->
         <div id="kt_content_container" class="container-xxl">
-            <!--begin::About card-->
+            <!--begin::Card-->
             <div class="card">
-                <!--begin::Body-->
-                <div class="card-body p-lg-17">
-                    <!--begin::About-->
-                    <div class="mb-18">
-                        <!--begin::Wrapper-->
-                        <div class="mb-10 text-center">
-                            <!--begin::Top-->
-                            <h3 class="fs-2hx text-dark mb-5">{{ $ppdb->name }}</h3>
-                            <div class="fs-5 text-muted fw-bold">
-                                Jalur Pendaftaran {{ $ppdb->ppdbType->name }} - {{ $ppdb->academicYear->name }} - {{
-                                $ppdb->school->name }}
-                            </div>
-                            <!--end::Top-->
+                <!--begin::Card body-->
+                <div class="card-body p-0">
+                    <!--begin::Wrapper-->
+                    <div class="card-px text-center py-20 my-10">
+                        <div class="text-center px-2">
+                            <img class="mw-100 mh-300px" alt="Pay Now"
+                                src="{{ asset('assets/media/illustrations/pay_now.jpg') }}" />
                         </div>
-                        <!--end::Text-->
-                        <!--begin::Overlay-->
-                        <div class="overlay">
-                            <!--begin::Image-->
-                            <img class="w-100 card-rounded" src="{{ asset($ppdb->image) }}" alt="" />
-                            <!--end::Image-->
-                        </div>
-                        <!--end::Container-->
+                        <!--begin::Title-->
+                        <h2 class="fs-2x fw-bolder mb-10">Proses Pembayaran Sekarang</h2>
+                        <!--end::Title-->
+                        <!--begin::Description-->
+                        <p class="text-gray-400 fs-4 fw-bold mb-10">Pendaftaran PPDB anda telah selesai, silahkan
+                            <br />melakukan pembayaran sekarang untuk melanjutkan ke tahap selanjutnya.
+
+                        </p>
+                        <!--end::Description-->
+                        <!--begin::Action-->
+                        <a href="{{ $ppdbHistory->transactionDetails->latest()->first()->transaction?->payment_link ?? '' }}"
+                            class="btn btn-primary">Bayar
+                            Sekarang</a>
+                        <!--end::Action-->
                     </div>
                     <!--end::Wrapper-->
-                    <!--begin::Description-->
-                    <div class="fs-5 fw-bold text-gray-600">
-                        <!--begin::Text-->
-                        <p class="mb-8">{!! $ppdb->description !!}</p>
-                        <!--end::Text-->
-                    </div>
-                    <!--end::Description-->
-                    <!--begin::Daftar Button (Responsive)-->
-                    <div class="text-center">
-                        <a href="{{ route('wali.ppdb.create',['ppdb_id' => $ppdb->id]) }}"
-                            class="btn btn-primary btn-lg btn-active-primary">Daftar Sekarang</a>
-                    </div>
-                    <!--end::Daftar Button-->
+                    <!--begin::Illustration-->
+                    {{-- <div class="text-center px-4">
+                        <img class="mw-100 mh-300px" alt="Pay Now"
+                            src="{{ asset('assets/media/illustrations/pay_now.jpg') }}" />
+                    </div> --}}
+                    <!--end::Illustration-->
                 </div>
-                <!--end::About-->
+                <!--end::Card body-->
             </div>
-            <!--end::Body-->
+            <!--end::Card-->
         </div>
-        <!--end::Statistics-->
+        <!--end::Container-->
     </div>
     <!--end::Post-->
 </div>

@@ -9,6 +9,7 @@ use Illuminate\Http\Request;
 use App\Models\PaymentMethod;
 use App\Models\PpdbRegistration;
 
+use Yajra\DataTables\DataTables;
 use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\Controller;
 use App\Services\TransactionService;
@@ -27,6 +28,7 @@ class WaliPpdbController extends Controller
             ->where('is_active', true)
             ->latest()
             ->get();
+
         return view('users.ppdb.index', compact('ppdbs'));
     }
 
@@ -66,10 +68,27 @@ class WaliPpdbController extends Controller
             $ppdbRegistration->ppdbStudents()->create($data);
             $ppdbRegistration->ppdbParents()->create($data);
 
+            if ($request->hasFile('family_card_image') && $request->hasFile('birth_certificate_image') && $request->hasFile('raport_image') && $request->hasFile('father_identity_image') && $request->hasFile('mother_identity_image')) {
+                $ppdbRegistration->ppdbDocument()->create([
+                    'family_card_image' => 'storage/' . $request->file('family_card_image')->store('images/ppdb/family_card', 'public'),
+                    'birth_certificate_image' => 'storage/' . $request->file('birth_certificate_image')->store('images/ppdb/birth_certificate', 'public'),
+                    'raport_image' => 'storage/' . $request->file('raport_image')->store('images/ppdb/raport', 'public'),
+                    'father_identity_image' => 'storage/' . $request->file('father_identity_image')->store('images/ppdb/father_identity', 'public'),
+                    'mother_identity_image' => 'storage/' . $request->file('mother_identity_image')->store('images/ppdb/mother_identity', 'public'),
+                ]);
+            } else {
+                return redirect()->back()->withInput()
+                    ->with('error', 'Dokumen tidak lengkap');
+            }
+
             // create transaction
             $paymentMethodType = PaymentMethod::where('type', PaymentMethod::TYPE_XENDIT)->firstOrFail();
 
-            $transaction = TransactionService::createTransaction($request, $paymentMethodType);
+            // get register fee from ppdb
+            $registerFee = $ppdb->register_fee ?? 0;
+
+            $transaction = TransactionService::createPaymentPpdb($request, $paymentMethodType, $registerFee, $ppdbRegistration);
+
             if ($paymentMethodType == PaymentMethod::TYPE_XENDIT) {
                 TransactionService::createInvoice($transaction);
             }
@@ -95,8 +114,8 @@ class WaliPpdbController extends Controller
      */
     public function show(string $id)
     {
-        $ppdb = Ppdb::findOrFail($id);
-        return view('users.ppdb.show', compact('ppdb'));
+        // $ppdb = Ppdb::findOrFail($id);
+        // return view('users.ppdb.show', compact('ppdb'));
     }
 
     /**

@@ -61,7 +61,9 @@ class PpdbHistoryController extends Controller
      */
     public function show(string $id)
     {
-        //
+        $ppdbHistory = PpdbRegistration::with('transactionDetails')->findOrFail($id);
+        dd($ppdbHistory);
+        return view('users.ppdb-history.show', compact('ppdbHistory'));
     }
 
     /**
