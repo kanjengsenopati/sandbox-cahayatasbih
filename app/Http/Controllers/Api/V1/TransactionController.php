@@ -169,6 +169,7 @@ class TransactionController extends Controller
                 } elseif ($transaction->type == Transaction::TYPE_PPDB) {
                     foreach ($transaction->transactionDetails as $detail) {
                         $detail->ppdbRegistration->update([
+                            'status' => PpdbRegistration::STATUS_PAID,
                             'payment_status' => PpdbRegistration::STATUS_PAID
                         ]);
                     }
