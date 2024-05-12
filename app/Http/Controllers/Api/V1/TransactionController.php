@@ -113,6 +113,16 @@ class TransactionController extends Controller
         dispatch(new SendToWhatsappNotificationJob($transaction->student->user->phone, $messageWhatsapp));
     }
 
+    private function dispatchNotificationsUser($transaction)
+    {
+        $title = 'Yeay!, Pembayaran Berhasil';
+        $body = 'Pembayaran di Pondok Pesantren Cahaya Tasbih berhasil! Terima kasih telah membayar tagihan';
+        $messageWhatsapp = SendNotifWaService::sendMessageBillNotification($transaction);
+        dispatch(new SendToPushNotificationJob($title, $body, $transaction->user, $transaction));
+        dispatch(new SendToWhatsappNotificationJob($transaction->user->phone, $messageWhatsapp));
+    }
+
+
     public function callbackXendit(Request $request)
     {
         DB::beginTransaction();
@@ -172,7 +182,11 @@ class TransactionController extends Controller
                         ]);
                     }
                 }
-                $this->dispatchNotifications($transaction);
+                if ($transaction->type == Transaction::TYPE_PPDB) {
+                    $this->dispatchNotificationsUser($transaction);
+                } else {
+                    $this->dispatchNotifications($transaction);
+                }
             }
 
             DB::commit();
