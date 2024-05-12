@@ -29,7 +29,7 @@ class PpdbHistoryController extends Controller
                     return $data->ppdbStudents->first()->name ?? '-';
                 })
                 ->addColumn('action', function ($data) {
-                    $actionPay = route('wali.ppdb-history.pay', $data->id);
+                    $actionPay = route('wali.ppdb-history.show', $data->id);
                     return "<div class='d-flex justify-content-center'>" .
                         view('components.action.show', ['action' => $actionPay, 'label' => 'Bayar']) .
                         "</div>";
@@ -62,7 +62,6 @@ class PpdbHistoryController extends Controller
     public function show(string $id)
     {
         $ppdbHistory = PpdbRegistration::with('transactionDetails')->findOrFail($id);
-        dd($ppdbHistory);
         return view('users.ppdb-history.show', compact('ppdbHistory'));
     }
 

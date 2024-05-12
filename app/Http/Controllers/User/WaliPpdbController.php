@@ -12,8 +12,11 @@ use App\Models\PpdbRegistration;
 use Yajra\DataTables\DataTables;
 use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\Controller;
+use App\Services\SendNotifWaService;
 use App\Services\TransactionService;
 use App\Http\Requests\User\WaliPpdbRequest;
+use App\Jobs\SendBillWhatsappNotificationJob;
+use App\Jobs\SendToWhatsappNotificationJob;
 use Illuminate\Support\Facades\DB; // Add this line at the top
 
 class WaliPpdbController extends Controller
@@ -94,10 +97,15 @@ class WaliPpdbController extends Controller
             if ($transaction->status == Transaction::STATUS_PAID) {
                 TransactionService::dispatchNotifications($transaction);
             }
+
+            // send notification to whatsapp
+            $message = SendNotifWaService::sendMessageUnpaidPpdb($ppdbRegistration);
+            dispatch(SendToWhatsappNotificationJob::class, $ppdbRegistration->user->phone, $message);
+
             DB::commit();
 
-            return redirect()->route('wali.ppdb.index')
-                ->with('success', 'Berhasil menambahkan pendaftaran PPDB');
+            return redirect()->route('wali.ppdb-history.show', $ppdbRegistration->id)
+                ->with('success', 'Berhasil Mendaftar PPDB, silahkan melakukan pembayaran');
         } catch (\Exception $e) {
             DB::rollback();
             Log::error($e);

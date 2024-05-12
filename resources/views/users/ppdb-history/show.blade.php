@@ -63,9 +63,8 @@
                         </p>
                         <!--end::Description-->
                         <!--begin::Action-->
-                        <a href="{{ $ppdbHistory->transactionDetails->latest()->first()->transaction?->payment_link ?? '' }}"
-                            class="btn btn-primary">Bayar
-                            Sekarang</a>
+                        <a href="{{ $ppdbHistory->transactionDetails->first()->transaction?->payment_link ?? '' }}"
+                            target="_blank" class="btn btn-primary">Bayar Sekarang</a>
                         <!--end::Action-->
                     </div>
                     <!--end::Wrapper-->
