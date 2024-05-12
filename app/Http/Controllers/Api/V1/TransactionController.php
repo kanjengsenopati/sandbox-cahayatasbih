@@ -117,11 +117,8 @@ class TransactionController extends Controller
     {
         $title = 'Yeay!, Pembayaran Berhasil';
         $body = 'Pembayaran di Pondok Pesantren Cahaya Tasbih berhasil! Terima kasih telah membayar tagihan';
-        $messageWhatsapp = SendNotifWaService::sendMessageBillNotification($transaction);
         dispatch(new SendToPushNotificationJob($title, $body, $transaction->user, $transaction));
-        dispatch(new SendToWhatsappNotificationJob($transaction->user->phone, $messageWhatsapp));
     }
-
 
     public function callbackXendit(Request $request)
     {
