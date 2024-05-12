@@ -4,23 +4,24 @@ namespace App\Http\Controllers\Admin;
 
 use Carbon\Carbon;
 use App\Models\User;
-use App\Models\Client;
+use App\Models\School;
+use GuzzleHttp\Client;
 use App\Models\Article;
 use App\Models\Student;
 use App\Models\Classroom;
 use App\Models\Transaction;
 use Illuminate\Http\Request;
 use App\Models\HistoryDownload;
+use App\Models\PpdbRegistration;
 use Yajra\DataTables\DataTables;
+use App\Models\ApplicationSetting;
 use App\Models\WhiteBlowingSystem;
 use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\Controller;
-use App\Jobs\SendToWhatsappNotificationJob;
-use App\Models\ApplicationSetting;
-use App\Models\PointOfSaleTransaction;
-use App\Models\School;
-use App\Services\NotificationService;
 use App\Services\SendNotifWaService;
+use App\Services\NotificationService;
+use App\Models\PointOfSaleTransaction;
+use App\Jobs\SendToWhatsappNotificationJob;
 
 class DashboardController extends Controller
 {

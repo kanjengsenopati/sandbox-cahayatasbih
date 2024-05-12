@@ -20,6 +20,7 @@ use App\Services\TransactionService;
 use App\Jobs\SendToPushNotificationJob;
 use App\Jobs\SendToWhatsappNotificationJob;
 use App\Http\Requests\Api\V1\TransactionRequest;
+use App\Models\PpdbRegistration;
 
 class TransactionController extends Controller
 {
@@ -158,6 +159,12 @@ class TransactionController extends Controller
                     $student->update([
                         'saving' => $student->saving + $transaction->pay_amount
                     ]);
+                } elseif ($transaction->type == Transaction::TYPE_PPDB) {
+                    foreach ($transaction->transactionDetails as $detail) {
+                        $detail->ppdbRegistration->update([
+                            'status' => PpdbRegistration::STATUS_PAID
+                        ]);
+                    }
                 } else {
                     foreach ($transaction->transactionDetails as $detail) {
                         $detail->bill->update([
