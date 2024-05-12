@@ -89,9 +89,7 @@ class WaliPpdbController extends Controller
 
             $transaction = TransactionService::createPaymentPpdb($request, $paymentMethodType, $registerFee, $ppdbRegistration);
 
-            if ($paymentMethodType == PaymentMethod::TYPE_XENDIT) {
-                TransactionService::createInvoice($transaction);
-            }
+            TransactionService::createInvoice($transaction);
 
             if ($transaction->status == Transaction::STATUS_PAID) {
                 TransactionService::dispatchNotifications($transaction);
