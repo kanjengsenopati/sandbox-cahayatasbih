@@ -22,6 +22,7 @@ class PpdbRegistration extends Model
         'register_fee',
         'status',
         'payment_status',
+        'note',
     ];
 
     protected $appends = [

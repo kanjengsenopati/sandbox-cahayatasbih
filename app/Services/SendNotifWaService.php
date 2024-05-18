@@ -145,7 +145,7 @@ class SendNotifWaService
         $parentStudent = $ppdbRegistration->user;
 
         $message = "Assalamualaikum Bapak/Ibu " . $parentStudent->name . ",\n";
-        $message .= "Pendaftaran PPDB Santri Anda Berhasil, Silahkan Melakukan Pembayaran Pendaftaran sebagai berikut:\n";
+        $message .= "Pendaftaran PPDB Putra/Putri Anda Berhasil, Silahkan Melakukan Pembayaran Pendaftaran sebagai berikut:\n";
         $message .= "--------------------------------\n";
         $message .= "1. No Registrasi : *" . $ppdbRegistration->no_reg . "*\n";
         $message .= "2. Nama Santri : *" . $ppdbRegistration->ppdbStudents->first()->name . "*\n";
@@ -158,6 +158,28 @@ class SendNotifWaService
         $message .= "Link Pembayaran : *" . route('wali.ppdb-history.show', $ppdbRegistration->id) . "*\n";
         $message .= "--------------------------------\n";
         $message .= "Note : _Jika sudah melakukan pembayaran, abaikan pesan ini_\n";
+        $message .= "Wassalamualaikum Wr. Wb.\n";
+        $message .= "*PPTQ CAHAYA TASBIH*";
+
+        return $message;
+    }
+
+    public static function sendMessageConfirmPpdb($ppdbRegistration)
+    {
+        $parentStudent = $ppdbRegistration->user;
+
+        $message = "Assalamualaikum Bapak/Ibu " . $parentStudent->name . ",\n";
+        $message .= "Pendaftaran PPDB Putra/Putri Anda " . $ppdbRegistration->translated_status . "\n";
+        $message .= "--------------------------------\n";
+        $message .= "1. No Registrasi : *" . $ppdbRegistration->no_reg . "*\n";
+        $message .= "2. Nama Santri : *" . $ppdbRegistration->ppdbStudents->first()->name . "*\n";
+        $message .= "3. Sekolah : *" . $ppdbRegistration->ppdb->school->name . "*\n";
+        $message .= "4. Program : *" . $ppdbRegistration->ppdb->name . "*\n";
+        $message .= "5. Tanggal Pendaftaran : *" . $ppdbRegistration->created_at->format('d-m-Y') . "*\n";
+        $message .= "6. Biaya Pendaftaran : *Rp." . number_format($ppdbRegistration->register_fee, 0, ',', '.') . "*\n";
+        $message .= "7. Status : *" . $ppdbRegistration->translated_status . "*\n";
+        $message .= "8. Catatan : *" . $ppdbRegistration->note . "*\n";
+        $message .= "--------------------------------\n";
         $message .= "Wassalamualaikum Wr. Wb.\n";
         $message .= "*PPTQ CAHAYA TASBIH*";
 

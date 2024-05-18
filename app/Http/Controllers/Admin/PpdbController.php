@@ -10,6 +10,7 @@ use Illuminate\Http\Request;
 use Yajra\DataTables\DataTables;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\PpdbRequest;
+use App\Models\PpdbRegistration;
 
 class PpdbController extends Controller
 {
@@ -28,9 +29,11 @@ class PpdbController extends Controller
                     return $data->is_active ? '<span class="badge badge-success">Aktif</span>' : '<span class="badge badge-danger">Tidak Aktif</span>';
                 })
                 ->addColumn('action', function ($data) {
+                    $actionShow = route('ppdb.show', $data->id);
                     $actionEdit = route('ppdb.edit', $data->id);
                     $actionDelete = route('ppdb.destroy', $data->id);
                     return "<div class='d-flex justify-content-center'>" .
+                        view('components.action.show', ['action' => $actionShow, 'label' => 'Peserta']) .
                         view('components.action.edit', ['action' => $actionEdit]) .
                         view('components.action.delete', ['action' => $actionDelete, 'id' => $data->id]) .
                         "</div>";
@@ -69,9 +72,31 @@ class PpdbController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show($slug)
+    public function show($id)
     {
-        $ppdb = Ppdb::where('slug', $slug)->first();
+        if (request()->ajax()) {
+            $data = PpdbRegistration::with('ppdb')->where('ppdb_id', $id)->latest()->get();
+            return DataTables::of($data)
+                ->addColumn('student_name', function ($data) {
+                    return $data->ppdbStudents->first()->name ?? '-';
+                })
+                ->addColumn('gender', function ($data) {
+                    $gender = $data->ppdbStudents->first()->gender ?? '-';
+                    return $gender == 'L' ? 'Laki-laki' : 'Perempuan';
+                })
+                ->addColumn('origin_school', function ($data) {
+                    return $data->ppdbStudents?->first()?->origin_school ?? '-';
+                })
+                ->addColumn('action', function ($data) {
+                    $actionPay = route('ppdb-registration.show', $data->id);
+                    return "<div class='d-flex justify-content-center'>" .
+                        view('components.action.show', ['action' => $actionPay, 'label' => 'Detail']) .
+                        "</div>";
+                })
+                ->rawColumns(['action', 'ppdb_name', 'school_name', 'student_name'])
+                ->make(true);
+        }
+        $ppdb = Ppdb::findorFail($id);
         return view('admins.ppdb.show', compact('ppdb'));
     }
 

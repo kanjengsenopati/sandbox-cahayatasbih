@@ -56,6 +56,7 @@ use App\Http\Controllers\Admin\GradePromotionController;
 use App\Http\Controllers\Admin\MenuNavigationController;
 use App\Http\Controllers\Admin\ApplicationMenuController;
 use App\Http\Controllers\Admin\OrderItemHistoryController;
+use App\Http\Controllers\Admin\PpdbRegistrationController;
 use App\Http\Controllers\Admin\ReportStudyGradeController;
 use App\Http\Controllers\Admin\SubMenuNavigationController;
 use App\Http\Controllers\Admin\ApplicationSettingController;
@@ -231,7 +232,8 @@ Route::group(['middleware' => ['auth']], function () {
 
     // start ppdb
     Route::resource('ppdb-type', PpdbTypeController::class);
-    Route::resource('ppdb', PpdbController::class, ['except' => ['show']]);
+    Route::resource('ppdb', PpdbController::class);
+    Route::resource('ppdb-registration', PpdbRegistrationController::class);
     Route::resource('menu-navigation', MenuNavigationController::class);
     Route::resource('submenu-navigation', SubMenuNavigationController::class);
 
