@@ -196,11 +196,12 @@
                 @endcanany
 
                 @canany(['school', 'academic-year', 'semester', 'study','user', 'student',
-                'category-item', 'item', 'stock-history'])
-                <div data-kt-menu-trigger="click" class="menu-item menu-accordion {{ request()->routeIs(['
+                'category-item', 'item', 'stock-history', 'ppdb'])
+                <div data-kt-menu-trigger="click"
+                    class="menu-item menu-accordion {{ request()->routeIs(['
                     school.*', 'academic-year.*', 'semester.*', 'study.*',
                     'user.*', 'student.*',
-                      'category-item.*', 'item.*', 'stock-history.*', 'grade-promotion.*']) ? 'show' : '' }}">
+                      'category-item.*', 'item.*', 'stock-history.*', 'grade-promotion.*', 'ppdb.*']) ? 'show' : '' }}">
                     <span class="menu-link ">
                         <span class="menu-icon">
                             <i class="fa-solid fa-school" style="color: #ffffff;"></i>
@@ -317,6 +318,17 @@
                                     <span class="bullet bullet-dot"></span>
                                 </span>
                                 <span class="menu-title">Inventori Barang</span>
+                            </a>
+                        </div>
+                        @endcan
+                        @can('ppdb')
+                        <div class="menu-item ">
+                            <a class="menu-link {{ request()->routeIs('ppdb.*') ? ' active' : '' }}"
+                                href="{{ route('ppdb.index') }}">
+                                <span class="menu-bullet">
+                                    <span class="bullet bullet-dot"></span>
+                                </span>
+                                <span class="menu-title">Data PPDB</span>
                             </a>
                         </div>
                         @endcan

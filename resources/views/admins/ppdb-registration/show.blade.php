@@ -23,15 +23,15 @@
 
                     <!--end::Item-->
                     <!--begin::Item-->
-                    <a class="breadcrumb-item" href="{{ route('user.index') }}">
-                        <li class="breadcrumb-item text-muted">User</li>
+                    <a class="breadcrumb-item" href="{{ route('ppdb.show', $ppdbRegistration->ppdb->id) }}">
+                        <li class="breadcrumb-item text-muted">List Peserta</li>
                     </a>
                     <!--end::Item-->
                     <li class="breadcrumb-item">
                         <span class="bullet bg-gray-300 w-5px h-2px"></span>
                     </li>
                     <!--begin::Item-->
-                    <li class="breadcrumb-item text-dark">Detail PPDB</li>
+                    <li class="breadcrumb-item text-dark">Detail Peserta</li>
                     <!--end::Item-->
                 </ul>
                 <!--end::Breadcrumb-->
