@@ -30,10 +30,19 @@ class PpdbHistoryController extends Controller
                 })
                 ->addColumn('action', function ($data) {
                     $actionPay = route('wali.ppdb-history.show', $data->id);
-                    return "<div class='d-flex justify-content-center'>" .
-                        view('components.action.show', ['action' => $actionPay, 'label' => 'Bayar']) .
-                        "</div>";
+                    $html = "<div class='d-flex justify-content-center'>";
+
+                    if ($data->status == 'PENDING') {
+                        $html .= view('components.action.show', ['action' => $actionPay, 'label' => 'Bayar'])->render();
+                    } else {
+                        $html .= view('components.action.show', ['action' => $actionPay, 'label' => 'Detail'])->render();
+                    }
+
+                    $html .= "</div>";
+
+                    return $html;
                 })
+
                 ->rawColumns(['action', 'ppdb_name', 'school_name', 'student_name'])
                 ->make(true);
         }

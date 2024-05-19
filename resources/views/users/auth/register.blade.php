@@ -61,7 +61,7 @@
             </div>
             <!--begin::Aside-->
             <!--begin::Content-->
-            <div class="flex-row-fluid d-flex flex-center justfiy-content-xl-first p-10">
+            <div class="flex-row-fluid d-flex flex-center justify-content-xl-first p-10">
                 <!--begin::Wrapper-->
                 <div class="d-flex flex-center p-15 shadow-sm bg-body rounded w-100 w-md-550px mx-auto ms-xl-20">
                     <!--begin::Form-->
@@ -135,7 +135,6 @@
                             <!--begin::Hint-->
                             <div class="text-muted">Gunakan 8 atau lebih karakter dengan kombinasi huruf, angka &
                                 simbol.</div>
-
                             <!--end::Hint-->
                         </div>
                         <!--end::Input group=-->
@@ -157,8 +156,7 @@
                         <!--end::Row-->
                         <!--begin::Row-->
                         <div class="text-center pb-lg-0 pb-8">
-                            <button type="submit" id="kt_free_trial_submit" onclick="submitForm()"
-                                class="btn btn-lg btn-primary fw-bolder">
+                            <button type="submit" id="kt_free_trial_submit" class="btn btn-lg btn-primary fw-bolder">
                                 <span class="indicator-label">Buat Akun</span>
                                 <span class="indicator-progress">Mohon Tunggu...
                                     <span class="spinner-border spinner-border-sm align-middle ms-2"></span></span>
@@ -181,11 +179,11 @@
         var hostUrl = "assets/";
     </script>
     <!--begin::Global Javascript Bundle(used by all pages)-->
-    <script src="assets/plugins/global/plugins.bundle.js"></script>
-    <script src="assets/js/scripts.bundle.js"></script>
+    <script src="{{ asset('assets/plugins/global/plugins.bundle.js') }}"></script>
+    <script src="{{ asset('assets/js/scripts.bundle.js') }}"></script>
     <!--end::Global Javascript Bundle-->
     <!--begin::Page Custom Javascript(used by this page)-->
-    <script src="assets/js/custom/authentication/sign-up/free-trial.js"></script>
+    {{-- <script src="{{ asset('assets/js/custom/authentication/sign-up/free-trial.js') }}"></script> --}}
     <!--end::Page Custom Javascript-->
     <!--end::Javascript-->
 </body>

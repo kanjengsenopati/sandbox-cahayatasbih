@@ -20,7 +20,8 @@
                 <ul class="breadcrumb breadcrumb-separatorless fw-bold fs-7 my-1">
                     <!--begin::Item-->
                     <li class="breadcrumb-item text-muted">
-                        <a href="{{ route('wali.ppdb.index') }}" class="text-muted text-hover-primary">PPDB</a>
+                        <a href="{{ route('wali.ppdb-history.index') }}" class="text-muted text-hover-primary">Riwayat
+                            PPDB</a>
                     </li>
                     <!--end::Item-->
                     <!--begin::Item-->
@@ -29,7 +30,7 @@
                     </li>
                     <!--end::Item-->
                     <!--begin::Item-->
-                    <li class="breadcrumb-item text-dark">List PPDB</li>
+                    <li class="breadcrumb-item text-dark">Detail Riwayat PPDB</li>
                     <!--end::Item-->
                 </ul>
                 <!--end::Breadcrumb-->
@@ -48,7 +49,8 @@
                 <!--begin::Card body-->
                 <div class="card-body p-0">
                     <!--begin::Wrapper-->
-                    <div class="card-px text-center py-20 my-10">
+                    @if ($ppdbHistory->status == 'PENDING')
+                    <div class="card-px text-center py-5 my-10">
                         <div class="text-center px-2">
                             <img class="mw-100 mh-300px" alt="Pay Now"
                                 src="{{ asset('assets/media/illustrations/pay_now.jpg') }}" />
@@ -59,7 +61,9 @@
                         <!--begin::Description-->
                         <p class="text-gray-400 fs-4 fw-bold mb-10">Pendaftaran PPDB anda telah selesai, silahkan
                             <br />melakukan pembayaran sekarang untuk melanjutkan ke tahap selanjutnya.
-
+                            <br />Batas Pembayaran : {{
+                            $ppdbHistory->transactionDetails->first()->transaction?->created_at->addDays(1)->format('d F
+                            Y H:i') }} WIB
                         </p>
                         <!--end::Description-->
                         <!--begin::Action-->
@@ -67,6 +71,57 @@
                             target="_blank" class="btn btn-primary">Bayar Sekarang</a>
                         <!--end::Action-->
                     </div>
+                    @elseif ($ppdbHistory->status == 'PAID')
+                    <div class="card-px text-center py-20 my-10">
+                        <div class="text-center px-2">
+                            <img class="mw-100 mh-300px" alt="Pay Now"
+                                src="{{ asset('assets/media/illustrations/pay_now.jpg') }}" />
+                        </div>
+                        <!--begin::Title-->
+                        <h2 class="fs-2x fw-bolder mb-10">Pembayaran Berhasil</h2>
+                        <!--end::Title-->
+                        <!--begin::Description-->
+                        <p class="text-gray-400 fs-4 fw-bold mb-10">Pembayaran PPDB anda telah berhasil, silahkan
+                            <br />menunggu konfirmasi dari pihak sekolah.
+
+                        </p>
+                        <!--end::Description-->
+                    </div>
+                    @elseif ($ppdbHistory->status == 'REJECTED')
+                    <div class="card-px text-center py-5 my-10">
+                        <div class="text-center px-2">
+                            <img class="mw-100 mh-300px" alt="Pay Now"
+                                src="{{ asset('assets/media/svg/approval/rejected.jpg') }}" />
+                        </div>
+                        <!--begin::Title-->
+                        <h2 class="fs-2x fw-bolder mb-5">
+                            <i class="bi bi-x-circle-fill text-danger me-2"></i>
+                            Maaf, Anda Tidak Lolos Seleksi Administrasi
+                        </h2>
+                        <!--end::Title-->
+                        <!--begin::Description-->
+                        <p class="text-gray-400 fs-4 fw-bold mb-10">Keterangan : {{ $ppdbHistory->note ?? '' }}
+                        </p>
+                        <!--end::Description-->
+                    </div>
+                    @elseif($ppdbHistory->status == 'APPROVED')
+                    <div class="card-px text-center py-5 my-10">
+                        <div class="text-center px-2">
+                            <img class="mw-100 mh-300px" alt="Success"
+                                src="{{ asset('assets/media/svg/approval/approved.svg') }}" />
+                        </div>
+                        <!--begin::Title-->
+                        <h2 class="fs-2x fw-bolder mb-5">
+                            <i class="bi bi-check-circle-fill text-success me-2"></i>
+                            Selamat, Anda Lolos Seleksi Administrasi
+                        </h2>
+                        <!--end::Title-->
+                        <!--begin::Description-->
+                        <p class="text-gray-400 fs-4 fw-bold mb-10">Keterangan : {{ $ppdbHistory->note ?? '' }}
+                        </p>
+                        <!--end::Description-->
+                    </div>
+                    @endif
                     <!--end::Wrapper-->
                     <!--begin::Illustration-->
                     {{-- <div class="text-center px-4">
