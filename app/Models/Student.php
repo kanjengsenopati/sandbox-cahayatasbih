@@ -19,6 +19,7 @@ class Student extends Model
     use HasFactory, UuidTrait, SoftDeletes;
 
     protected $fillable = [
+        'id', // add this line
         'nisn',
         'nis',
         'user_id',
