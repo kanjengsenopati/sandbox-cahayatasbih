@@ -25,14 +25,18 @@ $student = \App\Models\Student::find(@$value ?? 0);
                 return queryParameters;
             },
             processResults: function (data) {
-                return {
-                results:  $.map(data, function (item) {
-                        return {
-                            text: item.nisn + ' - ' + item.name + ' - ' + item.classroom?.name + ' - ' + item.classroom?.school?.name,
-                            id: item.id
-                        }
-                    })
-                };
+            return {
+                 results: $.map(data, function (item) {
+                 let displayText = (item.nis ? item.nis + ' - ' : '') +
+                    item.name + ' - ' +
+                        (item.classroom?.name ? item.classroom.name : '');
+            
+                    return {
+                        text: displayText,
+                        id: item.id
+                     };
+             })
+             };
             },
             cache: true
         }

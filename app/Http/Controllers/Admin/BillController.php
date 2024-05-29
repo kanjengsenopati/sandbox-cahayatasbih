@@ -27,6 +27,57 @@ class BillController extends Controller
      */
     public function index()
     {
+        if (request()->student_id) {
+
+            $id = request()->student_id;
+            $student = Student::findOrFail($id);
+
+            // Mengambil tagihan bulanan
+            $billMonth = BillType::with('billItem', 'academicYear', 'bills')
+                ->where('type', BillType::TYPE_MONTHLY)
+                ->whereHas('bills', function ($query) use ($id) {
+                    $query->where('student_id', $id);
+                })
+                ->latest()
+                ->get()
+                ->map(function ($item) use ($id) {
+                    $item->total_unpaid = Bill::where('student_id', $id)
+                        ->where('bill_type_id', $item->id)
+                        ->where('status', Bill::STATUS_UNPAID)
+                        ->sum('amount');
+
+                    $item->total_paid = Bill::where('student_id', $id)
+                        ->where('bill_type_id', $item->id)
+                        ->where('status', Bill::STATUS_PAID)
+                        ->sum('amount');
+
+                    return $item;
+                });
+
+
+            // Mengambil tagihan lainnya
+            $billOthers = BillType::where('type', BillType::TYPE_OTHER)
+                ->whereHas('bills', function ($query) use ($id) {
+                    $query->where('student_id', $id);
+                })
+                ->latest()
+                ->get()
+                ->map(function ($item) use ($id) {
+                    $item->total_unpaid = Bill::where('student_id', $id)
+                        ->where('bill_type_id', $item->id)
+                        ->where('status', Bill::STATUS_UNPAID)
+                        ->sum('amount');
+                    $item->total_paid = Bill::where('student_id', $id)
+                        ->where('bill_type_id', $item->id)
+                        ->where('status', Bill::STATUS_PAID)
+                        ->sum('amount');
+
+                    return $item;
+                });
+
+
+            return view('admins.bill.index', compact('student', 'billMonth', 'billOthers'));
+        }
         return view('admins.bill.index');
     }
 

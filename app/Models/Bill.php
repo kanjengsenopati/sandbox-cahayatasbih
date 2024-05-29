@@ -32,6 +32,8 @@ class Bill extends Model
 
     protected $appends = [
         'translated_month',
+        'paid_date',
+        'payment_method',
     ];
 
     public function billType()
@@ -67,5 +69,20 @@ class Bill extends Model
     public function transactions()
     {
         return $this->hasManyThrough(Transaction::class, TransactionDetail::class, 'bill_id', 'id', 'id', 'transaction_id');
+    }
+
+    public function getPaidTransaction()
+    {
+        return $this->transactions()->where('status', Transaction::STATUS_PAID)->first();
+    }
+
+    public function getPaidDateAttribute()
+    {
+        return $this->getPaidTransaction() ? $this->getPaidTransaction()->paid_at : null;
+    }
+
+    public function getPaymentMethodAttribute()
+    {
+        return $this->getPaidTransaction() ? $this->getPaidTransaction()->paymentMethod->name : null;
     }
 }

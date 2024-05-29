@@ -100,49 +100,389 @@
 
                         <!--begin::Card body-->
                         <div class="card-body pt-5">
-                            <!--begin::Form-->
-                            <!--begin::Input group-->
-                            <div class="fv-row mb-7 d-flex align-items-center">
-                                <!--begin::Label-->
-                                <label class="fs-6 fw-bold form-label mt-3 me-3" for="name">
-                                    <span class="required">NIS/NISN/Nama</span>
-                                </label>
-                                <!--end::Label-->
-                                <!--begin::Input-->
-                                <x-form.student :value="@$tahfidz->student_id" name="student_id"
-                                    class="form-control form-control-solid flex-grow-1" />
-                                <!--end::Input-->
-                                <button id="btn-cari" class="btn btn-sm btn-primary ms-3"
-                                    onclick="changeButtonText(this)">
-                                    <span class="indicator-label" id="buttonText">Cari</span>
-                                    <span class="indicator-progress d-none">Please wait...
-                                        <span class="spinner-border spinner-border-sm align-middle ms-2"></span>
-                                    </span>
-                                </button>
+                            <form action="{{ route('bill.index') }}" method="GET">
+                                <!--begin::Form-->
+                                <!--begin::Input group-->
+                                <div class="fv-row mb-7 d-flex align-items-center">
+                                    <!--begin::Label-->
+                                    <label class="fs-6 fw-bold form-label mt-3 me-3" for="name">
+                                        <span class="required">NIS/NISN/Nama</span>
+                                    </label>
+                                    <!--end::Label-->
+                                    <!--begin::Input-->
+                                    <x-form.student :value="@$tahfidz->student_id" name="student_id"
+                                        class="form-control form-control-solid flex-grow-1" />
+                                    <!--end::Input-->
+                                    <button id="btn-cari" class="btn btn-sm btn-primary ms-3"
+                                        style="height: 40px; width: 100px;" type="submit">
+                                        <span class="indicator-label" id="buttonText">Tampilkan</span>
+                                        <span class="indicator-progress d-none">Please wait...
+                                            <span class="spinner-border spinner-border-sm align-middle ms-2"></span>
+                                        </span>
+                                    </button>
+                            </form>
+                        </div>
+                        <!--end::Input group-->
+                        <!--begin::Separator-->
+                        <div class="separator mb-6"></div>
+                        <!--end::Separator-->
+                        <!--begin::Action buttons-->
+                        <div class="d-flex justify-content-end">
+                        </div>
+                        <!--end::Form-->
+                        {{-- <div id="show-bill"></div> --}}
+                        @if ($student ?? false)
+                        <div class="card-body pt-3">
+                            <!--begin::Card Information-->
+                            <div class="card-information">
+                                <div class="mb-3">
+                                    <span class="fw-bold text-muted">Tahun Ajaran</span>
+                                    :&nbsp;
+                                    <span><b>Semua Tahun Ajaran</b></span>
+                                </div>
+                                <div class="mb-3">
+                                    <span class="fw-bold text-muted">NIS</span>
+                                    :&nbsp;
+                                    <span>{{ @$student->nis ?? '' }}</span>
+                                </div>
+                                <div class="mb-3">
+                                    <span class="fw-bold text-muted">Nama</span>
+                                    :&nbsp;
+                                    <span>{{ @$student->name ?? '' }}</span>
+                                </div>
+                                <div class="mb-3">
+                                    <span class="fw-bold text-muted">Kelas</span>
+                                    :&nbsp;
+                                    <span>{{ @$student->classroom->name ?? '' }}</span>
+                                </div>
                             </div>
-                            <!--end::Input group-->
+                            <!--end::Card Information-->
+
                             <!--begin::Separator-->
                             <div class="separator mb-6"></div>
                             <!--end::Separator-->
+
                             <!--begin::Action buttons-->
                             <div class="d-flex justify-content-end">
                             </div>
-                            <!--end::Form-->
-                            <div id="show-bill"></div>
+                            <!--end::Action buttons-->
+                        </div>
+                        <div id="kt_accordion_1" class="accordion accordion-flush mx-5">
+                            <div class="accordion-item">
+                                <h2 class="accordion-header" id="kt_accordion_1_header_1">
+                                    <button class="accordion-button fs-4 fw-semibold" type="button"
+                                        data-bs-toggle="collapse" data-bs-target="#kt_accordion_1_body_1"
+                                        aria-expanded="true" aria-controls="kt_accordion_1_body_1">
+                                        Fitur Kilat
+                                    </button>
+                                </h2>
+                                <div id="kt_accordion_1_body_1" class="accordion-collapse collapse show"
+                                    aria-labelledby="kt_accordion_1_header_1" data-bs-parent="#kt_accordion_1">
+                                    <div class="accordion-body">
+
+                                        <ul class="nav nav-tabs nav-line-tabs nav-line-tabs-2x mb-5 fs-6">
+                                            <li class="nav-item">
+                                                <a class="nav-link active" data-bs-toggle="tab"
+                                                    href="#kt_tab_pane_4">Bulanan</a>
+                                            </li>
+                                            <li class="nav-item">
+                                                <a class="nav-link" data-bs-toggle="tab"
+                                                    href="#kt_tab_pane_5">Lainnya</a>
+                                            </li>
+                                        </ul>
+
+                                        <div class="tab-content" id="myTabContent">
+                                            <div class="tab-pane fade show active" id="kt_tab_pane_4" role="tabpanel">
+                                                <div class="table-responsive">
+                                                    <table class="table  gy-7 gs-7">
+                                                        <thead>
+                                                            @include('admins.bill.table.header-kilat')
+                                                        </thead>
+                                                        <tbody>
+                                                            @include('admins.bill.table.body-kilat')
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            </div>
+                                            <div class="tab-pane fade" id="kt_tab_pane_5" role="tabpanel">
+                                                <div class="table-responsive">
+                                                    <table class="table gy-7 gs-7">
+                                                        <thead>
+                                                            {{-- <tr
+                                                                class="fw-semibold fs-6 text-gray-800 border-bottom border-gray-200">
+                                                                <th>No</th>
+                                                                <th class="min-w-125px">Nama Tagihan</th>
+                                                                <th class="min-w-125px">Sisa Tagihan</th>
+                                                                @foreach (range(1, 12) as $month)
+                                                                <th class="min-w-125px">{{
+                                                                    \Carbon\Carbon::create()->month($month)->translatedFormat('F')
+                                                                    }}</th>
+                                                                @endforeach
+                                                            </tr> --}}
+                                                            @include('admins.bill.table.header-kilat')
+                                                        </thead>
+                                                        <tbody>
+                                                            @foreach ($billOthers as $bill)
+
+                                                            <tr>
+                                                                <td>{{ $loop->iteration }}</td>
+                                                                <td>{{ @$bill->name }}</td>
+                                                                <td>Rp {{ number_format(@$bill->total_unpaid, 0,
+                                                                    ',', '.') }}</td>
+                                                                @foreach (range(1, 12) as $month)
+                                                                @php
+                                                                $billDetail = $bill->bills->where('month',
+                                                                $month)->where('student_id',
+                                                                $student->id)->first();
+                                                                $amount = $billDetail ? $billDetail->amount : 0;
+                                                                $statusColor = $billDetail && $billDetail->status ==
+                                                                'PAID' ? 'rgba(0, 255, 0,
+                                                                1)' : 'rgba(255, 0, 0, 1)';
+                                                                $modalId = "bayarKilat{$bill->id}_{$month}";
+                                                                $showModal = $billDetail && $billDetail->status !=
+                                                                'PAID';
+                                                                @endphp
+                                                                <td
+                                                                    style="background-color: {{ $billDetail ? $statusColor : '' }}">
+                                                                    @if($showModal)
+                                                                    <a href="#" data-bs-toggle="modal"
+                                                                        data-bs-target="#{{ $modalId }}">{{
+                                                                        $billDetail ? 'Rp ' . number_format($amount,
+                                                                        0, ',', '.') : 'Belum Ada'
+                                                                        }}</a>
+                                                                    <div class="modal fade" id="{{ $modalId }}"
+                                                                        tabindex="-1"
+                                                                        aria-labelledby="exampleModalLabel"
+                                                                        aria-hidden="true">
+                                                                        <div class="modal-dialog modal-dialog-centered">
+                                                                            <div class="modal-content">
+                                                                                <div class="modal-header">
+                                                                                    <h5 class="modal-title"
+                                                                                        id="exampleModalLabel">Bayar
+                                                                                        Tagihan
+                                                                                    </h5>
+                                                                                    <button type="button"
+                                                                                        class="btn-close"
+                                                                                        data-bs-dismiss="modal"
+                                                                                        aria-label="Close"></button>
+                                                                                </div>
+                                                                                <div class="modal-body">
+                                                                                    <form
+                                                                                        action="{{ route('bill.store') }}"
+                                                                                        method="post">
+                                                                                        @csrf
+                                                                                        <div class="mb-3">
+                                                                                            <label for="saldo"
+                                                                                                class="form-label">Saldo
+                                                                                                Siswa:</label>
+                                                                                            <input type="text"
+                                                                                                class="form-control"
+                                                                                                id="saldo" name="saldo"
+                                                                                                value="Rp {{ number_format($student->saldo, 0, ',', '.') }}"
+                                                                                                readonly>
+                                                                                        </div>
+                                                                                        <div class="mb-3">
+                                                                                            <label for="jenis-tagihan"
+                                                                                                class="form-label">Jenis
+                                                                                                Tagihan:</label>
+                                                                                            <input type="text"
+                                                                                                class="form-control"
+                                                                                                value="{{ $bill->name }} - {{ \Carbon\Carbon::create()->month($month)->translatedFormat('F') }} - {{ $bill->academicYear->name }}"
+                                                                                                readonly>
+                                                                                        </div>
+                                                                                        <div class="mb-3">
+                                                                                            <label for="amount"
+                                                                                                class="form-label">Jumlah
+                                                                                                Pembayaran:</label>
+                                                                                            <input type="text"
+                                                                                                class="form-control"
+                                                                                                id="amount"
+                                                                                                name="amount"
+                                                                                                value="Rp {{ number_format($amount, 0, ',', '.') }}">
+                                                                                        </div>
+                                                                                        <div class="mb-3">
+                                                                                            <label for="payment_method"
+                                                                                                class="form-label">Metode
+                                                                                                Pembayaran:</label>
+                                                                                            <select class="form-select"
+                                                                                                name="payment_method"
+                                                                                                required>
+                                                                                                <option value="">
+                                                                                                    Pilih Metode
+                                                                                                    Pembayaran
+                                                                                                </option>
+                                                                                                @if ($student->saldo
+                                                                                                > $amount)
+                                                                                                <option value="BALANCE">
+                                                                                                    Saldo</option>
+                                                                                                @endif
+                                                                                                <option value="CASH">
+                                                                                                    Tunai</option>
+                                                                                            </select>
+                                                                                        </div>
+                                                                                        <div class="modal-footer">
+                                                                                            <button type="button"
+                                                                                                class="btn btn-secondary"
+                                                                                                data-bs-dismiss="modal">Close</button>
+                                                                                            <button type="submit"
+                                                                                                class="btn btn-primary">Bayar</button>
+                                                                                        </div>
+                                                                                    </form>
+                                                                                </div>
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+                                                                    @else
+                                                                    {{ $billDetail ? 'Rp ' . number_format($amount,
+                                                                    0, ',', '.') : 'Belum Ada'
+                                                                    }}
+                                                                    @endif
+                                                                </td>
+                                                                @endforeach
+                                                            </tr>
+                                                            @endforeach
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="separator mb-6"></div>
+                            <div class="accordion-item">
+                                <h2 class="accordion-header" id="kt_accordion_1_header_1">
+                                    <button class="accordion-button fs-4 fw-semibold" type="button"
+                                        data-bs-toggle="collapse" data-bs-target="#accordion-tagihan-bulanan"
+                                        aria-expanded="true" aria-controls="accordion-tagihan-bulanan">
+                                        Tagihan Bulanan
+                                    </button>
+                                </h2>
+                                <div id="accordion-tagihan-bulanan" class="accordion-collapse collapse show"
+                                    aria-labelledby="kt_accordion_1_header_1" data-bs-parent="#kt_accordion_1">
+                                    <div class="accordion-body">
+                                        <div class="table-responsive">
+                                            <table id="table-bill-monthly" class="table align-middle table-row-dashed ">
+                                                <thead>
+                                                    <tr
+                                                        class="text-start text-gray-400 fw-bolder fs-7 text-uppercase gs-0">
+                                                        <th style="width: 5%">No</th>
+                                                        <th class="min-w-125px">Tahun Ajaran</th>
+                                                        {{-- <th class="min-w-125px">Pos Bayar</th> --}}
+                                                        <th class="min-w-125px">Jenis Pembayaran</th>
+                                                        <th class="min-w-125px">Jumlah</th>
+                                                        <th class="min-w-125px">Dibayar</th>
+                                                        <th class="text-center min-w-100px" style="width: 22%">
+                                                            Status</th>
+                                                        <th class="text-center min-w-100px" style="width: 22%">Aksi
+                                                        </th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody class="text-gray-600 fw-bold">
+                                                    @foreach ($billMonth as $monthly)
+                                                    <tr>
+                                                        <td>{{ $loop->iteration }}</td>
+                                                        <td>{{ @$monthly->academicYear->name }}</td>
+                                                        {{-- <td>{{ @$monthly->billItem->name }}</td> --}}
+                                                        <td>{{ @$monthly->name }}</td>
+                                                        <td>Rp {{ number_format(@$monthly->total_unpaid, 0, ',',
+                                                            '.') }}</td>
+                                                        <td>Rp {{ number_format(@$monthly->total_paid, 0, ',', '.')
+                                                            }}</td>
+                                                        <td><span
+                                                                class="d-flex text-center bg-{{ @$monthly->total_unpaid == 0 ?
+                                                                     'success' : 'danger' }} text-white px-3 py-1 rounded-1">{{
+                                                                @$monthly->total_unpaid == 0 ? 'Lunas' : 'Belum
+                                                                Lunas' }}</span></td>
+                                                        <td class="text-center">
+                                                            <x-action.show
+                                                                :action="route('bill.summary-bill', ['bill_type_id' => $monthly->id, 'student_id' => $student->id])"
+                                                                label="Bayar" />
+                                                        </td>
+                                                    </tr>
+                                                    @endforeach
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="separator mb-6"></div>
+                            <div class="accordion-item">
+                                <h2 class="accordion-header" id="kt_accordion_1_header_1">
+                                    <button class="accordion-button fs-4 fw-semibold" type="button"
+                                        data-bs-toggle="collapse" data-bs-target="#accordion-bill-other"
+                                        aria-expanded="true" aria-controls="accordion-bill-other">
+                                        Tagihan Lainnya
+                                    </button>
+                                </h2>
+                                <div id="accordion-bill-other" class="accordion-collapse collapse show"
+                                    aria-labelledby="kt_accordion_1_header_1" data-bs-parent="#kt_accordion_1">
+                                    <div class="accordion-body">
+                                        <div class="table-responsive">
+                                            <table id="table-bill-monthly" class="table align-middle table-row-dashed ">
+                                                <thead>
+                                                    <tr
+                                                        class="text-start text-gray-400 fw-bolder fs-7 text-uppercase gs-0">
+                                                        <th style="width: 5%">No</th>
+                                                        <th class="min-w-125px">Tahun Ajaran</th>
+                                                        {{-- <th class="min-w-125px">Pos Bayar</th> --}}
+                                                        <th class="min-w-125px">Jenis Pembayaran</th>
+                                                        <th class="min-w-125px">Jumlah</th>
+                                                        <th class="min-w-125px">Dibayar</th>
+                                                        <th class="text-center min-w-100px" style="width: 22%">
+                                                            Status</th>
+                                                        <th class="text-center min-w-100px" style="width: 22%">Aksi
+                                                        </th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody class="text-gray-600 fw-bold">
+                                                    @foreach ($billOthers as $other)
+                                                    <tr>
+                                                        <td>{{ $loop->iteration }}</td>
+                                                        <td>{{ @$other->academicYear->name }}</td>
+                                                        {{-- <td>{{ @$other->billItem->name }}</td> --}}
+                                                        <td>{{ @$other->name }}</td>
+                                                        <td>Rp {{ number_format(@$other->total_unpaid, 0, ',', '.')
+                                                            }}</td>
+                                                        <td>Rp {{ number_format(@$other->total_paid, 0, ',', '.') }}
+                                                        </td>
+                                                        <td><span
+                                                                class="d-flex text-center bg-{{ @$other->total_unpaid == 0 ?
+                                                                         'success' : 'danger' }} text-white px-3 py-1 rounded-1">{{
+                                                                @$other->total_unpaid == 0 ? 'Lunas' : 'Belum Lunas'
+                                                                }}</span></td>
+                                                        <td class="text-center">
+                                                            <x-action.show
+                                                                :action="route('bill.summary-bill', ['bill_type_id' => $other->id, 'student_id' => $student->id])"
+                                                                label="Bayar" />
+                                                        </td>
+                                                    </tr>
+                                                    @endforeach
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
 
                         </div>
-
-                        <!--end::Card body-->
+                        @endif
+                        {{-- end show --}}
                     </div>
-                    <!--end::Contacts-->
+
+                    <!--end::Card body-->
                 </div>
-                <!--end::Content-->
+                <!--end::Contacts-->
             </div>
-            <!--end::Contacts App- Add New Contact-->
+            <!--end::Content-->
         </div>
-        <!--end::Container-->
+        <!--end::Contacts App- Add New Contact-->
     </div>
-    <!--end::Post-->
+    <!--end::Container-->
+</div>
+<!--end::Post-->
 </div>
 <!--end::Content-->
 <!--end::Wrapper-->
@@ -163,26 +503,26 @@
             }
         }
 
-        $('#btn-cari').click(function () {
-            var student_id = $('#student_id').val();
-            var url = "{{ route('bill.get-bill-data') }}";
-            url = url + '?student_id=' + student_id;
+        // $('#btn-cari').click(function () {
+        //     var student_id = $('#student_id').val();
+        //     var url = "{{ route('bill.get-bill-data') }}";
+        //     url = url + '?student_id=' + student_id;
 
-            var button = $(this);
-            changeButtonText(button);
+        //     var button = $(this);
+        //     changeButtonText(button);
 
-            $.ajax({
-                url: url,
-                type: 'GET',
-                success: function (data) {
-                    $('#show-bill').html(data);
-                    changeButtonText(button); // Reset button text after successful AJAX request
-                },
-                error: function () {
-                    changeButtonText(button); // Reset button text in case of AJAX error
-                }
-            });
-        });
+        //     $.ajax({
+        //         url: url,
+        //         type: 'GET',
+        //         success: function (data) {
+        //             $('#show-bill').html(data);
+        //             changeButtonText(button); // Reset button text after successful AJAX request
+        //         },
+        //         error: function () {
+        //             changeButtonText(button); // Reset button text in case of AJAX error
+        //         }
+        //     });
+        // });
 
         // on click modal-pay button to show modal and load data
         $(document).on('click', '.modal-pay', function () {

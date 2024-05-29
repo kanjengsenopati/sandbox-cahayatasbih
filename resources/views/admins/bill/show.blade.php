@@ -82,12 +82,16 @@
                                         $billDetail = $bill->bills->where('month', $month)->where('student_id',
                                         $student->id)->first();
                                         $amount = $billDetail ? $billDetail->amount : 0;
-                                        $statusColor = $billDetail && $billDetail->status == 'PAID' ? 'rgba(0, 255, 0,
-                                        1)' : 'rgba(255, 0, 0, 1)';
+                                        $statusColor = $billDetail && $billDetail->status == 'PAID' ? '#6B076B' :
+                                        '#9A9A04';
+                                        // $statusColor = $billDetail && $billDetail->status == 'PAID' ? 'rgba(0, 255,
+                                        // 0,
+                                        // 1)' : 'rgba(255, 0, 0, 1)';
                                         $modalId = "bayarKilat{$bill->id}_{$month}";
                                         $showModal = $billDetail && $billDetail->status != 'PAID';
                                         @endphp
-                                        <td style="background-color: {{ $statusColor }}">
+                                        {{-- <td style="background-color: {{ $statusColor }}"> --}}
+                                        <td style="background-color: {{ $statusColor }}; padding: 10px;">
                                             @if($showModal)
                                             <a href="#" data-bs-toggle="modal" data-bs-target="#{{ $modalId }}"
                                                 style="color: white;"> Rp {{ number_format($amount,

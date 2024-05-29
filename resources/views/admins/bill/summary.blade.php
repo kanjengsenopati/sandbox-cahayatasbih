@@ -141,7 +141,8 @@
                             <!--end::Seperator-->
                             <!--begin::Actions-->
                             <div class="mb-0">
-                                <a class="btn btn-primary" href="{{ route('bill.index') }}"
+                                <a class="btn btn-primary"
+                                    href="{{ route('bill.index', ['student_id' => $student->id]) }}"
                                     style="background-color: #4D0C7A; border-color: #4D0C7A;">Kembali</a>
                             </div>
                             <!--end::Actions-->
@@ -207,13 +208,22 @@
                                                 <input type="hidden" name="student_id" value="{{ $student->id ?? '' }}">
                                                 <td>Rp {{ $amount ?? '' }}</td>
                                                 <td>
-                                                    @if ($billForMonth && $billForMonth->status == 'PAID')
+                                                    @if ($billForMonth && $billForMonth->status == 'PAID' &&
+                                                    $billForMonth->transactions?->first()->paymentMethod?->type ==
+                                                    'CASH')
+                                                    <span class="badge badge-light-success">
+                                                        Tunai Melalui {{
+                                                        $billForMonth->transactions?->first()->admin?->name ??
+                                                        '' }}
+                                                    </span>
+                                                    @elseif ($billForMonth && $billForMonth->status == 'PAID')
                                                     <span class="badge badge-light-success">
                                                         {{
                                                         $billForMonth->transactions?->first()->paymentMethod?->name
                                                         ?? ''
                                                         }}
                                                     </span>
+
                                                     @elseif ($billForMonth)
                                                     <select class="form-select payment-method-select"
                                                         name="payment_method" required>
@@ -231,6 +241,7 @@
                                                     <span class="badge badge-light-success">Dibayar {{
                                                         $billForMonth->transactions?->first()->paid_at
                                                         ?? '' }}</span>
+                                                    <br>
                                                     @elseif ($billForMonth && $billForMonth->status == 'UNPAID' &&
                                                     $billForMonth?->transactions?->first()?->payment_link)
                                                     <a href="{{ $billForMonth?->transactions?->first()?->payment_link }}"
