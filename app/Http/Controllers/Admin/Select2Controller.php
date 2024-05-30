@@ -28,6 +28,7 @@ class Select2Controller extends Controller
             'ACADEMIC_YEAR' => $this->academicYear($request),
             'STUDY' => $this->study($request),
             'SEMESTER' => $this->semester($request),
+            'STUDENT_BY_SCHOOL' => $this->studentBySchool($request),
         };
         return response()->json($data);
     }
@@ -95,6 +96,15 @@ class Select2Controller extends Controller
         return Semester::whereRaw('LOWER(name) like ?', ['%' . strtolower($request->search) . '%'])
             ->orderBy('order')
             ->take(10)
+            ->get();
+    }
+
+    public function studentBySchool($request)
+    {
+        return Student::with('classroom.school')
+            ->where('school_id', $request->school_id)
+            ->whereRaw('LOWER(name) like ?', ['%' . strtolower($request->search) . '%'])
+            ->orderBy('name')
             ->get();
     }
 }

@@ -102,16 +102,36 @@
                         <div class="card-body pt-5">
                             <form action="{{ route('bill.index') }}" method="GET">
                                 <!--begin::Form-->
+                                <div class="fv-row mb-7 d-flex align-items-center">
+                                    <!--begin::Label-->
+                                    <label class="fs-6 fw-bold form-label mt-3 me-3 col-2" for="school_id">
+                                        <span class="required">UPT</span>
+                                    </label>
+                                    <!--end::Label-->
+                                    <!--begin::Input-->
+                                    <select name="school_id" name="school_id"
+                                        class="form-control form-control-solid flex-grow-1" id="school_id">
+                                        <option value="">Pilih UPT</option>
+                                        @foreach ($schools as $school)
+                                        <option value="{{ $school->id }}" {{ request('school_id')==$school->id ?
+                                            'selected' : '' }}>
+                                            {{ $school->name }}</option>
+                                        @endforeach
+                                    </select>
+                                    <!--end::Input-->
+                                </div>
                                 <!--begin::Input group-->
                                 <div class="fv-row mb-7 d-flex align-items-center">
                                     <!--begin::Label-->
-                                    <label class="fs-6 fw-bold form-label mt-3 me-3" for="name">
+                                    <label class="fs-6 fw-bold form-label mt-3 me-3 col-2" for="name">
                                         <span class="required">NIS/NISN/Nama</span>
                                     </label>
                                     <!--end::Label-->
                                     <!--begin::Input-->
-                                    <x-form.student :value="@$tahfidz->student_id" name="student_id"
-                                        class="form-control form-control-solid flex-grow-1" />
+                                    <select name="student_id" id="student_id" class="form-select form-select-solid"
+                                        id="student_id">
+                                        <option value="">Pilih Siswa</option>
+                                    </select>
                                     <!--end::Input-->
                                     <button id="btn-cari" class="btn btn-sm btn-primary ms-3"
                                         style="height: 40px; width: 100px;" type="submit">
@@ -120,8 +140,10 @@
                                             <span class="spinner-border spinner-border-sm align-middle ms-2"></span>
                                         </span>
                                     </button>
+                                </div>
                             </form>
                         </div>
+
                         <!--end::Input group-->
                         <!--begin::Separator-->
                         <div class="separator mb-6"></div>
@@ -483,9 +505,6 @@
     <!--end::Container-->
 </div>
 <!--end::Post-->
-</div>
-<!--end::Content-->
-<!--end::Wrapper-->
 @endsection
 @push('js')
 <script>
@@ -503,27 +522,6 @@
             }
         }
 
-        // $('#btn-cari').click(function () {
-        //     var student_id = $('#student_id').val();
-        //     var url = "{{ route('bill.get-bill-data') }}";
-        //     url = url + '?student_id=' + student_id;
-
-        //     var button = $(this);
-        //     changeButtonText(button);
-
-        //     $.ajax({
-        //         url: url,
-        //         type: 'GET',
-        //         success: function (data) {
-        //             $('#show-bill').html(data);
-        //             changeButtonText(button); // Reset button text after successful AJAX request
-        //         },
-        //         error: function () {
-        //             changeButtonText(button); // Reset button text in case of AJAX error
-        //         }
-        //     });
-        // });
-
         // on click modal-pay button to show modal and load data
         $(document).on('click', '.modal-pay', function () {
             var url = $(this).data('url');
@@ -540,6 +538,51 @@
         });
 
         
+    });
+</script>
+<script>
+    $(document).ready(function() {
+    // Function to fetch student data based on selected school
+    function fetchStudentData() {
+    var school_id = $('#school_id').val();
+    if (school_id) {
+    $.ajax({
+    url: "{{ route('select2') }}",
+    dataType: 'json',
+    delay: 300,
+    data: {
+    search: '', // Assuming you need a default search term
+    data_type: "STUDENT_BY_SCHOOL",
+    school_id: school_id
+    },
+    success: function (data) {
+    var results = $.map(data, function (item) {
+    let displayText = (item.nis ? item.nis + ' - ' : '') +
+    item.name + ' - ' +
+    (item.classroom?.name ? item.classroom.name : '');
+    return {
+    text: displayText,
+    id: item.id
+    };
+    });
+    
+    $('#student_id').empty().select2({
+    data: results,
+    cache: true
+    });
+    },
+    cache: true
+    });
+    } else {
+    $('#student_id').empty();
+    }
+    }
+    
+    // Bind the change event to the fetchStudentData function
+    $('#school_id').change(fetchStudentData);
+    
+    // Call the function on page load
+    fetchStudentData();
     });
 </script>
 @endpush

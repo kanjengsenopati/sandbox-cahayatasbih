@@ -19,6 +19,7 @@ use App\Services\TransactionService;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Http;
 use App\Http\Requests\Admin\BillPaymentRequest;
+use App\Models\School;
 
 class BillController extends Controller
 {
@@ -27,6 +28,7 @@ class BillController extends Controller
      */
     public function index()
     {
+        $schools = School::orderBy('name', 'asc')->get();
         if (request()->student_id) {
 
             $id = request()->student_id;
@@ -76,9 +78,9 @@ class BillController extends Controller
                 });
 
 
-            return view('admins.bill.index', compact('student', 'billMonth', 'billOthers'));
+            return view('admins.bill.index', compact('student', 'billMonth', 'billOthers', 'schools'));
         }
-        return view('admins.bill.index');
+        return view('admins.bill.index', compact('schools'));
     }
 
     /**
