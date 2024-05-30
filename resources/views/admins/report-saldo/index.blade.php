@@ -52,25 +52,24 @@
                 <div
                     class="card-header d-flex align-items-end gap-5 flex-sm-row mb-5 justify-content-between border-0 pt-6">
                     <div class="d-flex flex-wrap justify-content-beetween gap-5">
-                        {{-- <div class="mb-0">
-                            <label class="form-label">Filter Tanggal</label>
-                            <div class="d-flex
-                                                gap-4 align-items-end">
-                                <div id="dateRange" class="pull-right"
-                                    style="background: #fff; cursor: pointer; padding: 5px 10px; border: 1px solid #ccc;float: top;">
-                                    <i class="glyphicon glyphicon-calendar fa fa-calendar"></i>&nbsp;
-                                    <span></span> <b class="caret"></b>
-                                </div>
-                            </div>
-                        </div> --}}
                         <div class="mb-0">
                             <form action="{{ route('report-saldo.export') }}" id="form-filter" method="get">
                                 <input type="text" hidden id="type" name="type" required>
                                 <div class="d-flex flex-wrap gap-4 align-items-end">
                                     <div>
+                                        <label class="form-label">Filter Tanggal</label>
+                                        <div class="d-flex gap-4 align-items-end">
+                                            <div id="dateRange" class="pull-right"
+                                                style="background: #fff; cursor: pointer; padding: 5px 10px; border: 1px solid #ccc;float: top;">
+                                                <i class="glyphicon glyphicon-calendar fa fa-calendar"></i>&nbsp;
+                                                <span></span> <b class="caret"></b>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div>
                                         <label class="form-label">UPT</label>
                                         <select name="school_id" class="form-select" id="filter_school_id">
-                                            <option value="">Pilih Pendidikan</option>
+                                            <option value="">Semua UPT</option>
                                             @foreach ($schools as $school)
                                             <option value="{{ $school->id }}">{{ $school->name }}</option>
                                             @endforeach
@@ -79,7 +78,7 @@
                                     <div>
                                         <label class="form-label">Kelas</label>
                                         <select name="classroom_id" class="form-select" id="filter_classroom_id">
-                                            <option value="">Pilih Kelas</option>
+                                            <option value="">Semua Kelas</option>
                                         </select>
                                     </div>
                                     <div>
@@ -120,181 +119,219 @@
                                     <!--end::Export dropdown-->
                                 </div>
                             </form>
+                            {{-- add 3 card total topup saldo, pengurangan saldo, dan saldo tersedia --}}
+
+                            <div class="d-flex gap-2 mt-4">
+                                <div class="card bg-light-primary bg-active-primary flex-grow-1">
+                                    <!--begin::Body-->
+                                    <div class="card-body">
+                                        <!--begin::Label-->
+                                        <div class="fw-bolder fs-5 text-gray-800">Total Topup Saldo</div>
+                                        <!--end::Label-->
+                                        <!--begin::Stats-->
+                                        <div class="text-primary fs-3 fw-bolder" id="total-topup">Rp. 0</div>
+                                        <!--end::Stats-->
+                                    </div>
+                                    <!--end::Body-->
+                                </div>
+                                <div class="card bg-light-danger bg-active-danger flex-grow-1">
+                                    <!--begin::Body-->
+                                    <div class="card-body">
+                                        <!--begin::Label-->
+                                        <div class="fw-bolder fs-5 text-gray-800">Total Pengurangan Saldo</div>
+                                        <!--end::Label-->
+                                        <!--begin::Stats-->
+                                        <div class="text-danger fs-3 fw-bolder" id="total-pengurangan">Rp. 0</div>
+                                        <!--end::Stats-->
+                                    </div>
+                                    <!--end::Body-->
+                                </div>
+                                <div class="card bg-light-success bg-active-success flex-grow-1">
+                                    <!--begin::Body-->
+                                    <div class="card-body">
+                                        <!--begin::Label-->
+                                        <div class="fw-bolder fs-5 text-gray-800">Saldo Tersedia</div>
+                                        <!--end::Label-->
+                                        <!--begin::Stats-->
+                                        <div class="text-success fs-3 fw-bolder" id="saldo-tersedia">Rp. 0</div>
+                                        <!--end::Stats-->
+                                    </div>
+                                    <!--end::Body-->
+                                </div>
+                            </div>
+                            {{-- <div class="mt-4 gap-2 d-flex justify-content-beetween align-items-end">
+
+                            </div> --}}
+                            <!--end::Card title-->
                         </div>
+                        <!--end::Card header-->
+                        <!--begin::Card body-->
+                        <div class="card-body">
+                            <div class="card-body pt-0">
+                                <!--begin::Table-->
+                                <div class="table-responsive">
+                                    <table id="table-saldo" class="table align-middle table-row-dashed ">
+                                        <thead>
+                                            <tr class="text-start text-gray-400 fw-bolder fs-7 text-uppercase gs-0">
+                                                <th style="width: 5%">No</th>
+                                                <th>Tanggal</th>
+                                                <th>NIS</th>
+                                                <th>Nama Siswa</th>
+                                                <th>Jumlah</th>
+                                                <th>Status</th>
+                                                <th>Keterangan</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody class="text-gray-600 fw-bold"></tbody>
+                                    </table>
+                                </div>
+                                <!--end::Table-->
+                            </div>
+                        </div>
+                        <!--end::Card body-->
                     </div>
-                    <div class="mt-4 gap-2 d-flex justify-content-beetween align-items-end">
-
-                    </div>
-                    <!--end::Card title-->
+                    <!--end::Card-->
                 </div>
-                <!--end::Card header-->
-                <!--begin::Card body-->
-                <div class="card-body">
-                </div>
-                <!--end::Card body-->
+                <!--end::Container-->
             </div>
-            <!--end::Card-->
-
-            <!--begin::Card-->
-            <div class="card">
-                <!--begin::Card header-->
-                <div class="card-header d-flex align-items-center justify-content-between border-0 pt-6">
-                    <!--begin::Card title-->
-                    <div class="card-title">
-                        {{-- <h3 class="text-dark">Sekolah</h3> --}}
-                    </div>
-                    <div class="">
-                    </div>
-                    <!--end::Card title-->
-                </div>
-                <!--end::Card header-->
-                <!--begin::Card body-->
-                <div class="card-body pt-0">
-                    <!--begin::Table-->
-                    <div class="table-responsive">
-                        <table id="table-saldo" class="table align-middle table-row-dashed ">
-                            <thead>
-                                <tr class="text-start text-gray-400 fw-bolder fs-7 text-uppercase gs-0">
-                                    <th style="width: 5%">No</th>
-                                    <th>NIS</th>
-                                    <th>Nama Siswa</th>
-                                    <th>Jumlah</th>
-                                    <th>Status</th>
-                                    <th>Keterangan</th>
-                                </tr>
-                            </thead>
-                            <tbody class="text-gray-600 fw-bold"></tbody>
-                        </table>
-                    </div>
-                    <!--end::Table-->
-                </div>
-                <!--end::Card body-->
-            </div>
-            <!--end::Card-->
-            <!--begin::Modals-->
+            <!--end::Post-->
 
         </div>
-        <!--end::Container-->
     </div>
-    <!--end::Post-->
 </div>
 @endsection
 @push('js')
-<script type="text/javascript" src="https://cdn.jsdelivr.net/momentjs/latest/moment.min.js"></script>
+<script type="text/javascript" src="https://cdn.jsdelivr.net/momentjs/latenet/momentjs/latest/moment.min.js">
+</script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/locale/id.min.js"></script>
 <script>
-    // onchange school_id get data classrom on school
-        $('#filter_school_id').on('change', function() {
-            var school_id = $(this).val();
-            $.ajax({
-                url: "{{ route('report-bill.get-classroom') }}",
-                type: "GET",
-                data: {
-                    school_id: school_id
-                },
-                success: function(response) {
-                    console.log(response);
-                    $('#filter_classroom_id').empty();
-                    if (response.data.length > 0) {
-                        $('#filter_classroom_id').append('<option value="">Semua Kelas</option>');
-                        $.each(response.data, function(key, value) {
-                            $('#filter_classroom_id').append('<option value="' + value.id + '">' + value.name +
-                                '</option>');
-                        });
-                    } else {
-                        $('#filter_classroom_id').append('<option value="">Tidak ada kelas</option>');
-                    }
+    $(document).ready(function() {
+                // Initialize DataTables
+                let table = initializeTable();
+                getTotalSaldo();
+        
+                // Function to initialize DataTables
+                function initializeTable(start_date = '', end_date = '') {
+                    return $('#table-saldo').DataTable({
+                        processing: true,
+                        serverSide: true,
+                        ajax: {
+                            url: "{{ route('report-saldo.index') }}",
+                            data: function(d) {
+                                // Get filter data from form elements
+                                d.type = 'table';
+                                d.school_id = $('#filter_school_id').val();
+                                d.classroom_id = $('#filter_classroom_id').val();
+                                d.status = $('#filter_status').val();
+                                d.start_date = start_date;
+                                d.end_date = end_date;
+                            }
+                        },
+                        columns: [
+                            {
+                                data: null,
+                                sortable: false,
+                                searchable: false,
+                                render: function(data, type, row, meta) {
+                                    // Render serial number
+                                    return meta.row + meta.settings._iDisplayStart + 1;
+                                }
+                            },
+                            { data: 'date', name: 'date', orderable: true, searchable: true },
+                            { data: 'student.nis', name: 'student.nis', orderable: true, searchable: true },
+                            { data: 'student.name', name: 'student.name', orderable: true, searchable: true },
+                            { data: 'amount', name: 'amount', orderable: true, searchable: true },
+                            { data: 'status', name: 'status', orderable: true, searchable: true },
+                            { data: 'description', name: 'description', orderable: true, searchable: true }
+                        ]
+                    });
                 }
+
+                function getTotalSaldo(start_date = '', end_date = '') {
+                    $.ajax({
+                        url: "{{ route('report-saldo.index') }}",
+                        type: "GET",
+                        dataType: 'json',
+                        data: {
+                            type: 'total',
+                            school_id: $('#filter_school_id').val(),
+                            classroom_id: $('#filter_classroom_id').val(),
+                            status: $('#filter_status').val(),
+                            start_date : start_date,
+                            end_date : end_date
+                        },
+                        success: function(response) {
+                            $('#total-topup').text('Rp. ' + response.total_topup);
+                            $('#total-pengurangan').text('Rp. ' + response.total_pengurangan);
+                            $('#saldo-tersedia').text('Rp. ' + response.saldo_tersedia);
+                        }
+                    });
+                }
+        
+                // Function to reload DataTables
+                function reloadTable(start_date = '', end_date = '') {
+                    table.destroy();
+                    table = initializeTable(start_date, end_date);
+                    getTotalSaldo(start_date, end_date);
+                }
+        
+                // Fetch classroom data on school_id change
+                $('#filter_school_id').on('change', function() {
+                    var school_id = $(this).val();
+                    $.ajax({
+                        url: "{{ route('report-bill.get-classroom') }}",
+                        type: "GET",
+                        data: { school_id: school_id },
+                        success: function(response) {
+                            $('#filter_classroom_id').empty();
+                            if (response.data.length > 0) {
+                                $('#filter_classroom_id').append('<option value="">Semua Kelas</option>');
+                                $.each(response.data, function(key, value) {
+                                    $('#filter_classroom_id').append('<option value="' + value.id + '">' + value.name + '</option>');
+                                });
+                            } else {
+                                $('#filter_classroom_id').append('<option value="">Tidak ada kelas</option>');
+                            }
+                        }
+                    });
+                });
+        
+                // Event handlers to reload table
+                $('#btn_tampilkan').click(function() {
+                    reloadTable();
+                });
+        
+                $('#filter_form').submit(function(event) {
+                    event.preventDefault();
+                    reloadTable();
+                });
+        
+                $('#filter_school_id, #filter_classroom_id, #filter_status').on('change', function() {
+                    reloadTable();
+                });
+        
+                // Handle date range picker changes
+                $('#dateRange').daterangepicker({
+                    startDate: moment().subtract(365, 'days'),
+                    endDate: moment(),
+                    ranges: {
+                        'Hari Ini': [moment(), moment()],
+                        'Kemarin': [moment().subtract(1, 'days'), moment().subtract(1, 'days')],
+                        'Bulan Ini': [moment().startOf('month'), moment().endOf('month')],
+                        'Bulan Kemarin': [moment().subtract(1, 'month').startOf('month'), moment().subtract(1, 'month').endOf('month')],
+                        '7 Hari Terakhir': [moment().subtract(6, 'days'), moment()],
+                        '30 Hari Terakhir': [moment().subtract(29, 'days'), moment()]
+                    }
+                }, function(start, end) {
+                    $('#dateRange span').html(start.format('D MMMM YYYY') + ' - ' + end.format('D MMMM YYYY'));
+                    reloadTable(start.format('YYYY-MM-DD'), end.format('YYYY-MM-DD'));
+                });
+        
+                // Initial callback for date range picker
+                var start = moment().subtract(365, 'days');
+                var end = moment();
+                $('#dateRange span').html(start.format('D MMMM YYYY') + ' - ' + end.format('D MMMM YYYY'));
+                reloadTable(start.format('YYYY-MM-DD'), end.format('YYYY-MM-DD'));
             });
-        });
-
-   $(document).ready(function() {
-    // Initialize DataTables
-    var table = $('#table-saldo').DataTable({
-    processing: true,
-    serverSide: true,
-    ajax: {
-    url: "{{ route('report-saldo.index') }}",
-    data: function(d) {
-    // Get filter data from form elements
-    d.school_id = $('#filter_school_id').val();
-    d.classroom_id = $('#filter_classroom_id').val();
-    d.status = $('#filter_status').val();
-    }
-    },
-    columns: [
-    {
-    data: null,
-    sortable: false,
-    searchable: false,
-    render: function(data, type, row, meta) {
-    // Render serial number
-    return meta.row + meta.settings._iDisplayStart + 1;
-    }
-    },
-    {
-    data: 'student.nis',
-    name: 'student.nis',
-    orderable: true,
-    searchable: true
-    },
-    {
-    data: 'student.name',
-    name: 'student.name',
-    orderable: true,
-    searchable: true
-    },
-    {
-    data: 'amount',
-    name: 'amount',
-    orderable: true,
-    searchable: true
-    },
-    {
-    data: 'status',
-    name: 'status',
-    orderable: true,
-    searchable: true
-    },
-    {
-    data: 'description',
-    name: 'description',
-    orderable: true,
-    searchable: true
-    }
-    ]
-    });
-    // Fungsi untuk memperbarui data tabel saat melakukan pencarian
-    function searchData() {
-        table.ajax.reload();
-    }
-    
-    // Event saat tombol "Tampilkan" ditekan
-    $('#btn_tampilkan').click(function() {
-    searchData();
-    });
-    
-    // Event saat formulir filter disubmit
-    $('#filter_form').submit(function(event) {
-    event.preventDefault(); // Mencegah aksi default saat submit
-    searchData();
-    });
-
-    // onchange school_id and classroom_id reload datatable
-    $('#filter_school_id, #filter_classroom_id, #filter_status').on('change', function() {
-        searchData();
-    });
-
-    // Export Report
-    $('.btn-export').on('click', function() {
-        var type = $(this).data('type');
-        $('#type').val(type);
-        $('#school_id').val($('#filter_school_id').val());
-        $('#classroom_id').val($('#filter_classroom_id').val());
-        $('#status').val($('#filter_status').val());
-        $('#form-filter').submit();
-    });
-    });
-
 </script>
 @endpush
