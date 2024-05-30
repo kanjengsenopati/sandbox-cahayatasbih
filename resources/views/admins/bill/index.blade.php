@@ -105,13 +105,13 @@
                                 <div class="fv-row mb-7 d-flex align-items-center">
                                     <!--begin::Label-->
                                     <label class="fs-6 fw-bold form-label mt-3 me-3 col-2" for="school_id">
-                                        <span class="required">UPT</span>
+                                        <span class="required">Unit Pendidikan</span>
                                     </label>
                                     <!--end::Label-->
                                     <!--begin::Input-->
                                     <select name="school_id" name="school_id"
                                         class="form-control form-control-solid flex-grow-1" id="school_id">
-                                        <option value="">Pilih UPT</option>
+                                        <option value="">Pilih Unit Pendidikan</option>
                                         @foreach ($schools as $school)
                                         <option value="{{ $school->id }}" {{ request('school_id')==$school->id ?
                                             'selected' : '' }}>
