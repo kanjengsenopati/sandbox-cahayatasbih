@@ -33,8 +33,8 @@ class Bill extends Model
     protected $appends = [
         'translated_month',
         'translated_status',
-        'paid_date',
-        'payment_method',
+        // 'paid_date',
+        // 'payment_method',
     ];
 
     public function billType()
