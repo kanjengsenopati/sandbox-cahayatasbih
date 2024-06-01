@@ -21,11 +21,73 @@ class ReportBillController extends Controller
      */
     public function index()
     {
+        if (request()->ajax()) {
+            $type = request()->type;
+
+            // Query dasar untuk kedua permintaan Ajax
+            $query = Student::with('classroom', 'school', 'bills');
+
+            // Filter berdasarkan request parameters
+            if (request()->has('school_id')) {
+                $query->where('school_id', request()->school_id);
+            }
+
+            if (request()->has('classroom_id')) {
+                $query->where('classroom_id', request()->classroom_id);
+            }
+
+            if (request()->has('academic_year_id')) {
+                $query->whereHas('bills', function ($query) {
+                    $query->where('academic_year_id', request()->academic_year_id);
+                });
+            }
+
+            if (request()->has('bill_type_id')) {
+                $query->whereHas('bills', function ($query) {
+                    $query->where('bill_type_id', request()->bill_type_id);
+                });
+            }
+
+            // Handle permintaan tipe 'table'
+            if ($type == 'table') {
+                $data = $query->whereHas('bills')->orderBy('name', 'asc')->get();
+
+                return DataTables::of($data)
+                    ->addColumn('action', function ($data) {
+                        $actionShow = route('report-bill.show', $data->id);
+                        return "<div class='d-flex justify-content-center'>" .
+                            view('components.action.show', [
+                                'action' => $actionShow, 'label' => 'Cetak',
+                                'icon' => 'fa fa-print'
+                            ]) .
+                            "</div>";
+                    })
+                    ->rawColumns(['action'])
+                    ->make(true);
+            }
+
+            // Handle permintaan tipe 'total'
+            if ($type == 'total') {
+                $data = $query->orderBy('name', 'asc')->get();
+
+                $total_paid = $data->where('status', Bill::STATUS_PAID)->count();
+                $total = $data->count();
+
+                return response()->json([
+                    'total_paid' => $total_paid,
+                    'total' => $total,
+                ]);
+            }
+        }
+
+        // Ambil data untuk dropdown
         $schools = School::orderBy('name', 'asc')->get();
         $academicYears = AcademicYear::orderBy('name', 'asc')->get();
         $billTypes = BillType::orderBy('name', 'asc')->get();
+
         return view('admins.report-bill.index', compact('schools', 'academicYears', 'billTypes'));
     }
+
 
     /**
      * Show the form for creating a new resource.

@@ -61,6 +61,16 @@
                 <div class="card-body">
                     <form id="filter_form" method="GET">
                         <div class="row g-3">
+                            <div>
+                                <label class="form-label">Filter Tanggal</label>
+                                <div class="d-flex gap-4 align-items-end">
+                                    <div id="dateRange" class="pull-right"
+                                        style="background: #fff; cursor: pointer; padding: 5px 10px; border: 1px solid #ccc;float: top;">
+                                        <i class="glyphicon glyphicon-calendar fa fa-calendar"></i>&nbsp;
+                                        <span></span> <b class="caret"></b>
+                                    </div>
+                                </div>
+                            </div>
                             <div class="col-md-6 col-lg-3">
                                 <label for="filter_school_id" class="form-label">UPT</label>
                                 <select name="school_id" class="form-select" id="filter_school_id">
@@ -107,6 +117,33 @@
                             </div>
                         </div>
                     </form>
+                    <div class="d-flex gap-2 mt-4">
+                        <div class="card bg-light-primary bg-active-primary flex-grow-1">
+                            <!--begin::Body-->
+                            <div class="card-body">
+                                <!--begin::Label-->
+                                <div class="fw-bolder fs-5 text-gray-800">Target Pemasukkan</div>
+                                <!--end::Label-->
+                                <!--begin::Stats-->
+                                <div class="text-primary fs-3 fw-bolder" id="total">Rp. 0</div>
+                                <!--end::Stats-->
+                            </div>
+                            <!--end::Body-->
+                        </div>
+
+                        <div class="card bg-light-success bg-active-success flex-grow-1">
+                            <!--begin::Body-->
+                            <div class="card-body">
+                                <!--begin::Label-->
+                                <div class="fw-bolder fs-5 text-gray-800">Realisasi Pemasukkan</div>
+                                <!--end::Label-->
+                                <!--begin::Stats-->
+                                <div class="text-success fs-3 fw-bolder" id="total_paid">Rp. 0</div>
+                                <!--end::Stats-->
+                            </div>
+                            <!--end::Body-->
+                        </div>
+                    </div>
                 </div>
                 <!--end::Card body-->
             </div>
@@ -137,7 +174,6 @@
                                 <tr class="text-start text-gray-400 fw-bolder fs-7 text-uppercase gs-0">
                                     <th style="width: 5%">No</th>
                                     <th>NIS</th>
-                                    <th>NISN</th>
                                     <th>Nama Siswa</th>
                                     <th>Kelas</th>
                                     <th class="text-center min-w-100px" style="width: 22%">Aksi</th>
@@ -171,140 +207,170 @@
 </div>
 @endsection
 @push('js')
+<script type="text/javascript" src="https://cdn.jsdelivr.net/momentjs/latenet/momentjs/latest/moment.min.js">
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/locale/id.min.js"></script>
 <script>
-    // onchange school_id get data classrom on school
-        $('#filter_school_id').on('change', function() {
-            var school_id = $(this).val();
-            $.ajax({
-                url: "{{ route('report-bill.get-classroom') }}",
-                type: "GET",
-                data: {
-                    school_id: school_id
-                },
-                success: function(response) {
-                    console.log(response);
-                    $('#filter_classroom_id').empty();
-                    if (response.data.length > 0) {
-                        $('#filter_classroom_id').append('<option value="">Semua Kelas</option>');
-                        $.each(response.data, function(key, value) {
-                            $('#filter_classroom_id').append('<option value="' + value.id + '">' + value.name +
-                                '</option>');
-                        });
-                    } else {
-                        $('#filter_classroom_id').append('<option value="">Tidak ada kelas</option>');
-                    }
+    $(document).ready(function() {
+    // Event handler untuk perubahan filter sekolah
+    $('#filter_school_id').on('change', function() {
+        var school_id = $(this).val();
+        $.ajax({
+            url: "{{ route('report-bill.get-classroom') }}",
+            type: "GET",
+            data: { school_id: school_id },
+            success: function(response) {
+                $('#filter_classroom_id').empty();
+                if (response.data.length > 0) {
+                    $('#filter_classroom_id').append('<option value="">Semua Kelas</option>');
+                    $.each(response.data, function(key, value) {
+                        $('#filter_classroom_id').append('<option value="' + value.id + '">' + value.name + '</option>');
+                    });
+                } else {
+                    $('#filter_classroom_id').append('<option value="">Tidak ada kelas</option>');
                 }
-            });
+            }
         });
-
-       $(document).ready(function() {
-    // Inisialisasi DataTables
-    var table = $('#table-report-bill').DataTable({
-    processing: true,
-    serverSide: true,
-    ajax: {
-    url: "{{ route('report-bill.get-data') }}",
-    data: function(d) {
-    // Mengambil data filter dari elemen formulir
-    d.school_id = $('#filter_school_id').val();
-    d.classroom_id = $('#filter_classroom_id').val();
-    d.academic_year_id = $('#filter_academic_year_id').val();
-    d.bill_type_id = $('#filter_bill_type_id').val();
-    d.status = $('#filter_status').val();
-    }
-    },
-    columns: [
-    {
-    data: null,
-    sortable: false,
-    searchable: false,
-    render: function(data, type, row, meta) {
-    return meta.row + meta.settings._iDisplayStart + 1;
-    }
-    },
-    { data: 'nis', name: 'nis' },
-    { data: 'nisn', name: 'nisn' },
-    { data: 'name', name: 'name' },
-    { data: 'classroom.name', name: 'classroom.name' },
-    {
-    data: 'action',
-    name: 'action',
-    orderable: false,
-    searchable: false
-    }
-    ]
-    });
-    
-    // Fungsi untuk memperbarui data tabel saat melakukan pencarian
-    function searchData() {
-        table.ajax.reload();
-    }
-    
-    // Event saat tombol "Tampilkan" ditekan
-    $('#btn_tampilkan').click(function() {
-    searchData();
-    });
-    
-    // Event saat formulir filter disubmit
-    $('#filter_form').submit(function(event) {
-    event.preventDefault(); // Mencegah aksi default saat submit
-    searchData();
     });
 
- // Send Bill Notif on click send-blast-notif
-$('#send-blast-notif').on('click', function() {
-var button = $(this);
-changeButtonText(button, true); // Change button text and disable button
-// get data filter
-var school_id = $('#filter_school_id').val();
-var classroom_id = $('#filter_classroom_id').val();
-var academic_year_id = $('#filter_academic_year_id').val();
-var bill_type_id = $('#filter_bill_type_id').val();
-var status = $('#filter_status').val();
+    // Inisialisasi DataTable
+    var table = initializeTable();
 
-// send data to form use ajax
-$.ajax({
-url: "{{ route('report-bill.send-bill-notification') }}",
-type: "POST",
-data: {
-_token: "{{ csrf_token() }}", // Add CSRF token here
-school_id: school_id,
-classroom_id: classroom_id,
-academic_year_id: academic_year_id,
-bill_type_id: bill_type_id,
-status: status
-},
-success: function(response) {
-if (response.code == 200) {
-toastr.success("Berhasil mengirim notifikasi tagihan ke WhatsApp");
-} else {
-toastr.error(response.message);
-}
-},
-error: function(xhr, status, error) {
-toastr.error("Terjadi kesalahan saat mengirim notifikasi: " + error);
-},
-complete: function() {
-changeButtonText(button, false); // Restore button text and enable button
-}
+    function initializeTable(start_date = '', end_date = '') {
+        return $('#table-report-bill').DataTable({
+            processing: true,
+            serverSide: true,
+            ajax: {
+                url: "{{ route('report-bill.index') }}",
+                // url: "{{ route('report-bill.get-data') }}",
+                data: function(d) {
+                    d.type = 'table';
+                    d.school_id = $('#filter_school_id').val();
+                    d.classroom_id = $('#filter_classroom_id').val();
+                    d.academic_year_id = $('#filter_academic_year_id').val();
+                    d.bill_type_id = $('#filter_bill_type_id').val();
+                    d.status = $('#filter_status').val();
+                    d.start_date = start_date;
+                    d.end_date = end_date;
+                }
+            },
+            columns: [
+                { data: null, sortable: false, searchable: false, render: function(data, type, row, meta) {
+                    return meta.row + meta.settings._iDisplayStart + 1;
+                }},
+                { data: 'nis', name: 'nis' },
+                { data: 'name', name: 'name' },
+                { data: 'classroom.name', name: 'classroom.name' },
+                { data: 'action', name: 'action', orderable: false, searchable: false }
+            ]
+        });
+    }
+
+    function reloadTable(start_date = '', end_date = '') {
+        table.destroy();
+        table = initializeTable(start_date, end_date);
+        getTotalBill(start_date, end_date);
+    }
+
+    function getTotalBill(start_date = '', end_date = '') {
+        $.ajax({
+            url: "{{ route('report-bill.index') }}",
+            type: "GET",
+            dataType: 'json',
+            data: {
+                type: 'total',
+                school_id: $('#filter_school_id').val(),
+                classroom_id: $('#filter_classroom_id').val(),
+                status: $('#filter_status').val(),
+                start_date: start_date,
+                end_date: end_date
+            },
+            success: function(response) {
+                $('#total').text('Rp. ' + response.total);
+                $('#total_paid').text('Rp. ' + response.total_paid);
+            }
+        });
+    }
+
+    // Event handlers untuk memuat ulang tabel
+    $('#btn_tampilkan, #filter_form').on('click submit', function(event) {
+        event.preventDefault();
+        reloadTable();
+    });
+
+    $('#filter_school_id, #filter_classroom_id, #filter_status').on('change', reloadTable);
+
+    // Mengirim notifikasi tagihan
+    $('#send-blast-notif').on('click', function() {
+        var button = $(this);
+        changeButtonText(button, true);
+
+        var data = {
+            _token: "{{ csrf_token() }}",
+            school_id: $('#filter_school_id').val(),
+            classroom_id: $('#filter_classroom_id').val(),
+            academic_year_id: $('#filter_academic_year_id').val(),
+            bill_type_id: $('#filter_bill_type_id').val(),
+            status: $('#filter_status').val()
+        };
+
+        $.ajax({
+            url: "{{ route('report-bill.send-bill-notification') }}",
+            type: "POST",
+            data: data,
+            success: function(response) {
+                if (response.code === 200) {
+                    toastr.success("Berhasil mengirim notifikasi tagihan ke WhatsApp");
+                } else {
+                    toastr.error(response.message);
+                }
+            },
+            error: function(xhr, status, error) {
+                toastr.error("Terjadi kesalahan saat mengirim notifikasi: " + error);
+            },
+            complete: function() {
+                changeButtonText(button, false);
+            }
+        });
+    });
+
+    function changeButtonText(button, sending) {
+        var buttonText = button.find('.indicator-label');
+        var indicatorProgress = button.find('.indicator-progress');
+
+        if (sending) {
+            buttonText.text('Mengirim Notifikasi...');
+            button.attr('disabled', true);
+            indicatorProgress.removeClass('d-none');
+        } else {
+            buttonText.text('Kirim Notif Tagihan WA');
+            button.removeAttr('disabled');
+            indicatorProgress.addClass('d-none');
+        }
+    }
+
+    // Inisialisasi date range picker
+    $('#dateRange').daterangepicker({
+        startDate: moment().subtract(365, 'days'),
+        endDate: moment(),
+        ranges: {
+            'Hari Ini': [moment(), moment()],
+            'Kemarin': [moment().subtract(1, 'days'), moment().subtract(1, 'days')],
+            'Bulan Ini': [moment().startOf('month'), moment().endOf('month')],
+            'Bulan Kemarin': [moment().subtract(1, 'month').startOf('month'), moment().subtract(1, 'month').endOf('month')],
+            '7 Hari Terakhir': [moment().subtract(6, 'days'), moment()],
+            '30 Hari Terakhir': [moment().subtract(29, 'days'), moment()]
+        }
+    }, function(start, end) {
+        $('#dateRange span').html(start.format('D MMMM YYYY') + ' - ' + end.format('D MMMM YYYY'));
+        reloadTable(start.format('YYYY-MM-DD'), end.format('YYYY-MM-DD'));
+    });
+
+    // Panggilan awal untuk date range picker
+    var start = moment().subtract(365, 'days');
+    var end = moment();
+    $('#dateRange span').html(start.format('D MMMM YYYY') + ' - ' + end.format('D MMMM YYYY'));
+    reloadTable(start.format('YYYY-MM-DD'), end.format('YYYY-MM-DD'));
 });
-});
-
-function changeButtonText(button, sending) {
-var buttonText = button.find('.indicator-label');
-var indicatorProgress = button.find('.indicator-progress');
-
-if (sending) {
-buttonText.text('Mengirim Notifikasi...');
-button.attr('disabled', true);
-indicatorProgress.removeClass('d-none');
-} else {
-buttonText.text('Kirim Notif Tagihan WA');
-button.removeAttr('disabled');
-indicatorProgress.addClass('d-none');
-}
-}
-});
-
 </script>
 @endpush

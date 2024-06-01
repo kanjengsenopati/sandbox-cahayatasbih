@@ -257,9 +257,11 @@
                                                                 $month)->where('student_id',
                                                                 $student->id)->first();
                                                                 $amount = $billDetail ? $billDetail->amount : 0;
-                                                                $statusColor = $billDetail && $billDetail->status ==
-                                                                'PAID' ? 'rgba(0, 255, 0,
-                                                                1)' : 'rgba(255, 0, 0, 1)';
+                                                                // $statusColor = $billDetail && $billDetail->status ==
+                                                                // 'PAID' ? 'rgba(0, 255, 0,
+                                                                // 1)' : 'rgba(255, 0, 0, 1)';
+                                                                $statusColor = $billForMonth && $billForMonth->status ==
+                                                                'PAID' ? 'rgba(0, 255, 0, 1)' : 'rgba(255, 0, 0, 1)';
                                                                 $modalId = "bayarKilat{$bill->id}_{$month}";
                                                                 $showModal = $billDetail && $billDetail->status !=
                                                                 'PAID';

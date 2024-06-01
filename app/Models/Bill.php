@@ -32,6 +32,7 @@ class Bill extends Model
 
     protected $appends = [
         'translated_month',
+        'translated_status',
         'paid_date',
         'payment_method',
     ];
@@ -61,6 +62,15 @@ class Bill extends Model
         return Carbon::createFromFormat('m', $this->month)->translatedFormat('F');
     }
 
+    public function getTranslatedStatusAttribute()
+    {
+        if ($this->status == self::STATUS_UNPAID) {
+            return 'Belum Lunas';
+        } else {
+            return 'Lunas';
+        }
+    }
+
     public function transactionDetails()
     {
         return $this->hasMany(TransactionDetail::class)->withTrashed();
@@ -78,11 +88,11 @@ class Bill extends Model
 
     public function getPaidDateAttribute()
     {
-        return $this->getPaidTransaction() ? $this->getPaidTransaction()->paid_at : null;
+        return $this->getPaidTransaction() ? $this->getPaidTransaction()?->paid_at : null;
     }
 
     public function getPaymentMethodAttribute()
     {
-        return $this->getPaidTransaction() ? $this->getPaidTransaction()->paymentMethod->name : null;
+        return $this->getPaidTransaction() ? $this->getPaidTransaction()?->paymentMethod?->name : null;
     }
 }

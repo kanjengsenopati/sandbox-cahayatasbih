@@ -175,8 +175,8 @@
                                             <th style="width: 5%;">No</th>
                                             <th class="min-w-125px">Bulan</th>
                                             <th class="min-w-125px">Tagihan</th>
-                                            {{-- <th class="min-w-125px">Tanggal Bayar</th> --}}
                                             <th class="min-w-125px">Metode Pembayaran</th>
+                                            <th>Status</th>
                                             <th class="min-w-125px">Aksi</th>
                                         </tr>
                                     </thead>
@@ -211,19 +211,24 @@
                                                     @if ($billForMonth && $billForMonth->status == 'PAID' &&
                                                     $billForMonth->transactions?->first()->paymentMethod?->type ==
                                                     'CASH')
-                                                    <span class="badge badge-light-success">
+                                                    <span class="badge badge-success">
                                                         Tunai Melalui {{
                                                         $billForMonth->transactions?->first()->admin?->name ??
                                                         '' }}
+                                                        <br>Dibayar {{
+                                                        $billForMonth->transactions?->first()->paid_at
+                                                        ?? '' }}</span>
                                                     </span>
                                                     @elseif ($billForMonth && $billForMonth->status == 'PAID')
-                                                    <span class="badge badge-light-success">
+                                                    <span class="badge badge-success">
                                                         {{
                                                         $billForMonth->transactions?->first()->paymentMethod?->name
                                                         ?? ''
                                                         }}
+                                                        <br>Dibayar {{
+                                                        $billForMonth->transactions?->first()->paid_at
+                                                        ?? '' }}</span>
                                                     </span>
-
                                                     @elseif ($billForMonth)
                                                     <select class="form-select payment-method-select"
                                                         name="payment_method" required>
@@ -237,11 +242,11 @@
                                                     @endif
                                                 </td>
                                                 <td>
+                                                    {{ $billForMonth ? $billForMonth->translated_status : 'UNPAID' }}
+                                                </td>
+                                                <td>
                                                     @if ($billForMonth && $billForMonth->status == 'PAID')
-                                                    <span class="badge badge-light-success">Dibayar {{
-                                                        $billForMonth->transactions?->first()->paid_at
-                                                        ?? '' }}</span>
-                                                    <br>
+
                                                     @elseif ($billForMonth && $billForMonth->status == 'UNPAID' &&
                                                     $billForMonth?->transactions?->first()?->payment_link)
                                                     <a href="{{ $billForMonth?->transactions?->first()?->payment_link }}"
