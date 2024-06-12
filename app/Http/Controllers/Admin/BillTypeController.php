@@ -2,13 +2,17 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Models\Bank;
 use App\Models\BillType;
+use App\Models\PaymentRate;
+use App\Models\AcademicYear;
 use Illuminate\Http\Request;
 use Yajra\DataTables\DataTables;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\BillTypeRequest;
-use App\Models\AcademicYear;
-use App\Models\PaymentRate;
+use App\Models\BillTypeBank;
 
 class BillTypeController extends Controller
 {
@@ -18,7 +22,7 @@ class BillTypeController extends Controller
     public function index()
     {
         if (request()->ajax()) {
-            $data = BillType::with('billItem', 'academicYear')->latest()->get();
+            $data = BillType::with('billItem', 'academicYear', 'billTypeBank')->latest();
             return DataTables::of($data)
                 ->addColumn('payment_rates', function ($data) {
                     // show button to link to payment rate
@@ -29,6 +33,18 @@ class BillTypeController extends Controller
                     return $data->type == BillType::TYPE_MONTHLY ? '<span class="badge badge-primary">Bulanan</span>' :
                         '<span class="badge badge-secondary">Bebas</span>';
                 })
+                ->addColumn('bank', function ($data) {
+                    $bank = "";
+                    if ($data->billTypeBank->isEmpty()) {
+                        return "<span class='badge bg-danger m-1'>Belum ada bank</span>";
+                    } else {
+                        foreach ($data->billTypeBank as $value) {
+                            $bank .= "<span class='badge bg-success m-1'>{$value->bank?->name} - {$value->bank?->account_number}</span>";
+                        }
+                    }
+                    return $bank;
+                })
+
                 ->addColumn('action', function ($data) {
                     $actionEdit = route('bill-type.edit', $data->id);
                     $actionDelete = route('bill-type.destroy', $data->id);
@@ -37,7 +53,7 @@ class BillTypeController extends Controller
                         view('components.action.delete', ['action' => $actionDelete, 'id' => $data->id]) .
                         "</div>";
                 })
-                ->rawColumns(['action', 'type', 'payment_rates'])
+                ->rawColumns(['action', 'type', 'payment_rates', 'bank'])
                 ->make(true);
         }
         return view('admins.bill-type.index');
@@ -48,7 +64,9 @@ class BillTypeController extends Controller
      */
     public function create()
     {
-        return view('admins.bill-type.create-edit');
+        $banks = Bank::orderBy('name')->where('is_active', true)->get();
+        $bankValue = [];
+        return view('admins.bill-type.create-edit', compact('banks', 'bankValue'));
     }
 
     /**
@@ -56,9 +74,34 @@ class BillTypeController extends Controller
      */
     public function store(BillTypeRequest $request)
     {
-        $validated = $request->validated();
-        BillType::create($validated);
-        return redirect()->route('bill-type.index')->with('success', 'Data berhasil ditambahkan');
+        // Start the database transaction
+        DB::beginTransaction();
+
+        try {
+            $validated = $request->validated();
+            $billType = BillType::create($validated);
+
+            // If request has billTypeBanks, create new BillTypeBank entries
+            if ($request->billTypeBanks) {
+                $billType->billTypeBank()->createMany($request->billTypeBanks);
+            }
+
+            // Commit the transaction
+            DB::commit();
+
+            return redirect()->route('bill-type.index')->with('success', 'Data berhasil ditambahkan');
+        } catch (\Exception $e) {
+            // Rollback the transaction
+            DB::rollBack();
+
+            // Log the error
+            Log::error('Error storing bill type: ' . $e->getMessage(), [
+                'request' => $request->all(),
+                'exception' => $e,
+            ]);
+
+            return redirect()->route('bill-type.index')->with('error', 'Terjadi kesalahan saat menambahkan data');
+        }
     }
 
     /**
@@ -105,7 +148,9 @@ class BillTypeController extends Controller
      */
     public function edit(BillType $billType)
     {
-        return view('admins.bill-type.create-edit', compact('billType'));
+        $banks = Bank::orderBy('name')->where('is_active', true)->get();
+        $bankValue = $billType->billTypeBank->pluck('bank_id')->toArray();
+        return view('admins.bill-type.create-edit', compact('billType', 'banks', 'bankValue'));
     }
 
     /**
@@ -113,9 +158,36 @@ class BillTypeController extends Controller
      */
     public function update(BillTypeRequest $request, BillType $billType)
     {
-        $validated = $request->validated();
-        $billType->update($validated);
-        return redirect()->route('bill-type.index')->with('success', 'Data berhasil diubah');
+        // Start the database transaction
+        DB::beginTransaction();
+
+        try {
+            $validated = $request->validated();
+            $billType->update($validated);
+
+            if ($request->has('bank_ids')) {
+                $billType->billTypeBank()->delete();
+                foreach ($request->bank_ids as $bankId) {
+                    $billType->billTypeBank()->create(['bank_id' => $bankId]);
+                }
+            }
+
+            // Commit the transaction
+            DB::commit();
+
+            return redirect()->route('bill-type.index')->with('success', 'Data berhasil diubah');
+        } catch (\Exception $e) {
+            // Rollback the transaction
+            DB::rollBack();
+
+            // Log the error
+            Log::error('Error updating bill type: ' . $e->getMessage(), [
+                'request' => $request->all(),
+                'exception' => $e,
+            ]);
+
+            return redirect()->route('bill-type.index')->with('error', 'Terjadi kesalahan saat mengubah data');
+        }
     }
 
     /**
@@ -123,6 +195,7 @@ class BillTypeController extends Controller
      */
     public function destroy(BillType $billType)
     {
+        $billType->billTypeBank()->delete();
         $billType->delete();
         return redirect()->route('bill-type.index')->with('success', 'Data berhasil dihapus');
     }

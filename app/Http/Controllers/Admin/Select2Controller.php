@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Models\Bank;
 use App\Models\Item;
 use App\Models\User;
 use App\Models\Study;
@@ -29,6 +30,7 @@ class Select2Controller extends Controller
             'STUDY' => $this->study($request),
             'SEMESTER' => $this->semester($request),
             'STUDENT_BY_SCHOOL' => $this->studentBySchool($request),
+            'BANK' => $this->bank($request),
         };
         return response()->json($data);
     }
@@ -105,6 +107,14 @@ class Select2Controller extends Controller
             ->where('school_id', $request->school_id)
             ->whereRaw('LOWER(name) like ?', ['%' . strtolower($request->search) . '%'])
             ->orderBy('name')
+            ->get();
+    }
+
+    public function bank($request)
+    {
+        return Bank::whereRaw('LOWER(name) like ?', ['%' . strtolower($request->search) . '%'])
+            ->take(10)
+            ->where('is_active', true)
             ->get();
     }
 }

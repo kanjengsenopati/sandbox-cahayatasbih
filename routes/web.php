@@ -3,6 +3,7 @@
 use Maatwebsite\Excel\Row;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Admin\AuthController;
+use App\Http\Controllers\Admin\BankController;
 use App\Http\Controllers\Admin\BillController;
 use App\Http\Controllers\Admin\HelpController;
 use App\Http\Controllers\Admin\ItemController;
@@ -228,6 +229,8 @@ Route::group(['middleware' => ['auth']], function () {
     //     ->name('report-student.search-student');
 
     Route::resource('grade-promotion', GradePromotionController::class, ['only' => ['index', 'store']]);
+    Route::post('bank/status/{id}', [BankController::class, 'status'])->name('bank.status');
+    Route::resource('bank', BankController::class, ['except' => ['show']]);
 
 
     // start ppdb

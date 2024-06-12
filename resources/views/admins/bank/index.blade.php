@@ -1,4 +1,4 @@
-@extends('layouts.master', ['title' => 'Data Jenis Bayar'])
+@extends('layouts.master', ['title' => 'Data Bank'])
 @section('content')
 <div class="content d-flex flex-column flex-column-fluid" id="kt_content">
     <!--begin::Toolbar-->
@@ -10,7 +10,7 @@
                 data-kt-swapper-parent="{default: '#kt_content_container', 'lg': '#kt_toolbar_container'}"
                 class="page-title d-flex align-items-center flex-wrap me-3 mb-5 mb-lg-0">
                 <!--begin::Title-->
-                <h1 class="d-flex text-dark fw-bolder fs-3 align-items-center my-1">Data Jenis Bayar</h1>
+                <h1 class="d-flex text-dark fw-bolder fs-3 align-items-center my-1">Data Bank</h1>
                 <!--end::Title-->
                 <!--begin::Separator-->
                 <span class="h-20px border-gray-300 border-start mx-4"></span>
@@ -19,7 +19,7 @@
                 <ul class="breadcrumb breadcrumb-separatorless fw-bold fs-7 my-1">
                     <!--begin::Item-->
                     <li class="breadcrumb-item text-muted">
-                        <a class="text-muted text-hover-primary">Jenis Bayar</a>
+                        <a href="{{ route('dashboard') }}" class="text-muted text-hover-primary">Dashboard</a>
                     </li>
                     <!--end::Item-->
                     <!--begin::Item-->
@@ -28,7 +28,7 @@
                     </li>
                     <!--end::Item-->
                     <!--begin::Item-->
-                    <li class="breadcrumb-item text-dark">List Jenis Bayar</li>
+                    <li class="breadcrumb-item text-dark">Bank</li>
                     <!--end::Item-->
                 </ul>
                 <!--end::Breadcrumb-->
@@ -55,7 +55,7 @@
                     </div>
                     <div class="">
                         <a type="a" class="btn btn-sm btn-primary" id="btn_add_permission"
-                            href="{{ route('bill-type.create') }}">+ Jenis Bayar</a>
+                            href="{{ route('bank.create') }}"><i class="fa fa-plus"></i> Bank</a>
                         <!--end::Primary button-->
                     </div>
                     <!--end::Card title-->
@@ -65,16 +65,15 @@
                 <div class="card-body pt-0">
                     <!--begin::Table-->
                     <div class="table-responsive">
-                        <table id="table-bill-type" class="table align-middle table-row-dashed ">
+                        <table id="table-bank" class="table align-middle table-row-dashed ">
                             <thead>
                                 <tr class="text-start text-gray-400 fw-bolder fs-7 text-uppercase gs-0">
                                     <th style="width: 5%">No</th>
-                                    <th>Pos Bayar</th>
-                                    <th>Nama Pembayaran</th>
-                                    <th>Tipe</th>
-                                    <th>Tahun</th>
-                                    <th>Tarif Pembayaran</th>
-                                    <th>Bank Pembayaran</th>
+                                    <th>Logo</th>
+                                    <th>Nama Bank</th>
+                                    <th>Nama Pemilik</th>
+                                    <th>No Rekening</th>
+                                    <th>Status</th>
                                     <th class="text-center min-w-100px" style="width: 22%">Aksi</th>
                                 </tr>
                             </thead>
@@ -97,11 +96,11 @@
 @push('js')
 <script>
     $(document).ready(() => {
-            var table = $('#table-bill-type').DataTable({
+            var table = $('#table-bank').DataTable({
                 ordering: false,
                 processing: true,
                 serverSide: true,
-                ajax: "{{ route('bill-type.index') }}",
+                ajax: "{{ route('bank.index') }}",
                 language: {
                     "paginate": {
                         "next": "<i class='fa fa-angle-right'>",
@@ -118,29 +117,25 @@
                             return meta.row + meta.settings._iDisplayStart + 1;
                         }
                     },
-                    {
-                        data: 'bill_item.name',
-                        name: 'bill_item.name'
+                   {
+                    data: 'image',
+                    name: 'image',
                     },
-                    {
+                     {
                         data: 'name',
                         name: 'name'
                     },
                     {
-                        data: 'type',
-                        name: 'type'
+                        data: 'account_name',
+                        name: 'account_name'
                     },
                     {
-                        data: 'academic_year.name',
-                        name: 'academic_year.name'
+                        data: 'account_number',
+                        name: 'account_number'
                     },
                     {
-                        data: 'payment_rates',
-                        name: 'payment_rates'
-                    },
-                    {
-                        data: 'bank',
-                        name: 'bank'
+                        data: 'status',
+                        name: 'status'
                     },
                     {
                         data: 'action',

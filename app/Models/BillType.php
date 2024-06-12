@@ -39,4 +39,9 @@ class BillType extends Model
     {
         return $this->hasMany(Bill::class);
     }
+
+    public function billTypeBank()
+    {
+        return $this->hasMany(BillTypeBank::class);
+    }
 }

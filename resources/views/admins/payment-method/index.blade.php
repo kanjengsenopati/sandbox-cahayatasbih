@@ -59,7 +59,7 @@
                         </div>
                         <div>
                             <a type="a" class="btn btn-sm btn-primary" id="btn_add_permission"
-                                href="{{ route('payment-method.create') }}">+ Metode</a>
+                                href="{{ route('payment-method.create') }}">+ Pembayaran</a>
                         </div>
                     </div>
                     <!--end::Card title-->

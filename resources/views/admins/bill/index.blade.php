@@ -96,6 +96,7 @@
                 <!--begin::Content-->
                 <div class="col-xl-12">
                     <!--begin::Contacts-->
+                    {{-- add 2 tab this card is pembayaran tunai dan pembayaran transfer --}}
                     <div class="card card-flush h-lg-100" id="kt_contacts_main">
 
                         <!--begin::Card body-->
@@ -364,7 +365,6 @@
                         @endif
                         {{-- end show --}}
                     </div>
-
                     <!--end::Card body-->
                 </div>
                 <!--end::Contacts-->

@@ -20,6 +20,7 @@ class PaymentMethod extends Model
     const TYPE_BALANCE = 'BALANCE';
     const TYPE_XENDIT = 'XENDIT';
     const TYPE_CASH = 'CASH';
+    const TYPE_TRANSFER = 'TRANSFER';
 
     protected $fillable = [
         'name',
@@ -37,7 +38,8 @@ class PaymentMethod extends Model
         return [
             self::TYPE_BALANCE => 'Saldo',
             self::TYPE_XENDIT => 'Otomatis',
-            self::TYPE_CASH => 'Tunai'
+            self::TYPE_CASH => 'Tunai',
+            self::TYPE_TRANSFER => 'Transfer'
         ];
     }
 }

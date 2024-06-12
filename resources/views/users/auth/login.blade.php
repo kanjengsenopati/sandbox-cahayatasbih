@@ -301,7 +301,7 @@
                                 buttonsStyling: false,
                                 confirmButtonText: "Baik, Saya Mengerti!",
                                 customClass: {
-                                    confirmButton: "btn btn-primary"
+                                    confirmButton: "btn fw-bold btn-light-primary"
                                 }
                             });
                         }

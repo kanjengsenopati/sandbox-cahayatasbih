@@ -1,4 +1,4 @@
-@extends('layouts.master', ['title' => 'Data Jenis Bayar'])
+@extends('layouts.master', ['title' => 'Data Bank'])
 @section('content')
 <!--begin::Content-->
 <div class="content d-flex flex-column flex-column-fluid" id="kt_content">
@@ -11,7 +11,7 @@
                 data-kt-swapper-parent="{default: '#kt_content_container', 'lg': '#kt_toolbar_container'}"
                 class="page-title d-flex align-items-center flex-wrap me-3 mb-5 mb-lg-0">
                 <!--begin::Title-->
-                <h1 class="d-flex text-dark fw-bolder fs-3 align-items-center my-1">Data Jenis Bayar</h1>
+                <h1 class="d-flex text-dark fw-bolder fs-3 align-items-center my-1">Data Bank</h1>
                 <!--end::Title-->
                 <!--begin::Separator-->
                 <span class="h-20px border-gray-300 border-start mx-4"></span>
@@ -22,9 +22,9 @@
 
                     <!--end::Item-->
                     <!--begin::Item-->
-                    <a class="breadcrumb-item" href="{{ route('bill-type.index') }}">
+                    <a class="breadcrumb-item" href="{{ route('bank.index') }}">
                         <li class="text-muted">
-                            Jenis Bayar
+                            List Bank
                         </li>
                     </a>
                     <!--end::Item-->
@@ -35,7 +35,9 @@
                     <!--end::Item-->
                     <!--begin::Item-->
                     <li class="breadcrumb-item text-dark">
-                        {{ request()->routeIs('bill-type.create') ? 'Tambah Jenis Bayar' : 'Edit Jenis Bayar' }}</li>
+                        {{ request()->routeIs('bank.create') ? 'Tambah Bank' : 'Edit Bank'
+                        }}
+                    </li>
                     <!--end::Item-->
                 </ul>
                 <!--end::Breadcrumb-->
@@ -58,101 +60,82 @@
                 <div class="col-xl-12">
                     <!--begin::Contacts-->
                     <div class="card card-flush h-lg-100" id="kt_contacts_main">
+                        <!--begin::Card header-->
+                        <!--end::Card header-->
                         <!--begin::Card body-->
                         <div class="card-body pt-5">
                             <!--begin::Form-->
                             <x-alert.alert-validation />
-                            <form id="bill-type"
-                                action="{{ request()->routeIs('bill-type.create') ? route('bill-type.store') : route('bill-type.update', @$billType->id) }}"
+                            <form id="bank"
+                                action="{{ request()->routeIs('bank.create') ? route('bank.store') : route('bank.update', @$bank->id) }}"
                                 method="POST" enctype="multipart/form-data">
                                 @csrf
                                 <x-form.put-method />
                                 <!--begin::Input group-->
                                 <div class="fv-row mb-7">
                                     <!--begin::Label-->
-                                    <label class="fs-6 fw-bold form-label mt-3" for="bill_item_id">
-                                        <span class="required">POS</span>
-                                        <i class="fas fa-exclamation-circle ms-1 fs-7" data-bs-toggle="tooltip"
-                                            title="Pilih Pos Bayar (Wajib)"></i>
-                                    </label>
-                                    <!--end::Label-->
-                                    <!--begin::Input-->
-                                    <x-form.bill-item :value="@$billType->bill_item_id"
-                                        class="form-control form-control-solid" />
-                                    <!--end::Input-->
-                                </div>
-
-                                <div class="fv-row mb-7">
-                                    <!--begin::Label-->
-                                    <label class="fs-6 fw-bold form-label mt-3" for="academic_year_id">
-                                        <span class="required">Tahun Ajaran</span>
-                                        <i class="fas fa-exclamation-circle ms-1 fs-7" data-bs-toggle="tooltip"
-                                            title="Pilih Pos Bayar (Wajib)"></i>
-                                    </label>
-                                    <!--end::Label-->
-                                    <!--begin::Input-->
-                                    <x-form.academic-year :value="@$billType->academic_year_id"
-                                        class="form-control form-control-solid" />
-                                    <!--end::Input-->
-                                </div>
-
-
-                                <div class="fv-row mb-7">
-                                    <!--begin::Label-->
                                     <label class="fs-6 fw-bold form-label mt-3" for="name">
-                                        <span class="required">Nama Pembayaran</span>
+                                        <span class="required">Nama Bank</span>
                                         <i class="fas fa-exclamation-circle ms-1 fs-7" data-bs-toggle="tooltip"
-                                            title="Masukkan Nama Pembayaran (Wajib)"></i>
+                                            title="Masukkan Nama Bank Yang Valid"></i>
                                     </label>
                                     <!--end::Label-->
                                     <!--begin::Input-->
-                                    <input type="text" name="name" id="name" class="form-control form-control-solid"
-                                        placeholder="Masukkan Nama Pembayaran"
-                                        value="{{ old('name') ?? @$billType->name }}" />
-                                </div>
-
-                                <div class="fv-row mb-7">
-                                    <!--begin::Label-->
-                                    <label class="fs-6 fw-bold form-label mt-3" for="name">
-                                        <span class="required">Tipe Pembayaran</span>
-                                        <i class="fas fa-exclamation-circle ms-1 fs-7" data-bs-toggle="tooltip"
-                                            title="Pilih Tipe Pembayaran (Wajib)"></i>
-                                    </label>
-                                    <!--end::Label-->
-                                    <!--begin::Input-->
-                                    <select name="type" id="type" class="form-select form-select-solid" required>
-                                        <option value="">Pilih Tipe Pembayaran</option>
-                                        <option value="MONTHLY" {{ old('type')=='MONTHLY' ? 'selected' : (@$billType->
-                                            type == 'MONTHLY' ? 'selected' : '') }}>Bulanan</option>
-                                        <option value="OTHER" {{ old('type')=='OTHER' ? 'selected' : (@$billType->
-                                            type == 'OTHER' ? 'selected' : '') }}>Bebas</option>
-                                    </select>
-                                </div>
-
-                                <div class="fv-row mb-7">
-                                    <!--begin::Label-->
-                                    <label class="fs-6 fw-bold form-label mt-3" for="billTypeBank">
-                                        <span class="required">Bank Pembayaran</span>
-                                        <i class="fas fa-exclamation-circle ms-1 fs-7" data-bs-toggle="tooltip"
-                                            title="Pilih Bank Pembayaran (Wajib)"></i>
-                                    </label>
-                                    <!--end::Label-->
-                                    <!--begin::Input-->
-                                    <select name="bank_ids[]" class="form-select form-select-solid mb-3" id="select2"
-                                        data-control="select2" data-allow-clear="true" multiple="multiple" required>
-                                        @foreach ($banks as $bank)
-                                        <option value="{{ $bank->id }}" @if (in_array(@$bank->id,
-                                            @$bankValue)) selected @endif>
-                                            {{ $bank->name ?? '' }} - {{ $bank->account_number ?? '' }} -
-                                            {{ $bank->account_name ?? '' }}</option>
-                                        @endforeach
-                                    </select>
-                                    <div class="d-flex gap-3">
-                                        <input type="checkbox" id="select-all">
-                                        <label style="font-size: 14px;" class="cursor-pointer" for="select-all">Select
-                                            All</label>
-                                    </div>
+                                    <input type="text" class="form-control form-control-solid" name="name" id="name"
+                                        placeholder="Masukkan Nama Bank" value="{{ @$bank->name ?? old('name') }}"
+                                        required />
                                     <!--end::Input-->
+                                </div>
+
+                                <div class="fv-row mb-7">
+                                    <!--begin::Label-->
+                                    <label class="fs-6 fw-bold form-label mt-3" for="account_name">
+                                        <span class="required">Nama Pemilik Rekening</span>
+                                        <i class="fas fa-exclamation-circle ms-1 fs-7" data-bs-toggle="tooltip"
+                                            title="Masukkan Nama Pemilik Rekening Yang Valid"></i>
+                                    </label>
+                                    <!--end::Label-->
+                                    <!--begin::Input-->
+                                    <input type="text" class="form-control form-control-solid" name="account_name"
+                                        id="account_name" placeholder="Masukkan Nama Pemilik Rekening"
+                                        value="{{ @$bank->account_name ?? old('account_name') }}" required />
+                                    <!--end::Input-->
+                                </div>
+                                <div class="fv-row mb-7">
+                                    <!--begin::Label-->
+                                    <label class="fs-6 fw-bold form-label mt-3" for="account_number">
+                                        <span class="required">Nomor Rekening</span>
+                                        <i class="fas fa-exclamation-circle ms-1 fs-7" data-bs-toggle="tooltip"
+                                            title="Masukkan Nomor Rekening Yang Valid"></i>
+                                    </label>
+                                    <!--end::Label-->
+                                    <!--begin::Input-->
+                                    <input type="number" class="form-control form-control-solid" name="account_number"
+                                        id="account_number" placeholder="Masukkan Nomor Rekening"
+                                        value="{{ @$bank->account_number ?? old('account_number') }}" required />
+                                    <!--end::Input-->
+                                </div>
+                                <div class="fv-row mb-7">
+                                    <!--begin::Label-->
+                                    <label class="fs-6 fw-bold form-label mt-3" for="is_active">
+                                        <span class="required">Status</span>
+                                        <i class="fas fa-exclamation-circle ms-1 fs-7" data-bs-toggle="tooltip"
+                                            title="Pilih Status Yang Valid"></i>
+                                    </label>
+                                    <!--end::Label-->
+                                    <!--begin::Input-->
+                                    <select class="form-select form-select-solid" name="is_active" id="is_active"
+                                        required>
+                                        <option value="">Pilih Status</option>
+                                        <option value="1" {{ @$bank->is_active == 1 ? 'selected' : '' }}>Aktif</option>
+                                        <option value="0" {{ @$bank->is_active == 0 ? 'selected' : '' }}>Tidak Aktif
+                                        </option>
+                                    </select>
+                                    <!--end::Input-->
+                                </div>
+                                <div class="fv-row mb-7">
+                                    <x-form.image-upload label="Logo Bank" name="image"
+                                        :value="@$bank->image ?? null" />
                                 </div>
                                 <!--end::Input group-->
                                 <!--begin::Separator-->
@@ -161,7 +144,7 @@
                                 <!--begin::Action buttons-->
                                 <div class="d-flex justify-content-end">
                                     <!--begin::Button-->
-                                    <a href="{{ route('bill-type.index') }}">
+                                    <a href="{{ route('bank.index') }}">
                                         <button type="button" class="btn btn-sm btn-secondary me-3">Batal</button>
                                     </a>
                                     <!--end::Button-->
@@ -193,26 +176,3 @@
 <!--end::Content-->
 <!--end::Wrapper-->
 @endsection
-@push('js')
-<script>
-    $(".select2").select2();
-        $(document).ready(function() {
-            $("#select-all").click(function() {
-                if ($("#select-all").is(':checked')) { //select all
-                    $(".form-select").find('option').prop("selected", true);
-                    $(".form-select").trigger('change');
-                } else { //deselect all
-                    $(".form-select").find('option').prop("selected", false);
-                    $(".form-select").trigger('change');
-                }
-            });
-
-            $('#select2').on('change',function(){
-                let selected =  $(this).val();
-                if(selected == ''){
-                    $("#select-all").prop('checked',false);
-                }
-            })
-        })
-</script>
-@endpush

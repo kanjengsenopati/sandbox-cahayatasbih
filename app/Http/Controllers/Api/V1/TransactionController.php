@@ -15,12 +15,15 @@ use App\Models\ApplicationSetting;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Admin\ReuploadProofRequest;
+use App\Http\Requests\Admin\UploadProofRequest;
 use App\Services\SendNotifWaService;
 use App\Services\TransactionService;
 use App\Jobs\SendToPushNotificationJob;
 use App\Jobs\SendToWhatsappNotificationJob;
 use App\Http\Requests\Api\V1\TransactionRequest;
 use App\Models\PpdbRegistration;
+use App\Models\TransactionProof;
 
 class TransactionController extends Controller
 {
@@ -53,6 +56,16 @@ class TransactionController extends Controller
                 }
 
                 TransactionService::payWithBalance($student, $payAmount, $transaction, $request);
+            } elseif ($paymentMethodType == PaymentMethod::TYPE_TRANSFER) {
+                //generate unique payment 3 digit
+                $uniquePayment = rand(100, 999);
+                $transaction->update([
+                    'status' => Transaction::STATUS_PENDING_PAYMENT,
+                    'paid_at' => null,
+                    'unique_payment' => $uniquePayment
+                ]);
+                // load data all bank from billType
+                $transaction->load('transactionDetails.bill.banks');
             }
 
             DB::commit();
@@ -193,6 +206,79 @@ class TransactionController extends Controller
             DB::rollBack();
             Log::error($th);
             return $this->failedResponse($th->getMessage(), [], 500);
+        }
+    }
+
+    public function uploadProof(UploadProofRequest $request)
+    {
+        $transaction = Transaction::find($request->transaction_id);
+
+        if ($transaction->status != Transaction::STATUS_PENDING_PAYMENT) {
+            return $this->failedResponse('Transaksi tidak dalam status menunggu konfirmasi', 400);
+        }
+
+        $proofImage = 'storage/' . $request->file('proof_image')->store('images/proofs', 'public');
+
+        $transaction->transactionProofs()->create([
+            'bank_id' => $request->bank_id,
+            'student_id' => $transaction->student_id,
+            'proof_image' => $proofImage,
+            'status' => TransactionProof::STATUS_WAITING_CONFIRMATION,
+        ]);
+
+        return $this->postSuccessResponse('Berhasil mengupload bukti pembayaran', ['transaction' => $transaction]);
+    }
+
+    public function proof($id)
+    {
+        $proof = TransactionProof::with('bank', 'student', 'transaction')->find($id);
+
+        if (!$proof) {
+            return $this->failedResponse('Bukti pembayaran tidak ditemukan', 404);
+        }
+
+        return $this->getSuccessResponse($proof);
+    }
+
+    public function reuploadProof(ReuploadProofRequest $request, $id)
+    {
+        DB::beginTransaction();
+
+        try {
+            $proof = TransactionProof::find($id);
+
+            if (!$proof) {
+                return $this->failedResponse('Bukti pembayaran tidak ditemukan', 404);
+            }
+
+            if ($proof->status == TransactionProof::STATUS_CONFIRMED) {
+                return $this->failedResponse('Bukti pembayaran sudah dikonfirmasi', 400);
+            }
+
+            // Nonaktifkan bukti pembayaran sebelumnya
+            $proof->transaction->transactionProofs()->update(['is_active' => false]);
+
+            $proofImage = 'storage/' . $request->file('proof_image')->store('images/proofs', 'public');
+
+            // create new proof
+            $newProof = TransactionProof::create([
+                'transaction_id' => $proof->transaction_id,
+                'bank_id' => $request->bank_id,
+                'student_id' => $proof->student_id,
+                'proof_image' => $proofImage,
+                'status' => TransactionProof::STATUS_WAITING_CONFIRMATION,
+            ]);
+
+            DB::commit();
+
+            return $this->postSuccessResponse('Berhasil mengupdate bukti pembayaran', ['proof' => $newProof]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+
+            // Tambahkan logging jika terjadi kesalahan
+            Log::error('Error updating proof: ' . $e->getMessage());
+
+            return $this->failedResponse('Terjadi kesalahan saat mengupdate bukti pembayaran', 500);
         }
     }
 }

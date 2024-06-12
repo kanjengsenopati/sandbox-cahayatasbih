@@ -58,6 +58,13 @@
                     <div class="card card-flush h-lg-100" id="kt_contacts_main">
                         <!--begin::Card header-->
 
+                        <div class="card-header pt-5">
+                            <!--begin::Card title-->
+                            <div class="card-title">
+                                <h2 class="fw-bolder">Informasi Metode Pembayaran</h2>
+                            </div>
+                            <!--end::Card title-->
+                        </div>
                         <!--end::Card header-->
                         <!--begin::Card body-->
                         <div class="card-body pt-7">

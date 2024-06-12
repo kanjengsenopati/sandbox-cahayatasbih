@@ -10,6 +10,8 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 class Transaction extends Model
 {
     const STATUS_PENDING = 'PENDING';
+    const STATUS_PENDING_PAYMENT = 'PENDING_PAYMENT';
+    const STATUS_PENDING_CONFIRMATION = 'PENDING_CONFIRMATION';
     const STATUS_PAID = 'PAID';
     const STATUS_EXPIRED = 'EXPIRED';
     const STATUS_CANCELLED = 'CANCELLED';
@@ -40,6 +42,7 @@ class Transaction extends Model
         'app_fee',
         'admin_id',
         'user_id',
+        'unique_payment',
     ];
 
     public function transactionDetails()
@@ -65,5 +68,10 @@ class Transaction extends Model
     public function user()
     {
         return $this->belongsTo(User::class)->withTrashed();
+    }
+
+    public function transactionProofs()
+    {
+        return $this->hasMany(TransactionProof::class)->withTrashed();
     }
 }

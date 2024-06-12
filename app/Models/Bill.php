@@ -23,6 +23,7 @@ class Bill extends Model
         'month',
         'amount',
         'status',
+        'year',
     ];
 
     protected $casts = [
@@ -94,5 +95,11 @@ class Bill extends Model
     public function getPaymentMethodAttribute()
     {
         return $this->getPaidTransaction() ? $this->getPaidTransaction()?->paymentMethod?->name : null;
+    }
+
+    // get list bank for bill from bill type
+    public function banks()
+    {
+        return $this->hasManyThrough(Bank::class, BillTypeBank::class, 'bill_type_id', 'id', 'bill_type_id', 'bank_id');
     }
 }
