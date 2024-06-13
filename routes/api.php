@@ -52,6 +52,7 @@ Route::group(['prefix' => 'v1', 'middleware' => 'validate_api_key'], function ()
             Route::post('/upload-proof', [TransactionController::class, 'uploadProof']);
             Route::get('/proof/{id}', [TransactionController::class, 'proof']);
             Route::post('/reupload-proof/{id}', [TransactionController::class, 'reuploadProof']);
+            Route::get('/{id}', [TransactionController::class, 'show']);
         });
 
         // start saldo

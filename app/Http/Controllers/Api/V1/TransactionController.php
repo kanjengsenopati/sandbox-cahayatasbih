@@ -64,6 +64,8 @@ class TransactionController extends Controller
                     'paid_at' => null,
                     'unique_payment' => $uniquePayment
                 ]);
+                // add app fee to transaction
+                TransactionService::updateAppFee($transaction);
                 // load data all bank from billType
                 $transaction->load('transactionDetails.bill.banks');
             }
@@ -280,5 +282,16 @@ class TransactionController extends Controller
 
             return $this->failedResponse('Terjadi kesalahan saat mengupdate bukti pembayaran', 500);
         }
+    }
+
+    public function show($id)
+    {
+        $transaction = Transaction::with('transactionDetails.bill.banks', 'activeProof.bank', 'student', 'paymentMethod')->find($id);
+
+        if (!$transaction) {
+            return $this->failedResponse('Transaksi tidak ditemukan', 404);
+        }
+
+        return $this->getSuccessResponse($transaction);
     }
 }

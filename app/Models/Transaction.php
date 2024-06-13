@@ -74,4 +74,9 @@ class Transaction extends Model
     {
         return $this->hasMany(TransactionProof::class)->withTrashed();
     }
+
+    public function activeProof()
+    {
+        return $this->hasOne(TransactionProof::class)->where('is_active', true);
+    }
 }

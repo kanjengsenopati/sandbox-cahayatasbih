@@ -224,4 +224,15 @@ class TransactionService
 
         return $transaction;
     }
+
+    public static function updateAppFee($transaction)
+    {
+        $appSetting = ApplicationSetting::latest()->first();
+        $expiredTimeInMinutes = $appSetting->getPaymentExpireTimeInMinutesAttribute();
+
+        $transaction->update([
+            'app_fee' => $transaction->type == Transaction::TYPE_BILL ? $appSetting->bill_fee : ($transaction->pay_amount * $appSetting->saldo_fee / 100),
+            'expiry_time' => Carbon::now()->addMinutes($expiredTimeInMinutes),
+        ]);
+    }
 }
