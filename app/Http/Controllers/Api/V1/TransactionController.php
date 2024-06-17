@@ -62,7 +62,8 @@ class TransactionController extends Controller
                 $transaction->update([
                     'status' => Transaction::STATUS_PENDING_PAYMENT,
                     'paid_at' => null,
-                    'unique_payment' => $uniquePayment
+                    'unique_payment' => $uniquePayment,
+                    'pay_amount' => $transaction->pay_amount + $uniquePayment
                 ]);
                 // add app fee to transaction
                 TransactionService::updateAppFee($transaction);
