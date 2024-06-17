@@ -226,6 +226,12 @@ class BillController extends Controller
                 $transaction->activeProof->update([
                     'status' => TransactionProof::STATUS_CONFIRMED
                 ]);
+                // change bill status to paid
+                if ($transaction->type == Transaction::TYPE_BILL) {
+                    $transaction->transactionDetails->each(function ($detail) {
+                        $detail->bill->update(['status' => Bill::STATUS_PAID]);
+                    });
+                }
                 TransactionService::dispatchNotifications($transaction);
             }
             if ($transaction->status == Transaction::STATUS_REJECTED) {
