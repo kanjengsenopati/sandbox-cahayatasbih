@@ -69,6 +69,9 @@ class TransactionController extends Controller
                 TransactionService::updateAppFee($transaction);
                 // load data all bank from billType
                 $transaction->load('transactionDetails.bill.banks');
+                // send notification to user via whatsapp
+                $messageWhatsapp = SendNotifWaService::sendMessageBillNotification($transaction);
+                dispatch(new SendToWhatsappNotificationJob($transaction->student?->user?->phone, $messageWhatsapp));
             }
 
             DB::commit();
