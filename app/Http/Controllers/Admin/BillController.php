@@ -85,7 +85,7 @@ class BillController extends Controller
 
         if (request()->ajax()) {
             $transactions = Transaction::with('student', 'paymentMethod', 'activeProof')
-                ->where('status', Transaction::STATUS_PENDING_PAYMENT)
+                ->where('status', Transaction::STATUS_PENDING_CONFIRMATION)
                 ->latest();
 
             return DataTables::of($transactions)
