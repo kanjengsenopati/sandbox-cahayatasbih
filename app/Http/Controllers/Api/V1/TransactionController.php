@@ -70,7 +70,7 @@ class TransactionController extends Controller
                 // load data all bank from billType
                 $transaction->load('transactionDetails.bill.banks');
                 // send notification to user via whatsapp
-                $messageWhatsapp = SendNotifWaService::sendMessageBillNotification($transaction);
+                $messageWhatsapp = SendNotifWaService::sendMessagePendingTransferPayment($transaction);
                 dispatch(new SendToWhatsappNotificationJob($transaction->student?->user?->phone, $messageWhatsapp));
             }
 
@@ -237,6 +237,10 @@ class TransactionController extends Controller
             'status' => Transaction::STATUS_PENDING_CONFIRMATION
         ]);
 
+        // add notif whatsapp
+        $messageWhatsapp = SendNotifWaService::sendMessagePendingTransferPayment($transaction);
+        dispatch(new SendToWhatsappNotificationJob($transaction->student?->user?->phone, $messageWhatsapp));
+
         return $this->postSuccessResponse('Berhasil mengupload bukti pembayaran', ['transaction' => $transaction]);
     }
 
@@ -285,6 +289,10 @@ class TransactionController extends Controller
             $proof->transaction->update([
                 'status' => Transaction::STATUS_PENDING_CONFIRMATION
             ]);
+
+            // add notif whatsapp
+            $messageWhatsapp = SendNotifWaService::sendMessagePendingTransferPayment($proof->transaction);
+            dispatch(new SendToWhatsappNotificationJob($proof->transaction->student?->user?->phone, $messageWhatsapp));
 
             DB::commit();
 

@@ -193,13 +193,24 @@ class SendNotifWaService
 
         $message = "APLIKASI PPTQ CAHAYA TASBIH\n";
         $message .= "--------------------------------\n";
-        $message .= "-STATUS MENUNGGU UPLOAD BUKTI PEMBAYARAN TRANSFER-\n";
-        $message .= "--------------------------------\n";
-        $message .= "Assalamu'alaikum Bapak / Ibu " . $parentStudent->name . ",\n";
-        $message .= "Terima kasih sudah melakukan transaksi " . $transaction->payment_code . " sebesar Rp. " . number_format($transaction->pay_amount, 0, ',', '.') . " dengan cara pembayaran transfer.\n";
-        $message .= "*Mohon segera upload bukti pembayaran ke aplikasi untuk segera diproses petugas.*\n";
-        $message .= "--------------------------------\n";
-        $message .= "*PASTIKAN TRANSFER SESUAI NOMINAL DIATAS, TERMASUK 3 NOMOR TERAKHIR UNTUK KETEPATAN PELAYANAN TRANSAKSI.*\n";
+        if ($transaction->status == Transaction::STATUS_PENDING_CONFIRMATION) {
+            $message .= "*-STATUS MENUNGGU VERIFIKASI PETUGAS-*\n";
+            $message .= "--------------------------------\n";
+            $message .= "Assalamu'alaikum Bapak / Ibu " . $parentStudent->name . ",\n";
+            $message .= "Terima kasih sudah melakukan upload bukti pembayaran *" . $transaction->payment_code . "* sebesar *Rp. " . number_format($transaction->pay_amount, 0, ',', '.') . "*.\n";
+            $message .= "*Mohon menunggu verifikasi petugas untuk segera diproses.*\n";
+        } else {
+            $message .= "*-STATUS MENUNGGU UPLOAD BUKTI PEMBAYARAN TRANSFER-*\n";
+            $message .= "--------------------------------\n";
+            $message .= "Assalamu'alaikum Bapak / Ibu " . $parentStudent->name . ",\n";
+            $message .= "Terima kasih sudah melakukan transaksi " . $transaction->payment_code . " sebesar Rp. " . number_format($transaction->pay_amount, 0, ',', '.') . " dengan cara pembayaran transfer.\n";
+            $message .= "*Mohon segera upload bukti pembayaran ke aplikasi untuk segera diproses petugas.*\n";
+            $message .= "--------------------------------\n";
+            $message .= "*PASTIKAN TRANSFER SESUAI NOMINAL DIATAS, TERMASUK 3 NOMOR TERAKHIR UNTUK KETEPATAN PELAYANAN TRANSAKSI.*\n";
+            $message .= "--------------------------------\n";
+        }
+        // $message .= "italic Tidak perlu dibalas
+        $message .= "_Tidak perlu dibalas, Terima kasih_\n";
 
         return $message;
     }
