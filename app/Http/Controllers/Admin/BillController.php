@@ -85,7 +85,9 @@ class BillController extends Controller
 
         if (request()->ajax()) {
             $transactions = Transaction::with('student', 'paymentMethod', 'activeProof')
-                ->where('status', Transaction::STATUS_PENDING_CONFIRMATION)
+                ->whereHas('paymentMethod', function ($query) {
+                    $query->where('type', PaymentMethod::TYPE_TRANSFER);
+                })
                 ->latest();
 
             return DataTables::of($transactions)
@@ -109,13 +111,30 @@ class BillController extends Controller
                         return '<span class="badge badge-warning">PPDB</span>';
                     }
                 })
+                ->editColumn('status', function ($transaction) {
+                    if ($transaction->status == Transaction::STATUS_PENDING) {
+                        return '<span class="badge badge-primary">Belum Dibayar</span>';
+                    } elseif ($transaction->status == Transaction::STATUS_PENDING_PAYMENT) {
+                        return '<span class="badge badge-warning">Menunggu Pembayaran</span>';
+                    } elseif ($transaction->status == Transaction::STATUS_PENDING_CONFIRMATION) {
+                        return '<span class="badge badge-danger">Menunggu Konfirmasi</span>';
+                    } elseif ($transaction->status == Transaction::STATUS_PAID) {
+                        return '<span class="badge badge-success">Lunas</span>';
+                    } elseif ($transaction->status == Transaction::STATUS_EXPIRED) {
+                        return '<span class="badge badge-secondary">Kedaluwarsa</span>';
+                    } elseif ($transaction->status == Transaction::STATUS_CANCELLED) {
+                        return '<span class="badge badge-secondary">Dibatalkan</span>';
+                    } elseif ($transaction->status == Transaction::STATUS_REJECTED) {
+                        return '<span class="badge badge-danger">Ditolak</span><br><small>' . $transaction->activeProof?->note . '</small>';
+                    }
+                })
                 ->addColumn('action', function ($transaction) {
                     $actionShow = route('bill.show', $transaction->id);
                     return "<div class='d-flex justify-content-center'>" .
                         view('components.action.show', ['action' => $actionShow]) .
                         "</div>";
                 })
-                ->rawColumns(['proof', 'action', 'type'])
+                ->rawColumns(['proof', 'action', 'type', 'status'])
                 ->make(true);
         }
         return view('admins.bill.index', compact('schools'));

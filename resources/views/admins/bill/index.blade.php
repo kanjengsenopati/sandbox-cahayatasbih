@@ -399,6 +399,7 @@
                                                     <th>Jumlah Pembayaran</th>
                                                     <th>Kode Unik</th>
                                                     <th>Bukti Transfer</th>
+                                                    <th>Status</th>
                                                     <th class="text-center min-w-100px" style="width: 22%">Aksi</th>
                                                 </tr>
                                             </thead>
@@ -544,6 +545,10 @@
                     {
                         data: 'proof',
                         name: 'proof',
+                    },
+                    {
+                        data: 'status',
+                        name: 'status',
                     },
                     {
                         data: 'action',
