@@ -71,7 +71,7 @@
                             <form class="form" action="{{ route('bill.update',$transaction->id) }}" method="POST"
                                 enctype="multipart/form-data">
                                 @csrf
-                                <x-form.put-method />
+                                @method('PUT')
                                 <div class="fv-row mb-6">
                                     <!--begin::Label-->
                                     <label class="fs-6 fw-bold form-label" for="name">
