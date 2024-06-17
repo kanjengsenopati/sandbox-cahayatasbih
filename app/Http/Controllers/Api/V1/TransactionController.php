@@ -229,6 +229,11 @@ class TransactionController extends Controller
             'status' => TransactionProof::STATUS_WAITING_CONFIRMATION,
         ]);
 
+        // update transaction status
+        $transaction->update([
+            'status' => Transaction::STATUS_PENDING_CONFIRMATION
+        ]);
+
         return $this->postSuccessResponse('Berhasil mengupload bukti pembayaran', ['transaction' => $transaction]);
     }
 
@@ -270,6 +275,12 @@ class TransactionController extends Controller
                 'student_id' => $proof->student_id,
                 'proof_image' => $proofImage,
                 'status' => TransactionProof::STATUS_WAITING_CONFIRMATION,
+            ]);
+
+
+            // update transaction status
+            $proof->transaction->update([
+                'status' => Transaction::STATUS_PENDING_CONFIRMATION
             ]);
 
             DB::commit();

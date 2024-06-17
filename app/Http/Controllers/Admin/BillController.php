@@ -4,13 +4,15 @@ namespace App\Http\Controllers\Admin;
 
 use App\Models\Bill;
 use App\Models\User;
+use App\Models\School;
 use App\Models\Student;
 use App\Models\BillType;
 use App\Models\Transaction;
 use Illuminate\Http\Request;
 use App\Models\PaymentMethod;
-use Yajra\DataTables\DataTables;
 
+use App\Models\TransactionProof;
+use Yajra\DataTables\DataTables;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\Controller;
@@ -19,7 +21,7 @@ use App\Services\TransactionService;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Http;
 use App\Http\Requests\Admin\BillPaymentRequest;
-use App\Models\School;
+use App\Http\Requests\Admin\UpdateTransactionStatusRequest;
 
 class BillController extends Controller
 {
@@ -178,50 +180,9 @@ class BillController extends Controller
 
     public function show(string $id)
     {
-        $student = Student::findOrFail($id);
-
-        // Mengambil tagihan bulanan
-        $billMonth = BillType::with('billItem', 'academicYear')
-            ->where('type', BillType::TYPE_MONTHLY)
-            ->whereHas('bills', function ($query) use ($id) {
-                $query->where('student_id', $id);
-            })
-            ->latest()
-            ->get()
-            ->map(function ($item) use ($id) {
-                $item->total_unpaid = Bill::where('student_id', $id)
-                    ->where('bill_type_id', $item->id)
-                    ->where('status', Bill::STATUS_UNPAID)
-                    ->sum('amount');
-
-                $item->total_paid = Bill::where('student_id', $id)
-                    ->where('bill_type_id', $item->id)
-                    ->where('status', Bill::STATUS_PAID)
-                    ->sum('amount');
-
-                return $item;
-            });
-
-        // Mengambil tagihan lainnya
-        $billOthers = BillType::where('type', BillType::TYPE_OTHER)
-            ->whereHas('bills', function ($query) use ($id) {
-                $query->where('student_id', $id);
-            })
-            ->latest()
-            ->get()
-            ->map(function ($item) use ($id) {
-                $item->total_unpaid = Bill::where('student_id', $id)
-                    ->where('bill_type_id', $item->id)
-                    ->where('status', Bill::STATUS_UNPAID)
-                    ->sum('amount');
-                $item->total_paid = Bill::where('student_id', $id)
-                    ->where('bill_type_id', $item->id)
-                    ->where('status', Bill::STATUS_PAID)
-                    ->sum('amount');
-
-                return $item;
-            });
-        return view('admins.bill.show', compact('student', 'billMonth', 'billOthers'));
+        $transaction = Transaction::with('student', 'paymentMethod', 'activeProof')
+            ->findOrFail($id);
+        return view('admins.bill.show', compact('transaction'));
     }
 
 
@@ -236,9 +197,31 @@ class BillController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, string $id)
+    public function update(UpdateTransactionStatusRequest $request, string $id)
     {
-        //
+        DB::beginTransaction();
+        try {
+            $transaction = Transaction::findOrFail($id);
+            $transaction->update($request->validated());
+            if ($transaction->status == Transaction::STATUS_PAID) {
+                $transaction->activeProof->update([
+                    'status' => TransactionProof::STATUS_CONFIRMED
+                ]);
+                TransactionService::dispatchNotifications($transaction);
+            }
+            if ($transaction->status == Transaction::STATUS_REJECTED) {
+                $transaction->activeProof->update([
+                    'status' => TransactionProof::STATUS_REJECTED,
+                    'note' => $request->note,
+                ]);
+            }
+            DB::commit();
+            return redirect()->back()->with('success', "Status transaksi berhasil diubah");
+        } catch (\Throwable $th) {
+            DB::rollBack();
+            Log::error($th);
+            return redirect()->back()->with('error', "Status transaksi gagal diubah");
+        }
     }
 
     /**
