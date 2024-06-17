@@ -80,6 +80,42 @@ class BillController extends Controller
 
             return view('admins.bill.index', compact('student', 'billMonth', 'billOthers', 'schools'));
         }
+
+        if (request()->ajax()) {
+            $transactions = Transaction::with('student', 'paymentMethod', 'activeProof')
+                ->where('status', Transaction::STATUS_PENDING_PAYMENT)
+                ->latest();
+
+            return DataTables::of($transactions)
+                ->addColumn('proof', function ($transaction) {
+                    // add image preview on click zoom the image
+                    return "<a href='" . $transaction?->activeProof?->proof_image . "' target='_blank'>
+                        <img src='" . $transaction?->activeProof?->proof_image . "' class='img-fluid img-thumbnail' style='max-width: 100px;'>
+                    </a>";
+                })
+                ->editColumn('pay_amount', function ($transaction) {
+                    return 'Rp ' . number_format($transaction->pay_amount, 0, ',', '.');
+                })
+                ->editColumn('type', function ($transaction) {
+                    if ($transaction->type == Transaction::TYPE_BILL) {
+                        return '<span class="badge badge-primary">Tagihan</span>';
+                    } elseif ($transaction->type == Transaction::TYPE_SALDO) {
+                        return '<span class="badge badge-success">Saldo</span>';
+                    } elseif ($transaction->type == Transaction::TYPE_SAVING) {
+                        return '<span class="badge badge-info">Tabungan</span>';
+                    } elseif ($transaction->type == Transaction::TYPE_PPDB) {
+                        return '<span class="badge badge-warning">PPDB</span>';
+                    }
+                })
+                ->addColumn('action', function ($transaction) {
+                    $actionShow = route('bill.show', $transaction->id);
+                    return "<div class='d-flex justify-content-center'>" .
+                        view('components.action.show', ['action' => $actionShow]) .
+                        "</div>";
+                })
+                ->rawColumns(['proof', 'action', 'type'])
+                ->make(true);
+        }
         return view('admins.bill.index', compact('schools'));
     }
 

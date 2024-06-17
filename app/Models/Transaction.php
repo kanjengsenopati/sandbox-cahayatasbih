@@ -15,6 +15,7 @@ class Transaction extends Model
     const STATUS_PAID = 'PAID';
     const STATUS_EXPIRED = 'EXPIRED';
     const STATUS_CANCELLED = 'CANCELLED';
+    const STATUS_REJECTED = 'REJECTED';
     const TYPE_BILL = 'BILL';
     const TYPE_SALDO = 'SALDO';
     const TYPE_SAVING = 'SAVING';

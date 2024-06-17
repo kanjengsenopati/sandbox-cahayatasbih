@@ -96,274 +96,320 @@
                 <!--begin::Content-->
                 <div class="col-xl-12">
                     <!--begin::Contacts-->
-                    {{-- add 2 tab this card is pembayaran tunai dan pembayaran transfer --}}
-                    <div class="card card-flush h-lg-100" id="kt_contacts_main">
 
-                        <!--begin::Card body-->
-                        <div class="card-body pt-5">
-                            <form action="{{ route('bill.index') }}" method="GET">
-                                <!--begin::Form-->
-                                <div class="fv-row mb-7 d-flex align-items-center">
-                                    <!--begin::Label-->
-                                    <label class="fs-6 fw-bold form-label mt-3 me-3 col-2" for="school_id">
-                                        <span class="required">Unit Pendidikan</span>
-                                    </label>
-                                    <!--end::Label-->
-                                    <!--begin::Input-->
-                                    <select name="school_id" name="school_id"
-                                        class="form-control form-control-solid flex-grow-1" id="school_id">
-                                        <option value="">Pilih Unit Pendidikan</option>
-                                        @foreach ($schools as $school)
-                                        <option value="{{ $school->id }}" {{ request('school_id')==$school->id ?
-                                            'selected' : '' }}>
-                                            {{ $school->name }}</option>
-                                        @endforeach
-                                    </select>
-                                    <!--end::Input-->
-                                </div>
-                                <!--begin::Input group-->
-                                <div class="fv-row mb-7 d-flex align-items-center">
-                                    <!--begin::Label-->
-                                    <label class="fs-6 fw-bold form-label mt-3 me-3 col-2" for="name">
-                                        <span class="required">NIS/NISN/Nama</span>
-                                    </label>
-                                    <!--end::Label-->
-                                    <!--begin::Input-->
-                                    <select name="student_id" id="student_id" class="form-select form-select-solid"
-                                        id="student_id">
-                                        <option value="">Pilih Siswa</option>
-                                    </select>
-                                    <!--end::Input-->
-                                    <button id="btn-cari" class="btn btn-sm btn-primary ms-3"
-                                        style="height: 40px; width: 100px;" type="submit">
-                                        <span class="indicator-label" id="buttonText">Tampilkan</span>
-                                        <span class="indicator-progress d-none">Please wait...
-                                            <span class="spinner-border spinner-border-sm align-middle ms-2"></span>
-                                        </span>
-                                    </button>
-                                </div>
-                            </form>
-                        </div>
+                    <ul class="nav nav-tabs nav-line-tabs nav-line-tabs-2x mb-5 fs-6">
+                        <li class="nav-item">
+                            <a class="nav-link active" data-bs-toggle="tab" href="#pembayaran_tunai">Pembayaran
+                                Tunai</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" data-bs-toggle="tab" href="#pembayaran_transfer">Pembayaran Transfer</a>
+                        </li>
+                    </ul>
 
-                        <!--end::Input group-->
-                        <!--begin::Separator-->
-                        <div class="separator mb-6"></div>
-                        <!--end::Separator-->
-                        <!--begin::Action buttons-->
-                        <div class="d-flex justify-content-end">
-                        </div>
-                        <!--end::Form-->
-                        {{-- <div id="show-bill"></div> --}}
-                        @if ($student ?? false)
-                        <div class="card-body pt-3">
-                            <!--begin::Card Information-->
-                            <div class="card-information">
-                                <div class="mb-3">
-                                    <span class="fw-bold text-muted">Tahun Ajaran</span>
-                                    :&nbsp;
-                                    <span><b>Semua Tahun Ajaran</b></span>
-                                </div>
-                                <div class="mb-3">
-                                    <span class="fw-bold text-muted">NIS</span>
-                                    :&nbsp;
-                                    <span>{{ @$student->nis ?? '' }}</span>
-                                </div>
-                                <div class="mb-3">
-                                    <span class="fw-bold text-muted">Nama</span>
-                                    :&nbsp;
-                                    <span>{{ @$student->name ?? '' }}</span>
-                                </div>
-                                <div class="mb-3">
-                                    <span class="fw-bold text-muted">Kelas</span>
-                                    :&nbsp;
-                                    <span>{{ @$student->classroom->name ?? '' }}</span>
-                                </div>
-                            </div>
-                            <!--end::Card Information-->
-
-                            <!--begin::Separator-->
-                            <div class="separator mb-6"></div>
-                            <!--end::Separator-->
-
-                            <!--begin::Action buttons-->
-                            <div class="d-flex justify-content-end">
-                            </div>
-                            <!--end::Action buttons-->
-                        </div>
-                        <div id="kt_accordion_1" class="accordion accordion-flush mx-5">
-                            <div class="accordion-item">
-                                <h2 class="accordion-header" id="kt_accordion_1_header_1">
-                                    <button class="accordion-button fs-4 fw-semibold" type="button"
-                                        data-bs-toggle="collapse" data-bs-target="#kt_accordion_1_body_1"
-                                        aria-expanded="true" aria-controls="kt_accordion_1_body_1">
-                                        Fitur Kilat
-                                    </button>
-                                </h2>
-                                <div id="kt_accordion_1_body_1" class="accordion-collapse collapse show"
-                                    aria-labelledby="kt_accordion_1_header_1" data-bs-parent="#kt_accordion_1">
-                                    <div class="accordion-body">
-
-                                        <ul class="nav nav-tabs nav-line-tabs nav-line-tabs-2x mb-5 fs-6">
-                                            <li class="nav-item">
-                                                <a class="nav-link active" data-bs-toggle="tab"
-                                                    href="#kt_tab_pane_4">Bulanan</a>
-                                            </li>
-                                            <li class="nav-item">
-                                                <a class="nav-link" data-bs-toggle="tab"
-                                                    href="#kt_tab_pane_5">Lainnya</a>
-                                            </li>
-                                        </ul>
-
-                                        <div class="tab-content" id="myTabContent">
-                                            <div class="tab-pane fade show active" id="kt_tab_pane_4" role="tabpanel">
-                                                <div class="table-responsive">
-                                                    <table class="table  gy-7 gs-7">
-                                                        <thead>
-                                                            @include('admins.bill.table.header-kilat')
-                                                        </thead>
-                                                        <tbody>
-                                                            @include('admins.bill.table.body-kilat')
-                                                        </tbody>
-                                                    </table>
-                                                </div>
+                    <div class="tab-content" id="myTabContent">
+                        <div class="tab-pane fade show active" id="pembayaran_tunai" role="tabpanel">
+                            <!-- Pembayaran Tunai Content -->
+                            <div>
+                                <div class="card card-flush h-lg-100" id="kt_contacts_main">
+                                    <div class="card-body pt-5">
+                                        <form action="{{ route('bill.index') }}" method="GET">
+                                            <div class="fv-row mb-7 d-flex align-items-center">
+                                                <label class="fs-6 fw-bold form-label mt-3 me-3 col-2" for="school_id">
+                                                    <span class="required">Unit Pendidikan</span>
+                                                </label>
+                                                <select name="school_id" name="school_id"
+                                                    class="form-control form-control-solid flex-grow-1" id="school_id">
+                                                    <option value="">Pilih Unit Pendidikan</option>
+                                                    @foreach ($schools as $school)
+                                                    <option value="{{ $school->id }}" {{ request('school_id')==$school->
+                                                        id ?
+                                                        'selected' : '' }}>
+                                                        {{ $school->name }}</option>
+                                                    @endforeach
+                                                </select>
                                             </div>
-                                            <div class="tab-pane fade" id="kt_tab_pane_5" role="tabpanel">
-                                                <div class="table-responsive">
-                                                    <table class="table gy-7 gs-7">
-                                                        <thead>
-                                                            @include('admins.bill.table.header-kilat')
-                                                        </thead>
-                                                        <tbody>
-                                                            @include('admins.bill.table.body-lainnya')
-                                                        </tbody>
-                                                    </table>
+                                            <div class="fv-row mb-7 d-flex align-items-center">
+                                                <label class="fs-6 fw-bold form-label mt-3 me-3 col-2" for="name">
+                                                    <span class="required">NIS/NISN/Nama</span>
+                                                </label>
+                                                <select name="student_id" id="student_id"
+                                                    class="form-select form-select-solid" id="student_id">
+                                                    <option value="">Pilih Siswa</option>
+                                                </select>
+                                                <button id="btn-cari" class="btn btn-sm btn-primary ms-3"
+                                                    style="height: 40px; width: 100px;" type="submit">
+                                                    <span class="indicator-label" id="buttonText">Tampilkan</span>
+                                                    <span class="indicator-progress d-none">Please wait...
+                                                        <span
+                                                            class="spinner-border spinner-border-sm align-middle ms-2"></span>
+                                                    </span>
+                                                </button>
+                                            </div>
+                                        </form>
+                                    </div>
+                                    <div class="separator mb-6"></div>
+                                    <div class="d-flex justify-content-end"></div>
+
+                                    @if ($student ?? false)
+                                    <div class="card-body pt-3">
+                                        <div class="card-information">
+                                            <div class="mb-3">
+                                                <span class="fw-bold text-muted">Tahun Ajaran</span>
+                                                :&nbsp;
+                                                <span><b>Semua Tahun Ajaran</b></span>
+                                            </div>
+                                            <div class="mb-3">
+                                                <span class="fw-bold text-muted">NIS</span>
+                                                :&nbsp;
+                                                <span>{{ @$student->nis ?? '' }}</span>
+                                            </div>
+                                            <div class="mb-3">
+                                                <span class="fw-bold text-muted">Nama</span>
+                                                :&nbsp;
+                                                <span>{{ @$student->name ?? '' }}</span>
+                                            </div>
+                                            <div class="mb-3">
+                                                <span class="fw-bold text-muted">Kelas</span>
+                                                :&nbsp;
+                                                <span>{{ @$student->classroom->name ?? '' }}</span>
+                                            </div>
+                                        </div>
+                                        <div class="separator mb-6"></div>
+                                        <div class="d-flex justify-content-end"></div>
+                                    </div>
+                                    <div id="kt_accordion_1" class="accordion accordion-flush mx-5">
+                                        <div class="accordion-item">
+                                            <h2 class="accordion-header" id="kt_accordion_1_header_1">
+                                                <button class="accordion-button fs-4 fw-semibold" type="button"
+                                                    data-bs-toggle="collapse" data-bs-target="#kt_accordion_1_body_1"
+                                                    aria-expanded="true" aria-controls="kt_accordion_1_body_1">
+                                                    Fitur Kilat
+                                                </button>
+                                            </h2>
+                                            <div id="kt_accordion_1_body_1" class="accordion-collapse collapse show"
+                                                aria-labelledby="kt_accordion_1_header_1"
+                                                data-bs-parent="#kt_accordion_1">
+                                                <div class="accordion-body">
+
+                                                    <ul class="nav nav-tabs nav-line-tabs nav-line-tabs-2x mb-5 fs-6">
+                                                        <li class="nav-item">
+                                                            <a class="nav-link active" data-bs-toggle="tab"
+                                                                href="#kt_tab_pane_4">Bulanan</a>
+                                                        </li>
+                                                        <li class="nav-item">
+                                                            <a class="nav-link" data-bs-toggle="tab"
+                                                                href="#kt_tab_pane_5">Lainnya</a>
+                                                        </li>
+                                                    </ul>
+
+                                                    <div class="tab-content" id="myTabContent">
+                                                        <div class="tab-pane fade show active" id="kt_tab_pane_4"
+                                                            role="tabpanel">
+                                                            <div class="table-responsive">
+                                                                <table class="table  gy-7 gs-7">
+                                                                    <thead>
+                                                                        @include('admins.bill.table.header-kilat')
+                                                                    </thead>
+                                                                    <tbody>
+                                                                        @include('admins.bill.table.body-kilat')
+                                                                    </tbody>
+                                                                </table>
+                                                            </div>
+                                                        </div>
+                                                        <div class="tab-pane fade" id="kt_tab_pane_5" role="tabpanel">
+                                                            <div class="table-responsive">
+                                                                <table class="table gy-7 gs-7">
+                                                                    <thead>
+                                                                        @include('admins.bill.table.header-kilat')
+                                                                    </thead>
+                                                                    <tbody>
+                                                                        @include('admins.bill.table.body-lainnya')
+                                                                    </tbody>
+                                                                </table>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
                                                 </div>
                                             </div>
                                         </div>
-
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="separator mb-6"></div>
-                            <div class="accordion-item">
-                                <h2 class="accordion-header" id="kt_accordion_1_header_1">
-                                    <button class="accordion-button fs-4 fw-semibold" type="button"
-                                        data-bs-toggle="collapse" data-bs-target="#accordion-tagihan-bulanan"
-                                        aria-expanded="true" aria-controls="accordion-tagihan-bulanan">
-                                        Tagihan Bulanan
-                                    </button>
-                                </h2>
-                                <div id="accordion-tagihan-bulanan" class="accordion-collapse collapse show"
-                                    aria-labelledby="kt_accordion_1_header_1" data-bs-parent="#kt_accordion_1">
-                                    <div class="accordion-body">
-                                        <div class="table-responsive">
-                                            <table id="table-bill-monthly" class="table align-middle table-row-dashed ">
-                                                <thead>
-                                                    <tr
-                                                        class="text-start text-gray-400 fw-bolder fs-7 text-uppercase gs-0">
-                                                        <th style="width: 5%">No</th>
-                                                        <th class="min-w-125px">Tahun Ajaran</th>
-                                                        {{-- <th class="min-w-125px">Pos Bayar</th> --}}
-                                                        <th class="min-w-125px">Jenis Pembayaran</th>
-                                                        <th class="min-w-125px">Jumlah</th>
-                                                        <th class="min-w-125px">Dibayar</th>
-                                                        <th class="text-center min-w-100px" style="width: 22%">
-                                                            Status</th>
-                                                        <th class="text-center min-w-100px" style="width: 22%">Aksi
-                                                        </th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody class="text-gray-600 fw-bold">
-                                                    @foreach ($billMonth as $monthly)
-                                                    <tr>
-                                                        <td>{{ $loop->iteration }}</td>
-                                                        <td>{{ @$monthly->academicYear->name }}</td>
-                                                        {{-- <td>{{ @$monthly->billItem->name }}</td> --}}
-                                                        <td>{{ @$monthly->name }}</td>
-                                                        <td>Rp {{ number_format(@$monthly->total_unpaid, 0, ',',
-                                                            '.') }}</td>
-                                                        <td>Rp {{ number_format(@$monthly->total_paid, 0, ',', '.')
-                                                            }}</td>
-                                                        <td><span
-                                                                class="d-flex text-center bg-{{ @$monthly->total_unpaid == 0 ?
-                                                                     'success' : 'danger' }} text-white px-3 py-1 rounded-1">{{
-                                                                @$monthly->total_unpaid == 0 ? 'Lunas' : 'Belum
-                                                                Lunas' }}</span></td>
-                                                        <td class="text-center">
-                                                            <x-action.show
-                                                                :action="route('bill.summary-bill', ['bill_type_id' => $monthly->id, 'student_id' => $student->id])"
-                                                                label="Bayar" />
-                                                        </td>
-                                                    </tr>
-                                                    @endforeach
-                                                </tbody>
-                                            </table>
+                                        <div class="separator mb-6"></div>
+                                        <div class="accordion-item">
+                                            <h2 class="accordion-header" id="kt_accordion_1_header_1">
+                                                <button class="accordion-button fs-4 fw-semibold" type="button"
+                                                    data-bs-toggle="collapse"
+                                                    data-bs-target="#accordion-tagihan-bulanan" aria-expanded="true"
+                                                    aria-controls="accordion-tagihan-bulanan">
+                                                    Tagihan Bulanan
+                                                </button>
+                                            </h2>
+                                            <div id="accordion-tagihan-bulanan" class="accordion-collapse collapse show"
+                                                aria-labelledby="kt_accordion_1_header_1"
+                                                data-bs-parent="#kt_accordion_1">
+                                                <div class="accordion-body">
+                                                    <div class="table-responsive">
+                                                        <table id="table-bill-monthly"
+                                                            class="table align-middle table-row-dashed ">
+                                                            <thead>
+                                                                <tr
+                                                                    class="text-start text-gray-400 fw-bolder fs-7 text-uppercase gs-0">
+                                                                    <th style="width: 5%">No</th>
+                                                                    <th class="min-w-125px">Tahun Ajaran</th>
+                                                                    <th class="min-w-125px">Jenis Pembayaran</th>
+                                                                    <th class="min-w-125px">Jumlah</th>
+                                                                    <th class="min-w-125px">Dibayar</th>
+                                                                    <th class="text-center min-w-100px"
+                                                                        style="width: 22%">
+                                                                        Status</th>
+                                                                    <th class="text-center min-w-100px"
+                                                                        style="width: 22%">Aksi
+                                                                    </th>
+                                                                </tr>
+                                                            </thead>
+                                                            <tbody class="text-gray-600 fw-bold">
+                                                                @foreach ($billMonth as $monthly)
+                                                                <tr>
+                                                                    <td>{{ $loop->iteration }}</td>
+                                                                    <td>{{ @$monthly->academicYear->name }}</td>
+                                                                    <td>{{ @$monthly->name }}</td>
+                                                                    <td>Rp {{ number_format(@$monthly->total_unpaid, 0,
+                                                                        ',',
+                                                                        '.') }}</td>
+                                                                    <td>Rp {{ number_format(@$monthly->total_paid, 0,
+                                                                        ',', '.')
+                                                                        }}</td>
+                                                                    <td><span
+                                                                            class="d-flex text-center bg-{{ @$monthly->total_unpaid == 0 ?
+                                                                                                 'success' : 'danger' }} text-white px-3 py-1 rounded-1">{{
+                                                                            @$monthly->total_unpaid == 0 ? 'Lunas' :
+                                                                            'Belum
+                                                                            Lunas' }}</span></td>
+                                                                    <td class="text-center">
+                                                                        <x-action.show
+                                                                            :action="route('bill.summary-bill', ['bill_type_id' => $monthly->id, 'student_id' => $student->id])"
+                                                                            label="Bayar" />
+                                                                    </td>
+                                                                </tr>
+                                                                @endforeach
+                                                            </tbody>
+                                                        </table>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="separator mb-6"></div>
+                                        <div class="accordion-item">
+                                            <h2 class="accordion-header" id="kt_accordion_1_header_1">
+                                                <button class="accordion-button fs-4 fw-semibold" type="button"
+                                                    data-bs-toggle="collapse" data-bs-target="#accordion-bill-other"
+                                                    aria-expanded="true" aria-controls="accordion-bill-other">
+                                                    Tagihan Lainnya
+                                                </button>
+                                            </h2>
+                                            <div id="accordion-bill-other" class="accordion-collapse collapse show"
+                                                aria-labelledby="kt_accordion_1_header_1"
+                                                data-bs-parent="#kt_accordion_1">
+                                                <div class="accordion-body">
+                                                    <div class="table-responsive">
+                                                        <table id="table-bill-monthly"
+                                                            class="table align-middle table-row-dashed ">
+                                                            <thead>
+                                                                <tr
+                                                                    class="text-start text-gray-400 fw-bolder fs-7 text-uppercase gs-0">
+                                                                    <th style="width: 5%">No</th>
+                                                                    <th class="min-w-125px">Tahun Ajaran</th>
+                                                                    <th class="min-w-125px">Jenis Pembayaran</th>
+                                                                    <th class="min-w-125px">Jumlah</th>
+                                                                    <th class="min-w-125px">Dibayar</th>
+                                                                    <th class="text-center min-w-100px"
+                                                                        style="width: 22%">
+                                                                        Status</th>
+                                                                    <th class="text-center min-w-100px"
+                                                                        style="width: 22%">Aksi
+                                                                    </th>
+                                                                </tr>
+                                                            </thead>
+                                                            <tbody class="text-gray-600 fw-bold">
+                                                                @foreach ($billOthers as $other)
+                                                                <tr>
+                                                                    <td>{{ $loop->iteration }}</td>
+                                                                    <td>{{ @$other->academicYear->name }}</td>
+                                                                    <td>{{ @$other->name }}</td>
+                                                                    <td>Rp {{ number_format(@$other->total_unpaid, 0,
+                                                                        ',', '.')
+                                                                        }}</td>
+                                                                    <td>Rp {{ number_format(@$other->total_paid, 0, ',',
+                                                                        '.') }}
+                                                                    </td>
+                                                                    <td><span
+                                                                            class="d-flex text-center bg-{{ @$other->total_unpaid == 0 ?
+                                                                                                     'success' : 'danger' }} text-white px-3 py-1 rounded-1">{{
+                                                                            @$other->total_unpaid == 0 ? 'Lunas' :
+                                                                            'Belum Lunas'
+                                                                            }}</span></td>
+                                                                    <td class="text-center">
+                                                                        <x-action.show
+                                                                            :action="route('bill.summary-bill', ['bill_type_id' => $other->id, 'student_id' => $student->id])"
+                                                                            label="Bayar" />
+                                                                    </td>
+                                                                </tr>
+                                                                @endforeach
+                                                            </tbody>
+                                                        </table>
+                                                    </div>
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
+                                    @endif
                                 </div>
                             </div>
-                            <div class="separator mb-6"></div>
-                            <div class="accordion-item">
-                                <h2 class="accordion-header" id="kt_accordion_1_header_1">
-                                    <button class="accordion-button fs-4 fw-semibold" type="button"
-                                        data-bs-toggle="collapse" data-bs-target="#accordion-bill-other"
-                                        aria-expanded="true" aria-controls="accordion-bill-other">
-                                        Tagihan Lainnya
-                                    </button>
-                                </h2>
-                                <div id="accordion-bill-other" class="accordion-collapse collapse show"
-                                    aria-labelledby="kt_accordion_1_header_1" data-bs-parent="#kt_accordion_1">
-                                    <div class="accordion-body">
-                                        <div class="table-responsive">
-                                            <table id="table-bill-monthly" class="table align-middle table-row-dashed ">
-                                                <thead>
-                                                    <tr
-                                                        class="text-start text-gray-400 fw-bolder fs-7 text-uppercase gs-0">
-                                                        <th style="width: 5%">No</th>
-                                                        <th class="min-w-125px">Tahun Ajaran</th>
-                                                        {{-- <th class="min-w-125px">Pos Bayar</th> --}}
-                                                        <th class="min-w-125px">Jenis Pembayaran</th>
-                                                        <th class="min-w-125px">Jumlah</th>
-                                                        <th class="min-w-125px">Dibayar</th>
-                                                        <th class="text-center min-w-100px" style="width: 22%">
-                                                            Status</th>
-                                                        <th class="text-center min-w-100px" style="width: 22%">Aksi
-                                                        </th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody class="text-gray-600 fw-bold">
-                                                    @foreach ($billOthers as $other)
-                                                    <tr>
-                                                        <td>{{ $loop->iteration }}</td>
-                                                        <td>{{ @$other->academicYear->name }}</td>
-                                                        {{-- <td>{{ @$other->billItem->name }}</td> --}}
-                                                        <td>{{ @$other->name }}</td>
-                                                        <td>Rp {{ number_format(@$other->total_unpaid, 0, ',', '.')
-                                                            }}</td>
-                                                        <td>Rp {{ number_format(@$other->total_paid, 0, ',', '.') }}
-                                                        </td>
-                                                        <td><span
-                                                                class="d-flex text-center bg-{{ @$other->total_unpaid == 0 ?
-                                                                         'success' : 'danger' }} text-white px-3 py-1 rounded-1">{{
-                                                                @$other->total_unpaid == 0 ? 'Lunas' : 'Belum Lunas'
-                                                                }}</span></td>
-                                                        <td class="text-center">
-                                                            <x-action.show
-                                                                :action="route('bill.summary-bill', ['bill_type_id' => $other->id, 'student_id' => $student->id])"
-                                                                label="Bayar" />
-                                                        </td>
-                                                    </tr>
-                                                    @endforeach
-                                                </tbody>
-                                            </table>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
                         </div>
-                        @endif
-                        {{-- end show --}}
+                        <div class="tab-pane fade" id="pembayaran_transfer" role="tabpanel">
+                            <!-- Pembayaran Transfer Content -->
+                            <!-- Add your content for Pembayaran Transfer here -->
+                            <div class="card">
+                                <!--begin::Card header-->
+                                <div
+                                    class="card-header d-flex align-items-center justify-content-between border-0 pt-6">
+                                    <!--begin::Card title-->
+                                    <div class="card-title">
+                                        <h3 class="text-dark">Data Pembayaran Transfer</h3>
+                                    </div>
+                                    <div class="">
+                                        {{-- <a type="a" class="btn btn-sm btn-primary" id="btn_add_permission"
+                                            href="{{ route('permission.create') }}">+
+                                            Permission</a> --}}
+                                        <!--end::Primary button-->
+                                    </div>
+                                    <!--end::Card title-->
+                                </div>
+                                <!--end::Card header-->
+                                <!--begin::Card body-->
+                                <div class="card-body pt-0">
+                                    <!--begin::Table-->
+                                    <div class="table-responsive">
+                                        <table id="table-transfer" class="table align-middle table-row-dashed ">
+                                            <thead>
+                                                <tr class="text-start text-gray-400 fw-bolder fs-7 text-uppercase gs-0">
+                                                    <th style="width: 5%">No</th>
+                                                    <th>Siswa</th>
+                                                    <th>Jenis Pembayaran</th>
+                                                    <th>Jumlah Pembayaran</th>
+                                                    <th>Kode Unik</th>
+                                                    <th>Bukti Transfer</th>
+                                                    <th class="text-center min-w-100px" style="width: 22%">Aksi</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody class="text-gray-600 fw-bold"></tbody>
+                                        </table>
+                                    </div>
+                                    <!--end::Table-->
+                                </div>
+                                <!--end::Card body-->
+                            </div>
+                        </div>
                     </div>
                     <!--end::Card body-->
                 </div>
@@ -455,5 +501,59 @@
     // Call the function on page load
     fetchStudentData();
     });
+</script>
+<script>
+    $(document).ready(() => {
+            var table = $('#table-transfer').DataTable({
+                ordering: false,
+                processing: true,
+                serverSide: true,
+                ajax: "{{ route('bill.index') }}",
+                language: {
+                    "paginate": {
+                        "next": "<i class='fa fa-angle-right'>",
+                        "previous": "<i class='fa fa-angle-left'>"
+                    },
+                    "loadingRecords": "Loading...",
+                    "processing": "Processing...",
+                },
+                columns: [{
+                        "data": null,
+                        "sortable": false,
+                        "searchable": false,
+                        render: function(data, type, row, meta) {
+                            return meta.row + meta.settings._iDisplayStart + 1;
+                        }
+                    },
+                     {
+                        data: 'student.name',
+                        name: 'student.name'
+                    },
+                    {
+                        data: 'type',
+                        name: 'type'
+                    },
+                    {
+                        data: 'pay_amount',
+                        name: 'pay_amount'
+                    },
+                    {
+                        data: 'unique_payment',
+                        name: 'unique_payment'
+                    },
+                    {
+                        data: 'proof',
+                        name: 'proof',
+                    },
+                    {
+                        data: 'action',
+                        name: 'action',
+                        orderable: false,
+                        searchable: false
+                    }
+                ]
+            });
+
+        })
 </script>
 @endpush
