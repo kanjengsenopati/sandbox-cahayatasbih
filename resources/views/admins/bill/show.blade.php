@@ -68,8 +68,8 @@
                             <div class="text-center">
                                 <img src="{{ asset('assets/media/svg/approval/approval.svg') }}" alt="" class="w-50">
                             </div>
-                            <form class="form" action="{{ route('bill.update', ['bill' => $transaction->id]) }}"
-                                method="POST" enctype="multipart/form-data">
+                            <form class="form" action="{{ route('bill.update',$transaction->id) }}" method="POST"
+                                enctype="multipart/form-data">
                                 @csrf
                                 <x-form.put-method />
                                 <div class="fv-row mb-6">
