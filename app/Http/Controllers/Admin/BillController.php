@@ -221,7 +221,9 @@ class BillController extends Controller
         DB::beginTransaction();
         try {
             $transaction = Transaction::findOrFail($id);
-            $transaction->update($request->validated());
+            $data = $request->validated();
+            $data['admin_id'] = Auth::id();
+            $transaction->update($data);
             if ($transaction->status == Transaction::STATUS_PAID) {
                 $transaction->activeProof->update([
                     'status' => TransactionProof::STATUS_CONFIRMED
