@@ -165,10 +165,12 @@ class TransactionService
 
         $transaction = Transaction::create(array_merge($transactionData, $request->validated()));
 
-        foreach ($request->bill_ids as $billId) {
-            $transaction->transactionDetails()->create([
-                'bill_id' => $billId,
-            ]);
+        if ($request->bill_ids != null) {
+            foreach ($request->bill_ids as $billId) {
+                $transaction->transactionDetails()->create([
+                    'bill_id' => $billId,
+                ]);
+            }
         }
 
         if ($transaction->status == Transaction::STATUS_PAID && $paymentMethodType == PaymentMethod::TYPE_XENDIT) {
