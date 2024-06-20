@@ -129,11 +129,28 @@ class BillController extends Controller
                     }
                 })
                 ->addColumn('action', function ($transaction) {
-                    $actionShow = route('bill.show', $transaction->id);
-                    return "<div class='d-flex justify-content-center'>" .
-                        view('components.action.show', ['action' => $actionShow]) .
-                        "</div>";
+                    $action = "<select class='form-control status-transaction' name='status' id='status-{$transaction->id}' onchange='updateStatus(this.value, \"{$transaction->id}\")'>
+                        <option value=''>Pilih Status</option>
+                        <option value='" . Transaction::STATUS_PENDING_CONFIRMATION . "' " . ($transaction->status == Transaction::STATUS_PENDING_CONFIRMATION ? 'selected' : '') . ">Menunggu Konfirmasi</option>
+                        <option value='" . Transaction::STATUS_PAID . "' " . ($transaction->status == Transaction::STATUS_PAID ? 'selected' : '') . ">Lunas</option>
+                        <option value='" . Transaction::STATUS_REJECTED . "' " . ($transaction->status == Transaction::STATUS_REJECTED ? 'selected' : '') . ">Ditolak</option>
+                    </select>";
+
+
+                    $action .= "<input type='hidden' name='note' id='note-{$transaction->id}' value='{$transaction->activeProof?->note}'>";
+
+                    // Tambahkan button simpan
+                    $action .= "<button class='btn btn-primary btn-sm mt-2' onclick='saveStatus(\"{$transaction->id}\")'>Simpan</button>";
+
+                    // Jika status sudah lunas maka tidak bisa diubah
+                    if ($transaction->status == Transaction::STATUS_PAID) {
+                        $action = "<span class='badge badge-success'>Lunas</span>";
+                    }
+
+                    return $action;
                 })
+
+
                 ->rawColumns(['proof', 'action', 'type', 'status'])
                 ->make(true);
         }
@@ -241,13 +258,18 @@ class BillController extends Controller
                     'status' => TransactionProof::STATUS_REJECTED,
                     'note' => $request->note,
                 ]);
+            } else {
+                $transaction->activeProof->update([
+                    'status' => TransactionProof::STATUS_CONFIRMED,
+                    'note' => null,
+                ]);
             }
             DB::commit();
-            return redirect()->back()->with('success', "Status transaksi berhasil diubah");
+            return $this->postSuccessResponse("Berhasil mengubah status transaksi", $transaction);
         } catch (\Throwable $th) {
             DB::rollBack();
             Log::error($th);
-            return redirect()->back()->with('error', "Status transaksi gagal diubah");
+            return $this->failedResponse("Gagal mengubah status transaksi");
         }
     }
 

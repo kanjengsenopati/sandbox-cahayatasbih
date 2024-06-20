@@ -23,7 +23,7 @@ class UpdateTransactionStatusRequest extends FormRequest
     {
         return [
             'status' => 'required|in:PENDING,PENDING_PAYMENT,PENDING_CONFIRMATION,PAID,EXPIRED,CANCELLED,REJECTED',
-            'reason' => 'required_if:status,REJECTED',
+            'note' => 'required_if:status,REJECTED',
         ];
     }
 }

@@ -369,47 +369,7 @@
                         <div class="tab-pane fade" id="pembayaran_transfer" role="tabpanel">
                             <!-- Pembayaran Transfer Content -->
                             <!-- Add your content for Pembayaran Transfer here -->
-                            <div class="card">
-                                <!--begin::Card header-->
-                                <div
-                                    class="card-header d-flex align-items-center justify-content-between border-0 pt-6">
-                                    <!--begin::Card title-->
-                                    <div class="card-title">
-                                        <h3 class="text-dark">Data Pembayaran Transfer</h3>
-                                    </div>
-                                    <div class="">
-                                        {{-- <a type="a" class="btn btn-sm btn-primary" id="btn_add_permission"
-                                            href="{{ route('permission.create') }}">+
-                                            Permission</a> --}}
-                                        <!--end::Primary button-->
-                                    </div>
-                                    <!--end::Card title-->
-                                </div>
-                                <!--end::Card header-->
-                                <!--begin::Card body-->
-                                <div class="card-body pt-0">
-                                    <!--begin::Table-->
-                                    <div class="table-responsive">
-                                        <table id="table-transfer" class="table align-middle table-row-dashed ">
-                                            <thead>
-                                                <tr class="text-start text-gray-400 fw-bolder fs-7 text-uppercase gs-0">
-                                                    <th style="width: 5%">No</th>
-                                                    <th>Siswa</th>
-                                                    <th>Jenis Pembayaran</th>
-                                                    <th>Jumlah Pembayaran</th>
-                                                    <th>Kode Unik</th>
-                                                    <th>Bukti Transfer</th>
-                                                    <th>Status</th>
-                                                    <th class="text-center min-w-100px" style="width: 22%">Aksi</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody class="text-gray-600 fw-bold"></tbody>
-                                        </table>
-                                    </div>
-                                    <!--end::Table-->
-                                </div>
-                                <!--end::Card body-->
-                            </div>
+                            @include('admins.bill.transfer-tab.index')
                         </div>
                     </div>
                     <!--end::Card body-->
@@ -506,7 +466,8 @@
 <script>
     $(document).ready(() => {
             var table = $('#table-transfer').DataTable({
-                ordering: false,
+                ordering: true,
+                sortable: true,
                 processing: true,
                 serverSide: true,
                 ajax: "{{ route('bill.index') }}",
@@ -528,7 +489,8 @@
                     },
                      {
                         data: 'student.name',
-                        name: 'student.name'
+                        name: 'student.name',
+                        orderable: false,
                     },
                     {
                         data: 'type',
@@ -549,6 +511,8 @@
                     {
                         data: 'status',
                         name: 'status',
+                        orderable: true,
+                        searchable: false
                     },
                     {
                         data: 'action',
