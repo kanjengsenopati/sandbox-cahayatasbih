@@ -63,19 +63,16 @@ class SavingController extends Controller
             }
 
             $saldoHistory = $this->createSavingHistory($request);
-
-            $paymentCode = 'CHT-TAB-' . Str::random(3) . time();
-
-            $transaction = $this->createTransaction($request, $paymentCode);
+            $transaction = TransactionService::createTransaction($request, $paymentMethodType, Transaction::TYPE_SAVING);
 
             $this->createTransactionDetail($transaction, $saldoHistory);
 
-            TransactionService::createInvoice($transaction);
 
             if ($paymentMethodType == PaymentMethod::TYPE_XENDIT) {
+                TransactionService::createInvoice($transaction);
                 $response = $this->postSuccessResponse("Berhasil melakukan transaksi pembayaran", $transaction->payment_link);
             } else {
-                $response = $this->postSuccessResponse('Berhasil Membayar Tagihan', ['transaction' => $transaction]);
+                $response = $this->postSuccessResponse('Berhasil Topup Tagihan', ['transaction' => $transaction]);
             }
 
             DB::commit();

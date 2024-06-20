@@ -100,7 +100,7 @@ class SaldoController extends Controller
                 TransactionService::createInvoice($transaction, $request);
                 $response = $this->postSuccessResponse("Berhasil melakukan transaksi pembayaran", $transaction->payment_link);
             } else {
-                $response = $this->postSuccessResponse('Berhasil Membayar Tagihan', ['transaction' => $transaction]);
+                $response = $this->postSuccessResponse('Berhasil Topup Saldo', ['transaction' => $transaction]);
             }
 
             DB::commit();
