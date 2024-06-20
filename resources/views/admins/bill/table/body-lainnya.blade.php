@@ -1,7 +1,9 @@
 @foreach ($billOthers as $bill)
 <tr>
     <td style="padding: 10px; border: 2px solid white;" class="text-center">{{ $loop->iteration }}</td>
-    <td style="padding: 10px; border: 2px solid white;" class="text-center">{{ $bill->name }}</td>
+    <td style="padding: 10px; border: 2px solid white;" class="text-center">{{ $bill->name }}<br>
+        <input type="checkbox" name="bills[]" value="{{ $bill->id }}" id="bill-{{ $bill->id }}">
+    </td>
     <td style="padding: 10px; border: 2px solid white;" class="text-center">Rp {{
         number_format($bill->total_unpaid,
         0, ',', '.') }}</td>
@@ -19,6 +21,8 @@
     @endphp
     <td style="background-color: {{ $statusColor }}; padding: 10px; border: 2px solid white;">
         @if($showModal)
+        <input type="checkbox" name="bill_months[{{ $bill->id }}][]" value="{{ $month }}"
+            id="bill-month-{{ $bill->id }}-{{ $month }}">
         <a href="#" data-bs-toggle="modal" data-bs-target="#{{ $modalId }}" style="color: rgb(255, 255, 255);">
             Rp {{ number_format($amount, 0, ',', '.') }}
         </a>

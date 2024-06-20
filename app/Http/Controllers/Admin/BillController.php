@@ -175,7 +175,7 @@ class BillController extends Controller
         try {
             $paymentMethodType = $request->payment_method;
 
-            $transaction = TransactionService::createTransaction($request, $paymentMethodType);
+            $transaction = TransactionService::createTransaction($request, $paymentMethodType, Transaction::TYPE_BILL);
             if ($paymentMethodType == PaymentMethod::TYPE_XENDIT) {
                 TransactionService::createInvoice($transaction);
             } elseif ($paymentMethodType == PaymentMethod::TYPE_BALANCE) {

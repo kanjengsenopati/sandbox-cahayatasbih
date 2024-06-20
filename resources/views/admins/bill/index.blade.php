@@ -34,6 +34,10 @@
             width: 50%;
         }
     }
+
+    .d-flex.align-items-center>*:not(:last-child) {
+        margin-right: 10px;
+    }
 </style>
 
 @endpush
@@ -201,7 +205,18 @@
                                                             <a class="nav-link" data-bs-toggle="tab"
                                                                 href="#kt_tab_pane_5">Lainnya</a>
                                                         </li>
+                                                        <div
+                                                            class="d-flex justify-content-end align-items-center mb-3 ms-auto">
+                                                            <input type="checkbox" id="select-all">
+                                                            <label for="select-all" class="ms-2 mb-0">Bayar
+                                                                Semua</label>
+                                                            <button class="btn btn-primary modal-pay ms-2"
+                                                                style="min-width: 100px;">
+                                                                Bayar
+                                                            </button>
+                                                        </div>
                                                     </ul>
+
 
                                                     <div class="tab-content" id="myTabContent">
                                                         <div class="tab-pane fade show active" id="kt_tab_pane_4"
@@ -385,6 +400,34 @@
 <!--end::Post-->
 @endsection
 @push('js')
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const selectAllCheckbox = document.getElementById('select-all-bills');
+    
+        selectAllCheckbox.addEventListener('change', function() {
+            const billCheckboxes = document.querySelectorAll('.bill-checkbox');
+            billCheckboxes.forEach(checkbox => {
+                checkbox.checked = selectAllCheckbox.checked;
+                const billId = checkbox.value;
+                const monthCheckboxes = document.querySelectorAll(`.bill-month-checkbox.bill-${billId}`);
+                monthCheckboxes.forEach(monthCheckbox => {
+                    monthCheckbox.checked = selectAllCheckbox.checked;
+                });
+            });
+        });
+    
+        const billCheckboxes = document.querySelectorAll('.bill-checkbox');
+        billCheckboxes.forEach(checkbox => {
+            checkbox.addEventListener('change', function() {
+                const billId = checkbox.value;
+                const monthCheckboxes = document.querySelectorAll(`.bill-month-checkbox.bill-${billId}`);
+                monthCheckboxes.forEach(monthCheckbox => {
+                    monthCheckbox.checked = checkbox.checked;
+                });
+            });
+        });
+    });
+</script>
 <script>
     $(document).ready(function () {
         function changeButtonText(button) {
