@@ -253,16 +253,18 @@ class BillController extends Controller
                 }
                 TransactionService::dispatchNotifications($transaction);
             }
-            if ($transaction->status == Transaction::STATUS_REJECTED) {
-                $transaction->activeProof->update([
-                    'status' => TransactionProof::STATUS_REJECTED,
-                    'note' => $request->note,
-                ]);
-            } else {
-                $transaction->activeProof->update([
-                    'status' => TransactionProof::STATUS_CONFIRMED,
-                    'note' => null,
-                ]);
+            if ($transaction->activeProof) {
+                if ($transaction->status == Transaction::STATUS_REJECTED) {
+                    $transaction->activeProof->update([
+                        'status' => TransactionProof::STATUS_REJECTED,
+                        'note' => $request->note,
+                    ]);
+                } else {
+                    $transaction->activeProof->update([
+                        'status' => $request->status,
+                        'note' => null,
+                    ]);
+                }
             }
             DB::commit();
             return $this->postSuccessResponse("Berhasil mengubah status transaksi", $transaction);

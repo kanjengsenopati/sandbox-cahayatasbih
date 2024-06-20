@@ -155,7 +155,7 @@ class TransactionService
         $paymentCode = 'CHT-' . Str::random(3) . time();
 
         $transactionData = [
-            'pay_amount' => self::getTotalPayAmount($request->bill_ids),
+            'pay_amount' => $request->bill_ids != null ? self::getTotalPayAmount($request->bill_ids) : $request->amount,
             'payment_code' => $paymentCode,
             'student_id' => $request->student_id,
             'expiry_time' => Carbon::now()->addMinutes($expiryTimeInMinutes),
@@ -164,6 +164,24 @@ class TransactionService
         ];
 
         $transaction = Transaction::create(array_merge($transactionData, $request->validated()));
+
+        if ($paymentMethodType == PaymentMethod::TYPE_TRANSFER) {
+            // Generate unique payment 3 digits
+            $uniquePayment = str_pad(rand(1, 300), 3, '0', STR_PAD_LEFT);
+            $transaction->update([
+                'status' => Transaction::STATUS_PENDING_PAYMENT,
+                'paid_at' => null,
+                'unique_payment' => $uniquePayment,
+                'pay_amount' => $transaction->pay_amount + $uniquePayment
+            ]);
+            // add app fee to transaction
+            TransactionService::updateAppFee($transaction);
+            // load data all bank from billType
+            $transaction->load('transactionDetails.bill.banks');
+            // send notification to user via whatsapp
+            $messageWhatsapp = SendNotifWaService::sendMessagePendingTransferPayment($transaction);
+            dispatch(new SendToWhatsappNotificationJob($transaction->student?->user?->phone, $messageWhatsapp));
+        }
 
         if ($request->bill_ids != null) {
             foreach ($request->bill_ids as $billId) {

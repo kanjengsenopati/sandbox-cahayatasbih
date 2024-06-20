@@ -93,9 +93,6 @@ class SaldoController extends Controller
 
             $saldoHistory = $this->createSaldoHistory($request);
 
-            // $paymentCode = 'CHT-' . Str::random(3) . time();
-
-            // $transaction = $this->createTransaction($request, $paymentCode);
             $transaction = TransactionService::createTransaction($request, $paymentMethodType);
 
             $this->createTransactionDetail($transaction, $saldoHistory);
