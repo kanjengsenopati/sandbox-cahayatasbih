@@ -27,4 +27,19 @@ class School extends Model
     {
         return $this->hasMany(Classroom::class)->withTrashed();
     }
+
+    public function topupBank()
+    {
+        return $this->hasMany(TopupBank::class);
+    }
+
+    public function saldoBank()
+    {
+        return $this->topupBank()->where('type', TopupBank::TYPE_SALDO);
+    }
+
+    public function savingBank()
+    {
+        return $this->topupBank()->where('type', TopupBank::TYPE_SAVING);
+    }
 }

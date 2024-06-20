@@ -8,6 +8,7 @@ use App\Models\User;
 use App\Models\Student;
 use App\Models\BillItem;
 use App\Models\GymClass;
+use App\Models\TopupBank;
 use Xendit\Configuration;
 use App\Models\Membership;
 use App\Models\Transaction;
@@ -18,6 +19,7 @@ use Xendit\Invoice\InvoiceApi;
 use App\Models\GymClassHistory;
 use App\Models\GymClassBundling;
 use App\Models\MembershipHistory;
+use App\Models\TransactionDetail;
 use App\Models\ApplicationSetting;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Mail;
@@ -27,7 +29,6 @@ use Xendit\Invoice\CreateInvoiceRequest;
 use App\Jobs\SendToWhatsappNotificationJob;
 use App\Models\PersonalTrainerPacketSession;
 use App\Models\PersonalTrainerPacketSessionHistory;
-use App\Models\TransactionDetail;
 
 class TransactionService
 {
@@ -148,7 +149,7 @@ class TransactionService
         ]);
     }
 
-    public static function createTransaction($request, $paymentMethodType)
+    public static function createTransaction($request, $paymentMethodType, $type)
     {
         $appSetting = ApplicationSetting::latest()->first();
         $expiryTimeInMinutes = $appSetting->getPaymentExpireTimeInMinutesAttribute();
@@ -161,6 +162,7 @@ class TransactionService
             'expiry_time' => Carbon::now()->addMinutes($expiryTimeInMinutes),
             'status' => Transaction::STATUS_PENDING,
             'paid_at' => null,
+            'type' => $type ?? Transaction::TYPE_BILL,
         ];
 
         $transaction = Transaction::create(array_merge($transactionData, $request->validated()));
@@ -177,7 +179,21 @@ class TransactionService
             // add app fee to transaction
             TransactionService::updateAppFee($transaction);
             // load data all bank from billType
-            $transaction->load('transactionDetails.bill.banks');
+            if ($transaction->type == Transaction::TYPE_BILL) {
+                $transaction->load('transactionDetails.bill.banks');
+            } else {
+                // Load necessary relationships for TYPE_SALDO and TYPE_SAVING
+                $transaction->load('student.classroom.school.topupBank.bank');
+
+                if ($transaction->type == Transaction::TYPE_SALDO) {
+                    $transaction['banks'] = $transaction?->student?->classroom->school?->saldoBank
+                        ->pluck('bank');
+                } elseif ($transaction->type == Transaction::TYPE_SAVING) {
+                    $transaction['banks'] = $transaction?->student?->classroom?->school?->savingBank
+                        ->pluck('bank');
+                }
+            }
+
             // send notification to user via whatsapp
             $messageWhatsapp = SendNotifWaService::sendMessagePendingTransferPayment($transaction);
             dispatch(new SendToWhatsappNotificationJob($transaction->student?->user?->phone, $messageWhatsapp));

@@ -1,4 +1,4 @@
-@extends('layouts.master', ['title' => 'Data Tabungan Siswa'])
+@extends('layouts.master', ['title' => 'Bank TopUp Saldo'])
 @section('content')
 <div class="content d-flex flex-column flex-column-fluid" id="kt_content">
     <!--begin::Toolbar-->
@@ -10,7 +10,7 @@
                 data-kt-swapper-parent="{default: '#kt_content_container', 'lg': '#kt_toolbar_container'}"
                 class="page-title d-flex align-items-center flex-wrap me-3 mb-5 mb-lg-0">
                 <!--begin::Title-->
-                <h1 class="d-flex text-dark fw-bolder fs-3 align-items-center my-1">Data Tabungan Siswa</h1>
+                <h1 class="d-flex text-dark fw-bolder fs-3 align-items-center my-1">Bank TopUp Saldo</h1>
                 <!--end::Title-->
                 <!--begin::Separator-->
                 <span class="h-20px border-gray-300 border-start mx-4"></span>
@@ -19,7 +19,7 @@
                 <ul class="breadcrumb breadcrumb-separatorless fw-bold fs-7 my-1">
                     <!--begin::Item-->
                     <li class="breadcrumb-item text-muted">
-                        <a href="{{ route('saving-history.index') }}" class="text-dark text-hover-primary">Data Tabungan
+                        <a href="{{ route('saldo-bank.index') }}" class="text-dark text-hover-primary">Data Saldo
                             Siswa</a>
                     </li>
                     <!--end::Item-->
@@ -29,7 +29,7 @@
                     </li>
                     <!--end::Item-->
                     <!--begin::Item-->
-                    <li class="breadcrumb-item text-dark">List Tabungan Siswa</li>
+                    <li class="breadcrumb-item text-dark">Bank TopUp Saldo</li>
                     <!--end::Item-->
                 </ul>
                 <!--end::Breadcrumb-->
@@ -51,14 +51,10 @@
                 <!--begin::Card header-->
                 <div class="card-header d-flex align-items-center justify-content-between border-0 pt-6">
                     <!--begin::Card title-->
-                    <div class="card-title">
-                        <a href="{{ route('saving-bank.index') }}" class="btn btn-sm btn-primary"><i
-                                class="fa fa-gear"></i>
-                            Setting List Bank</a>
-                    </div>
+
                     <div class="">
-                        <a type="a" class="btn btn-sm btn-primary" id="btn_add_permission"
-                            href="{{ route('saving-history.create') }}">+ Tabungan</a>
+                        <a href="{{ route('saldo-history.index') }}"><i class="fa fa-arrow-left"></i>
+                            <span class="ms-2 text-gray-700">Riwayat Saldo</span></a>
                         <!--end::Primary button-->
                     </div>
                     <!--end::Card title-->
@@ -68,15 +64,13 @@
                 <div class="card-body pt-0">
                     <!--begin::Table-->
                     <div class="table-responsive">
-                        <table id="table-saving-history" class="table align-middle table-row-dashed ">
+                        <table id="table-saldo-bank" class="table align-middle table-row-dashed ">
                             <thead>
                                 <tr class="text-start text-gray-400 fw-bolder fs-7 text-uppercase gs-0">
                                     <th style="width: 5%">No</th>
-                                    <th class="min-w-100px" style="width: 10%">Tanggal</th>
-                                    <th class="min-w-100px" style="width: 22%">Siswa</th>
-                                    <th class="min-w-100px" style="width: 22%">Jumlah</th>
-                                    <th class="min-w-100px" style="width: 22%">Status</th>
-                                    <th class="min-w-100px" style="width: 22%">Keterangan</th>
+                                    <th>UPT</th>
+                                    <th style="width: 50%">Bank</th>
+                                    <th class="text-center min-w-100px" style="width: 22%">Aksi</th>
                                 </tr>
                             </thead>
                             <tbody class="text-gray-600 fw-bold"></tbody>
@@ -98,11 +92,11 @@
 @push('js')
 <script>
     $(document).ready(() => {
-            var table = $('#table-saving-history').DataTable({
+            var table = $('#table-saldo-bank').DataTable({
                 ordering: false,
                 processing: true,
                 serverSide: true,
-                ajax: "{{ route('saving-history.index') }}",
+                ajax: "{{ route('saldo-bank.index') }}",
                 language: {
                     "paginate": {
                         "next": "<i class='fa fa-angle-right'>",
@@ -120,39 +114,24 @@
                         }
                     },
                     {
-                        data: 'date',
-                        name: 'date',
-                    },
-                    {
-                        data: 'student.name',
-                        name: 'student.name',
+                        data: 'name',
+                        name: 'name',
                         orderable: true,
                         searchable: true
                     },
                     {
-                        data: 'amount',
-                        name: 'amount',
+                        data: 'banks',
+                        name: 'banks',
                         orderable: true,
                         searchable: true
                     },
                     {
-                        data: 'status',
-                        name: 'status',
+                        data: 'action',
+                        name: 'action',
                         orderable: true,
                         searchable: true
                     },
-                    {
-                        data: 'description',
-                        name: 'description',
-                        orderable: true,
-                        searchable: true
-                    },
-                    // {
-                    //     data: 'action',
-                    //     name: 'action',
-                    //     orderable: true,
-                    //     searchable: true
-                    // },
+                  
                 ]
             });
 

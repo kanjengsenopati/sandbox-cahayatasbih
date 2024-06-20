@@ -80,4 +80,21 @@ class Transaction extends Model
     {
         return $this->hasOne(TransactionProof::class)->where('is_active', true);
     }
+
+    public function getBanksAttribute()
+    {
+        // return $this->load('student.classroom.school.topupBank.bank');
+        if ($this->type == self::TYPE_BILL) {
+            $this->load('transactionDetails.bill.banks');
+            return $this->transactionDetails->bill->banks->pluck('bank');
+        } elseif ($this->type == self::TYPE_SALDO) {
+            $this->load('student.classroom.school.saldoBank.bank');
+            return $this->student->classroom->school->saldoBank->pluck('bank');
+        } elseif ($this->type == self::TYPE_SAVING) {
+            $this->load('student.classroom.school.savingBank.bank');
+            return $this->student->classroom->school->savingBank->pluck('bank');
+        }
+
+        return collect(); // Return an empty collection if the type is unknown
+    }
 }

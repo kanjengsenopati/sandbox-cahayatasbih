@@ -93,8 +93,7 @@ class SaldoController extends Controller
 
             $saldoHistory = $this->createSaldoHistory($request);
 
-            $transaction = TransactionService::createTransaction($request, $paymentMethodType);
-
+            $transaction = TransactionService::createTransaction($request, $paymentMethodType, Transaction::TYPE_SALDO);
             $this->createTransactionDetail($transaction, $saldoHistory);
 
             if ($paymentMethodType == PaymentMethod::TYPE_XENDIT) {

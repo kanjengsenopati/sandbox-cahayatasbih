@@ -66,6 +66,8 @@ use App\Http\Controllers\Admin\InformationCategoryController;
 use App\Http\Controllers\User\WaliSettingLimitSaldoController;
 use App\Http\Controllers\Admin\StudentCounselingScoreController;
 use App\Http\Controllers\Admin\ReportStudentCounselingScoreController;
+use App\Http\Controllers\Admin\SaldoBankController;
+use App\Http\Controllers\Admin\SavingBankController;
 
 /*
 |--------------------------------------------------------------------------
@@ -184,6 +186,8 @@ Route::group(['middleware' => ['auth']], function () {
         ->names('application-setting');
 
     // start saldo history
+    Route::resource('saldo-bank', SaldoBankController::class, ['only' => ['index', 'edit', 'update']])->names('saldo-bank');
+    Route::resource('saving-bank', SavingBankController::class, ['only' => ['index', 'edit', 'update']])->names('saving-bank');
     Route::resource('saldo-history', SaldoHistoryController::class);
     Route::resource('saving-history', SavingHistoryController::class);
 

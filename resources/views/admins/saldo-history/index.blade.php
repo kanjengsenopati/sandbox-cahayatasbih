@@ -52,7 +52,9 @@
                 <div class="card-header d-flex align-items-center justify-content-between border-0 pt-6">
                     <!--begin::Card title-->
                     <div class="card-title">
-                        {{-- <h3 class="text-dark">Sekolah</h3> --}}
+                        <a href="{{ route('saldo-bank.index') }}" class="btn btn-sm btn-primary"><i
+                                class="fa fa-gear"></i>
+                            Setting List Bank</a>
                     </div>
                     <div class="">
                         <a type="a" class="btn btn-sm btn-primary" id="btn_add_permission"
