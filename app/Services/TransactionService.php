@@ -197,15 +197,18 @@ class TransactionService
             // send notification to user via whatsapp
             $messageWhatsapp = SendNotifWaService::sendMessagePendingTransferPayment($transaction);
             dispatch(new SendToWhatsappNotificationJob($transaction->student?->user?->phone, $messageWhatsapp));
+        } elseif ($paymentMethodType == PaymentMethod::TYPE_XENDIT) {
+            TransactionService::createInvoice($transaction);
+        } elseif ($paymentMethodType == PaymentMethod::TYPE_BALANCE) {
+            $payAmount = $transaction->pay_amount;
+            $student = Student::find($request->student_id);
+            if ($student->saldo < $payAmount) {
+                abort(400, 'Saldo tidak mencukupi');
+            }
+
+            TransactionService::payWithBalance($student, $payAmount, $transaction, $request);
         }
 
-        if ($request->bill_ids != null) {
-            foreach ($request->bill_ids as $billId) {
-                $transaction->transactionDetails()->create([
-                    'bill_id' => $billId,
-                ]);
-            }
-        }
 
         if ($transaction->status == Transaction::STATUS_PAID && $paymentMethodType == PaymentMethod::TYPE_XENDIT) {
             TransactionService::changeStatusToPaid($transaction);
@@ -266,9 +269,12 @@ class TransactionService
         $appSetting = ApplicationSetting::latest()->first();
         $expiredTimeInMinutes = $appSetting->getPaymentExpireTimeInMinutesAttribute();
 
+        $app_fee = $transaction->type == Transaction::TYPE_BILL ? $appSetting->bill_fee : ($transaction->pay_amount * $appSetting->saldo_fee / 100);
+
         $transaction->update([
-            'app_fee' => $transaction->type == Transaction::TYPE_BILL ? $appSetting->bill_fee : ($transaction->pay_amount * $appSetting->saldo_fee / 100),
+            'app_fee' => $app_fee,
             'expiry_time' => Carbon::now()->addMinutes($expiredTimeInMinutes),
+            'pay_amount' => $transaction->pay_amount + $app_fee
         ]);
     }
 }

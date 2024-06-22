@@ -8,9 +8,12 @@ use App\Models\School;
 use App\Models\Student;
 use App\Models\BillType;
 use App\Models\Transaction;
+use App\Models\SaldoHistory;
 use Illuminate\Http\Request;
-use App\Models\PaymentMethod;
 
+use App\Models\PaymentMethod;
+use App\Models\SavingHistory;
+use App\Models\PpdbRegistration;
 use App\Models\TransactionProof;
 use Yajra\DataTables\DataTables;
 use Illuminate\Support\Facades\DB;
@@ -242,14 +245,44 @@ class BillController extends Controller
             $data['admin_id'] = Auth::id();
             $transaction->update($data);
             if ($transaction->status == Transaction::STATUS_PAID) {
-                $transaction->activeProof->update([
-                    'status' => TransactionProof::STATUS_CONFIRMED
-                ]);
+                if ($transaction->activeProof !== null) {
+                    $transaction->activeProof->update([
+                        'status' => TransactionProof::STATUS_CONFIRMED
+                    ]);
+                }
                 // change bill status to paid
                 if ($transaction->type == Transaction::TYPE_BILL) {
                     $transaction->transactionDetails->each(function ($detail) {
                         $detail->bill->update(['status' => Bill::STATUS_PAID]);
                     });
+                }
+                if ($transaction->type == Transaction::TYPE_SALDO) {
+                    $student = Student::find($transaction->student_id);
+                    $student->update([
+                        'saldo' => $student->saldo + $transaction->pay_amount
+                    ]);
+                    // change status to saldo history
+                    $transaction->transactionDetails->first()->saldoHistory->update([
+                        'status' => SaldoHistory::STATUS_SUCCESS
+                    ]);
+                } elseif ($transaction->type == Transaction::TYPE_SAVING) {
+                    foreach ($transaction->transactionDetails as $detail) {
+                        $detail->savingHistory->update([
+                            'status' => SavingHistory::STATUS_SUCCESS
+                        ]);
+                    }
+
+                    $student = Student::find($transaction->student_id);
+                    $student->update([
+                        'saving' => $student->saving + $transaction->pay_amount
+                    ]);
+                } elseif ($transaction->type == Transaction::TYPE_PPDB) {
+                    foreach ($transaction->transactionDetails as $detail) {
+                        $detail->ppdbRegistration->update([
+                            'status' => PpdbRegistration::STATUS_PAID,
+                            'payment_status' => PpdbRegistration::STATUS_PAID
+                        ]);
+                    }
                 }
                 TransactionService::dispatchNotifications($transaction);
             }
@@ -270,6 +303,7 @@ class BillController extends Controller
             return $this->postSuccessResponse("Berhasil mengubah status transaksi", $transaction);
         } catch (\Throwable $th) {
             DB::rollBack();
+            dd($th);
             Log::error($th);
             return $this->failedResponse("Gagal mengubah status transaksi");
         }
