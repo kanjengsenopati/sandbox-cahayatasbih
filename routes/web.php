@@ -144,6 +144,7 @@ Route::group(['middleware' => ['auth']], function () {
     Route::resource('category-item', CategoryItemController::class);
     Route::resource('item', ItemController::class);
     Route::resource('stock-history', StockHistoryController::class);
+    Route::resource('contact', ContactController::class);
 
     // Start POS
     Route::get('pos/dashboard', [OrderItemController::class, 'dashboard'])->name('pos.dashboard');

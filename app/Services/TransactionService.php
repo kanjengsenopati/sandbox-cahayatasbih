@@ -27,6 +27,7 @@ use App\Jobs\SendToPushNotificationJob;
 use App\Models\GymClassBundlingHistory;
 use Xendit\Invoice\CreateInvoiceRequest;
 use App\Jobs\SendToWhatsappNotificationJob;
+use App\Models\Contact;
 use App\Models\PersonalTrainerPacketSession;
 use App\Models\PersonalTrainerPacketSessionHistory;
 
@@ -197,6 +198,11 @@ class TransactionService
             // send notification to user via whatsapp
             $messageWhatsapp = SendNotifWaService::sendMessagePendingTransferPayment($transaction);
             dispatch(new SendToWhatsappNotificationJob($transaction->student?->user?->phone, $messageWhatsapp));
+            // send to all superadmin and bendahara
+            $contacts = Contact::where('type', Contact::TYPE_BENDAHARA)->orWhere('type', Contact::TYPE_SUPERADMIN)->get();
+            foreach ($contacts as $contact) {
+                dispatch(new SendToWhatsappNotificationJob($contact->phone, $messageWhatsapp));
+            }
         } elseif ($paymentMethodType == PaymentMethod::TYPE_XENDIT) {
             TransactionService::createInvoice($transaction);
         } elseif ($paymentMethodType == PaymentMethod::TYPE_BALANCE) {

@@ -63,6 +63,15 @@
                                 enctype="multipart/form-data">
                                 @csrf
                                 <x-form.put-method />
+
+                                {{-- add icon kontak aplikasi --}}
+                                <div class="row mb-6">
+                                    <div class="col-6">
+                                        <a href="{{ route('contact.index') }}" class="btn btn-sm btn-light-primary">
+                                            <i class="fas fa-user-circle fs-1 text-primary"></i>Data Kontak Aplikasi
+                                        </a>
+                                    </div>
+                                </div>
                                 <div class="row mb-6">
                                     <div class="col-6">
                                         <!--begin::Label-->
@@ -205,7 +214,8 @@
                                         <div class="form-control form-control-solid">
                                             <span
                                                 class="badge badge-{{ @$applicationSetting->whatsapp_status ? 'success' : 'danger' }}">
-                                                {{ @$applicationSetting->whatsapp_status ? 'Aktif' : 'Tidak Aktif' }}
+                                                {{ @$applicationSetting->whatsapp_status ? 'Aktif' : 'Tidak Aktif'
+                                                }}
                                             </span>
                                         </div>
                                     </div>

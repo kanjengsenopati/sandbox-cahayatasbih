@@ -2,24 +2,44 @@
 
 namespace App\Http\Controllers\Admin;
 
-use App\Http\Controllers\Controller;
-use App\Http\Requests\Admin\ContactRequest;
 use App\Models\Contact;
 use Illuminate\Http\Request;
+use Yajra\DataTables\DataTables;
+use App\Http\Controllers\Controller;
+use App\Http\Requests\Admin\ContactRequest;
 
 class ContactController extends Controller
 {
     public function __construct()
     {
-        $this->middleware('permission:content');
     }
     /**
      * Display a listing of the resource.
      */
     public function index()
     {
-        $contact = Contact::first();
-        return view('admins.contact.index', compact('contact'));
+        if (request()->ajax()) {
+            $data = Contact::latest()->get();
+            return DataTables::of($data)
+                ->editColumn('type', function ($data) {
+                    if ($data->type == Contact::TYPE_SUPERADMIN) {
+                        return '<span class="badge badge-primary">SuperAdmin</span>';
+                    } elseif ($data->type == Contact::TYPE_BENDAHARA) {
+                        return '<span class="badge badge-success">Bendahara</span>';
+                    }
+                })
+                ->addColumn('action', function ($data) {
+                    $actionEdit = route('contact.edit', $data->id);
+                    $actionDelete = route('contact.destroy', $data->id);
+                    return "<div class='d-flex justify-content-center'>" .
+                        view('components.action.edit', ['action' => $actionEdit]) .
+                        view('components.action.delete', ['action' => $actionDelete, 'id' => $data->id]) .
+                        "</div>";
+                })
+                ->rawColumns(['action', 'type'])
+                ->make(true);
+        }
+        return view('admins.contact.index');
     }
 
     /**
@@ -27,25 +47,19 @@ class ContactController extends Controller
      */
     public function create()
     {
-        //
+        $contact = new Contact();
+        $types = $contact->getListType();
+        return view('admins.contact.create-edit', compact('types'));
     }
+
 
     /**
      * Store a newly created resource in storage.
      */
     public function store(ContactRequest $request)
     {
-        $contact = Contact::first();
-        $data = $request->validated();
-
-        $contact ? $contact->update($data) : Contact::create($data);
-        foreach (['contact_info'] as $key) {
-            if (cache()->has($key)) {
-                cache()->forget($key);
-            }
-        }
-
-        return redirect()->back()->with('success', 'Data Kontak Perusahaan berhasil diubah');
+        Contact::create($request->validated());
+        return redirect()->route('contact.index')->with('success', 'Kontak berhasil ditambahkan');
     }
 
     /**
@@ -59,24 +73,27 @@ class ContactController extends Controller
     /**
      * Show the form for editing the specified resource.
      */
-    public function edit(string $id)
+    public function edit(Contact $contact)
     {
-        //
+        $types = $contact->getListType();
+        return view('admins.contact.create-edit', compact('contact', 'types'));
     }
 
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, string $id)
+    public function update(ContactRequest $request, Contact $contact)
     {
-        //
+        $contact->update($request->validated());
+        return redirect()->route('contact.index')->with('success', 'Kontak berhasil diubah');
     }
 
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(string $id)
+    public function destroy(Contact $contact)
     {
-        //
+        $contact->delete();
+        return redirect()->route('contact.index')->with('success', 'Kontak berhasil dihapus');
     }
 }

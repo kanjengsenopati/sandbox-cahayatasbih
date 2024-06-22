@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\V1;
 
 use Carbon\Carbon;
 use App\Models\Bill;
+use App\Models\Contact;
 use App\Models\Student;
 use App\Models\Transaction;
 use Illuminate\Support\Str;
@@ -11,19 +12,19 @@ use App\Models\SaldoHistory;
 use Illuminate\Http\Request;
 use App\Models\PaymentMethod;
 use App\Models\SavingHistory;
+use App\Models\PpdbRegistration;
+use App\Models\TransactionProof;
 use App\Models\ApplicationSetting;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\Controller;
-use App\Http\Requests\Admin\ReuploadProofRequest;
-use App\Http\Requests\Admin\UploadProofRequest;
 use App\Services\SendNotifWaService;
 use App\Services\TransactionService;
 use App\Jobs\SendToPushNotificationJob;
 use App\Jobs\SendToWhatsappNotificationJob;
+use App\Http\Requests\Admin\UploadProofRequest;
 use App\Http\Requests\Api\V1\TransactionRequest;
-use App\Models\PpdbRegistration;
-use App\Models\TransactionProof;
+use App\Http\Requests\Admin\ReuploadProofRequest;
 
 class TransactionController extends Controller
 {
@@ -219,6 +220,10 @@ class TransactionController extends Controller
         // add notif whatsapp
         $messageWhatsapp = SendNotifWaService::sendMessagePendingTransferPayment($transaction);
         dispatch(new SendToWhatsappNotificationJob($transaction->student?->user?->phone, $messageWhatsapp));
+        $contacts = Contact::where('type', Contact::TYPE_BENDAHARA)->orWhere('type', Contact::TYPE_SUPERADMIN)->get();
+        foreach ($contacts as $contact) {
+            dispatch(new SendToWhatsappNotificationJob($contact->phone, $messageWhatsapp));
+        }
 
         return $this->postSuccessResponse('Berhasil mengupload bukti pembayaran', ['transaction' => $transaction]);
     }
@@ -273,6 +278,10 @@ class TransactionController extends Controller
             $messageWhatsapp = SendNotifWaService::sendMessagePendingTransferPayment($proof->transaction);
             dispatch(new SendToWhatsappNotificationJob($proof->transaction->student?->user?->phone, $messageWhatsapp));
 
+            $contacts = Contact::where('type', Contact::TYPE_BENDAHARA)->orWhere('type', Contact::TYPE_SUPERADMIN)->get();
+            foreach ($contacts as $contact) {
+                dispatch(new SendToWhatsappNotificationJob($contact->phone, $messageWhatsapp));
+            }
             DB::commit();
 
             return $this->postSuccessResponse('Berhasil mengupdate bukti pembayaran', ['proof' => $newProof]);
