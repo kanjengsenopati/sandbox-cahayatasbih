@@ -29,7 +29,7 @@
     @php
     $billDetail = $bill->bills->where('month', $month)->where('student_id', $student->id)->first();
     $amount = $billDetail ? $billDetail->amount : 0;
-    $statusColor = $billDetail && $billDetail->status == 'PAID' ? '#4CAF50' : '#F44336';
+    $statusColor = $billDetail && $billDetail->status == 'PAID' ? '#4CAF50' : '#FF9800';
     $detailPayment = $billDetail ? $billDetail->transactions?->first() : null;
     $modalId = "bayarKilat{$bill->id}_{$month}";
     $showModal = $billDetail && $billDetail->status != 'PAID';
