@@ -41,7 +41,7 @@ class TransactionController extends Controller
         try {
             $paymentMethodType = PaymentMethod::find($request->payment_method_id)->type;
 
-            $transaction = TransactionService::createTransaction($request, $paymentMethodType);
+            $transaction = TransactionService::createTransaction($request, $paymentMethodType, Transaction::TYPE_BILL);
 
             if ($paymentMethodType == PaymentMethod::TYPE_XENDIT) {
                 TransactionService::createInvoice($transaction);
@@ -55,24 +55,23 @@ class TransactionController extends Controller
                 }
 
                 TransactionService::payWithBalance($student, $payAmount, $transaction, $request);
+            } elseif ($paymentMethodType == PaymentMethod::TYPE_TRANSFER) {
+                //generate unique payment 3 digit
+                $uniquePayment = rand(100, 999);
+                $transaction->update([
+                    'status' => Transaction::STATUS_PENDING_PAYMENT,
+                    'paid_at' => null,
+                    'unique_payment' => $uniquePayment,
+                    'pay_amount' => $transaction->pay_amount + $uniquePayment
+                ]);
+                // add app fee to transaction
+                TransactionService::updateAppFee($transaction);
+                // load data all bank from billType
+                $transaction->load('transactionDetails.bill.banks');
+                // send notification to user via whatsapp
+                $messageWhatsapp = SendNotifWaService::sendMessagePendingTransferPayment($transaction);
+                dispatch(new SendToWhatsappNotificationJob($transaction->student?->user?->phone, $messageWhatsapp));
             }
-            // elseif ($paymentMethodType == PaymentMethod::TYPE_TRANSFER) {
-            //     //generate unique payment 3 digit
-            //     $uniquePayment = rand(100, 999);
-            //     $transaction->update([
-            //         'status' => Transaction::STATUS_PENDING_PAYMENT,
-            //         'paid_at' => null,
-            //         'unique_payment' => $uniquePayment,
-            //         'pay_amount' => $transaction->pay_amount + $uniquePayment
-            //     ]);
-            //     // add app fee to transaction
-            //     TransactionService::updateAppFee($transaction);
-            //     // load data all bank from billType
-            //     $transaction->load('transactionDetails.bill.banks');
-            //     // send notification to user via whatsapp
-            //     $messageWhatsapp = SendNotifWaService::sendMessagePendingTransferPayment($transaction);
-            //     dispatch(new SendToWhatsappNotificationJob($transaction->student?->user?->phone, $messageWhatsapp));
-            // }
 
             DB::commit();
 
