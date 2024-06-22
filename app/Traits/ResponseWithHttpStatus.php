@@ -24,7 +24,7 @@ trait ResponseWithHttpStatus
         return response()->json($data, 200);
     }
 
-    public function failedResponse($message = 'Failed Process Data', $data = null, $code = 500)
+    public function failedResponse($message = 'Failed Process Data', $data = null, $code = 422)
     {
         if ($data != null) {
             $data = [

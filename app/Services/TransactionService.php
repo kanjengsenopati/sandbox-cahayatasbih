@@ -269,8 +269,12 @@ class TransactionService
         $appSetting = ApplicationSetting::latest()->first();
         $expiredTimeInMinutes = $appSetting->getPaymentExpireTimeInMinutesAttribute();
 
-        $app_fee = $transaction->type == Transaction::TYPE_BILL ? $appSetting->bill_fee : ($transaction->pay_amount * $appSetting->saldo_fee / 100);
+        // Hitung app_fee berdasarkan tipe transaksi dan bulatkan ke atas
+        $app_fee = $transaction->type == Transaction::TYPE_BILL
+            ? $appSetting->bill_fee
+            : ceil($transaction->pay_amount * $appSetting->saldo_fee / 100);
 
+        // Perbarui transaksi dengan app_fee yang telah dibulatkan dan informasi lainnya
         $transaction->update([
             'app_fee' => $app_fee,
             'expiry_time' => Carbon::now()->addMinutes($expiredTimeInMinutes),

@@ -19,8 +19,8 @@ return [
 
     'allowed_methods' => ['GET', 'POST', 'PUT', 'DELETE'],
 
-    'allowed_origins' => ['https://krakatauproperti.com'],
-    
+    'allowed_origins' => ['https://ponpes.cahayatasbih.or.id'],
+
     'allowed_origins_patterns' => [],
 
     'allowed_headers' => ['*'],

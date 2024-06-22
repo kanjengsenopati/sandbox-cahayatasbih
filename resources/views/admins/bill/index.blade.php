@@ -210,13 +210,12 @@
                                                             <input type="checkbox" id="select-all">
                                                             <label for="select-all" class="ms-2 mb-0">Bayar
                                                                 Semua</label>
+                                                            <!-- Tempatkan tombol "Bayar" di lokasi yang sesuai -->
                                                             <button class="btn btn-primary modal-pay ms-2"
-                                                                style="min-width: 100px;">
-                                                                Bayar
-                                                            </button>
+                                                                data-bs-toggle="modal" data-bs-target="#paymentModal"
+                                                                style="min-width: 100px;">Bayar</button>
                                                         </div>
                                                     </ul>
-
 
                                                     <div class="tab-content" id="myTabContent">
                                                         <div class="tab-pane fade show active" id="kt_tab_pane_4"
@@ -397,37 +396,38 @@
     </div>
     <!--end::Container-->
 </div>
+<!-- Modal untuk semua pembayaran -->
+<div class="modal fade" id="paymentModal" tabindex="-1" aria-labelledby="paymentModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="paymentModalLabel">Informasi Pembayaran</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="text-center mb-2">
+                    <div class="mb-1">
+                        <span class="fw-bold fs-1" id="total-amount"></span>
+                    </div>
+                    <div class="mb-1">
+                        <span class="fw-bold text-muted">Total Pembayaran Tagihan</span>
+                    </div>
+                </div>
+                <span class="fw-bold text-muted">Rincian Pembayaran</span>
+                <div id="payment-details">
+                    <!-- Informasi pembayaran akan ditambahkan di sini -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
+                <button type="button" class="btn btn-primary">Bayar Sekarang</button>
+            </div>
+        </div>
+    </div>
+</div>
 <!--end::Post-->
 @endsection
 @push('js')
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const selectAllCheckbox = document.getElementById('select-all-bills');
-    
-        selectAllCheckbox.addEventListener('change', function() {
-            const billCheckboxes = document.querySelectorAll('.bill-checkbox');
-            billCheckboxes.forEach(checkbox => {
-                checkbox.checked = selectAllCheckbox.checked;
-                const billId = checkbox.value;
-                const monthCheckboxes = document.querySelectorAll(`.bill-month-checkbox.bill-${billId}`);
-                monthCheckboxes.forEach(monthCheckbox => {
-                    monthCheckbox.checked = selectAllCheckbox.checked;
-                });
-            });
-        });
-    
-        const billCheckboxes = document.querySelectorAll('.bill-checkbox');
-        billCheckboxes.forEach(checkbox => {
-            checkbox.addEventListener('change', function() {
-                const billId = checkbox.value;
-                const monthCheckboxes = document.querySelectorAll(`.bill-month-checkbox.bill-${billId}`);
-                monthCheckboxes.forEach(monthCheckbox => {
-                    monthCheckbox.checked = checkbox.checked;
-                });
-            });
-        });
-    });
-</script>
 <script>
     $(document).ready(function () {
         function changeButtonText(button) {

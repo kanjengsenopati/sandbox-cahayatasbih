@@ -21,8 +21,6 @@
     @endphp
     <td style="background-color: {{ $statusColor }}; padding: 10px; border: 2px solid white;">
         @if($showModal)
-        <input type="checkbox" name="bill_months[{{ $bill->id }}][]" value="{{ $month }}"
-            id="bill-month-{{ $bill->id }}-{{ $month }}">
         <a href="#" data-bs-toggle="modal" data-bs-target="#{{ $modalId }}" style="color: rgb(255, 255, 255);">
             Rp {{ number_format($amount, 0, ',', '.') }}
         </a>
