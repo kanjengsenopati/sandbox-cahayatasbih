@@ -294,6 +294,22 @@ class TransactionController extends Controller
             return $this->failedResponse('Transaksi tidak ditemukan', 404);
         }
 
+        // check tipe transaksi
+        if ($transaction->type == Transaction::TYPE_BILL) {
+            $transaction->load('transactionDetails.bill.banks');
+        } else {
+            // Load necessary relationships for TYPE_SALDO and TYPE_SAVING
+            $transaction->load('student.classroom.school.topupBank.bank');
+
+            if ($transaction->type == Transaction::TYPE_SALDO) {
+                $transaction['banks'] = $transaction?->student?->classroom->school?->saldoBank
+                    ->pluck('bank');
+            } elseif ($transaction->type == Transaction::TYPE_SAVING) {
+                $transaction['banks'] = $transaction?->student?->classroom?->school?->savingBank
+                    ->pluck('bank');
+            }
+        }
+
         return $this->getSuccessResponse($transaction);
     }
 }
