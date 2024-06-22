@@ -413,6 +413,21 @@
                         <span class="fw-bold text-muted">Total Pembayaran Tagihan</span>
                     </div>
                 </div>
+                {{-- add card metode pembayaran --}}
+                <span class="fw-bold text-muted">Metode Pembayaran</span>
+                <div class="card payment-card">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center">
+
+                            <select class="form-select" name="payment_method" required>
+                                <option value="">Pilih Metode Pembayaran</option>
+                                <option value="BALANCE">Saldo</option>
+                                <option value="CASH">Tunai</option>
+                            </select>
+
+                        </div>
+                    </div>
+                </div>
                 <span class="fw-bold text-muted">Rincian Pembayaran</span>
                 <div id="payment-details">
                     <!-- Informasi pembayaran akan ditambahkan di sini -->
