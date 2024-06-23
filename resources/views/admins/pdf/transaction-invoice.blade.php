@@ -200,7 +200,7 @@
                         <strong class="text-sm">Informasi Transaksi</strong>
                         <table width="100%">
                             <tr>
-                                <td style="white-space: nowrap" width="15%" class="text-muted">Tanggal Pembelian</td>
+                                <td style="white-space: nowrap" width="15%" class="text-muted">Pembayaran</td>
                                 <td width="2%">:</td>
                                 <td><strong>{{ \Carbon\Carbon::parse($data->created_at)->locale('id_ID')->isoFormat('D
                                         MMMM YYYY H:mm') }}</strong></td>
