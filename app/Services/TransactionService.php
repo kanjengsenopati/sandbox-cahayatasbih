@@ -154,7 +154,7 @@ class TransactionService
     {
         $appSetting = ApplicationSetting::latest()->first();
         $expiryTimeInMinutes = $appSetting->getPaymentExpireTimeInMinutesAttribute();
-        $paymentCode = 'CHT-' . Str::random(3) . time();
+        $paymentCode = 'CHT-' . now()->format('Ymd') . str_pad(Transaction::whereDate('created_at', now())->count() + 1, 3, '0', STR_PAD_LEFT);
 
         $transactionData = [
             'pay_amount' => $request->bill_ids != null ? self::getTotalPayAmount($request->bill_ids) : $request->amount,
