@@ -179,28 +179,6 @@ class BillController extends Controller
             $paymentMethodType = $request->payment_method;
 
             $transaction = TransactionService::createTransaction($request, $paymentMethodType, Transaction::TYPE_BILL);
-            if ($paymentMethodType == PaymentMethod::TYPE_XENDIT) {
-                TransactionService::createInvoice($transaction);
-            } elseif ($paymentMethodType == PaymentMethod::TYPE_BALANCE) {
-                $payAmount = $transaction->pay_amount;
-                $student = Student::find($request->student_id);
-
-                if ($student->saldo < $payAmount) {
-                    DB::rollBack();
-                    return redirect()->back()->with('error', "Maaf Saldo Santri tidak mencukupi");
-                }
-                $transaction->update([
-                    'payment_method_id' => PaymentMethod::where('type', $paymentMethodType)
-                        ->first()->id,
-                    'admin_id' => Auth::id(),
-                ]);
-                TransactionService::payWithBalance($student, $payAmount, $transaction, $request);
-            } elseif ($paymentMethodType == PaymentMethod::TYPE_CASH) {
-                $transaction->update(['payment_method_id' => PaymentMethod::where('type', $paymentMethodType)
-                    ->first()->id]);
-                TransactionService::payWithCash($transaction);
-            }
-
             if ($transaction->status == Transaction::STATUS_PAID) {
                 TransactionService::dispatchNotifications($transaction);
             }

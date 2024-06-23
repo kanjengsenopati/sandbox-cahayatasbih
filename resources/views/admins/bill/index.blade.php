@@ -400,43 +400,44 @@
 <div class="modal fade" id="paymentModal" tabindex="-1" aria-labelledby="paymentModalLabel" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="paymentModalLabel">Informasi Pembayaran</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <div class="text-center mb-2">
-                    <div class="mb-1">
-                        <span class="fw-bold fs-1" id="total-amount"></span>
-                    </div>
-                    <div class="mb-1">
-                        <span class="fw-bold text-muted">Total Pembayaran Tagihan</span>
-                    </div>
+            <form action="{{ route('bill.store') }}" method="post" id="form-multi-payment">
+                @csrf
+                <div class="modal-header">
+                    <h5 class="modal-title" id="paymentModalLabel">Informasi Pembayaran</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-                {{-- add card metode pembayaran --}}
-                <span class="fw-bold text-muted">Metode Pembayaran</span>
-                <div class="card payment-card">
-                    <div class="card-body">
-                        <div class="d-flex align-items-center">
-
-                            <select class="form-select" name="payment_method" required>
-                                <option value="">Pilih Metode Pembayaran</option>
-                                <option value="BALANCE">Saldo</option>
-                                <option value="CASH">Tunai</option>
-                            </select>
-
+                <div class="modal-body">
+                    <div class="text-center mb-2">
+                        <div class="mb-1">
+                            <span class="fw-bold fs-1" id="total-amount"></span>
+                        </div>
+                        <div class="mb-1">
+                            <span class="fw-bold text-muted">Total Pembayaran Tagihan</span>
                         </div>
                     </div>
+                    <span class="fw-bold text-muted">Metode Pembayaran</span>
+                    <div class="card payment-card">
+                        <div class="card-body">
+                            <div class="d-flex align-items-center">
+                                <select class="form-select" name="payment_method" id="payment-method" required>
+                                    <option value="">Pilih Metode Pembayaran</option>
+                                    <option value="BALANCE">Saldo</option>
+                                    <option value="CASH">Tunai</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <span class="fw-bold text-muted">Rincian Pembayaran</span>
+                    <div id="payment-details">
+                        <!-- Informasi pembayaran akan ditambahkan di sini -->
+                    </div>
+                    <input type="hidden" name="student_id" id="student-id" value="{{ $student->id }}">
                 </div>
-                <span class="fw-bold text-muted">Rincian Pembayaran</span>
-                <div id="payment-details">
-                    <!-- Informasi pembayaran akan ditambahkan di sini -->
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
+                    <button type="submit" class="btn btn-primary">Bayar Sekarang</button>
                 </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
-                <button type="button" class="btn btn-primary">Bayar Sekarang</button>
-            </div>
+            </form>
         </div>
     </div>
 </div>

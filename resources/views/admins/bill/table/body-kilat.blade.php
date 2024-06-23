@@ -42,7 +42,7 @@
             </a>
             <input type="checkbox" name="bill_months[{{ $bill->id }}][]" value="{{ $month }}"
                 id="bill-month-{{ $bill->id }}-{{ $month }}"
-                class="bill-month-checkbox bill-{{ $bill->id }} prevent-modal" data-bill-id="{{ $bill->id }}"
+                class="bill-month-checkbox bill-{{ $bill->id }} prevent-modal" data-bill-id="{{ $billDetail->id }}"
                 data-month="{{ $billDetail->translated_month }}" data-year="{{ $billDetail->year }}"
                 data-bill-name="{{ $bill->name }}" data-amount="{{ $amount }}" style="margin-top: 10px;">
         </div>
@@ -65,73 +65,100 @@
         const selectAllCheckbox = document.getElementById('select-all');
 
         selectAllCheckbox.addEventListener('change', function() {
-            const billMonthCheckboxes = document.querySelectorAll('.bill-month-checkbox');
-            billMonthCheckboxes.forEach(checkbox => {
-                checkbox.checked = selectAllCheckbox.checked;
-            });
+        const billMonthCheckboxes = document.querySelectorAll('.bill-month-checkbox');
+        billMonthCheckboxes.forEach(checkbox => {
+        checkbox.checked = selectAllCheckbox.checked;
+        });
         });
 
         // Prevent the modal from opening when clicking on checkboxes
         const preventModalCheckboxes = document.querySelectorAll('.prevent-modal');
         preventModalCheckboxes.forEach(checkbox => {
-            checkbox.addEventListener('click', function(event) {
-                event.stopPropagation();
-            });
+        checkbox.addEventListener('click', function(event) {
+        event.stopPropagation();
+        });
         });
 
         // Handle "Bayar" button click
         document.querySelector('.modal-pay').addEventListener('click', function() {
-            const selectedCheckboxes = document.querySelectorAll('.bill-month-checkbox:checked');
-            const paymentDetails = document.getElementById('payment-details');
-            const totalAmountElement = document.getElementById('total-amount');
-            
-            paymentDetails.innerHTML = ''; // Clear previous details
+        const selectedCheckboxes = document.querySelectorAll('.bill-month-checkbox:checked');
+        const paymentDetails = document.getElementById('payment-details');
+        const totalAmountElement = document.getElementById('total-amount');
 
-            let totalAmount = 0;
+        paymentDetails.innerHTML = ''; // Clear previous details
 
-            selectedCheckboxes.forEach(checkbox => {
-                const billId = checkbox.getAttribute('data-bill-id');
-                const billName = checkbox.getAttribute('data-bill-name');
-                const translatedMonth = checkbox.getAttribute('data-month');
-                const year = checkbox.getAttribute('data-year');
-                const month = checkbox.value;
-                const amount = parseInt(checkbox.getAttribute('data-amount'));
+        let totalAmount = 0;
 
-                if (!isNaN(amount)) {
-                    totalAmount += amount;
-                    
-                    // Create a new card element for each selected bill
-                    const cardDiv = document.createElement('div');
-                    cardDiv.className = 'card payment-card'; // Add class for styling
-                    
-                    const cardBodyDiv = document.createElement('div');
-                    cardBodyDiv.className = 'card-body pt-5';
-                    
-                    const nameDiv = document.createElement('div');
-                    nameDiv.className = 'mb-1';
-                    const nameSpan = document.createElement('span');
-                    nameSpan.className = 'fw-bold fs-5';
-                    nameSpan.textContent = `${billName}, ${translatedMonth} ${year}`;
-                    nameDiv.appendChild(nameSpan);
-                    
-                    const amountDiv = document.createElement('div');
-                    amountDiv.className = 'mb-1';
-                    const amountSpan = document.createElement('span');
-                    amountSpan.className = 'fw-bold text-muted';
-                    amountSpan.textContent = `Rp ${amount.toLocaleString()}`;
-                    amountDiv.appendChild(amountSpan);
-                    
-                    cardBodyDiv.appendChild(nameDiv);
-                    cardBodyDiv.appendChild(amountDiv);
-                    cardDiv.appendChild(cardBodyDiv);
-                    
-                    paymentDetails.appendChild(cardDiv);
-                }
-            });
+        // Remove any existing bill_ids hidden inputs
+        document.querySelectorAll('input[name="bill_ids[]"]').forEach(input => input.remove());
 
-            // Update total amount
-            totalAmountElement.textContent = `Rp ${totalAmount.toLocaleString()}`;
+        selectedCheckboxes.forEach(checkbox => {
+        const billId = checkbox.getAttribute('data-bill-id');
+        const billName = checkbox.getAttribute('data-bill-name');
+        const translatedMonth = checkbox.getAttribute('data-month');
+        const year = checkbox.getAttribute('data-year');
+        const month = checkbox.value;
+        const amount = parseInt(checkbox.getAttribute('data-amount'));
+
+
+        if (!isNaN(amount)) {
+        totalAmount += amount;
+
+        // check jika student->saldo < totalAmount maka hidden option payment method value='BALANCE'
+        const studentBalance = parseInt('{{ $student->saldo }}');
+        const paymentMethod = document.getElementById('payment-method');
+        if (studentBalance < totalAmount) {
+        // sembunyikan option payment method value='BALANCE'
+        paymentMethod.querySelector('option[value="BALANCE"]').style.display = 'none';
+        } else {
+        // tampilkan option payment method value='BALANCE'
+        paymentMethod.querySelector('option[value="BALANCE"]').style.display = 'block';
+        }
+
+
+        // Create a new hidden input for each selected bill ID
+        const hiddenInput = document.createElement('input');
+        hiddenInput.type = 'hidden';
+        hiddenInput.name = 'bill_ids[]';
+        hiddenInput.value = billId;
+        // append hidden input to form with id form-multi-payment
+        document.getElementById('form-multi-payment').appendChild(hiddenInput);
+
+
+
+        // Create a new card element for each selected bill
+        const cardDiv = document.createElement('div');
+        cardDiv.className = 'card payment-card'; // Add class for styling
+
+        const cardBodyDiv = document.createElement('div');
+        cardBodyDiv.className = 'card-body pt-5';
+
+        const nameDiv = document.createElement('div');
+        nameDiv.className = 'mb-1';
+        const nameSpan = document.createElement('span');
+        nameSpan.className = 'fw-bold fs-5';
+        nameSpan.textContent = `${billName}, ${translatedMonth} ${year}`;
+        nameDiv.appendChild(nameSpan);
+
+        const amountDiv = document.createElement('div');
+        amountDiv.className = 'mb-1';
+        const amountSpan = document.createElement('span');
+        amountSpan.className = 'fw-bold text-muted';
+        amountSpan.textContent = `Rp ${amount.toLocaleString()}`;
+        amountDiv.appendChild(amountSpan);
+
+        cardBodyDiv.appendChild(nameDiv);
+        cardBodyDiv.appendChild(amountDiv);
+        cardDiv.appendChild(cardBodyDiv);
+
+        paymentDetails.appendChild(cardDiv);
+        }
         });
-    });
+
+        // Update total amount
+        totalAmountElement.textContent = `Rp ${totalAmount.toLocaleString()}`;
+        });
+
+        });
 </script>
 @endpush

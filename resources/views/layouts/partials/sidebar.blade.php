@@ -191,6 +191,15 @@
                             </a>
                         </div>
                         @endcan
+                        <div class="menu-item ">
+                            <a class="menu-link {{ request()->routeIs('bank.*') ? ' active' : '' }}"
+                                href="{{ route('bank.index') }}">
+                                <span class="menu-bullet">
+                                    <span class="bullet bullet-dot"></span>
+                                </span>
+                                <span class="menu-title">Bank</span>
+                            </a>
+                        </div>
                     </div>
                 </div>
                 @endcanany

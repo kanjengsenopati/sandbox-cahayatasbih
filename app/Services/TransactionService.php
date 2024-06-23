@@ -35,10 +35,74 @@ class TransactionService
 {
     public static function changeStatusToPaid($transaction)
     {
-        foreach ($transaction->transactionDetails as $detail) {
-            if ($detail->bill !== null) {
-                $detail->bill->update([
-                    'status' => Bill::STATUS_PAID
+        if ($transaction->type == Transaction::TYPE_BILL) {
+
+            // check apakah transaction detail sudah ada
+            if ($transaction->transactionDetails->count() > 0) {
+                foreach ($transaction->transactionDetails as $detail) {
+                    $detail->bill->update([
+                        'status' => Bill::STATUS_PAID
+                    ]);
+                }
+            } else {
+                // create bill on transaction detail
+                foreach (request()->bill_ids as $billId) {
+                    TransactionDetail::create([
+                        'transaction_id' => $transaction->id,
+                        'bill_id' => $billId
+                    ]);
+                }
+                $transaction->refresh();
+                // update bill status with loop in transaction details
+                foreach ($transaction->transactionDetails as $detail) {
+                    $detail->bill->update([
+                        'status' => Bill::STATUS_PAID
+                    ]);
+                }
+            }
+        } elseif ($transaction->type == Transaction::TYPE_SALDO) {
+            $transaction->student->update([
+                'saldo' => $transaction->student->saldo + $transaction->pay_amount
+            ]);
+
+            // check apakah transaction detail sudah ada
+            if ($transaction->transactionDetails->count() > 0) {
+                foreach ($transaction->transactionDetails as $detail) {
+                    $detail->saldoHistory->update([
+                        'status' => SaldoHistory::STATUS_SUCCESS
+                    ]);
+                }
+            } else {
+                // create saldo history
+                $saldoHistory = SaldoHistory::create([
+                    'student_id' => $transaction->student->id,
+                    'amount' => $transaction->pay_amount,
+                    'type' => SaldoHistory::TYPE_IN,
+                    'description' => 'Top Up Saldo Sebesar Rp.' . number_format($transaction->pay_amount, 0, ',', '.'),
+                    'status' => SaldoHistory::STATUS_SUCCESS,
+                    'usage' => SaldoHistory::USAGE_TOPUP
+                ]);
+            }
+        } elseif ($transaction->type == Transaction::TYPE_SAVING) {
+            $transaction->student->update([
+                'saving' => $transaction->student->saving + $transaction->pay_amount
+            ]);
+            // check apakah transaction detail sudah ada
+            if ($transaction->transactionDetails->count() > 0) {
+                foreach ($transaction->transactionDetails as $detail) {
+                    $detail->savingHistory->update([
+                        'status' => SaldoHistory::STATUS_SUCCESS
+                    ]);
+                }
+            } else {
+                // create saving history
+                $savingHistory = SaldoHistory::create([
+                    'student_id' => $transaction->student->id,
+                    'amount' => $transaction->pay_amount,
+                    'type' => SaldoHistory::TYPE_IN,
+                    'description' => 'Top Up Tabungan Sebesar Rp.' . number_format($transaction->pay_amount, 0, ',', '.'),
+                    'status' => SaldoHistory::STATUS_SUCCESS,
+                    'usage' => SaldoHistory::USAGE_TOPUP
                 ]);
             }
         }
@@ -84,7 +148,6 @@ class TransactionService
             'status' => Transaction::STATUS_PAID,
             'paid_at' => Carbon::now(),
             'admin_id' => Auth::id(),
-            'type' => Transaction::TYPE_BILL
         ]);
 
         self::changeStatusToPaid($transaction);
@@ -155,9 +218,10 @@ class TransactionService
         $appSetting = ApplicationSetting::latest()->first();
         $expiryTimeInMinutes = $appSetting->getPaymentExpireTimeInMinutesAttribute();
         $paymentCode = 'CHT-' . now()->format('Ymd') . str_pad(Transaction::whereDate('created_at', now())->count() + 1, 3, '0', STR_PAD_LEFT);
+        $pay_amount = $request->bill_ids != null ? self::getTotalPayAmount($request->bill_ids) : $request->amount;
 
         $transactionData = [
-            'pay_amount' => $request->bill_ids != null ? self::getTotalPayAmount($request->bill_ids) : $request->amount,
+            'pay_amount' => $pay_amount,
             'payment_code' => $paymentCode,
             'student_id' => $request->student_id,
             'expiry_time' => Carbon::now()->addMinutes($expiryTimeInMinutes),
@@ -209,10 +273,16 @@ class TransactionService
             $payAmount = $transaction->pay_amount;
             $student = Student::find($request->student_id);
             if ($student->saldo < $payAmount) {
-                abort(400, 'Saldo tidak mencukupi');
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Saldo tidak mencukupi'
+                ], 400);
             }
-
             TransactionService::payWithBalance($student, $payAmount, $transaction, $request);
+        } elseif ($paymentMethodType == PaymentMethod::TYPE_CASH) {
+            $transaction->update(['payment_method_id' => PaymentMethod::where('type', $paymentMethodType)
+                ->first()->id]);
+            TransactionService::payWithCash($transaction);
         }
 
 
