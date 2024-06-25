@@ -431,7 +431,7 @@
                     <div id="payment-details">
                         <!-- Informasi pembayaran akan ditambahkan di sini -->
                     </div>
-                    <input type="hidden" name="student_id" id="student-id" value="{{ $student->id }}">
+                    <input type="hidden" name="student_id" id="student-id" value="{{ @$student->id }}">
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
