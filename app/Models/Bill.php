@@ -38,6 +38,21 @@ class Bill extends Model
         // 'payment_method',
     ];
 
+    public static $monthOrder = [
+        1 => 1,   // Januari
+        2 => 2,   // Februari
+        3 => 3,   // Maret
+        4 => 4,   // April
+        5 => 5,   // Mei
+        6 => 6,   // Juni
+        7 => 7,   // Juli
+        8 => 8,   // Agustus
+        9 => 9,   // September
+        10 => 10, // Oktober
+        11 => 11, // November
+        12 => 12, // Desember
+    ];
+
     public function billType()
     {
         return $this->belongsTo(BillType::class);

@@ -22,5 +22,6 @@ class AppServiceProvider extends ServiceProvider
     {
         // Mengatur lokal ke bahasa Indonesia
         Carbon::setLocale('id');
+        setlocale(LC_TIME, 'id_ID');
     }
 }

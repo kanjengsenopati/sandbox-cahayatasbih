@@ -8,8 +8,10 @@ use App\Models\BillType;
 use App\Models\Classroom;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\Controller;
 use App\Services\SendNotifWaService;
+use App\Http\Requests\Admin\PaymentRateRequest;
 
 class PaymentRateController extends Controller
 {
@@ -36,7 +38,7 @@ class PaymentRateController extends Controller
      * Store a newly created resource in storage.
      */
 
-    public function store(Request $request)
+    public function store(PaymentRateRequest $request)
     {
         try {
             DB::beginTransaction();
@@ -59,37 +61,49 @@ class PaymentRateController extends Controller
             $months = [];
             if ($billType->type == BillType::TYPE_MONTHLY) {
                 $months = range(1, 12);
+                foreach ($months as $month) {
+                    foreach ($classrooms as $classroom) {
+                        foreach ($classroom->students as $student) {
+                            $billAmount = $request->{"bulan_$month"}; // Get amount for current month
+                            $billYear = $request->{"tahun_$month"}; // Get year for current month
+                            $student->bills()->create([
+                                'bill_type_id' => $billType->id,
+                                'classroom_id' => $classroom->id,
+                                'academic_year_id' => $billType->academic_year_id,
+                                'month' => $month,
+                                'year' => $billYear,
+                                'amount' => $billAmount,
+                                'status' => 'UNPAID',
+                            ]);
+                        }
+                    }
+                }
             } else {
-                $months = [$request->month];
-                unset($request->month);
-                $amount = $request->price;
-            }
-            foreach ($months as $month) {
-                foreach ($classrooms as $classroom) {
-                    foreach ($classroom->students as $student) {
-                        $student->bills()->create([
-                            'bill_type_id' => $billType->id,
-                            'classroom_id' => $classroom->id,
-                            'academic_year_id' => $billType->academic_year_id,
-                            'month' => $month,
-                            'amount' => $request->$month ?? $amount,
-                            'status' => 'UNPAID',
-                        ]);
+                $months = $request->months;
+                foreach ($months as $month) {
+                    foreach ($classrooms as $classroom) {
+                        foreach ($classroom->students as $student) {
+                            $billAmount = $request->price; // Get amount for current month
+                            $billYear = $request->year;
+                            $student->bills()->create([
+                                'bill_type_id' => $billType->id,
+                                'classroom_id' => $classroom->id,
+                                'academic_year_id' => $billType->academic_year_id,
+                                'month' => $month,
+                                'year' => $billYear,
+                                'amount' => $billAmount,
+                                'status' => 'UNPAID',
+                            ]);
+                        }
                     }
                 }
             }
-            DB::commit();
 
-            // send notif to whatsapp to all student
-            // $message = "Halo, ada tagihan baru untuk bulan " . implode(', ', $months) . " sebesar Rp " . number_format($request->price, 0, ',', '.');
-            // foreach ($classrooms as $classroom) {
-            //     foreach ($classroom->students as $student) {
-            //         SendNotifWaService::sendMessage($student->phone, $message);
-            //     }
-            // }
+            DB::commit();
 
             return redirect()->route('bill-type.index')->with('success', 'Tarif pembayaran berhasil ditambahkan');
         } catch (\Exception $e) {
+            Log::error($e);
             DB::rollBack();
             return redirect()->back()->with('error', 'Terjadi kesalahan: ' . $e->getMessage())->withInput();
         }

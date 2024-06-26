@@ -45,9 +45,11 @@ class BillController extends Controller
     public function show(Request $request, $id)
     {
         $billType = BillType::with(['billItem', 'academicYear', 'bills' => function ($query) use ($request) {
-            $query->where('student_id', $request->student_id);
-            $query->orderBy('month', 'asc');
-        },])->find($id);
+            $query->where('student_id', $request->student_id)
+                ->orderBy('year', 'asc')
+                ->orderByRaw("FIELD(month, " . implode(",", array_keys(Bill::$monthOrder)) . ")");
+        }])->find($id);
+
 
         // add total unpaid and total paid
         $billType->total = $billType->bills->sum('amount');
