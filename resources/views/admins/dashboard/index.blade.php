@@ -318,8 +318,7 @@
     // Data omzet dan profit koperasi untuk setiap bulan
     var omzet = @json($chartCashierOmzet);
     var profit = @json($chartCashierProfit);
-    console.log(omzet);
-    console.log(profit);
+   
 
     // Konfigurasi grafik omzet dan profit koperasi
     var options = {

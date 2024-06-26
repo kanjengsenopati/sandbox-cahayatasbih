@@ -28,19 +28,19 @@ class ReportBillController extends Controller
             $query = Student::with('classroom', 'school', 'bills');
 
             // Filter berdasarkan request parameters
-            if (request()->has('school_id')) {
-                $query->where('school_id', request()->school_id);
-            }
+            // if (request()->has('school_id')) {
+            //     $query->where('school_id', request()->school_id);
+            // }
 
-            if (request()->has('classroom_id')) {
-                $query->where('classroom_id', request()->classroom_id);
-            }
+            // if (request()->has('classroom_id')) {
+            //     $query->where('classroom_id', request()->classroom_id);
+            // }
 
-            if (request()->has('academic_year_id')) {
-                $query->whereHas('bills', function ($query) {
-                    $query->where('academic_year_id', request()->academic_year_id);
-                });
-            }
+            // if (request()->has('academic_year_id')) {
+            //     $query->whereHas('bills', function ($query) {
+            //         $query->where('academic_year_id', request()->academic_year_id);
+            //     });
+            // }
 
             if (request()->has('bill_type_id')) {
                 $query->whereHas('bills', function ($query) {
@@ -50,7 +50,7 @@ class ReportBillController extends Controller
 
             // Handle permintaan tipe 'table'
             if ($type == 'table') {
-                $data = $query->whereHas('bills')->orderBy('name', 'asc')->get();
+                $data = $query->orderBy('name', 'asc');
 
                 return DataTables::of($data)
                     ->addColumn('action', function ($data) {
@@ -67,15 +67,28 @@ class ReportBillController extends Controller
             }
 
             // Handle permintaan tipe 'total'
+
             if ($type == 'total') {
                 $data = $query->orderBy('name', 'asc')->get();
 
-                $total_paid = $data->where('status', Bill::STATUS_PAID)->count();
-                $total = $data->count();
+                $total_paid = 0;
+                foreach ($data as $student) {
+                    $total_paid += $student->bills->where('status', Bill::STATUS_PAID)->sum('amount');
+                }
+                // $total = $data->whereHas('bills', function ($query) {
+                //     $query->where('status', Bill::STATUS_UNPAID);
+                // })->count();
+                // sum total tagihan
+                $total = 0;
+                foreach ($data as $student) {
+                    $total += $student->bills->sum('amount');
+                }
 
                 return response()->json([
-                    'total_paid' => $total_paid,
-                    'total' => $total,
+                    'total_paid' => number_format($total_paid, 0, ',', '.'),
+                    'total' => number_format($total, 0, ',', '.'),
+                    'realisasion_percentage' => $total == 0 ? 0 : number_format(($total_paid / $total) * 100, 2, ',', '.') . '%',
+                    'total_unpaid' => number_format($total - $total_paid, 0, ',', '.')
                 ]);
             }
         }

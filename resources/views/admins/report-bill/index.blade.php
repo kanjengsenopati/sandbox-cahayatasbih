@@ -139,6 +139,15 @@
                                 <!--end::Label-->
                                 <!--begin::Stats-->
                                 <div class="text-success fs-3 fw-bolder" id="total_paid">Rp. 0</div>
+                                <div class="progress">
+                                    <div class="progress-bar" role="progressbar" aria-valuenow="0" id="progress-bar"
+                                        aria-valuemin="0" aria-valuemax="100">
+                                        <div class="progress-bar-label" id="progress-bar-label">0%</div>
+                                    </div>
+                                </div>
+                                <p class="text-center mt-3">
+                                <div class="text-danger" id="total_unpaid">Rp. 0</div>
+                                </p>
                                 <!--end::Stats-->
                             </div>
                             <!--end::Body-->
@@ -288,6 +297,10 @@
             success: function(response) {
                 $('#total').text('Rp. ' + response.total);
                 $('#total_paid').text('Rp. ' + response.total_paid);
+                $('#progress-bar').css('width', response.realisasion_percentage);
+                $('#progress-bar-label').text(response.realisasion_percentage);
+                $('#total_unpaid').text('Belum Lunas: Rp. ' + response.total_unpaid);
+
             }
         });
     }
