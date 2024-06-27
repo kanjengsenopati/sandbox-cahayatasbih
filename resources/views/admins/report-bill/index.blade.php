@@ -263,6 +263,10 @@
                     d.end_date = end_date;
                 }
             },
+            lengthMenu: [
+            [10, 25, 50, 100, -1],
+            [10, 25, 50, 100, "Semua"]
+            ],
             columns: [
                 { data: null, sortable: false, searchable: false, render: function(data, type, row, meta) {
                     return meta.row + meta.settings._iDisplayStart + 1;

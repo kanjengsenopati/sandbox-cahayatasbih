@@ -27,22 +27,40 @@ class ReportBillController extends Controller
             // Query dasar untuk kedua permintaan Ajax
             $query = Student::with('classroom', 'school', 'bills');
 
+            // ambil data bulan dan tahun dari request
+            $startMonth = request()->start_date ? date('n', strtotime(request()->start_date)) : null;
+            $endMonth = request()->end_date ? date('n', strtotime(request()->end_date)) : null;
+            $startYear = request()->start_date ? date('Y', strtotime(request()->start_date)) : null;
+            $endYear = request()->end_date ? date('Y', strtotime(request()->end_date)) : null;
+
+
+            if (request()->start_date && request()->end_date) {
+                $query->whereHas('bills', function ($query) use ($startMonth, $endMonth, $startYear, $endYear) {
+                    $query->where('year', '>=', $startYear)
+                        ->where('year', '<=', $endYear)
+                        ->where('month', '>=', $startMonth)
+                        ->where('month', '<=', $endMonth);
+                });
+            }
+
             // Filter berdasarkan request parameters
-            // if (request()->has('school_id')) {
-            //     $query->where('school_id', request()->school_id);
-            // }
+            if (request()->has('school_id') && request()->school_id != 'null') {
+                $query->whereHas('classroom', function ($query) {
+                    $query->where('school_id', request()->school_id);
+                });
+            }
 
-            // if (request()->has('classroom_id')) {
-            //     $query->where('classroom_id', request()->classroom_id);
-            // }
+            if (request()->has('classroom_id') && request()->classroom_id != 'null') {
+                $query->where('classroom_id', request()->classroom_id);
+            }
 
-            // if (request()->has('academic_year_id')) {
-            //     $query->whereHas('bills', function ($query) {
-            //         $query->where('academic_year_id', request()->academic_year_id);
-            //     });
-            // }
+            if (request()->has('academic_year_id') && request()->academic_year_id != 'null') {
+                $query->whereHas('bills', function ($query) {
+                    $query->where('academic_year_id', request()->academic_year_id);
+                });
+            }
 
-            if (request()->has('bill_type_id')) {
+            if (request()->has('bill_type_id') && request()->bill_type_id != 'null') {
                 $query->whereHas('bills', function ($query) {
                     $query->where('bill_type_id', request()->bill_type_id);
                 });
