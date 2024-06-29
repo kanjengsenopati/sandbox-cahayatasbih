@@ -142,6 +142,7 @@ Route::group(['middleware' => ['auth']], function () {
     Route::resource('student', StudentController::class);
     Route::resource('tahfidz', TahfidzController::class);
     Route::resource('category-item', CategoryItemController::class);
+    Route::post('item/import', [ItemController::class, 'import'])->name('item.import');
     Route::resource('item', ItemController::class);
     Route::resource('stock-history', StockHistoryController::class);
     Route::resource('contact', ContactController::class);

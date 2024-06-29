@@ -3,9 +3,13 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Models\Item;
+use App\Imports\ItemImport;
 use Illuminate\Http\Request;
 use Yajra\DataTables\DataTables;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\Controller;
+use Maatwebsite\Excel\Facades\Excel;
 use App\Http\Requests\Admin\ItemRequest;
 
 class ItemController extends Controller
@@ -128,5 +132,25 @@ class ItemController extends Controller
         }
 
         return $this->postSuccessResponse("Berhasil mengambil data", $items);
+    }
+
+    public function import(Request $request)
+    {
+        try {
+            $request->validate([
+                'file' => 'required|mimes:xls,xlsx'
+            ]);
+
+            return DB::transaction(function () use ($request) {
+                Excel::import(new ItemImport, $request->file('file'));
+                return redirect()->route('item.index')->with('success', 'Data berhasil diimport');
+            });
+        } catch (\Exception $e) {
+            // Log the exception
+            Log::error('Import failed: ' . $e->getMessage());
+
+            // Return with an error message or handle the exception as needed
+            return redirect()->back()->with('error', 'Data gagal diimport');
+        }
     }
 }
