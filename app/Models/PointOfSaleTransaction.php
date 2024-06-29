@@ -10,6 +10,10 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class PointOfSaleTransaction extends Model
 {
+    const TYPE_SANTRI = 'SANTRI';
+    const TYPE_UMUM = 'UMUM';
+    const PAYMENT_SALDO = 'Saldo';
+    const PAYMENT_TUNAI = 'Tunai';
     const STATUS_PENDING = 'PENDING';
     const STATUS_SUCCESS = 'SUCCESS';
     const STATUS_FAILED = 'FAILED';
@@ -24,6 +28,7 @@ class PointOfSaleTransaction extends Model
         'paid_at',
         'status',
         'profit',
+        'type',
     ];
 
     protected $casts = [

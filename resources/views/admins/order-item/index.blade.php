@@ -85,75 +85,107 @@
                         <!--end::Card header-->
                         <!--begin::Card body-->
                         <div class="card-body pt-0">
-                            <div class="d-flex flex-column gap-6">
-                                <!--begin::Input group-->
-                                <div class="fv-row">
-                                    <!--begin::Label-->
-                                    <label class="form-label">Scan Kartu Santri</label>
-                                    <!--end::Label-->
-                                    <!--begin::Input-->
-                                    <div class="input-group">
-                                        <span class="input-group-text">
-                                            <i class="fas fa-id-card"></i>
-                                        </span>
-                                        <input class="form-control form-control-solid" name="barcode"
-                                            placeholder="Masukkan ID Kartu Santri" type="password" id="scan-card" />
+                            <x-alert.alert-validation />
+                            <!--begin::Tabs-->
+                            <ul class="nav nav-tabs" id="myTab" role="tablist">
+                                <li class="nav-item" role="presentation">
+                                    <button class="nav-link active" id="santri-tab" data-bs-toggle="tab"
+                                        data-bs-target="#santri" type="button" role="tab" aria-controls="santri"
+                                        aria-selected="true">Santri</button>
+                                </li>
+                                <li class="nav-item" role="presentation">
+                                    <button class="nav-link" id="umum-tab" data-bs-toggle="tab" data-bs-target="#umum"
+                                        type="button" role="tab" aria-controls="umum"
+                                        aria-selected="false">Umum</button>
+                                </li>
+                            </ul>
+                            <div class="tab-content" id="myTabContent">
+                                <div class="tab-pane fade show active" id="santri" role="tabpanel"
+                                    aria-labelledby="santri-tab">
+                                    <div class="d-flex flex-column gap-6 mt-4">
+                                        <!--begin::Input group-->
+                                        <div class="fv-row" id="scan-card-group">
+                                            <!--begin::Label-->
+                                            <label class="form-label">Scan Kartu Santri</label>
+                                            <!--end::Label-->
+                                            <!--begin::Input-->
+                                            <div class="input-group">
+                                                <span class="input-group-text">
+                                                    <i class="fas fa-id-card"></i>
+                                                </span>
+                                                <input class="form-control form-control-solid" name="barcode"
+                                                    placeholder="Masukkan ID Kartu Santri" type="password"
+                                                    id="scan-card" />
+                                            </div>
+                                            <!--end::Input-->
+                                        </div>
+                                        <!--end::Input group-->
+                                        <!--begin::Input group-->
+                                        <div class="fv-row" id="student-name-group">
+                                            <!--begin::Student Info-->
+                                            <label class="form-label">Nama Santri</label>
+                                            <!--end::Label-->
+                                            <!--begin::Input-->
+                                            <input type="text" class="form-control form-control-solid"
+                                                name="student_name" id="student-name" placeholder="Nama Santri"
+                                                disabled />
+                                            <!--end::Input-->
+                                        </div>
+                                        <!--end::Input group-->
+                                        <div class="fv-row d-flex gap-3">
+                                            <!--begin::Label-->
+                                            <div class="col-6">
+                                                <label class="form-label">Saldo</label>
+                                                <!--end::Label-->
+                                                <!--begin::Input-->
+                                                <input type="text" class="form-control form-control-solid" name="saldo"
+                                                    id="saldo" placeholder="Saldo" disabled />
+                                            </div>
+                                            <div class="col-6">
+                                                <label class="form-label">Sisa</label>
+                                                <!--end::Label-->
+                                                <!--begin::Input-->
+                                                <input type="text" class="form-control form-control-solid"
+                                                    name="remaining-saldo" id="remaining-saldo" placeholder="Kembalian"
+                                                    disabled />
+                                            </div>
+                                            <!--end::Input-->
+                                        </div>
                                     </div>
-                                    <!--end::Input-->
                                 </div>
-
-                                <!--end::Input group-->
-                                <!--begin::Input group-->
-                                <div class="fv-row">
-                                    <!--begin::Student Info-->
-                                    <label class="form-label">Nama Santri</label>
-                                    <!--end::Label-->
-                                    <!--begin::Input-->
-                                    <input type="text" class="form-control form-control-solid" name="student_name"
-                                        id="student-name" placeholder="Nama Santri" disabled />
-                                    <!--end::Input-->
+                                <div class="tab-pane fade" id="umum" role="tabpanel" aria-labelledby="umum-tab">
                                 </div>
+                            </div>
+                            <!--end::Tabs-->
 
+                            <!-- Konten di luar tab -->
+                            <div class="d-flex flex-column gap-6 mt-4">
                                 <div class="fv-row">
                                     <!--begin::Label-->
-                                    <!--end::Label-->
-                                    <!--begin::Auto-generated ID-->
+                                    <label class="form-label">Pembayaran</label>
+                                    <input class="form-control" name="payment-method" type="text" id="payment-method"
+                                        value="Saldo" readonly>
+                                    <!--end::Input-->
+                                </div>
+                                <div class="fv-row">
+                                    <!--begin::Label-->
                                     <label class="form-label">Total Pembayaran</label>
                                     <input class="form-control" type="text" id="total-price" value="Rp. 0"
                                         aria-label="Total Pembayaran" disabled readonly>
-
                                     <!--end::Input-->
                                 </div>
-
-                                <div class="fv-row d-flex gap-3">
-                                    <!--begin::Label-->
-                                    <div class="col-6">
-                                        <label class="form-label">Saldo</label>
-                                        <!--end::Label-->
-                                        <!--begin::Input-->
-                                        <input type="text" class="form-control form-control-solid" name="saldo"
-                                            id="saldo" placeholder="Saldo" disabled />
-                                    </div>
-                                    <div class="col-6">
-                                        <label class="form-label">Sisa</label>
-                                        <!--end::Label-->
-                                        <!--begin::Input-->
-                                        <input type="text" class="form-control form-control-solid"
-                                            name="remaining-saldo" id="remaining-saldo" placeholder="Kembalian"
-                                            disabled />
-                                    </div>
-                                    <!--end::Input-->
-                                </div>
-                                {{-- add button bayar --}}
                                 <div class="d-flex justify-content-center">
-                                    <button type="submit" id="btn-bayar" class=" btn btn-primary mt-3 w-100">
+                                    <button type="submit" id="btn-bayar" class="btn btn-primary mt-3 w-100">
                                         <span class="indicator-label">Bayar</span>
                                     </button>
                                 </div>
                             </div>
                         </div>
-                        <!--end::Card header-->
+                        <!--end::Card body-->
                     </div>
+
+
+
                     <!--end::Order details-->
                 </div>
                 <!--end::Aside column-->
@@ -687,402 +719,54 @@
 </script>
 <script>
     // jika #scan-card diinputkan maka cari student berdasarkan id card
-    document.getElementById('scan-card').addEventListener('input', function (e) {
-        var barcode = e.target.value;
-        axios.post("{{ route('order-item.search-student') }}", {
-            barcode: barcode
-        }).then(function (response) {
-            var student = response.data.data;
-            if (student) {
-                // replace name, saldo, and count saldo - total price
-                document.getElementById('student-name').value = student.name;
-                document.getElementById('saldo').value = 'Rp. ' + student.saldo.toLocaleString('id-ID');
-                // add student id to form form-payment
-                document.getElementById('form-payment').insertAdjacentHTML('beforeend', `<input type="hidden" name="student_id" value="${student.id}">`);
-                updateTotalPrice();
-                // Clear input
-                e.target.value = '';
-            } else {
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Santri tidak ditemukan',
-                    text: 'ID Kartu Santri tidak ditemukan'
-                });
-                // Clear input
-                e.target.value = '';
-            }
-        }).catch(function (error) {
-            console.error(error);
-        });
-    });
-
-</script>
-{{-- <script>
-    var number = 1;
-    var totalPrice = 0;
-
-    window.addEventListener('DOMContentLoaded', function () {
-        focusOnFirstInput();
-        refreshProductList();
-
-        var searchProductInput = document.getElementById('search-product');
-        if (searchProductInput) {
-            searchProductInput.addEventListener('input', searchProductByCode);
-        }
-    });
-
-    function focusOnFirstInput() {
-        var searchProductInput = document.getElementById('search-product');
-        if (searchProductInput) {
-            searchProductInput.focus();
-        }
-    }
-
-    function searchProductByCode(e) {
-        var search = e.target.value;
-
-        axios.post("{{ route('item.search-item') }}", {
-            search: search,
-            type: 'CODE'
-        }).then(handleProductResponse)
-          .catch(handleError);
-    }
-
-    function handleProductResponse(response) {
-        var product = response.data.data;
-        var searchProductInput = document.getElementById('search-product');
-        
-        if (product === null) {
-            showErrorAlert(response.data.message);
-            clearInput(searchProductInput);
-        } else {
-            clearInput(searchProductInput);
-            addProductToCart(product);
-            appendProductToTable(product);
-            updateTotalPrice();
-        }
-    }
-
-    // add product to cart use axios
-    function addProductToCart(product) {
-        axios.post("{{ route('order-item.add-to-cart') }}", {
-            code: product.code,
-            quantity: 1
-        }).then(function (response) {
-            // if success, refresh table product #list-product
-            refreshProductList();
-        }).catch(function (error) {
-            console.error(error);
-        });
-    }
-
-    function refreshProductList() {
-    // Show loader
-    document.getElementById('product-loader').style.display = 'block';
-    
-    axios.get("{{ route('order-item.get-cart') }}")
-    .then(function (response) {
-    var products = response.data.data;
-    var listProduct = document.getElementById('list-product');
-    // Clear existing rows
-    listProduct.innerHTML = '';
-    
-    if (products && products.length > 0) {
-    products.forEach(function (product, index) {
-    var tr = createTableRow(product);
-    listProduct.appendChild(tr);
-    });
-    } else {
-    // Display message if no products found
-    var tr = document.createElement('tr');
-    tr.innerHTML = `<td colspan="5" class="text-center">Barang Masih Kosong</td>`;
-    listProduct.appendChild(tr);
-    }
+    document.getElementById('scan-card').onchange = function (e) {
+    var barcode = e.target.value;
+    axios.post("{{ route('order-item.search-student') }}", {
+    barcode: barcode
+    }).then(function (response) {
+    var student = response.data.data;
+    if (student) {
+    // replace name, saldo, and count saldo - total price
+    document.getElementById('student-name').value = student.name;
+    document.getElementById('saldo').value = 'Rp. ' + student.saldo.toLocaleString('id-ID');
+    // add student id to form form-payment
+    document.getElementById('form-payment').insertAdjacentHTML('beforeend', `<input type="hidden" name="student_id"
+        value="${student.id}">`);
     updateTotalPrice();
-    
-    // Hide loader
-    document.getElementById('product-loader').style.display = 'none';
-    }).catch(function (error) {
-    console.error(error);
-    // Hide loader in case of error
-    document.getElementById('product-loader').style.display = 'none';
-    });
-    }
-
-    function createTableRow(product) {
-    var tr = document.createElement('tr');
-    tr.innerHTML = `
-    <td>
-        <div class="d-flex align-items-center" data-kt-ecommerce-edit-order-filter="product"
-            data-kt-ecommerce-edit-order-id="product_${product.id}">
-            <a class="symbol symbol-50px">
-                <span class="symbol-label" style="background-image:url(${product.item.image})"></span>
-            </a>
-            <div class="ms-5">
-                <a class="text-gray-800 text-hover-primary fs-5 fw-bolder">${product.item.name}</a>
-                <div class="text-muted fs-7">Stok: ${product.item.stock}</div>
-            </div>
-        </div>
-    </td>
-    <td>
-        <div class="d-flex justify-content-center align-items-center">
-           <a class="btn btn-icon btn-light-primary btn-sm me-2 decrement-btn"
-            onclick="updateCartQuantity('${product.id}', Math.max(1, ${product.quantity - 1}))">
-            <i class="fas fa-minus"></i>
-            </a>
-            <span class="quantity">${product.quantity}</span>
-            <a class="btn btn-icon btn-light-primary btn-sm ms-2 increment-btn"
-                onclick="updateCartQuantity('${product.id}', Math.min(${product.item.stock}, ${product.quantity + 1}))">
-                <i class="fas fa-plus"></i>
-            </a>
-            <input type="hidden" value="${product.id}">
-        </div>
-    </td>
-    <td>Rp. ${product.price.toLocaleString('id-ID')}</td>
-    <td>Rp. ${product.total.toLocaleString('id-ID')}</td>
-    <td>
-      <a class="btn btn-icon btn-light-danger btn-sm" onclick="deleteProductFromCart('${product.id}')">
-            <span class="svg-icon svg-icon-3"><i class="fas fa-trash"></i></span>
-        </a>
-    </td>`;
-    return tr;
-    }
-
-    function deleteProductFromCart(productId) {
-    axios.post("{{ route('order-item.delete-from-cart') }}", {
-    id: productId
-    }).then(function (response) {
-    refreshProductList();
-    }).catch(function (error) {
-    console.error(error);
-    });
-    }
-
-    function updateCartQuantity(productId, quantity) {
-        axios.post("{{ route('order-item.update-cart-quantity') }}", {
-            id: productId,
-            quantity: quantity
-        }).then(function (response) {
-            refreshProductList();
-        }).catch(function (error) {
-            console.error(error);
-        });
-    }
-
-    function showErrorAlert(message) {
-        Swal.fire({
-            icon: 'error',
-            title: 'Maaf...',
-            text: message,
-        });
-    }
-
-    function clearInput(inputElement) {
-        inputElement.value = '';
-    }
-
-    function appendProductToTable(product) {
-        var listProduct = document.getElementById('list-product');
-        var tr = createTableRow(product);
-        listProduct.appendChild(tr);
-    }
-
-   function updateTotalPrice() {
-        axios.get("{{ route('order-item.get-total-price') }}")
-        .then(function (response) {
-        var totalPrice = response.data.data;
-        var totalPriceElement = document.getElementById('total-price');
-        // show in total price element with original format
-        totalPriceElement.value = `${totalPrice}`;
-        // update return value from student saldo - total price
-        var remainingSaldoElement = document.getElementById('remaining-saldo');
-        var saldoElement = document.getElementById('saldo');
-        // remove Rp. and replace . with empty string
-        saldo = parseInt(saldoElement.value.replace('Rp. ', '').replace('.', ''));
-        totalPayment = parseInt(totalPrice.replace('Rp. ', '').replace('.', ''));
-        // Check if saldo is not empty before calculating remaining saldo
-        if (saldo > 0) {
-        var remainingSaldo = saldo - totalPayment;
-        remainingSaldoElement.value = `Rp. ${remainingSaldo.toLocaleString('id-ID')}`;
-        } else {
-        // If saldo is empty, set remaining saldo to 0
-        remainingSaldoElement.value = `Rp. 0`;
-        }
-        }).catch(function (error) {
-        console.error(error);
-        });
-        }
-
-    function deleteAllProductFromCart() {
-        // Menampilkan SweetAlert konfirmasi sebelum menghapus
-        Swal.fire({
-        title: 'Yakin ingin menghapus semua barang?',
-        text: "Semua barang yang ada di keranjang akan dihapus dari keranjang!",
-        icon: 'warning',
-        showCancelButton: true,
-        // confirmButtonColor: red
-        confirmButtonColor: '#d33',
-        confirmButtonText: 'Ya, hapus semua!',
-        cancelButtonText: 'Batal'
-        }).then((result) => {
-        // Jika pengguna menekan tombol "Ya"
-        if (result.isConfirmed) {
-        // Mengirim permintaan AJAX untuk menghapus semua barang dari keranjang
-        axios.post("{{ route('order-item.delete-all-cart') }}")
-        .then(function (response) {
-        // Menjalankan fungsi refreshProductList() setelah penghapusan berhasil
-        refreshProductList();
-        }).catch(function (error) {
-        console.error(error);
-        });
-        }
-        });
-    }
-
-    function handleError(error) {
-        console.error(error);
-    }
-
-</script>
-<script>
-    function updateProductList(products, listId) {
-        var listProduct = document.getElementById(listId);
-        listProduct.innerHTML = '';
-
-        if (products && products.length > 0) {
-            products.forEach(function (product, index) {
-                var tr = document.createElement('tr');
-
-                // Create td for product details
-                var tdProduct = document.createElement('td');
-                tdProduct.innerHTML = `
-                    <div class="d-flex align-items-center" data-kt-ecommerce-edit-order-filter="product"
-                        data-kt-ecommerce-edit-order-id="product_${product.id}">
-                        <a class="symbol symbol-50px">
-                            <span class="symbol-label" style="background-image:url(${product.image})"></span>
-                        </a>
-                        <div class="ms-5">
-                            <a class="text-gray-800 text-hover-primary fs-5 fw-bolder">${product.name}</a>
-                            <div class="text-muted fs-7">Stok: ${product.stock}</div>
-                        </div>
-                    </div>`;
-                tr.appendChild(tdProduct);
-
-                // Create td for price
-                var tdPrice = document.createElement('td');
-                tdPrice.textContent = `Rp. ${product.price.toLocaleString('id-ID')}`;
-                tr.appendChild(tdPrice);
-
-                // Create td for action button
-                var tdAction = document.createElement('td');
-                var button = document.createElement('button');
-                button.classList.add('btn', 'btn-primary');
-                button.textContent = 'Pilih';
-                button.addEventListener('click', function () {
-                    addProductToCart(product);
-                    appendProductToTable(product);
-                    updateTotalPrice();
-                });
-                tdAction.appendChild(button);
-                tr.appendChild(tdAction);
-
-                listProduct.appendChild(tr);
-            });
-        } else {
-            // Display message if no products found
-            var tr = document.createElement('tr');
-            tr.innerHTML = `<td colspan="4" class="text-center">Tidak ada produk yang ditemukan</td>`;
-            listProduct.appendChild(tr);
-        }
-    }
-
-    function addToProductList(product, listId) {
-        var listProduct = document.getElementById('list-product');
-        var tr = document.createElement('tr');
-        tr.innerHTML = `
-            <td class="text-gray-800 fw-bolder d-block fs-7">${number}</td>
-            <td>
-                <div class="d-flex align-items-center" data-kt-ecommerce-edit-order-filter="product"
-                    data-kt-ecommerce-edit-order-id="product_${product.id}">
-                    <a class="symbol symbol-50px">
-                        <span class="symbol-label" style="background-image:url(${product.image})"></span>
-                    </a>
-                    <div class="ms-5">
-                        <a class="text-gray-800 text-hover-primary fs-5 fw-bolder">${product.name}</a>
-                        <div class="fw-bold fs-7">Harga: Rp. 
-                            <span data-kt-ecommerce-edit-order-filter="price">${product.price.toLocaleString('id-ID')}</span>
-                        </div>
-                        <div class="text-muted fs-7">Stok: ${product.stock}</div>
-                    </div>
-                </div>
-            </td>
-            <td>
-                <input type="number" class="form-control form-control-solid w-100px" value="1" min="1" max="${product.stock}">
-            </td>`;
-        
-        // Create delete button
-        var tdDelete = document.createElement('td');
-        var deleteButton = document.createElement('button');
-        deleteButton.classList.add('btn', 'btn-icon', 'btn-light-danger', 'btn-sm', 'me-2');
-        deleteButton.innerHTML = `<span class="svg-icon svg-icon-3"><i class="fas fa-trash"></i></span>`;
-        deleteButton.addEventListener('click', function () {
-            tr.remove();
-        });
-        tdDelete.appendChild(deleteButton);
-        tr.appendChild(tdDelete);
-
-        listProduct.appendChild(tr);
-    }
-
-    document.addEventListener('DOMContentLoaded', function () {
-    var searchProductNameInput = document.getElementById('search-product-name');
-    if (searchProductNameInput) {
-    searchProductNameInput.addEventListener('change', function (e) {
-    var search = e.target.value;
-    axios.post("{{ route('item.search-item') }}", {
-    search: search,
-    type: 'NAME'
-    }).then(function (response) {
-    updateProductList(response.data.data, 'list-product-name');
-    // clear input
+    // Clear input
     e.target.value = '';
+    } else {
+    Swal.fire({
+    icon: 'error',
+    title: 'Santri tidak ditemukan',
+    text: 'ID Kartu Santri tidak ditemukan'
+    });
+    // Clear input
+    e.target.value = '';
+    }
     }).catch(function (error) {
     console.error(error);
     });
-    });
-    }
-    });
+    };
+
 </script>
 <script>
-    // jika #scan-card diinputkan maka cari student berdasarkan id card
-    document.getElementById('scan-card').addEventListener('input', function (e) {
-        var barcode = e.target.value;
-        axios.post("{{ route('order-item.search-student') }}", {
-            barcode: barcode
-        }).then(function (response) {
-            var student = response.data.data;
-            if (student) {
-                // replace name, saldo, and count saldo - total price
-                document.getElementById('student-name').value = student.name;
-                document.getElementById('saldo').value = 'Rp. ' + student.saldo.toLocaleString('id-ID');
-                // add student id to form form-payment
-                document.getElementById('form-payment').insertAdjacentHTML('beforeend', `<input type="hidden" name="student_id" value="${student.id}">`);
-                updateTotalPrice();
-                // Clear input
-                e.target.value = '';
-            } else {
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Santri tidak ditemukan',
-                    text: 'ID Kartu Santri tidak ditemukan'
-                });
-                // Clear input
-                e.target.value = '';
-            }
-        }).catch(function (error) {
-            console.error(error);
-        });
+    document.getElementById('santri-tab').addEventListener('click', function () {
+        document.getElementById('scan-card-group').style.display = 'block';
+        document.getElementById('student-name-group').style.display = 'block';
+        document.getElementById('saldo').closest('.fv-row').style.display = 'block';
+        document.getElementById('remaining-saldo').closest('.fv-row').style.display = 'block';
+        // set #payment-method value to 'Saldo'
+        document.getElementById('payment-method').value = 'Saldo';
     });
 
-</script> --}}
+    document.getElementById('umum-tab').addEventListener('click', function () {
+        document.getElementById('scan-card-group').style.display = 'none';
+        document.getElementById('student-name-group').style.display = 'none';
+        document.getElementById('saldo').closest('.fv-row').style.display = 'none';
+        document.getElementById('remaining-saldo').closest('.fv-row').style.display = 'none';
+        // set #payment-method value to 'Umum'
+        document.getElementById('payment-method').value = 'Tunai';
+    });
+</script>
 @endpush

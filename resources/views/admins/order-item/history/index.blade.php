@@ -71,7 +71,7 @@
                                 <tr class="text-start text-gray-400 fw-bolder fs-7 text-uppercase gs-0">
                                     <th style="width: 5%">No</th>
                                     <th class="min-w-100px" style="width: 22%">Kode Pembayaran</th>
-                                    <th class="min-w-100px" style="width: 22%">Siswa</th>
+                                    <th class="min-w-100px" style="width: 22%">Tipe</th>
                                     <th class="min-w-100px" style="width: 22%">Jumlah</th>
                                     <th class="min-w-100px" style="width: 22%">Status</th>
                                     <th class="min-w-100px" style="width: 22%">Kasir</th>
@@ -123,8 +123,8 @@
                         name: 'payment_code'
                     },
                     {
-                        data: 'student.name',
-                        name: 'student.name'
+                        data: 'type',
+                        name: 'type'
                     },
                     {
                         data: 'pay_amount',

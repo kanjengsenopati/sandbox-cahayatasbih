@@ -140,6 +140,7 @@
                             </div>
                             <!-- End Card informasi transaksi -->
                         </div>
+                        @if ($order->type == 'SANTRI')
                         <div class="col-6">
                             <!-- Card informasi siswa -->
                             <div class="card" style="height: 100%;">
@@ -196,6 +197,7 @@
                             </div>
                             <!-- End Card informasi siswa -->
                         </div>
+                        @endif
                         <!-- End Card informasi siswa -->
                     </div>
                     <!--end::Basic info-->

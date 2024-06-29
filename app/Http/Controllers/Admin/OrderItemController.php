@@ -101,7 +101,8 @@ class OrderItemController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'student_id' => 'required|exists:students,id',
+            'payment-method' => 'required',
+            'student_id' => 'required_if:payment-method,Saldo|nullable|exists:students,id',
         ]);
 
         // Use database transaction to ensure data consistency
@@ -125,51 +126,54 @@ class OrderItemController extends Controller
             });
 
             // Get student data
-            $student = Student::findOrFail($request->student_id);
-            if ($student->saldo < $total) {
-                return redirect()->back()->with('error', 'Saldo siswa tidak mencukupi');
+            if ($request->payment_method == PointOfSaleTransaction::PAYMENT_SALDO) {
+                $student = Student::findOrFail($request->student_id);
+                if ($student->saldo < $total) {
+                    return redirect()->back()->with('error', 'Saldo siswa tidak mencukupi');
+                }
+
+                // check if student is blocked
+                if ($student->is_blocked) {
+                    return redirect()->back()->with('error', 'Saldo Siswa Masih Diblokir');
+                }
+
+                // Check if student has reached the daily limit
+                $totalThisDay = PointOfSaleTransaction::where('student_id', $student->id)
+                    ->whereDate('paid_at', now())
+                    ->where('status', PointOfSaleTransaction::STATUS_SUCCESS)
+                    ->sum('pay_amount') ?? 0;
+
+                if ($student->daily_limit < $totalThisDay + $total) {
+                    return redirect()->back()->with('error', 'Maaf, Siswa telah mencapai batas transaksi harian');
+                }
+
+                // Deduct student's balance
+                $student->saldo -= $total;
+                $student->save();
+
+                // Add history saldo
+                $history = SaldoHistory::create([
+                    'student_id' => $student->id,
+                    'type' => 'OUT',
+                    'amount' => $total,
+                    'description' => 'Pembayaran Pembelian Barang Rp. ' . number_format($total, 0, ',', '.'),
+                    'status' => 'SUCCESS',
+                    'usage' => SaldoHistory::USAGE_POS,
+                ]);
             }
 
-            // check if student is blocked
-            if ($student->is_blocked) {
-                return redirect()->back()->with('error', 'Saldo Siswa Masih Diblokir');
-            }
-
-            // Check if student has reached the daily limit
-            $totalThisDay = PointOfSaleTransaction::where('student_id', $student->id)
-                ->whereDate('paid_at', now())
-                ->where('status', PointOfSaleTransaction::STATUS_SUCCESS)
-                ->sum('pay_amount') ?? 0;
-
-            if ($student->daily_limit < $totalThisDay + $total) {
-                return redirect()->back()->with('error', 'Maaf, Siswa telah mencapai batas transaksi harian');
-            }
-
-            // Deduct student's balance
-            $student->saldo -= $total;
-            $student->save();
-
-            // Add history saldo
-            $history = SaldoHistory::create([
-                'student_id' => $student->id,
-                'type' => 'OUT',
-                'amount' => $total,
-                'description' => 'Pembayaran Pembelian Barang Rp. ' . number_format($total, 0, ',', '.'),
-                'status' => 'SUCCESS',
-                'usage' => SaldoHistory::USAGE_POS,
-            ]);
-
-
+            $paymentCode = 'POS-' . now()->format('Ymd') . str_pad(PointOfSaleTransaction::whereDate('paid_at', now())->count() + 1, 3, '0', STR_PAD_LEFT);
             // Save transaction data
             $transaction = PointOfSaleTransaction::create([
-                'student_id' => $request->student_id,
+                'student_id' => $request->student_id ?? null,
                 'admin_id' => $adminId,
-                'payment_code' => 'POS-CHT-' . time() . uniqid(4),
+                'payment_code' => $paymentCode,
                 'pay_amount' => $total,
                 'paid_at' => now(),
                 'status' => PointOfSaleTransaction::STATUS_SUCCESS,
-                'saldo_history_id' => $history->id,
+                'saldo_history_id' => $request->payment_method == PointOfSaleTransaction::PAYMENT_SALDO ? $history->id : null,
                 'profit' => $totalProfit,
+                'type' => $request->payment_method == PointOfSaleTransaction::PAYMENT_SALDO ? PointOfSaleTransaction::TYPE_SANTRI : PointOfSaleTransaction::TYPE_UMUM,
             ]);
 
             // Add transaction details
@@ -190,7 +194,7 @@ class OrderItemController extends Controller
             // Commit the transaction
             DB::commit();
 
-            return redirect()->route('order-item.index')->with('success', 'Transaksi berhasil');
+            return redirect()->route('order-item.index')->with('success', 'Yeay! Transaksi berhasil');
         } catch (\Exception $e) {
             // If an exception occurs, rollback the transaction
             DB::rollback();

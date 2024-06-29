@@ -30,6 +30,15 @@ class OrderItemHistoryController extends Controller
                         return '<span class="badge bg-danger">' . $data->status . '</span>';
                     }
                 })
+                ->editColumn('type', function ($data) {
+                    if ($data->type === PointOfSaleTransaction::TYPE_SANTRI) {
+                        return '<span class="badge bg-primary">' . $data->type . '</span>';
+                    } elseif ($data->type === PointOfSaleTransaction::TYPE_UMUM) {
+                        return '<span class="badge bg-info">' . $data->type . '</span>';
+                    } else {
+                        return '<span class="badge bg-warning">' . $data->type . '</span>';
+                    }
+                })
                 ->editColumn('paid_at', function ($data) {
                     $data->paid_at ? $data->paid_at->format('d F Y') : '-';
                 })
@@ -39,7 +48,7 @@ class OrderItemHistoryController extends Controller
                 ->addColumn('action', function ($data) {
                     return '<a href="' . route('order-item-history.show', $data->id) . '" class="btn btn-primary btn-sm">Detail</a>';
                 })
-                ->rawColumns(['status', 'action'])
+                ->rawColumns(['status', 'action', 'type'])
                 ->make(true);
         }
         return view('admins.order-item.history.index');
