@@ -551,31 +551,31 @@
         listProduct.appendChild(tr);
     }
 
-   function updateTotalPrice() {
+    function updateTotalPrice() {
         axios.get("{{ route('order-item.get-total-price') }}")
         .then(function (response) {
         var totalPrice = response.data.data;
+        var formattedTotalPrice = `Rp. ${totalPrice.toLocaleString('id-ID')}`;
         var totalPriceElement = document.getElementById('total-price');
-        // show in total price element with original format
-        totalPriceElement.value = `${totalPrice}`;
-        // update return value from student saldo - total price
+        totalPriceElement.value = formattedTotalPrice;
+
         var remainingSaldoElement = document.getElementById('remaining-saldo');
         var saldoElement = document.getElementById('saldo');
-        // remove Rp. and replace . with empty string
-        saldo = parseInt(saldoElement.value.replace('Rp. ', '').replace('.', ''));
-        totalPayment = parseInt(totalPrice.replace('Rp. ', '').replace('.', ''));
-        // Check if saldo is not empty before calculating remaining saldo
-        if (saldo > 0) {
-        var remainingSaldo = saldo - totalPayment;
+
+        // Get the saldo value and remove formatting
+        var saldo = parseInt(saldoElement.value.replace(/[Rp.\s]/g, ''));
+
+        if (saldo) {
+        var remainingSaldo = saldo - totalPrice;
         remainingSaldoElement.value = `Rp. ${remainingSaldo.toLocaleString('id-ID')}`;
         } else {
-        // If saldo is empty, set remaining saldo to 0
         remainingSaldoElement.value = `Rp. 0`;
         }
-        }).catch(function (error) {
+        })
+        .catch(function (error) {
         console.error(error);
         });
-        }
+    }
 
     function deleteAllProductFromCart() {
         // Menampilkan SweetAlert konfirmasi sebelum menghapus
