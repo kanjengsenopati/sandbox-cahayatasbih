@@ -5,12 +5,13 @@ namespace App\Http\Controllers\Admin;
 use App\Models\Bill;
 use App\Models\User;
 use App\Models\School;
+use App\Models\Contact;
 use App\Models\Student;
 use App\Models\BillType;
 use App\Models\Transaction;
 use App\Models\SaldoHistory;
-use Illuminate\Http\Request;
 
+use Illuminate\Http\Request;
 use App\Models\PaymentMethod;
 use App\Models\SavingHistory;
 use App\Models\PpdbRegistration;
@@ -23,6 +24,8 @@ use App\Services\SendNotifWaService;
 use App\Services\TransactionService;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Http;
+use App\Jobs\SendToPushNotificationJob;
+use App\Jobs\SendToWhatsappNotificationJob;
 use App\Http\Requests\Admin\BillPaymentRequest;
 use App\Http\Requests\Admin\UpdateTransactionStatusRequest;
 
@@ -91,6 +94,8 @@ class BillController extends Controller
                 ->whereHas('paymentMethod', function ($query) {
                     $query->where('type', PaymentMethod::TYPE_TRANSFER);
                 })
+                ->where('type', Transaction::TYPE_BILL)
+                ->where('status', Transaction::STATUS_PENDING_CONFIRMATION)
                 ->latest();
 
             return DataTables::of($transactions)
@@ -103,17 +108,7 @@ class BillController extends Controller
                 ->editColumn('pay_amount', function ($transaction) {
                     return 'Rp ' . number_format($transaction->pay_amount, 0, ',', '.');
                 })
-                ->editColumn('type', function ($transaction) {
-                    if ($transaction->type == Transaction::TYPE_BILL) {
-                        return '<span class="badge badge-primary">Tagihan</span>';
-                    } elseif ($transaction->type == Transaction::TYPE_SALDO) {
-                        return '<span class="badge badge-success">Saldo</span>';
-                    } elseif ($transaction->type == Transaction::TYPE_SAVING) {
-                        return '<span class="badge badge-info">Tabungan</span>';
-                    } elseif ($transaction->type == Transaction::TYPE_PPDB) {
-                        return '<span class="badge badge-warning">PPDB</span>';
-                    }
-                })
+
                 ->editColumn('status', function ($transaction) {
                     if ($transaction->status == Transaction::STATUS_PENDING) {
                         return '<span class="badge badge-primary">Belum Dibayar</span>';
@@ -216,74 +211,16 @@ class BillController extends Controller
      */
     public function update(UpdateTransactionStatusRequest $request, string $id)
     {
-        DB::beginTransaction();
-        try {
-            $transaction = Transaction::findOrFail($id);
-            $data = $request->validated();
-            $data['admin_id'] = Auth::id();
-            $transaction->update($data);
-            if ($transaction->status == Transaction::STATUS_PAID) {
-                if ($transaction->activeProof !== null) {
-                    $transaction->activeProof->update([
-                        'status' => TransactionProof::STATUS_CONFIRMED
-                    ]);
-                }
-                // change bill status to paid
-                if ($transaction->type == Transaction::TYPE_BILL) {
-                    $transaction->transactionDetails->each(function ($detail) {
-                        $detail->bill->update(['status' => Bill::STATUS_PAID]);
-                    });
-                }
-                if ($transaction->type == Transaction::TYPE_SALDO) {
-                    $student = Student::find($transaction->student_id);
-                    $student->update([
-                        'saldo' => $student->saldo + $transaction->pay_amount
-                    ]);
-                    // change status to saldo history
-                    $transaction->transactionDetails->first()->saldoHistory->update([
-                        'status' => SaldoHistory::STATUS_SUCCESS
-                    ]);
-                } elseif ($transaction->type == Transaction::TYPE_SAVING) {
-                    foreach ($transaction->transactionDetails as $detail) {
-                        $detail->savingHistory->update([
-                            'status' => SavingHistory::STATUS_SUCCESS
-                        ]);
-                    }
+        $transaction = Transaction::findOrFail($id);
+        $data = $request->validated();
+        $data['admin_id'] = Auth::id();
 
-                    $student = Student::find($transaction->student_id);
-                    $student->update([
-                        'saving' => $student->saving + $transaction->pay_amount
-                    ]);
-                } elseif ($transaction->type == Transaction::TYPE_PPDB) {
-                    foreach ($transaction->transactionDetails as $detail) {
-                        $detail->ppdbRegistration->update([
-                            'status' => PpdbRegistration::STATUS_PAID,
-                            'payment_status' => PpdbRegistration::STATUS_PAID
-                        ]);
-                    }
-                }
-                TransactionService::dispatchNotifications($transaction);
-            }
-            if ($transaction->activeProof) {
-                if ($transaction->status == Transaction::STATUS_REJECTED) {
-                    $transaction->activeProof->update([
-                        'status' => TransactionProof::STATUS_REJECTED,
-                        'note' => $request->note,
-                    ]);
-                } else {
-                    $transaction->activeProof->update([
-                        'status' => $request->status,
-                        'note' => null,
-                    ]);
-                }
-            }
-            DB::commit();
-            return $this->postSuccessResponse("Berhasil mengubah status transaksi", $transaction);
-        } catch (\Throwable $th) {
-            DB::rollBack();
-            dd($th);
-            Log::error($th);
-            return $this->failedResponse("Gagal mengubah status transaksi");
+        $result = TransactionService::updateStatusPaymentTransfer($data, $transaction);
+
+        if ($result['status']) {
+            return $this->postSuccessResponse($result['message'], $result['transaction']);
+        } else {
+            return $this->failedResponse($result['message']);
         }
     }
 

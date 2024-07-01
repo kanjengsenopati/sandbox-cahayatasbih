@@ -5,6 +5,7 @@ namespace App\Services;
 use Carbon\Carbon;
 use App\Models\Bill;
 use App\Models\User;
+use App\Models\Contact;
 use App\Models\Student;
 use App\Models\BillItem;
 use App\Models\GymClass;
@@ -15,19 +16,23 @@ use App\Models\Transaction;
 use Illuminate\Support\Str;
 use App\Models\SaldoHistory;
 use App\Models\PaymentMethod;
+use App\Models\SavingHistory;
 use Xendit\Invoice\InvoiceApi;
 use App\Models\GymClassHistory;
 use App\Models\GymClassBundling;
+use App\Models\PpdbRegistration;
+use App\Models\TransactionProof;
 use App\Models\MembershipHistory;
 use App\Models\TransactionDetail;
 use App\Models\ApplicationSetting;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Mail;
 use App\Jobs\SendToPushNotificationJob;
 use App\Models\GymClassBundlingHistory;
 use Xendit\Invoice\CreateInvoiceRequest;
 use App\Jobs\SendToWhatsappNotificationJob;
-use App\Models\Contact;
 use App\Models\PersonalTrainerPacketSession;
 use App\Models\PersonalTrainerPacketSessionHistory;
 
@@ -305,6 +310,10 @@ class TransactionService
         $messageWhatsapp = SendNotifWaService::sendMessageBillNotification($transaction);
         dispatch(new SendToPushNotificationJob($title, $body, $transaction->student->user, $transaction));
         dispatch(new SendToWhatsappNotificationJob($transaction->student->user->phone, $messageWhatsapp));
+        $contacts = Contact::where('type', Contact::TYPE_BENDAHARA)->orWhere('type', Contact::TYPE_SUPERADMIN)->get();
+        foreach ($contacts as $contact) {
+            dispatch(new SendToWhatsappNotificationJob($contact->phone, $messageWhatsapp));
+        }
     }
 
     public static function createPaymentPpdb($request, $paymentMethodType, $registerFee, $ppdbRegistration)
@@ -356,5 +365,91 @@ class TransactionService
             'expiry_time' => Carbon::now()->addMinutes($expiredTimeInMinutes),
             'pay_amount' => $transaction->pay_amount + $app_fee
         ]);
+    }
+
+    public static function updateStatusPaymentTransfer($data, $transaction)
+    {
+        DB::beginTransaction();
+        try {
+            $transaction->update($data);
+            if ($transaction->status == Transaction::STATUS_PAID) {
+                if ($transaction->activeProof !== null) {
+                    $transaction->activeProof->update([
+                        'status' => TransactionProof::STATUS_CONFIRMED
+                    ]);
+                }
+                // change bill status to paid
+                if ($transaction->type == Transaction::TYPE_BILL) {
+                    $transaction->transactionDetails->each(function ($detail) {
+                        $detail->bill->update(['status' => Bill::STATUS_PAID]);
+                    });
+                }
+                if ($transaction->type == Transaction::TYPE_SALDO) {
+                    $student = Student::find($transaction->student_id);
+                    $student->update([
+                        'saldo' => $student->saldo + $transaction->pay_amount
+                    ]);
+                    // change status to saldo history
+                    $transaction->transactionDetails->first()->saldoHistory->update([
+                        'status' => SaldoHistory::STATUS_SUCCESS
+                    ]);
+                } elseif ($transaction->type == Transaction::TYPE_SAVING) {
+                    foreach ($transaction->transactionDetails as $detail) {
+                        $detail->savingHistory->update([
+                            'status' => SavingHistory::STATUS_SUCCESS
+                        ]);
+                    }
+
+                    $student = Student::find($transaction->student_id);
+                    $student->update([
+                        'saving' => $student->saving + $transaction->pay_amount
+                    ]);
+                } elseif ($transaction->type == Transaction::TYPE_PPDB) {
+                    foreach ($transaction->transactionDetails as $detail) {
+                        $detail->ppdbRegistration->update([
+                            'status' => PpdbRegistration::STATUS_PAID,
+                            'payment_status' => PpdbRegistration::STATUS_PAID
+                        ]);
+                    }
+                }
+                self::dispatchNotifications($transaction);
+            }
+            if ($transaction->activeProof) {
+                if ($transaction->status == Transaction::STATUS_REJECTED) {
+                    $transaction->activeProof->update([
+                        'status' => TransactionProof::STATUS_REJECTED,
+                        'note' => $data['note'],
+                    ]);
+                    // send notification to whatsapp
+                    $messageWhatsapp = SendNotifWaService::sendMessageRejectedPayment($transaction);
+                    $title = 'Bukti Pembayaran Ditolak';
+                    $body = 'Maaf, Bukti pembayaran anda ditolak. Silahkan upload ulang bukti pembayaran';
+                    dispatch(new SendToPushNotificationJob($title, $body, $transaction->student->user, $transaction));
+                    dispatch(new SendToWhatsappNotificationJob($transaction->student->user->phone, $messageWhatsapp));
+                    $contacts = Contact::where('type', Contact::TYPE_BENDAHARA)->orWhere('type', Contact::TYPE_SUPERADMIN)->get();
+                    foreach ($contacts as $contact) {
+                        dispatch(new SendToWhatsappNotificationJob($contact->phone, $messageWhatsapp));
+                    }
+                } else {
+                    $transaction->activeProof->update([
+                        'status' => $data['status'],
+                        'note' => null,
+                    ]);
+                }
+            }
+            DB::commit();
+            return [
+                'status' => true,
+                'message' => "Berhasil mengubah status transaksi",
+                'transaction' => $transaction
+            ];
+        } catch (\Throwable $th) {
+            DB::rollBack();
+            Log::error($th);
+            return [
+                'status' => false,
+                'message' => "Gagal mengubah status transaksi"
+            ];
+        }
     }
 }

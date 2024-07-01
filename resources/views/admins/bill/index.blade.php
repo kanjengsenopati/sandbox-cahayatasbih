@@ -551,10 +551,7 @@
                         name: 'student.name',
                         orderable: false,
                     },
-                    {
-                        data: 'type',
-                        name: 'type'
-                    },
+                  
                     {
                         data: 'pay_amount',
                         name: 'pay_amount'

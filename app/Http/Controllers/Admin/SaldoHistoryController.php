@@ -2,15 +2,20 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Models\User;
+use App\Models\Student;
+use App\Models\Transaction;
 use App\Models\SaldoHistory;
 use Illuminate\Http\Request;
+use App\Models\PaymentMethod;
 use Yajra\DataTables\DataTables;
-use App\Http\Controllers\Controller;
-use App\Http\Requests\Admin\SaldoHistoryRequest;
-use App\Models\Student;
-use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use App\Http\Controllers\Controller;
+use App\Services\TransactionService;
+use Illuminate\Support\Facades\Auth;
+use App\Http\Requests\Admin\SaldoHistoryRequest;
+use App\Http\Requests\Admin\UpdateStatusTopupSaldoRequest;
 
 class SaldoHistoryController extends Controller
 {
@@ -19,7 +24,7 @@ class SaldoHistoryController extends Controller
      */
     public function index()
     {
-        if (request()->ajax()) {
+        if (request()->ajax() && request()->type === 'saldo') {
             $data = SaldoHistory::with('student')->latest()->get();
             return DataTables::of($data)
                 ->editColumn('amount', function ($data) {
@@ -39,6 +44,69 @@ class SaldoHistoryController extends Controller
                     }
                 })
                 ->rawColumns(['amount', 'status'])
+                ->make(true);
+        }
+        if (request()->ajax() && request()->type === 'topup') {
+            $transactions = Transaction::with('student', 'paymentMethod', 'activeProof')
+                ->whereHas('paymentMethod', function ($query) {
+                    $query->where('type', PaymentMethod::TYPE_TRANSFER);
+                })
+                ->where('type', Transaction::TYPE_SALDO)
+                ->where('status', Transaction::STATUS_PENDING_CONFIRMATION)
+                ->latest();
+
+            return DataTables::of($transactions)
+                ->addColumn('proof', function ($transaction) {
+                    // add image preview on click zoom the image
+                    return "<a href='" . $transaction?->activeProof?->proof_image . "' target='_blank'>
+                        <img src='" . $transaction?->activeProof?->proof_image . "' class='img-fluid img-thumbnail' style='max-width: 100px;'>
+                    </a>";
+                })
+                ->editColumn('pay_amount', function ($transaction) {
+                    return 'Rp ' . number_format($transaction->pay_amount, 0, ',', '.');
+                })
+
+                ->editColumn('status', function ($transaction) {
+                    if ($transaction->status == Transaction::STATUS_PENDING) {
+                        return '<span class="badge badge-primary">Belum Dibayar</span>';
+                    } elseif ($transaction->status == Transaction::STATUS_PENDING_PAYMENT) {
+                        return '<span class="badge badge-warning">Menunggu Pembayaran</span>';
+                    } elseif ($transaction->status == Transaction::STATUS_PENDING_CONFIRMATION) {
+                        return '<span class="badge badge-danger">Menunggu Konfirmasi</span>';
+                    } elseif ($transaction->status == Transaction::STATUS_PAID) {
+                        return '<span class="badge badge-success">Lunas</span>';
+                    } elseif ($transaction->status == Transaction::STATUS_EXPIRED) {
+                        return '<span class="badge badge-secondary">Kedaluwarsa</span>';
+                    } elseif ($transaction->status == Transaction::STATUS_CANCELLED) {
+                        return '<span class="badge badge-secondary">Dibatalkan</span>';
+                    } elseif ($transaction->status == Transaction::STATUS_REJECTED) {
+                        return '<span class="badge badge-danger">Ditolak</span><br><small>' . $transaction->activeProof?->note . '</small>';
+                    }
+                })
+                ->addColumn('action', function ($transaction) {
+                    $action = "<select class='form-control status-transaction' name='status' id='status-{$transaction->id}' onchange='updateStatus(this.value, \"{$transaction->id}\")'>
+                        <option value=''>Pilih Status</option>
+                        <option value='" . Transaction::STATUS_PENDING_CONFIRMATION . "' " . ($transaction->status == Transaction::STATUS_PENDING_CONFIRMATION ? 'selected' : '') . ">Menunggu Konfirmasi</option>
+                        <option value='" . Transaction::STATUS_PAID . "' " . ($transaction->status == Transaction::STATUS_PAID ? 'selected' : '') . ">Lunas</option>
+                        <option value='" . Transaction::STATUS_REJECTED . "' " . ($transaction->status == Transaction::STATUS_REJECTED ? 'selected' : '') . ">Ditolak</option>
+                    </select>";
+
+
+                    $action .= "<input type='hidden' name='note' id='note-{$transaction->id}' value='{$transaction->activeProof?->note}'>";
+
+                    // Tambahkan button simpan
+                    $action .= "<button class='btn btn-primary btn-sm mt-2' onclick='saveStatus(\"{$transaction->id}\")'>Simpan</button>";
+
+                    // Jika status sudah lunas maka tidak bisa diubah
+                    if ($transaction->status == Transaction::STATUS_PAID) {
+                        $action = "<span class='badge badge-success'>Lunas</span>";
+                    }
+
+                    return $action;
+                })
+
+
+                ->rawColumns(['proof', 'action', 'type', 'status'])
                 ->make(true);
         }
         return view('admins.saldo-history.index');
@@ -136,5 +204,20 @@ class SaldoHistoryController extends Controller
     public function destroy(string $id)
     {
         //
+    }
+
+    public function updateStatusPayment(UpdateStatusTopupSaldoRequest $request, $id)
+    {
+        $transaction = Transaction::findOrFail($id);
+        $data = $request->validated();
+        $data['admin_id'] = Auth::id();
+
+        $result = TransactionService::updateStatusPaymentTransfer($data, $transaction);
+
+        if ($result['status']) {
+            return $this->postSuccessResponse($result['message'], $result['transaction']);
+        } else {
+            return $this->failedResponse($result['message']);
+        }
     }
 }

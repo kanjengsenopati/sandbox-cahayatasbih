@@ -214,4 +214,27 @@ class SendNotifWaService
 
         return $message;
     }
+
+
+    public static function sendMessageRejectedPayment($transaction)
+    {
+        $student = $transaction->student;
+        $parentStudent = $student->user;
+
+        $message = "APLIKASI PPTQ CAHAYA TASBIH\n";
+        $message .= "--------------------------------\n";
+        $message .= "*-STATUS PEMBAYARAN DITOLAK-*\n";
+        $message .= "--------------------------------\n";
+        $message .= "Assalamu'alaikum Bapak / Ibu " . $parentStudent->name . ",\n";
+        $message .= "Mohon maaf, pembayaran *" . $transaction->payment_code . "* sebesar *Rp. " . number_format($transaction->pay_amount, 0, ',', '.') . "* ditolak.\n";
+        $message .= "Alasan : " . $transaction?->activeProof?->note . "\n";
+        $message .= "*Mohon segera upload ulang bukti pembayaran untuk segera diproses petugas.*\n";
+        $message .= "--------------------------------\n";
+        $message .= "*PASTIKAN TRANSFER SESUAI NOMINAL DIATAS, TERMASUK 3 NOMOR TERAKHIR UNTUK KETEPATAN PELAYANAN TRANSAKSI.*\n";
+        $message .= "--------------------------------\n";
+        // $message .= "italic Tidak perlu dibalas
+        $message .= "_Tidak perlu dibalas, Terima kasih_\n";
+
+        return $message;
+    }
 }

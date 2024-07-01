@@ -18,7 +18,6 @@
                     <tr class="text-start text-gray-400 fw-bolder fs-7 text-uppercase gs-0">
                         <th style="width: 5%">No</th>
                         <th>Siswa</th>
-                        <th>Jenis Pembayaran</th>
                         <th>Jumlah Pembayaran</th>
                         <th>Kode Unik</th>
                         <th>Bukti Transfer</th>
@@ -36,8 +35,6 @@
 @push('js')
 <script>
     function updateStatus(status, id) {
-// Function to update the status if needed
-console.log('Status updated to', status, 'for transaction', id);
 // Show note textarea if status is "Ditolak"
 const noteTextarea = document.getElementById(`note-${id}`);
 if (status == 'REJECTED') {
@@ -65,7 +62,6 @@ noteTextarea.replaceWith(input);
 function saveStatus(id) {
 const status = document.getElementById(`status-${id}`).value;
 const note = document.getElementById(`note-${id}`).value || '';
-console.log('Saving status', status, 'and note', note, 'for transaction', id);
 
 // Tampilkan loader menggunakan SweetAlert
 Swal.fire({
