@@ -72,7 +72,7 @@ class SaldoHistoryController extends Controller
                     } elseif ($transaction->status == Transaction::STATUS_PENDING_PAYMENT) {
                         return '<span class="badge badge-warning">Menunggu Pembayaran</span>';
                     } elseif ($transaction->status == Transaction::STATUS_PENDING_CONFIRMATION) {
-                        return '<span class="badge badge-danger">Menunggu Konfirmasi</span>';
+                        return '<span class="badge badge-danger">Menunggu Verifikasi</span>';
                     } elseif ($transaction->status == Transaction::STATUS_PAID) {
                         return '<span class="badge badge-success">Lunas</span>';
                     } elseif ($transaction->status == Transaction::STATUS_EXPIRED) {
@@ -86,9 +86,8 @@ class SaldoHistoryController extends Controller
                 ->addColumn('action', function ($transaction) {
                     $action = "<select class='form-control status-transaction' name='status' id='status-{$transaction->id}' onchange='updateStatus(this.value, \"{$transaction->id}\")'>
                         <option value=''>Pilih Status</option>
-                        <option value='" . Transaction::STATUS_PENDING_CONFIRMATION . "' " . ($transaction->status == Transaction::STATUS_PENDING_CONFIRMATION ? 'selected' : '') . ">Menunggu Konfirmasi</option>
                         <option value='" . Transaction::STATUS_PAID . "' " . ($transaction->status == Transaction::STATUS_PAID ? 'selected' : '') . ">Lunas</option>
-                        <option value='" . Transaction::STATUS_REJECTED . "' " . ($transaction->status == Transaction::STATUS_REJECTED ? 'selected' : '') . ">Ditolak</option>
+                        <option value='" . Transaction::STATUS_REJECTED . "' " . ($transaction->status == Transaction::STATUS_REJECTED ? 'selected' : '') . ">Cek Ulang</option>
                     </select>";
 
 
