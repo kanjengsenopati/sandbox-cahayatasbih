@@ -203,7 +203,7 @@ class SendNotifWaService
             $message .= "*-STATUS MENUNGGU UPLOAD BUKTI PEMBAYARAN TRANSFER-*\n";
             $message .= "--------------------------------\n";
             $message .= "Assalamu'alaikum Bapak / Ibu " . $parentStudent->name . ",\n";
-            $message .= "Terima kasih sudah melakukan transaksi " . $transaction->payment_code . " sebesar Rp. " . number_format($transaction->pay_amount, 0, ',', '.') . " dengan cara pembayaran transfer.\n";
+            $message .= "Terima kasih sudah melakukan transaksi *" . $transaction->payment_code . "* sebesar *Rp. " . number_format($transaction->pay_amount, 0, ',', '.') . "* dengan cara pembayaran transfer.\n";
             $message .= "*Mohon segera upload bukti pembayaran ke aplikasi untuk segera diproses petugas.*\n";
             $message .= "--------------------------------\n";
             $message .= "*PASTIKAN TRANSFER SESUAI NOMINAL DIATAS, TERMASUK 3 NOMOR TERAKHIR UNTUK KETEPATAN PELAYANAN TRANSAKSI.*\n";
