@@ -101,14 +101,19 @@ class OrderItemController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'payment-method' => 'required',
-            'student_id' => 'required_if:payment-method,Saldo|nullable|exists:students,id',
+            'payment_method' => 'required',
+            'student_id' => 'required_if:payment_method,Saldo|nullable|exists:students,id',
         ]);
 
         // Use database transaction to ensure data consistency
         DB::beginTransaction();
 
         try {
+
+            if ($request->payment_method == PointOfSaleTransaction::PAYMENT_SALDO && !$request->student_id) {
+                return redirect()->back()->with('error', 'Maaf, Pembayaran Saldo harus scan barcode siswa');
+            }
+
             $adminId = auth()->user()->id;
 
             // Get cart data

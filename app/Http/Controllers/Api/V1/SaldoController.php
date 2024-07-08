@@ -54,7 +54,10 @@ class SaldoController extends Controller
         if ($saldoHistory->usage == SaldoHistory::USAGE_BILL) {
             $saldoHistory->load('transaction_details.bill.billType');
         } elseif ($saldoHistory->usage == SaldoHistory::USAGE_POS) {
-            $saldoHistory->load('pointOfSaleTransaction.pointOfSaleTransactionDetails.item');
+            $saldoHistory->load(
+                'pointOfSaleTransaction.pointOfSaleTransactionDetails.item',
+                'cashier'
+            );
         } elseif ($saldoHistory->usage == SaldoHistory::USAGE_TOPUP) {
             $saldoHistory->load('transaction_details.transaction');
         }

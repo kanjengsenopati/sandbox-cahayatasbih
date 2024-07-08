@@ -163,7 +163,7 @@
                                 <div class="fv-row">
                                     <!--begin::Label-->
                                     <label class="form-label">Pembayaran</label>
-                                    <input class="form-control" name="payment-method" type="text" id="payment-method"
+                                    <input class="form-control" name="payment_method" type="text" id="payment_method"
                                         value="Saldo" readonly>
                                     <!--end::Input-->
                                 </div>
@@ -756,8 +756,8 @@
         document.getElementById('student-name-group').style.display = 'block';
         document.getElementById('saldo').closest('.fv-row').style.display = 'block';
         document.getElementById('remaining-saldo').closest('.fv-row').style.display = 'block';
-        // set #payment-method value to 'Saldo'
-        document.getElementById('payment-method').value = 'Saldo';
+        // set #payment_method value to 'Saldo'
+        document.getElementById('payment_method').value = 'Saldo';
     });
 
     document.getElementById('umum-tab').addEventListener('click', function () {
@@ -765,8 +765,8 @@
         document.getElementById('student-name-group').style.display = 'none';
         document.getElementById('saldo').closest('.fv-row').style.display = 'none';
         document.getElementById('remaining-saldo').closest('.fv-row').style.display = 'none';
-        // set #payment-method value to 'Umum'
-        document.getElementById('payment-method').value = 'Tunai';
+        // set #payment_method value to 'Umum'
+        document.getElementById('payment_method').value = 'Tunai';
     });
 </script>
 @endpush
