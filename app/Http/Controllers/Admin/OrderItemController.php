@@ -394,7 +394,6 @@ class OrderItemController extends Controller
     public function getTotalPrice()
     {
         $total = PointOfSaleCart::where('admin_id', auth()->user()->id)->sum('total');
-        // $total = "Rp. " . number_format($total, 0, ',', '.');
         return $this->getSuccessResponse($total);
     }
 

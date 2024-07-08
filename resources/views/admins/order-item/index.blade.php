@@ -258,16 +258,6 @@
                                         </div>
                                     </div>
                                     <!--end::Search inputs-->
-                                    <!--begin::Selected products-->
-                                    {{-- <div
-                                        class="row row-cols-1 row-cols-xl-3 row-cols-md-2 border border-dashed rounded pt-3 pb-1 px-2 mb-5 mh-300px overflow-scroll"
-                                        id="kt_ecommerce_edit_order_selected_products">
-                                        <!--begin::Empty message-->
-                                        <span class="w-100 text-muted">Cari barang berdasarkan kode pada kolom di
-                                            atas</span>
-                                        <!--end::Empty message-->
-                                    </div> --}}
-                                    <!--end::Selected products-->
                                 </div>
                                 <!--end::Input group-->
                                 <!--begin::Separator-->
@@ -402,6 +392,67 @@
         }
     }
 
+    $('#modalListProduct').on('shown.bs.modal', function () {
+     getListProduct();
+    });
+
+    function getListProduct() {
+        axios.post("{{ route('item.search-item') }}", {
+        }).then(handleListProductResponse)
+        .catch(handleError);
+    }
+
+    function handleListProductResponse(response) {
+        var products = response.data.data;
+        var listProduct = document.getElementById('list-product-name');
+        listProduct.innerHTML = '';
+
+        if (products && products.length > 0) {
+            products.forEach(function (product, index) {
+                var tr = document.createElement('tr');
+                // tr.innerHTML = `
+                //     <td>${product.name}</td>`;
+                // listProduct.appendChild(tr);
+                tr.innerHTML = `
+                <div class="d-flex align-items-center" data-kt-ecommerce-edit-order-filter="product"
+                    data-kt-ecommerce-edit-order-id="product_${product.id}">
+                    <a class="symbol symbol-50px">
+                        <span class="symbol-label" style="background-image:url(${product.image})"></span>
+                    </a>
+                    <div class="ms-5">
+                        <a class="text-gray-800 text-hover-primary fs-5 fw-bolder">${product.name}</a>
+                        <div class="text-muted fs-7">Stok: ${product.stock}</div>
+                    </div>
+                </div>`;
+                listProduct.appendChild(tr);
+                
+                var tdPrice = document.createElement('td');
+                tdPrice.textContent = `Rp. ${product.price.toLocaleString('id-ID')}`;
+                tr.appendChild(tdPrice);
+                
+                // Create td for action button
+                var tdAction = document.createElement('td');
+                var button = document.createElement('button');
+                button.classList.add('btn', 'btn-primary');
+                button.textContent = 'Pilih';
+                button.addEventListener('click', function () {
+                addProductToCart(product);
+                appendProductToTable(product);
+                updateTotalPrice();
+                });
+                tdAction.appendChild(button);
+                tr.appendChild(tdAction);
+                
+                listProduct.appendChild(tr);
+            });
+        } else {
+            // Display message if no products found
+            var tr = document.createElement('tr');
+            tr.innerHTML = `<td colspan="3" class="text-center">Tidak ada produk yang ditemukan</td>`;
+            listProduct.appendChild(tr);
+        }
+    }
+
     function searchProductByCode(e) {
         var search = e.target.value;
 
@@ -478,13 +529,13 @@
     tr.innerHTML = `
     <td>
         <div class="d-flex align-items-center" data-kt-ecommerce-edit-order-filter="product"
-            data-kt-ecommerce-edit-order-id="product_${product.id}">
+            data-kt-ecommerce-edit-order-id="product_${product?.id || 'unknown'}">
             <a class="symbol symbol-50px">
-                <span class="symbol-label" style="background-image:url(${product.item.image})"></span>
+                <span class="symbol-label" style="background-image:url(${product?.item?.image || 'default-image.jpg'})"></span>
             </a>
             <div class="ms-5">
-                <a class="text-gray-800 text-hover-primary fs-5 fw-bolder">${product.item.name}</a>
-                <div class="text-muted fs-7">Stok: ${product.item.stock}</div>
+                <a class="text-gray-800 text-hover-primary fs-5 fw-bolder">${product?.item?.name || 'Unknown Product'}</a>
+                <div class="text-muted fs-7">Stok: ${product?.item?.stock ?? 'N/A'}</div>
             </div>
         </div>
     </td>
@@ -673,7 +724,7 @@
                     </a>
                     <div class="ms-5">
                         <a class="text-gray-800 text-hover-primary fs-5 fw-bolder">${product.name}</a>
-                        <div class="fw-bold fs-7">Harga: Rp. 
+                        <div class="fw-bold fs-7">Harga: Rp.
                             <span data-kt-ecommerce-edit-order-filter="price">${product.price.toLocaleString('id-ID')}</span>
                         </div>
                         <div class="text-muted fs-7">Stok: ${product.stock}</div>

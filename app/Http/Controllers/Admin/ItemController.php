@@ -103,10 +103,16 @@ class ItemController extends Controller
 
     public function searchItem(Request $request)
     {
-        if ($request->type == 'CODE') {
-            return $this->searchItemCode($request);
+        if (!$request->search) {
+            // show 10 product terlaris
+            $item = Item::whereIsActive(true)->withCount('pointOfSaleTransactionDetails')->orderBy('point_of_sale_transaction_details_count', 'desc')->limit(10)->get();
+            return $this->postSuccessResponse("Berhasil mengambil data", $item);
         } else {
-            return $this->searchItemName($request);
+            if ($request->type == 'CODE') {
+                return $this->searchItemCode($request);
+            } else {
+                return $this->searchItemName($request);
+            }
         }
     }
 
