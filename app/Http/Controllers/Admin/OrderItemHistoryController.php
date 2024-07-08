@@ -2,9 +2,11 @@
 
 namespace App\Http\Controllers\Admin;
 
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Yajra\DataTables\DataTables;
 use App\Http\Controllers\Controller;
+use App\Models\Item;
 use App\Models\PointOfSaleTransaction;
 use App\Models\PointOfSaleTransactionDetail;
 
@@ -13,31 +15,13 @@ class OrderItemHistoryController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
-        if (request()->ajax()) {
-            $data = PointOfSaleTransaction::with('pointOfSaleTransactionDetails', 'student', 'admins')->latest()->get();
+        if (request()->ajax() && request()->query('type') === 'santri') {
+            $data = PointOfSaleTransaction::with('pointOfSaleTransactionDetails', 'student.classroom', 'admins')->where('type', PointOfSaleTransaction::TYPE_SANTRI)->latest();
             return DataTables::of($data)
                 ->editColumn('pay_amount', function ($data) {
                     return 'Rp ' . number_format($data->pay_amount, 0, ',', '.');
-                })
-                ->editColumn('status', function ($data) {
-                    if ($data->status === PointOfSaleTransaction::STATUS_SUCCESS) {
-                        return '<span class="badge bg-success">' . $data->status . '</span>';
-                    } elseif ($data->status === PointOfSaleTransaction::STATUS_PENDING) {
-                        return '<span class="badge bg-warning">' . $data->status . '</span>';
-                    } else {
-                        return '<span class="badge bg-danger">' . $data->status . '</span>';
-                    }
-                })
-                ->editColumn('type', function ($data) {
-                    if ($data->type === PointOfSaleTransaction::TYPE_SANTRI) {
-                        return '<span class="badge bg-primary">' . $data->type . '</span>';
-                    } elseif ($data->type === PointOfSaleTransaction::TYPE_UMUM) {
-                        return '<span class="badge bg-info">' . $data->type . '</span>';
-                    } else {
-                        return '<span class="badge bg-warning">' . $data->type . '</span>';
-                    }
                 })
                 ->editColumn('paid_at', function ($data) {
                     $data->paid_at ? $data->paid_at->format('d F Y') : '-';
@@ -51,7 +35,90 @@ class OrderItemHistoryController extends Controller
                 ->rawColumns(['status', 'action', 'type'])
                 ->make(true);
         }
-        return view('admins.order-item.history.index');
+        if (request()->ajax() && request()->query('type') === 'umum') {
+            $data = PointOfSaleTransaction::with('pointOfSaleTransactionDetails', 'admins')->where('type', PointOfSaleTransaction::TYPE_UMUM)->latest();
+            return DataTables::of($data)
+                ->editColumn('pay_amount', function ($data) {
+                    return 'Rp ' . number_format($data->pay_amount, 0, ',', '.');
+                })
+                ->addColumn('admin', function ($data) {
+                    return $data->admins ? $data->admins->name : '-';
+                })
+                ->editColumn('profit', function ($data) {
+                    return 'Rp ' . number_format($data->profit, 0, ',', '.');
+                })
+                ->addColumn('action', function ($data) {
+                    return '<a href="' . route('order-item-history.show', $data->id) . '" class="btn btn-primary btn-sm">Detail</a>';
+                })
+                ->rawColumns(['status', 'action', 'type'])
+                ->make(true);
+        }
+
+        if (request()->ajax() && request()->query('type') === 'top-items') {
+            // $data = Item::whereIsActive(true)->order(); get item with most transaction
+            $data = Item::whereIsActive(true)->withCount('pointOfSaleTransactionDetails')->orderBy('point_of_sale_transaction_details_count', 'desc');
+            return DataTables::of($data)
+                ->addColumn('total_transaction', function ($data) {
+                    return $data->point_of_sale_transaction_details_count ?? 0;
+                })
+                ->rawColumns(['total_transaction'])
+                ->make(true);
+        }
+
+
+        $year = request('year', now()->year);
+        $chartIncomesCategories = collect(range(1, 12))->map(function ($month) use ($year) {
+            return Carbon::create($year, $month, 1)->locale('id')->monthName;
+        })->toArray();
+
+        $startDate = $request->input('start_date');
+        $endDate = $request->input('end_date');
+
+        $totalProduct = Item::whereIsActive(true)->count();
+
+        $transactionQuery = PointOfSaleTransaction::where('status', PointOfSaleTransaction::STATUS_SUCCESS);
+
+        if ($startDate && $endDate) {
+            $transactionQuery->whereDate('created_at', '>=', $startDate)
+                ->whereDate('created_at', '<=', $endDate);
+        } else {
+            $year = now()->year;
+            $month = now()->month;
+            $transactionQuery->whereYear('created_at', $year)
+                ->whereMonth('created_at', $month);
+        }
+
+        $totalTransaction = $transactionQuery->count();
+        $totalSales = $transactionQuery->sum('pay_amount');
+        $totalIncome = $transactionQuery->sum('profit');
+
+        $incomesCashier = [
+            'totalProduct' => $totalProduct,
+            'totalTransaction' => $totalTransaction,
+            'totalSales' => $totalSales,
+            'totalIncome' => $totalIncome,
+        ];
+
+        $chartCashierOmzet = collect(range(1, 12))->map(function ($month) use ($year) {
+            return intval(PointOfSaleTransaction::whereYear('created_at', $year)
+                ->whereMonth('created_at', $month)
+                ->where('status', PointOfSaleTransaction::STATUS_SUCCESS)
+                ->sum('pay_amount'));
+        })->toArray();
+
+        $chartCashierProfit = collect(range(1, 12))->map(function ($month) use ($year) {
+            return intval(PointOfSaleTransaction::whereYear('created_at', $year)
+                ->whereMonth('created_at', $month)
+                ->where('status', PointOfSaleTransaction::STATUS_SUCCESS)
+                ->sum('profit'));
+        })->toArray();
+
+        return view('admins.order-item.history.index', compact(
+            'incomesCashier',
+            'chartCashierOmzet',
+            'chartCashierProfit',
+            'chartIncomesCategories'
+        ));
     }
 
     /**
