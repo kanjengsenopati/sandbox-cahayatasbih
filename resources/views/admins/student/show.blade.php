@@ -78,7 +78,7 @@
                                                 Informasi Siswa
                                             </a>
                                         </li>
-                                        <li class="nav-item">
+                                        {{-- <li class="nav-item">
                                             <a class="nav-link btn btn-active-light btn-color-gray-600 btn-active-color-primary rounded-bottom-0"
                                                 data-bs-toggle="tab" href="#kt_tab_pane_2">
                                                 Activity History
@@ -107,7 +107,7 @@
                                                 data-bs-toggle="tab" href="#kt_tab_pane_5">
                                                 Reward Claim History
                                             </a>
-                                        </li>
+                                        </li> --}}
                                     </ul>
                                 </div>
                             </div>
@@ -122,8 +122,10 @@
                                             <span class="badge badge-secondary">
                                                 Kelas {{ $student->classroom->name ?? 'Belum diatur' }}</span>
                                             {{-- add button direct to edit student --}}
+                                            @can ('Edit Santri')
                                             <a href="{{ route('student.edit', $student->id) }}"
                                                 class="btn btn-primary btn-sm"><i class="fa fa-edit"></i> Edit Siswa</a>
+                                            @endcan
                                         </div>
                                         <div class="ms-5 ps-3 w-100">
                                             <!-- <div class=""> -->
@@ -205,7 +207,7 @@
                                         </div>
                                     </div>
                                 </div>
-                                <div class="tab-pane fade" id="kt_tab_pane_2" role="tabpanel">
+                                {{-- <div class="tab-pane fade" id="kt_tab_pane_2" role="tabpanel">
                                     <div class="table-responsive">
                                         <table id="table-run" class="table table-striped border rounded gy-5 gs-7">
                                             <thead>
@@ -301,7 +303,7 @@
                                             <tbody></tbody>
                                         </table>
                                     </div>
-                                </div>
+                                </div> --}}
                             </div>
                         </div>
                         <!--end::Card body-->

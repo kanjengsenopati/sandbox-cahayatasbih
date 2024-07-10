@@ -14,6 +14,7 @@ use App\Models\ApplicationSetting;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\Controller;
+use Illuminate\Support\Facades\Auth;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Http\Requests\Admin\StudentRequest;
 use SimpleSoftwareIO\QrCode\Facades\QrCode;
@@ -25,6 +26,9 @@ class StudentController extends Controller
      */
     public function index()
     {
+        if (!Auth::user()->can('Manage Santri')) {
+            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
+        }
         if (request()->ajax()) {
             $data = Student::with('user', 'classroom.school')
                 ->when(request('school_id'), function ($query) {
@@ -38,7 +42,7 @@ class StudentController extends Controller
                 ->when(request('status'), function ($query) {
                     $query->where('status', request('status'));
                 })
-                ->latest()->get();
+                ->latest();
             return DataTables::of($data)
                 ->editColumn('saldo', function ($data) {
                     return '<span class="badge bg-success">Rp ' . number_format($data->saldo, 0, ',', '.') . '</span>';
@@ -74,7 +78,7 @@ class StudentController extends Controller
                         // view('components.action.edit', ['action' => $actionEdit]) .
                         view('components.action.show', ['action' => $actionShow]) .
                         view('components.action.qr-code', ['action' => $actionPrint, 'label' => 'Cetak Kartu']) .
-                        view('components.action.delete', ['action' => $actionDelete, 'id' => $data->id]) .
+                        view('components.action.delete', ['action' => $actionDelete, 'id' => $data->id, 'name' => 'Santri']) .
                         "</div>";
                 })
                 ->rawColumns(['action', 'saldo', 'classroom', 'school', 'status'])
@@ -89,6 +93,9 @@ class StudentController extends Controller
      */
     public function create()
     {
+        if (!Auth::user()->can('Create Santri')) {
+            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
+        }
         $schools = School::orderBy('name')->get();
         return view('admins.student.create-edit', compact('schools'));
     }
@@ -98,6 +105,9 @@ class StudentController extends Controller
      */
     public function store(StudentRequest $request)
     {
+        if (!Auth::user()->can('Create Santri')) {
+            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
+        }
         $data = $request->validated();
         if ($request->hasFile('avatar')) {
             $data['avatar'] = 'storage/' . $request->file('avatar')->store('images/avatar', 'public');
@@ -111,6 +121,9 @@ class StudentController extends Controller
      */
     public function show(string $id)
     {
+        if (!Auth::user()->can('Manage Santri')) {
+            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
+        }
         $student = Student::with('user', 'classroom.school')->findOrFail($id);
         $saldo = [
             'IN' => SaldoHistory::where('student_id', $student->id)
@@ -126,6 +139,9 @@ class StudentController extends Controller
      */
     public function edit(Student $student)
     {
+        if (!Auth::user()->can('Edit Santri')) {
+            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
+        }
         $schools = School::orderBy('name')->get();
         $saldo = [
             'IN' => SaldoHistory::where('student_id', $student->id)
@@ -141,6 +157,9 @@ class StudentController extends Controller
      */
     public function update(StudentRequest $request, Student $student)
     {
+        if (!Auth::user()->can('Edit Santri')) {
+            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
+        }
         $data = $request->validated();
         if ($request->hasFile('avatar')) {
             file_exists($student->avatar) ? unlink($student->avatar) : '';
@@ -155,6 +174,9 @@ class StudentController extends Controller
      */
     public function destroy(Student $student)
     {
+        if (!Auth::user()->can('Delete Santri')) {
+            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
+        }
         file_exists($student->avatar) ? unlink($student->avatar) : '';
         $student->delete();
         return redirect()->route('student.index')->with('success', 'Siswa berhasil dihapus');

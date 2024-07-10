@@ -2,10 +2,11 @@
 
 namespace App\Http\Controllers\Admin;
 
-use App\Http\Controllers\Controller;
-use App\Http\Requests\Admin\ClassroomRequest;
 use App\Models\Classroom;
 use Illuminate\Http\Request;
+use App\Http\Controllers\Controller;
+use Illuminate\Support\Facades\Auth;
+use App\Http\Requests\Admin\ClassroomRequest;
 
 class ClassroomController extends Controller
 {
@@ -22,6 +23,9 @@ class ClassroomController extends Controller
      */
     public function create()
     {
+        if (!Auth::user()->can('Create Sekolah')) {
+            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
+        }
         return view('admins.school.classroom.create-edit');
     }
 
@@ -30,6 +34,9 @@ class ClassroomController extends Controller
      */
     public function store(ClassroomRequest $request)
     {
+        if (!Auth::user()->can('Create Sekolah')) {
+            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
+        }
         $data = $request->validated();
         Classroom::create($data);
         return redirect()->route('school.show', $data['school_id'])->with('success', 'Kelas berhasil ditambahkan');
@@ -48,6 +55,9 @@ class ClassroomController extends Controller
      */
     public function edit(Classroom $classroom)
     {
+        if (!Auth::user()->can('Edit Sekolah')) {
+            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
+        }
         return view('admins.school.classroom.create-edit', compact('classroom'));
     }
 
@@ -56,6 +66,9 @@ class ClassroomController extends Controller
      */
     public function update(ClassroomRequest $request, Classroom $classroom)
     {
+        if (!Auth::user()->can('Edit Sekolah')) {
+            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
+        }
         $data = $request->validated();
         $classroom->update($data);
         return redirect()->route('school.show', $classroom->school_id)->with('success', 'Kelas berhasil diperbarui');
@@ -66,6 +79,9 @@ class ClassroomController extends Controller
      */
     public function destroy(Classroom $classroom)
     {
+        if (!Auth::user()->can('Delete Sekolah')) {
+            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
+        }
         $classroom->delete();
         return redirect()->route('school.show', $classroom->school_id)->with('success', 'Kelas berhasil dihapus');
     }

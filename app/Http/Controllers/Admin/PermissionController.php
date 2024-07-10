@@ -12,7 +12,7 @@ class PermissionController extends Controller
 {
     public function __construct()
     {
-        $this->middleware(['permission:permission']);
+        // $this->middleware(['permission:permission']);
     }
     /**
      * Display a listing of the resource.
@@ -20,7 +20,7 @@ class PermissionController extends Controller
     public function index()
     {
         if (request()->ajax()) {
-            $permissions = Permission::query();
+            $permissions = Permission::latest();
             return DataTables::of($permissions)
                 ->addColumn('action', function ($data) {
                     $actionEdit = route('permission.edit', $data->id);

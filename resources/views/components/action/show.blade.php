@@ -14,6 +14,5 @@
             <span class="path4"></span>
             <span class="path5"></span>
         </i>
-        {{ $label ?? '' }}
     </a>
 </div>

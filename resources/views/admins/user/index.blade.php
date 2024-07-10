@@ -48,24 +48,14 @@
                 <div
                     class="card-header d-flex align-items-end gap-5 flex-sm-row mb-5 justify-content-between border-0 pt-6">
                     <div class="d-flex flex-wrap justify-content-beetween gap-5">
-                        <div class="mb-0">
-                            <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal"
-                                data-bs-target="#modalImport">
-                                + Import Data
-                            </button>
-                        </div>
+                        <x-action.import target="#modalImport" name="Wali Santri" />
                         <div class="mb-0">
 
                         </div>
                     </div>
                     <div class="mt-4 gap-2 d-flex justify-content-beetween align-items-end">
-                        <div>
 
-                        </div>
-                        <div>
-                            <a type="a" class="btn btn-sm btn-primary" id="btn_add_permission"
-                                href="{{ route('user.create') }}">+ Wali Santri</a>
-                        </div>
+                        <x-action.create name="Wali Santri" action="{{ route('user.create') }}" />
                     </div>
                     <!--end::Card title-->
                 </div>

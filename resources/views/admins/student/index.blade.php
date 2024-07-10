@@ -77,15 +77,9 @@
                     </div>
                     <div class="d-flex flex-column flex-sm-row align-items-end">
                         <div class="me-sm-3 mb-3 mb-sm-0">
-                            <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal"
-                                data-bs-target="#modalImport">
-                                + Import Data
-                            </button>
+                            <x-action.import target="#modalImport" name="Santri" />
                         </div>
-                        <div>
-                            <a type="button" class="btn btn-sm btn-primary" id="btn_add_permission"
-                                href="{{ route('student.create') }}">+ Siswa</a>
-                        </div>
+                        <x-action.create name="Santri" action="{{ route('student.create') }}" />
                     </div>
                 </div>
                 <!--end::Card header-->

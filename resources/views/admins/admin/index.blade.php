@@ -49,11 +49,7 @@
                     <div class="card-title">
                         <h3 class="text-dark">Admin</h3>
                     </div>
-                    <div class="">
-                        <a type="a" class="btn btn-sm btn-primary" id="btn_add_permission"
-                            href="{{ route('admin.create') }}">+ Admin</a>
-                        <!--end::Primary button-->
-                    </div>
+                    <x-action.create name="Admin" action="{{ route('admin.create') }}" />
                     <!--end::Card title-->
                 </div>
                 <!--end::Card header-->
@@ -69,6 +65,7 @@
                                     <th>Nama</th>
                                     <th>Email</th>
                                     <th>Role</th>
+                                    <th>UPT</th>
                                     <th>Status</th>
                                     <th width="20%" class="text-center">Aksi</th>
                                 </tr>
@@ -141,6 +138,10 @@
                         data: 'role',
                         name: 'role',
                         responsivePriority: 2,
+                    },
+                    {
+                        data: 'school',
+                        name: 'school',
                     },
                     {
                         data: 'is_active',

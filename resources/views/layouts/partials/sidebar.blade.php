@@ -56,9 +56,7 @@
                     </a>
                 </div>
 
-                @canany(['permission', 'role', 'information-category', 'information', 'payment-method',
-                'application-setting',
-                'application-menu', 'help', 'app-information', 'bill-item', 'bill-type'])
+                @canany(['Manage Role', 'Manage Admin'])
                 <div data-kt-menu-trigger="click" class="menu-item menu-accordion {{ request()->routeIs(['permission.*', 'role.*', 'information-category.*',
                     'information.*', 'payment-method.*', 'application-setting.*', 'application-menu.*', 'help.*',
                     'app-information.*', 'bill-item.*', 'bill-type.*']) ? 'show' : '' }}">
@@ -81,7 +79,7 @@
                             </a>
                         </div>
                         @endcan
-                        @can('role')
+                        @can('Manage Role')
                         <div class="menu-item ">
                             <a class="menu-link {{ request()->routeIs('role.*') ? ' active' : '' }}"
                                 href="{{ route('role.index') }}">
@@ -89,6 +87,17 @@
                                     <span class="bullet bullet-dot"></span>
                                 </span>
                                 <span class="menu-title">Role</span>
+                            </a>
+                        </div>
+                        @endcan
+                        @can('Manage Admin')
+                        <div class="menu-item ">
+                            <a class="menu-link {{ request()->routeIs('admin.*') ? ' active' : '' }}"
+                                href="{{ route('admin.index') }}">
+                                <span class="menu-bullet">
+                                    <span class="bullet bullet-dot"></span>
+                                </span>
+                                <span class="menu-title">Pengguna</span>
                             </a>
                         </div>
                         @endcan
@@ -204,14 +213,12 @@
                 </div>
                 @endcanany
 
-                @canany(['school', 'academic-year', 'semester', 'study','user', 'student',
-                'category-item', 'item', 'stock-history', 'ppdb'])
+                @canany(['Manage Wali Santri', 'Manage Santri', 'Manage Sekolah'])
                 <div data-kt-menu-trigger="click"
-                    class="menu-item menu-accordion {{ request()->routeIs(['
-                    school.*', 'academic-year.*', 'semester.*', 'study.*',
+                    class="menu-item menu-accordion {{ request()->routeIs(['school.*', 'academic-year.*', 'semester.*', 'study.*',
                     'user.*', 'student.*',
                       'category-item.*', 'item.*', 'stock-history.*', 'grade-promotion.*', 'ppdb.*']) ? 'show' : '' }}">
-                    <span class="menu-link ">
+                    <span class="menu-link">
                         <span class="menu-icon">
                             <i class="fa-solid fa-school" style="color: #ffffff;"></i>
                         </span>
@@ -219,7 +226,7 @@
                         <span class="menu-arrow"></span>
                     </span>
                     <div class="menu-sub menu-sub-accordion menu-active-bg">
-                        @can('school')
+                        @can('Manage Sekolah')
                         <div class="menu-item ">
                             <a class="menu-link {{ request()->routeIs('school.*') ? ' active' : '' }}"
                                 href="{{ route('school.index') }}">
@@ -264,7 +271,7 @@
                         </div>
                         @endcan
 
-                        @can('user')
+                        @can('Manage Wali Santri')
                         <div class="menu-item ">
                             <a class="menu-link {{ request()->routeIs('user.*') ? ' active' : '' }}"
                                 href="{{ route('user.index') }}">
@@ -275,7 +282,7 @@
                             </a>
                         </div>
                         @endcan
-                        @can('student')
+                        @can('Manage Santri')
                         <div class="menu-item">
                             <a class="menu-link {{ request()->routeIs('student.*') ? ' active' : '' }}"
                                 href="{{ route('student.index') }}">

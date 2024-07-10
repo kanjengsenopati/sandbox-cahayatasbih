@@ -54,12 +54,8 @@
                     <div class="card-title">
                         <h3 class="text-dark">Kelas {{ $school->name }}</h3>
                     </div>
-                    <div class="">
-                        <a type="a" class="btn btn-sm btn-primary" id="btn_add_permission"
-                            href="{{ route('classroom.create', ['school' => $school->id]) }}">+
-                            Kelas</a>
-                        <!--end::Primary button-->
-                    </div>
+                    <x-action.create name="Sekolah" label="Kelas"
+                        action="{{ route('classroom.create', ['school' => $school->id]) }}" />
                     <!--end::Card title-->
                 </div>
                 <!--end::Card header-->

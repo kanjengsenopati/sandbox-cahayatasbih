@@ -9,6 +9,7 @@ use Yajra\DataTables\DataTables;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\Controller;
+use Illuminate\Support\Facades\Auth;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Http\Requests\Admin\UserRequest;
 
@@ -19,16 +20,18 @@ class UserController extends Controller
      */
     public function index()
     {
-
+        if (!Auth::user()->can('Manage Wali Santri')) {
+            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
+        }
         if (request()->ajax()) {
-            $data = User::latest()->get();
+            $data = User::latest();
             return DataTables::of($data)
                 ->addColumn('action', function ($data) {
                     $actionEdit = route('user.edit', $data->id);
                     $actionDelete = route('user.destroy', $data->id);
                     return "<div class='d-flex justify-content-center'>" .
-                        view('components.action.edit', ['action' => $actionEdit]) .
-                        view('components.action.delete', ['action' => $actionDelete, 'id' => $data->id]) .
+                        view('components.action.edit', ['action' => $actionEdit, 'name' => 'Wali Santri']) . '&nbsp;' .
+                        view('components.action.delete', ['action' => $actionDelete, 'id' => $data->id, 'name' => 'Wali Santri']) .
                         "</div>";
                 })
                 ->rawColumns(['action'])
@@ -42,6 +45,9 @@ class UserController extends Controller
      */
     public function create()
     {
+        if (!Auth::user()->can('Create Wali Santri')) {
+            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
+        }
         return view('admins.user.create-edit');
     }
 
@@ -50,6 +56,9 @@ class UserController extends Controller
      */
     public function store(UserRequest $request)
     {
+        if (!Auth::user()->can('Create Wali Santri')) {
+            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
+        }
         $data = $request->validated();
         $data['password'] = bcrypt($data['password']);
         if ($request->hasFile('avatar')) {
@@ -74,6 +83,9 @@ class UserController extends Controller
      */
     public function edit(User $user)
     {
+        if (!Auth::user()->can('Edit Wali Santri')) {
+            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
+        }
         return view('admins.user.create-edit', compact('user'));
     }
 
@@ -82,6 +94,9 @@ class UserController extends Controller
      */
     public function update(UserRequest $request, User $user)
     {
+        if (!Auth::user()->can('Edit Wali Santri')) {
+            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
+        }
         $data = $request->except('password');
         if ($request->filled('password')) {
             $data['password'] = bcrypt($request->password);
@@ -98,6 +113,9 @@ class UserController extends Controller
      */
     public function destroy(User $user)
     {
+        if (!Auth::user()->can('Delete Wali Santri')) {
+            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
+        }
         file_exists($user->avatar) ? unlink($user->avatar) : '';
         $user->delete();
         return redirect()->route('user.index')->with('success', 'Berhasil menghapus data user');
@@ -109,6 +127,9 @@ class UserController extends Controller
 
     public function import(Request $request)
     {
+        if (!Auth::user()->can('Create Wali Santri')) {
+            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
+        }
         try {
             $request->validate([
                 'file' => 'required|mimes:xls,xlsx'

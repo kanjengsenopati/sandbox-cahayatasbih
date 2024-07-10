@@ -6,6 +6,7 @@ use App\Models\Bank;
 use Illuminate\Http\Request;
 use Yajra\DataTables\DataTables;
 use App\Http\Controllers\Controller;
+use Illuminate\Support\Facades\Auth;
 use App\Http\Requests\Admin\BankRequest;
 
 class BankController extends Controller
@@ -15,6 +16,9 @@ class BankController extends Controller
      */
     public function index()
     {
+        if (!Auth::user()->can('Manage Bank')) {
+            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
+        }
         if (request()->ajax()) {
             $data = Bank::latest()->get();
             return DataTables::of($data)
@@ -31,8 +35,8 @@ class BankController extends Controller
                     $actionDelete = route('bank.destroy', $data->id);
                     return "<div class='d-flex justify-content-center'>" .
                         view('components.action.status', ['action' => $actionStatus, 'status' => $data->is_active, 'id' => $data->id]) .
-                        view('components.action.edit', ['action' => $actionEdit]) .
-                        view('components.action.delete', ['action' => $actionDelete, 'id' => $data->id]) .
+                        view('components.action.edit', ['action' => $actionEdit, 'name' => 'Bank']) .
+                        view('components.action.delete', ['action' => $actionDelete, 'id' => $data->id, 'name' => 'Bank']) .
                         "</div>";
                 })
                 ->rawColumns(['action', 'status', 'image'])
@@ -46,6 +50,9 @@ class BankController extends Controller
      */
     public function create()
     {
+        if (!Auth::user()->can('Create Bank')) {
+            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
+        }
         return view('admins.bank.create-edit');
     }
 
@@ -54,6 +61,9 @@ class BankController extends Controller
      */
     public function store(BankRequest $request)
     {
+        if (!Auth::user()->can('Create Bank')) {
+            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
+        }
         $data = $request->validated();
         if ($request->hasFile('image')) {
             $data['image'] = 'storage/' . $request->file('image')->store('images/bank', 'public');
@@ -75,6 +85,9 @@ class BankController extends Controller
      */
     public function edit(Bank $bank)
     {
+        if (!Auth::user()->can('Edit Bank')) {
+            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
+        }
         return view('admins.bank.create-edit', compact('bank'));
     }
 
@@ -83,6 +96,9 @@ class BankController extends Controller
      */
     public function update(BankRequest $request, Bank $bank)
     {
+        if (!Auth::user()->can('Edit Bank')) {
+            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
+        }
         $data = $request->validated();
         if ($request->hasFile('image')) {
             file_exists($bank->image) ? unlink($bank->image) : null;
@@ -97,6 +113,9 @@ class BankController extends Controller
      */
     public function destroy(Bank $bank)
     {
+        if (!Auth::user()->can('Delete Bank')) {
+            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
+        }
         file_exists($bank->image) ? unlink($bank->image) : null;
         $bank->delete();
         return redirect()->route('bank.index')->with('success', 'Bank berhasil dihapus');
@@ -108,6 +127,9 @@ class BankController extends Controller
 
     public function status(string $id)
     {
+        if (!Auth::user()->can('Edit Bank')) {
+            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
+        }
         $bank = Bank::findOrFail($id);
         $bank->update(['is_active' => !$bank->is_active]);
         return redirect()->route('bank.index')->with('success', 'Status bank berhasil diperbarui');

@@ -70,4 +70,9 @@ class Admin extends Authenticatable
     {
         return $this->hasMany(PointOfSaleTransaction::class);
     }
+
+    public function adminSchool(): HasMany
+    {
+        return $this->hasMany(AdminSchool::class);
+    }
 }

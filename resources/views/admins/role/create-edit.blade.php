@@ -1,4 +1,4 @@
-@extends('layouts.master', ['title' => 'Data Admin'])
+@extends('layouts.master', ['title' => 'Data Role'])
 @section('content')
 <!--begin::Content-->
 <div class="content d-flex flex-column flex-column-fluid" id="kt_content">
@@ -19,12 +19,9 @@
                 <!--begin::Breadcrumb-->
                 <ul class="breadcrumb breadcrumb-separatorless fw-bold fs-7 my-1">
                     <!--begin::Item-->
-
-                    <!--end::Item-->
-                    <!--begin::Item-->
-                    <a class="breadcrumb-item" href="{{ route('role.index') }}">
-                        <li class="breadcrumb-item text-muted">Role</li>
-                    </a>
+                    <li class="breadcrumb-item text-muted">
+                        <a href="{{ route('role.index') }}" class="text-muted text-hover-primary">Role</a>
+                    </li>
                     <!--end::Item-->
                     <!--begin::Item-->
                     <li class="breadcrumb-item">
@@ -33,7 +30,8 @@
                     <!--end::Item-->
                     <!--begin::Item-->
                     <li class="breadcrumb-item text-dark">
-                        {{ request()->routeIs('role.create') ? 'Tambah Role' : 'Edit Role' }}</li>
+                        {{ request()->routeIs('role.create') ? 'Tambah Role' : 'Edit Role' }}
+                    </li>
                     <!--end::Item-->
                 </ul>
                 <!--end::Breadcrumb-->
@@ -58,7 +56,8 @@
                             <!--begin::Card title-->
                             <div class="card-title">
                                 <h1 class="d-flex text-dark fw-bolder fs-3 align-items-center">
-                                    {{ request()->routeIs('role.create') ? 'Tambah Role' : 'Edit Role' }}</h1>
+                                    {{ request()->routeIs('role.create') ? 'Tambah Role' : 'Edit Role' }}
+                                </h1>
                             </div>
                             <!--end::Card title-->
                         </div>
@@ -72,6 +71,7 @@
                                 method="POST" enctype="multipart/form-data">
                                 @csrf
                                 <x-form.put-method />
+
                                 <!--begin::Input group-->
                                 <div class="fv-row mb-6">
                                     <!--begin::Label-->
@@ -86,35 +86,110 @@
                                         value="{{ @$role->name ?? old('name') }}" />
                                     <!--end::Input-->
                                 </div>
+
                                 <div class="fv-row mb-7">
-                                    <!--begin::Label-->
-                                    <label class="fs-6 fw-bold form-label" for="select2">
-                                        <span class="required">Permission</span>
+                                    <label class="fs-6 fw-bold form-label" for="permissions">
+                                        <span class="required">Pilih Permission Yang Akan Diberikan</span>
                                         <i class="fas fa-exclamation-circle ms-1 fs-7" data-bs-toggle="tooltip"
-                                            title="Silahkan memilih akses yang diberikan"></i>
+                                            title="Select the permissions for this role"></i>
                                     </label>
-                                    <!--end::Label-->
-                                    <!--begin::Input-->
-                                    <select name="permissions[]" class="form-select form-select-solid mb-3" id="select2"
-                                        data-control="select2" data-allow-clear="true" multiple="multiple" required>
-                                        @foreach ($permissions as $permission)
-                                        <option value="{{ $permission->name }}" @if (in_array(@$permission->id,
-                                            @$permissionValue)) selected @endif>
-                                            {{ $permission->name }}</option>
-                                        @endforeach
-                                    </select>
-                                    <div class="d-flex gap-3">
-                                        <input type="checkbox" id="select-all">
-                                        <label style="font-size: 14px;" class="cursor-pointer" for="select-all">Select
-                                            All</label>
-                                    </div>
-                                    <!--end::Input-->
+
+                                    <table class="table table-striped border rounded gy-5 gs-7">
+                                        <thead>
+                                            <tr class="fw-bolder fs-6 text-gray-800 px-7">
+                                                <th>
+                                                    <div class="form-check form-check-inline">
+                                                        <input class="form-check-input module-checkbox" type="checkbox"
+                                                            data-module="all">
+                                                    </div>
+                                                </th>
+                                                <th>Module</th>
+                                                <th>Manage</th>
+                                                <th>Create</th>
+                                                <th>Edit</th>
+                                                <th>Delete</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @php
+                                            $modules = ['Role', 'Admin', 'Santri', 'Wali Santri', 'Sekolah', 'Bank'];
+                                            @endphp
+
+                                            @foreach ($modules as $module)
+                                            <tr>
+                                                <td>
+                                                    <div class="form-check form-check-inline">
+                                                        <input class="form-check-input module-checkbox" type="checkbox"
+                                                            data-module="{{ str_replace(' ', '', $module) }}">
+                                                    </div>
+                                                </td>
+                                                <td>{{ ucfirst($module) }}</td>
+                                                <td>
+                                                    @if (in_array('Manage ' . $module, (array) $permissions))
+                                                    @php
+                                                    $manageKey = array_search('Manage ' . $module, $permissions);
+                                                    @endphp
+                                                    <div class="form-check form-check-inline">
+                                                        <input
+                                                            class="form-check-input permission-checkbox isscheck_{{ str_replace(' ', '', $module) }}"
+                                                            type="checkbox" name="permissions[]"
+                                                            value="{{ $manageKey }}" id="permission{{ $manageKey }}"
+                                                            @if(in_array($manageKey, (array) $permissionValue)) checked
+                                                            @endif>
+                                                    </div>
+                                                    @endif
+                                                </td>
+                                                <td>
+                                                    @if (in_array('Create ' . $module, (array) $permissions))
+                                                    @php
+                                                    $createKey = array_search('Create ' . $module, $permissions);
+                                                    @endphp
+                                                    <div class="form-check form-check-inline">
+                                                        <input
+                                                            class="form-check-input permission-checkbox isscheck_{{ str_replace(' ', '', $module) }}"
+                                                            type="checkbox" name="permissions[]"
+                                                            value="{{ $createKey }}" id="permission{{ $createKey }}"
+                                                            @if(in_array($createKey, (array) $permissionValue)) checked
+                                                            @endif>
+                                                    </div>
+                                                    @endif
+                                                </td>
+                                                <td>
+                                                    @if (in_array('Edit ' . $module, (array) $permissions))
+                                                    @php
+                                                    $editKey = array_search('Edit ' . $module, $permissions);
+                                                    @endphp
+                                                    <div class="form-check form-check-inline">
+                                                        <input
+                                                            class="form-check-input permission-checkbox isscheck_{{ str_replace(' ', '', $module) }}"
+                                                            type="checkbox" name="permissions[]" value="{{ $editKey }}"
+                                                            id="permission{{ $editKey }}" @if(in_array($editKey, (array)
+                                                            $permissionValue)) checked @endif>
+                                                    </div>
+                                                    @endif
+                                                </td>
+                                                <td>
+                                                    @if (in_array('Delete ' . $module, (array) $permissions))
+                                                    @php
+                                                    $deleteKey = array_search('Delete ' . $module, $permissions);
+                                                    @endphp
+                                                    <div class="form-check form-check-inline">
+                                                        <input
+                                                            class="form-check-input permission-checkbox isscheck_{{ str_replace(' ', '', $module) }}"
+                                                            type="checkbox" name="permissions[]"
+                                                            value="{{ $deleteKey }}" id="permission{{ $deleteKey }}"
+                                                            @if(in_array($deleteKey, (array) $permissionValue)) checked
+                                                            @endif>
+                                                    </div>
+                                                    @endif
+                                                </td>
+                                            </tr>
+                                            @endforeach
+                                        </tbody>
+                                    </table>
                                 </div>
-                                <!--end::Input group-->
-                                <!--begin::Separator-->
-                                <div class="separator mb-6"></div>
-                                <!--end::Separator-->
-                                <!--begin::Action buttons-->
+
+                                <!--begin::Actions-->
                                 <div class="d-flex justify-content-end">
                                     <!--begin::Button-->
                                     <a href="{{ route('role.index') }}">
@@ -131,7 +206,7 @@
                                     </button>
                                     <!--end::Button-->
                                 </div>
-                                <!--end::Action buttons-->
+                                <!--end::Actions-->
                             </form>
                             <!--end::Form-->
                         </div>
@@ -150,26 +225,26 @@
 <!--end::Content-->
 <!--end::Wrapper-->
 @endsection
+
 @push('js')
 <script>
-    $(".select2").select2();
-        $(document).ready(function() {
-            $("#select-all").click(function() {
-                if ($("#select-all").is(':checked')) { //select all
-                    $(".form-select").find('option').prop("selected", true);
-                    $(".form-select").trigger('change');
-                } else { //deselect all
-                    $(".form-select").find('option').prop("selected", false);
-                    $(".form-select").trigger('change');
-                }
-            });
+    $(document).ready(function() {
+        $('.module-checkbox').on('change', function() {
+            var module = $(this).data('module');
+            if (module === 'all') {
+                $('.permission-checkbox').prop('checked', this.checked);
+            } else {
+                $('.permission-checkbox.isscheck_' + module).prop('checked', this.checked);
+                var allChecked = $('.permission-checkbox.isscheck_' + module).length === $('.permission-checkbox.isscheck_' + module + ':checked').length;
+                $('.module-checkbox[data-module="' + module + '"]').prop('checked', allChecked);
+            }
+        });
 
-            $('#select2').on('change',function(){
-                let selected =  $(this).val();
-                if(selected == ''){
-                    $("#select-all").prop('checked',false);
-                }
-            })
-        })
+        $('.permission-checkbox').on('change', function() {
+            var module = $(this).data('module');
+            var allChecked = $('.permission-checkbox.isscheck_' + module).length === $('.permission-checkbox.isscheck_' + module + ':checked').length;
+            $('.module-checkbox[data-module="' + module + '"]').prop('checked', allChecked);
+        });
+    });
 </script>
 @endpush

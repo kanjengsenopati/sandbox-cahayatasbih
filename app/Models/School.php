@@ -25,7 +25,7 @@ class School extends Model
 
     public function classroom()
     {
-        return $this->hasMany(Classroom::class)->withTrashed();
+        return $this->hasMany(Classroom::class);
     }
 
     public function topupBank()

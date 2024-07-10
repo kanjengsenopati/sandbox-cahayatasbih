@@ -8,40 +8,45 @@ use Illuminate\Support\Facades\DB;
 use Spatie\Permission\Models\Role;
 use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\Controller;
+use Illuminate\Support\Facades\Auth;
 use Spatie\Permission\Models\Permission;
 
 class RoleController extends Controller
 {
     public function __construct()
     {
-        $this->middleware(['permission:role']);
+        // $this->middleware(['permission:role']);
     }
+
     /**
      * Display a listing of the resource.
      */
     public function index()
     {
-        $data = Role::with('permissions');
+        if (!Auth::user()->can('Manage Role')) {
+            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
+        }
+
         if (request()->ajax()) {
+            $data = Role::with('permissions')->latest();
             return DataTables::of($data)
                 ->addColumn('action', function ($data) {
                     $actionEdit = route('role.edit', $data->id);
                     $actionDelete = route('role.destroy', $data->id);
                     return "<div class='d-flex gap-2 flex-nowrap justify-content-center'>" .
-                        view('components.action.edit', ['action' => $actionEdit]) .
-                        view('components.action.delete', ['action' => $actionDelete, 'id' => $data->id]) .
+                        view('components.action.edit', ['action' => $actionEdit, 'name' => 'Role']) . '&nbsp;' .
+                        view('components.action.delete', ['action' => $actionDelete, 'id' => $data->id, 'name' => 'Role']) .
                         "</div>";
                 })
                 ->editColumn('permissions', function ($query) {
-                    $permission = "";
-                    foreach ($query->permissions as $value) {
-                        $permission .= "<span class='badge bg-success m-1'>{$value->name}</span>";
-                    }
-                    return $permission;
+                    return $query->permissions->map(function ($permission) {
+                        return "<span class='badge bg-success m-1'>{$permission->name}</span>";
+                    })->implode('');
                 })
                 ->rawColumns(['action', 'permissions'])
                 ->make(true);
         }
+
         return view('admins.role.index');
     }
 
@@ -50,8 +55,13 @@ class RoleController extends Controller
      */
     public function create()
     {
-        $permissions = Permission::get();
+        if (!Auth::user()->can('Create Role')) {
+            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
+        }
+
+        $permissions = Permission::pluck('name', 'id')->toArray();
         $permissionValue = [];
+
         return view('admins.role.create-edit', compact('permissions', 'permissionValue'));
     }
 
@@ -60,17 +70,24 @@ class RoleController extends Controller
      */
     public function store(Request $request)
     {
+        if (!Auth::user()->can('Create Role')) {
+            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
+        }
+
         $request->validate([
             'name' => 'required',
             'permissions' => 'required|array'
         ]);
+
         DB::beginTransaction();
+
         try {
             $role = Role::create($request->only('name'));
 
             if ($request->permissions) {
                 $role->givePermissionTo($request->permissions);
             }
+
             DB::commit();
             return redirect('role')->with('success', 'Data berhasil disimpan');
         } catch (\Exception $e) {
@@ -85,7 +102,7 @@ class RoleController extends Controller
      */
     public function show(string $id)
     {
-        //
+        // Implementasi jika diperlukan
     }
 
     /**
@@ -93,9 +110,14 @@ class RoleController extends Controller
      */
     public function edit(string $id)
     {
-        $permissions = Permission::get();
-        $role = Role::with('permissions')->find($id);
+        if (!Auth::user()->can('Edit Role')) {
+            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
+        }
+
+        $permissions = Permission::pluck('name', 'id')->toArray();
+        $role = Role::with('permissions')->findOrFail($id);
         $permissionValue = $role->permissions->pluck('id')->toArray();
+
         return view('admins.role.create-edit', compact('role', 'permissions', 'permissionValue'));
     }
 
@@ -104,14 +126,21 @@ class RoleController extends Controller
      */
     public function update(Request $request, Role $role)
     {
+        if (!Auth::user()->can('Edit Role')) {
+            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
+        }
+
         $request->validate([
             'name' => 'required',
             'permissions' => 'required|array'
         ]);
+
         DB::beginTransaction();
+
         try {
             $role->update($request->only('name'));
             $role->syncPermissions($request->permissions);
+
             DB::commit();
             return redirect('role')->with('success', 'Data berhasil diperbarui');
         } catch (\Exception $e) {
@@ -125,6 +154,10 @@ class RoleController extends Controller
      */
     public function destroy(Role $role)
     {
+        if (!Auth::user()->can('Delete Role')) {
+            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
+        }
+
         $role->delete();
         return back()->with('success', 'Data berhasil dihapus');
     }

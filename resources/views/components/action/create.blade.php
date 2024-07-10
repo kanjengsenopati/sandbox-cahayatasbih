@@ -1,2 +1,7 @@
-<a href="{{$action}}"><button  class="btn btn-sm shadow btn-primary my-1 px-3 py-2">{{$text ?? 'Tambah'}}</button></a>
-
+@if(isset($name) && Auth::user()->can('Create ' . $name))
+<div class="">
+    <a type="a" class="btn btn-sm btn-primary" id="btn_add_permission" href="{{ $action }}"><i class="fas fa-plus"></i>
+        {{ $label ?? $name }}</a>
+    <!--end::Primary button-->
+</div>
+@endif

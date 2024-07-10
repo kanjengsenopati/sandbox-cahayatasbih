@@ -171,20 +171,18 @@
                                     <label class="fs-6 fw-bold form-label" for="school">
                                         <span class="required">Divisi Admin (Jika Bukan Super Admin)</span>
                                         <i class="fas fa-exclamation-circle ms-1 fs-7" data-bs-toggle="tooltip"
-                                            title="Masukkan Divisi Admin"></i>
+                                            title="Masukkan Unit Pendidikan Admin"></i>
                                     </label>
                                     <!--end::Label-->
                                     <!--begin::Input-->
-                                    <select name="school_id" class="form-select form-select-solid" id="school_id"
-                                        data-control="select2" data-placeholder="Select option" data-allow-clear="true"
-                                        data-hide-search="true">
-                                        <option value="">--Pilih Divisi Admin--</option>
+
+                                    <select name="admin_schools[]" class="form-select form-select-solid mb-3"
+                                        id="select2" data-control="select2" data-allow-clear="true" multiple="multiple"
+                                        required>
                                         @foreach ($schools as $school)
-                                        <option value="{{ $school->id }}" {{ old('school_id')==$school->id ||
-                                            @$admin->school_id
-                                            == $school->id ? 'selected' : '' }}>
-                                            {{ $school->name }}
-                                        </option>
+                                        <option value="{{ $school->id }}" @if (in_array(@$school->id,
+                                            @$adminSchools)) selected @endif>
+                                            {{ $school->name }}</option>
                                         @endforeach
                                     </select>
                                     <!--end::Input-->
