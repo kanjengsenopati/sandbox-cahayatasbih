@@ -52,12 +52,17 @@
                 <div class="card-header d-flex align-items-center justify-content-between border-0 pt-6">
                     <!--begin::Card title-->
                     <div class="card-title">
+                        @can('Manage Informasi')
+                        <div>
+                            <a href="{{ route('information-category.index') }}" class="btn btn-sm btn-primary">
+                                <i class="fa fa-caret-left"></i>
+                                Kategori
+                                Informasi</a>
+                        </div>
+                        @endcan
+
                     </div>
-                    <div class="">
-                        <a type="a" class="btn btn-sm btn-primary" id="btn_add_permission"
-                            href="{{ route('information.create') }}">+ Informasi</a>
-                        <!--end::Primary button-->
-                    </div>
+                    <x-action.create name="Informasi" action="{{ route('information.create') }}" />
                     <!--end::Card title-->
                 </div>
                 <!--end::Card header-->

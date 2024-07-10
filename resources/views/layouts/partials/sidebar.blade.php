@@ -56,7 +56,7 @@
                     </a>
                 </div>
 
-                @canany(['Manage Role', 'Manage Admin'])
+                @canany(['Manage Role', 'Manage Admin', 'Manage Informasi'])
                 <div data-kt-menu-trigger="click" class="menu-item menu-accordion {{ request()->routeIs(['permission.*', 'role.*', 'information-category.*',
                     'information.*', 'payment-method.*', 'application-setting.*', 'application-menu.*', 'help.*',
                     'app-information.*', 'bill-item.*', 'bill-type.*']) ? 'show' : '' }}">
@@ -101,20 +101,9 @@
                             </a>
                         </div>
                         @endcan
-                        @can('information-category')
+                        @can('Manage Informasi')
                         <div class="menu-item ">
-                            <a class="menu-link {{ request()->routeIs('information-category.*') ? ' active' : '' }}"
-                                href="{{ route('information-category.index') }}">
-                                <span class="menu-bullet">
-                                    <span class="bullet bullet-dot"></span>
-                                </span>
-                                <span class="menu-title">Kategori Informasi</span>
-                            </a>
-                        </div>
-                        @endcan
-                        @can('information')
-                        <div class="menu-item ">
-                            <a class="menu-link {{ request()->routeIs('information.*') ? ' active' : '' }}"
+                            <a class="menu-link {{ request()->routeIs('information.*', 'information-category.*') ? ' active' : '' }}"
                                 href="{{ route('information.index') }}">
                                 <span class="menu-bullet">
                                     <span class="bullet bullet-dot"></span>

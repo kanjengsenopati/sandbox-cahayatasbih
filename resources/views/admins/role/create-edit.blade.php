@@ -112,7 +112,8 @@
                                         </thead>
                                         <tbody>
                                             @php
-                                            $modules = ['Role', 'Admin', 'Santri', 'Wali Santri', 'Sekolah', 'Bank'];
+                                            $modules = ['Role', 'Admin', 'Santri', 'Wali Santri', 'Sekolah', 'Bank',
+                                            'Informasi'];
                                             @endphp
 
                                             @foreach ($modules as $module)
