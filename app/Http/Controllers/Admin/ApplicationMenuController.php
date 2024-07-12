@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use App\Models\ApplicationMenu;
 use Yajra\DataTables\DataTables;
 use App\Http\Controllers\Controller;
+use Illuminate\Support\Facades\Auth;
 use App\Http\Requests\Admin\ApplicationMenuRequest;
 
 class ApplicationMenuController extends Controller
@@ -17,6 +18,9 @@ class ApplicationMenuController extends Controller
      */
     public function index()
     {
+        if (!Auth::user()->can('Manage Menu Aplikasi')) {
+            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
+        }
         if (request()->ajax()) {
             $data = ApplicationMenu::latest()->get();
             return DataTables::of($data)
@@ -29,9 +33,9 @@ class ApplicationMenuController extends Controller
                     $actionEdit = route('application-menu.edit', $data->id);
                     $actionDelete = route('application-menu.destroy', $data->id);
                     return "<div class='d-flex justify-content-center'>" .
-                        view('components.action.status', ['action' => $actionStatus, 'status' => $data->is_active, 'id' => $data->id]) .
-                        view('components.action.edit', ['action' => $actionEdit]) .
-                        view('components.action.delete', ['action' => $actionDelete, 'id' => $data->id]) .
+                        view('components.action.status', ['action' => $actionStatus, 'status' => $data->is_active, 'id' => $data->id, 'name' => 'Menu Aplikasi']) . '&nbsp;' .
+                        view('components.action.edit', ['action' => $actionEdit, 'name' => 'Menu Aplikasi']) . '&nbsp;' .
+                        view('components.action.delete', ['action' => $actionDelete, 'id' => $data->id, 'name' => 'Menu Aplikasi']) .
                         "</div>";
                 })
                 ->rawColumns(['action', 'status'])
@@ -45,6 +49,9 @@ class ApplicationMenuController extends Controller
      */
     public function create()
     {
+        if (!Auth::user()->can('Create Menu Aplikasi')) {
+            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
+        }
         return view('admins.application-menu.create-edit');
     }
 
@@ -53,6 +60,9 @@ class ApplicationMenuController extends Controller
      */
     public function store(ApplicationMenuRequest $request)
     {
+        if (!Auth::user()->can('Create Menu Aplikasi')) {
+            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
+        }
         ApplicationMenu::create($request->validated());
         return redirect()->route('application-menu.index')->with('success', 'Menu Aplikasi berhasil ditambahkan');
     }
@@ -70,6 +80,9 @@ class ApplicationMenuController extends Controller
      */
     public function edit(ApplicationMenu $applicationMenu)
     {
+        if (!Auth::user()->can('Edit Menu Aplikasi')) {
+            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
+        }
         return view('admins.application-menu.create-edit', compact('applicationMenu'));
     }
 
@@ -78,6 +91,9 @@ class ApplicationMenuController extends Controller
      */
     public function update(ApplicationMenuRequest $request, ApplicationMenu $applicationMenu)
     {
+        if (!Auth::user()->can('Edit Menu Aplikasi')) {
+            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
+        }
         $applicationMenu->update($request->validated());
         return redirect()->route('application-menu.index')->with('success', 'Menu Aplikasi berhasil diperbarui');
     }
@@ -87,12 +103,18 @@ class ApplicationMenuController extends Controller
      */
     public function destroy(ApplicationMenu $applicationMenu)
     {
+        if (!Auth::user()->can('Delete Menu Aplikasi')) {
+            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
+        }
         $applicationMenu->delete();
         return redirect()->route('application-menu.index')->with('success', 'Menu Aplikasi berhasil dihapus');
     }
 
     public function status(string $id)
     {
+        if (!Auth::user()->can('Edit Menu Aplikasi')) {
+            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
+        }
         $applicationMenu = ApplicationMenu::find($id);
         $applicationMenu->status = !$applicationMenu->status;
         $applicationMenu->save();

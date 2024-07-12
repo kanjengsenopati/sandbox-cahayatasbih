@@ -123,7 +123,7 @@
                                 <div class="fv-row mb-7">
                                     <!--begin::Label-->
                                     <label class="fs-6 fw-bold form-label mt-3" for="quantity">
-                                        <span class="required">Harga Barang</span>
+                                        <span class="required">Jumlah Barang</span>
                                         <i class="fas fa-exclamation-circle ms-1 fs-7" data-bs-toggle="tooltip"
                                             title="Masukkan Jumlah Barang"></i>
                                     </label>

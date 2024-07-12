@@ -10,7 +10,7 @@
                 data-kt-swapper-parent="{default: '#kt_content_container', 'lg': '#kt_toolbar_container'}"
                 class="page-title d-flex align-items-center flex-wrap me-3 mb-5 mb-lg-0">
                 <!--begin::Title-->
-                <h1 class="d-flex text-dark fw-bolder fs-3 align-items-center my-1">Data Contact Center</h1>
+                <h1 class="d-flex text-dark fw-bolder fs-3 align-items-center my-1">Kontak Bantuan</h1>
                 <!--end::Title-->
                 <!--begin::Separator-->
                 <span class="h-20px border-gray-300 border-start mx-4"></span>
@@ -19,8 +19,8 @@
                 <ul class="breadcrumb breadcrumb-separatorless fw-bold fs-7 my-1">
                     <!--begin::Item-->
                     <li class="breadcrumb-item text-muted">
-                        <a href="{{ route('help.index') }}" class="text-muted text-hover-primary">Data Contact
-                            Center</a>
+                        <a href="{{ route('help.index') }}" class="text-muted text-hover-primary">Data Kontak
+                            Bantuan</a>
                     </li>
                     <!--end::Item-->
                     <!--begin::Item-->
@@ -29,7 +29,7 @@
                     </li>
                     <!--end::Item-->
                     <!--begin::Item-->
-                    <li class="breadcrumb-item text-dark">List Contact Center</li>
+                    <li class="breadcrumb-item text-dark">List Kontak Bantuan</li>
                     <!--end::Item-->
                 </ul>
                 <!--end::Breadcrumb-->
@@ -54,11 +54,8 @@
                     <div class="card-title">
                         {{-- <h3 class="text-dark">Sekolah</h3> --}}
                     </div>
-                    <div class="">
-                        <a type="a" class="btn btn-sm btn-primary" id="btn_add_permission"
-                            href="{{ route('help.create') }}">+ Contact Center</a>
-                        <!--end::Primary button-->
-                    </div>
+
+                    <x-action.create name="Kontak Bantuan" action="{{ route('help.create') }}" />
                     <!--end::Card title-->
                 </div>
                 <!--end::Card header-->

@@ -6,6 +6,7 @@ use App\Models\CategoryItem;
 use Illuminate\Http\Request;
 use Yajra\DataTables\DataTables;
 use App\Http\Controllers\Controller;
+use Illuminate\Support\Facades\Auth;
 use App\Http\Requests\Admin\CategoryItemRequest;
 
 class CategoryItemController extends Controller
@@ -15,15 +16,18 @@ class CategoryItemController extends Controller
      */
     public function index()
     {
+        if (!Auth::user()->can('Manage Barang')) {
+            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
+        }
         if (request()->ajax()) {
-            $data = CategoryItem::latest()->get();
+            $data = CategoryItem::latest();
             return DataTables::of($data)
                 ->addColumn('action', function ($data) {
                     $actionEdit = route('category-item.edit', $data->id);
                     $actionDelete = route('category-item.destroy', $data->id);
                     return "<div class='d-flex justify-content-center'>" .
-                        view('components.action.edit', ['action' => $actionEdit]) .
-                        view('components.action.delete', ['action' => $actionDelete, 'id' => $data->id]) .
+                        view('components.action.edit', ['action' => $actionEdit, 'name' => 'Barang']) . '&nbsp;' .
+                        view('components.action.delete', ['action' => $actionDelete, 'id' => $data->id, 'name' => 'Barang']) .
                         "</div>";
                 })
                 ->rawColumns(['action'])
@@ -37,6 +41,9 @@ class CategoryItemController extends Controller
      */
     public function create()
     {
+        if (!Auth::user()->can('Create Barang')) {
+            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
+        }
         return view('admins.category-item.create-edit');
     }
 
@@ -45,6 +52,9 @@ class CategoryItemController extends Controller
      */
     public function store(CategoryItemRequest $request)
     {
+        if (!Auth::user()->can('Create Barang')) {
+            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
+        }
         CategoryItem::create($request->validated());
         return redirect()->route('category-item.index')->with('success', 'Kategori berhasil ditambahkan');
     }
@@ -62,6 +72,9 @@ class CategoryItemController extends Controller
      */
     public function edit(CategoryItem $categoryItem)
     {
+        if (!Auth::user()->can('Edit Barang')) {
+            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
+        }
         return view('admins.category-item.create-edit', compact('categoryItem'));
     }
 
@@ -70,6 +83,9 @@ class CategoryItemController extends Controller
      */
     public function update(CategoryItemRequest $request, CategoryItem $categoryItem)
     {
+        if (!Auth::user()->can('Edit Barang')) {
+            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
+        }
         $categoryItem->update($request->validated());
         return redirect()->route('category-item.index')->with('success', 'Kategori berhasil diubah');
     }
@@ -79,6 +95,9 @@ class CategoryItemController extends Controller
      */
     public function destroy(CategoryItem $categoryItem)
     {
+        if (!Auth::user()->can('Delete Barang')) {
+            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
+        }
         $categoryItem->delete();
         return redirect()->route('category-item.index')->with('success', 'Kategori berhasil dihapus');
     }

@@ -54,13 +54,7 @@
                         </div>
                     </div>
                     <div class="mt-4 gap-2 d-flex justify-content-beetween align-items-end">
-                        <div>
-
-                        </div>
-                        <div>
-                            <a type="a" class="btn btn-sm btn-primary" id="btn_add_permission"
-                                href="{{ route('payment-method.create') }}">+ Pembayaran</a>
-                        </div>
+                        <x-action.create name="Metode Pembayaran" action="{{ route('payment-method.create') }}" />
                     </div>
                     <!--end::Card title-->
                 </div>

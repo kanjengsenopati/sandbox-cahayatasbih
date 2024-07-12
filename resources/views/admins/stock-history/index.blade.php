@@ -53,11 +53,7 @@
                     <div class="card-title">
                         {{-- <h3 class="text-dark">Sekolah</h3> --}}
                     </div>
-                    <div class="">
-                        <a type="a" class="btn btn-sm btn-primary" id="btn_add_permission"
-                            href="{{ route('stock-history.create') }}">+ Stok</a>
-                        <!--end::Primary button-->
-                    </div>
+                    <x-action.create name="Barang" label="Stok" action="{{ route('stock-history.create') }}" />
                     <!--end::Card title-->
                 </div>
                 <!--end::Card header-->

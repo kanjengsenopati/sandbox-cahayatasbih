@@ -54,11 +54,7 @@
                     <div class="card-title">
                         {{-- <h3 class="text-dark">Sekolah</h3> --}}
                     </div>
-                    <div class="">
-                        <a type="a" class="btn btn-sm btn-primary" id="btn_add_permission"
-                            href="{{ route('category-item.create') }}">+ Kategori</a>
-                        <!--end::Primary button-->
-                    </div>
+                    <x-action.create name="Barang" label="Kategori" action="{{ route('category-item.create') }}" />
                     <!--end::Card title-->
                 </div>
                 <!--end::Card header-->

@@ -6,6 +6,7 @@ use App\Models\Help;
 use Illuminate\Http\Request;
 use Yajra\DataTables\DataTables;
 use App\Http\Controllers\Controller;
+use Illuminate\Support\Facades\Auth;
 use App\Http\Requests\Admin\HelpRequest;
 
 class HelpController extends Controller
@@ -15,8 +16,11 @@ class HelpController extends Controller
      */
     public function index()
     {
+        if (!Auth::user()->can('Manage Kontak Bantuan')) {
+            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
+        }
         if (request()->ajax()) {
-            $data = Help::latest()->get();
+            $data = Help::latest();
             return DataTables::of($data)
                 ->editColumn('image', function ($data) {
                     return "<img src='" . asset($data->image) . "' class='img-fluid' style='max-width: 100px'>";
@@ -25,8 +29,8 @@ class HelpController extends Controller
                     $actionEdit = route('help.edit', $data->id);
                     $actionDelete = route('help.destroy', $data->id);
                     return "<div class='d-flex justify-content-center'>" .
-                        view('components.action.edit', ['action' => $actionEdit]) .
-                        view('components.action.delete', ['action' => $actionDelete, 'id' => $data->id]) .
+                        view('components.action.edit', ['action' => $actionEdit, 'name' => 'Kontak Bantuan']) . '&nbsp;' .
+                        view('components.action.delete', ['action' => $actionDelete, 'id' => $data->id, 'name' => 'Kontak Bantuan']) .
                         "</div>";
                 })
                 ->rawColumns(['action', 'image'])
@@ -40,6 +44,9 @@ class HelpController extends Controller
      */
     public function create()
     {
+        if (!Auth::user()->can('Create Kontak Bantuan')) {
+            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
+        }
         $types = (new Help())->getTypes();
         return view('admins.help.create-edit', compact('types'));
     }
@@ -49,6 +56,9 @@ class HelpController extends Controller
      */
     public function store(HelpRequest $request)
     {
+        if (!Auth::user()->can('Create Kontak Bantuan')) {
+            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
+        }
         $data = $request->validated();
         if ($request->hasFile('image')) {
             $data['image'] = 'storage/' . $request->file('image')->store('images/help', 'public');
@@ -70,6 +80,9 @@ class HelpController extends Controller
      */
     public function edit(Help $help)
     {
+        if (!Auth::user()->can('Edit Kontak Bantuan')) {
+            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
+        }
         $types = $help->getTypes();
         return view('admins.help.create-edit', compact('help', 'types'));
     }
@@ -79,6 +92,9 @@ class HelpController extends Controller
      */
     public function update(HelpRequest $request, Help $help)
     {
+        if (!Auth::user()->can('Edit Kontak Bantuan')) {
+            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
+        }
         $data = $request->validated();
         if ($request->hasFile('image')) {
             file_exists($help->image) && unlink($help->image);
@@ -93,6 +109,9 @@ class HelpController extends Controller
      */
     public function destroy(Help $help)
     {
+        if (!Auth::user()->can('Delete Kontak Bantuan')) {
+            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
+        }
         file_exists($help->image) && unlink($help->image);
         $help->delete();
         return redirect()->route('help.index')->with('success', 'Data Bantuan berhasil dihapus');

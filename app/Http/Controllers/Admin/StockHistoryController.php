@@ -2,14 +2,15 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Models\Item;
 use App\Models\StockHistory;
 use Illuminate\Http\Request;
 use Yajra\DataTables\DataTables;
-use App\Http\Controllers\Controller;
-use App\Http\Requests\Admin\StockHistoryRequest;
-use App\Models\Item;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use App\Http\Controllers\Controller;
+use Illuminate\Support\Facades\Auth;
+use App\Http\Requests\Admin\StockHistoryRequest;
 
 class StockHistoryController extends Controller
 {
@@ -18,8 +19,11 @@ class StockHistoryController extends Controller
      */
     public function index()
     {
+        if (!Auth::user()->can('Manage Barang')) {
+            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
+        }
         if (request()->ajax()) {
-            $data = StockHistory::with(['item', 'admin'])->latest()->get();
+            $data = StockHistory::with(['item', 'admin'])->latest();
             return DataTables::of($data)
                 ->addColumn('admin', function ($data) {
                     return $data->admin->name ?? 'Belum Ada Admin';
@@ -34,8 +38,8 @@ class StockHistoryController extends Controller
                     $actionEdit = route('stock-history.edit', $data->id);
                     $actionDelete = route('stock-history.destroy', $data->id);
                     return "<div class='d-flex justify-content-center'>" .
-                        view('components.action.edit', ['action' => $actionEdit]) .
-                        view('components.action.delete', ['action' => $actionDelete, 'id' => $data->id]) .
+                        view('components.action.edit', ['action' => $actionEdit, 'name' => 'Barang']) . '&nbsp;' .
+                        view('components.action.delete', ['action' => $actionDelete, 'id' => $data->id, 'name' => 'Barang']) .
                         "</div>";
                 })
                 ->rawColumns(['action', 'quantity'])
@@ -49,6 +53,9 @@ class StockHistoryController extends Controller
      */
     public function create()
     {
+        if (!Auth::user()->can('Create Barang')) {
+            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
+        }
         return view('admins.stock-history.create-edit');
     }
 
@@ -58,6 +65,9 @@ class StockHistoryController extends Controller
 
     public function store(StockHistoryRequest $request)
     {
+        if (!Auth::user()->can('Create Barang')) {
+            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
+        }
         try {
             DB::beginTransaction();
 
@@ -102,6 +112,9 @@ class StockHistoryController extends Controller
      */
     public function edit(StockHistory $stockHistory)
     {
+        if (!Auth::user()->can('Edit Barang')) {
+            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
+        }
         return view('admins.stock-history.create-edit', compact('stockHistory'));
     }
 
@@ -110,6 +123,9 @@ class StockHistoryController extends Controller
      */
     public function update(StockHistoryRequest $request, StockHistory $stockHistory)
     {
+        if (!Auth::user()->can('Edit Barang')) {
+            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
+        }
         try {
             DB::beginTransaction();
 
@@ -146,6 +162,9 @@ class StockHistoryController extends Controller
      */
     public function destroy(StockHistory $stockHistory)
     {
+        if (!Auth::user()->can('Delete Barang')) {
+            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
+        }
         try {
             DB::beginTransaction();
 

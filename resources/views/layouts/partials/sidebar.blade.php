@@ -56,7 +56,8 @@
                     </a>
                 </div>
 
-                @canany(['Manage Role', 'Manage Admin', 'Manage Informasi'])
+                @canany(['Manage Role', 'Manage Admin', 'Manage Informasi', 'Manage Metode Pembayaran','Manage Menu
+                Aplikasi', 'Manage Kontak Bantuan', 'Manage Bank'])
                 <div data-kt-menu-trigger="click" class="menu-item menu-accordion {{ request()->routeIs(['permission.*', 'role.*', 'information-category.*',
                     'information.*', 'payment-method.*', 'application-setting.*', 'application-menu.*', 'help.*',
                     'app-information.*', 'bill-item.*', 'bill-type.*']) ? 'show' : '' }}">
@@ -112,14 +113,14 @@
                             </a>
                         </div>
                         @endcan
-                        @can('payment-method')
+                        @can('Manage Metode Pembayaran')
                         <div class="menu-item ">
                             <a class="menu-link {{ request()->routeIs('payment-method.*') ? ' active' : '' }}"
                                 href="{{ route('payment-method.index') }}">
                                 <span class="menu-bullet">
                                     <span class="bullet bullet-dot"></span>
                                 </span>
-                                <span class="menu-title">Data Metode Pembayaran</span>
+                                <span class="menu-title">Metode Pembayaran</span>
                             </a>
                         </div>
                         @endcan
@@ -134,7 +135,7 @@
                             </a>
                         </div>
                         @endcan
-                        @can('application-menu')
+                        @can('Manage Menu Aplikasi')
                         <div class="menu-item ">
                             <a class="menu-link {{ request()->routeIs('application-menu.*') ? ' active' : '' }}"
                                 href="{{ route('application-menu.index') }}">
@@ -145,7 +146,7 @@
                             </a>
                         </div>
                         @endcan
-                        @can('help')
+                        @can('Manage Kontak Bantuan')
                         <div class="menu-item ">
                             <a class="menu-link {{ request()->routeIs('help.*') ? ' active' : '' }}"
                                 href="{{ route('help.index') }}">
@@ -189,6 +190,7 @@
                             </a>
                         </div>
                         @endcan
+                        @can('Manage Bank')
                         <div class="menu-item ">
                             <a class="menu-link {{ request()->routeIs('bank.*') ? ' active' : '' }}"
                                 href="{{ route('bank.index') }}">
@@ -198,6 +200,7 @@
                                 <span class="menu-title">Bank</span>
                             </a>
                         </div>
+                        @endcan
                     </div>
                 </div>
                 @endcanany
@@ -293,7 +296,7 @@
                             </a>
                         </div>
                         @endcan
-                        @can('category-item')
+                        @can('Manage Barang')
                         <div class="menu-item">
                             <a class="menu-link {{ request()->routeIs('category-item.*') ? ' active' : '' }}"
                                 href="{{ route('category-item.index') }}">
@@ -303,8 +306,6 @@
                                 <span class="menu-title">Kategori Barang</span>
                             </a>
                         </div>
-                        @endcan
-                        @can('item')
                         <div class="menu-item ">
                             <a class="menu-link {{ request()->routeIs('item.*') ? ' active' : '' }}"
                                 href="{{ route('item.index') }}">
@@ -314,8 +315,6 @@
                                 <span class="menu-title">Data Barang</span>
                             </a>
                         </div>
-                        @endcan
-                        @can('stock-history')
                         <div class="menu-item ">
                             <a class="menu-link {{ request()->routeIs('stock-history.*') ? ' active' : '' }}"
                                 href="{{ route('stock-history.index') }}">

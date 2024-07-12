@@ -113,7 +113,8 @@
                                         <tbody>
                                             @php
                                             $modules = ['Role', 'Admin', 'Santri', 'Wali Santri', 'Sekolah', 'Bank',
-                                            'Informasi'];
+                                            'Informasi', 'Metode Pembayaran', 'Menu Aplikasi', 'Kontak Bantuan',
+                                            'Barang',];
                                             @endphp
 
                                             @foreach ($modules as $module)

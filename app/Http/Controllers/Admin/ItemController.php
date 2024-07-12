@@ -9,6 +9,7 @@ use Yajra\DataTables\DataTables;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\Controller;
+use Illuminate\Support\Facades\Auth;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Http\Requests\Admin\ItemRequest;
 
@@ -19,8 +20,11 @@ class ItemController extends Controller
      */
     public function index()
     {
+        if (!Auth::user()->can('Manage Barang')) {
+            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
+        }
         if (request()->ajax()) {
-            $data = Item::with('categoryItem')->get();
+            $data = Item::with('categoryItem')->latest();
             return DataTables::of($data)
                 ->addColumn('status', function ($data) {
                     return $data->is_active == 1 ? '<span class="badge badge-success">Aktif</span>' :
@@ -30,8 +34,8 @@ class ItemController extends Controller
                     $actionEdit = route('item.edit', $data->id);
                     $actionDelete = route('item.destroy', $data->id);
                     return "<div class='d-flex justify-content-center'>" .
-                        view('components.action.edit', ['action' => $actionEdit]) .
-                        view('components.action.delete', ['action' => $actionDelete, 'id' => $data->id]) .
+                        view('components.action.edit', ['action' => $actionEdit, 'name' => 'Barang']) . '&nbsp;' .
+                        view('components.action.delete', ['action' => $actionDelete, 'id' => $data->id, 'name' => 'Barang']) .
                         "</div>";
                 })
                 ->rawColumns(['action', 'status', 'summary_price'])
@@ -45,6 +49,9 @@ class ItemController extends Controller
      */
     public function create()
     {
+        if (!Auth::user()->can('Create Barang')) {
+            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
+        }
         return view('admins.item.create-edit');
     }
 
@@ -53,6 +60,9 @@ class ItemController extends Controller
      */
     public function store(ItemRequest $request)
     {
+        if (!Auth::user()->can('Create Barang')) {
+            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
+        }
         $data = $request->validated();
         if ($request->hasFile('image')) {
             $data['image'] = 'storage/' . $request->file('image')->store('images/item', 'public');
@@ -74,6 +84,9 @@ class ItemController extends Controller
      */
     public function edit(Item $item)
     {
+        if (!Auth::user()->can('Edit Barang')) {
+            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
+        }
         return view('admins.item.create-edit', compact('item'));
     }
 
@@ -82,6 +95,9 @@ class ItemController extends Controller
      */
     public function update(ItemRequest $request, Item $item)
     {
+        if (!Auth::user()->can('Edit Barang')) {
+            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
+        }
         $data = $request->validated();
         if ($request->hasFile('image')) {
             file_exists($item->image) ? unlink($item->image) : null;
@@ -96,6 +112,9 @@ class ItemController extends Controller
      */
     public function destroy(Item $item)
     {
+        if (!Auth::user()->can('Delete Barang')) {
+            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
+        }
         file_exists($item->image) ? unlink($item->image) : null;
         $item->delete();
         return redirect()->route('item.index')->with('success', 'Barang berhasil dihapus');
@@ -142,6 +161,9 @@ class ItemController extends Controller
 
     public function import(Request $request)
     {
+        if (!Auth::user()->can('Create Barang')) {
+            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
+        }
         try {
             $request->validate([
                 'file' => 'required|mimes:xls,xlsx'

@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use App\Models\PaymentMethod;
 use Yajra\DataTables\DataTables;
 use App\Http\Controllers\Controller;
+use Illuminate\Support\Facades\Auth;
 use App\Http\Requests\Admin\PaymentMethodRequest;
 
 class PaymentMethodController extends Controller
@@ -15,6 +16,9 @@ class PaymentMethodController extends Controller
      */
     public function index()
     {
+        if (!Auth::user()->can('Manage Metode Pembayaran')) {
+            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
+        }
         if (request()->ajax()) {
             $data = PaymentMethod::latest()->get();
             return DataTables::of($data)
@@ -27,8 +31,8 @@ class PaymentMethodController extends Controller
                     $actionEdit = route('payment-method.edit', $data->id);
                     $actionDelete = route('payment-method.destroy', $data->id);
                     return "<div class='d-flex justify-content-center'>" .
-                        view('components.action.edit', ['action' => $actionEdit]) .
-                        view('components.action.delete', ['action' => $actionDelete, 'id' => $data->id]) .
+                        view('components.action.edit', ['action' => $actionEdit, 'name' => 'Metode Pembayaran']) . '&nbsp;' .
+                        view('components.action.delete', ['action' => $actionDelete, 'id' => $data->id, 'name' => 'Metode Pembayaran']) .
                         "</div>";
                 })
                 ->rawColumns(['action', 'status'])
@@ -42,6 +46,9 @@ class PaymentMethodController extends Controller
      */
     public function create()
     {
+        if (!Auth::user()->can('Create Metode Pembayaran')) {
+            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
+        }
         $paymentMethodType = (new PaymentMethod)->getTypeList();
         return view('admins.payment-method.create-edit', compact('paymentMethodType'));
     }
@@ -51,6 +58,9 @@ class PaymentMethodController extends Controller
      */
     public function store(PaymentMethodRequest $request)
     {
+        if (!Auth::user()->can('Create Metode Pembayaran')) {
+            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
+        }
         $validated = $request->validated();
         PaymentMethod::create($validated);
         return redirect()->route('payment-method.index')->with('success', 'Metode pembayaran berhasil ditambahkan');
@@ -69,6 +79,9 @@ class PaymentMethodController extends Controller
      */
     public function edit(PaymentMethod $paymentMethod)
     {
+        if (!Auth::user()->can('Edit Metode Pembayaran')) {
+            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
+        }
         $paymentMethodType = (new PaymentMethod)->getTypeList();
         return view('admins.payment-method.create-edit', compact('paymentMethod', 'paymentMethodType'));
     }
@@ -78,6 +91,9 @@ class PaymentMethodController extends Controller
      */
     public function update(PaymentMethodRequest $request, PaymentMethod $paymentMethod)
     {
+        if (!Auth::user()->can('Edit Metode Pembayaran')) {
+            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
+        }
         $validated = $request->validated();
         $paymentMethod->update($validated);
         return redirect()->route('payment-method.index')->with('success', 'Metode pembayaran berhasil diubah');
@@ -88,6 +104,9 @@ class PaymentMethodController extends Controller
      */
     public function destroy(PaymentMethod $paymentMethod)
     {
+        if (!Auth::user()->can('Delete Metode Pembayaran')) {
+            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
+        }
         $paymentMethod->delete();
         return redirect()->route('payment-method.index')->with('success', 'Metode pembayaran berhasil dihapus');
     }
