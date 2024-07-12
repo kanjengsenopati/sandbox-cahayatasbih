@@ -3,10 +3,11 @@
 namespace App\Http\Controllers\Admin;
 
 use Carbon\Carbon;
+use App\Models\Item;
 use Illuminate\Http\Request;
 use Yajra\DataTables\DataTables;
 use App\Http\Controllers\Controller;
-use App\Models\Item;
+use Illuminate\Support\Facades\Auth;
 use App\Models\PointOfSaleTransaction;
 use App\Models\PointOfSaleTransactionDetail;
 
@@ -17,6 +18,10 @@ class OrderItemHistoryController extends Controller
      */
     public function index(Request $request)
     {
+        if (!Auth::user()->can('Manage Laporan Pos Kasir')) {
+            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
+        }
+
         if (request()->ajax() && request()->query('type') === 'santri') {
             $data = PointOfSaleTransaction::with('pointOfSaleTransactionDetails', 'student.classroom', 'admins')->where('type', PointOfSaleTransaction::TYPE_SANTRI)->latest();
             return DataTables::of($data)
@@ -142,8 +147,12 @@ class OrderItemHistoryController extends Controller
      */
     public function show(string $id)
     {
+        if (!Auth::user()->can('Manage Laporan Pos Kasir')) {
+            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
+        }
+
         if (request()->ajax()) {
-            $order = PointOfSaleTransactionDetail::with('pointOfSaleTransaction', 'item')->where('point_of_sale_transaction_id', $id)->get();
+            $order = PointOfSaleTransactionDetail::with('pointOfSaleTransaction', 'item')->where('point_of_sale_transaction_id', $id)->latest();
             return DataTables::of($order)
                 ->editColumn('price', function ($data) {
                     return 'Rp ' . number_format($data->price, 0, ',', '.');

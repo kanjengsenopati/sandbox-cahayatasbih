@@ -26,8 +26,8 @@ class PermissionController extends Controller
                     $actionEdit = route('permission.edit', $data->id);
                     $actionDelete = route('permission.destroy', $data->id);
                     return "<div class='d-flex gap-2 flex-nowrap justify-content-center'>" .
-                        view('components.action.edit', ['action' => $actionEdit, 'id' => $data->id]) .
-                        view('components.action.delete', ['action' => $actionDelete, 'id' => $data->id]) .
+                        view('components.action.edit', ['action' => $actionEdit, 'id' => $data->id, 'name' => 'Permission']) . '&nbsp;' .
+                        view('components.action.delete', ['action' => $actionDelete, 'id' => $data->id, 'name' => 'Permission']) .
                         "</div>";
                 })
                 ->rawColumns(['action'])

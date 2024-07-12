@@ -12,6 +12,7 @@ use Yajra\DataTables\DataTables;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\Controller;
+use Illuminate\Support\Facades\Auth;
 use App\Models\PointOfSaleTransaction;
 use App\Models\PointOfSaleTransactionDetail;
 
@@ -83,6 +84,10 @@ class OrderItemController extends Controller
      */
     public function index()
     {
+
+        if (!Auth::user()->can('Manage Pos Kasir')) {
+            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
+        }
         return view('admins.order-item.index');
     }
 
@@ -100,6 +105,9 @@ class OrderItemController extends Controller
 
     public function store(Request $request)
     {
+        if (!Auth::user()->can('Create Pos Kasir')) {
+            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
+        }
         $request->validate([
             'payment_method' => 'required',
             'student_id' => 'required_if:payment_method,Saldo|nullable|exists:students,id',

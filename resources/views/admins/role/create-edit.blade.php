@@ -112,9 +112,11 @@
                                         </thead>
                                         <tbody>
                                             @php
-                                            $modules = ['Role', 'Admin', 'Santri', 'Wali Santri', 'Sekolah', 'Bank',
+                                            $modules = ['Permission','Role', 'Admin', 'Santri', 'Wali Santri',
+                                            'Sekolah', 'Bank',
                                             'Informasi', 'Metode Pembayaran', 'Menu Aplikasi', 'Kontak Bantuan',
-                                            'Barang','Saldo Santri', 'Tabungan Santri', 'Jadwal', 'Tahfidz'];
+                                            'Barang','Saldo Santri', 'Tabungan Santri', 'Jadwal', 'Tahfidz',
+                                            'Pos Kasir', 'Laporan Pos Kasir'];
                                             @endphp
 
                                             @foreach ($modules as $module)

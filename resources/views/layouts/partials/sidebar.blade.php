@@ -340,9 +340,10 @@
                 </div>
                 @endcanany
 
-                @canany(['Manage Saldo Santri', 'Manage Tabungan Santri','Manage Jadwal', 'Manage Tahfidz'])
+                @canany(['Manage Saldo Santri', 'Manage Tabungan Santri','Manage Jadwal', 'Manage Tahfidz', 'Manage Pos
+                Kasir'])
                 <div data-kt-menu-trigger="click" class="menu-item menu-accordion {{ request()->routeIs(['
-                    bill.*', 'saldo-history.*', 'saving-history.*', 'order-item.*', 'order-item-history.*', 'study-grade.*',
+                    bill.*', 'saldo-history.*', 'saving-history.*', 'order-item.*', 'study-grade.*',
                     'tahfidz.*', 'student-counseling-score.*', 'schedule.*']) ? 'show' : '' }}">
                     <span class=" menu-link ">
                         <span class=" menu-icon">
@@ -387,7 +388,7 @@
                             </a>
                         </div>
                         @endcan
-                        @can('order-item')
+                        @can('Manage Pos Kasir')
                         <div class="menu-item ">
                             <a class="menu-link {{ request()->routeIs('order-item.*') ? ' active' : '' }}"
                                 href="{{ route('order-item.index') }}">
@@ -398,17 +399,7 @@
                             </a>
                         </div>
                         @endcan
-                        @can('order-item-history')
-                        <div class="menu-item ">
-                            <a class="menu-link {{ request()->routeIs('order-item-history.*') ? ' active' : '' }}"
-                                href="{{ route('order-item-history.index') }}">
-                                <span class="menu-bullet">
-                                    <span class="bullet bullet-dot"></span>
-                                </span>
-                                <span class="menu-title">Riwayat Transaksi</span>
-                            </a>
-                        </div>
-                        @endcan
+
                         @can('study-grade')
                         <div class="menu-item">
                             <a class="menu-link {{ request()->routeIs('study-grade.*') ? ' active' : '' }}"
@@ -459,7 +450,8 @@
 
                 <div data-kt-menu-trigger="click" class="menu-item menu-accordion {{ request()->routeIs(['report-bill.*', 'report-student.*','report-tahfidz.*',
                     'report-student-counseling-score.*', 'report-app-fee.*',
-                    'report-saldo.*', 'report-study-grade.*']) ? 'show' : '' }}">
+                    'report-saldo.*', 'report-study-grade.*', 'order-item-history.*'
+                    ]) ? 'show' : '' }}">
                     <span class="menu-link ">
                         <span class="menu-icon">
                             <i class="fa-solid fa-file" style="color: #ffffff;"></i>
@@ -469,6 +461,17 @@
                     </span>
 
                     <div class="menu-sub menu-sub-accordion menu-active-bg">
+                        @can('Manage Laporan Pos Kasir')
+                        <div class="menu-item ">
+                            <a class="menu-link {{ request()->routeIs('order-item-history.*') ? ' active' : '' }}"
+                                href="{{ route('order-item-history.index') }}">
+                                <span class="menu-bullet">
+                                    <span class="bullet bullet-dot"></span>
+                                </span>
+                                <span class="menu-title">Laporan POS Kasir</span>
+                            </a>
+                        </div>
+                        @endcan
                         <div class="menu-item ">
                             <a class="menu-link {{ request()->routeIs('report-bill.*') ? ' active' : '' }}"
                                 href="{{ route('report-bill.index') }}">

@@ -174,11 +174,13 @@
                                         aria-label="Total Pembayaran" disabled readonly>
                                     <!--end::Input-->
                                 </div>
+                                @if (Auth::user()->can('Create Pos Kasir'))
                                 <div class="d-flex justify-content-center">
                                     <button type="submit" id="btn-bayar" class="btn btn-primary mt-3 w-100">
                                         <span class="indicator-label">Bayar</span>
                                     </button>
                                 </div>
+                                @endif
                             </div>
                         </div>
                         <!--end::Card body-->
