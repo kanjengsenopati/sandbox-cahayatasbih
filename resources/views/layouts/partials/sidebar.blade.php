@@ -366,7 +366,7 @@
                             </div>
                         </div>
                         @endcan
-                        @can('saldo-history')
+                        @can('Manage Saldo Santri')
                         <div class="menu-item ">
                             <a class="menu-link {{ request()->routeIs('saldo-history.*') ? ' active' : '' }}"
                                 href="{{ route('saldo-history.index') }}">

@@ -24,98 +24,203 @@ class SaldoHistoryController extends Controller
      */
     public function index()
     {
-        if (request()->ajax() && request()->type === 'saldo') {
-            $data = SaldoHistory::with('student')->latest()->get();
-            return DataTables::of($data)
-                ->editColumn('amount', function ($data) {
-                    if ($data->type === 'IN') {
-                        return '<span class="badge bg-success">+' . $data->amount . '</span>';
-                    } else {
-                        return '<span class="badge bg-danger">-' . $data->amount . '</span>';
-                    }
-                })
-                ->editColumn('status', function ($data) {
-                    if ($data->status === SaldoHistory::STATUS_SUCCESS) {
-                        return '<span class="badge bg-success">' . $data->status . '</span>';
-                    } elseif ($data->status === SaldoHistory::STATUS_PENDING) {
-                        return '<span class="badge bg-warning">' . $data->status . '</span>';
-                    } else {
-                        return '<span class="badge bg-danger">' . $data->status . '</span>';
-                    }
-                })
-                ->rawColumns(['amount', 'status'])
-                ->make(true);
+        if (!Auth::user()->can('Manage Saldo Santri')) {
+            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
         }
-        if (request()->ajax() && request()->type === 'topup') {
-            $transactions = Transaction::with('student', 'paymentMethod', 'activeProof')
-                ->whereHas('paymentMethod', function ($query) {
-                    $query->where('type', PaymentMethod::TYPE_TRANSFER);
-                })
-                ->where('type', Transaction::TYPE_SALDO)
-                ->where('status', Transaction::STATUS_PENDING_CONFIRMATION)
-                ->latest();
 
-            return DataTables::of($transactions)
-                ->addColumn('proof', function ($transaction) {
-                    // add image preview on click zoom the image
-                    return "<a href='" . $transaction?->activeProof?->proof_image . "' target='_blank'>
-                        <img src='" . $transaction?->activeProof?->proof_image . "' class='img-fluid img-thumbnail' style='max-width: 100px;'>
-                    </a>";
-                })
-                ->editColumn('pay_amount', function ($transaction) {
-                    return 'Rp ' . number_format($transaction->pay_amount, 0, ',', '.');
-                })
-
-                ->editColumn('status', function ($transaction) {
-                    if ($transaction->status == Transaction::STATUS_PENDING) {
-                        return '<span class="badge badge-primary">Belum Dibayar</span>';
-                    } elseif ($transaction->status == Transaction::STATUS_PENDING_PAYMENT) {
-                        return '<span class="badge badge-warning">Menunggu Pembayaran</span>';
-                    } elseif ($transaction->status == Transaction::STATUS_PENDING_CONFIRMATION) {
-                        return '<span class="badge badge-danger">Menunggu Verifikasi</span>';
-                    } elseif ($transaction->status == Transaction::STATUS_PAID) {
-                        return '<span class="badge badge-success">Lunas</span>';
-                    } elseif ($transaction->status == Transaction::STATUS_EXPIRED) {
-                        return '<span class="badge badge-secondary">Kedaluwarsa</span>';
-                    } elseif ($transaction->status == Transaction::STATUS_CANCELLED) {
-                        return '<span class="badge badge-secondary">Dibatalkan</span>';
-                    } elseif ($transaction->status == Transaction::STATUS_REJECTED) {
-                        return '<span class="badge badge-danger">Ditolak</span><br><small>' . $transaction->activeProof?->note . '</small>';
-                    }
-                })
-                ->addColumn('action', function ($transaction) {
-                    $action = "<select class='form-control status-transaction' name='status' id='status-{$transaction->id}' onchange='updateStatus(this.value, \"{$transaction->id}\")'>
-                        <option value=''>Pilih Status</option>
-                        <option value='" . Transaction::STATUS_PAID . "' " . ($transaction->status == Transaction::STATUS_PAID ? 'selected' : '') . ">Lunas</option>
-                        <option value='" . Transaction::STATUS_REJECTED . "' " . ($transaction->status == Transaction::STATUS_REJECTED ? 'selected' : '') . ">Cek Ulang</option>
-                    </select>";
-
-
-                    $action .= "<input type='hidden' name='note' id='note-{$transaction->id}' value='{$transaction->activeProof?->note}'>";
-
-                    // Tambahkan button simpan
-                    $action .= "<button class='btn btn-primary btn-sm mt-2' onclick='saveStatus(\"{$transaction->id}\")'>Simpan</button>";
-
-                    // Jika status sudah lunas maka tidak bisa diubah
-                    if ($transaction->status == Transaction::STATUS_PAID) {
-                        $action = "<span class='badge badge-success'>Lunas</span>";
-                    }
-
-                    return $action;
-                })
-
-
-                ->rawColumns(['proof', 'action', 'type', 'status'])
-                ->make(true);
+        if (request()->ajax()) {
+            if (request()->type === 'saldo') {
+                return $this->getSaldoData();
+            } elseif (request()->type === 'topup') {
+                return $this->getTopupData();
+            }
         }
+
         return view('admins.saldo-history.index');
     }
+
+    private function getSaldoData()
+    {
+        $data = SaldoHistory::with('student')->latest()->get();
+
+        return DataTables::of($data)
+            ->editColumn('amount', function ($data) {
+                $badgeClass = $data->type === 'IN' ? 'bg-success' : 'bg-danger';
+                $sign = $data->type === 'IN' ? '+' : '-';
+                return "<span class='badge {$badgeClass}'>{$sign}{$data->amount}</span>";
+            })
+            ->editColumn('status', function ($data) {
+                $statusBadges = [
+                    SaldoHistory::STATUS_SUCCESS => 'bg-success',
+                    SaldoHistory::STATUS_PENDING => 'bg-warning',
+                    SaldoHistory::STATUS_FAILED => 'bg-danger',
+                ];
+                $badgeClass = $statusBadges[$data->status] ?? 'bg-secondary';
+                return "<span class='badge {$badgeClass}'>{$data->status}</span>";
+            })
+            ->rawColumns(['amount', 'status'])
+            ->make(true);
+    }
+
+    private function getTopupData()
+    {
+        $transactions = Transaction::with('student', 'paymentMethod', 'activeProof')
+            ->whereHas('paymentMethod', function ($query) {
+                $query->where('type', PaymentMethod::TYPE_TRANSFER);
+            })
+            ->where('type', Transaction::TYPE_SALDO)
+            ->where('status', Transaction::STATUS_PENDING_CONFIRMATION)
+            ->latest()
+            ->get();
+
+        return DataTables::of($transactions)
+            ->addColumn('proof', function ($transaction) {
+                return "<a href='{$transaction->activeProof?->proof_image}' target='_blank'>
+                        <img src='{$transaction->activeProof?->proof_image}' class='img-fluid img-thumbnail' style='max-width: 100px;'>
+                    </a>";
+            })
+            ->editColumn('pay_amount', function ($transaction) {
+                return 'Rp ' . number_format($transaction->pay_amount, 0, ',', '.');
+            })
+            ->editColumn('status', function ($transaction) {
+                $statusBadges = [
+                    Transaction::STATUS_PENDING => 'badge-primary',
+                    Transaction::STATUS_PENDING_PAYMENT => 'badge-warning',
+                    Transaction::STATUS_PENDING_CONFIRMATION => 'badge-danger',
+                    Transaction::STATUS_PAID => 'badge-success',
+                    Transaction::STATUS_EXPIRED => 'badge-secondary',
+                    Transaction::STATUS_CANCELLED => 'badge-secondary',
+                    Transaction::STATUS_REJECTED => 'badge-danger',
+                ];
+                $badgeClass = $statusBadges[$transaction->status] ?? 'badge-secondary';
+                $note = $transaction->status == Transaction::STATUS_REJECTED ? "<br><small>{$transaction->activeProof?->note}</small>" : '';
+                return "<span class='badge {$badgeClass}'>{$transaction->status}</span>{$note}";
+            })
+            ->addColumn('action', function ($transaction) {
+                if (Auth::user()->can('Edit Saldo Santri')) {
+                    return $this->getActionColumn($transaction);
+                }
+                return $transaction->status == Transaction::STATUS_PAID ? "<span class='badge badge-success'>Lunas</span>" : '';
+            })
+            ->rawColumns(['proof', 'action', 'status'])
+            ->make(true);
+    }
+
+    private function getActionColumn($transaction)
+    {
+        $action = "<select class='form-control status-transaction' name='status' id='status-{$transaction->id}' onchange='updateStatus(this.value, \"{$transaction->id}\")'>
+                <option value=''>Pilih Status</option>
+                <option value='" . Transaction::STATUS_PAID . "' " . ($transaction->status == Transaction::STATUS_PAID ? 'selected' : '') . ">Lunas</option>
+                <option value='" . Transaction::STATUS_REJECTED . "' " . ($transaction->status == Transaction::STATUS_REJECTED ? 'selected' : '') . ">Cek Ulang</option>
+            </select>";
+        $action .= "<input type='hidden' name='note' id='note-{$transaction->id}' value='{$transaction->activeProof?->note}'>";
+        $action .= "<button class='btn btn-primary btn-sm mt-2' onclick='saveStatus(\"{$transaction->id}\")'>Simpan</button>";
+
+        return $transaction->status == Transaction::STATUS_PAID ? "<span class='badge badge-success'>Lunas</span>" : $action;
+    }
+
+    // public function index()
+    // {
+    //     if (!Auth::user()->can('Manage Saldo Santri')) {
+    //         return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
+    //     }
+    //     if (request()->ajax() && request()->type === 'saldo') {
+    //         $data = SaldoHistory::with('student')->latest()->get();
+    //         return DataTables::of($data)
+    //             ->editColumn('amount', function ($data) {
+    //                 if ($data->type === 'IN') {
+    //                     return '<span class="badge bg-success">+' . $data->amount . '</span>';
+    //                 } else {
+    //                     return '<span class="badge bg-danger">-' . $data->amount . '</span>';
+    //                 }
+    //             })
+    //             ->editColumn('status', function ($data) {
+    //                 if ($data->status === SaldoHistory::STATUS_SUCCESS) {
+    //                     return '<span class="badge bg-success">' . $data->status . '</span>';
+    //                 } elseif ($data->status === SaldoHistory::STATUS_PENDING) {
+    //                     return '<span class="badge bg-warning">' . $data->status . '</span>';
+    //                 } else {
+    //                     return '<span class="badge bg-danger">' . $data->status . '</span>';
+    //                 }
+    //             })
+    //             ->rawColumns(['amount', 'status'])
+    //             ->make(true);
+    //     }
+    //     if (request()->ajax() && request()->type === 'topup') {
+    //         $transactions = Transaction::with('student', 'paymentMethod', 'activeProof')
+    //             ->whereHas('paymentMethod', function ($query) {
+    //                 $query->where('type', PaymentMethod::TYPE_TRANSFER);
+    //             })
+    //             ->where('type', Transaction::TYPE_SALDO)
+    //             ->where('status', Transaction::STATUS_PENDING_CONFIRMATION)
+    //             ->latest();
+
+    //         return DataTables::of($transactions)
+    //             ->addColumn('proof', function ($transaction) {
+    //                 // add image preview on click zoom the image
+    //                 return "<a href='" . $transaction?->activeProof?->proof_image . "' target='_blank'>
+    //                     <img src='" . $transaction?->activeProof?->proof_image . "' class='img-fluid img-thumbnail' style='max-width: 100px;'>
+    //                 </a>";
+    //             })
+    //             ->editColumn('pay_amount', function ($transaction) {
+    //                 return 'Rp ' . number_format($transaction->pay_amount, 0, ',', '.');
+    //             })
+
+    //             ->editColumn('status', function ($transaction) {
+    //                 if ($transaction->status == Transaction::STATUS_PENDING) {
+    //                     return '<span class="badge badge-primary">Belum Dibayar</span>';
+    //                 } elseif ($transaction->status == Transaction::STATUS_PENDING_PAYMENT) {
+    //                     return '<span class="badge badge-warning">Menunggu Pembayaran</span>';
+    //                 } elseif ($transaction->status == Transaction::STATUS_PENDING_CONFIRMATION) {
+    //                     return '<span class="badge badge-danger">Menunggu Verifikasi</span>';
+    //                 } elseif ($transaction->status == Transaction::STATUS_PAID) {
+    //                     return '<span class="badge badge-success">Lunas</span>';
+    //                 } elseif ($transaction->status == Transaction::STATUS_EXPIRED) {
+    //                     return '<span class="badge badge-secondary">Kedaluwarsa</span>';
+    //                 } elseif ($transaction->status == Transaction::STATUS_CANCELLED) {
+    //                     return '<span class="badge badge-secondary">Dibatalkan</span>';
+    //                 } elseif ($transaction->status == Transaction::STATUS_REJECTED) {
+    //                     return '<span class="badge badge-danger">Ditolak</span><br><small>' . $transaction->activeProof?->note . '</small>';
+    //                 }
+    //             })
+    //             @if(isset($name) && Auth::user()->can('Edit Saldo Santri'))
+    //             ->addColumn('action', function ($transaction) {
+    //                 $action = "<select class='form-control status-transaction' name='status' id='status-{$transaction->id}' onchange='updateStatus(this.value, \"{$transaction->id}\")'>
+    //                     <option value=''>Pilih Status</option>
+    //                     <option value='" . Transaction::STATUS_PAID . "' " . ($transaction->status == Transaction::STATUS_PAID ? 'selected' : '') . ">Lunas</option>
+    //                     <option value='" . Transaction::STATUS_REJECTED . "' " . ($transaction->status == Transaction::STATUS_REJECTED ? 'selected' : '') . ">Cek Ulang</option>
+    //                 </select>";
+
+
+    //                 $action .= "<input type='hidden' name='note' id='note-{$transaction->id}' value='{$transaction->activeProof?->note}'>";
+
+    //                 // Tambahkan button simpan
+    //                 $action .= "<button class='btn btn-primary btn-sm mt-2' onclick='saveStatus(\"{$transaction->id}\")'>Simpan</button>";
+
+    //                 // Jika status sudah lunas maka tidak bisa diubah
+    //                 if ($transaction->status == Transaction::STATUS_PAID) {
+    //                     $action = "<span class='badge badge-success'>Lunas</span>";
+    //                 }
+
+    //                 return $action;
+    //             })
+    //             @endif
+
+
+    //             ->rawColumns(['proof', 'action', 'type', 'status'])
+    //             ->make(true);
+    //     }
+    //     return view('admins.saldo-history.index');
+    // }
 
     /**
      * Show the form for creating a new resource.
      */
     public function create()
     {
+        if (!Auth::user()->can('Create Saldo Santri')) {
+            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
+        }
         return view('admins.saldo-history.create-edit');
     }
 
@@ -125,6 +230,9 @@ class SaldoHistoryController extends Controller
 
     public function store(SaldoHistoryRequest $request)
     {
+        if (!Auth::user()->can('Create Saldo Santri')) {
+            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
+        }
         // Start a database transaction
         DB::beginTransaction();
 
@@ -184,6 +292,9 @@ class SaldoHistoryController extends Controller
      */
     public function edit(SaldoHistory $saldoHistory)
     {
+        if (!Auth::user()->can('Edit Saldo Santri')) {
+            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
+        }
         return view('admins.saldo-history.create-edit', compact('saldoHistory'));
     }
 
@@ -192,6 +303,9 @@ class SaldoHistoryController extends Controller
      */
     public function update(SaldoHistoryRequest $request, SaldoHistory $saldoHistory)
     {
+        if (!Auth::user()->can('Edit Saldo Santri')) {
+            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
+        }
         $data = $request->validated();
         $saldoHistory->update($data);
         return redirect()->route('saldo-history.index')->with('success', 'Saldo History berhasil diubah');
@@ -207,6 +321,9 @@ class SaldoHistoryController extends Controller
 
     public function updateStatusPayment(UpdateStatusTopupSaldoRequest $request, $id)
     {
+        if (!Auth::user()->can('Edit Saldo Santri')) {
+            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
+        }
         $transaction = Transaction::findOrFail($id);
         $data = $request->validated();
         $data['admin_id'] = Auth::id();

@@ -255,7 +255,7 @@ class TransactionController extends Controller
             }
 
             // Nonaktifkan bukti pembayaran sebelumnya
-            $proof->transaction->transactionProofs()->update(['is_active' => false]);
+            $proof->transaction->activeProof()->update(['is_active' => false]);
 
             $proofImage = 'storage/' . $request->file('proof_image')->store('images/proofs', 'public');
 

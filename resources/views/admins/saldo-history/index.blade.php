@@ -57,10 +57,8 @@
                         </a>
                     </div>
                     <div>
-                        <a class="btn btn-sm btn-primary" id="btn_add_permission"
-                            href="{{ route('saldo-history.create') }}">
-                            + Penyesuaian Saldo
-                        </a>
+                        <x-action.create name="Saldo Santri" label="Penyesuaian Saldo"
+                            action="{{ route('saldo-history.create') }}" />
                     </div>
                     <!--end::Card title-->
                 </div>
@@ -70,17 +68,18 @@
                 <div class="card-body pt-0">
                     <!--begin::Tabs-->
                     <ul class="nav nav-tabs" id="myTab" role="tablist">
+
                         <li class="nav-item" role="presentation">
-                            <a class="nav-link active" id="saldo-history-tab" data-bs-toggle="tab" href="#saldo-history"
-                                role="tab" aria-controls="saldo-history" aria-selected="true">Riwayat Saldo</a>
+                            <a class="nav-link active" id="top-up-saldo-tab" data-bs-toggle="tab" href="#top-up-saldo"
+                                role="tab" aria-controls="top-up-saldo" aria-selected="false">Top Up Saldo</a>
                         </li>
                         <li class="nav-item" role="presentation">
-                            <a class="nav-link" id="top-up-saldo-tab" data-bs-toggle="tab" href="#top-up-saldo"
-                                role="tab" aria-controls="top-up-saldo" aria-selected="false">Top Up Saldo</a>
+                            <a class="nav-link" id="saldo-history-tab" data-bs-toggle="tab" href="#saldo-history"
+                                role="tab" aria-controls="saldo-history" aria-selected="true">Riwayat Saldo</a>
                         </li>
                     </ul>
                     <div class="tab-content" id="myTabContent">
-                        <div class="tab-pane fade show active" id="saldo-history" role="tabpanel"
+                        <div class="tab-pane fade " id="saldo-history" role="tabpanel"
                             aria-labelledby="saldo-history-tab">
                             <!--begin::Table-->
                             <div class="table-responsive">
@@ -100,7 +99,8 @@
                             </div>
                             <!--end::Table-->
                         </div>
-                        <div class="tab-pane fade" id="top-up-saldo" role="tabpanel" aria-labelledby="top-up-saldo-tab">
+                        <div class="tab-pane fade show active" id="top-up-saldo" role="tabpanel"
+                            aria-labelledby="top-up-saldo-tab">
                             <!--begin::Top Up Form-->
                             <!--begin::Table-->
                             <div class="table-responsive">
