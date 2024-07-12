@@ -2,12 +2,13 @@
 
 namespace App\Http\Controllers\Admin;
 
+use Carbon\Carbon;
 use App\Models\Tahfidz;
 use Illuminate\Http\Request;
 use Yajra\DataTables\DataTables;
 use App\Http\Controllers\Controller;
+use Illuminate\Support\Facades\Auth;
 use App\Http\Requests\Admin\TahfidzRequest;
-use Carbon\Carbon;
 
 class TahfidzController extends Controller
 {
@@ -16,8 +17,11 @@ class TahfidzController extends Controller
      */
     public function index()
     {
+        if (!Auth::user()->can('Manage Tahfidz')) {
+            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
+        }
         if (request()->ajax()) {
-            $data = Tahfidz::with('student')->latest()->get();
+            $data = Tahfidz::with('student')->latest();
             return DataTables::of($data)
                 ->editColumn('link', function ($data) {
                     return "<a href='$data->link' target='_blank'><i class='fas fa-external-link-alt'></i></a>";
@@ -29,8 +33,8 @@ class TahfidzController extends Controller
                     $actionEdit = route('tahfidz.edit', $data->id);
                     $actionDelete = route('tahfidz.destroy', $data->id);
                     return "<div class='d-flex justify-content-center'>" .
-                        view('components.action.edit', ['action' => $actionEdit]) .
-                        view('components.action.delete', ['action' => $actionDelete, 'id' => $data->id]) .
+                        view('components.action.edit', ['action' => $actionEdit, 'name' => 'Tahfidz']) . '&nbsp;' .
+                        view('components.action.delete', ['action' => $actionDelete, 'id' => $data->id, 'name' => 'Tahfidz']) .
                         "</div>";
                 })
                 ->rawColumns(['action', 'link'])
@@ -44,6 +48,9 @@ class TahfidzController extends Controller
      */
     public function create()
     {
+        if (!Auth::user()->can('Create Tahfidz')) {
+            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
+        }
         return view('admins.tahfidz.create-edit');
     }
 
@@ -52,6 +59,9 @@ class TahfidzController extends Controller
      */
     public function store(TahfidzRequest $request)
     {
+        if (!Auth::user()->can('Create Tahfidz')) {
+            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
+        }
         Tahfidz::create($request->validated());
         return redirect()->route('tahfidz.index')->with('success', 'Data berhasil ditambahkan');
     }
@@ -69,6 +79,9 @@ class TahfidzController extends Controller
      */
     public function edit(Tahfidz $tahfidz)
     {
+        if (!Auth::user()->can('Edit Tahfidz')) {
+            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
+        }
         return view('admins.tahfidz.create-edit', compact('tahfidz'));
     }
 
@@ -77,6 +90,9 @@ class TahfidzController extends Controller
      */
     public function update(TahfidzRequest $request, Tahfidz $tahfidz)
     {
+        if (!Auth::user()->can('Edit Tahfidz')) {
+            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
+        }
         $tahfidz->update($request->validated());
         return redirect()->route('tahfidz.index')->with('success', 'Data berhasil diubah');
     }
@@ -86,6 +102,9 @@ class TahfidzController extends Controller
      */
     public function destroy(Tahfidz $tahfidz)
     {
+        if (!Auth::user()->can('Delete Tahfidz')) {
+            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
+        }
         $tahfidz->delete();
         return redirect()->route('tahfidz.index')->with('success', 'Data berhasil dihapus');
     }

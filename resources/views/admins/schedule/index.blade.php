@@ -52,13 +52,7 @@
                         </div>
                     </div>
                     <div class="mt-4 gap-2 d-flex justify-content-beetween align-items-end">
-                        <div>
-
-                        </div>
-                        <div>
-                            <a type="a" class="btn btn-sm btn-primary" id="btn_add_permission"
-                                href="{{ route('schedule.create') }}">+ Jadwal</a>
-                        </div>
+                        <x-action.create name="Jadwal" action="{{ route('schedule.create') }}" />
                     </div>
                     <!--end::Card title-->
                 </div>
@@ -100,56 +94,56 @@
 <script>
     $(document).ready(() => {
     var table = $('#table-jadwal').DataTable({
-    ordering: false,
-    processing: true,
-    serverSide: true,
-    ajax: "{{ route('schedule.index') }}",
-    language: {
-    "paginate": {
-    "next": "<i class='fa fa-angle-right'>",
-        "previous": "<i class='fa fa-angle-left'>"
-            },
-            "loadingRecords": "Loading...",
-            "processing": "Processing...",
-            },
-            columns: [{
-            "data": null,
-            "sortable": false,
-            "searchable": false,
-            render: function(data, type, row, meta) {
-            return meta.row + meta.settings._iDisplayStart + 1;
-            }
-            },
-            {
-                data: 'date',
-                name: 'date',
-            },
-            {
-                data: 'name',
-                name: 'name',
-            },
-            {
-                data: 'type',
-                name: 'type',
-            },
-            {
-                data: 'school_id',
-                name: 'school_id',
-               
-            },
-            {
-                data: 'description',
-                name: 'description',
-            },
-            {
-            data: 'action',
-            name: 'action',
-            orderable: true,
-            searchable: true,
-            responsivePriority: -1,
-            },
-            ]
-            });
+            ordering: false,
+            processing: true,
+            serverSide: true,
+            ajax: "{{ route('schedule.index') }}",
+            language: {
+            "paginate": {
+            "next": "<i class='fa fa-angle-right'>",
+                "previous": "<i class='fa fa-angle-left'>"
+                    },
+                    "loadingRecords": "Loading...",
+                    "processing": "Processing...",
+                    },
+                    columns: [{
+                    "data": null,
+                    "sortable": false,
+                    "searchable": false,
+                    render: function(data, type, row, meta) {
+                    return meta.row + meta.settings._iDisplayStart + 1;
+                    }
+                    },
+                    {
+                        data: 'date',
+                        name: 'date',
+                    },
+                    {
+                        data: 'name',
+                        name: 'name',
+                    },
+                    {
+                        data: 'type',
+                        name: 'type',
+                    },
+                    {
+                        data: 'school_id',
+                        name: 'school_id',
+                    
+                    },
+                    {
+                        data: 'description',
+                        name: 'description',
+                    },
+                    {
+                    data: 'action',
+                    name: 'action',
+                    orderable: true,
+                    searchable: true,
+                    responsivePriority: -1,
+                    },
+                    ]
+                    });
                 
                 })
 </script>

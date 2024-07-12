@@ -340,7 +340,7 @@
                 </div>
                 @endcanany
 
-                @canany(['Manage Saldo Santri', 'Manage Tabungan Santri'])
+                @canany(['Manage Saldo Santri', 'Manage Tabungan Santri','Manage Jadwal', 'Manage Tahfidz'])
                 <div data-kt-menu-trigger="click" class="menu-item menu-accordion {{ request()->routeIs(['
                     bill.*', 'saldo-history.*', 'saving-history.*', 'order-item.*', 'order-item-history.*', 'study-grade.*',
                     'tahfidz.*', 'student-counseling-score.*', 'schedule.*']) ? 'show' : '' }}">
@@ -410,7 +410,7 @@
                         </div>
                         @endcan
                         @can('study-grade')
-                        <div class="menu-item ">
+                        <div class="menu-item">
                             <a class="menu-link {{ request()->routeIs('study-grade.*') ? ' active' : '' }}"
                                 href="{{ route('study-grade.index') }}">
                                 <span class="menu-bullet">
@@ -420,7 +420,7 @@
                             </a>
                         </div>
                         @endcan
-                        @can('tahfidz')
+                        @can('Manage Tahfidz')
                         <div class="menu-item ">
                             <a class="menu-link {{ request()->routeIs('tahfidz.*') ? ' active' : '' }}"
                                 href="{{ route('tahfidz.index') }}">
@@ -442,7 +442,7 @@
                             </a>
                         </div>
                         @endcan
-                        @can('schedule')
+                        @can('Manage Jadwal')
                         <div class="menu-item ">
                             <a class="menu-link {{ request()->routeIs('schedule.*') ? ' active' : '' }}"
                                 href="{{ route('schedule.index') }}">
