@@ -340,8 +340,7 @@
                 </div>
                 @endcanany
 
-                @canany(['bill', 'saldo-history', 'saving-history', 'order-item', 'order-item-history', 'study-grade',
-                'tahfidz', 'student-counseling-score', 'schedule'])
+                @canany(['Manage Saldo Santri', 'Manage Tabungan Santri'])
                 <div data-kt-menu-trigger="click" class="menu-item menu-accordion {{ request()->routeIs(['
                     bill.*', 'saldo-history.*', 'saving-history.*', 'order-item.*', 'order-item-history.*', 'study-grade.*',
                     'tahfidz.*', 'student-counseling-score.*', 'schedule.*']) ? 'show' : '' }}">
@@ -377,7 +376,7 @@
                             </a>
                         </div>
                         @endcan
-                        @can('saving-history')
+                        @can('Manage Tabungan Santri')
                         <div class="menu-item ">
                             <a class="menu-link {{ request()->routeIs('saving-history.*') ? ' active' : '' }}"
                                 href="{{ route('saving-history.index') }}">

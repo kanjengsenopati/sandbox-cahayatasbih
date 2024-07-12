@@ -114,7 +114,7 @@
                                             @php
                                             $modules = ['Role', 'Admin', 'Santri', 'Wali Santri', 'Sekolah', 'Bank',
                                             'Informasi', 'Metode Pembayaran', 'Menu Aplikasi', 'Kontak Bantuan',
-                                            'Barang','Saldo Santri' ];
+                                            'Barang','Saldo Santri', 'Tabungan Santri'];
                                             @endphp
 
                                             @foreach ($modules as $module)

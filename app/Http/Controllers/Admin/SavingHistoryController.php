@@ -25,8 +25,12 @@ class SavingHistoryController extends Controller
      */
     public function index()
     {
+        if (!Auth::user()->can('Manage Tabungan Santri')) {
+            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
+        }
+
         if (request()->ajax() && request()->type === 'saving') {
-            $data = SavingHistory::with('student')->latest()->get();
+            $data = SavingHistory::with('student')->latest();
             return DataTables::of($data)
                 ->editColumn('date', function ($data) {
                     Carbon::setLocale('id'); // Set locale to Indonesian
@@ -90,24 +94,26 @@ class SavingHistoryController extends Controller
                     }
                 })
                 ->addColumn('action', function ($transaction) {
-                    $action = "<select class='form-control status-transaction' name='status' id='status-{$transaction->id}' onchange='updateStatus(this.value, \"{$transaction->id}\")'>
+                    if (Auth::user()->can('Edit Tabungan Santri')) {
+                        $action = "<select class='form-control status-transaction' name='status' id='status-{$transaction->id}' onchange='updateStatus(this.value, \"{$transaction->id}\")'>
                         <option value=''>Pilih Status</option>
                         <option value='" . Transaction::STATUS_PAID . "' " . ($transaction->status == Transaction::STATUS_PAID ? 'selected' : '') . ">Lunas</option>
                         <option value='" . Transaction::STATUS_REJECTED . "' " . ($transaction->status == Transaction::STATUS_REJECTED ? 'selected' : '') . ">Cek Ulang</option>
                     </select>";
 
 
-                    $action .= "<input type='hidden' name='note' id='note-{$transaction->id}' value='{$transaction->activeProof?->note}'>";
+                        $action .= "<input type='hidden' name='note' id='note-{$transaction->id}' value='{$transaction->activeProof?->note}'>";
 
-                    // Tambahkan button simpan
-                    $action .= "<button class='btn btn-primary btn-sm mt-2' onclick='saveStatus(\"{$transaction->id}\")'>Simpan</button>";
+                        // Tambahkan button simpan
+                        $action .= "<button class='btn btn-primary btn-sm mt-2' onclick='saveStatus(\"{$transaction->id}\")'>Simpan</button>";
 
-                    // Jika status sudah lunas maka tidak bisa diubah
-                    if ($transaction->status == Transaction::STATUS_PAID) {
-                        $action = "<span class='badge badge-success'>Lunas</span>";
+                        // Jika status sudah lunas maka tidak bisa diubah
+                        if ($transaction->status == Transaction::STATUS_PAID) {
+                            $action = "<span class='badge badge-success'>Lunas</span>";
+                        }
+
+                        return $action;
                     }
-
-                    return $action;
                 })
 
 
@@ -122,6 +128,9 @@ class SavingHistoryController extends Controller
      */
     public function create()
     {
+        if (!Auth::user()->can('Create Tabungan Santri')) {
+            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
+        }
         return view('admins.saving-history.create-edit');
     }
 
@@ -130,6 +139,9 @@ class SavingHistoryController extends Controller
      */
     public function store(SavingHistoryRequest $request)
     {
+        if (!Auth::user()->can('Create Tabungan Santri')) {
+            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
+        }
 
         DB::beginTransaction();
 
@@ -207,6 +219,9 @@ class SavingHistoryController extends Controller
 
     public function updateStatusPayment(UpdateStatusTopupSavingRequest $request, $id)
     {
+        if (!Auth::user()->can('Edit Tabungan Santri')) {
+            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
+        }
         $transaction = Transaction::findOrFail($id);
         $data = $request->validated();
         $data['admin_id'] = Auth::id();
