@@ -240,7 +240,7 @@
                             </a>
                         </div>
                         @endcan
-                        @can('semester')
+                        @can('Manage Semester')
                         <div class="menu-item ">
                             <a class="menu-link {{ request()->routeIs('semester.*') ? ' active' : '' }}"
                                 href="{{ route('semester.index') }}">

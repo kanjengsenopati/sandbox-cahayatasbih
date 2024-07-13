@@ -6,6 +6,7 @@ use App\Models\Semester;
 use Illuminate\Http\Request;
 use Yajra\DataTables\DataTables;
 use App\Http\Controllers\Controller;
+use Illuminate\Support\Facades\Auth;
 use App\Http\Requests\Admin\SemesterRequest;
 
 class SemesterController extends Controller
@@ -15,15 +16,18 @@ class SemesterController extends Controller
      */
     public function index()
     {
+        if (!Auth::user()->can('Manage Semester')) {
+            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
+        }
         if (request()->ajax()) {
-            $data = Semester::orderBy('order', 'asc')->get();
+            $data = Semester::orderBy('order', 'asc');
             return DataTables::of($data)
                 ->addColumn('action', function ($data) {
                     $actionEdit = route('semester.edit', $data->id);
                     $actionDelete = route('semester.destroy', $data->id);
                     return "<div class='d-flex justify-content-center'>" .
-                        view('components.action.edit', ['action' => $actionEdit]) .
-                        view('components.action.delete', ['action' => $actionDelete, 'id' => $data->id]) .
+                        view('components.action.edit', ['action' => $actionEdit, 'name' => 'Semester']) .
+                        view('components.action.delete', ['action' => $actionDelete, 'id' => $data->id, 'name' => 'Semester']) .
                         "</div>";
                 })
                 ->rawColumns(['action'])
@@ -37,6 +41,9 @@ class SemesterController extends Controller
      */
     public function create()
     {
+        if (!Auth::user()->can('Create Semester')) {
+            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
+        }
         return view('admins.semester.create-edit');
     }
 
@@ -45,6 +52,9 @@ class SemesterController extends Controller
      */
     public function store(SemesterRequest $request)
     {
+        if (!Auth::user()->can('Create Semester')) {
+            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
+        }
         $data = $request->validated();
         Semester::create($data);
         return redirect()->route('semester.index')->with('success', 'Semester berhasil ditambahkan');
@@ -63,6 +73,9 @@ class SemesterController extends Controller
      */
     public function edit(Semester $semester)
     {
+        if (!Auth::user()->can('Edit Semester')) {
+            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
+        }
         return view('admins.semester.create-edit', compact('semester'));
     }
 
@@ -71,6 +84,9 @@ class SemesterController extends Controller
      */
     public function update(SemesterRequest $request, Semester $semester)
     {
+        if (!Auth::user()->can('Edit Semester')) {
+            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
+        }
         $data = $request->validated();
         $semester->update($data);
         return redirect()->route('semester.index')->with('success', 'Semester berhasil diubah');
@@ -81,6 +97,9 @@ class SemesterController extends Controller
      */
     public function destroy(Semester $semester)
     {
+        if (!Auth::user()->can('Delete Semester')) {
+            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
+        }
         $semester->delete();
         return redirect()->route('semester.index')->with('success', 'Semester berhasil dihapus');
     }
