@@ -202,6 +202,7 @@
                                                     <!--begin::Button-->
                                                     <!--end::Button-->
                                                     <!--begin::Button-->
+                                                    @if (Auth::user()->can('Edit PPDB'))
                                                     <button type="submit" data-kt-contacts-type="submit"
                                                         class="btn btn-sm btn-primary">
                                                         <span class="indicator-label">Simpan</span>
@@ -209,6 +210,7 @@
                                                             <span
                                                                 class="spinner-border spinner-border-sm align-middle ms-2"></span></span>
                                                     </button>
+                                                    @endif
                                                     <!--end::Button-->
                                                 </div>
                                                 <!--end::Action buttons-->

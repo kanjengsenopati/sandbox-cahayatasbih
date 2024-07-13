@@ -205,11 +205,11 @@
                 </div>
                 @endcanany
 
-                @canany(['Manage Wali Santri', 'Manage Santri', 'Manage Sekolah'])
+                @canany(['Manage Wali Santri', 'Manage Santri', 'Manage Sekolah','Manage PPDB', 'Manage Tahun Ajaran'])
                 <div data-kt-menu-trigger="click"
                     class="menu-item menu-accordion {{ request()->routeIs(['school.*', 'academic-year.*', 'semester.*', 'study.*',
                     'user.*', 'student.*',
-                      'category-item.*', 'item.*', 'stock-history.*', 'grade-promotion.*', 'ppdb.*']) ? 'show' : '' }}">
+                      'category-item.*', 'item.*', 'stock-history.*', 'grade-promotion.*', 'ppdb.*', 'ppdb-registration.*']) ? 'show' : '' }}">
                     <span class="menu-link">
                         <span class="menu-icon">
                             <i class="fa-solid fa-school" style="color: #ffffff;"></i>
@@ -229,7 +229,7 @@
                             </a>
                         </div>
                         @endcan
-                        @can('academic-year')
+                        @can('Manage Tahun Ajaran')
                         <div class="menu-item ">
                             <a class="menu-link {{ request()->routeIs('academic-year.*') ? ' active' : '' }}"
                                 href="{{ route('academic-year.index') }}">
@@ -251,7 +251,7 @@
                             </a>
                         </div>
                         @endcan
-                        @can('study')
+                        @can('Manage Mata Pelajaran')
                         <div class="menu-item ">
                             <a class="menu-link {{ request()->routeIs('study.*') ? ' active' : '' }}"
                                 href="{{ route('study.index') }}">
@@ -325,9 +325,9 @@
                             </a>
                         </div>
                         @endcan
-                        @can('ppdb')
+                        @can('Manage PPDB')
                         <div class="menu-item ">
-                            <a class="menu-link {{ request()->routeIs('ppdb.*') ? ' active' : '' }}"
+                            <a class="menu-link {{ request()->routeIs('ppdb.*','ppdb-registration.*') ? ' active' : '' }}"
                                 href="{{ route('ppdb.index') }}">
                                 <span class="menu-bullet">
                                     <span class="bullet bullet-dot"></span>
@@ -341,9 +341,8 @@
                 @endcanany
 
                 @canany(['Manage Saldo Santri', 'Manage Tabungan Santri','Manage Jadwal', 'Manage Tahfidz', 'Manage Pos
-                Kasir'])
-                <div data-kt-menu-trigger="click" class="menu-item menu-accordion {{ request()->routeIs(['
-                    bill.*', 'saldo-history.*', 'saving-history.*', 'order-item.*', 'study-grade.*',
+                Kasir', 'Manage Tagihan', 'Manage Perilaku Santri'])
+                <div data-kt-menu-trigger="click" class="menu-item menu-accordion {{ request()->routeIs(['bill.*', 'saldo-history.*', 'saving-history.*', 'order-item.*', 'study-grade.*',
                     'tahfidz.*', 'student-counseling-score.*', 'schedule.*']) ? 'show' : '' }}">
                     <span class=" menu-link ">
                         <span class=" menu-icon">
@@ -353,7 +352,7 @@
                         <span class="menu-arrow"></span>
                     </span>
                     <div class="menu-sub menu-sub-accordion menu-active-bg">
-                        @can('bill')
+                        @can('Manage Tagihan')
                         <div class="menu-sub menu-sub-accordion menu-active-bg">
                             <div class="menu-item ">
                                 <a class="menu-link {{ request()->routeIs('bill.*') ? ' active' : '' }}"
@@ -400,7 +399,7 @@
                         </div>
                         @endcan
 
-                        @can('study-grade')
+                        @can('Manage Nilai Pelajaran')
                         <div class="menu-item">
                             <a class="menu-link {{ request()->routeIs('study-grade.*') ? ' active' : '' }}"
                                 href="{{ route('study-grade.index') }}">
@@ -422,7 +421,7 @@
                             </a>
                         </div>
                         @endcan
-                        @can('student-counseling-score')
+                        @can('Manage Perilaku Santri')
                         <div class="menu-item ">
                             <a class="menu-link {{ request()->routeIs('student-counseling-score.*') ? ' active' : '' }}"
                                 href="{{ route('student-counseling-score.index') }}">
@@ -468,7 +467,7 @@
                                 <span class="menu-bullet">
                                     <span class="bullet bullet-dot"></span>
                                 </span>
-                                <span class="menu-title">Laporan POS Kasir</span>
+                                <span class="menu-title">POS Kasir</span>
                             </a>
                         </div>
                         @endcan

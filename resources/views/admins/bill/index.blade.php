@@ -211,9 +211,11 @@
                                                             <label for="select-all" class="ms-2 mb-0">Bayar
                                                                 Semua</label>
                                                             <!-- Tempatkan tombol "Bayar" di lokasi yang sesuai -->
+                                                            @if (Auth::user()->can('Edit Tagihan'))
                                                             <button class="btn btn-primary modal-pay ms-2"
                                                                 data-bs-toggle="modal" data-bs-target="#paymentModal"
                                                                 style="min-width: 100px;">Bayar</button>
+                                                            @endif
                                                         </div>
                                                     </ul>
 

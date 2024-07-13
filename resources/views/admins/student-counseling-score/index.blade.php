@@ -1,4 +1,4 @@
-@extends('layouts.master', ['title' => 'Data Perilaku Siswa'])
+@extends('layouts.master', ['title' => 'Data Perilaku Santri'])
 @section('content')
 <div class="content d-flex flex-column flex-column-fluid" id="kt_content">
     <!--begin::Toolbar-->
@@ -10,7 +10,7 @@
                 data-kt-swapper-parent="{default: '#kt_content_container', 'lg': '#kt_toolbar_container'}"
                 class="page-title d-flex align-items-center flex-wrap me-3 mb-5 mb-lg-0">
                 <!--begin::Title-->
-                <h1 class="d-flex text-dark fw-bolder fs-3 align-items-center my-1"> Daftar Perilaku Siswa</h1>
+                <h1 class="d-flex text-dark fw-bolder fs-3 align-items-center my-1">Data Perilaku Santri</h1>
                 <!--end::Title-->
                 <!--begin::Separator-->
                 <span class="h-20px border-gray-300 border-start mx-4"></span>
@@ -20,7 +20,7 @@
                     <!--begin::Item-->
                     <li class="breadcrumb-item text-muted">
                         <a href="{{ route('student-counseling-score.index') }}"
-                            class="text-muted text-hover-primary">Perilaku</a>
+                            class="text-muted text-hover-primary">Perilaku Santri</a>
                     </li>
                     <!--end::Item-->
                     <!--begin::Item-->
@@ -29,7 +29,7 @@
                     </li>
                     <!--end::Item-->
                     <!--begin::Item-->
-                    <li class="breadcrumb-item text-dark">List Perilaku</li>
+                    <li class="breadcrumb-item text-dark">Data Perilaku</li>
                     <!--end::Item-->
 
                 </ul>
@@ -54,13 +54,9 @@
                         </div>
                     </div>
                     <div class="mt-4 gap-2 d-flex justify-content-beetween align-items-end">
-                        <div>
 
-                        </div>
-                        <div>
-                            <a type="a" class="btn btn-sm btn-primary" id="btn_add_permission"
-                                href="{{ route('student-counseling-score.create') }}">+ Perilaku</a>
-                        </div>
+                        <x-action.create name="Perilaku Santri"
+                            action="{{ route('student-counseling-score.create') }}" />
                     </div>
                     <!--end::Card title-->
                 </div>

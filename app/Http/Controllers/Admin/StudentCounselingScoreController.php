@@ -6,6 +6,7 @@ use App\Models\School;
 use Illuminate\Http\Request;
 use Yajra\DataTables\DataTables;
 use App\Http\Controllers\Controller;
+use Illuminate\Support\Facades\Auth;
 use App\Models\StudentCounselingScore;
 use App\Http\Requests\Admin\StudentCounselingScoreRequest;
 
@@ -16,15 +17,18 @@ class StudentCounselingScoreController extends Controller
      */
     public function index()
     {
+        if (!Auth::user()->can('Manage Perilaku Santri')) {
+            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
+        }
         if (request()->ajax()) {
-            $data = StudentCounselingScore::with('student', 'academicYear', 'classroom', 'school')->latest()->get();
+            $data = StudentCounselingScore::with('student', 'academicYear', 'classroom', 'school')->latest();
             return DataTables::of($data)
                 ->addColumn('btnAction', function ($data) {
                     $actionEdit = route('student-counseling-score.edit', $data->id);
                     $actionDelete = route('student-counseling-score.destroy', $data->id);
                     return "<div class='d-flex justify-content-center'>" .
-                        view('components.action.edit', ['action' => $actionEdit]) .
-                        view('components.action.delete', ['action' => $actionDelete, 'id' => $data->id]) .
+                        view('components.action.edit', ['action' => $actionEdit, 'name' => 'Perilaku Santri']) . '&nbsp;' .
+                        view('components.action.delete', ['action' => $actionDelete, 'id' => $data->id, 'name' => 'Perilaku Santri']) .
                         "</div>";
                 })
                 ->rawColumns(['btnAction', 'link'])
@@ -38,6 +42,9 @@ class StudentCounselingScoreController extends Controller
      */
     public function create()
     {
+        if (!Auth::user()->can('Create Perilaku Santri')) {
+            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
+        }
         $schools = School::OrderBy('name', 'asc')->get();
         return view('admins.student-counseling-score.create-edit', compact('schools'));
     }
@@ -47,9 +54,12 @@ class StudentCounselingScoreController extends Controller
      */
     public function store(StudentCounselingScoreRequest $request)
     {
+        if (!Auth::user()->can('Create Perilaku Santri')) {
+            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
+        }
         StudentCounselingScore::create($request->validated());
         return redirect()->route('student-counseling-score.index')
-            ->with('success', 'Skor konseling siswa berhasil ditambahkan');
+            ->with('success', 'Skor konseling Santri berhasil ditambahkan');
     }
 
     /**
@@ -65,6 +75,9 @@ class StudentCounselingScoreController extends Controller
      */
     public function edit(StudentCounselingScore $studentCounselingScore)
     {
+        if (!Auth::user()->can('Edit Perilaku Santri')) {
+            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
+        }
         $schools = School::OrderBy('name', 'asc')->get();
         return view('admins.student-counseling-score.create-edit', compact('studentCounselingScore', 'schools'));
     }
@@ -74,9 +87,12 @@ class StudentCounselingScoreController extends Controller
      */
     public function update(StudentCounselingScoreRequest $request, StudentCounselingScore $studentCounselingScore)
     {
+        if (!Auth::user()->can('Edit Perilaku Santri')) {
+            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
+        }
         $studentCounselingScore->update($request->validated());
         return redirect()->route('student-counseling-score.index')
-            ->with('success', 'Skor konseling siswa berhasil diperbarui');
+            ->with('success', 'Skor konseling Santri berhasil diperbarui');
     }
 
     /**
@@ -84,8 +100,11 @@ class StudentCounselingScoreController extends Controller
      */
     public function destroy(StudentCounselingScore $studentCounselingScore)
     {
+        if (!Auth::user()->can('Delete Perilaku Santri')) {
+            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
+        }
         $studentCounselingScore->delete();
         return redirect()->route('student-counseling-score.index')
-            ->with('success', 'Skor konseling siswa berhasil dihapus');
+            ->with('success', 'Skor konseling Santri berhasil dihapus');
     }
 }

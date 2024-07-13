@@ -57,12 +57,8 @@
                     <div class="card-title">
                         <h3 class="text-dark">Data PPDB</h3>
                     </div>
-                    <div class="">
-                        <a type="a" class="btn btn-sm btn-primary" id="btn_add_permission"
-                            href="{{ route('ppdb.create') }}">+
-                            PPDB</a>
-                        <!--end::Primary button-->
-                    </div>
+
+                    <x-action.create name="PPDB" action="{{ route('ppdb.create') }}" />
                     <!--end::Card title-->
                 </div>
                 <!--end::Card header-->

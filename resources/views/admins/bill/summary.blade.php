@@ -209,8 +209,8 @@
                                                 <td>Rp {{ $amount ?? '' }}</td>
                                                 <td>
                                                     @if ($billForMonth && $billForMonth->status == 'PAID' &&
-                                                    $billForMonth->transactions?->first()->paymentMethod?->type ==
-                                                    'CASH')
+                                                    optional($billForMonth->transactions?->first())->paymentMethod?->type
+                                                    == 'CASH')
                                                     <span class="badge badge-success">
                                                         Tunai Melalui {{
                                                         $billForMonth->transactions?->first()->admin?->name ??

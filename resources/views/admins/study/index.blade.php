@@ -54,13 +54,8 @@
                         </div>
                     </div>
                     <div class="mt-4 gap-2 d-flex justify-content-beetween align-items-end">
-                        <div>
 
-                        </div>
-                        <div>
-                            <a type="a" class="btn btn-sm btn-primary" id="btn_add_permission"
-                                href="{{ route('study.create') }}">+ Mapel</a>
-                        </div>
+                        <x-action.create name="Mata Pelajaran" action="{{ route('study.create') }}" />
                     </div>
                     <!--end::Card title-->
                 </div>

@@ -7,10 +7,11 @@ use App\Models\School;
 use App\Models\PpdbType;
 use Illuminate\Support\Str;
 use Illuminate\Http\Request;
+use App\Models\PpdbRegistration;
 use Yajra\DataTables\DataTables;
 use App\Http\Controllers\Controller;
+use Illuminate\Support\Facades\Auth;
 use App\Http\Requests\Admin\PpdbRequest;
-use App\Models\PpdbRegistration;
 
 class PpdbController extends Controller
 {
@@ -19,8 +20,11 @@ class PpdbController extends Controller
      */
     public function index()
     {
+        if (!Auth::user()->can('Manage PPDB')) {
+            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
+        }
         if (request()->ajax()) {
-            $data = Ppdb::with('ppdbType', 'academicYear', 'school')->where('is_active', true)->OrderBy('name', 'asc')->get();
+            $data = Ppdb::with('ppdbType', 'academicYear', 'school')->where('is_active', true)->OrderBy('name', 'asc');
             return DataTables::of($data)
                 ->editColumn('image', function ($data) {
                     return "<img src='" . asset($data->image) . "' width='100px' />";
@@ -34,8 +38,8 @@ class PpdbController extends Controller
                     $actionDelete = route('ppdb.destroy', $data->id);
                     return "<div class='d-flex justify-content-center'>" .
                         view('components.action.show', ['action' => $actionShow, 'label' => 'Peserta']) .
-                        view('components.action.edit', ['action' => $actionEdit]) .
-                        view('components.action.delete', ['action' => $actionDelete, 'id' => $data->id]) .
+                        view('components.action.edit', ['action' => $actionEdit, 'name' => 'PPDB']) .
+                        view('components.action.delete', ['action' => $actionDelete, 'id' => $data->id, 'name' => 'PPDB']) .
                         "</div>";
                 })
                 ->rawColumns(['action', 'image', 'status'])
@@ -49,6 +53,9 @@ class PpdbController extends Controller
      */
     public function create()
     {
+        if (!Auth::user()->can('Create PPDB')) {
+            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
+        }
         return view('admins.ppdb.create-edit', [
             'ppdbTypes' => PpdbType::where('is_active', true)->get(),
             'schools' => School::orderBy('name', 'asc')->get()
@@ -60,6 +67,9 @@ class PpdbController extends Controller
      */
     public function store(PpdbRequest $request)
     {
+        if (!Auth::user()->can('Create PPDB')) {
+            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
+        }
         $data = $request->validated();
         if ($request->hasFile('image')) {
             $data['image'] = 'storage/' . $request->file('image')->store('images/ppdb', 'public');
@@ -74,6 +84,9 @@ class PpdbController extends Controller
      */
     public function show($id)
     {
+        if (!Auth::user()->can('Manage PPDB')) {
+            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
+        }
         if (request()->ajax()) {
             $data = PpdbRegistration::with('ppdb')->where('ppdb_id', $id)->latest()->get();
             return DataTables::of($data)
@@ -105,6 +118,9 @@ class PpdbController extends Controller
      */
     public function edit(Ppdb $ppdb)
     {
+        if (!Auth::user()->can('Edit PPDB')) {
+            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
+        }
         return view('admins.ppdb.create-edit', [
             'ppdb' => $ppdb,
             'ppdbTypes' => PpdbType::where('is_active', true)->get(),
@@ -117,6 +133,9 @@ class PpdbController extends Controller
      */
     public function update(PpdbRequest $request, Ppdb $ppdb)
     {
+        if (!Auth::user()->can('Edit PPDB')) {
+            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
+        }
         $data = $request->validated();
         if ($request->hasFile('image')) {
             $data['image'] = 'storage/' . $request->file('image')->store('images/ppdb', 'public');
@@ -130,6 +149,9 @@ class PpdbController extends Controller
      */
     public function destroy(Ppdb $ppdb)
     {
+        if (!Auth::user()->can('Delete PPDB')) {
+            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
+        }
         file_exists($ppdb->image) ? unlink($ppdb->image) : null;
         $ppdb->delete();
         return redirect()->route('ppdb.index')->with('success', 'Data berhasil dihapus');

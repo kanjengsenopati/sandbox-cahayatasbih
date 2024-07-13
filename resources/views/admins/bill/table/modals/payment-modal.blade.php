@@ -38,7 +38,9 @@
                     <input type="hidden" name="student_id" value="{{ $student->id }}">
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                        @if (Auth::user()->can('Edit Tagihan'))
                         <button type="submit" class="btn btn-primary">Bayar</button>
+                        @endif
                     </div>
                 </form>
             </div>

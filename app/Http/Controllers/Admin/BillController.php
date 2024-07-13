@@ -36,6 +36,9 @@ class BillController extends Controller
      */
     public function index()
     {
+        if (!Auth::user()->can('Manage Tagihan')) {
+            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
+        }
         $schools = School::orderBy('name', 'asc')->get();
         if (request()->student_id) {
 
@@ -127,24 +130,26 @@ class BillController extends Controller
                     }
                 })
                 ->addColumn('action', function ($transaction) {
-                    $action = "<select class='form-control status-transaction' name='status' id='status-{$transaction->id}' onchange='updateStatus(this.value, \"{$transaction->id}\")'>
+                    if (Auth::user()->can('Edit Tagihan')) {
+                        $action = "<select class='form-control status-transaction' name='status' id='status-{$transaction->id}' onchange='updateStatus(this.value, \"{$transaction->id}\")'>
                         <option value=''>Pilih Status</option>
                         <option value='" . Transaction::STATUS_PAID . "' " . ($transaction->status == Transaction::STATUS_PAID ? 'selected' : '') . ">Lunas</option>
                         <option value='" . Transaction::STATUS_REJECTED . "' " . ($transaction->status == Transaction::STATUS_REJECTED ? 'selected' : '') . ">Cek Ulang</option>
                     </select>";
 
 
-                    $action .= "<input type='hidden' name='note' id='note-{$transaction->id}' value='{$transaction->activeProof?->note}'>";
+                        $action .= "<input type='hidden' name='note' id='note-{$transaction->id}' value='{$transaction->activeProof?->note}'>";
 
-                    // Tambahkan button simpan
-                    $action .= "<button class='btn btn-primary btn-sm mt-2' onclick='saveStatus(\"{$transaction->id}\")'>Simpan</button>";
+                        // Tambahkan button simpan
+                        $action .= "<button class='btn btn-primary btn-sm mt-2' onclick='saveStatus(\"{$transaction->id}\")'>Simpan</button>";
 
-                    // Jika status sudah lunas maka tidak bisa diubah
-                    if ($transaction->status == Transaction::STATUS_PAID) {
-                        $action = "<span class='badge badge-success'>Lunas</span>";
+                        // Jika status sudah lunas maka tidak bisa diubah
+                        if ($transaction->status == Transaction::STATUS_PAID) {
+                            $action = "<span class='badge badge-success'>Lunas</span>";
+                        }
+
+                        return $action;
                     }
-
-                    return $action;
                 })
 
 
@@ -191,6 +196,9 @@ class BillController extends Controller
 
     public function show(string $id)
     {
+        if (!Auth::user()->can('Manage Tagihan')) {
+            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
+        }
         $transaction = Transaction::with('student', 'paymentMethod', 'activeProof')
             ->findOrFail($id);
         return view('admins.bill.show', compact('transaction'));
