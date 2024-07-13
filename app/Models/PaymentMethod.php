@@ -28,9 +28,18 @@ class PaymentMethod extends Model
         'is_active'
     ];
 
+    protected $appends = [
+        'translated_name'
+    ];
+
     public function transactions()
     {
         return $this->hasMany(Transaction::class)->withTrashed();
+    }
+
+    public function getTranslatedNameAttribute()
+    {
+        return $this->getTypeList()[$this->type];
     }
 
     public function getTypeList()

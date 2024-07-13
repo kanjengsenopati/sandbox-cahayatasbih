@@ -221,6 +221,9 @@ class BillController extends Controller
         $transaction = Transaction::findOrFail($id);
         $data = $request->validated();
         $data['admin_id'] = Auth::id();
+        if ($request->status == Transaction::STATUS_PAID) {
+            $data['paid_at'] = now();
+        }
 
         $result = TransactionService::updateStatusPaymentTransfer($data, $transaction);
 

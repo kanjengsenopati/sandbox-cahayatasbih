@@ -81,6 +81,11 @@ class Transaction extends Model
         return $this->hasOne(TransactionProof::class)->where('is_active', true);
     }
 
+    public function getTranslatedPaymentMethod()
+    {
+        return $this->paymentMethod->translated_name;
+    }
+
     public function getBanksAttribute()
     {
         // return $this->load('student.classroom.school.topupBank.bank');
