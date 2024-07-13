@@ -117,7 +117,7 @@
                                             'Informasi', 'Metode Pembayaran', 'Menu Aplikasi', 'Kontak Bantuan',
                                             'Barang','Saldo Santri', 'Tabungan Santri', 'Jadwal', 'Tahfidz',
                                             'Pos Kasir', 'Laporan Pos Kasir', 'Tagihan', 'Perilaku Santri',
-                                            'PPDB', 'Mata Pelajaran', 'Tahun Ajaran', 'Semester'];
+                                            'PPDB', 'Mata Pelajaran', 'Tahun Ajaran', 'Semester', 'Kenaikan Kelas'];
                                             @endphp
 
                                             @foreach ($modules as $module)

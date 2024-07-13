@@ -7,11 +7,12 @@ use App\Models\Student;
 use App\Models\AcademicYear;
 use Illuminate\Http\Request;
 use Yajra\DataTables\DataTables;
-use App\Http\Controllers\Controller;
-use App\Http\Requests\Admin\GradePromotionRequest;
-use App\Models\StudentClassroomHistory;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use App\Http\Controllers\Controller;
+use Illuminate\Support\Facades\Auth;
+use App\Models\StudentClassroomHistory;
+use App\Http\Requests\Admin\GradePromotionRequest;
 
 class GradePromotionController extends Controller
 {
@@ -20,6 +21,9 @@ class GradePromotionController extends Controller
      */
     public function index()
     {
+        if (!Auth::user()->can('Manage Kenaikan Kelas')) {
+            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
+        }
         if (request()->ajax()) {
             $data = Student::with('user', 'classroom.school')
                 ->when(request('school_id'), function ($query) {
@@ -33,7 +37,7 @@ class GradePromotionController extends Controller
                 ->when(request('status'), function ($query) {
                     $query->where('status', request('status'));
                 })
-                ->latest()->get();
+                ->latest();
             return DataTables::of($data)
                 ->editColumn('saldo', function ($data) {
                     return '<span class="badge bg-success">Rp ' . number_format($data->saldo, 0, ',', '.') . '</span>';
@@ -65,8 +69,8 @@ class GradePromotionController extends Controller
                     $actionDelete = route('student.destroy', $data->id);
                     $actionPrint = route('student.generate-student-card', $data->id);
                     return "<div class='d-flex justify-content-center'>" .
-                        view('components.action.edit', ['action' => $actionEdit]) .
-                        view('components.action.delete', ['action' => $actionDelete, 'id' => $data->id]) .
+                        view('components.action.edit', ['action' => $actionEdit, 'name' => 'Kenaikan Kelas']) .
+                        view('components.action.delete', ['action' => $actionDelete, 'id' => $data->id, 'name' => 'Kenaikan Kelas']) .
                         view('components.action.qr-code', ['action' => $actionPrint, 'label' => 'Cetak Kartu']) .
                         "</div>";
                 })
@@ -93,6 +97,9 @@ class GradePromotionController extends Controller
 
     public function store(GradePromotionRequest $request)
     {
+        if (!Auth::user()->can('Create Kenaikan Kelas')) {
+            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
+        }
         // Start the database transaction
         DB::beginTransaction();
 

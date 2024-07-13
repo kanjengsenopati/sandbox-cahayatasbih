@@ -205,7 +205,8 @@
                 </div>
                 @endcanany
 
-                @canany(['Manage Wali Santri', 'Manage Santri', 'Manage Sekolah','Manage PPDB', 'Manage Tahun Ajaran'])
+                @canany(['Manage Wali Santri', 'Manage Santri', 'Manage Sekolah','Manage PPDB', 'Manage Tahun Ajaran',
+                'Manage Kenaikan Kelas'])
                 <div data-kt-menu-trigger="click"
                     class="menu-item menu-accordion {{ request()->routeIs(['school.*', 'academic-year.*', 'semester.*', 'study.*',
                     'user.*', 'student.*',
@@ -285,7 +286,7 @@
                             </a>
                         </div>
                         @endcan
-                        @can('grade-promotion')
+                        @can('Manage Kenaikan Kelas')
                         <div class="menu-item">
                             <a class="menu-link {{ request()->routeIs('grade-promotion.*') ? ' active' : '' }}"
                                 href="{{ route('grade-promotion.index') }}">

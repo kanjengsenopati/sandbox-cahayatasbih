@@ -136,10 +136,12 @@
                                     @endforeach
                                 </select>
                             </div>
+                            @if (Auth::user()->can('Create Kenaikan Kelas'))
                             <div class="col-md-auto">
                                 <button type="submit" class="btn btn-primary" id="btn_change_classroom">Pindah
                                     Kelas</button>
                             </div>
+                            @endif
                         </div>
                     </form>
                 </div>
