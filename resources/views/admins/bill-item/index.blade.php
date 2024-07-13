@@ -53,11 +53,8 @@
                     <div class="card-title">
                         {{-- <h3 class="text-dark">Sekolah</h3> --}}
                     </div>
-                    <div class="">
-                        <a type="a" class="btn btn-sm btn-primary" id="btn_add_permission"
-                            href="{{ route('bill-item.create') }}">+ Pos Bayar</a>
-                        <!--end::Primary button-->
-                    </div>
+
+                    <x-action.create name="Item Bayar" action="{{ route('bill-item.create') }}" />
                     <!--end::Card title-->
                 </div>
                 <!--end::Card header-->

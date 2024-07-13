@@ -6,13 +6,14 @@ use App\Models\Bank;
 use App\Models\BillType;
 use App\Models\PaymentRate;
 use App\Models\AcademicYear;
+use App\Models\BillTypeBank;
 use Illuminate\Http\Request;
 use Yajra\DataTables\DataTables;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\Controller;
+use Illuminate\Support\Facades\Auth;
 use App\Http\Requests\Admin\BillTypeRequest;
-use App\Models\BillTypeBank;
 
 class BillTypeController extends Controller
 {
@@ -21,6 +22,10 @@ class BillTypeController extends Controller
      */
     public function index()
     {
+        if (!Auth::user()->can('Manage Jenis Bayar')) {
+            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
+        }
+
         if (request()->ajax()) {
             $data = BillType::with('billItem', 'academicYear', 'billTypeBank')->latest();
             return DataTables::of($data)
@@ -49,8 +54,8 @@ class BillTypeController extends Controller
                     $actionEdit = route('bill-type.edit', $data->id);
                     $actionDelete = route('bill-type.destroy', $data->id);
                     return "<div class='d-flex justify-content-center'>" .
-                        view('components.action.edit', ['action' => $actionEdit]) .
-                        view('components.action.delete', ['action' => $actionDelete, 'id' => $data->id]) .
+                        view('components.action.edit', ['action' => $actionEdit, 'name' => 'Jenis Bayar']) .
+                        view('components.action.delete', ['action' => $actionDelete, 'id' => $data->id, 'name' => 'Jenis Bayar']) .
                         "</div>";
                 })
                 ->rawColumns(['action', 'type', 'payment_rates', 'bank'])
@@ -64,6 +69,10 @@ class BillTypeController extends Controller
      */
     public function create()
     {
+        if (!Auth::user()->can('Create Jenis Bayar')) {
+            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
+        }
+
         $banks = Bank::orderBy('name')->where('is_active', true)->get();
         $bankValue = [];
         return view('admins.bill-type.create-edit', compact('banks', 'bankValue'));
@@ -74,6 +83,10 @@ class BillTypeController extends Controller
      */
     public function store(BillTypeRequest $request)
     {
+        if (!Auth::user()->can('Create Jenis Bayar')) {
+            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
+        }
+
         // Start the database transaction
         DB::beginTransaction();
 
@@ -109,6 +122,9 @@ class BillTypeController extends Controller
      */
     public function show(BillType $billType)
     {
+        if (!Auth::user()->can('Manage Jenis Bayar')) {
+            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
+        }
         if (request()->ajax()) {
             $academicYear = AcademicYear::whereIsActive(true)->first();
             $data = PaymentRate::with('billType', 'paymentRateClassrooms')
@@ -148,6 +164,10 @@ class BillTypeController extends Controller
      */
     public function edit(BillType $billType)
     {
+        if (!Auth::user()->can('Edit Jenis Bayar')) {
+            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
+        }
+
         $banks = Bank::orderBy('name')->where('is_active', true)->get();
         $bankValue = $billType->billTypeBank->pluck('bank_id')->toArray();
         return view('admins.bill-type.create-edit', compact('billType', 'banks', 'bankValue'));
@@ -158,6 +178,10 @@ class BillTypeController extends Controller
      */
     public function update(BillTypeRequest $request, BillType $billType)
     {
+        if (!Auth::user()->can('Edit Jenis Bayar')) {
+            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
+        }
+
         // Start the database transaction
         DB::beginTransaction();
 
@@ -195,6 +219,10 @@ class BillTypeController extends Controller
      */
     public function destroy(BillType $billType)
     {
+        if (!Auth::user()->can('Delete Jenis Bayar')) {
+            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
+        }
+
         $billType->billTypeBank()->delete();
         $billType->delete();
         return redirect()->route('bill-type.index')->with('success', 'Data berhasil dihapus');
