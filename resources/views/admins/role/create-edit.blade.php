@@ -104,7 +104,7 @@
                                                     </div>
                                                 </th>
                                                 <th>Module</th>
-                                                <th>Manage</th>
+                                                <th>Read</th>
                                                 <th>Create</th>
                                                 <th>Edit</th>
                                                 <th>Delete</th>
@@ -112,12 +112,13 @@
                                         </thead>
                                         <tbody>
                                             @php
-                                            $modules = ['Permission','Role', 'Admin', 'Santri', 'Wali Santri',
+                                            $modules = ['Role', 'Admin', 'Santri', 'Wali Santri',
                                             'Sekolah', 'Bank',
                                             'Informasi', 'Metode Pembayaran', 'Menu Aplikasi', 'Kontak Bantuan',
                                             'Barang','Saldo Santri', 'Tabungan Santri', 'Jadwal', 'Tahfidz',
                                             'Pos Kasir', 'Laporan Pos Kasir', 'Tagihan', 'Perilaku Santri',
-                                            'PPDB', 'Mata Pelajaran', 'Tahun Ajaran', 'Semester', 'Kenaikan Kelas'];
+                                            'PPDB', 'Mata Pelajaran', 'Tahun Ajaran', 'Semester', 'Kenaikan Kelas',
+                                            'Pengaturan Aplikasi'];
                                             @endphp
 
                                             @foreach ($modules as $module)

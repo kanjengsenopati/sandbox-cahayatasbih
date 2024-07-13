@@ -57,7 +57,7 @@
                 </div>
 
                 @canany(['Manage Role', 'Manage Admin', 'Manage Informasi', 'Manage Metode Pembayaran','Manage Menu
-                Aplikasi', 'Manage Kontak Bantuan', 'Manage Bank'])
+                Aplikasi', 'Manage Kontak Bantuan', 'Manage Bank', 'Manage Pengaturan Aplikasi'])
                 <div data-kt-menu-trigger="click" class="menu-item menu-accordion {{ request()->routeIs(['permission.*', 'role.*', 'information-category.*',
                     'information.*', 'payment-method.*', 'application-setting.*', 'application-menu.*', 'help.*',
                     'app-information.*', 'bill-item.*', 'bill-type.*']) ? 'show' : '' }}">
@@ -124,7 +124,7 @@
                             </a>
                         </div>
                         @endcan
-                        @can('application-setting')
+                        @can('Manage Pengaturan Aplikasi')
                         <div class="menu-item ">
                             <a class="menu-link {{ request()->routeIs('application-setting.*') ? ' active' : '' }}"
                                 href="{{ route('application-setting.index') }}">

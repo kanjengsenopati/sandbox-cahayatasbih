@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use App\Models\ApplicationSetting;
 use Illuminate\Console\Application;
 use App\Http\Controllers\Controller;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Http;
 use App\Http\Requests\Admin\ApplicationSettingRequest;
 
@@ -16,6 +17,10 @@ class ApplicationSettingController extends Controller
      */
     public function index()
     {
+        if (!Auth::user()->can('Manage Pengaturan Aplikasi')) {
+            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
+        }
+
         $applicationSetting = ApplicationSetting::first();
         return view('admins.application-setting.index', compact('applicationSetting'));
     }
@@ -33,6 +38,9 @@ class ApplicationSettingController extends Controller
      */
     public function store(ApplicationSettingRequest $request)
     {
+        if (!Auth::user()->can('Edit Pengaturan Aplikasi')) {
+            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
+        }
         $data = $request->validated();
 
         if ($request->hasFile('student_card_image')) {
