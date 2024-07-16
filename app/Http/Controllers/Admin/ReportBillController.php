@@ -12,6 +12,7 @@ use Illuminate\Http\Request;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Yajra\DataTables\DataTables;
 use App\Http\Controllers\Controller;
+use Illuminate\Support\Facades\Auth;
 use App\Jobs\SendBillWhatsappNotificationJob;
 
 class ReportBillController extends Controller
@@ -21,6 +22,9 @@ class ReportBillController extends Controller
      */
     public function index()
     {
+        if (!Auth::user()->can('Manage Laporan Tagihan')) {
+            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
+        }
         if (request()->ajax()) {
             $type = request()->type;
 
@@ -141,6 +145,10 @@ class ReportBillController extends Controller
      */
     public function show(string $id)
     {
+
+        if (!Auth::user()->can('Manage Laporan Tagihan')) {
+            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
+        }
         $data = BillType::whereHas('bills.student', function ($query) use ($id) {
             $query->where('student_id', $id);
         })->get();

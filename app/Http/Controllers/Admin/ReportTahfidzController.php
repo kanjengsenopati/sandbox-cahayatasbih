@@ -2,15 +2,16 @@
 
 namespace App\Http\Controllers\Admin;
 
-use App\Exports\TahfidzExport;
 use Carbon\Carbon;
 use App\Models\School;
 use App\Models\Student;
 use App\Models\Tahfidz;
 use App\Models\AcademicYear;
 use Illuminate\Http\Request;
+use App\Exports\TahfidzExport;
 use Yajra\DataTables\DataTables;
 use App\Http\Controllers\Controller;
+use Illuminate\Support\Facades\Auth;
 use Maatwebsite\Excel\Facades\Excel;
 
 class ReportTahfidzController extends Controller
@@ -20,6 +21,9 @@ class ReportTahfidzController extends Controller
      */
     public function index()
     {
+        if (!Auth::user()->can('Manage Laporan Tahfidz')) {
+            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
+        }
         $schools = School::orderBy('name', 'asc')->get();
         $academicYears = AcademicYear::orderBy('name', 'asc')->get();
         if (request()->ajax()) {
@@ -53,6 +57,9 @@ class ReportTahfidzController extends Controller
 
     public function export(Request $request)
     {
+        if (!Auth::user()->can('Manage Laporan Tahfidz')) {
+            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
+        }
         return Excel::download(new TahfidzExport(), "Laporan Data Tahfidz." . $request->type);
     }
 }

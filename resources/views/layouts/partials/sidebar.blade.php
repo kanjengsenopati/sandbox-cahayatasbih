@@ -473,6 +473,7 @@
                             </a>
                         </div>
                         @endcan
+                        @can('Manage Laporan Tagihan')
                         <div class="menu-item ">
                             <a class="menu-link {{ request()->routeIs('report-bill.*') ? ' active' : '' }}"
                                 href="{{ route('report-bill.index') }}">
@@ -482,6 +483,8 @@
                                 <span class="menu-title">Tagihan</span>
                             </a>
                         </div>
+                        @endcan
+                        @can('Manage Laporan Santri')
                         <div class="menu-item ">
                             <a class="menu-link {{ request()->routeIs('report-student.*') ? ' active' : '' }}"
                                 href="{{ route('report-student.index') }}">
@@ -491,15 +494,19 @@
                                 <span class="menu-title">Siswa</span>
                             </a>
                         </div>
+                        @endcan
+                        @can('Manage Laporan Nilai Akademik')
                         <div class="menu-item ">
                             <a class="menu-link {{ request()->routeIs('report-study-grade.*') ? ' active' : '' }}"
                                 href="{{ route('report-study-grade.index') }}">
                                 <span class="menu-bullet">
                                     <span class="bullet bullet-dot"></span>
                                 </span>
-                                <span class="menu-title">Raport Nilai Akademik</span>
+                                <span class="menu-title">Nilai Akademik</span>
                             </a>
                         </div>
+                        @endcan
+                        @can('Manage Laporan Tahfidz')
                         <div class="menu-item ">
                             <a class="menu-link {{ request()->routeIs('report-tahfidz.*') ? ' active' : '' }}"
                                 href="{{ route('report-tahfidz.index') }}">
@@ -509,6 +516,8 @@
                                 <span class="menu-title">Tahfidz</span>
                             </a>
                         </div>
+                        @endcan
+                        @can('Manage Laporan Perilaku Siswa')
                         <div class="menu-item">
                             <a class="menu-link {{ request()->routeIs('report-student-counseling-score.*') ? ' active' : '' }}"
                                 href="{{ route('report-student-counseling-score.index') }}">
@@ -518,6 +527,8 @@
                                 <span class="menu-title">Perilaku Siswa</span>
                             </a>
                         </div>
+                        @endcan
+                        @can('Manage Laporan Saldo Santri')
                         <div class="menu-item">
                             <a class="menu-link {{ request()->routeIs('report-saldo.*') ? ' active' : '' }}"
                                 href="{{ route('report-saldo.index') }}">
@@ -527,6 +538,8 @@
                                 <span class="menu-title">Saldo Santri</span>
                             </a>
                         </div>
+                        @endcan
+                        @can('Manage Laporan Fee Aplikasi')
                         <div class="menu-item">
                             <a class="menu-link {{ request()->routeIs('report-app-fee.*') ? ' active' : '' }}"
                                 href="{{ route('report-app-fee.index') }}">
@@ -536,6 +549,7 @@
                                 <span class="menu-title">Fee Aplikasi</span>
                             </a>
                         </div>
+                        @endcan
                     </div>
                 </div>
 

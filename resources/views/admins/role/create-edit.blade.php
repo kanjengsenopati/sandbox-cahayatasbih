@@ -118,7 +118,9 @@
                                             'Barang','Saldo Santri', 'Tabungan Santri', 'Jadwal', 'Tahfidz',
                                             'Pos Kasir', 'Laporan Pos Kasir', 'Tagihan', 'Perilaku Santri',
                                             'PPDB', 'Mata Pelajaran', 'Tahun Ajaran', 'Semester', 'Kenaikan Kelas',
-                                            'Pengaturan Aplikasi', 'Item Bayar', 'Jenis Bayar'];
+                                            'Pengaturan Aplikasi', 'Item Bayar', 'Jenis Bayar', 'Laporan Tagihan',
+                                            'Laporan Santri', 'Laporan Tahfidz', 'Laporan Perilaku Siswa',
+                                            'Laporan Saldo Santri', 'Laporan Fee Aplikasi'];
                                             @endphp
 
                                             @foreach ($modules as $module)

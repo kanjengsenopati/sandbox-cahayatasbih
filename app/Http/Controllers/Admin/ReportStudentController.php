@@ -2,13 +2,14 @@
 
 namespace App\Http\Controllers\Admin;
 
-use App\Exports\StudentExport;
 use App\Models\School;
 use App\Models\Student;
 use App\Models\AcademicYear;
 use Illuminate\Http\Request;
+use App\Exports\StudentExport;
 use Yajra\DataTables\DataTables;
 use App\Http\Controllers\Controller;
+use Illuminate\Support\Facades\Auth;
 use Maatwebsite\Excel\Facades\Excel;
 
 class ReportStudentController extends Controller
@@ -18,6 +19,9 @@ class ReportStudentController extends Controller
      */
     public function index()
     {
+        if (!Auth::user()->can('Manage Laporan Santri')) {
+            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
+        }
         $schools = School::orderBy('name', 'asc')->get();
         $academicYears = AcademicYear::orderBy('name', 'asc')->get();
         if (request()->ajax() && request()->has('school_id')) {
@@ -49,6 +53,9 @@ class ReportStudentController extends Controller
 
     public function export(Request $request)
     {
+        if (!Auth::user()->can('Manage Laporan Santri')) {
+            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
+        }
         return Excel::download(new StudentExport(), "Laporan Data User." . $request->type);
     }
 }

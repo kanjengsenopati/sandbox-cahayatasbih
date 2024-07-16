@@ -9,6 +9,7 @@ use Illuminate\Http\Request;
 use Yajra\DataTables\DataTables;
 use App\Exports\StudyGradeExport;
 use App\Http\Controllers\Controller;
+use Illuminate\Support\Facades\Auth;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Models\StudentCounselingScore;
 
@@ -16,6 +17,9 @@ class ReportStudyGradeController extends Controller
 {
     public function index()
     {
+        if (!Auth::user()->can('Manage Laporan Nilai Akademik')) {
+            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
+        }
         $schools = School::orderBy('name', 'asc')->get();
         $academicYears = AcademicYear::orderBy('name', 'asc')->get();
         if (request()->ajax()) {
@@ -53,6 +57,9 @@ class ReportStudyGradeController extends Controller
 
     public function export(Request $request)
     {
+        if (!Auth::user()->can('Manage Laporan Nilai Akademik')) {
+            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
+        }
         return Excel::download(new StudyGradeExport(), "Laporan Data Raport Nilai Akademik." . $request->type);
     }
 }

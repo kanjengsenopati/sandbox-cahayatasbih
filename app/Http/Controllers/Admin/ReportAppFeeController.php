@@ -7,11 +7,15 @@ use App\Models\Transaction;
 use Illuminate\Http\Request;
 use Yajra\DataTables\DataTables;
 use App\Http\Controllers\Controller;
+use Illuminate\Support\Facades\Auth;
 
 class ReportAppFeeController extends Controller
 {
     public function index()
     {
+        if (!Auth::user()->can('Manage Laporan Fee Aplikasi')) {
+            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
+        }
         if (request()->ajax()) {
             $data = Transaction::whereNotNull('app_fee')->where('status', Transaction::STATUS_PAID)
                 ->where('app_fee', '>', 0)->latest()->get();

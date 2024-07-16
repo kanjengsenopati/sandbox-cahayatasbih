@@ -17,6 +17,9 @@ class ReportSaldoController extends Controller
     public function index()
     {
 
+        if (!Auth::user()->can('Manage Laporan Saldo Santri')) {
+            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
+        }
         if (request()->ajax()) {
             $data = SaldoHistory::with('student.classroom.school')
                 ->when(request()->filled('school_id'), function ($query) {
