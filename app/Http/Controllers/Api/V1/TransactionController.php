@@ -44,36 +44,6 @@ class TransactionController extends Controller
 
             $transaction = TransactionService::createTransaction($request, $paymentMethodType, Transaction::TYPE_BILL);
 
-            // if ($paymentMethodType == PaymentMethod::TYPE_XENDIT) {
-            //     TransactionService::createInvoice($transaction);
-            // } elseif ($paymentMethodType == PaymentMethod::TYPE_BALANCE) {
-            //     $payAmount = $transaction->pay_amount;
-            //     $student = Student::find($request->student_id);
-
-            //     if ($student->saldo < $payAmount) {
-            //         DB::rollBack();
-            //         return $this->failedResponse("Maaf Saldo Santri tidak mencukupi");
-            //     }
-
-            //     TransactionService::payWithBalance($student, $payAmount, $transaction, $request);
-            // } elseif ($paymentMethodType == PaymentMethod::TYPE_TRANSFER) {
-            //     //generate unique payment 3 digit
-            //     $uniquePayment = rand(100, 999);
-            //     $transaction->update([
-            //         'status' => Transaction::STATUS_PENDING_PAYMENT,
-            //         'paid_at' => null,
-            //         'unique_payment' => $uniquePayment,
-            //         'pay_amount' => $transaction->pay_amount + $uniquePayment
-            //     ]);
-            //     // add app fee to transaction
-            //     TransactionService::updateAppFee($transaction);
-            //     // load data all bank from billType
-            //     $transaction->load('transactionDetails.bill.banks');
-            //     // send notification to user via whatsapp
-            //     $messageWhatsapp = SendNotifWaService::sendMessagePendingTransferPayment($transaction);
-            //     dispatch(new SendToWhatsappNotificationJob($transaction->student?->user?->phone, $messageWhatsapp));
-            // }
-
             // create transaction details
             // if ($request->bill_ids) {
             foreach ($request->bill_ids as $billId) {

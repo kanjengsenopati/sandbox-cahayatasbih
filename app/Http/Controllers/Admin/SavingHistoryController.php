@@ -13,8 +13,11 @@ use Yajra\DataTables\DataTables;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\Controller;
+use App\Services\SendNotifWaService;
 use App\Services\TransactionService;
 use Illuminate\Support\Facades\Auth;
+use App\Jobs\SendToPushNotificationJob;
+use App\Jobs\SendToWhatsappNotificationJob;
 use App\Http\Requests\Admin\SavingHistoryRequest;
 use App\Http\Requests\Admin\UpdateStatusTopupSavingRequest;
 
@@ -148,42 +151,59 @@ class SavingHistoryController extends Controller
 
         try {
             $data = $request->validated();
-
-            // Retrieve the student
             $student = Student::findOrFail($data['student_id']);
 
-            // Check if saldo deduction exceeds user's saldo
+            // Validate saldo
             if ($data['type'] === 'OUT' && $student->saving < $data['amount']) {
                 return redirect()->route('saving-history.index')->with('error', 'Tabungan tidak mencukupi');
             }
 
-            // Update saldo and create description
-            if ($data['type'] === 'IN') {
-                $student->saving += $data['amount'];
-                $description = 'Tabungan ditambahkan sebesar ' . $data['amount'] . ' oleh ' . auth()->user()->name;
-            } else {
-                $student->saving -= $data['amount'];
-                $description = 'Tabungan dikurangi sebesar ' . $data['amount'] . ' oleh ' . auth()->user()->name;
-            }
-            $student->save();
+            $description = $this->updateStudentSaving($student, $data['type'], $data['amount']);
+            $this->createSavingHistory($data, $description);
 
-            // Create saldo history
-            $data['description'] = $description;
-            $data['status'] = SavingHistory::STATUS_SUCCESS;
-            $data['admin_id'] = auth()->id();
-            SavingHistory::create($data);
-
-            // Commit the transaction
             DB::commit();
+
+            $this->sendNotifications($student, $data['amount'], $description);
 
             return redirect()->route('saving-history.index')->with('success', 'Tabungan berhasil ditambahkan');
         } catch (\Exception $e) {
-            // If an exception occurs, rollback the transaction
             Log::error($e->getMessage());
             DB::rollBack();
 
             return redirect()->route('saving-history.index')->with('error', 'Tabungan gagal ditambahkan');
         }
+    }
+
+    private function updateStudentSaving(Student $student, string $type, float $amount): string
+    {
+        if ($type === 'IN') {
+            $student->saving += $amount;
+            $description = 'Tabungan ditambahkan sebesar  Rp. ' . number_format($amount, 0, ',', '.') . ' oleh ' . auth()->user()?->name;
+        } else {
+            $student->saving -= $amount;
+            $description = 'Tabungan dikurangi sebesar  Rp. ' . number_format($amount, 0, ',', '.') . ' oleh ' . auth()->user()?->name;
+        }
+        $student->save();
+
+        return $description;
+    }
+
+    private function createSavingHistory(array $data, string $description)
+    {
+        $data['description'] = $description;
+        $data['status'] = SavingHistory::STATUS_SUCCESS;
+        $data['admin_id'] = auth()->id();
+        SavingHistory::create($data);
+    }
+
+    private function sendNotifications(Student $student, float $amount, string $description)
+    {
+        $title = 'Pemberitahuan Tabungan';
+        $body = 'Santri ' . $student->name . ' ' . $description . ' menjadi Rp. ' . number_format($student->saving, 0, ',', '.');
+        $messageWhatsapp = SendNotifWaService::balanceAdjustment($student, $amount, "SAVING");
+
+        dispatch(new SendToPushNotificationJob($title, $body, $student->user, null));
+        dispatch(new SendToWhatsappNotificationJob($student->user?->phone, $messageWhatsapp));
     }
 
     /**

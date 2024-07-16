@@ -12,8 +12,11 @@ use Yajra\DataTables\DataTables;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\Controller;
+use App\Services\SendNotifWaService;
 use App\Services\TransactionService;
 use Illuminate\Support\Facades\Auth;
+use App\Jobs\SendToPushNotificationJob;
+use App\Jobs\SendToWhatsappNotificationJob;
 use App\Http\Requests\Admin\SaldoHistoryRequest;
 use App\Http\Requests\Admin\UpdateStatusTopupSaldoRequest;
 
@@ -137,51 +140,68 @@ class SaldoHistoryController extends Controller
         if (!Auth::user()->can('Create Saldo Santri')) {
             return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
         }
-        // Start a database transaction
+
         DB::beginTransaction();
 
         try {
             $data = $request->validated();
 
-            // Retrieve the student
-            $student = Student::findOrFail($data['student_id']);
+            $student = $this->getStudentOrFail($data['student_id']);
 
-            // Check if saldo deduction exceeds user's saldo
-            if ($data['type'] === 'OUT' && $student->saldo < $data['amount']) {
+            if ($this->isInsufficientSaldo($data['type'], $student->saldo, $data['amount'])) {
                 return redirect()->route('saldo-history.index')->with('error', 'Saldo tidak mencukupi');
             }
-            $data['usage'] = SaldoHistory::USAGE_TOPUP;
 
-            // Update saldo and create description
-            if ($data['type'] === 'IN') {
-                $student->saldo += $data['amount'];
-                $description = 'Saldo Ditambahkan Sebesar Rp. ' . number_format($data['amount'], 0, ',', '.') . ' oleh ' . auth()->user()?->name;
-            } else {
-                $student->saldo -= $data['amount'];
-                $description = 'Saldo Dikurangi Sebesar Rp. ' . number_format($data['amount'], 0, ',', '.') . ' oleh ' . auth()->user()?->name;
-            }
+            $data['usage'] = SaldoHistory::USAGE_TOPUP;
+            $description = $this->adjustStudentSaldo($data['type'], $student, $data['amount']);
             $student->save();
 
-            // Create saldo history
             $data['description'] = $description;
             $data['status'] = SaldoHistory::STATUS_SUCCESS;
-            SaldoHistory::create($data);
+            $saldoHistory = SaldoHistory::create($data);
 
-            // Commit the transaction
             DB::commit();
+
+            $this->sendNotifications($student, $saldoHistory);
 
             return redirect()->route('saldo-history.index')->with('success', 'Penyesuaian saldo berhasil');
         } catch (\Exception $e) {
-            // If an exception occurs, rollback the transaction
             Log::error($e->getMessage());
             DB::rollBack();
-
-            // You can handle the exception here (e.g., log it, display an error message, etc.)
             return redirect()->route('saldo-history.index')->with('error', $e->getMessage());
         }
     }
 
+    private function getStudentOrFail($studentId)
+    {
+        return Student::findOrFail($studentId);
+    }
 
+    private function isInsufficientSaldo($type, $currentSaldo, $amount)
+    {
+        return $type === 'OUT' && $currentSaldo < $amount;
+    }
+
+    private function adjustStudentSaldo($type, $student, $amount)
+    {
+        if ($type === 'IN') {
+            $student->saldo += $amount;
+            return 'Saldo Ditambahkan Sebesar Rp. ' . number_format($amount, 0, ',', '.') . ' oleh ' . auth()->user()?->name;
+        } else {
+            $student->saldo -= $amount;
+            return 'Saldo Dikurangi Sebesar Rp. ' . number_format($amount, 0, ',', '.') . ' oleh ' . auth()->user()?->name;
+        }
+    }
+
+    private function sendNotifications($student, $saldoHistory)
+    {
+        $title = 'Pemberitahuan Saldo';
+        $body = 'Santri ' . $student->name . ' ' . $saldoHistory->description . ' menjadi Rp. ' . number_format($student->saldo, 0, ',', '.');
+        $messageWhatsapp = SendNotifWaService::balanceAdjustment($student, $saldoHistory, "SALDO");
+
+        dispatch(new SendToPushNotificationJob($title, $body, $student->user, null));
+        dispatch(new SendToWhatsappNotificationJob($student->user?->phone, $messageWhatsapp));
+    }
 
     /**
      * Display the specified resource.

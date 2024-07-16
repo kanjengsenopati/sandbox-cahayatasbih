@@ -96,61 +96,6 @@ class SendNotifWaService
         return $message;
     }
 
-
-    // public static function sendMessageBillNotification($transaction)
-    // {
-    //     $student = $transaction->student;
-    //     $parentStudent = $student->user;
-
-    //     $message = "Assalamualaikum Bapak/Ibu " . $parentStudent->name . ",\n";
-    //     $message .= "PEMBAYARAN " . $transaction->payment_code . " BERHASIL\n";
-    //     $message .= "--------------------------------\n";
-    //     $message .= "1. NIS : *" . $student->nis . "*\n";
-    //     $message .= "2. Nama Santri : *" . $student->name . "*\n";
-    //     $message .= "3. Kelas : *" . $student->classroom->name . "*\n";
-    //     $message .= "4. Metode Pembayaran : *" . $transaction->getTranslatedPaymentMethod() . "*\n";
-    //     if ($transaction->admin) {
-    //         $message .= "5. Petugas : *" . $transaction->admin?->name . "*\n";
-    //     }
-
-    //     switch ($transaction->type) {
-    //         case Transaction::TYPE_BILL:
-    //             foreach ($transaction->transactionDetails as $detail) {
-    //                 $bill = $detail->bill;
-    //                 $message .= "--------------------------------\n";
-    //                 $message .= "Pembayaran : *" . $bill->billType->name .
-    //                     " " . $bill->translated_month . " " . $bill->academicYear->name . "*\n";
-    //                 $message .= "Nominal Pembayaran : *Rp." . number_format($bill->amount, 0, ',', '.') . "*\n";
-    //             }
-    //             break;
-    //         case Transaction::TYPE_SAVING:
-    //             $message .= "4. Pembayaran : *Tabungan Santri*\n";
-    //             $message .= "5. Total Pembayaran : *Rp." . number_format($transaction->pay_amount, 0, ',', '.') . "*\n";
-    //             $message .= "6. Tabungan Terkini : *Rp." . number_format($student->saving, 0, ',', '.') . "*\n";
-    //             break;
-    //         case Transaction::TYPE_SALDO:
-    //             $message .= "4. Transaksi : *Saldo Santri*\n";
-    //             $message .= "5. Nominal : *Rp." . number_format($transaction->pay_amount, 0, ',', '.') . "*\n";
-    //             $message .= "6. Saldo Terkini : *Rp." . number_format($student->saldo, 0, ',', '.') . "*\n";
-    //             break;
-    //         default:
-    //             $message .= "--------------------------------\n";
-    //             $message .= "Pembayaran : *Pembayaran Lainnya*\n";
-    //             $message .= "Total Pembayaran : *Rp." . number_format($transaction->pay_amount, 0, ',', '.') . "*\n";
-    //             break;
-    //     }
-
-    //     $message .= "--------------------------------\n";
-    //     $message .= "Link Kuitansi Digital : *" . route('transaction.invoice', $transaction->id) . "*\n";
-    //     $message .= "--------------------------------\n";
-    //     $message .= "Note : _Transaksi Berhasil dan Kuitansi digital dapat diakses melalui link di atas_\n";
-    //     $message .= "Wassalamualaikum Wr. Wb.\n";
-    //     $message .= "*PPTQ CAHAYA TASBIH*";
-
-    //     return $message;
-    // }
-
-
     public static function sendMessageUnpaidNotification($student, $billTypes)
     {
         $parentStudent = $student->user;
@@ -298,6 +243,25 @@ class SendNotifWaService
         $message .= "*PASTIKAN TRANSFER SESUAI NOMINAL DIATAS, TERMASUK 3 NOMOR TERAKHIR UNTUK KETEPATAN PELAYANAN TRANSAKSI.*\n";
         $message .= "--------------------------------\n";
         // $message .= "italic Tidak perlu dibalas
+        $message .= "_Tidak perlu dibalas, Terima kasih_\n";
+
+        return $message;
+    }
+
+    public static function balanceAdjustment($student, $history, $type)
+    {
+        $parentStudent = $student->user;
+        $title = $type == 'SALDO' ? 'SALDO' : 'TABUNGAN';
+
+        $message = "APLIKASI PPTQ CAHAYA TASBIH\n";
+        $message .= "--------------------------------\n";
+        $message .= "*-PENYESUAIAN " . strtoupper($title) . " SANTRI-*\n";
+        $message .= "--------------------------------\n";
+        $message .= "Assalamu'alaikum Bapak / Ibu " . $parentStudent->name . ",\n";
+        $message .= "Pemberitahuan bahwa *" . $title . "* santri *" . $student->name . "* telah disesuaikan oleh petugas.\n";
+        $message .= "Keterangan : " . $history->description . "\n";
+        $message .= ucfirst($title) . " Terkini :* Rp. " . ($type == 'SALDO' ? number_format($student->saldo, 0, ',', '.') : number_format($student->saving, 0, ',', '.')) . "*\n";
+        $message .= "--------------------------------\n";
         $message .= "_Tidak perlu dibalas, Terima kasih_\n";
 
         return $message;
