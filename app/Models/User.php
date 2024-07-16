@@ -4,12 +4,13 @@ namespace App\Models;
 
 
 use App\Traits\UuidTrait;
-use Illuminate\Auth\Passwords\CanResetPassword;
+use Laravel\Passport\HasApiTokens;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Auth\Passwords\CanResetPassword;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
-use Laravel\Passport\HasApiTokens;
 
 class User extends Authenticatable
 {
@@ -55,5 +56,19 @@ class User extends Authenticatable
     public function student()
     {
         return $this->hasMany(Student::class);
+    }
+
+    public function scopeHasSchool($query)
+    {
+        // Assuming 'adminSchool' is a relationship returning the school IDs the admin can access
+        $admin = Auth::user();
+        $schoolIds = $admin?->adminSchool?->pluck('school_id');
+        $query->whereHas('student', function ($query) use ($schoolIds) {
+            $query->whereHas('classroom', function ($query) use ($schoolIds) {
+                $query->whereHas('school', function ($query) use ($schoolIds) {
+                    $query->whereIn('id', $schoolIds);
+                });
+            });
+        });
     }
 }

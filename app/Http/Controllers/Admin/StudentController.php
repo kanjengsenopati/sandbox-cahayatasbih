@@ -30,7 +30,7 @@ class StudentController extends Controller
             return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
         }
         if (request()->ajax()) {
-            $data = Student::with('user', 'classroom.school')
+            $data = Student::with('user', 'classroom.school')->hasSchool()
                 ->when(request('school_id'), function ($query) {
                     $query->whereHas('classroom', function ($query) {
                         $query->where('school_id', request('school_id'));
@@ -84,7 +84,7 @@ class StudentController extends Controller
                 ->rawColumns(['action', 'saldo', 'classroom', 'school', 'status'])
                 ->make(true);
         }
-        $schools = School::orderBy('name')->get();
+        $schools = School::hasSchool()->orderBy('name')->get();
         return view('admins.student.index', compact('schools'));
     }
 
@@ -96,7 +96,7 @@ class StudentController extends Controller
         if (!Auth::user()->can('Create Santri')) {
             return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
         }
-        $schools = School::orderBy('name')->get();
+        $schools = School::hasSchool()->orderBy('name')->get();
         return view('admins.student.create-edit', compact('schools'));
     }
 
@@ -142,7 +142,7 @@ class StudentController extends Controller
         if (!Auth::user()->can('Edit Santri')) {
             return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
         }
-        $schools = School::orderBy('name')->get();
+        $schools = School::hasSchool()->orderBy('name')->get();
         $saldo = [
             'IN' => SaldoHistory::where('student_id', $student->id)
                 ->where('type', SaldoHistory::TYPE_IN)->sum('amount'),

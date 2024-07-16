@@ -21,7 +21,7 @@ class TahfidzController extends Controller
             return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
         }
         if (request()->ajax()) {
-            $data = Tahfidz::with('student')->latest();
+            $data = Tahfidz::with('student')->hasSchool()->latest();
             return DataTables::of($data)
                 ->editColumn('link', function ($data) {
                     return "<a href='$data->link' target='_blank'><i class='fas fa-external-link-alt'></i></a>";

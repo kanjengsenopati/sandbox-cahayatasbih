@@ -21,7 +21,7 @@ class StudentCounselingScoreController extends Controller
             return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
         }
         if (request()->ajax()) {
-            $data = StudentCounselingScore::with('student', 'academicYear', 'classroom', 'school')->latest();
+            $data = StudentCounselingScore::with('student', 'academicYear', 'classroom', 'school')->hasSchool()->latest();
             return DataTables::of($data)
                 ->addColumn('btnAction', function ($data) {
                     $actionEdit = route('student-counseling-score.edit', $data->id);
@@ -45,7 +45,7 @@ class StudentCounselingScoreController extends Controller
         if (!Auth::user()->can('Create Perilaku Santri')) {
             return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
         }
-        $schools = School::OrderBy('name', 'asc')->get();
+        $schools = School::hasSchool()->OrderBy('name', 'asc')->get();
         return view('admins.student-counseling-score.create-edit', compact('schools'));
     }
 
@@ -78,7 +78,7 @@ class StudentCounselingScoreController extends Controller
         if (!Auth::user()->can('Edit Perilaku Santri')) {
             return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
         }
-        $schools = School::OrderBy('name', 'asc')->get();
+        $schools = School::hasSchool()->OrderBy('name', 'asc')->get();
         return view('admins.student-counseling-score.create-edit', compact('studentCounselingScore', 'schools'));
     }
 

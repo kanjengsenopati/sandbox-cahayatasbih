@@ -24,7 +24,7 @@ class PpdbController extends Controller
             return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
         }
         if (request()->ajax()) {
-            $data = Ppdb::with('ppdbType', 'academicYear', 'school')->where('is_active', true)->OrderBy('name', 'asc');
+            $data = Ppdb::with('ppdbType', 'academicYear', 'school')->where('is_active', true)->hasSchool()->latest();
             return DataTables::of($data)
                 ->editColumn('image', function ($data) {
                     return "<img src='" . asset($data->image) . "' width='100px' />";
@@ -58,7 +58,7 @@ class PpdbController extends Controller
         }
         return view('admins.ppdb.create-edit', [
             'ppdbTypes' => PpdbType::where('is_active', true)->get(),
-            'schools' => School::orderBy('name', 'asc')->get()
+            'schools' => School::hasSchool()->orderBy('name', 'asc')->get()
         ]);
     }
 
@@ -124,7 +124,7 @@ class PpdbController extends Controller
         return view('admins.ppdb.create-edit', [
             'ppdb' => $ppdb,
             'ppdbTypes' => PpdbType::where('is_active', true)->get(),
-            'schools' => School::orderBy('name', 'asc')->get()
+            'schools' =>  School::hasSchool()->orderBy('name', 'asc')->get()
         ]);
     }
 

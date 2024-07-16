@@ -2,11 +2,12 @@
 
 namespace App\Models;
 
+use Carbon\Carbon;
 use App\Traits\UuidTrait;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class Bill extends Model
 {
@@ -116,5 +117,14 @@ class Bill extends Model
     public function banks()
     {
         return $this->hasManyThrough(Bank::class, BillTypeBank::class, 'bill_type_id', 'id', 'bill_type_id', 'bank_id');
+    }
+
+    public function scopeHasSchool($query)
+    {
+        $query->whereHas('student', function ($query) {
+            $query->whereHas('classroom', function ($query) {
+                $query->where('school_id', request()->school_id ?? Auth::user()->adminSchool->school_id);
+            });
+        });
     }
 }

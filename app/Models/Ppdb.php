@@ -3,9 +3,10 @@
 namespace App\Models;
 
 use App\Traits\UuidTrait;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class Ppdb extends Model
 {
@@ -39,5 +40,13 @@ class Ppdb extends Model
     public function school()
     {
         return $this->belongsTo(School::class)->withTrashed();
+    }
+
+    public function scopeHasSchool($query)
+    {
+        // Assuming 'adminSchool' is a relationship returning the school IDs the admin can access
+        $admin = Auth::user();
+        $schoolIds = $admin?->adminSchool?->pluck('school_id');
+        $query->whereIn('school_id', $schoolIds);
     }
 }

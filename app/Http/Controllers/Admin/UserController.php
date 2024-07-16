@@ -24,7 +24,7 @@ class UserController extends Controller
             return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
         }
         if (request()->ajax()) {
-            $data = User::latest();
+            $data = User::hasSchool()->latest();
             return DataTables::of($data)
                 ->addColumn('action', function ($data) {
                     $actionEdit = route('user.edit', $data->id);

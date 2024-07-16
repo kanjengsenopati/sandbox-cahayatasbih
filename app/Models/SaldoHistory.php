@@ -3,9 +3,10 @@
 namespace App\Models;
 
 use App\Traits\UuidTrait;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class SaldoHistory extends Model
 {
@@ -48,5 +49,19 @@ class SaldoHistory extends Model
     public function transaction_details()
     {
         return $this->hasMany(TransactionDetail::class)->withTrashed();
+    }
+
+    public function scopeHasSchool($query)
+    {
+        // Assuming 'adminSchool' is a relationship returning the school IDs the admin can access
+        $admin = Auth::user();
+        $schoolIds = $admin?->adminSchool?->pluck('school_id');
+        $query->whereHas('student', function ($query) use ($schoolIds) {
+            $query->whereHas('classroom', function ($query) use ($schoolIds) {
+                $query->whereHas('school', function ($query) use ($schoolIds) {
+                    $query->whereIn('id', $schoolIds);
+                });
+            });
+        });
     }
 }

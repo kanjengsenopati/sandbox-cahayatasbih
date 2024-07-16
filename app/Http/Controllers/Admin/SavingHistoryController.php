@@ -30,7 +30,7 @@ class SavingHistoryController extends Controller
         }
 
         if (request()->ajax() && request()->type === 'saving') {
-            $data = SavingHistory::with('student')->latest();
+            $data = SavingHistory::with('student')->hasSchool()->latest();
             return DataTables::of($data)
                 ->editColumn('date', function ($data) {
                     Carbon::setLocale('id'); // Set locale to Indonesian
@@ -63,6 +63,7 @@ class SavingHistoryController extends Controller
                 })
                 ->where('type', Transaction::TYPE_SAVING)
                 ->where('status', Transaction::STATUS_PENDING_CONFIRMATION)
+                ->hasSchool()
                 ->latest();
 
             return DataTables::of($transactions)

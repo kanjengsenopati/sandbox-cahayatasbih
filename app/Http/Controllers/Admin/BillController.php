@@ -39,7 +39,7 @@ class BillController extends Controller
         if (!Auth::user()->can('Manage Tagihan')) {
             return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
         }
-        $schools = School::orderBy('name', 'asc')->get();
+        $schools = School::orderBy('name', 'asc')->hasSchool()->get();
         if (request()->student_id) {
 
             $id = request()->student_id;
@@ -99,6 +99,7 @@ class BillController extends Controller
                 })
                 ->where('type', Transaction::TYPE_BILL)
                 ->where('status', Transaction::STATUS_PENDING_CONFIRMATION)
+                ->hasSchool()
                 ->latest();
 
             return DataTables::of($transactions)

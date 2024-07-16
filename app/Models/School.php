@@ -3,9 +3,10 @@
 namespace App\Models;
 
 use App\Traits\UuidTrait;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class School extends Model
 {
@@ -41,5 +42,13 @@ class School extends Model
     public function savingBank()
     {
         return $this->topupBank()->where('type', TopupBank::TYPE_SAVING);
+    }
+
+    public function scopeHasSchool($query)
+    {
+        // Assuming 'adminSchool' is a relationship returning the school IDs the admin can access
+        $admin = Auth::user();
+        $schoolIds = $admin?->adminSchool?->pluck('school_id');
+        $query->whereIn('id', $schoolIds);
     }
 }

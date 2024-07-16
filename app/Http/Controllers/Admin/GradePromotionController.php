@@ -37,6 +37,7 @@ class GradePromotionController extends Controller
                 ->when(request('status'), function ($query) {
                     $query->where('status', request('status'));
                 })
+                ->hasSchool()
                 ->latest();
             return DataTables::of($data)
                 ->editColumn('saldo', function ($data) {
@@ -78,7 +79,7 @@ class GradePromotionController extends Controller
                 ->make(true);
         }
 
-        $schools = School::orderBy('name', 'asc')->get();
+        $schools = School::hasSchool()->orderBy('name', 'asc')->get();
         $academicYears = AcademicYear::orderBy('name', 'asc')->get();
         return view('admins.grade-promotion.index', compact('schools', 'academicYears'));
     }

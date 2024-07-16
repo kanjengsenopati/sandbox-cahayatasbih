@@ -128,4 +128,16 @@ class Student extends Model
             $model->barcode = Str::random(17);
         });
     }
+
+    public function scopeHasSchool($query)
+    {
+        // Assuming 'adminSchool' is a relationship returning the school IDs the admin can access
+        $admin = Auth::user();
+        $schoolIds = $admin?->adminSchool?->pluck('school_id');
+        $query->whereHas('classroom', function ($query) use ($schoolIds) {
+            $query->whereHas('school', function ($query) use ($schoolIds) {
+                $query->whereIn('id', $schoolIds);
+            });
+        });
+    }
 }

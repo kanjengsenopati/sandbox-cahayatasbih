@@ -28,7 +28,7 @@ class SaldoHistoryController extends Controller
             return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
         }
         if (request()->ajax() && request()->type === 'saldo') {
-            $data = SaldoHistory::with('student')->latest()->get();
+            $data = SaldoHistory::with('student')->hasSchool()->latest();
             return DataTables::of($data)
                 ->editColumn('amount', function ($data) {
                     if ($data->type === 'IN') {
@@ -56,6 +56,7 @@ class SaldoHistoryController extends Controller
                 })
                 ->where('type', Transaction::TYPE_SALDO)
                 ->where('status', Transaction::STATUS_PENDING_CONFIRMATION)
+                ->hasSchool()
                 ->latest();
 
             return DataTables::of($transactions)

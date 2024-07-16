@@ -23,7 +23,13 @@ class ScheduleController extends Controller
         }
 
         if (request()->ajax()) {
-            $data = Schedule::with('school')->orderBy('date', 'desc');
+            $schoolIds = Auth::user()?->adminSchool?->pluck('school_id');
+            $data = Schedule::with('school')
+                // cari yang punya school_id atau yang school_id nya null
+                ->whereIn('school_id', $schoolIds)
+                ->orWhere('school_id', null)
+                ->orderBy('date', 'desc');
+
             return DataTables::of($data)
                 ->editColumn('type', function ($data) {
                     return $data->type == Schedule::TYPE_ALL ? '<span class="badge badge-success">Semua</span>' : '<span class="badge badge-primary">Sekolah</span>';
@@ -56,7 +62,7 @@ class ScheduleController extends Controller
         if (!Auth::user()->can('Create Jadwal')) {
             return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
         }
-        $schools = School::orderBy('name')->get();
+        $schools = School::hasSchool()->OrderBy('name', 'asc')->get();
         return view('admins.schedule.create-edit', compact('schools'));
     }
 
@@ -89,7 +95,7 @@ class ScheduleController extends Controller
         if (!Auth::user()->can('Edit Jadwal')) {
             return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
         }
-        $schools = School::orderBy('name')->get();
+        $schools = School::hasSchool()->OrderBy('name', 'asc')->get();
         return view('admins.schedule.create-edit', compact('schedule', 'schools'));
     }
 
