@@ -24,7 +24,7 @@ class ReportTahfidzController extends Controller
         if (!Auth::user()->can('Manage Laporan Tahfidz')) {
             return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
         }
-        $schools = School::orderBy('name', 'asc')->get();
+        $schools = School::hasSchool()->orderBy('name', 'asc')->get();
         $academicYears = AcademicYear::orderBy('name', 'asc')->get();
         if (request()->ajax()) {
             $data = Tahfidz::with('student', 'student.classroom', 'student.school')
@@ -40,8 +40,8 @@ class ReportTahfidzController extends Controller
                         $query->where('classroom_id', request()->classroom_id);
                     });
                 })
-                ->latest()
-                ->get();
+                ->hasSchool()
+                ->latest();
             return DataTables::of($data)
                 ->editColumn('deposit_date', function ($data) {
                     return Carbon::parse($data->deposit_date)->format('d M Y');

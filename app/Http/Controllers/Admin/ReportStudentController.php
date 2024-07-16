@@ -22,7 +22,7 @@ class ReportStudentController extends Controller
         if (!Auth::user()->can('Manage Laporan Santri')) {
             return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
         }
-        $schools = School::orderBy('name', 'asc')->get();
+        $schools = School::hasSchool()->orderBy('name', 'asc')->get();
         $academicYears = AcademicYear::orderBy('name', 'asc')->get();
         if (request()->ajax() && request()->has('school_id')) {
             $data = Student::with('classroom', 'school')
@@ -32,6 +32,7 @@ class ReportStudentController extends Controller
                 ->when(request()->classroom_id, function ($query) {
                     $query->where('classroom_id', request()->classroom_id);
                 })
+                ->hasSchool()
                 ->orderBy('name', 'asc')
                 ->get();
             return DataTables::of($data)

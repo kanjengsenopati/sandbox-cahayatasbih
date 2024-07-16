@@ -20,7 +20,7 @@ class ReportStudentCounselingScoreController extends Controller
         if (!Auth::user()->can('Manage Laporan Perilaku Siswa')) {
             return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
         }
-        $schools = School::orderBy('name', 'asc')->get();
+        $schools = School::hasSchool()->orderBy('name', 'asc')->get();
         $academicYears = AcademicYear::orderBy('name', 'asc')->get();
         if (request()->ajax()) {
             $data = StudentCounselingScore::with('academicYear', 'student', 'student.classroom', 'student.school')
@@ -36,8 +36,8 @@ class ReportStudentCounselingScoreController extends Controller
                         $query->where('classroom_id', request()->classroom_id);
                     });
                 })
-                ->latest()
-                ->get();
+                ->hasSchool()
+                ->latest();
             return DataTables::of($data)
                 ->make(true);
         }

@@ -29,7 +29,8 @@ class ReportBillController extends Controller
             $type = request()->type;
 
             // Query dasar untuk kedua permintaan Ajax
-            $query = Student::with('classroom', 'school', 'bills');
+            $query = Student::with('classroom', 'school', 'bills')
+                ->hasSchool();
 
             // ambil data bulan dan tahun dari request
             $startMonth = request()->start_date ? date('n', strtotime(request()->start_date)) : null;
@@ -116,7 +117,7 @@ class ReportBillController extends Controller
         }
 
         // Ambil data untuk dropdown
-        $schools = School::orderBy('name', 'asc')->get();
+        $schools = School::hasSchool()->orderBy('name', 'asc')->get();
         $academicYears = AcademicYear::orderBy('name', 'asc')->get();
         $billTypes = BillType::orderBy('name', 'asc')->get();
 
@@ -213,6 +214,7 @@ class ReportBillController extends Controller
                         $query->where('bill_type_id', request()->bill_type_id);
                     });
                 })
+                ->hasSchool()
                 ->orderBy('name', 'asc')
                 ->get();
             return DataTables::of($data)
@@ -252,6 +254,7 @@ class ReportBillController extends Controller
                     $query->where('bill_type_id', $request->bill_type_id);
                 });
             })
+            ->hasSchool()
             ->orderBy('name', 'asc');
 
         $data = $query->get();

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use Carbon\Carbon;
 use App\Models\School;
 use App\Models\AcademicYear;
 use App\Models\SaldoHistory;
@@ -9,7 +10,7 @@ use Illuminate\Http\Request;
 use Yajra\DataTables\DataTables;
 use App\Exports\SaldoStudentExport;
 use App\Http\Controllers\Controller;
-use Carbon\Carbon;
+use Illuminate\Support\Facades\Auth;
 use Maatwebsite\Excel\Facades\Excel;
 
 class ReportSaldoController extends Controller
@@ -41,8 +42,8 @@ class ReportSaldoController extends Controller
                 ->when(request()->filled('end_date'), function ($query) {
                     $query->whereDate('created_at', '<=', request()->end_date);
                 })
-                ->latest()
-                ->get();
+                ->hasSchool()
+                ->latest();
             if (request()->type == 'total') {
                 $total_topup = $data->where('type', 'IN')->sum('amount');
                 $total_pengurangan = $data->where('type', 'OUT')->sum('amount');
@@ -83,7 +84,7 @@ class ReportSaldoController extends Controller
             }
         }
 
-        $schools = School::orderBy('name')->get();
+        $schools = School::hasSchool()->orderBy('name', 'asc')->get();
         return view('admins.report-saldo.index', compact('schools'));
     }
 
