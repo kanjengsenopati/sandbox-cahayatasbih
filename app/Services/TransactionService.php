@@ -132,7 +132,8 @@ class TransactionService
         // update transaction status
         $transaction->update([
             'status' => Transaction::STATUS_PAID,
-            'paid_at' => Carbon::now()
+            'paid_at' => Carbon::now(),
+            'payment_method_id' => PaymentMethod::where('type', PaymentMethod::TYPE_BALANCE)->first()?->id,
         ]);
 
         // create transaction detail with saldo history

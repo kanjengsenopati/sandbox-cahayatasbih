@@ -28,6 +28,89 @@
             <div class="d-flex flex-column flex-lg-row">
                 <!-- Content -->
                 <div class="flex-lg-row-fluid me-lg-15 order-2 order-lg-1 mb-10 mb-lg-0">
+                    <div class="card shadow mb-4">
+                        <div class="card-header bg-secondary text-white">
+                            <h2 class="card-title mb-0">Ringkasan Tagihan</h2>
+
+                        </div>
+                        <div class="card-body">
+                            <div class="row g-4">
+                                <!-- Informasi Siswa -->
+                                <div class="col-md-6">
+                                    <h3 class="h4 mb-3">Informasi Siswa</h3>
+                                    <table class="table table-bordered">
+                                        <tbody>
+                                            <tr>
+                                                <th scope="row">Nama</th>
+                                                <td>{{ $student->name ?? '' }}</td>
+                                            </tr>
+                                            <tr>
+                                                <th scope="row">Saldo</th>
+                                                <td>Rp. {{ number_format($student->saldo ?? 0, 0, ',', '.') }}</td>
+                                            </tr>
+                                            <tr>
+                                                <th scope="row">Kelas</th>
+                                                <td>{{ $student->classroom->name ?? '' }}</td>
+                                            </tr>
+                                            <tr>
+                                                <th scope="row">NISN</th>
+                                                <td>{{ $student->nisn ?? '' }}</td>
+                                            </tr>
+                                            <tr>
+                                                <th scope="row">Sekolah</th>
+                                                <td>{{ $student->school->name ?? '' }}</td>
+                                            </tr>
+                                            <tr>
+                                                <th scope="row">Wali Murid</th>
+                                                <td>{{ $student->user?->name ?? '' }}</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+
+                                <!-- Informasi Tagihan -->
+                                <div class="col-md-6">
+                                    <h3 class="h4 mb-3">Informasi Tagihan</h3>
+                                    <table class="table table-bordered">
+                                        <tbody>
+                                            <tr>
+                                                <th scope="row">Nama</th>
+                                                <td>{{ $billType->name ?? '' }}</td>
+                                            </tr>
+                                            <tr>
+                                                <th scope="row">Tahun Ajaran</th>
+                                                <td>{{ $billType->academicYear->name ?? '' }}</td>
+                                            </tr>
+                                            <tr>
+                                                <th scope="row">Total Tagihan</th>
+                                                <td>Rp. {{ number_format($billType['total_bill'] ?? 0) }}</td>
+                                            </tr>
+                                            <tr>
+                                                <th scope="row">Total Dibayar</th>
+                                                <td>Rp. {{ number_format($billType['total_paid'] ?? 0) }}</td>
+                                            </tr>
+                                            <tr>
+                                                <th scope="row">Sisa Tagihan</th>
+                                                <td>Rp. {{ number_format($billType['total_unpaid'] ?? 0) }}</td>
+                                            </tr>
+                                            <tr>
+                                                <th scope="row">Status</th>
+                                                <td>{{ $billType['total_unpaid'] == 0 ? 'LUNAS' : 'BELUM LUNAS' }}</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+
+                            <div class="mt-4 pt-3 border-top">
+                                <a href="{{ route('bill.index', ['student_id' => $student->id]) }}"
+                                    class="btn btn-primary" style="background-color: #4D0C7A; border-color: #4D0C7A;">
+                                    Kembali
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    {{--
                     <!-- Invoice Summary -->
                     <div class="card card-flush pt-5 mb-5 mb-lg-10" style="background-color: #E5E7EB;">
                         <div class="card-header" style="background-color: #D1D5DB;">
@@ -63,6 +146,10 @@
                                                 <td class="fw-bold">Sekolah :</td>
                                                 <td>{{ $student->school->name ?? '' }}</td>
                                             </tr>
+                                            <tr>
+                                                <td class="fw-bold">Wali Murid :</td>
+                                                <td>{{ $student->user?->name ?? '' }}</td>
+                                            </tr>
                                         </tbody>
                                     </table>
                                 </div>
@@ -91,6 +178,10 @@
                                                 <td class="fw-bold">Sisa Tagihan :</td>
                                                 <td>Rp. {{ number_format($billType['total_unpaid'] ?? 0) }}</td>
                                             </tr>
+                                            <tr>
+                                                <td class="fw-bold">Status :</td>
+                                                <td>{{ $billType['total_unpaid'] == 0 ? 'LUNAS' : 'BELUM LUNAS' }}</td>
+                                            </tr>
                                         </tbody>
                                     </table>
                                 </div>
@@ -99,7 +190,7 @@
                             <a class="btn btn-primary" href="{{ route('bill.index', ['student_id' => $student->id]) }}"
                                 style="background-color: #4D0C7A; border-color: #4D0C7A;">Kembali</a>
                         </div>
-                    </div>
+                    </div> --}}
 
                     <!-- Bill Payment -->
                     <div class="card card-flush pt-3 mb-5 mb-lg-10">

@@ -84,7 +84,7 @@ class Transaction extends Model
 
     public function getTranslatedPaymentMethod()
     {
-        return $this->paymentMethod->translated_name;
+        return $this->paymentMethod?->translated_name ?? '';
     }
 
     public function getBanksAttribute()

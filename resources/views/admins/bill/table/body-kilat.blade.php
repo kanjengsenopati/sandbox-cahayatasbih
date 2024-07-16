@@ -51,7 +51,8 @@
         @else
         <span style="color: #fff; display: block;">Rp {{ number_format($amount, 0, ',', '.') }}</span>
         @if($detailPayment)
-        <br><span style="color: #fff;">({{ $billDetail->paid_date ?? '' }})</span>
+        {!! !empty($billDetail->paid_date) ? '<br><span style="color: #fff;">(' . $billDetail->paid_date . ')</span>' :
+        '' !!}
         <br><span style="color: #fff;">{{ $billDetail->payment_method ?? '' }}</span>
         @endif
         @endif

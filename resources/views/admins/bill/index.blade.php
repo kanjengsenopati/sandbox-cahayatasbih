@@ -38,6 +38,21 @@
     .d-flex.align-items-center>*:not(:last-child) {
         margin-right: 10px;
     }
+
+    .btn-custom-purple {
+        background-color: #8A4FFF;
+        border-color: #8A4FFF;
+        color: white;
+        padding: 10px 20px;
+        font-size: 13px;
+        border-radius: 25px;
+    }
+
+    .btn-custom-purple:hover {
+        background-color: #7A3FEF;
+        border-color: #7A3FEF;
+        color: white;
+    }
 </style>
 
 @endpush
@@ -302,9 +317,11 @@
                                                                             'Belum
                                                                             Lunas' }}</span></td>
                                                                     <td class="text-center">
-                                                                        <x-action.show
-                                                                            :action="route('bill.summary-bill', ['bill_type_id' => $monthly->id, 'student_id' => $student->id])"
-                                                                            label="Bayar" />
+                                                                        <a href="{{ route('bill.summary-bill', ['bill_type_id' => $monthly->id, 'student_id' => $student->id]) }}"
+                                                                            class="btn btn-custom-purple btn-sm">
+                                                                            <i class="bi bi-file-text me-2"></i>
+                                                                            Lihat Rincian
+                                                                        </a>
                                                                     </td>
                                                                 </tr>
                                                                 @endforeach
@@ -365,9 +382,11 @@
                                                                             'Belum Lunas'
                                                                             }}</span></td>
                                                                     <td class="text-center">
-                                                                        <x-action.show
-                                                                            :action="route('bill.summary-bill', ['bill_type_id' => $other->id, 'student_id' => $student->id])"
-                                                                            label="Bayar" />
+                                                                        <a href="{{ route('bill.summary-bill', ['bill_type_id' => $other->id, 'student_id' => $student->id]) }}"
+                                                                            class="btn btn-custom-purple btn-sm">
+                                                                            <i class="bi bi-file-text me-2"></i>
+                                                                            Lihat Rincian
+                                                                        </a>
                                                                     </td>
                                                                 </tr>
                                                                 @endforeach

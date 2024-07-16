@@ -47,8 +47,8 @@
         <span style="color: white;">{{ $billDetail ? 'Rp ' . number_format($amount, 0, ',', '.') : 'Tidak Ada' }}</span>
         <br>
         @if($detailPayment)
-        <span style="color: white;">({{
-            $billDetail->paid_date ?? '' }})</span>
+        {!! !empty($billDetail->paid_date) ? '<br><span style="color: #fff;">(' . $billDetail->paid_date . ')</span>' :
+        '' !!}
         <br>
         <span style="color: white;">{{
             $billDetail->payment_method ?? '' }}</span>

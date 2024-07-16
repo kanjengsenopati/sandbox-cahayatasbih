@@ -155,10 +155,10 @@ class SaldoHistoryController extends Controller
             // Update saldo and create description
             if ($data['type'] === 'IN') {
                 $student->saldo += $data['amount'];
-                $description = 'Saldo ditambahkan sebesar ' . $data['amount'] . ' oleh ' . auth()->user()->name;
+                $description = 'Saldo Ditambahkan Sebesar Rp. ' . number_format($data['amount'], 0, ',', '.') . ' oleh ' . auth()->user()?->name;
             } else {
                 $student->saldo -= $data['amount'];
-                $description = 'Saldo dikurangi sebesar ' . $data['amount'] . ' oleh ' . auth()->user()->name;
+                $description = 'Saldo Dikurangi Sebesar Rp. ' . number_format($data['amount'], 0, ',', '.') . ' oleh ' . auth()->user()?->name;
             }
             $student->save();
 

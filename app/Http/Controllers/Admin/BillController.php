@@ -186,6 +186,7 @@ class BillController extends Controller
             return redirect()->back()->with('success', "Transaksi pembayaran berhasil");
         } catch (\Throwable $th) {
             DB::rollBack();
+            dd($th);
             Log::error($th);
             return redirect()->back()->with('error', "Transaksi pembayaran gagal");
         }

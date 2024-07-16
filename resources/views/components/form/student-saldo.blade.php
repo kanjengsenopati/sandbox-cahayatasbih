@@ -27,8 +27,9 @@ $student = \App\Models\Student::find(@$value ?? 0);
             processResults: function (data) {
                 return {
                 results:  $.map(data, function (item) {
+                        var nisText = item.nis ? item.nis + ' - ' : '';
                         return {
-                            text: item.nisn + ' - ' + item.name + ' - ' + item.saldo,
+                            text: nisText + item.name + ' - ' + item.saldo,
                             id: item.id
                         }
                     })
@@ -38,6 +39,5 @@ $student = \App\Models\Student::find(@$value ?? 0);
         }
     });
 });
-
 </script>
 @endpush
