@@ -268,40 +268,16 @@
                     <th class="text-end">Jumlah</th>
                 </thead>
                 <tbody>
-                    @php
-                    $seenMonths = [];
-                    @endphp
-
                     @foreach ($data->transactionDetails as $transaction_detail)
-                    @php
-                    $month = Carbon\Carbon::parse($transaction_detail->bill->month)->translatedFormat('F');
-                    @endphp
-
-                    @if(!in_array($month, $seenMonths))
                     <tr>
                         <td class="text-primary" width="50%">
                             <span>{{ $transaction_detail->bill->billType->name ?? '' }}</span>
                         </td>
-                        <td align="right">{{ $month }}</td>
+                        <td align="right">{{ $transaction_detail->bill->translated_month ?? '' }}</td>
                         <td align="right">{{ $transaction_detail->bill->academicYear->name ?? '' }}</td>
                         <td align="right">Rp{{ number_format($transaction_detail->bill->amount, 0, ',', '.') }}</td>
                     </tr>
-                    @php
-                    $seenMonths[] = $month;
-                    @endphp
-                    @endif
                     @endforeach
-                    {{-- @foreach ($data->transactionDetails as $transaction_detail)
-                    <tr>
-                        <td class="text-primary" width="50%">
-                            <span>{{ $transaction_detail->bill->billType->name ?? '' }}</span>
-                        </td>
-                        <td align="right">{{
-                            Carbon\Carbon::parse($transaction_detail->bill->month)->translatedFormat('F') }}</td>
-                        <td align="right">{{ $transaction_detail->bill->academicYear->name ?? '' }}</td>
-                        <td align="right">Rp{{ number_format($transaction_detail->bill->amount, 0, ',', '.') }}</td>
-                    </tr>
-                    @endforeach --}}
                 </tbody>
                 @endif
             </table>
