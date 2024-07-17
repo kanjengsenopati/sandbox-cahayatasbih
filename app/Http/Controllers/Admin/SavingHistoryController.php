@@ -159,14 +159,15 @@ class SavingHistoryController extends Controller
             }
 
             $description = $this->updateStudentSaving($student, $data['type'], $data['amount']);
-            $this->createSavingHistory($data, $description);
+            $savingHistory = $this->createSavingHistory($data, $description);
 
             DB::commit();
 
-            $this->sendNotifications($student, $data['amount'], $description);
+            $this->sendNotifications($student, $savingHistory, $description);
 
             return redirect()->route('saving-history.index')->with('success', 'Tabungan berhasil ditambahkan');
         } catch (\Exception $e) {
+            dd($e);
             Log::error($e->getMessage());
             DB::rollBack();
 
@@ -193,14 +194,14 @@ class SavingHistoryController extends Controller
         $data['description'] = $description;
         $data['status'] = SavingHistory::STATUS_SUCCESS;
         $data['admin_id'] = auth()->id();
-        SavingHistory::create($data);
+        return SavingHistory::create($data);
     }
 
-    private function sendNotifications(Student $student, float $amount, string $description)
+    private function sendNotifications(Student $student, $savingHistory, $description)
     {
         $title = 'Pemberitahuan Tabungan';
         $body = 'Santri ' . $student->name . ' ' . $description . ' menjadi Rp. ' . number_format($student->saving, 0, ',', '.');
-        $messageWhatsapp = SendNotifWaService::balanceAdjustment($student, $amount, "SAVING");
+        $messageWhatsapp = SendNotifWaService::balanceAdjustment($student, $savingHistory, "SAVING");
 
         dispatch(new SendToPushNotificationJob($title, $body, $student->user, null));
         dispatch(new SendToWhatsappNotificationJob($student->user?->phone, $messageWhatsapp));
