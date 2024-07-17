@@ -163,11 +163,14 @@
         const submitButton = form.querySelector('[type="submit"]');
 
         submitButton.addEventListener('click', function (event) {
-            // Remove thousands separator from the amount input
-            const rawValue = amountInput.value.replace(/,/g, '');
-            amountInput.value = rawValue;
+            event.preventDefault();
+            
+            setTimeout(function () {
+                const rawValue = amountInput.value.replace(/[,.]/g, '');
+                amountInput.value = rawValue;
 
-            // Allow form submission to proceed
+                form.submit();
+            }, 2000);
         });
     });
 </script>
