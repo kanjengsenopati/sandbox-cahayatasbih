@@ -170,7 +170,7 @@
                 amountInput.value = rawValue;
 
                 form.submit();
-            }, 2000);
+            }, 500);
         });
     });
 </script>
