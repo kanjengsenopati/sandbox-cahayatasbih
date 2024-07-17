@@ -355,20 +355,18 @@
                     </span>
                     <div class="menu-sub menu-sub-accordion menu-active-bg">
                         @can('Manage Tagihan')
-                        <div class="menu-sub menu-sub-accordion menu-active-bg">
-                            <div class="menu-item ">
-                                <a class="menu-link {{ request()->routeIs('bill.*') ? ' active' : '' }}"
-                                    href="{{ route('bill.index') }}">
-                                    <span class="menu-bullet">
-                                        <span class="bullet bullet-dot"></span>
-                                    </span>
-                                    <span class="menu-title">Tagihan</span>
-                                </a>
-                            </div>
+                        <div class="menu-item">
+                            <a class="menu-link {{ request()->routeIs('bill.*') ? ' active' : '' }}"
+                                href="{{ route('bill.index') }}">
+                                <span class="menu-bullet">
+                                    <span class="bullet bullet-dot"></span>
+                                </span>
+                                <span class="menu-title">Tagihan</span>
+                            </a>
                         </div>
                         @endcan
                         @can('Manage Saldo Santri')
-                        <div class="menu-item ">
+                        <div class="menu-item">
                             <a class="menu-link {{ request()->routeIs('saldo-history.*') ? ' active' : '' }}"
                                 href="{{ route('saldo-history.index') }}">
                                 <span class="menu-bullet">

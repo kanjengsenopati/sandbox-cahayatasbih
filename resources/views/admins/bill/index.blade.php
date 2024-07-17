@@ -286,10 +286,11 @@
                                                                 <tr
                                                                     class="text-start text-gray-400 fw-bolder fs-7 text-uppercase gs-0">
                                                                     <th style="width: 5%">No</th>
-                                                                    <th class="min-w-125px">Tahun Ajaran</th>
-                                                                    <th class="min-w-125px">Jenis Pembayaran</th>
-                                                                    <th class="min-w-125px">Jumlah</th>
-                                                                    <th class="min-w-125px">Dibayar</th>
+                                                                    <th class="min-w-70px">Tahun Ajaran</th>
+                                                                    <th class="min-w-125px">Item Pembayaran</th>
+                                                                    <th class="min-w-100px">Total Tagihan</th>
+                                                                    <th class="min-w-100px">Dibayar</th>
+                                                                    <th class="min-w-100px">Sisa Tagihan</th>
                                                                     <th class="text-center min-w-100px"
                                                                         style="width: 22%">
                                                                         Status</th>
@@ -304,12 +305,15 @@
                                                                     <td>{{ $loop->iteration }}</td>
                                                                     <td>{{ @$monthly->academicYear->name }}</td>
                                                                     <td>{{ @$monthly->name }}</td>
-                                                                    <td>Rp {{ number_format(@$monthly->total_unpaid, 0,
+                                                                    <td>Rp {{ number_format(@$monthly->total_bill, 0,
                                                                         ',',
                                                                         '.') }}</td>
                                                                     <td>Rp {{ number_format(@$monthly->total_paid, 0,
                                                                         ',', '.')
                                                                         }}</td>
+                                                                    <td>Rp {{ number_format(@$monthly->total_unpaid, 0,
+                                                                        ',',
+                                                                        '.') }}</td>
                                                                     <td><span
                                                                             class="d-flex text-center bg-{{ @$monthly->total_unpaid == 0 ?
                                                                                                  'success' : 'danger' }} text-white px-3 py-1 rounded-1">{{
@@ -351,11 +355,12 @@
                                                                 <tr
                                                                     class="text-start text-gray-400 fw-bolder fs-7 text-uppercase gs-0">
                                                                     <th style="width: 5%">No</th>
-                                                                    <th class="min-w-125px">Tahun Ajaran</th>
-                                                                    <th class="min-w-125px">Jenis Pembayaran</th>
-                                                                    <th class="min-w-125px">Jumlah</th>
-                                                                    <th class="min-w-125px">Dibayar</th>
-                                                                    <th class="text-center min-w-100px"
+                                                                    <th class="min-w-70px">Tahun Ajaran</th>
+                                                                    <th class="min-w-125px">Item Pembayaran</th>
+                                                                    <th class="min-w-100px">Total Tagihan</th>
+                                                                    <th class="min-w-100px">Dibayar</th>
+                                                                    <th class="min-w-100px">Sisa Tagihan</th>
+                                                                    <th class="text-center min-w-70px"
                                                                         style="width: 22%">
                                                                         Status</th>
                                                                     <th class="text-center min-w-100px"
@@ -369,12 +374,15 @@
                                                                     <td>{{ $loop->iteration }}</td>
                                                                     <td>{{ @$other->academicYear->name }}</td>
                                                                     <td>{{ @$other->name }}</td>
-                                                                    <td>Rp {{ number_format(@$other->total_unpaid, 0,
-                                                                        ',', '.')
+                                                                    <td>Rp {{ number_format(@$other->total_bill, 0, ',',
+                                                                        '.')
                                                                         }}</td>
                                                                     <td>Rp {{ number_format(@$other->total_paid, 0, ',',
                                                                         '.') }}
                                                                     </td>
+                                                                    <td>Rp {{ number_format(@$other->total_unpaid, 0,
+                                                                        ',', '.')
+                                                                        }}</td>
                                                                     <td><span
                                                                             class="d-flex text-center bg-{{ @$other->total_unpaid == 0 ?
                                                                                                      'success' : 'danger' }} text-white px-3 py-1 rounded-1">{{
