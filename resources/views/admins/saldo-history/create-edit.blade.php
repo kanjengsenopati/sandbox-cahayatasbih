@@ -158,20 +158,17 @@
 @push('js')
 <script>
     document.addEventListener('DOMContentLoaded', function () {
-            const form = document.getElementById('saldo-history');
-            const amountInput = document.getElementById('amount');
-    
-            form.addEventListener('submit', function (event) {
-                // Remove thousands separator from the amount input
-                const rawValue = amountInput.value.replace(/,/g, '');
-                amountInput.value = rawValue;
-            });
-    
-            // Optional: Add thousands separator while typing
-            amountInput.addEventListener('input', function () {
-                let value = amountInput.value.replace(/,/g, '');
-                amountInput.value = new Intl.NumberFormat('id-ID').format(value);
-            });
+        const form = document.getElementById('saldo-history');
+        const amountInput = document.getElementById('amount');
+        const submitButton = form.querySelector('[type="submit"]');
+
+        submitButton.addEventListener('click', function (event) {
+            // Remove thousands separator from the amount input
+            const rawValue = amountInput.value.replace(/,/g, '');
+            amountInput.value = rawValue;
+
+            // Allow form submission to proceed
         });
+    });
 </script>
 @endpush
