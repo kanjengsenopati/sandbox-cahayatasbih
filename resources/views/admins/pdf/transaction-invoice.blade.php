@@ -305,7 +305,12 @@
                 </tr>
                 <tr class="text-strong border-table">
                     <td>TOTAL TAGIHAN</td>
-                    @php $total = $data->pay_amount + $data->xendit_fee + $data->app_fee; @endphp
+                    @php
+                    $total = $data->pay_amount;
+                    if ($data->xendit_fee > 0) {
+                    $total += $data->xendit_fee + $data->app_fee;
+                    }
+                    @endphp
                     <td align="right">Rp{{ number_format($total, 0, ',', '.') }}</td>
                 </tr>
                 <tr class="text-strong">
