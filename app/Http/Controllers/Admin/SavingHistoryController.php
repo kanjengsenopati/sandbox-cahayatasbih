@@ -167,7 +167,6 @@ class SavingHistoryController extends Controller
 
             return redirect()->route('saving-history.index')->with('success', 'Tabungan berhasil ditambahkan');
         } catch (\Exception $e) {
-            dd($e);
             Log::error($e->getMessage());
             DB::rollBack();
 
