@@ -234,6 +234,7 @@ class TransactionService
             'status' => Transaction::STATUS_PENDING,
             'paid_at' => null,
             'type' => $type ?? Transaction::TYPE_BILL,
+            'admin_id' => Auth::id() ?? null,
         ];
 
         $transaction = Transaction::create(array_merge($transactionData, $request->validated()));
