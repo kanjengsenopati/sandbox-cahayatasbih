@@ -48,7 +48,7 @@ class SendNotifWaService
         $message .= "2. Nama Santri : *" . $student->name . "*\n";
         $message .= "3. Kelas : *" . $student->classroom->name . "*\n";
         $message .= "4. Metode Pembayaran : *" . $transaction->getTranslatedPaymentMethod() . "*\n";
-        if ($transaction->admin) {
+        if ($transaction?->admin_id) {
             $message .= "5. Petugas : *" . $transaction->admin?->name . "*\n";
         }
 

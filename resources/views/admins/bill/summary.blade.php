@@ -133,7 +133,7 @@
                                         </tr>
                                     </thead>
                                     <tbody class="text-gray-600">
-                                        @foreach (range(1, 12) as $month)
+                                        @foreach (array_merge(range(7, 12), range(1, 6)) as $month)
                                         <tr>
                                             <form action="{{ route('bill.store') }}" method="post" class="form-bayar"
                                                 enctype="multipart/form-data">
@@ -175,6 +175,25 @@
                                                         @endif
                                                         @if($billForMonth->transactions?->first()?->paid_at)
                                                         <br>Dibayar {{ $billForMonth->transactions->first()->paid_at }}
+                                                        @endif
+                                                    </span>
+                                                    @elseif(optional($billForMonth?->transactions?->first())->paymentMethod?->type
+                                                    == "BALANCE")
+                                                    <span class="badge badge-success">
+                                                        @php
+                                                        $transaction = $billForMonth?->transactions?->first();
+                                                        $adminName = $transaction?->admin?->name ?? '';
+                                                        $paidAt = $transaction?->paid_at;
+                                                        @endphp
+
+                                                        @if ($transaction?->admin_id)
+                                                        Debit Saldo melalui {{ $adminName }}
+                                                        @else
+                                                        Debit Saldo
+                                                        @endif
+
+                                                        @if ($paidAt)
+                                                        <br>Dibayar {{ $paidAt }}
                                                         @endif
                                                     </span>
                                                     @else
