@@ -301,7 +301,9 @@
                 </tr>
                 <tr>
                     <td>Biaya Aplikasi</td>
-                    <td align="right">Rp{{ number_format($data->app_fee, 0, ',', '.') }}</td>
+                    <td align="right">
+                        Rp{{ number_format($data->app_fee + ($transaction->unique_payment ?? 0), 0, ',', '.') }}
+                    </td>
                 </tr>
                 <tr class="text-strong border-table">
                     <td>TOTAL TAGIHAN</td>

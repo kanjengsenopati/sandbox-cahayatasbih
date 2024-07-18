@@ -6,7 +6,7 @@
     <td style="padding: 10px; border: 2px solid white;" class="text-center">Rp {{
         number_format($bill->total_unpaid,
         0, ',', '.') }}</td>
-    @foreach (range(1, 12) as $month)
+    @foreach (array_merge(range(7, 12), range(1, 6)) as $month)
     @php
     $billDetail = $bill->bills->where('month',
     $month)->where('student_id', $student->id)->first();
