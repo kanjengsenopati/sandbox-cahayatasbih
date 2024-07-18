@@ -288,11 +288,10 @@
                                                                     <th style="width: 5%">No</th>
                                                                     <th class="min-w-70px">Tahun Ajaran</th>
                                                                     <th class="min-w-125px">Item Pembayaran</th>
-                                                                    <th class="min-w-100px">Total Tagihan</th>
-                                                                    <th class="min-w-100px">Dibayar</th>
-                                                                    <th class="min-w-100px">Sisa Tagihan</th>
-                                                                    <th class="text-center min-w-100px"
-                                                                        style="width: 22%">
+                                                                    <th class="min-w-125px">Total Tagihan</th>
+                                                                    <th class="min-w-125px">Dibayar</th>
+                                                                    <th class="min-w-125px">Sisa Tagihan</th>
+                                                                    <th class="text-center" style="width: 22%">
                                                                         Status</th>
                                                                     <th class="text-center min-w-100px"
                                                                         style="width: 22%">Aksi
@@ -357,9 +356,9 @@
                                                                     <th style="width: 5%">No</th>
                                                                     <th class="min-w-70px">Tahun Ajaran</th>
                                                                     <th class="min-w-125px">Item Pembayaran</th>
-                                                                    <th class="min-w-100px">Total Tagihan</th>
-                                                                    <th class="min-w-100px">Dibayar</th>
-                                                                    <th class="min-w-100px">Sisa Tagihan</th>
+                                                                    <th class="min-w-125px">Total Tagihan</th>
+                                                                    <th class="min-w-125px">Dibayar</th>
+                                                                    <th class="min-w-125px">Sisa Tagihan</th>
                                                                     <th class="text-center min-w-70px"
                                                                         style="width: 22%">
                                                                         Status</th>
