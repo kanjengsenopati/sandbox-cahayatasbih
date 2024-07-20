@@ -91,6 +91,7 @@ class SendNotifWaService
         $message .= "Link Kuitansi Digital : *" . route('transaction.invoice', $transaction->id) . "*\n";
         $message .= "--------------------------------\n";
         $message .= "Note : _Transaksi Berhasil dan Kuitansi digital dapat diakses melalui link di atas_\n";
+        $message .= "*Tidak perlu dibalas, Silahkan share / forward ke grup Wali Santri*_\n";
         $message .= "Wassalamualaikum Wr. Wb.\n";
         $message .= "*PPTQ CAHAYA TASBIH*";
 
@@ -221,7 +222,7 @@ class SendNotifWaService
             $message .= "--------------------------------\n";
         }
         // $message .= "italic Tidak perlu dibalas
-        $message .= "_Tidak perlu dibalas, Terima kasih_\n";
+        $message .= "_Tidak perlu dibalas, *Tidak perlu dibalas, Silahkan share / forward ke grup Wali Santri*_\n";
 
         return $message;
     }
@@ -244,7 +245,7 @@ class SendNotifWaService
         $message .= "*PASTIKAN TRANSFER SESUAI NOMINAL DIATAS, TERMASUK 3 NOMOR TERAKHIR UNTUK KETEPATAN PELAYANAN TRANSAKSI.*\n";
         $message .= "--------------------------------\n";
         // $message .= "italic Tidak perlu dibalas
-        $message .= "_Tidak perlu dibalas, Terima kasih_\n";
+        $message .= "_Tidak perlu dibalas, *Tidak perlu dibalas, Silahkan share / forward ke grup Wali Santri*_\n";
 
         return $message;
     }
@@ -267,7 +268,7 @@ class SendNotifWaService
             $message .= "5. Petugas : *" . Auth::user()->name . "*\n";
         }
         $message .= "--------------------------------\n";
-        $message .= "_Tidak perlu dibalas, Terima kasih_\n";
+        $message .= "_Tidak perlu dibalas, *Tidak perlu dibalas, Silahkan share / forward ke grup Wali Santri*_\n";
 
         return $message;
     }
