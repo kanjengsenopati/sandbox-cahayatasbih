@@ -10,6 +10,7 @@ use Yajra\DataTables\DataTables;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\Controller;
+use Illuminate\Support\Facades\Auth;
 use App\Http\Requests\Admin\SavingBankRequest;
 
 class SavingBankController extends Controller
@@ -19,6 +20,9 @@ class SavingBankController extends Controller
      */
     public function index()
     {
+        if (!Auth::user()->can('Manage Tabungan Santri')) {
+            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
+        }
         if (request()->ajax()) {
             $data = School::with(['topupBank' => function ($query) {
                 $query->where('type', TopupBank::TYPE_SAVING);
@@ -38,7 +42,7 @@ class SavingBankController extends Controller
                 ->addColumn('action', function ($data) {
                     $actionEdit = route('saving-bank.edit', $data->id);
                     return "<div class='d-flex justify-content-center'>" .
-                        view('components.action.edit', ['action' => $actionEdit]) .
+                        view('components.action.edit', ['action' => $actionEdit, 'name' => 'Tabungan Santri']) .
                         "</div>";
                 })
                 ->rawColumns(['banks', 'action'])
