@@ -345,7 +345,7 @@
                 @canany(['Manage Saldo Santri', 'Manage Tabungan Santri','Manage Jadwal', 'Manage Tahfidz', 'Manage Pos
                 Kasir', 'Manage Tagihan', 'Manage Perilaku Santri'])
                 <div data-kt-menu-trigger="click" class="menu-item menu-accordion {{ request()->routeIs(['bill.*', 'saldo-history.*', 'saving-history.*', 'order-item.*', 'study-grade.*',
-                    'tahfidz.*', 'student-counseling-score.*', 'schedule.*']) ? 'show' : '' }}">
+                    'tahfidz.*', 'student-counseling-score.*', 'schedule.*','saldo-bank.*']) ? 'show' : '' }}">
                     <span class=" menu-link ">
                         <span class=" menu-icon">
                             <i class="fa-solid fa-edit" style="color: #ffffff;"></i>
@@ -367,8 +367,8 @@
                         @endcan
                         @can('Manage Saldo Santri')
                         <div class="menu-item">
-                            <a class="menu-link {{ request()->routeIs('saldo-history.*') ? ' active' : '' }}"
-                                href="{{ route('saldo-history.index') }}">
+                            <a class="menu-link {{ request()->routeIs('saldo-history.*', 'saldo-bank.*'
+                            ) ? ' active' : '' }}" href="{{ route('saldo-history.index') }}">
                                 <span class="menu-bullet">
                                     <span class="bullet bullet-dot"></span>
                                 </span>
