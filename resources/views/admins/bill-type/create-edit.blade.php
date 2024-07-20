@@ -195,24 +195,23 @@
 @endsection
 @push('js')
 <script>
-    $(".select2").select2();
-        $(document).ready(function() {
-            $("#select-all").click(function() {
-                if ($("#select-all").is(':checked')) { //select all
-                    $(".form-select").find('option').prop("selected", true);
-                    $(".form-select").trigger('change');
-                } else { //deselect all
-                    $(".form-select").find('option').prop("selected", false);
-                    $(".form-select").trigger('change');
-                }
-            });
+    $(document).ready(function() {
+        $("#select2").select2();
 
-            $('#select2').on('change',function(){
-                let selected =  $(this).val();
-                if(selected == ''){
-                    $("#select-all").prop('checked',false);
-                }
-            })
-        })
+        $("#select-all").click(function() {
+            if ($("#select-all").is(':checked')) {
+                $("#select2").find('option').prop("selected", true).trigger('change');
+            } else {
+                $("#select2").find('option').prop("selected", false).trigger('change');
+            }
+        });
+
+        $('#select2').on('change', function() {
+            let selected = $(this).val();
+            if (!selected || selected.length === 0) {
+                $("#select-all").prop('checked', false);
+            }
+        });
+    });
 </script>
 @endpush
