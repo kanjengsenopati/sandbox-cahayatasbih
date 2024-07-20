@@ -61,7 +61,7 @@
                 'Manage Jenis Bayar'])
                 <div data-kt-menu-trigger="click" class="menu-item menu-accordion {{ request()->routeIs(['permission.*', 'role.*', 'information-category.*',
                     'information.*', 'payment-method.*', 'application-setting.*', 'application-menu.*', 'help.*',
-                    'app-information.*', 'bill-item.*', 'bill-type.*']) ? 'show' : '' }}">
+                    'app-information.*', 'bill-item.*', 'bill-type.*', 'admin.*']) ? 'show' : '' }}">
                     <span class="menu-link ">
                         <span class="menu-icon">
                             <i class="fa-solid fa-cog" style="color: #ffffff;"></i>

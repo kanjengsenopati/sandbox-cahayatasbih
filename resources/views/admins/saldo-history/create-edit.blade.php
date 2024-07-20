@@ -79,7 +79,7 @@
                                         class="form-control form-control-solid" />
                                 </div>
 
-                                <div class="fv-row mb-7">
+                                {{-- <div class="fv-row mb-7">
                                     <!--begin::Label-->
                                     <label class="fs-6 fw-bold form-label mt-3" for="type">
                                         <span class="required">Tipe Penyesuaian</span>
@@ -96,7 +96,7 @@
                                             Saldo Keluar</option>
                                     </select>
                                     <!--end::Input-->
-                                </div>
+                                </div> --}}
 
                                 <div class="fv-row mb-7">
                                     <!--begin::Label-->

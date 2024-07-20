@@ -87,6 +87,11 @@ class TransactionService
                     'status' => SaldoHistory::STATUS_SUCCESS,
                     'usage' => SaldoHistory::USAGE_TOPUP
                 ]);
+
+                // create transaction detail with saldo history
+                $transaction->transactionDetails()->create([
+                    'saldo_history_id' => $saldoHistory->id
+                ]);
             }
         } elseif ($transaction->type == Transaction::TYPE_SAVING) {
             $transaction->student->update([
@@ -153,7 +158,7 @@ class TransactionService
         $transaction->update([
             'status' => Transaction::STATUS_PAID,
             'paid_at' => Carbon::now(),
-            'admin_id' => Auth::id(),
+            'admin_id' => Auth::id() ?? null,
         ]);
 
         self::changeStatusToPaid($transaction);

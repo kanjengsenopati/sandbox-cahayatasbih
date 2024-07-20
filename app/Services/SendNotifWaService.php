@@ -7,6 +7,7 @@ use GuzzleHttp\Client;
 use App\Models\BillType;
 use App\Models\Transaction;
 use App\Models\ApplicationSetting;
+use Illuminate\Support\Facades\Auth;
 
 class SendNotifWaService
 {
@@ -253,14 +254,18 @@ class SendNotifWaService
         $parentStudent = $student->user;
         $title = $type == 'SALDO' ? 'SALDO' : 'TABUNGAN';
 
-        $message = "APLIKASI PPTQ CAHAYA TASBIH\n";
-        $message .= "--------------------------------\n";
-        $message .= "*-PENYESUAIAN " . strtoupper($title) . " SANTRI-*\n";
+        $message = "*-PENYESUAIAN " . strtoupper($title) . " SANTRI-*\n";
         $message .= "--------------------------------\n";
         $message .= "Assalamu'alaikum Bapak / Ibu " . $parentStudent->name . ",\n";
-        $message .= "Pemberitahuan bahwa *" . $title . "* santri *" . $student->name . "* telah disesuaikan oleh petugas.\n";
-        $message .= "Keterangan : " . $history->description . "\n";
-        $message .= ucfirst($title) . " Terkini :* Rp. " . ($type == 'SALDO' ? number_format($student->saldo, 0, ',', '.') : number_format($student->saving, 0, ',', '.')) . "*\n";
+        $message .= "Pemberitahuan bahwa *" . ucfirst($title) . "* atas nama santri : \n";
+        $message .= "--------------------------------\n";
+        $message .= "1. Nama : *" . $student->name . "*\n";
+        $message .= "2. Kelas : *" . $student->classroom?->name . "*\n";
+        $message .= "3. Tambah " . ucfirst($title) . " : *Rp. " . number_format($history->amount, 0, ',', '.') . "*\n";
+        $message .= "4. " . ucfirst($title) . " Terkini : *Rp. " . ($type == 'SALDO' ? number_format($student->saldo, 0, ',', '.') : number_format($student->saving, 0, ',', '.')) . "*\n";
+        if (Auth::id() != $student->id) {
+            $message .= "5. Petugas : *" . Auth::user()->name . "*\n";
+        }
         $message .= "--------------------------------\n";
         $message .= "_Tidak perlu dibalas, Terima kasih_\n";
 

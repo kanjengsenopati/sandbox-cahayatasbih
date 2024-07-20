@@ -23,7 +23,6 @@ class SaldoHistoryRequest extends FormRequest
     {
         return [
             'student_id' => ['required', 'exists:students,id'],
-            'type' => ['required', 'in:IN,OUT'],
             'amount' => ['required', 'numeric'],
         ];
     }

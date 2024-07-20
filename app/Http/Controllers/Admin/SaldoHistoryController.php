@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Models\User;
+use App\Models\Contact;
 use App\Models\Student;
 use App\Models\Transaction;
 use App\Models\SaldoHistory;
@@ -144,63 +145,35 @@ class SaldoHistoryController extends Controller
         DB::beginTransaction();
 
         try {
-            $data = $request->validated();
+            $paymentMethod = PaymentMethod::where('type', PaymentMethod::TYPE_CASH)->first();
+            $paymentMethodType = $paymentMethod->type;
 
-            $student = $this->getStudentOrFail($data['student_id']);
-
-            if ($this->isInsufficientSaldo($data['type'], $student->saldo, $data['amount'])) {
-                return redirect()->route('saldo-history.index')->with('error', 'Saldo tidak mencukupi');
-            }
-
-            $data['usage'] = SaldoHistory::USAGE_TOPUP;
-            $description = $this->adjustStudentSaldo($data['type'], $student, $data['amount']);
-            $student->save();
-
-            $data['description'] = $description;
-            $data['status'] = SaldoHistory::STATUS_SUCCESS;
-            $saldoHistory = SaldoHistory::create($data);
-
+            $transaction = TransactionService::createTransaction($request, $paymentMethodType, Transaction::TYPE_SALDO);
             DB::commit();
 
-            $this->sendNotifications($student, $saldoHistory);
+            $this->sendNotifications($transaction->student, $transaction->transactionDetails()?->first()?->saldoHistory);
 
-            return redirect()->route('saldo-history.index')->with('success', 'Penyesuaian saldo berhasil');
+
+            return redirect()->route('saldo-history.index')->with('success', 'Berhasil Topup Saldo');
         } catch (\Exception $e) {
-            Log::error($e->getMessage());
             DB::rollBack();
-            return redirect()->route('saldo-history.index')->with('error', $e->getMessage());
-        }
-    }
-
-    private function getStudentOrFail($studentId)
-    {
-        return Student::findOrFail($studentId);
-    }
-
-    private function isInsufficientSaldo($type, $currentSaldo, $amount)
-    {
-        return $type === 'OUT' && $currentSaldo < $amount;
-    }
-
-    private function adjustStudentSaldo($type, $student, $amount)
-    {
-        if ($type === 'IN') {
-            $student->saldo += $amount;
-            return 'Saldo Ditambahkan Sebesar Rp. ' . number_format($amount, 0, ',', '.') . ' oleh ' . auth()->user()?->name;
-        } else {
-            $student->saldo -= $amount;
-            return 'Saldo Dikurangi Sebesar Rp. ' . number_format($amount, 0, ',', '.') . ' oleh ' . auth()->user()?->name;
+            Log::error($e);
+            return redirect()->route('saldo-history.index')->with('error', 'Gagal Topup Saldo');
         }
     }
 
     private function sendNotifications($student, $saldoHistory)
     {
         $title = 'Pemberitahuan Saldo';
-        $body = 'Santri ' . $student->name . ' ' . $saldoHistory->description . ' menjadi Rp. ' . number_format($student->saldo, 0, ',', '.');
+        $body = 'Santri ' . $student->name . ' ' . $saldoHistory->description . ', Saldo Terkini Rp. ' . number_format($student->saldo, 0, ',', '.');
         $messageWhatsapp = SendNotifWaService::balanceAdjustment($student, $saldoHistory, "SALDO");
 
         dispatch(new SendToPushNotificationJob($title, $body, $student->user, null));
         dispatch(new SendToWhatsappNotificationJob($student->user?->phone, $messageWhatsapp));
+        $contacts = Contact::where('type', Contact::TYPE_BENDAHARA)->orWhere('type', Contact::TYPE_SUPERADMIN)->get();
+        foreach ($contacts as $contact) {
+            dispatch(new SendToWhatsappNotificationJob($contact->phone, $messageWhatsapp));
+        }
     }
 
     /**
