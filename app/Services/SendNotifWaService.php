@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use Carbon\Carbon;
 use App\Models\Bill;
 use GuzzleHttp\Client;
 use App\Models\BillType;
@@ -222,7 +223,7 @@ class SendNotifWaService
             $message .= "--------------------------------\n";
         }
         // $message .= "italic Tidak perlu dibalas
-        $message .= "_Tidak perlu dibalas, *Tidak perlu dibalas, Silahkan share / forward ke grup Wali Santri*_\n";
+        $message .= "_*Tidak perlu dibalas, Tidak perlu dibalas, Silahkan share / forward ke grup Wali Santri*_\n";
 
         return $message;
     }
@@ -245,7 +246,7 @@ class SendNotifWaService
         $message .= "*PASTIKAN TRANSFER SESUAI NOMINAL DIATAS, TERMASUK 3 NOMOR TERAKHIR UNTUK KETEPATAN PELAYANAN TRANSAKSI.*\n";
         $message .= "--------------------------------\n";
         // $message .= "italic Tidak perlu dibalas
-        $message .= "_Tidak perlu dibalas, *Tidak perlu dibalas, Silahkan share / forward ke grup Wali Santri*_\n";
+        $message .= "_*Tidak perlu dibalas, Tidak perlu dibalas, Silahkan share / forward ke grup Wali Santri*_\n";
 
         return $message;
     }
@@ -255,6 +256,15 @@ class SendNotifWaService
         $parentStudent = $student->user;
         $title = $type == 'SALDO' ? 'SALDO' : 'TABUNGAN';
 
+        // Format tanggal dengan Carbon
+        if ($type == 'SALDO') {
+            // Ambil tanggal dari created_at untuk SALDO
+            $formattedDate = Carbon::parse($history->created_at)->locale('id')->translatedFormat('d F Y');
+        } else {
+            // Ambil tanggal dari date untuk SAVING
+            $formattedDate = Carbon::parse($history->date)->locale('id')->translatedFormat('d F Y');
+        }
+
         $message = "*-PENYESUAIAN " . strtoupper($title) . " SANTRI-*\n";
         $message .= "--------------------------------\n";
         $message .= "Assalamu'alaikum Bapak / Ibu " . $parentStudent->name . ",\n";
@@ -262,13 +272,14 @@ class SendNotifWaService
         $message .= "--------------------------------\n";
         $message .= "1. Nama : *" . $student->name . "*\n";
         $message .= "2. Kelas : *" . $student->classroom?->name . "*\n";
-        $message .= "3. Tambah " . ucfirst($title) . " : *Rp. " . number_format($history->amount, 0, ',', '.') . "*\n";
+        $message .= $history->type == 'IN' ? "3. Tambah " . ucfirst($title) . " : *Rp. " . number_format($history->amount, 0, ',', '.') . "*\n" : "3. Tarik " . ucfirst($title) . " : *Rp. " . number_format($history->amount, 0, ',', '.') . "*\n";
         $message .= "4. " . ucfirst($title) . " Terkini : *Rp. " . ($type == 'SALDO' ? number_format($student->saldo, 0, ',', '.') : number_format($student->saving, 0, ',', '.')) . "*\n";
+        $message .= "5. Tanggal : *" . $formattedDate . "*\n";
         if (Auth::id() != $student->id) {
-            $message .= "5. Petugas : *" . Auth::user()->name . "*\n";
+            $message .= "6. Petugas : *" . Auth::user()->name . "*\n";
         }
         $message .= "--------------------------------\n";
-        $message .= "_Tidak perlu dibalas, *Tidak perlu dibalas, Silahkan share / forward ke grup Wali Santri*_\n";
+        $message .= "_*Tidak perlu dibalas, Silahkan share / forward ke grup Wali Santri*_\n";
 
         return $message;
     }
