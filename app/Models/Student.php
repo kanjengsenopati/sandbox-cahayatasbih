@@ -16,10 +16,12 @@ class Student extends Model
     const STATUS_GRADUATED = "GRADUATED";
     const STATUS_TRANSFERRED = "TRANSFERRED";
     const STATUS_DROPPED_OUT = "DROPPED_OUT";
-    use HasFactory, UuidTrait, SoftDeletes;
+    use HasFactory, SoftDeletes;
+
+    protected $keyType = 'string';
+    public $incrementing = false;
 
     protected $fillable = [
-        'id', // add this line
         'nisn',
         'nis',
         'user_id',
@@ -126,6 +128,12 @@ class Student extends Model
         parent::boot();
         static::creating(function ($model) {
             $model->barcode = Str::random(17);
+        });
+
+        static::creating(function ($model) {
+            if (empty($model->id)) {
+                $model->id = (string) Str::uuid();
+            }
         });
     }
 
