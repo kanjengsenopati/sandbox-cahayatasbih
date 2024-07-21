@@ -136,7 +136,7 @@
                                     </div>
                                 </div>
 
-                                <div class="row mb-6">
+                                {{-- <div class="row mb-6">
                                     <div class="col-6">
                                         <!--begin::Label-->
                                         <label class="fs-6 fw-bold form-label" for="target_month">
@@ -169,7 +169,7 @@
                                                 required />
                                         </div>
                                     </div>
-                                </div>
+                                </div> --}}
 
                                 <div class="row mb-6">
                                     <div class="col-6">
