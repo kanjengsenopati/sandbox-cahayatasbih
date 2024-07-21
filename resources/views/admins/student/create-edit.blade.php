@@ -47,9 +47,9 @@
         <!--begin::Container-->
         <div id="kt_content_container" class="container-xxl">
             <!--begin::Navbar-->
-            @if (request()->routeIs('student.edit'))
+            {{-- @if (request()->routeIs('student.edit'))
             @include('admins.student.components.header')
-            @endif
+            @endif --}}
             <!--end::Navbar-->
             <!--begin::Basic info-->
             <div class="card mb-5 mb-xl-10">

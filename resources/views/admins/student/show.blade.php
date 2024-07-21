@@ -8,9 +8,7 @@
         <!--begin::Container-->
         <div id="kt_toolbar_container" class="container-fluid d-flex flex-stack">
             <!--begin::Page title-->
-            <div data-kt-swapper="true" data-kt-swapper-mode="prepend"
-                data-kt-swapper-parent="{default: '#kt_content_container', 'lg': '#kt_toolbar_container'}"
-                class="page-title d-flex align-items-center flex-wrap me-3 mb-5 mb-lg-0">
+            <div class="page-title d-flex align-items-center flex-wrap me-3 mb-5 mb-lg-0">
                 <!--begin::Title-->
                 <h1 class="d-flex text-dark fw-bolder fs-3 align-items-center my-1">Data Siswa</h1>
                 <!--end::Title-->
@@ -20,12 +18,9 @@
                 <!--begin::Breadcrumb-->
                 <ul class="breadcrumb breadcrumb-separatorless fw-bold fs-7 my-1">
                     <!--begin::Item-->
-
-                    <!--end::Item-->
-                    <!--begin::Item-->
-                    <a class="breadcrumb-item" href="{{ route('student.index') }}">
-                        <li class="breadcrumb-item text-muted">Data Siswa</li>
-                    </a>
+                    <li class="breadcrumb-item">
+                        <a class="breadcrumb-item text-muted" href="{{ route('student.index') }}">Data Siswa</a>
+                    </li>
                     <!--end::Item-->
                     <li class="breadcrumb-item">
                         <span class="bullet bg-gray-300 w-5px h-2px"></span>
@@ -55,14 +50,7 @@
                         <div class="card-header pt-7" id="kt_chat_contacts_header">
                             <!--begin::Card title-->
                             <div class="card-title">
-                                <!--begin::Svg Icon | path: icons/duotune/communication/com005.svg-->
-                                <span class="svg-icon svg-icon-1 me-2">
-                                    {{-- add online icon admin --}}
-
-                                </span>
-                                <!--end::Svg Icon-->
-                                <h1 class="d-flex text-dark fw-bolder fs-3 align-items-center">
-                                    Detail Siswa
+                                <h1 class="d-flex text-dark fw-bolder fs-3 align-items-center">Detail Siswa</h1>
                             </div>
                             <!--end::Card title-->
                         </div>
@@ -78,36 +66,30 @@
                                                 Informasi Siswa
                                             </a>
                                         </li>
-                                        {{-- <li class="nav-item">
+                                        <li class="nav-item">
                                             <a class="nav-link btn btn-active-light btn-color-gray-600 btn-active-color-primary rounded-bottom-0"
                                                 data-bs-toggle="tab" href="#kt_tab_pane_2">
-                                                Activity History
+                                                Tagihan Santri
                                             </a>
                                         </li>
                                         <li class="nav-item">
                                             <a class="nav-link btn btn-active-light btn-color-gray-600 btn-active-color-primary rounded-bottom-0"
                                                 data-bs-toggle="tab" href="#kt_tab_pane_3">
-                                                Challenge History
+                                                Riwayat Saldo
                                             </a>
                                         </li>
                                         <li class="nav-item">
                                             <a class="nav-link btn btn-active-light btn-color-gray-600 btn-active-color-primary rounded-bottom-0"
                                                 data-bs-toggle="tab" href="#kt_tab_pane_4">
-                                                Point History
-                                            </a>
-                                        </li>
-                                        <li class="nav-item">
-                                            <a class="nav-link btn btn-active-light btn-color-gray-600 btn-active-color-primary rounded-bottom-0"
-                                                data-bs-toggle="tab" href="#kt_tab_pane_6">
-                                                XP History
+                                                Riwayat Tabungan
                                             </a>
                                         </li>
                                         <li class="nav-item">
                                             <a class="nav-link btn btn-active-light btn-color-gray-600 btn-active-color-primary rounded-bottom-0"
                                                 data-bs-toggle="tab" href="#kt_tab_pane_5">
-                                                Reward Claim History
+                                                Tahfidz
                                             </a>
-                                        </li> --}}
+                                        </li>
                                     </ul>
                                 </div>
                             </div>
@@ -121,14 +103,12 @@
                                                 alt="Avatar User">
                                             <span class="badge badge-secondary">
                                                 Kelas {{ $student->classroom->name ?? 'Belum diatur' }}</span>
-                                            {{-- add button direct to edit student --}}
                                             @can ('Edit Santri')
                                             <a href="{{ route('student.edit', $student->id) }}"
                                                 class="btn btn-primary btn-sm"><i class="fa fa-edit"></i> Edit Siswa</a>
                                             @endcan
                                         </div>
                                         <div class="ms-5 ps-3 w-100">
-                                            <!-- <div class=""> -->
                                             <table class="profile table">
                                                 <tr>
                                                     <td class="grey" width="20%">Nama</td>
@@ -144,7 +124,7 @@
                                                 <tr>
                                                     <td class="grey" width="20%">NIS</td>
                                                     <td></td>
-                                                    <td>+{{ $student->nis ?? 'Belum diatur' }}</td>
+                                                    <td>{{ $student->nis ?? 'Belum diatur' }}</td>
                                                 </tr>
                                                 <tr>
                                                     <td class="grey" width="20%">NISN</td>
@@ -152,10 +132,19 @@
                                                     <td>{{ $student->nisn ?? 'Belum diatur' }}</td>
                                                 </tr>
                                                 <tr>
+                                                    <td class="grey" width="20%">Saldo</td>
+                                                    <td></td>
+                                                    <td>Rp. {{ number_format($student->saldo, 0, ',', '.') }}</td>
+                                                </tr>
+                                                <tr>
+                                                    <td class="grey" width="20%">Tabungan</td>
+                                                    <td></td>
+                                                    <td>Rp. {{ number_format($student->saving, 0, ',', '.') }}</td>
+                                                </tr>
+                                                <tr>
                                                     <td class="grey" width="20%">Jenis Kelamin</td>
                                                     <td></td>
-                                                    <td>{{ $student->gender == 'L' ?
-                                                        'Laki-laki' : 'Perempuan' }}</td>
+                                                    <td>{{ $student->gender == 'L' ? 'Laki-laki' : 'Perempuan' }}</td>
                                                 </tr>
                                                 <tr>
                                                     <td class="grey" width="20%">Wali Siswa</td>
@@ -172,138 +161,80 @@
                                                     <td></td>
                                                     <td>{{ $student->address ?? 'Belum diatur' }}</td>
                                                 </tr>
-                                                {{-- <tr>
-                                                    <td class="grey" width="20%">Total Xp</td>
-                                                    <td></td>
-                                                    <td><span class="badge badge-danger">{{ $student->experience_point
-                                                            }}
-                                                            Xp</span>
-                                                </tr> --}}
-                                                {{-- <tr>
-                                                    <td class="grey" width="20%">Gender</td>
-                                                    <td></td>
-                                                    <td>{{ $student->gender == 'L' ? 'Laki-laki' : 'Perempuan' }}</td>
-                                                </tr>
-                                                <tr>
-                                                    <td class="grey" width="20%">Birth</td>
-                                                    <td></td>
-                                                    <td>{{ $student->birth ?? 'Belum Ditambahkan' }}</td>
-                                                </tr>
-                                                <tr>
-                                                    <td class="grey" width="20%">Height</td>
-                                                    <td></td>
-                                                    <td>{{ $student->height ? $student->height . ' Cm' : 'Belum
-                                                        Ditambahkan'
-                                                        }}</td>
-                                                </tr>
-                                                <tr>
-                                                    <td class="grey" width="20%">Weight</td>
-                                                    <td></td>
-                                                    <td>{{ $student->weight ? $student->weight . ' Kg' : 'Belum
-                                                        Ditambahkan'
-                                                        }}</td>
-                                                </tr> --}}
                                             </table>
                                         </div>
                                     </div>
                                 </div>
-                                {{-- <div class="tab-pane fade" id="kt_tab_pane_2" role="tabpanel">
+                                <div class="tab-pane fade" id="kt_tab_pane_2" role="tabpanel">
                                     <div class="table-responsive">
-                                        <table id="table-run" class="table table-striped border rounded gy-5 gs-7">
+                                        <table id="table-student-bill" class="table align-middle table-row-dashed">
                                             <thead>
-                                                <tr class="fw-bolder fs-6 text-gray-800 px-7">
-                                                    <th width="3%">No</th>
-                                                    <th class="w-10px pe-2 nowrap">Distance (Km)</th>
-                                                    <th>Duration</th>
-                                                    <th>Step</th>
-                                                    <th class="nowrap">Calory (Kcal)</th>
-                                                    <th class="nowrap">Pace (Duration/Km)</th>
-                                                    <th>Start</th>
-                                                    <th>Finish</th>
+                                                <tr class="text-start text-gray-400 fw-bolder fs-7 text-uppercase gs-0">
+                                                    <th style="width: 5%">No</th>
+                                                    <th class="min-w-70px">Tahun Ajaran</th>
+                                                    <th class="min-w-125px">Item Pembayaran</th>
+                                                    <th class="min-w-125px">Total Tagihan</th>
+                                                    <th class="min-w-125px">Dibayar</th>
+                                                    <th class="min-w-125px">Sisa Tagihan</th>
+                                                    <th class="text-center min-w-70px" style="width: 22%">
+                                                        Status</th>
                                                 </tr>
                                             </thead>
-                                            <tbody></tbody>
+                                            <tbody class="text-gray-600 fw-bold"></tbody>
                                         </table>
                                     </div>
                                 </div>
                                 <div class="tab-pane fade" id="kt_tab_pane_3" role="tabpanel">
                                     <div class="table-responsive">
-                                        <table id="table-challenge"
-                                            class="table table-striped border rounded gy-5 gs-7">
+                                        <table id="table-saldo-history" class="table align-middle table-row-dashed">
                                             <thead>
-                                                <tr class="fw-bolder fs-6 text-gray-800 px-7">
-                                                    <th width="3%">No</th>
-                                                    <th class="w-10px pe-2 nowrap">Challenge</th>
-                                                    <th class="w-10px pe-2 nowrap">Distance (Km)</th>
-                                                    <th>Duration</th>
-                                                    <th>Step</th>
-                                                    <th class="nowrap">Calory (Kcal)</th>
-                                                    <th class="nowrap">Pace (Duration/Km)</th>
-                                                    <th class="nowrap">Start At</th>
-                                                    <th class="nowrap">Finish At</th>
-                                                    <th>Status</th>
-                                                    <th>Failed Note</th>
+                                                <tr class="text-start text-gray-400 fw-bolder fs-7 text-uppercase gs-0">
+                                                    <th style="width: 5%">No</th>
+                                                    <th class="min-w-100px" style="width: 22%">Siswa</th>
+                                                    <th class="min-w-100px" style="width: 22%">Jumlah</th>
+                                                    <th class="min-w-100px" style="width: 22%">Status</th>
+                                                    <th class="min-w-100px" style="width: 22%">Keterangan</th>
                                                 </tr>
                                             </thead>
-                                            <tbody></tbody>
+                                            <tbody class="text-gray-600 fw-bold"></tbody>
                                         </table>
                                     </div>
                                 </div>
                                 <div class="tab-pane fade" id="kt_tab_pane_4" role="tabpanel">
                                     <div class="table-responsive">
-                                        <table id="table-poin" class="table table-striped border rounded gy-5 gs-7">
+                                        <table id="table-saving-history" class="table align-middle table-row-dashed">
                                             <thead>
-                                                <tr class="fw-bolder fs-6 text-gray-800 px-7">
-                                                    <th width="3%">No</th>
-                                                    <th class="nowrap">History</th>
-                                                    <th class="nowrap">Poin (Km)</th>
-                                                    <th>Get At</th>
+                                                <tr class="text-start text-gray-400 fw-bolder fs-7 text-uppercase gs-0">
+                                                    <th style="width: 5%">No</th>
+                                                    <th class="min-w-100px" style="width: 10%">Tanggal</th>
+                                                    <th class="min-w-100px" style="width: 22%">Siswa</th>
+                                                    <th class="min-w-100px" style="width: 22%">Jumlah</th>
+                                                    <th class="min-w-100px" style="width: 22%">Status</th>
+                                                    <th class="min-w-100px" style="width: 22%">Keterangan</th>
                                                 </tr>
                                             </thead>
-                                            <tbody></tbody>
-                                        </table>
-                                    </div>
-                                </div>
-                                <div class="tab-pane fade" id="kt_tab_pane_6" role="tabpanel">
-                                    <div class="d-flex justify-content-end my-5">
-                                        <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal"
-                                            data-bs-target="#addXp">
-                                            Tambah XP
-                                        </button>
-                                    </div>
-                                    <div class="table-responsive">
-                                        <table id="table-xp" class="table table-striped border rounded gy-5 gs-7">
-                                            <thead>
-                                                <tr class="fw-bolder fs-6 text-gray-800 px-7">
-                                                    <th width="3%">No</th>
-                                                    <th>Jumlah XP</th>
-                                                    <th>Status</th>
-                                                    <th>Keterangan</th>
-                                                    <th>Diperoleh Pada</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody></tbody>
+                                            <tbody class="text-gray-600 fw-bold"></tbody>
                                         </table>
                                     </div>
                                 </div>
                                 <div class="tab-pane fade" id="kt_tab_pane_5" role="tabpanel">
                                     <div class="table-responsive">
-                                        <table id="table-reward" class="table table-striped border rounded gy-5 gs-7">
+                                        <table id="table-tahfidz" class="table align-middle table-row-dashed">
                                             <thead>
-                                                <tr class="fw-bolder fs-6 text-gray-800 px-7">
+                                                <tr class="text-start text-gray-400 fw-bolder fs-7 text-uppercase gs-0">
                                                     <th width="3%">No</th>
-                                                    <th class="nowrap">Reward</th>
-                                                    <th class="nowrap">Value</th>
-                                                    <th>Claimed At</th>
-                                                    <th>Expired At</th>
-                                                    <th>Used At</th>
-                                                    <th>Status</th>
+                                                    <th>Tanggal</th>
+                                                    <th>Santri</th>
+                                                    <th>Jumlah Halaman</th>
+                                                    <th>Keterangan</th>
+                                                    <th>Feedback</th>
+                                                    <th>Link Video</th>
                                                 </tr>
                                             </thead>
-                                            <tbody></tbody>
+                                            <tbody class="text-gray-600 fw-bold"></tbody>
                                         </table>
                                     </div>
-                                </div> --}}
+                                </div>
                             </div>
                         </div>
                         <!--end::Card body-->
@@ -319,145 +250,21 @@
     <!--end::Post-->
 </div>
 <!--end::Content-->
-
-<!--end::Modal dialog-->
-{{-- </div> --}}
-{{-- add modal #addXp --}}
-{{-- <div class="modal fade" id="addXp" tabindex="-1" aria-hidden="true">
-    <!--begin::Modal dialog-->
-    <div class="modal-dialog modal-dialog-centered mw-650px">
-        <!--begin::Modal content-->
-        <div class="modal-content rounded">
-            <!--begin::Modal header-->
-            <div class="modal-header pb-0 border-0 justify-content-end">
-                <!--begin::Close-->
-                <div class="btn btn-sm btn-icon btn-active-color-primary" data-kt-modal-action-type="close">
-                    <i class="ki-duotone ki-cross fs-1">
-                        <span class="path1"></span>
-                        <span class="path2"></span>
-                    </i>
-                </div>
-                <!--end::Close-->
-            </div>
-            <!--begin::Modal header-->
-            <!--begin::Modal body-->
-            <div class="modal-body scroll-y px-10 px-lg-15 pt-0 pb-15">
-                <!--begin:Form-->
-                <form id="kt_modal_bidding_form" class="form" action="" method="POST" enctype="multipart/form-data"
-                    autocomplete="off">
-                    @csrf
-                    <!--begin::Heading-->
-                    <div class="mb-13 text-center">
-                        <!--begin::Title-->
-                        <h1 class="mb-3">Penyesuaian XP</h1>
-                        <!--end::Title-->
-                        <!--begin::Description-->
-                        <div class="text-muted fw-semibold fs-5">Sistem dukungan yang memungkinkan admin
-                            memberikan bantuan atau resolusi masalah yang mungkin muncul terkait
-                            dengan XP.
-                        </div>
-                        <!--end::Description-->
-                    </div>
-                    <!--end::Heading-->
-                    <!--end::Input group-->
-                    <!--begin::Input group-->
-                    <div class="fv-row mb-8">
-                        <!--begin::Label-->
-                        <label class="d-flex align-items-center fs-6 fw-semibold mb-2">
-                            <span class="required">Tipe XP</span>
-                        </label>
-                        <!--end::Label-->
-                        <!--begin::Select2-->
-                        <select class="form-select form-select-solid" data-control="select2" data-hide-search="true"
-                            data-placeholder="Pilih Tipe Tindakan" name="type">
-                            <option value="ADD">Penambahan XP</option>
-                            <option value="SUBTRACT">Pengurangan XP</option>
-                        </select>
-                        <!--end::Select2-->
-                    </div>
-
-                    <div class="fv-row mb-8">
-                        <!--begin::Label-->
-                        <label class="d-flex align-items-center fs-6 fw-semibold mb-2">
-                            <span class="required">Mode XP</span>
-                        </label>
-                        <!--end::Label-->
-                        <!--begin::Select2-->
-                        <select class="form-select form-select-solid" data-control="select2" data-hide-search="true"
-                            data-placeholder="Pilih Mode XP" name="mode">
-                            <option value="walk">Jalan Kaki</option>
-                            <option value="run">Lari</option>
-                            <option value="bike">Bersepeda</option>
-                        </select>
-                        <!--end::Select2-->
-                    </div>
-                    <!--end::Input group-->
-                    <!--begin::Input group-->
-                    <div class="fv-row mb-8">
-                        <!--begin::Label-->
-                        <label class="d-flex align-items-center fs-6 fw-semibold mb-2">
-                            <span class="required">Jumlah XP</span>
-                        </label>
-                        <!--end::Label-->
-                        <!--begin::Input wrapper-->
-                        <input type="number" class="form-control form-control-solid" placeholder="Masukkan Jumlah XP"
-                            name="xp" />
-                    </div>
-                    <input type="hidden" name="user_id" value="{{ $student->id }}">
-                    <!--end::Input group-->
-                    <!--begin::Notice-->
-                    <!--begin::Notice-->
-                    <div class="notice d-flex bg-light-primary rounded border-primary border border-dashed mb-9 p-6">
-                        <!--begin::Icon-->
-                        <!--end::Icon-->
-                        <!--begin::Wrapper-->
-                        <div class="d-flex flex-stack flex-grow-1">
-                            <!--begin::Content-->
-                            <div class="fw-semibold">
-                                <h4 class="text-gray-900 fw-bold">Peringatan!</h4>
-                                <div class="fs-6 text-gray-700">Pastikan jumlah XP yang anda masukkan sudah sesuai
-                                    dengan
-                                    kebutuhan user.</div>
-                            </div>
-                        </div>
-                        <!--end::Content-->
-                    </div>
-                    <!--end::Wrapper-->
-            </div>
-            <!--end::Notice-->
-            <!--end::Notice-->
-            <!--begin::Actions-->
-            <div class="text-center">
-                <button type="reset" class="btn btn-light me-3" data-kt-modal-action-type="cancel">Cancel</button>
-                <button type="submit" class="btn btn-primary" data-kt-modal-action-type="submit">
-                    <span class="indicator-label">Simpan</span>
-                    <span class="indicator-progress">Please wait...
-                        <span class="spinner-border spinner-border-sm align-middle ms-2"></span></span>
-                </button>
-            </div>
-            <!--end::Actions-->
-            </form>
-            <!--end:Form-->
-        </div>
-        <!--end::Modal body-->
-    </div>
-    <!--end::Modal content-->
-</div> --}}
-<!--end::Wrapper-->
 @endsection
+
 @push('js')
 <script>
     $(document).ready(() => {
-            var table = $('#table-run').DataTable({
+            var table = $('#table-saldo-history').DataTable({
                 ordering: false,
                 processing: true,
                 serverSide: true,
                 responsive: true,
                 ajax: {
-                    url: "{{ route('user.show', $student->id) }}",
+                    url: "{{ route('student.show', $student->id) }}",
                     type: 'GET',
                     data: {
-                        type: 'history'
+                        type: 'saldo'
                     }
                 },
                 language: {
@@ -476,48 +283,25 @@
                         render: function(data, type, row, meta) {
                             return meta.row + meta.settings._iDisplayStart + 1;
                         }
+
                     },
-                    {
-                        data: 'range',
-                        name: 'range'
-                    },
-                    {
-                        data: 'duration',
-                        name: 'duration'
-                    },
-                    {
-                        data: 'step',
-                        name: 'step'
-                    },
-                    {
-                        data: 'calory',
-                        name: 'calory',
-                    },
-                    {
-                        data: 'pace',
-                        name: 'pace',
-                    },
-                    {
-                        data: 'start_at',
-                        name: 'start_at',
-                    },
-                    {
-                        data: 'finish_at',
-                        name: 'finish_at',
-                    },
+                    { data: 'student.name', name: 'student.name' },
+                    { data: 'amount', name: 'amount' },
+                    { data: 'status', name: 'status' },
+                    { data: 'description', name: 'description' },
                 ]
             });
 
-            var tableChallenge = $('#table-challenge').DataTable({
+            var table = $('#table-saving-history').DataTable({
                 ordering: false,
                 processing: true,
                 serverSide: true,
                 responsive: true,
                 ajax: {
-                    url: "{{ route('user.show', $student->id) }}",
+                    url: "{{ route('student.show', $student->id) }}",
                     type: 'GET',
                     data: {
-                        type: 'challenge'
+                        type: 'saving'
                     }
                 },
                 language: {
@@ -537,59 +321,24 @@
                             return meta.row + meta.settings._iDisplayStart + 1;
                         }
                     },
-                    {
-                        data: 'challenge',
-                        name: 'challenge'
-                    },
-                    {
-                        data: 'range',
-                        name: 'range'
-                    },
-                    {
-                        data: 'duration',
-                        name: 'duration'
-                    },
-                    {
-                        data: 'step',
-                        name: 'step'
-                    },
-                    {
-                        data: 'calory',
-                        name: 'calory',
-                    },
-                    {
-                        data: 'pace',
-                        name: 'pace',
-                    },
-                    {
-                        data: 'start_at',
-                        name: 'start_at',
-                    },
-                    {
-                        data: 'finish_at',
-                        name: 'finish_at',
-                    },
-                    {
-                        data: 'status',
-                        name: 'status',
-                    },
-                    {
-                        data: 'failed_note',
-                        name: 'failed_note',
-                    }
+                   { data: 'date', name: 'date' },
+                    { data: 'student.name', name: 'student.name' },
+                    { data: 'amount', name: 'amount' },
+                    { data: 'status', name: 'status' },
+                    { data: 'description', name: 'description' },
                 ]
             });
 
-            var tableReward = $('#table-poin').DataTable({
+            var table = $('#table-tahfidz').DataTable({
                 ordering: false,
                 processing: true,
                 serverSide: true,
                 responsive: true,
                 ajax: {
-                    url: "{{ route('user.show', $student->id) }}",
+                    url: "{{ route('student.show', $student->id) }}",
                     type: 'GET',
                     data: {
-                        type: 'point'
+                        type: 'tahfidz'
                     }
                 },
                 language: {
@@ -609,132 +358,72 @@
                             return meta.row + meta.settings._iDisplayStart + 1;
                         }
                     },
-
                     {
-                        data: 'note',
-                        name: 'note',
+                        data: 'deposit_date',
+                        name: 'deposit_date'
                     },
                     {
-                        data: 'point',
-                        name: 'point'
+                        data: 'student.name',
+                        name: 'student.name'
                     },
                     {
-                        data: 'created_at',
-                        name: 'created_at',
-                        responsivePriority: -1,
-                    },
-                ]
-            });
-
-            var tableReward = $('#table-xp').DataTable({
-                ordering: false,
-                processing: true,
-                serverSide: true,
-                responsive: true,
-                ajax: {
-                    url: "{{ route('user.show', $student->id) }}",
-                    type: 'GET',
-                    data: {
-                        type: 'xp'
-                    }
-                },
-                language: {
-                    "paginate": {
-                        "next": "<i class='fa fa-angle-right'>",
-                        "previous": "<i class='fa fa-angle-left'>"
-                    },
-                    "loadingRecords": "Loading...",
-                    "processing": "Processing...",
-                },
-                columns: [{
-                        "data": null,
-                        "sortable": false,
-                        "searchable": false,
-                        responsivePriority: -1,
-                        render: function(data, type, row, meta) {
-                            return meta.row + meta.settings._iDisplayStart + 1;
-                        }
-                    },  
-                    {
-                        data: 'xp',
-                        name: 'xp',
-                    },
-                    {
-                        data: 'status',
-                        name: 'status'
+                        data: 'number_of_pages',
+                        name: 'number_of_pages'
                     },
                     {
                         data: 'note',
                         name: 'note'
                     },
                     {
-                        data: 'created_at',
-                        name: 'created_at',
-                        responsivePriority: -1,
+                        data: 'feedback',
+                        name: 'feedback'
                     },
+                    {
+                        data: 'link',
+                        name: 'link'
+                   },
                 ]
             });
 
-            var tableReward = $('#table-reward').DataTable({
+            var table = $('#table-student-bill').DataTable({
                 ordering: false,
                 processing: true,
                 serverSide: true,
                 responsive: true,
                 ajax: {
-                    url: "{{ route('user.show', $student->id) }}",
+                    url: "{{ route('student.show', $student->id) }}",
                     type: 'GET',
                     data: {
-                        type: 'reward'
+                        type: 'bill'
                     }
                 },
                 language: {
-                    "paginate": {
-                        "next": "<i class='fa fa-angle-right'>",
-                        "previous": "<i class='fa fa-angle-left'>"
+                "paginate": {
+                "next": "<i class='fa fa-angle-right'>",
+                "previous": "<i class='fa fa-angle-left'>"
                     },
                     "loadingRecords": "Loading...",
                     "processing": "Processing...",
-                },
-                columns: [{
-                        "data": null,
-                        "sortable": false,
-                        "searchable": false,
-                        responsivePriority: -1,
-                        render: function(data, type, row, meta) {
-                            return meta.row + meta.settings._iDisplayStart + 1;
-                        }
                     },
-                    {
-                        data: 'reward',
-                        name: 'reward',
+                    columns: [{
+                    "data": null,
+                    "sortable": false,
+                    "searchable": false,
+                    responsivePriority: -1,
+                    render: function(data, type, row, meta) {
+                    return meta.row + meta.settings._iDisplayStart + 1;
+                    }
                     },
-                    {
-                        data: 'value',
-                        name: 'value'
-                    },
-                    {
-                        data: 'claimed_at',
-                        name: 'claimed_at',
-                        responsivePriority: -1,
-                    },
-                    {
-                        data: 'expired_at',
-                        name: 'expired_at',
-                        responsivePriority: -1,
-                    },
-                    {
-                        data: 'used_at',
-                        name: 'used_at',
-                        responsivePriority: -1,
-                    },
-                    {
-                        data: 'status',
-                        name: 'status',
-                        responsivePriority: -1,
-                    },
-                ]
-
-            });
+                    { data: 'academic_year.name', name: 'academic_year.name' },
+                    { data: 'name', name: 'name' },
+                    { data: 'total', name: 'total' },
+                    { data: 'total_paid', name: 'total_paid' },
+                    { data: 'total_unpaid', name: 'total_unpaid' },
+                    { data: 'status', name: 'status',
+                    responsivePriority: -1,
+                    }
+                    ]
+                    });
         })
 </script>
 @endpush
