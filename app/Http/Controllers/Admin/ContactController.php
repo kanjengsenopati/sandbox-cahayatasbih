@@ -6,6 +6,7 @@ use App\Models\Contact;
 use Illuminate\Http\Request;
 use Yajra\DataTables\DataTables;
 use App\Http\Controllers\Controller;
+use Illuminate\Support\Facades\Auth;
 use App\Http\Requests\Admin\ContactRequest;
 
 class ContactController extends Controller
@@ -18,8 +19,11 @@ class ContactController extends Controller
      */
     public function index()
     {
+        if (!Auth::user()->can('Manage Pengaturan Aplikasi')) {
+            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
+        }
         if (request()->ajax()) {
-            $data = Contact::latest()->get();
+            $data = Contact::latest();
             return DataTables::of($data)
                 ->editColumn('type', function ($data) {
                     if ($data->type == Contact::TYPE_SUPERADMIN) {
@@ -32,8 +36,8 @@ class ContactController extends Controller
                     $actionEdit = route('contact.edit', $data->id);
                     $actionDelete = route('contact.destroy', $data->id);
                     return "<div class='d-flex justify-content-center'>" .
-                        view('components.action.edit', ['action' => $actionEdit]) .
-                        view('components.action.delete', ['action' => $actionDelete, 'id' => $data->id]) .
+                        view('components.action.edit', ['action' => $actionEdit, 'name' => 'Pengaturan Aplikasi']) .
+                        view('components.action.delete', ['action' => $actionDelete, 'id' => $data->id, 'name' => 'Pengaturan Aplikasi']) .
                         "</div>";
                 })
                 ->rawColumns(['action', 'type'])

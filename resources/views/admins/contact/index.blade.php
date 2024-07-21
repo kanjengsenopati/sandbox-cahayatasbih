@@ -50,15 +50,8 @@
             <div class="card">
                 <!--begin::Card header-->
                 <div class="card-header d-flex align-items-center justify-content-between border-0 pt-6">
-                    <!--begin::Card title-->
-                    <div class="card-title">
-                        {{-- <h3 class="text-dark">Sekolah</h3> --}}
-                    </div>
-                    <div class="">
-                        <a type="a" class="btn btn-sm btn-primary" id="btn_add_permission"
-                            href="{{ route('contact.create') }}"><i class="fa fa-plus"></i> Kontak</a>
-                        <!--end::Primary button-->
-                    </div>
+
+                    <x-action.create name="Pengaturan Aplikasi" label="Kontak" action="{{ route('contact.create') }}" />
                     <!--end::Card title-->
                 </div>
                 <!--end::Card header-->

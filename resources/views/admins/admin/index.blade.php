@@ -1,4 +1,4 @@
-@extends('layouts.master', ['title' => 'Admin'])
+@extends('layouts.master', ['title' => 'Data Pengguna'])
 @section('content')
 <div class="content d-flex flex-column flex-column-fluid" id="kt_content">
     <!--begin::Toolbar-->
@@ -10,7 +10,7 @@
                 data-kt-swapper-parent="{default: '#kt_content_container', 'lg': '#kt_toolbar_container'}"
                 class="page-title d-flex align-items-center flex-wrap me-3 mb-5 mb-lg-0">
                 <!--begin::Title-->
-                <h1 class="d-flex text-dark fw-bolder fs-3 align-items-center my-1"> Daftar Admin</h1>
+                <h1 class="d-flex text-dark fw-bolder fs-3 align-items-center my-1">Data Pengguna</h1>
                 <!--end::Title-->
                 <!--begin::Separator-->
                 <span class="h-20px border-gray-300 border-start mx-4"></span>
@@ -19,7 +19,7 @@
                 <ul class="breadcrumb breadcrumb-separatorless fw-bold fs-7 my-1">
                     <!--begin::Item-->
                     <li class="breadcrumb-item text-muted">
-                        <a href="{{ route('admin.index') }}" class="text-muted text-hover-primary">Admin</a>
+                        <a href="{{ route('admin.index') }}" class="text-muted text-hover-primary">Pengguna</a>
                     </li>
                     <!--end::Item-->
                     <!--begin::Item-->
@@ -28,7 +28,7 @@
                     </li>
                     <!--end::Item-->
                     <!--begin::Item-->
-                    <li class="breadcrumb-item text-dark">List Admin</li>
+                    <li class="breadcrumb-item text-dark">Data Pengguna</li>
                     <!--end::Item-->
                 </ul>
                 <!--end::Breadcrumb-->
@@ -47,7 +47,7 @@
                 <div class="card-header d-flex align-items-center justify-content-between border-0 pt-6">
                     <!--begin::Card title-->
                     <div class="card-title">
-                        <h3 class="text-dark">Admin</h3>
+                        <h3 class="text-dark">Data Pengguna</h3>
                     </div>
                     <x-action.create name="Admin" action="{{ route('admin.create') }}" />
                     <!--end::Card title-->
