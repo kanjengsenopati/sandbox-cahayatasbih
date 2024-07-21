@@ -66,12 +66,12 @@ class Student extends Model
 
     public function tahfidzs()
     {
-        return $this->hasMany(Tahfidz::class)->withTrashed();
+        return $this->hasMany(Tahfidz::class);
     }
 
     public function bills()
     {
-        return $this->hasMany(Bill::class)->withTrashed();
+        return $this->hasMany(Bill::class);
     }
 
     public function saldoHistories()
