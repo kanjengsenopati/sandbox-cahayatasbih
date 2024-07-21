@@ -342,8 +342,8 @@
                 </div>
                 @endcanany
 
-                @canany(['Manage Saldo Santri', 'Manage Tabungan Santri','Manage Jadwal', 'Manage Tahfidz', 'Manage Pos
-                Kasir', 'Manage Tagihan', 'Manage Perilaku Santri'])
+                @canany(['Manage Saldo Santri', 'Manage Tabungan Santri','Manage Jadwal', 'Manage Tahfidz',
+                'Manage Pos Kasir', 'Manage Tagihan', 'Manage Perilaku Santri'])
                 <div data-kt-menu-trigger="click"
                     class="menu-item menu-accordion {{ request()->routeIs(['bill.*', 'saldo-history.*', 'saving-history.*', 'order-item.*', 'study-grade.*',
                     'tahfidz.*', 'student-counseling-score.*', 'schedule.*','saldo-bank.*', 'saving-bank.*']) ? 'show' : '' }}">
@@ -448,6 +448,9 @@
                 </div>
                 @endcanany
 
+                @canany(['Manage Laporan Pos Kasir', 'Manage Laporan Tagihan', 'Manage Laporan Santri', 'Manage Laporan
+                Nilai Akademik', 'Manage Laporan Tahfidz',
+                'Manage Laporan Perilaku Siswa', 'Manage Laporan Saldo Santri', 'Manage Laporan Fee Aplikasi'])
                 <div data-kt-menu-trigger="click" class="menu-item menu-accordion {{ request()->routeIs(['report-bill.*', 'report-student.*','report-tahfidz.*',
                     'report-student-counseling-score.*', 'report-app-fee.*',
                     'report-saldo.*', 'report-study-grade.*', 'order-item-history.*'
@@ -551,7 +554,7 @@
                         @endcan
                     </div>
                 </div>
-
+                @endcanany
             </div>
             <!--end::Menu-->
         </div>
