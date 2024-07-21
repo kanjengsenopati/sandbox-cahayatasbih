@@ -26,103 +26,189 @@ class ReportBillController extends Controller
             return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
         }
         if (request()->ajax()) {
-            $type = request()->type;
-
-            // Query dasar untuk kedua permintaan Ajax
-            $query = Student::with('classroom', 'school', 'bills')
-                ->hasSchool();
-
-            // ambil data bulan dan tahun dari request
             $startMonth = request()->start_date ? date('n', strtotime(request()->start_date)) : null;
             $endMonth = request()->end_date ? date('n', strtotime(request()->end_date)) : null;
             $startYear = request()->start_date ? date('Y', strtotime(request()->start_date)) : null;
             $endYear = request()->end_date ? date('Y', strtotime(request()->end_date)) : null;
+            $data = BillType::with('billItem', 'academicYear', 'bills')
+                ->when(request()->start_date && request()->end_date, function ($query) use ($startMonth, $endMonth, $startYear, $endYear) {
+                    $query->whereHas('bills', function ($query) use ($startMonth, $endMonth, $startYear, $endYear) {
+                        $query->where('year', '>=', $startYear)
+                            ->where('year', '<=', $endYear)
+                            ->where('month', '>=', $startMonth)
+                            ->where('month', '<=', $endMonth);
+                    });
+                })
+                ->when(request()->school_id && request()->school_id != 'null', function ($query) {
+                    $query->whereHas('bills.student', function ($query) {
+                        $query->whereHas('classroom', function ($query) {
+                            $query->where('school_id', request()->school_id);
+                        });
+                    });
+                })
+                ->when(request()->academic_year_id && request()->academic_year_id != 'null', function ($query) {
+                    $query->whereHas('bills', function ($query) {
+                        $query->where('academic_year_id', request()->academic_year_id);
+                    });
+                })
+                ->when(request()->classroom_id && request()->classroom_id != 'null', function ($query) {
+                    $query->whereHas('bills.student', function ($query) {
+                        $query->where('classroom_id', request()->classroom_id);
+                    });
+                })
+                // ->whereHas('bills', fn ($query) => $query->where('student_id', $id))
+                ->latest();
 
-
-            if (request()->start_date && request()->end_date) {
-                $query->whereHas('bills', function ($query) use ($startMonth, $endMonth, $startYear, $endYear) {
-                    $query->where('year', '>=', $startYear)
-                        ->where('year', '<=', $endYear)
-                        ->where('month', '>=', $startMonth)
-                        ->where('month', '<=', $endMonth);
-                });
-            }
-
-            // Filter berdasarkan request parameters
-            if (request()->has('school_id') && request()->school_id != 'null') {
-                $query->whereHas('classroom', function ($query) {
-                    $query->where('school_id', request()->school_id);
-                });
-            }
-
-            if (request()->has('classroom_id') && request()->classroom_id != 'null') {
-                $query->where('classroom_id', request()->classroom_id);
-            }
-
-            if (request()->has('academic_year_id') && request()->academic_year_id != 'null') {
-                $query->whereHas('bills', function ($query) {
-                    $query->where('academic_year_id', request()->academic_year_id);
-                });
-            }
-
-            if (request()->has('bill_type_id') && request()->bill_type_id != 'null') {
-                $query->whereHas('bills', function ($query) {
-                    $query->where('bill_type_id', request()->bill_type_id);
-                });
-            }
-
-            // Handle permintaan tipe 'table'
-            if ($type == 'table') {
-                $data = $query->orderBy('name', 'asc');
+            if (request()->type == 'bill') {
 
                 return DataTables::of($data)
+                    ->addColumn('total_bill', function ($data) {
+                        return $data->bills->count();
+                    })
+                    ->addColumn('student_count', function ($data) {
+                        return $data->bills->pluck('student_id')->unique()->count();
+                    })
+                    ->editColumn('type', function ($data) {
+                        return $data->type === BillType::TYPE_MONTHLY ? '<span class="badge badge-primary">Bulanan</span>' : '<span class="badge badge-secondary">Bebas</span>';
+                    })
                     ->addColumn('action', function ($data) {
                         $actionShow = route('report-bill.show', $data->id);
                         return "<div class='d-flex justify-content-center'>" .
                             view('components.action.show', [
-                                'action' => $actionShow, 'label' => 'Cetak',
-                                'icon' => 'fa fa-print'
+                                'action' => $actionShow
                             ]) .
                             "</div>";
                     })
-                    ->rawColumns(['action'])
+                    ->rawColumns(['action', 'type'])
                     ->make(true);
-            }
-
-            // Handle permintaan tipe 'total'
-
-            if ($type == 'total') {
-                $data = $query->orderBy('name', 'asc')->get();
-
-                $total_paid = 0;
-                foreach ($data as $student) {
-                    $total_paid += $student->bills->where('status', Bill::STATUS_PAID)->sum('amount');
-                }
-                // $total = $data->whereHas('bills', function ($query) {
-                //     $query->where('status', Bill::STATUS_UNPAID);
-                // })->count();
-                // sum total tagihan
+            } elseif (request()->type == 'total') {
+                $data = $data->get();
                 $total = 0;
-                foreach ($data as $student) {
-                    $total += $student->bills->sum('amount');
+                $totalPaid = 0;
+                foreach ($data as $billType) {
+                    $total += $billType->bills->sum('amount');
+                    $totalPaid += $billType->bills->where('status', Bill::STATUS_PAID)->sum('amount');
                 }
-
                 return response()->json([
-                    'total_paid' => number_format($total_paid, 0, ',', '.'),
                     'total' => number_format($total, 0, ',', '.'),
-                    'realisasion_percentage' => $total == 0 ? 0 : number_format(($total_paid / $total) * 100, 2, ',', '.') . '%',
-                    'total_unpaid' => number_format($total - $total_paid, 0, ',', '.')
+                    'total_paid' => number_format($totalPaid, 0, ',', '.'),
+                    'realisasion_percentage' => $total == 0 ? 0 : number_format(($totalPaid / $total) * 100, 2, ',', '.') . '%',
+                    'total_unpaid' => number_format($total - $totalPaid, 0, ',', '.')
                 ]);
             }
         }
 
-        // Ambil data untuk dropdown
         $schools = School::hasSchool()->orderBy('name', 'asc')->get();
         $academicYears = AcademicYear::orderBy('name', 'asc')->get();
         $billTypes = BillType::orderBy('name', 'asc')->get();
 
         return view('admins.report-bill.index', compact('schools', 'academicYears', 'billTypes'));
     }
+
+
+    // public function index()
+    // {
+    //     if (!Auth::user()->can('Manage Laporan Tagihan')) {
+    //         return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
+    //     }
+    //     if (request()->ajax()) {
+    //         $type = request()->type;
+
+    //         // Query dasar untuk kedua permintaan Ajax
+    //         $query = Student::with('classroom', 'school', 'bills')
+    //             ->hasSchool();
+
+    //         // ambil data bulan dan tahun dari request
+    //         $startMonth = request()->start_date ? date('n', strtotime(request()->start_date)) : null;
+    //         $endMonth = request()->end_date ? date('n', strtotime(request()->end_date)) : null;
+    //         $startYear = request()->start_date ? date('Y', strtotime(request()->start_date)) : null;
+    //         $endYear = request()->end_date ? date('Y', strtotime(request()->end_date)) : null;
+
+
+    //         if (request()->start_date && request()->end_date) {
+    //             $query->whereHas('bills', function ($query) use ($startMonth, $endMonth, $startYear, $endYear) {
+    //                 $query->where('year', '>=', $startYear)
+    //                     ->where('year', '<=', $endYear)
+    //                     ->where('month', '>=', $startMonth)
+    //                     ->where('month', '<=', $endMonth);
+    //             });
+    //         }
+
+    //         // Filter berdasarkan request parameters
+    //         if (request()->has('school_id') && request()->school_id != 'null') {
+    //             $query->whereHas('classroom', function ($query) {
+    //                 $query->where('school_id', request()->school_id);
+    //             });
+    //         }
+
+    //         if (request()->has('classroom_id') && request()->classroom_id != 'null') {
+    //             $query->where('classroom_id', request()->classroom_id);
+    //         }
+
+    //         if (request()->has('academic_year_id') && request()->academic_year_id != 'null') {
+    //             $query->whereHas('bills', function ($query) {
+    //                 $query->where('academic_year_id', request()->academic_year_id);
+    //             });
+    //         }
+
+    //         if (request()->has('bill_type_id') && request()->bill_type_id != 'null') {
+    //             $query->whereHas('bills', function ($query) {
+    //                 $query->where('bill_type_id', request()->bill_type_id);
+    //             });
+    //         }
+
+    //         // Handle permintaan tipe 'table'
+    //         if ($type == 'table') {
+    //             $data = $query->orderBy('name', 'asc');
+
+    //             return DataTables::of($data)
+    //                 ->addColumn('action', function ($data) {
+    //                     $actionShow = route('report-bill.show', $data->id);
+    //                     return "<div class='d-flex justify-content-center'>" .
+    //                         view('components.action.show', [
+    //                             'action' => $actionShow, 'label' => 'Cetak',
+    //                             'icon' => 'fa fa-print'
+    //                         ]) .
+    //                         "</div>";
+    //                 })
+    //                 ->rawColumns(['action'])
+    //                 ->make(true);
+    //         }
+
+    //         // Handle permintaan tipe 'total'
+
+    //         if ($type == 'total') {
+    //             $data = $query->orderBy('name', 'asc')->get();
+
+    //             $total_paid = 0;
+    //             foreach ($data as $student) {
+    //                 $total_paid += $student->bills->where('status', Bill::STATUS_PAID)->sum('amount');
+    //             }
+    //             // $total = $data->whereHas('bills', function ($query) {
+    //             //     $query->where('status', Bill::STATUS_UNPAID);
+    //             // })->count();
+    //             // sum total tagihan
+    //             $total = 0;
+    //             foreach ($data as $student) {
+    //                 $total += $student->bills->sum('amount');
+    //             }
+
+    //             return response()->json([
+    //                 'total_paid' => number_format($total_paid, 0, ',', '.'),
+    //                 'total' => number_format($total, 0, ',', '.'),
+    //                 'realisasion_percentage' => $total == 0 ? 0 : number_format(($total_paid / $total) * 100, 2, ',', '.') . '%',
+    //                 'total_unpaid' => number_format($total - $total_paid, 0, ',', '.')
+    //             ]);
+    //         }
+    //     }
+
+    //     // Ambil data untuk dropdown
+    //     $schools = School::hasSchool()->orderBy('name', 'asc')->get();
+    //     $academicYears = AcademicYear::orderBy('name', 'asc')->get();
+    //     $billTypes = BillType::orderBy('name', 'asc')->get();
+
+    //     return view('admins.report-bill.index', compact('schools', 'academicYears', 'billTypes'));
+    // }
 
 
     /**

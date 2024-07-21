@@ -74,7 +74,7 @@
                             <div class="col-md-6 col-lg-3">
                                 <label for="filter_school_id" class="form-label">UPT</label>
                                 <select name="school_id" class="form-select" id="filter_school_id">
-                                    <option value="">Pilih Pendidikan</option>
+                                    <option value="">Semua UPT</option>
                                     @foreach ($schools as $school)
                                     <option value="{{ $school->id }}">{{ $school->name }}</option>
                                     @endforeach
@@ -83,37 +83,17 @@
                             <div class="col-md-6 col-lg-3">
                                 <label for="filter_classroom_id" class="form-label">Kelas</label>
                                 <select name="classroom_id" class="form-select" id="filter_classroom_id">
-                                    <option value="">Pilih Kelas</option>
+                                    <option value="">Semua Kelas</option>
                                 </select>
                             </div>
                             <div class="col-md-6 col-lg-3">
                                 <label for="filter_academic_year_id" class="form-label">Tahun Ajaran</label>
                                 <select name="academic_year_id" class="form-select" id="filter_academic_year_id">
-                                    <option value="">Pilih Tahun Ajaran</option>
+                                    <option value="">Semua Tahun Ajaran</option>
                                     @foreach ($academicYears as $academicYear)
                                     <option value="{{ $academicYear->id }}">{{ $academicYear->name }}</option>
                                     @endforeach
                                 </select>
-                            </div>
-                            <div class="col-md-6 col-lg-3">
-                                <label for="filter_bill_type_id" class="form-label">Tagihan</label>
-                                <select name="bill_type_id" class="form-select select2" id="filter_bill_type_id">
-                                    <option value="">Semua Tagihan</option>
-                                    @foreach ($billTypes as $billType)
-                                    <option value="{{ $billType->id }}">{{ $billType->name }}</option>
-                                    @endforeach
-                                </select>
-                            </div>
-                            <div class="col-md-6 col-lg-3">
-                                <label for="filter_status" class="form-label">Status</label>
-                                <select class="form-select" id="filter_status" name="status">
-                                    <option value="">Pilih Status</option>
-                                    <option value="PAID">Lunas</option>
-                                    <option value="UNPAID">Belum Lunas</option>
-                                </select>
-                            </div>
-                            <div class="col-md-6 col-lg-3 align-self-end">
-                                <button onclick="searchData()" class="btn btn-primary">Tampilkan</button>
                             </div>
                         </div>
                     </form>
@@ -182,9 +162,11 @@
                             <thead>
                                 <tr class="text-start text-gray-400 fw-bolder fs-7 text-uppercase gs-0">
                                     <th style="width: 5%">No</th>
-                                    <th>NIS</th>
-                                    <th>Nama Siswa</th>
-                                    <th>Kelas</th>
+                                    <th>Nama</th>
+                                    <th>Tahun Akademik</th>
+                                    <th>Tipe</th>
+                                    <th>Total Tagihan</th>
+                                    <th>Total Santri</th>
                                     <th class="text-center min-w-100px" style="width: 22%">Aksi</th>
                                 </tr>
                             </thead>
@@ -194,7 +176,7 @@
                     <!--end::Table-->
 
                     <!-- Add Button for WA Blast -->
-                    <div class="text-center mt-3">
+                    {{-- <div class="text-center mt-3">
                         <button class="btn btn-success" id="send-blast-notif"><i class="bi bi-whatsapp"></i>
                             <span class="indicator-label" id="buttonText">Kirim
                                 Notif
@@ -202,7 +184,7 @@
                             <span class="indicator-progress d-none">Please wait...
                                 <span class="spinner-border spinner-border-sm align-middle ms-2"></span>
                             </span></button>
-                    </div>
+                    </div> --}}
                 </div>
                 <!--end::Card body-->
             </div>
@@ -221,27 +203,6 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/locale/id.min.js"></script>
 <script>
     $(document).ready(function() {
-    // Event handler untuk perubahan filter sekolah
-    $('#filter_school_id').on('change', function() {
-        var school_id = $(this).val();
-        $.ajax({
-            url: "{{ route('report-bill.get-classroom') }}",
-            type: "GET",
-            data: { school_id: school_id },
-            success: function(response) {
-                $('#filter_classroom_id').empty();
-                if (response.data.length > 0) {
-                    $('#filter_classroom_id').append('<option value="">Semua Kelas</option>');
-                    $.each(response.data, function(key, value) {
-                        $('#filter_classroom_id').append('<option value="' + value.id + '">' + value.name + '</option>');
-                    });
-                } else {
-                    $('#filter_classroom_id').append('<option value="">Tidak ada kelas</option>');
-                }
-            }
-        });
-    });
-
     // Inisialisasi DataTable
     var table = initializeTable();
 
@@ -251,17 +212,17 @@
             serverSide: true,
             ajax: {
                 url: "{{ route('report-bill.index') }}",
-                // url: "{{ route('report-bill.get-data') }}",
                 data: function(d) {
-                    d.type = 'table';
+                    d.type = 'bill';
                     d.school_id = $('#filter_school_id').val();
                     d.classroom_id = $('#filter_classroom_id').val();
                     d.academic_year_id = $('#filter_academic_year_id').val();
-                    d.bill_type_id = $('#filter_bill_type_id').val();
-                    d.status = $('#filter_status').val();
                     d.start_date = start_date;
                     d.end_date = end_date;
                 }
+            },
+            language: {
+                 processing: "Sedang memproses data, Silahkan ditunggu..."
             },
             lengthMenu: [
             [10, 25, 50, 100, -1],
@@ -271,9 +232,11 @@
                 { data: null, sortable: false, searchable: false, render: function(data, type, row, meta) {
                     return meta.row + meta.settings._iDisplayStart + 1;
                 }},
-                { data: 'nis', name: 'nis' },
                 { data: 'name', name: 'name' },
-                { data: 'classroom.name', name: 'classroom.name' },
+                { data: 'academic_year.name', name: 'academic_year.name' },
+                { data: 'type', name: 'type' },
+                { data: 'total_bill', name: 'total_bill' },
+                { data: 'student_count', name: 'student_count' },
                 { data: 'action', name: 'action', orderable: false, searchable: false }
             ]
         });
@@ -294,7 +257,7 @@
                 type: 'total',
                 school_id: $('#filter_school_id').val(),
                 classroom_id: $('#filter_classroom_id').val(),
-                status: $('#filter_status').val(),
+                academic_year_id: $('#filter_academic_year_id').val(),
                 start_date: start_date,
                 end_date: end_date
             },
@@ -309,62 +272,81 @@
         });
     }
 
-    // Event handlers untuk memuat ulang tabel
-    $('#btn_tampilkan, #filter_form').on('click submit', function(event) {
-        event.preventDefault();
+    $('#filter_school_id').on('change', function() {
+         var school_id = $(this).val();
+         $.ajax({
+        url: "{{ route('report-bill.get-classroom') }}",
+        type: "GET",
+        data: { school_id: school_id },
+          success: function(response) {
+          $('#filter_classroom_id').empty();
+            if (response.data.length > 0) {
+                  $('#filter_classroom_id').append('<option value="">Semua Kelas</option>');
+            $.each(response.data, function(key, value) {
+                 $('#filter_classroom_id').append('<option value="' + value.id + '">' + value.name + '</option>');
+            });
+            } else {
+                 $('#filter_classroom_id').append('<option value="">Tidak ada kelas</option>');
+            }
+            }
+         });
+
         reloadTable();
     });
 
-    $('#filter_school_id, #filter_classroom_id, #filter_status').on('change', reloadTable);
-
-    // Mengirim notifikasi tagihan
-    $('#send-blast-notif').on('click', function() {
-        var button = $(this);
-        changeButtonText(button, true);
-
-        var data = {
-            _token: "{{ csrf_token() }}",
-            school_id: $('#filter_school_id').val(),
-            classroom_id: $('#filter_classroom_id').val(),
-            academic_year_id: $('#filter_academic_year_id').val(),
-            bill_type_id: $('#filter_bill_type_id').val(),
-            status: $('#filter_status').val()
-        };
-
-        $.ajax({
-            url: "{{ route('report-bill.send-bill-notification') }}",
-            type: "POST",
-            data: data,
-            success: function(response) {
-                if (response.code === 200) {
-                    toastr.success("Berhasil mengirim notifikasi tagihan ke WhatsApp");
-                } else {
-                    toastr.error(response.message);
-                }
-            },
-            error: function(xhr, status, error) {
-                toastr.error("Terjadi kesalahan saat mengirim notifikasi: " + error);
-            },
-            complete: function() {
-                changeButtonText(button, false);
-            }
-        });
+    // handle filter change
+    $('#filter_classroom_id, #filter_academic_year_id').on('change', function() {
+        reloadTable();
     });
 
-    function changeButtonText(button, sending) {
-        var buttonText = button.find('.indicator-label');
-        var indicatorProgress = button.find('.indicator-progress');
+    // Mengirim notifikasi tagihan
+    // $('#send-blast-notif').on('click', function() {
+    //     var button = $(this);
+    //     changeButtonText(button, true);
 
-        if (sending) {
-            buttonText.text('Mengirim Notifikasi...');
-            button.attr('disabled', true);
-            indicatorProgress.removeClass('d-none');
-        } else {
-            buttonText.text('Kirim Notif Tagihan WA');
-            button.removeAttr('disabled');
-            indicatorProgress.addClass('d-none');
-        }
-    }
+    //     var data = {
+    //         _token: "{{ csrf_token() }}",
+    //         school_id: $('#filter_school_id').val(),
+    //         classroom_id: $('#filter_classroom_id').val(),
+    //         academic_year_id: $('#filter_academic_year_id').val(),
+    //         bill_type_id: $('#filter_bill_type_id').val(),
+    //         status: $('#filter_status').val()
+    //     };
+
+    //     $.ajax({
+    //         url: "{{ route('report-bill.send-bill-notification') }}",
+    //         type: "POST",
+    //         data: data,
+    //         success: function(response) {
+    //             if (response.code === 200) {
+    //                 toastr.success("Berhasil mengirim notifikasi tagihan ke WhatsApp");
+    //             } else {
+    //                 toastr.error(response.message);
+    //             }
+    //         },
+    //         error: function(xhr, status, error) {
+    //             toastr.error("Terjadi kesalahan saat mengirim notifikasi: " + error);
+    //         },
+    //         complete: function() {
+    //             changeButtonText(button, false);
+    //         }
+    //     });
+    // });
+
+    // function changeButtonText(button, sending) {
+    //     var buttonText = button.find('.indicator-label');
+    //     var indicatorProgress = button.find('.indicator-progress');
+
+    //     if (sending) {
+    //         buttonText.text('Mengirim Notifikasi...');
+    //         button.attr('disabled', true);
+    //         indicatorProgress.removeClass('d-none');
+    //     } else {
+    //         buttonText.text('Kirim Notif Tagihan WA');
+    //         button.removeAttr('disabled');
+    //         indicatorProgress.addClass('d-none');
+    //     }
+    // }
 
     // Inisialisasi date range picker
     $('#dateRange').daterangepicker({
