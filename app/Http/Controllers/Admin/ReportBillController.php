@@ -75,9 +75,11 @@ class ReportBillController extends Controller
                     ->addColumn('action', function ($data) {
                         $actionShow = route('report-bill.show', $data->id);
                         return "<div class='d-flex justify-content-center'>" .
-                            view('components.action.show', [
-                                'action' => $actionShow
-                            ]) .
+                            // view('components.action.show', [
+                            //     'action' => $actionShow
+                            // ]) .
+                            // add button detail with no icon 
+                            "<a href='$actionShow' class='btn btn-primary btn-sm'>Lihat Detail</a>" .
                             "</div>";
                     })
                     ->rawColumns(['action', 'type'])
