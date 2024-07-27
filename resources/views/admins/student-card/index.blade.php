@@ -183,7 +183,7 @@
                                 <div class="student-nis">
                                     {{ $student->nis ?? '' }}
                                 </div>
-                                <div class="student-class">
+                                <div class="student-school">
                                     {{ $student->classroom?->name ?? '' }}
                                 </div>
                                 <div class="student-school">
