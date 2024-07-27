@@ -19,12 +19,23 @@ class UserImportData implements ToCollection, WithHeadingRow
     {
         foreach ($rows as $row) {
             if ($row['nama'] !== null) {
+
+                // format phone number jika depannya bukan 0 dan lebih dari 1 digit maka tambah 0 di depannya
+                $phone = $row['nomor_handphone'] ?? null;
+                if (substr($phone, 0, 1) !== '0' && strlen($phone) > 1) {
+                    $phone = '0' . $phone;
+                }
+                // jika depannya 62 maka hilangan 62 dan tambah 0 di depannya
+                if (substr($phone, 0, 2) == '62') {
+                    $phone = '0' . substr($phone, 2);
+                }
+
                 User::create([
                     'name' => $row['nama'],
-                    'email' => $row['email'],
+                    'email' => $row['email'] ?? null,
                     'password' => bcrypt($row['password']),
-                    'phone' => $row['nomor_handphone'] ?? null,
-                    'gender' => strtoupper($row['jenis_kelamin']),
+                    'phone' => $phone ?? null,
+                    'gender' => null,
                 ]);
             }
         }

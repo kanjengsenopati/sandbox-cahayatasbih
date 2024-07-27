@@ -1,5 +1,9 @@
 {
     "anton": {
         "normal": "anton_normal_9f6b1e615e674452881761d975aab062"
+    },
+    "raleway": {
+        "normal": "D:\\Laravel\\cahaya-tasbih\\storage\\fonts\/raleway_normal_66266c4632471de398a14bdec8413bb7",
+        "bold": "raleway_bold_5b9f5983585810045c0c5c7240f79ea2"
     }
 }

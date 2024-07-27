@@ -24,7 +24,7 @@ class UserController extends Controller
             return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
         }
         if (request()->ajax()) {
-            $data = User::hasSchool()->latest();
+            $data = User::latest();
             return DataTables::of($data)
                 ->addColumn('action', function ($data) {
                     $actionEdit = route('user.edit', $data->id);
@@ -140,6 +140,7 @@ class UserController extends Controller
                 return redirect()->route('user.index')->with('success', 'Data berhasil diimport');
             });
         } catch (\Exception $e) {
+            dd($e);
             // Log the exception
             Log::error('Import failed: ' . $e->getMessage());
 

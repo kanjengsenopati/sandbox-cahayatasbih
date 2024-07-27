@@ -177,17 +177,17 @@
                     <div class="card-content">
                         <div class="student-info">
                             <div class="student-name">
-                                {{ $student->name ?? 'Nama Siswa' }}
+                                {{ $student->name ?? '' }}
                             </div>
                             <div class="student-info-row">
                                 <div class="student-nis">
-                                    {{ $student->nis ?? 'NIS' }}
+                                    {{ $student->nis ?? '' }}
                                 </div>
                                 <div class="student-class">
-                                    Kelas: VII-A
+                                    {{ $student->classroom?->name ?? '' }}
                                 </div>
                                 <div class="student-school">
-                                    PPTQ Cahaya Tasbih
+                                    {{ $student->classroom?->school?->name ?? '' }}
                                 </div>
                             </div>
                         </div>

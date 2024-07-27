@@ -41,6 +41,13 @@ class DashboardController extends Controller
         // $setting = ApplicationSetting::first();
         // $targetMonth = $setting->target_month;
         // $targetYear = $setting->target_year;
+
+        // delete all data student
+        // $user = User::all();
+        // foreach ($user as $u) {
+        //     $u->delete();
+        // }
+
         $total_parents = User::where('is_active', 1)->count();
         $total_students = Student::count();
         $data = [
