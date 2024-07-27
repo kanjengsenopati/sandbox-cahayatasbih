@@ -126,8 +126,11 @@ class Student extends Model
     public static function boot()
     {
         parent::boot();
+        // static::creating(function ($model) {
+        //     $model->barcode = Str::random(17);
+        // });
         static::creating(function ($model) {
-            $model->barcode = Str::random(17);
+            $model->barcode = self::generateRandomNumber();
         });
 
         static::creating(function ($model) {
@@ -135,6 +138,11 @@ class Student extends Model
                 $model->id = (string) Str::uuid();
             }
         });
+    }
+
+    private static function generateRandomNumber()
+    {
+        return substr(str_shuffle(str_repeat('0123456789', 17)), 0, 17);
     }
 
     public function scopeHasSchool($query)

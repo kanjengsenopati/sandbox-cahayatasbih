@@ -30,9 +30,17 @@ class DashboardController extends Controller
      */
     public function index()
     {
-        $setting = ApplicationSetting::first();
-        $targetMonth = $setting->target_month;
-        $targetYear = $setting->target_year;
+        // $students = Student::all();
+
+        // foreach ($students as $student) {
+        //     $newBarcode = $this->generateRandomNumber();
+        //     $student->barcode = $newBarcode;
+        //     $student->save();
+        // }
+
+        // $setting = ApplicationSetting::first();
+        // $targetMonth = $setting->target_month;
+        // $targetYear = $setting->target_year;
         $total_parents = User::where('is_active', 1)->count();
         $total_students = Student::count();
         $data = [
@@ -46,6 +54,11 @@ class DashboardController extends Controller
         return view('admins.dashboard.index', compact(
             'data',
         ));
+    }
+
+    public function generateRandomNumber()
+    {
+        return substr(str_shuffle(str_repeat('0123456789', 30)), 0, 30);
     }
 
     /**
