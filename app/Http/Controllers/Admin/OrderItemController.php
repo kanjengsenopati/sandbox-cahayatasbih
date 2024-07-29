@@ -110,7 +110,8 @@ class OrderItemController extends Controller
         }
         $request->validate([
             'payment_method' => 'required',
-            'student_id' => 'required_if:payment_method,Saldo|nullable|exists:students,id',
+            // 'student_id' => 'required_if:payment_method,Saldo|nullable|exists:students,id',
+            'barcode' => 'required_if:payment_method,Saldo|nullable',
         ]);
 
         // Use database transaction to ensure data consistency
@@ -118,7 +119,7 @@ class OrderItemController extends Controller
 
         try {
 
-            if ($request->payment_method == PointOfSaleTransaction::PAYMENT_SALDO && !$request->student_id) {
+            if ($request->payment_method == PointOfSaleTransaction::PAYMENT_SALDO && !$request->barcode) {
                 return redirect()->back()->with('error', 'Maaf, Pembayaran Saldo harus scan barcode siswa');
             }
 
@@ -140,14 +141,14 @@ class OrderItemController extends Controller
 
             // Get student data
             if ($request->payment_method == PointOfSaleTransaction::PAYMENT_SALDO) {
-                $student = Student::findOrFail($request->student_id);
+                $student = Student::where('barcode', $request->barcode)->first();
                 if ($student->saldo < $total) {
-                    return redirect()->back()->with('error', 'Saldo siswa tidak mencukupi');
+                    return redirect()->back()->with('error', 'Maaf, Saldo Santri tidak mencukupi');
                 }
 
                 // check if student is blocked
                 if ($student->is_blocked) {
-                    return redirect()->back()->with('error', 'Saldo Siswa Masih Diblokir');
+                    return redirect()->back()->with('error', 'Maaf, Saldo Santri diblokir oleh Wali Santri');
                 }
 
                 // Check if student has reached the daily limit
@@ -178,7 +179,7 @@ class OrderItemController extends Controller
             $paymentCode = 'POS-' . now()->format('Ymd') . str_pad(PointOfSaleTransaction::whereDate('paid_at', now())->count() + 1, 3, '0', STR_PAD_LEFT);
             // Save transaction data
             $transaction = PointOfSaleTransaction::create([
-                'student_id' => $request->student_id ?? null,
+                'student_id' => $request->payment_method == PointOfSaleTransaction::PAYMENT_SALDO ? $student->id : null,
                 'admin_id' => $adminId,
                 'payment_code' => $paymentCode,
                 'pay_amount' => $total,
@@ -207,7 +208,11 @@ class OrderItemController extends Controller
             // Commit the transaction
             DB::commit();
 
-            return redirect()->route('order-item.index')->with('success', 'Yeay! Transaksi berhasil');
+            if ($request->payment_method == PointOfSaleTransaction::PAYMENT_SALDO) {
+                return redirect()->route('order-item.index')->with('success', 'Yeay! Transaksi berhasil, Saldo ' . $student->name . ' dikurangi Rp. ' . number_format($total, 0, ',', '.'));
+            } else {
+                return redirect()->route('order-item.index')->with('success', 'Yeay! Transaksi berhasil');
+            }
         } catch (\Exception $e) {
             // If an exception occurs, rollback the transaction
             DB::rollback();

@@ -771,37 +771,38 @@
     });
 </script>
 <script>
-    // jika #scan-card diinputkan maka cari student berdasarkan id card
-    document.getElementById('scan-card').onchange = function (e) {
-    var barcode = e.target.value;
-    axios.post("{{ route('order-item.search-student') }}", {
-    barcode: barcode
-    }).then(function (response) {
-    var student = response.data.data;
-    if (student) {
-    // replace name, saldo, and count saldo - total price
-    document.getElementById('student-name').value = student.name;
-    document.getElementById('saldo').value = 'Rp. ' + student.saldo.toLocaleString('id-ID');
-    // add student id to form form-payment
-    document.getElementById('form-payment').insertAdjacentHTML('beforeend', `<input type="hidden" name="student_id"
-        value="${student.id}">`);
-    updateTotalPrice();
-    // Clear input
-    e.target.value = '';
-    } else {
-    Swal.fire({
-    icon: 'error',
-    title: 'Santri tidak ditemukan',
-    text: 'ID Kartu Santri tidak ditemukan'
+    // Trigger search on Enter key press
+    document.getElementById('scan-card').addEventListener('keypress', function (e) {
+        if (e.key === 'Enter') {
+            var barcode = e.target.value;
+            axios.post("{{ route('order-item.search-student') }}", {
+                barcode: barcode
+            }).then(function (response) {
+                var student = response.data.data;
+                if (student) {
+                    // Replace name, saldo, and update total price
+                    document.getElementById('student-name').value = student.name;
+                    document.getElementById('saldo').value = 'Rp. ' + student.saldo.toLocaleString('id-ID');
+                    // Add student id to form-payment
+                    document.getElementById('form-payment').insertAdjacentHTML('beforeend', `<input type="hidden" name="student_id"
+                        value="${student.id}">`);
+                    updateTotalPrice();
+                    // Clear input
+                    e.target.value = '';
+                } else {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Santri tidak ditemukan',
+                        text: 'ID Kartu Santri tidak ditemukan'
+                    });
+                    // Clear input
+                    e.target.value = '';
+                }
+            }).catch(function (error) {
+                console.error(error);
+            });
+        }
     });
-    // Clear input
-    e.target.value = '';
-    }
-    }).catch(function (error) {
-    console.error(error);
-    });
-    };
-
 </script>
 <script>
     document.getElementById('santri-tab').addEventListener('click', function () {
