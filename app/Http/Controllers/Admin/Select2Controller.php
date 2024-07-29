@@ -6,6 +6,7 @@ use App\Models\Bank;
 use App\Models\Item;
 use App\Models\User;
 use App\Models\Study;
+use App\Models\School;
 use App\Models\Student;
 use App\Models\BillItem;
 use App\Models\Semester;
@@ -106,7 +107,9 @@ class Select2Controller extends Controller
     public function studentBySchool($request)
     {
         return Student::with('classroom.school')
-            ->where('school_id', $request->school_id)
+            ->whereHas('classroom', function ($query) use ($request) {
+                $query->where('school_id', $request->school_id);
+            })
             ->whereRaw('LOWER(name) like ?', ['%' . strtolower($request->search) . '%'])
             ->hasSchool()
             ->orderBy('name')
