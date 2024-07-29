@@ -151,14 +151,17 @@ class OrderItemController extends Controller
                     return redirect()->back()->with('error', 'Maaf, Saldo Santri diblokir oleh Wali Santri');
                 }
 
-                // Check if student has reached the daily limit
-                $totalThisDay = PointOfSaleTransaction::where('student_id', $student->id)
-                    ->whereDate('paid_at', now())
-                    ->where('status', PointOfSaleTransaction::STATUS_SUCCESS)
-                    ->sum('pay_amount') ?? 0;
+                if ($student->daily_limit > 0) {
 
-                if ($student->daily_limit < $totalThisDay + $total) {
-                    return redirect()->back()->with('error', 'Maaf, Siswa telah mencapai batas transaksi harian');
+                    // Check if student has reached the daily limit
+                    $totalThisDay = PointOfSaleTransaction::where('student_id', $student->id)
+                        ->whereDate('paid_at', now())
+                        ->where('status', PointOfSaleTransaction::STATUS_SUCCESS)
+                        ->sum('pay_amount') ?? 0;
+
+                    if ($student->daily_limit < $totalThisDay + $total) {
+                        return redirect()->back()->with('error', 'Maaf, Siswa telah mencapai batas transaksi harian');
+                    }
                 }
 
                 // Deduct student's balance
