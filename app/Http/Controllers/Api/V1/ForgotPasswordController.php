@@ -29,7 +29,7 @@ class ForgotPasswordController extends Controller
 
     private function generateToken()
     {
-        return Str::random(6);
+        return str_pad(random_int(0, 999999), 6, '0', STR_PAD_LEFT);
     }
 
     private function saveToken($request, $token)

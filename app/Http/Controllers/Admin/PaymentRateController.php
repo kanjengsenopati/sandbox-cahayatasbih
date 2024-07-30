@@ -66,15 +66,21 @@ class PaymentRateController extends Controller
                         foreach ($classroom->students as $student) {
                             $billAmount = $request->{"bulan_$month"}; // Get amount for current month
                             $billYear = $request->{"tahun_$month"}; // Get year for current month
-                            $student->bills()->create([
-                                'bill_type_id' => $billType->id,
-                                'classroom_id' => $classroom->id,
-                                'academic_year_id' => $billType->academic_year_id,
-                                'month' => $month,
-                                'year' => $billYear,
-                                'amount' => $billAmount,
-                                'status' => 'UNPAID',
-                            ]);
+                            $existingBill = $student->bills()->where('bill_type_id', $billType->id)
+                                ->where('month', $month)
+                                ->where('year', $billYear)
+                                ->first();
+                            if (!$existingBill) {
+                                $student->bills()->create([
+                                    'bill_type_id' => $billType->id,
+                                    'classroom_id' => $classroom->id,
+                                    'academic_year_id' => $billType->academic_year_id,
+                                    'month' => $month,
+                                    'year' => $billYear,
+                                    'amount' => $billAmount,
+                                    'status' => 'UNPAID',
+                                ]);
+                            }
                         }
                     }
                 }
@@ -85,15 +91,21 @@ class PaymentRateController extends Controller
                         foreach ($classroom->students as $student) {
                             $billAmount = $request->price; // Get amount for current month
                             $billYear = $request->year;
-                            $student->bills()->create([
-                                'bill_type_id' => $billType->id,
-                                'classroom_id' => $classroom->id,
-                                'academic_year_id' => $billType->academic_year_id,
-                                'month' => $month,
-                                'year' => $billYear,
-                                'amount' => $billAmount,
-                                'status' => 'UNPAID',
-                            ]);
+                            $existingBill = $student->bills()->where('bill_type_id', $billType->id)
+                                ->where('month', $month)
+                                ->where('year', $billYear)
+                                ->first();
+                            if (!$existingBill) {
+                                $student->bills()->create([
+                                    'bill_type_id' => $billType->id,
+                                    'classroom_id' => $classroom->id,
+                                    'academic_year_id' => $billType->academic_year_id,
+                                    'month' => $month,
+                                    'year' => $billYear,
+                                    'amount' => $billAmount,
+                                    'status' => 'UNPAID',
+                                ]);
+                            }
                         }
                     }
                 }
@@ -108,6 +120,78 @@ class PaymentRateController extends Controller
             return redirect()->back()->with('error', 'Terjadi kesalahan: ' . $e->getMessage())->withInput();
         }
     }
+
+
+    // public function store(PaymentRateRequest $request)
+    // {
+    //     try {
+    //         DB::beginTransaction();
+
+    //         $billType = BillType::findOrFail($request->bill_type_id);
+
+    //         $paymentRate = $billType->paymentRates()->create([
+    //             'amount' => $request->price,
+    //         ]);
+
+    //         // create payment rate classroom
+    //         foreach ($request->classrooms as $classroom) {
+    //             $paymentRate->paymentRateClassrooms()->create([
+    //                 'classroom_id' => $classroom,
+    //             ]);
+    //         }
+
+    //         // create bill to all student where classroom_id in classrooms
+    //         $classrooms = Classroom::whereIn('id', $request->classrooms)->get();
+    //         $months = [];
+    //         if ($billType->type == BillType::TYPE_MONTHLY) {
+    //             $months = range(1, 12);
+    //             foreach ($months as $month) {
+    //                 foreach ($classrooms as $classroom) {
+    //                     foreach ($classroom->students as $student) {
+    //                         $billAmount = $request->{"bulan_$month"}; // Get amount for current month
+    //                         $billYear = $request->{"tahun_$month"}; // Get year for current month
+    //                         $student->bills()->create([
+    //                             'bill_type_id' => $billType->id,
+    //                             'classroom_id' => $classroom->id,
+    //                             'academic_year_id' => $billType->academic_year_id,
+    //                             'month' => $month,
+    //                             'year' => $billYear,
+    //                             'amount' => $billAmount,
+    //                             'status' => 'UNPAID',
+    //                         ]);
+    //                     }
+    //                 }
+    //             }
+    //         } else {
+    //             $months = $request->months;
+    //             foreach ($months as $month) {
+    //                 foreach ($classrooms as $classroom) {
+    //                     foreach ($classroom->students as $student) {
+    //                         $billAmount = $request->price; // Get amount for current month
+    //                         $billYear = $request->year;
+    //                         $student->bills()->create([
+    //                             'bill_type_id' => $billType->id,
+    //                             'classroom_id' => $classroom->id,
+    //                             'academic_year_id' => $billType->academic_year_id,
+    //                             'month' => $month,
+    //                             'year' => $billYear,
+    //                             'amount' => $billAmount,
+    //                             'status' => 'UNPAID',
+    //                         ]);
+    //                     }
+    //                 }
+    //             }
+    //         }
+
+    //         DB::commit();
+
+    //         return redirect()->route('bill-type.index')->with('success', 'Tarif pembayaran berhasil ditambahkan');
+    //     } catch (\Exception $e) {
+    //         Log::error($e);
+    //         DB::rollBack();
+    //         return redirect()->back()->with('error', 'Terjadi kesalahan: ' . $e->getMessage())->withInput();
+    //     }
+    // }
 
 
     /**
