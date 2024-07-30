@@ -324,7 +324,6 @@ class StudentController extends Controller
                 return redirect()->route('student.index')->with('success', 'Data berhasil diimpor');
             });
         } catch (\Exception $e) {
-            dd($e);
             // Log the exception
             Log::error('Import failed: ' . $e->getMessage());
 

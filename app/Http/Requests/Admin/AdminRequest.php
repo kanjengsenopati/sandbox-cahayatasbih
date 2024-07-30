@@ -31,7 +31,7 @@ class AdminRequest extends FormRequest
             ],
             'PUT' => [
                 'name' => 'required',
-                'email' => 'required|unique:users,email,' . $this->id,
+                'email' => 'required|email',
                 'password' => 'nullable|min:8|confirmed',
                 'school_id' => 'nullable|exists:schools,id',
                 'avatar' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',

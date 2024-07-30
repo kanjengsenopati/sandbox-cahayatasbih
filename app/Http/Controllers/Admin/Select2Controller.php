@@ -39,7 +39,6 @@ class Select2Controller extends Controller
     public function user($request)
     {
         return User::whereRaw('LOWER(name) like ?', ['%' . strtolower($request->search) . '%'])
-            ->hasSchool()
             ->take(30)
             ->get();
     }

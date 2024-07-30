@@ -146,6 +146,12 @@ class AdminController extends Controller
         }
         $data = $request->except('password');
 
+        // check email is unique
+        $existAdmin = Admin::where('email', $request->email)->where('id', '!=', $admin->id)->first();
+        if ($existAdmin) {
+            return redirect()->back()->with('error', 'Email sudah digunakan');
+        }
+
         if (!empty($request->password)) {
             $data['password'] = bcrypt($request->password);
         }
