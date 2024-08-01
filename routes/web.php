@@ -247,15 +247,10 @@ Route::group(['middleware' => ['auth']], function () {
     Route::resource('ppdb-registration', PpdbRegistrationController::class);
     Route::resource('menu-navigation', MenuNavigationController::class);
     Route::resource('submenu-navigation', SubMenuNavigationController::class);
-
-    Route::group(['prefix' => 'information'], function () {
-        Route::resource(
-            'term-condition',
-            TermConditionController::class,
-            ['only' => ['index', 'store']]
-        )->names('term-condition');
-    });
 });
 
 
+Route::get('privacy-policy', [PrivacyPolicyController::class, 'index'])->name('privacy-policy');
+Route::get('term-condition', [PrivacyPolicyController::class, 'termCondition'])->name('term-condition');
+Route::get('about-us', [PrivacyPolicyController::class, 'aboutUs'])->name('about-us');
 Route::get('transaction/invoice/{id}', [TransactionController::class, 'invoice'])->name('transaction.invoice');
