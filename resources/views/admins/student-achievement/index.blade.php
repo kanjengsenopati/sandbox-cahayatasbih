@@ -55,11 +55,8 @@
                     </div>
                     <div class="mt-4 gap-2 d-flex justify-content-beetween align-items-end">
                         <div>
-
-                        </div>
-                        <div>
-                            <a type="a" class="btn btn-sm btn-primary" id="btn_add_permission"
-                                href="{{ route('student-achievement.create') }}">+ Prestasi</a>
+                            <x-action.create name="Prestasi Santri"
+                                action="{{ route('student-achievement.create') }}" />
                         </div>
                     </div>
                     <!--end::Card title-->

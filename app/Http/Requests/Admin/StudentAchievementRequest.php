@@ -25,7 +25,6 @@ class StudentAchievementRequest extends FormRequest
             'student_id' => 'required|exists:students,id',
             'academic_year_id' => 'required|exists:academic_years,id',
             'classroom_id' => 'required|exists:classrooms,id',
-            'school_id' => 'required|exists:schools,id',
             'semester' => 'required|in:GENAP,GANJIL',
             'title' => 'required|string',
             'champion' => 'required|string',

@@ -20,6 +20,7 @@ use App\Jobs\SendToPushNotificationJob;
 use App\Jobs\SendToWhatsappNotificationJob;
 use App\Http\Requests\Admin\SaldoHistoryRequest;
 use App\Http\Requests\Admin\UpdateStatusTopupSaldoRequest;
+use App\Models\TransactionDetail;
 
 class SaldoHistoryController extends Controller
 {
@@ -142,6 +143,13 @@ class SaldoHistoryController extends Controller
             return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
         }
 
+        if ($request->type === SaldoHistory::TYPE_WITHDRAW) {
+            // check if student has enough saldo
+            $student = Student::findOrFail($request->student_id);
+            if ($student->saldo < $request->amount) {
+                return redirect()->route('saldo-history.index')->with('error', 'Saldo Santri tidak mencukupi');
+            }
+        }
         DB::beginTransaction();
 
         try {
@@ -149,6 +157,44 @@ class SaldoHistoryController extends Controller
             $paymentMethodType = $paymentMethod->type;
 
             $transaction = TransactionService::createTransaction($request, $paymentMethodType, Transaction::TYPE_SALDO);
+
+            if ($request->type === SaldoHistory::TYPE_WITHDRAW) {
+                // reduce saldo
+                $transaction->student->saldo -= $request->amount;
+                $transaction->student->save();
+                // make saldo history
+                $saldoHistory = SaldoHistory::create([
+                    'student_id' => $transaction->student_id,
+                    'amount' => $request->amount,
+                    'type' => SaldoHistory::TYPE_WITHDRAW,
+                    'description' => $request->description ?? 'Penarikan Saldo Rp.' . number_format($request->amount, 0, ',', '.') . ' oleh ' . Auth::user()->name,
+                    'status' => SaldoHistory::STATUS_SUCCESS,
+                    'admin_id' => Auth::id()
+                ]);
+
+                $transactionDetail = TransactionDetail::create([
+                    'transaction_id' => $transaction->id,
+                    'saldo_history_id' => $saldoHistory->id
+                ]);
+            } else {
+                // add saldo
+                $transaction->student->saldo += $request->amount;
+                $transaction->student->save();
+                // make saldo history
+                $saldoHistory = SaldoHistory::create([
+                    'student_id' => $transaction->student_id,
+                    'amount' => $request->amount,
+                    'type' => SaldoHistory::TYPE_IN,
+                    'description' => $request->description ?? 'Topup Saldo Rp.' . number_format($request->amount, 0, ',', '.') . ' oleh ' . Auth::user()->name,
+                    'status' => SaldoHistory::STATUS_SUCCESS,
+                    'admin_id' => Auth::id()
+                ]);
+
+                $transactionDetail = TransactionDetail::create([
+                    'transaction_id' => $transaction->id,
+                    'saldo_history_id' => $saldoHistory->id
+                ]);
+            }
             DB::commit();
 
             $this->sendNotifications($transaction->student, $transaction->transactionDetails()?->first()?->saldoHistory);
@@ -164,17 +210,21 @@ class SaldoHistoryController extends Controller
 
     private function sendNotifications($student, $saldoHistory)
     {
+        $activity = ($saldoHistory->type === 'IN') ? 'Topup Saldo' : 'Tarik Saldo';
         $title = 'Pemberitahuan Saldo';
-        $body = 'Santri ' . $student->name . ' ' . $saldoHistory->description . ', Saldo Terkini Rp. ' . number_format($student->saldo, 0, ',', '.');
+        $body = 'Santri ' . $student->name . ' telah melakukan ' . $activity . ' sebesar Rp. ' . number_format($saldoHistory->amount, 0, ',', '.') .
+            ', Saldo Terkini Rp. ' . number_format($student->saldo, 0, ',', '.');
         $messageWhatsapp = SendNotifWaService::balanceAdjustment($student, $saldoHistory, "SALDO");
 
         dispatch(new SendToPushNotificationJob($title, $body, $student->user, null));
         dispatch(new SendToWhatsappNotificationJob($student->user?->phone, $messageWhatsapp));
+
         $contacts = Contact::where('type', Contact::TYPE_BENDAHARA)->orWhere('type', Contact::TYPE_SUPERADMIN)->get();
         foreach ($contacts as $contact) {
             dispatch(new SendToWhatsappNotificationJob($contact->phone, $messageWhatsapp));
         }
     }
+
 
     /**
      * Display the specified resource.

@@ -2,13 +2,14 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Models\Study;
+use App\Models\Student;
 use App\Models\StudyGrade;
 use Illuminate\Http\Request;
 use Yajra\DataTables\DataTables;
 use App\Http\Controllers\Controller;
+use Illuminate\Support\Facades\Auth;
 use App\Http\Requests\Admin\StudyGradeRequest;
-use App\Models\Student;
-use App\Models\Study;
 
 class StudyGradeController extends Controller
 {
@@ -17,8 +18,11 @@ class StudyGradeController extends Controller
      */
     public function index()
     {
+        if (!Auth::user()->can('Manage Nilai Santri')) {
+            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
+        }
         if (request()->ajax()) {
-            $data = StudyGrade::with(['study', 'student', 'academicYear', 'semester'])->latest()->get();
+            $data = StudyGrade::with(['study', 'student', 'academicYear', 'semester'])->latest();
             return DataTables::of($data)
                 ->editColumn('grade', function ($data) {
                     return $data->grade . ' (' . $data->letter_grade . ')';
@@ -30,8 +34,8 @@ class StudyGradeController extends Controller
                     $actionEdit = route('study-grade.edit', $data->id);
                     $actionDelete = route('study-grade.destroy', $data->id);
                     return "<div class='d-flex justify-content-center'>" .
-                        view('components.action.edit', ['action' => $actionEdit]) .
-                        view('components.action.delete', ['action' => $actionDelete, 'id' => $data->id]) .
+                        view('components.action.edit', ['action' => $actionEdit, 'name' => 'Nilai Santri']) .
+                        view('components.action.delete', ['action' => $actionDelete, 'id' => $data->id, 'name' => 'Nilai Santri']) .
                         "</div>";
                 })
                 ->rawColumns(['action'])
@@ -45,6 +49,9 @@ class StudyGradeController extends Controller
      */
     public function create()
     {
+        if (!Auth::user()->can('Create Nilai Santri')) {
+            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
+        }
         return view('admins.study-grade.create-edit');
     }
 
@@ -53,6 +60,9 @@ class StudyGradeController extends Controller
      */
     public function store(StudyGradeRequest $request)
     {
+        if (!Auth::user()->can('Create Nilai Santri')) {
+            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
+        }
         $data = $request->validated();
         $data['kkm'] = Study::find($data['study_id'])->kkm;
         $data['classroom_id'] = Student::find($data['student_id'])->classroom_id ?? null;
@@ -73,6 +83,9 @@ class StudyGradeController extends Controller
      */
     public function edit(StudyGrade $studyGrade)
     {
+        if (!Auth::user()->can('Edit Nilai Santri')) {
+            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
+        }
         return view('admins.study-grade.create-edit', compact('studyGrade'));
     }
 
@@ -81,6 +94,9 @@ class StudyGradeController extends Controller
      */
     public function update(StudyGradeRequest $request, StudyGrade $studyGrade)
     {
+        if (!Auth::user()->can('Edit Nilai Santri')) {
+            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
+        }
         $data = $request->validated();
         $studyGrade->update($data);
         return redirect()->route('study-grade.index')->with('success', 'Nilai berhasil diubah');
@@ -91,6 +107,9 @@ class StudyGradeController extends Controller
      */
     public function destroy(StudyGrade $studyGrade)
     {
+        if (!Auth::user()->can('Delete Nilai Santri')) {
+            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
+        }
         $studyGrade->delete();
         return redirect()->route('study-grade.index')->with('success', 'Nilai berhasil dihapus');
     }

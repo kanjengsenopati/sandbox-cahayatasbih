@@ -92,6 +92,20 @@
                     <div class=""></div>
                 </div>
                 <div class="card-body pt-0">
+                    {{-- add button and select all to send bill whatsapp notification --}}
+                    <div class="d-flex justify-content-between">
+                        <div class="d-flex gap-2">
+                            {{-- tambahkan checkbutton select all --}}
+                            <div class="form-check form-check-sm">
+                                <input class="form-check-input" type="checkbox" id="select-all">
+                                <label class="form-check-label" for="select-all">Pilih Semua</label>
+                            </div>
+                            <button type="button" class="btn btn-primary btn-sm" id="send-bill-whatsapp">Kirim
+                                Notifikasi
+                                WhatsApp</button>
+                        </div>
+                    </div>
+
                     <div class="table-responsive">
                         <table id="table-report-bill" class="table align-middle table-row-dashed">
                             <thead>
@@ -143,6 +157,9 @@
                     [10, 25, 50, 100, "Semua"]
                 ],
                 columns: [
+                    { data: null, sortable: false, searchable: false, render: function(data, type, row, meta) {
+                        return '<input type="checkbox" class="select-row">';
+                    }},
                     { data: null, sortable: false, searchable: false, render: function(data, type, row, meta) {
                         return meta.row + meta.settings._iDisplayStart + 1;
                     }},
@@ -204,6 +221,20 @@
 
         $('#filter_school_id, #filter_classroom_id, #status').on('change', function() {
             reloadTable();
+        });
+
+        $('#select-all').on('click', function() {
+            var rows = table.rows({ 'search': 'applied' }).nodes();
+            $('input[type="checkbox"]', rows).prop('checked', this.checked);
+        });
+
+        $('#table-report-bill tbody').on('change', 'input[type="checkbox"]', function() {
+            if (!this.checked) {
+                var el = $('#select-all').get(0);
+                if (el && el.checked && ('indeterminate' in el)) {
+                    el.indeterminate = true;
+                }
+            }
         });
 
         getTotalBill();

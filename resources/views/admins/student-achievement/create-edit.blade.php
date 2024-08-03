@@ -80,12 +80,13 @@
                                     <label class="fs-6 fw-bold form-label" for="school_id">
                                         <span class="required">Sekolah</span>
                                         <i class="fas fa-exclamation-circle ms-1 fs-7" data-bs-toggle="tooltip"
-                                            title="Pilih Tahun Ajaran"></i>
+                                            title="Pilih Sekolah"></i>
                                     </label>
                                     <select name="school_id" id="school_id" class="form-select form-select-solid">
                                         <option value="">Pilih Sekolah</option>
                                         @foreach ($schools as $school)
-                                        <option value="{{ $school->id }}" {{ @$studentAchievement->school_id ==
+                                        <option value="{{ $school->id }}" {{ @$studentAchievement?->
+                                            classroom?->school_id ==
                                             $school->id ? 'selected' : '' }}>
                                             {{ $school->name }}</option>
                                         @endforeach
@@ -102,7 +103,11 @@
                                             title="Pilih Tahun Ajaran"></i>
                                     </label>
                                     <select name="classroom_id" id="classroom_id" class="form-select form-select-solid">
-                                        <option value="">Pilih Kelas</option>
+
+                                        @if (@$studentAchievement->classroom)
+                                        <option value="{{ @$studentAchievement->classroom->id }}" selected>
+                                            {{ @$studentAchievement->classroom?->name }}</option>
+                                        @endif
                                     </select>
                                     <!--end::Label-->
                                     <!--end::Input-->
@@ -130,12 +135,10 @@
                                     </label>
                                     <select class="form-select form-select-solid" id="semester" name="semester">
                                         <option value="">Pilih Semester</option>
-                                        <option value="GANJIL" {{ @$studentAchievement->semester == 'Ganjil' ?
-                                            'selected' : '' }}>
-                                            Ganjil</option>
-                                        <option value="GENAP" {{ @$studentAchievement->semester == 'Genap' ? 'selected'
-                                            : '' }}>
-                                            Genap</option>
+                                        <option value="GANJIL" {{ @$studentAchievement->semester == 'GANJIL' ?
+                                            'selected' : '' }}>Ganjil</option>
+                                        <option value="GENAP" {{ @$studentAchievement->semester == 'GENAP' ?
+                                            'selected' : '' }}>Genap</option>
                                     </select>
                                     <!--end::Label-->
                                     <!--begin::Input-->
@@ -149,7 +152,7 @@
                                         <i class="fas fa-exclamation-circle ms-1 fs-7" data-bs-toggle="tooltip"
                                             title="Pilih Nama Santri"></i>
                                     </label>
-                                    <x-form.student :value="@$tahfidz->student_id"
+                                    <x-form.student :value="@$studentAchievement->student_id"
                                         class="form-control form-control-solid" />
                                     <!--end::Label-->
                                     <!--begin::Input-->
@@ -182,7 +185,7 @@
                                     <!--begin::Input-->
                                     <input type="text" class="form-control form-control-solid" id="champion"
                                         name="champion" placeholder="Masukkan Juara Ke"
-                                        value="{{ @$tahfidz->champion ?? old('champion') }}" required />
+                                        value="{{ @$studentAchievement->champion ?? old('champion') }}" required />
                                     <!--end::Input-->
                                 </div>
                                 <div class="fv-row mb-6">

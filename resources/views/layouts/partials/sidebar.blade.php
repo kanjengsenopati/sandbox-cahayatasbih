@@ -343,10 +343,11 @@
                 @endcanany
 
                 @canany(['Manage Saldo Santri', 'Manage Tabungan Santri','Manage Jadwal', 'Manage Tahfidz',
-                'Manage Pos Kasir', 'Manage Tagihan', 'Manage Perilaku Santri'])
-                <div data-kt-menu-trigger="click"
-                    class="menu-item menu-accordion {{ request()->routeIs(['bill.*', 'saldo-history.*', 'saving-history.*', 'order-item.*', 'study-grade.*',
-                    'tahfidz.*', 'student-counseling-score.*', 'schedule.*','saldo-bank.*', 'saving-bank.*']) ? 'show' : '' }}">
+                'Manage Pos Kasir', 'Manage Tagihan', 'Manage Perilaku Santri', 'Manage Nilai Pelajaran',
+                'Manage Prestasi Santri', 'Manage Nilai Santri'])
+                <div data-kt-menu-trigger="click" class="menu-item menu-accordion {{ request()->routeIs(['bill.*', 'saldo-history.*', 'saving-history.*', 'order-item.*', 'study-grade.*',
+                    'tahfidz.*', 'student-counseling-score.*', 'schedule.*','saldo-bank.*', 'saving-bank.*', 'student-achievement.*',
+                    'study-grade.*']) ? 'show' : '' }}">
                     <span class=" menu-link ">
                         <span class=" menu-icon">
                             <i class="fa-solid fa-edit" style="color: #ffffff;"></i>
@@ -400,14 +401,25 @@
                         </div>
                         @endcan
 
-                        @can('Manage Nilai Pelajaran')
+                        @can('Manage Nilai Santri')
                         <div class="menu-item">
                             <a class="menu-link {{ request()->routeIs('study-grade.*') ? ' active' : '' }}"
                                 href="{{ route('study-grade.index') }}">
                                 <span class="menu-bullet">
                                     <span class="bullet bullet-dot"></span>
                                 </span>
-                                <span class="menu-title">Nilai Pelajaran</span>
+                                <span class="menu-title">Nilai Santri</span>
+                            </a>
+                        </div>
+                        @endcan
+                        @can('Manage Prestasi Santri')
+                        <div class="menu-item">
+                            <a class="menu-link {{ request()->routeIs('student-achievement.*') ? ' active' : '' }}"
+                                href="{{ route('student-achievement.index') }}">
+                                <span class="menu-bullet">
+                                    <span class="bullet bullet-dot"></span>
+                                </span>
+                                <span class="menu-title">Prestasi Santri</span>
                             </a>
                         </div>
                         @endcan

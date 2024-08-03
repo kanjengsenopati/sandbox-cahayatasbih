@@ -66,10 +66,6 @@ class TransactionService
                 }
             }
         } elseif ($transaction->type == Transaction::TYPE_SALDO) {
-            $transaction->student->update([
-                'saldo' => $transaction->student->saldo + $transaction->pay_amount
-            ]);
-
             // check apakah transaction detail sudah ada
             if ($transaction->transactionDetails->count() > 0) {
                 foreach ($transaction->transactionDetails as $detail) {
@@ -77,20 +73,8 @@ class TransactionService
                         'status' => SaldoHistory::STATUS_SUCCESS
                     ]);
                 }
-            } else {
-                // create saldo history
-                $saldoHistory = SaldoHistory::create([
-                    'student_id' => $transaction->student->id,
-                    'amount' => $transaction->pay_amount,
-                    'type' => SaldoHistory::TYPE_IN,
-                    'description' => 'Top Up Saldo Sebesar Rp.' . number_format($transaction->pay_amount, 0, ',', '.'),
-                    'status' => SaldoHistory::STATUS_SUCCESS,
-                    'usage' => SaldoHistory::USAGE_TOPUP
-                ]);
-
-                // create transaction detail with saldo history
-                $transaction->transactionDetails()->create([
-                    'saldo_history_id' => $saldoHistory->id
+                $transaction->student->update([
+                    'saldo' => $transaction->student->saldo + $transaction->pay_amount
                 ]);
             }
         } elseif ($transaction->type == Transaction::TYPE_SAVING) {
@@ -296,7 +280,6 @@ class TransactionService
                 ->first()->id]);
             TransactionService::payWithCash($transaction);
         }
-
 
         if ($transaction->status == Transaction::STATUS_PAID && $paymentMethodType == PaymentMethod::TYPE_XENDIT) {
             TransactionService::changeStatusToPaid($transaction);

@@ -79,7 +79,7 @@
                                         class="form-control form-control-solid" />
                                 </div>
 
-                                {{-- <div class="fv-row mb-7">
+                                <div class="fv-row mb-7">
                                     <!--begin::Label-->
                                     <label class="fs-6 fw-bold form-label mt-3" for="type">
                                         <span class="required">Tipe Penyesuaian</span>
@@ -89,14 +89,15 @@
                                     <!--end::Label-->
                                     <!--begin::Input-->
                                     <select name="type" id="type" class="form-select form-select-solid"
-                                        aria-label="Select example">
+                                        aria-label="Pilih Tipe Penyesuaian" required>
                                         <option value="IN" {{ @$saldoHistory->type == 'IN' ? 'selected' : '' }}>
-                                            Saldo Masuk</option>
-                                        <option value="OUT" {{ @$saldoHistory->type == 'OUT' ? 'selected' : '' }}>
-                                            Saldo Keluar</option>
+                                            TopUp Saldo</option>
+                                        <option value="WITHDRAW" {{ @$saldoHistory->type == 'WITHDRAW' ? 'selected' : ''
+                                            }}>
+                                            Penarikan Saldo</option>
                                     </select>
                                     <!--end::Input-->
-                                </div> --}}
+                                </div>
 
                                 <div class="fv-row mb-7">
                                     <!--begin::Label-->
@@ -115,6 +116,21 @@
                                             value="{{ old('amount') ?? @$stockHistory->amount }}" required />
                                     </div>
                                     <!--end::Input-->
+                                </div>
+
+                                <div class="fv-row mb-7">
+                                    <!--begin::Label-->
+                                    <label class="fs-6 fw-bold form-label mt-3" for="description">
+                                        <span class="required">Keterangan</span>
+                                        <i class="fas fa-exclamation-circle ms-1 fs-7" data-bs-toggle="tooltip"
+                                            title="Masukkan Keterangan Penyesuaian"></i>
+                                    </label>
+                                    <!--end::Label-->
+                                    <!--begin::Input-->
+                                    <textarea name="description" id="description"
+                                        class="form-control form-control-solid"
+                                        placeholder="Masukkan Keterangan Penyesuaian"
+                                        required>{{ old('description') ?? @$stockHistory->description }}</textarea>
                                 </div>
                                 <!--end::Input group-->
                                 <!--begin::Separator-->

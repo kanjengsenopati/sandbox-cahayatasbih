@@ -12,6 +12,8 @@ class SaldoHistory extends Model
 {
     const TYPE_IN = 'IN';
     const TYPE_OUT = 'OUT';
+    const TYPE_WITHDRAW = 'WITHDRAW';
+
     const STATUS_PENDING = 'PENDING';
     const STATUS_SUCCESS = 'SUCCESS';
     const STATUS_FAILED = 'FAILED';

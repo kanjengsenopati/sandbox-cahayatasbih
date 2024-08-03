@@ -15,7 +15,6 @@ class StudentAchievement extends Model
         'student_id',
         'academic_year_id',
         'classroom_id',
-        'school_id',
         'semester',
         'title',
         'champion',
@@ -25,17 +24,17 @@ class StudentAchievement extends Model
 
     public function student()
     {
-        return $this->belongsTo(Student::class);
+        return $this->belongsTo(Student::class)->withTrashed();
     }
 
     public function academicYear()
     {
-        return $this->belongsTo(AcademicYear::class);
+        return $this->belongsTo(AcademicYear::class)->withTrashed();
     }
 
     public function classroom()
     {
-        return $this->belongsTo(Classroom::class);
+        return $this->belongsTo(Classroom::class)->withTrashed();
     }
 
     public function school()
