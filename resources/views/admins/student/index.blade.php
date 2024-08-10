@@ -194,6 +194,9 @@
                     data: 'user.name',
                     name: 'user.name',
                     responsivePriority: -1,
+                    render: function(data, type, row) {
+                        return data ? data : 'Belum ada';
+                    },
                 },
                 {
                     data: 'school',
