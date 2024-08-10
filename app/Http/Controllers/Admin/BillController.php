@@ -62,10 +62,10 @@ class BillController extends Controller
     {
         return BillType::with('billItem', 'academicYear', 'bills')
             ->where('type', $type)
-            ->whereHas('bills', fn ($query) => $query->where('student_id', $studentId))
+            ->whereHas('bills', fn($query) => $query->where('student_id', $studentId))
             ->latest()
             ->get()
-            ->map(fn ($item) => $this->calculateBillTotals($item, $studentId));
+            ->map(fn($item) => $this->calculateBillTotals($item, $studentId));
     }
 
     private function calculateBillTotals($item, $studentId)
@@ -91,17 +91,17 @@ class BillController extends Controller
     private function getTransactionData()
     {
         $transactions = Transaction::with('student', 'paymentMethod', 'activeProof')
-            ->whereHas('paymentMethod', fn ($query) => $query->where('type', PaymentMethod::TYPE_TRANSFER))
+            ->whereHas('paymentMethod', fn($query) => $query->where('type', PaymentMethod::TYPE_TRANSFER))
             ->where('type', Transaction::TYPE_BILL)
             ->where('status', Transaction::STATUS_PENDING_CONFIRMATION)
             ->hasSchool()
             ->latest();
 
         return DataTables::of($transactions)
-            ->addColumn('proof', fn ($transaction) => $this->formatProofColumn($transaction))
-            ->editColumn('pay_amount', fn ($transaction) => 'Rp ' . number_format($transaction->pay_amount, 0, ',', '.'))
-            ->editColumn('status', fn ($transaction) => $this->formatStatusColumn($transaction))
-            ->addColumn('action', fn ($transaction) => $this->formatActionColumn($transaction))
+            ->addColumn('proof', fn($transaction) => $this->formatProofColumn($transaction))
+            ->editColumn('pay_amount', fn($transaction) => 'Rp ' . number_format($transaction->pay_amount, 0, ',', '.'))
+            ->editColumn('status', fn($transaction) => $this->formatStatusColumn($transaction))
+            ->addColumn('action', fn($transaction) => $this->formatActionColumn($transaction))
             ->rawColumns(['proof', 'action', 'status'])
             ->make(true);
     }
@@ -328,14 +328,13 @@ class BillController extends Controller
             $paymentMethodType = $request->payment_method;
 
             $transaction = TransactionService::createTransaction($request, $paymentMethodType, Transaction::TYPE_BILL);
-            if ($transaction->status == Transaction::STATUS_PAID) {
+            if ($transaction->status == Transaction::STATUS_PAID && $transaction?->student?->user?->phone) {
                 TransactionService::dispatchNotifications($transaction);
             }
             DB::commit();
             return redirect()->back()->with('success', "Transaksi pembayaran berhasil");
         } catch (\Throwable $th) {
             DB::rollBack();
-            dd($th);
             Log::error($th);
             return redirect()->back()->with('error', "Transaksi pembayaran gagal");
         }
