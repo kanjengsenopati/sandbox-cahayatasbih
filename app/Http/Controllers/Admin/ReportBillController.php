@@ -135,54 +135,55 @@ class ReportBillController extends Controller
 
         if (request()->ajax() && request()->type === 'bill') {
             $students = Student::with('classroom', 'school', 'bills')
-                ->whereHas('bills', fn ($query) => $query->where('bill_type_id', $id))
-                ->when(request()->school_id && request()->school_id != 'null', fn ($query) => $query->whereHas('classroom', fn ($query) => $query->where('school_id', request()->school_id)))
-                ->when(request()->classroom_id && request()->classroom_id != 'null', fn ($query) => $query->where('classroom_id', request()->classroom_id))
+                ->whereHas('bills', fn($query) => $query->where('bill_type_id', $id))
+                ->when(request()->school_id && request()->school_id != 'null', fn($query) => $query->whereHas('classroom', fn($query) => $query->where('school_id', request()->school_id)))
+                ->when(request()->classroom_id && request()->classroom_id != 'null', fn($query) => $query->where('classroom_id', request()->classroom_id))
                 ->when(
                     request()->status === 'UNPAID',
-                    fn ($query) =>
-                    $query->whereHas('bills', fn ($q) => $q->where('status', Bill::STATUS_UNPAID)
+                    fn($query) =>
+                    $query->whereHas('bills', fn($q) => $q->where('status', Bill::STATUS_UNPAID)
                         ->where('bill_type_id', $id))
                 )
                 ->when(
                     request()->status === 'PAID',
-                    fn ($query) =>
-                    $query->whereDoesntHave('bills', fn ($q) => $q->where('status', Bill::STATUS_UNPAID)
+                    fn($query) =>
+                    $query->whereDoesntHave('bills', fn($q) => $q->where('status', Bill::STATUS_UNPAID)
                         ->where('bill_type_id', $id))
                 )
                 ->hasSchool()
                 ->orderBy('name', 'asc');
+            // jika tidak ada filter request start_date dan end_date maka tampilkan data pembayaran hari ini
 
             return DataTables::of($students)
-                ->addColumn('total_unpaid', fn ($student) => $this->formatCurrency(
+                ->addColumn('total_unpaid', fn($student) => $this->formatCurrency(
                     $this->getBillTotal($student->id, $id, Bill::STATUS_UNPAID)
                 ))
-                ->addColumn('total_paid', fn ($student) => $this->formatCurrency(
+                ->addColumn('total_paid', fn($student) => $this->formatCurrency(
                     $this->getBillTotal($student->id, $id, Bill::STATUS_PAID)
                 ))
-                ->addColumn('total', fn ($student) => $this->formatCurrency(
+                ->addColumn('total', fn($student) => $this->formatCurrency(
                     $this->getBillTotal($student->id, $id)
                 ))
-                ->addColumn('status', fn ($student) => $this->getPaymentStatus($student->id, $id))
+                ->addColumn('status', fn($student) => $this->getPaymentStatus($student->id, $id))
                 ->rawColumns(['status'])
                 ->make(true);
         }
 
         if (request()->ajax() && request()->type === 'total') {
             $students = Student::with('classroom', 'school', 'bills')
-                ->whereHas('bills', fn ($query) => $query->where('bill_type_id', $id))
-                ->when(request()->school_id && request()->school_id != 'null', fn ($query) => $query->whereHas('classroom', fn ($query) => $query->where('school_id', request()->school_id)))
-                ->when(request()->classroom_id && request()->classroom_id != 'null', fn ($query) => $query->where('classroom_id', request()->classroom_id))
+                ->whereHas('bills', fn($query) => $query->where('bill_type_id', $id))
+                ->when(request()->school_id && request()->school_id != 'null', fn($query) => $query->whereHas('classroom', fn($query) => $query->where('school_id', request()->school_id)))
+                ->when(request()->classroom_id && request()->classroom_id != 'null', fn($query) => $query->where('classroom_id', request()->classroom_id))
                 ->when(
                     request()->status === 'UNPAID',
-                    fn ($query) =>
-                    $query->whereHas('bills', fn ($q) => $q->where('status', Bill::STATUS_UNPAID)
+                    fn($query) =>
+                    $query->whereHas('bills', fn($q) => $q->where('status', Bill::STATUS_UNPAID)
                         ->where('bill_type_id', $id))
                 )
                 ->when(
                     request()->status === 'PAID',
-                    fn ($query) =>
-                    $query->whereDoesntHave('bills', fn ($q) => $q->where('status', Bill::STATUS_UNPAID)
+                    fn($query) =>
+                    $query->whereDoesntHave('bills', fn($q) => $q->where('status', Bill::STATUS_UNPAID)
                         ->where('bill_type_id', $id))
                 )
                 ->hasSchool()
@@ -305,7 +306,8 @@ class ReportBillController extends Controller
                     $actionShow = route('report-bill.show', $data->id);
                     return "<div class='d-flex justify-content-center'>" .
                         view('components.action.show', [
-                            'action' => $actionShow, 'label' => 'Cetak',
+                            'action' => $actionShow,
+                            'label' => 'Cetak',
                             'icon' => 'fa fa-print'
                         ]) .
                         "</div>";

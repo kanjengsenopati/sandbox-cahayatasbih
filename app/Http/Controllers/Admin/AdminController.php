@@ -107,7 +107,6 @@ class AdminController extends Controller
             return redirect()->route('admin.index')->with('success', 'Berhasil menambah admin');
         } catch (\Exception $e) {
             DB::rollback();
-            dd($e->getMessage());
             Log::error($e->getMessage());
             // Handle the exception, log it, or return an error response
             return redirect()->back()->with('error', 'Gagal menambah admin: ' . $e->getMessage());

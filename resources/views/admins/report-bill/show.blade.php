@@ -128,14 +128,15 @@
 </div>
 
 @endsection
-
 @push('js')
 <script type="text/javascript" src="https://cdn.jsdelivr.net/momentjs/latest/moment.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/locale/id.min.js"></script>
 <script>
     $(document).ready(function() {
+        // Initialize the table on document ready
         var table = initializeTable();
 
+        // Function to initialize DataTable
         function initializeTable(start_date = '', end_date = '') {
             return $('#table-report-bill').DataTable({
                 processing: true,
@@ -158,9 +159,6 @@
                 ],
                 columns: [
                     { data: null, sortable: false, searchable: false, render: function(data, type, row, meta) {
-                        return '<input type="checkbox" class="select-row">';
-                    }},
-                    { data: null, sortable: false, searchable: false, render: function(data, type, row, meta) {
                         return meta.row + meta.settings._iDisplayStart + 1;
                     }},
                     { data: 'name', name: 'name' },
@@ -172,12 +170,14 @@
             });
         }
 
+        // Function to reload DataTable
         function reloadTable(start_date = '', end_date = '') {
-            table.destroy();
-            table = initializeTable(start_date, end_date);
-            getTotalBill(start_date, end_date);
+            table.destroy(); // Destroy existing DataTable
+            table = initializeTable(start_date, end_date); // Reinitialize DataTable
+            getTotalBill(start_date, end_date); // Fetch totals
         }
 
+        // Function to get total bill information
         function getTotalBill(start_date = '', end_date = '') {
             $.ajax({
                 url: "{{ route('report-bill.show', $billType->id) }}",
@@ -199,6 +199,7 @@
             });
         }
 
+        // Event listener for school filter change
         $('#filter_school_id').on('change', function() {
             var school_id = $(this).val();
             $.ajax({
@@ -219,15 +220,18 @@
             });
         });
 
+        // Event listeners for filters
         $('#filter_school_id, #filter_classroom_id, #status').on('change', function() {
             reloadTable();
         });
 
+        // Select/Deselect all rows based on the header checkbox
         $('#select-all').on('click', function() {
             var rows = table.rows({ 'search': 'applied' }).nodes();
             $('input[type="checkbox"]', rows).prop('checked', this.checked);
         });
 
+        // Deselect header checkbox if any row is unchecked
         $('#table-report-bill tbody').on('change', 'input[type="checkbox"]', function() {
             if (!this.checked) {
                 var el = $('#select-all').get(0);
@@ -237,6 +241,7 @@
             }
         });
 
+        // Initial call to fetch totals
         getTotalBill();
     });
 </script>
