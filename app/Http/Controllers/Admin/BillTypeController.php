@@ -49,6 +49,9 @@ class BillTypeController extends Controller
                     }
                     return $bank;
                 })
+                ->addColumn('bill_item', function ($data) {
+                    return $data->billItem?->name ?? '-';
+                })
 
                 ->addColumn('action', function ($data) {
                     $actionEdit = route('bill-type.edit', $data->id);

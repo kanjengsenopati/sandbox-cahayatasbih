@@ -116,8 +116,8 @@
                         }
                     },
                     {
-                        data: 'bill_item.name',
-                        name: 'bill_item.name'
+                        data: 'bill_item',
+                        name: 'bill_item',
                     },
                     {
                         data: 'name',
@@ -129,7 +129,8 @@
                     },
                     {
                         data: 'academic_year.name',
-                        name: 'academic_year.name'
+                        name: 'academic_year.name',
+                        searchable: false
                     },
                     {
                         data: 'payment_rates',
