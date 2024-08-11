@@ -116,7 +116,7 @@
                                             'Sekolah', 'Bank',
                                             'Informasi', 'Metode Pembayaran', 'Menu Aplikasi', 'Kontak Bantuan',
                                             'Barang','Saldo Santri', 'Tabungan Santri', 'Jadwal', 'Tahfidz',
-                                            'Pos Kasir', 'Tagihan', 'Perilaku Santri',
+                                            'Pos Kasir', 'Tagihan', 'Status Tagihan', 'Perilaku Santri',
                                             'Prestasi Santri', 'Nilai Santri',
                                             'PPDB', 'Mata Pelajaran', 'Tahun Ajaran', 'Semester', 'Kenaikan Kelas',
                                             'Pengaturan Aplikasi', 'Item Bayar', 'Jenis Bayar','Laporan Pos Kasir',

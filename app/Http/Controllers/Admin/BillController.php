@@ -473,4 +473,19 @@ class BillController extends Controller
 
         return view('admins.bill.summary', compact('student', 'billType', 'bills', 'paymentMethods'));
     }
+
+    public function changeStatus()
+    {
+        if (!Auth::user()->can('Edit Status Tagihan')) {
+            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
+        }
+
+        $requestData = request()->only(['bill_id', 'status']);
+
+        $bill = Bill::findOrFail($requestData['bill_id']);
+        $bill->status = $requestData['status'];
+        $bill->save();
+
+        return redirect()->back()->with('success', 'Status tagihan berhasil diubah');
+    }
 }

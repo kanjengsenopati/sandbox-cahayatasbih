@@ -167,6 +167,7 @@ Route::group(['middleware' => ['auth']], function () {
     Route::resource('bill-item', BillItemController::class);
     Route::resource('bill-type', BillTypeController::class);
     Route::resource('payment-rate', PaymentRateController::class);
+    Route::post('bill.change-status', [BillController::class, 'changeStatus'])->name('bill.change-status');
     Route::resource('bill', BillController::class);
     Route::resource('payment-method', PaymentMethodController::class);
     Route::resource('transaction', TransactionController::class);
