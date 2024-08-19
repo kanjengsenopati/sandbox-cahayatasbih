@@ -127,6 +127,8 @@ class ReportBillController extends Controller
     /**
      * Display the specified resource.
      */
+
+
     public function show(string $id)
     {
         if (!Auth::user()->can('Manage Laporan Tagihan')) {
@@ -134,83 +136,91 @@ class ReportBillController extends Controller
         }
 
         if (request()->ajax() && request()->type === 'bill') {
-            $students = Student::with('classroom', 'school', 'bills')
+            $students = Student::with(['classroom', 'school', 'bills' => fn($query) => $query->where('bill_type_id', $id)])
                 ->whereHas('bills', fn($query) => $query->where('bill_type_id', $id))
-                ->when(request()->school_id && request()->school_id != 'null', fn($query) => $query->whereHas('classroom', fn($query) => $query->where('school_id', request()->school_id)))
-                ->when(request()->classroom_id && request()->classroom_id != 'null', fn($query) => $query->where('classroom_id', request()->classroom_id))
                 ->when(
-                    request()->status === 'UNPAID',
-                    fn($query) =>
-                    $query->whereHas('bills', fn($q) => $q->where('status', Bill::STATUS_UNPAID)
-                        ->where('bill_type_id', $id))
+                    request()->school_id && request()->school_id !== 'null',
+                    fn($query) => $query->whereHas('classroom', fn($query) => $query->where('school_id', request()->school_id))
                 )
                 ->when(
-                    request()->status === 'PAID',
-                    fn($query) =>
-                    $query->whereDoesntHave('bills', fn($q) => $q->where('status', Bill::STATUS_UNPAID)
-                        ->where('bill_type_id', $id))
-                )
-                ->hasSchool()
-                ->orderBy('name', 'asc');
-            // jika tidak ada filter request start_date dan end_date maka tampilkan data pembayaran hari ini
-
-            return DataTables::of($students)
-                ->addColumn('total_unpaid', fn($student) => $this->formatCurrency(
-                    $this->getBillTotal($student->id, $id, Bill::STATUS_UNPAID)
-                ))
-                ->addColumn('total_paid', fn($student) => $this->formatCurrency(
-                    $this->getBillTotal($student->id, $id, Bill::STATUS_PAID)
-                ))
-                ->addColumn('total', fn($student) => $this->formatCurrency(
-                    $this->getBillTotal($student->id, $id)
-                ))
-                ->addColumn('status', fn($student) => $this->getPaymentStatus($student->id, $id))
-                ->addColumn('action', function ($data) use ($id) {
-                    $actionDetail = route('bill.summary-bill', ['student_id' => $data->id, 'bill_type_id' => $id]);
-                    $notificationRoute = route('report-bill.send-bill-notification');
-
-                    return "
-                            <div class='d-flex gap-2 flex-nowrap justify-content-center'>
-                                <a href='{$actionDetail}' class='btn btn-primary btn-sm'>Detail</a>
-                                <form action='{$notificationRoute}' method='POST'>
-                                    " . csrf_field() . "
-                                    <input type='hidden' name='bill_type_id' value='{$id}'>
-                                    <input type='hidden' name='student_id[]' value='{$data->id}'>
-                                    <button type='submit' class='btn btn-success btn-sm'>Kirim Notifikasi</button>
-                                </form>
-                            </div>";
-                })
-                ->rawColumns(['status', 'action'])
-                ->make(true);
-        }
-
-        if (request()->ajax() && request()->type === 'total') {
-            $students = Student::with('classroom', 'school', 'bills')
-                ->whereHas('bills', fn($query) => $query->where('bill_type_id', $id))
-                ->when(request()->school_id && request()->school_id != 'null', fn($query) => $query->whereHas('classroom', fn($query) => $query->where('school_id', request()->school_id)))
-                ->when(request()->classroom_id && request()->classroom_id != 'null', fn($query) => $query->where('classroom_id', request()->classroom_id))
-                ->when(
-                    request()->status === 'UNPAID',
-                    fn($query) =>
-                    $query->whereHas('bills', fn($q) => $q->where('status', Bill::STATUS_UNPAID)
-                        ->where('bill_type_id', $id))
+                    request()->classroom_id && request()->classroom_id !== 'null',
+                    fn($query) => $query->where('classroom_id', request()->classroom_id)
                 )
                 ->when(
-                    request()->status === 'PAID',
-                    fn($query) =>
-                    $query->whereDoesntHave('bills', fn($q) => $q->where('status', Bill::STATUS_UNPAID)
-                        ->where('bill_type_id', $id))
+                    request()->status,
+                    fn($query) => $this->filterByStatus($query, request()->status, $id)
                 )
                 ->hasSchool()
                 ->orderBy('name', 'asc')
                 ->get();
 
-            $total = 0;
-            $totalPaid = 0;
-            foreach ($students as $student) {
-                $total += $this->getBillTotal($student->id, $id);
-                $totalPaid += $this->getBillTotal($student->id, $id, Bill::STATUS_PAID);
-            }
+            // Initialize overall totals
+            $totalPaidSum = 0;
+            $totalUnpaidSum = 0;
+
+            // Loop over the students to calculate totals and payment status in memory
+            $students->map(function ($student) use (&$totalPaidSum, &$totalUnpaidSum, $id) {
+                // Initialize the student's unpaid and paid totals
+                $studentTotalUnpaid = 0;
+                $studentTotalPaid = 0;
+                $total = 0;
+
+                // Calculate total unpaid and paid for each student from the bills
+                foreach ($student->bills as $bill) {
+                    $total += $bill->amount;
+                    if ($bill->status == Bill::STATUS_PAID) {
+                        $studentTotalPaid += $bill->amount;
+                    } elseif ($bill->status == Bill::STATUS_UNPAID) {
+                        $studentTotalUnpaid += $bill->amount;
+                    }
+                }
+
+                // Update overall totals
+                $totalPaidSum += $studentTotalPaid;
+                $totalUnpaidSum += $studentTotalUnpaid;
+
+                // Assign the totals and status to the student object for use in DataTables
+                $student->total_paid = $studentTotalPaid;
+                $student->total_unpaid = $studentTotalUnpaid;
+                $student->total = $total;
+
+                // Determine the payment status
+                if ($studentTotalPaid === 0) {
+                    $student->status = '<span class="badge bg-danger">Belum Bayar</span>';
+                } elseif ($studentTotalPaid === $total) {
+                    $student->status = '<span class="badge bg-success">Lunas</span>';
+                } else {
+                    $student->status = '<span class="badge bg-warning">Belum Lunas</span>';
+                }
+
+                return $student;
+            });
+
+            // Pass data to DataTables
+            return DataTables::of($students)
+                ->addColumn('total_unpaid', fn($student) => $this->formatCurrency($student->total_unpaid))
+                ->addColumn('total_paid', fn($student) => $this->formatCurrency($student->total_paid))
+                ->addColumn('total', fn($student) => $this->formatCurrency($student->total))
+                ->addColumn('status', fn($student) => $student->status) // Status already calculated in map
+                ->addColumn('action', fn($data) => $this->renderActions($data, $id))
+                ->rawColumns(['status', 'action'])
+                ->make(true);
+        }
+
+        if (request()->ajax() && request()->type === 'total') {
+
+            $total = Bill::where('bill_type_id', $id)
+                ->when(request()->school_id && request()->school_id != 'null', fn($query) => $query->whereHas('student', fn($query) => $query->whereHas('classroom', fn($query) => $query->where('school_id', request()->school_id))))
+                ->when(request()->classroom_id && request()->classroom_id != 'null', fn($query) => $query->whereHas('student', fn($query) => $query->where('classroom_id', request()->classroom_id)))
+                ->when(request()->status === 'UNPAID', fn($query) => $query->where('status', Bill::STATUS_UNPAID))
+                ->when(request()->status === 'PAID', fn($query) => $query->where('status', Bill::STATUS_PAID))
+                ->sum('amount');
+
+            $totalPaid = Bill::where('bill_type_id', $id)
+                ->where('status', Bill::STATUS_PAID)
+                ->when(request()->school_id && request()->school_id != 'null', fn($query) => $query->whereHas('student', fn($query) => $query->whereHas('classroom', fn($query) => $query->where('school_id', request()->school_id))))
+                ->when(request()->classroom_id && request()->classroom_id != 'null', fn($query) => $query->whereHas('student', fn($query) => $query->where('classroom_id', request()->classroom_id)))
+                ->sum('amount');
 
             return response()->json([
                 'total' => number_format($total, 0, ',', '.'),
@@ -242,23 +252,50 @@ class ReportBillController extends Controller
         return 'Rp. ' . number_format($amount, 0, ',', '.');
     }
 
-    private function getPaymentStatus($studentId, $billTypeId)
+    // private function getPaymentStatus($studentId, $billTypeId)
+    // {
+    //     $totalPaid = Bill::where('student_id', $studentId)
+    //         ->where('status', Bill::STATUS_PAID)
+    //         ->where('bill_type_id', $billTypeId)
+    //         ->sum('amount');
+    //     $total = Bill::where('student_id', $studentId)->where('bill_type_id', $billTypeId)->sum('amount');
+
+    //     if ($totalPaid === 0) {
+    //         return '<span class="badge bg-danger">Belum Bayar</span>';
+    //     } elseif ($totalPaid === $total) {
+    //         return '<span class="badge bg-success">Lunas</span>';
+    //     } elseif ($totalPaid < $total) {
+    //         return '<span class="badge bg-warning">Belum Lunas</span>';
+    //     }
+
+    //     return '<span class="badge bg-success">Lunas</span>';
+    // }
+
+    private function filterByStatus($query, $status, $billTypeId)
     {
-        $totalPaid = Bill::where('student_id', $studentId)
-            ->where('status', Bill::STATUS_PAID)
-            ->where('bill_type_id', $billTypeId)
-            ->sum('amount');
-        $total = Bill::where('student_id', $studentId)->where('bill_type_id', $billTypeId)->sum('amount');
-
-        if ($totalPaid === 0) {
-            return '<span class="badge bg-danger">Belum Bayar</span>';
-        } elseif ($totalPaid === $total) {
-            return '<span class="badge bg-success">Lunas</span>';
-        } elseif ($totalPaid < $total) {
-            return '<span class="badge bg-warning">Belum Lunas</span>';
+        if ($status === 'UNPAID') {
+            return $query->whereHas('bills', fn($q) => $q->where('status', Bill::STATUS_UNPAID)->where('bill_type_id', $billTypeId));
+        } elseif ($status === 'PAID') {
+            return $query->whereDoesntHave('bills', fn($q) => $q->where('status', Bill::STATUS_UNPAID)->where('bill_type_id', $billTypeId));
         }
+        return $query;
+    }
 
-        return '<span class="badge bg-success">Lunas</span>';
+    private function renderActions($data, $billTypeId)
+    {
+        $actionDetail = route('bill.summary-bill', ['student_id' => $data->id, 'bill_type_id' => $billTypeId]);
+        $notificationRoute = route('report-bill.send-bill-notification');
+
+        return "
+        <div class='d-flex gap-2 flex-nowrap justify-content-center'>
+            <a href='{$actionDetail}' class='btn btn-primary btn-sm'>Detail</a>
+            <form action='{$notificationRoute}' method='POST'>
+                " . csrf_field() . "
+                <input type='hidden' name='bill_type_id' value='{$billTypeId}'>
+                <input type='hidden' name='student_id[]' value='{$data->id}'>
+                <button type='submit' class='btn btn-success btn-sm'>Kirim Notifikasi</button>
+            </form>
+        </div>";
     }
 
     /**
