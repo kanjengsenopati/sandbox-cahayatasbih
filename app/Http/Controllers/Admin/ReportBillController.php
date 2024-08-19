@@ -165,7 +165,22 @@ class ReportBillController extends Controller
                     $this->getBillTotal($student->id, $id)
                 ))
                 ->addColumn('status', fn($student) => $this->getPaymentStatus($student->id, $id))
-                ->rawColumns(['status'])
+                ->addColumn('action', function ($data) use ($id) {
+                    $actionDetail = route('bill.summary-bill', ['student_id' => $data->id, 'bill_type_id' => $id]);
+                    $notificationRoute = route('report-bill.send-bill-notification');
+
+                    return "
+                            <div class='d-flex gap-2 flex-nowrap justify-content-center'>
+                                <a href='{$actionDetail}' class='btn btn-primary btn-sm'>Detail</a>
+                                <form action='{$notificationRoute}' method='POST'>
+                                    " . csrf_field() . "
+                                    <input type='hidden' name='bill_type_id' value='{$id}'>
+                                    <input type='hidden' name='student_id[]' value='{$data->id}'>
+                                    <button type='submit' class='btn btn-success btn-sm'>Kirim Notifikasi</button>
+                                </form>
+                            </div>";
+                })
+                ->rawColumns(['status', 'action'])
                 ->make(true);
         }
 
@@ -319,42 +334,37 @@ class ReportBillController extends Controller
 
     public function sendBillNotification(Request $request)
     {
-        $query = Student::with('classroom', 'school', 'bills')
-            ->whereHas('bills', function ($query) {
-                $query->where('status', Bill::STATUS_UNPAID);
-            })
-            ->when($request->school_id, function ($query) use ($request) {
-                $query->where('school_id', $request->school_id);
-            })
-            ->when($request->classroom_id, function ($query) use ($request) {
-                $query->where('classroom_id', $request->classroom_id);
-            })
-            ->when($request->academic_year_id, function ($query) use ($request) {
-                $query->whereHas('bills', function ($query) use ($request) {
-                    $query->where('academic_year_id', $request->academic_year_id);
-                });
-            })
-            ->when($request->bill_type_id, function ($query) use ($request) {
-                $query->whereHas('bills', function ($query) use ($request) {
-                    $query->where('bill_type_id', $request->bill_type_id);
-                });
-            })
-            ->hasSchool()
-            ->orderBy('name', 'asc');
+        $billTypeId = $request->bill_type_id;
+        $studentIds = $request->student_id;
 
-        $data = $query->get();
-        $studentIds = $data->pluck('id');
-
+        // Pastikan $studentIds adalah array
+        if (!is_array($studentIds)) {
+            $studentIds = [$studentIds];
+        }
 
         $thisMonthInInteger = intval(date('n'));
-        $billTypes = BillType::whereHas('bills.student', function ($query) use ($studentIds, $thisMonthInInteger) {
-            $query->whereIn('student_id', $studentIds)
+
+        $billTypes = BillType::with('bills.student')->where('id', $billTypeId)->get();
+
+        // Pastikan $studentIds adalah array sebelum mengirimkannya ke job
+        dispatch(new SendBillWhatsappNotificationJob($studentIds, $billTypes));
+
+        return redirect()->back()->with('success', 'Notifikasi tagihan berhasil dikirim');
+    }
+
+    public function sendWa($id)
+    {
+        $billTypes = BillType::with('bills.student')->where('id', $id)->get();
+        // get student_id where status bill is unpaid from month 1 and month now
+        $students = Student::whereHas('bills', function ($query) use ($id) {
+            $query->where('bill_type_id', $id)
                 ->where('status', Bill::STATUS_UNPAID)
-                ->where('month', '<=', $thisMonthInInteger);
-        })->get();
+                ->where('month', '>=', 1)
+                ->where('month', '<=', date('n'));
+        })->pluck('id')->toArray();
 
-        dispatch(new SendBillWhatsappNotificationJob($data, $billTypes));
+        dispatch(new SendBillWhatsappNotificationJob($students, $billTypes));
 
-        return $this->postSuccessResponse("Berhasil mengirimkan notifikasi tagihan", null);
+        return $this->postSuccessResponse('Notifikasi tagihan berhasil dikirim');
     }
 }

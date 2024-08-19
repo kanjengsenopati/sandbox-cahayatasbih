@@ -57,6 +57,19 @@
                                     <option value="UNPAID">Belum Lunas</option>
                                 </select>
                             </div>
+                            <div class="col-md-6 col-lg-3">
+                                <label for="status" class="form-label">Notifikasi Tagihan Wa</label><br>
+                                <button type="button" class="btn btn-success" id="send-wa">
+                                    Kirim <i class="bi bi-whatsapp"></i>
+                                    <span id="spinner" class="spinner-border spinner-border-sm" style="display: none;"
+                                        role="status"></span>
+                                </button>
+                            </div>
+                            {{-- <div class="col-md-6 col-lg-3">
+                                <label for="status" class="form-label">Notifikasi Tagihan Wa</label><br>
+                                <button type="button" class="btn btn-success" id="send-wa">Kirim <i
+                                        class="bi bi-whatsapp"></i></button>
+                            </div> --}}
                         </div>
                     </form>
                     <div class="d-flex gap-2 mt-4">
@@ -92,19 +105,6 @@
                     <div class=""></div>
                 </div>
                 <div class="card-body pt-0">
-                    {{-- add button and select all to send bill whatsapp notification --}}
-                    <div class="d-flex justify-content-between">
-                        <div class="d-flex gap-2">
-                            {{-- tambahkan checkbutton select all --}}
-                            <div class="form-check form-check-sm">
-                                <input class="form-check-input" type="checkbox" id="select-all">
-                                <label class="form-check-label" for="select-all">Pilih Semua</label>
-                            </div>
-                            <button type="button" class="btn btn-primary btn-sm" id="send-bill-whatsapp">Kirim
-                                Notifikasi
-                                WhatsApp</button>
-                        </div>
-                    </div>
 
                     <div class="table-responsive">
                         <table id="table-report-bill" class="table align-middle table-row-dashed">
@@ -116,6 +116,7 @@
                                     <th class="min-w-125px">Dibayar</th>
                                     <th class="min-w-125px">Sisa Tagihan</th>
                                     <th class="text-center min-w-70px" style="width: 22%">Status</th>
+                                    <th class="text-center" style="width: 10%">Aksi</th>
                                 </tr>
                             </thead>
                             <tbody class="text-gray-600 fw-bold"></tbody>
@@ -165,7 +166,8 @@
                     { data: 'total', name: 'total' },
                     { data: 'total_paid', name: 'total_paid' },
                     { data: 'total_unpaid', name: 'total_unpaid' },
-                    { data: 'status', name: 'status', responsivePriority: -1 }
+                    { data: 'status', name: 'status', responsivePriority: -1 },
+                    { data: 'action', name: 'action', responsivePriority: -1 }
                 ]
             });
         }
@@ -243,6 +245,42 @@
 
         // Initial call to fetch totals
         getTotalBill();
+        
+        $('#send-wa').on('click', function() {
+            const button = $('#send-wa');
+            const originalText = 'Kirim <i class="bi bi-whatsapp"></i>';
+    
+            // Change button text and show the spinner
+            button.html('Mengirim Notif Tagihan... <span id="spinner" class="spinner-border spinner-border-sm" role="status"></span>');
+            $('#spinner').show();
+    
+            // Simulate the delay or call your AJAX request
+            setTimeout(() => {
+                // Your AJAX request
+                $.ajax({
+                    url: "{{ route('report-bill.send-wa', $billType->id) }}",
+                    type: "GET",
+                    success: function(response) {
+                        if (response.code == 200) {
+                            toastr.success(response.message);
+                        } else {
+                            toastr.error(response.message);
+                        }
+    
+                        // Hide the spinner and reset the button text after the request is done
+                        $('#spinner').hide();
+                        button.html(originalText);
+                    },
+                    error: function() {
+                        // Handle errors and reset the button
+                        toastr.error('Error occurred while sending notification.');
+                        $('#spinner').hide();
+                        button.html(originalText);
+                    }
+                });
+            }, 2000); // Adjust this delay if needed
+        });
+       
     });
 </script>
 @endpush

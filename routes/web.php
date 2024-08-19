@@ -215,6 +215,7 @@ Route::group(['middleware' => ['auth']], function () {
     Route::get('report-bill/get-classroom', [ReportBillController::class, 'getClassroom'])
         ->name('report-bill.get-classroom');
     Route::get('report-bill/get-data', [ReportBillController::class, 'getData'])->name('report-bill.get-data');
+    Route::get('report-bill/send-wa/{id}', [ReportBillController::class, 'sendWa'])->name('report-bill.send-wa');
     Route::resource('report-bill', ReportBillController::class, ['only' => ['index', 'show']])->names('report-bill');
     // end report bill
 

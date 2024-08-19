@@ -5,6 +5,7 @@ namespace App\Jobs;
 use GuzzleHttp\Client;
 use Illuminate\Bus\Queueable;
 use App\Models\ApplicationSetting;
+use App\Models\Student;
 use Illuminate\Support\Facades\Log;
 use App\Services\SendNotifWaService;
 use Illuminate\Queue\SerializesModels;
@@ -40,12 +41,13 @@ class SendBillWhatsappNotificationJob implements ShouldQueue
     public function handle()
     {
         try {
-            foreach ($this->students as $student) {
+            foreach ($this->students as $student_id) {
+                $student = Student::find($student_id);
                 $message = SendNotifWaService::sendMessageUnpaidNotification($student, $this->billTypes);
                 $this->sendToWhatsapp($student->user->phone, $message);
             }
         } catch (\Exception $e) {
-            Log::error('Failed to send WhatsApp notification: ' . $e->getMessage());
+            Log::error('Failed to send WhatsApp notification: ' . $e);
             return $e->getMessage();
         }
     }
@@ -71,7 +73,7 @@ class SendBillWhatsappNotificationJob implements ShouldQueue
 
             return "<pre>" . print_r($result, true);
         } catch (\Exception $e) {
-            Log::error('Failed to send WhatsApp notification: ' . $e->getMessage());
+            Log::error('Failed to send WhatsApp notification: ' . $e);
             return $e->getMessage();
         }
     }

@@ -102,55 +102,124 @@ class SendNotifWaService
     public static function sendMessageUnpaidNotification($student, $billTypes)
     {
         $parentStudent = $student->user;
+        $must_pay = 0;
 
-        $message = "Assalamualaikum Bapak/Ibu " . $parentStudent->name . ",\n";
+        $message = "Assalamualaikum Bapak/Ibu *" . $parentStudent->name . "*,\n\n";
         $message .= "Anda memiliki Kewajiban Administrasi Keuangan yang belum terbayar, sebagai berikut:\n";
         $message .= "--------------------------------\n";
-        $message .= "1. NIS : *" . $student->nis . "*\n";
-        $message .= "2. Nama Santri : *" . $student->name . "*\n";
-        $message .= "3. Kelas : *" . $student->classroom->name . "*\n";
+        $message .= "1. NIS           : *" . $student->nis . "*\n";
+        $message .= "2. Nama Santri   : *" . $student->name . "*\n";
+        $message .= "3. Kelas         : *" . $student?->classroom?->name . "*\n";
 
-        $must_pay = 0;
         foreach ($billTypes as $billType) {
             if ($billType->type == BillType::TYPE_OTHER) {
                 $total_unpaid = $billType->bills
-                    ->where('student_id', $student->id)->where('status', Bill::STATUS_UNPAID)
+                    ->where('student_id', $student->id)
+                    ->where('status', Bill::STATUS_UNPAID)
                     ->sum('amount');
                 $must_pay += $total_unpaid;
+
                 $message .= "--------------------------------\n";
-                $message .= "Tagihan : *" . $billType->name . "*\n";
-                $message .= "Total Tagihan : *Rp." . number_format($billType->bills->where('student_id', $student->id)
+                $message .= "Tagihan          : *" . $billType->name . "*\n";
+                $message .= "Total Tagihan    : *Rp." . number_format($billType->bills->where('student_id', $student->id)
                     ->sum('amount'), 0, ',', '.') . "*\n";
-                $message .= "Total Kekurangan: *Rp." . number_format($total_unpaid, 0, ',', '.') . "*\n";
-                $message .= "Status Pembayaran : *" . ($total_unpaid > 0 ? 'Belum Lunas' : 'Lunas') . "*\n";
+                $message .= "Total Kekurangan : *Rp." . number_format($total_unpaid, 0, ',', '.') . "*\n";
+                $message .= "Status Pembayaran: *" . ($total_unpaid > 0 ? 'Belum Lunas' : 'Lunas') . "*\n";
             } else {
-                $thisMonthInInteger = intval(date('n'));
                 $unpaidBills = $billType->bills()
                     ->where('student_id', $student->id)
                     ->where('status', Bill::STATUS_UNPAID)
-                    ->where('month', '<=', $thisMonthInInteger)
+                    ->where('month', '<=', intval(date('n')))
+                    ->orderBy('month', 'asc') // Pastikan bulan diurutkan dari yang terkecil ke yang terbesar
                     ->get();
 
                 $totalUnpaid = $unpaidBills->sum('amount');
-                $listMonth = $unpaidBills->pluck('translated_month')->toArray();
+                $listMonthYear = $unpaidBills->map(function ($bill) {
+                    return $bill->translated_month . ' ' . $bill->year; // Menggabungkan bulan dengan tahun
+                })->toArray();
 
                 $must_pay += $totalUnpaid;
-                $message .= "Tagihan : *" . $billType->name . ' ' . $billType->academicYear->name . "*\n";
-                $message .= "Bulan : *" . implode(', ', $listMonth) . "*\n";
-                $message .= "Jumlah Tagihan: *Rp." . number_format($totalUnpaid, 0, ',', '.') . "*\n";
-                $message .= "Status Pembayaran : *" . ($totalUnpaid > 0 ? 'Belum Lunas' : 'Lunas') . "*\n";
+
+                $message .= "4. Tagihan          : *" . $billType->name . ' ' . $billType->academicYear->name . "*\n";
+
+                if (count($listMonthYear) > 1) {
+                    $message .= "5. Item Tagihan :\n";
+                    foreach ($listMonthYear as $index => $monthYear) {
+                        $message .= "     " . chr(97 + $index) . ". *" . $monthYear . "*\n"; // Menambahkan penomoran abjad
+                    }
+                } else {
+                    $message .= "5. Item Tagihan : *" . $listMonthYear[0] . "*\n";
+                }
+
+                $message .= "Jumlah Tagihan   : *Rp." . number_format($totalUnpaid, 0, ',', '.') . "*\n";
+                $message .= "Status Pembayaran: *" . ($totalUnpaid > 0 ? 'Belum Lunas' : 'Lunas') . "*\n";
             }
         }
-        $message .= "\n";
+
+        $message .= "\n--------------------------------\n";
+        $message .= "Total Kekurangan: *Rp." . number_format($must_pay, 0, ',', '.') . "*\n";
         $message .= "--------------------------------\n";
-        $message .= "Total Kekurangan : *Rp." . number_format($must_pay, 0, ',', '.') . "*\n";
-        $message .= "--------------------------------\n";
-        $message .= "Note : _Jika sudah melakukan pembayaran, abaikan pesan ini_\n";
+        $message .= "Note: _Jika sudah melakukan pembayaran, abaikan pesan ini._\n";
         $message .= "Wassalamualaikum Wr. Wb.\n";
         $message .= "*PPTQ CAHAYA TASBIH*";
 
         return $message;
     }
+
+
+
+    // public static function sendMessageUnpaidNotification($student, $billTypes)
+    // {
+    //     $parentStudent = $student->user;
+
+    //     $message = "Assalamualaikum Bapak/Ibu " . $parentStudent->name . ",\n";
+    //     $message .= "Anda memiliki Kewajiban Administrasi Keuangan yang belum terbayar, sebagai berikut:\n";
+    //     $message .= "--------------------------------\n";
+    //     $message .= "1. NIS : *" . $student->nis . "*\n";
+    //     $message .= "2. Nama Santri : *" . $student->name . "*\n";
+    //     $message .= "3. Kelas : *" . $student->classroom->name . "*\n";
+
+    //     $must_pay = 0;
+    //     foreach ($billTypes as $billType) {
+    //         if ($billType->type == BillType::TYPE_OTHER) {
+    //             $total_unpaid = $billType->bills
+    //                 ->where('student_id', $student->id)->where('status', Bill::STATUS_UNPAID)
+    //                 ->sum('amount');
+    //             $must_pay += $total_unpaid;
+    //             $message .= "--------------------------------\n";
+    //             $message .= "Tagihan : *" . $billType->name . "*\n";
+    //             $message .= "Total Tagihan : *Rp." . number_format($billType->bills->where('student_id', $student->id)
+    //                 ->sum('amount'), 0, ',', '.') . "*\n";
+    //             $message .= "Total Kekurangan: *Rp." . number_format($total_unpaid, 0, ',', '.') . "*\n";
+    //             $message .= "Status Pembayaran : *" . ($total_unpaid > 0 ? 'Belum Lunas' : 'Lunas') . "*\n";
+    //         } else {
+    //             $thisMonthInInteger = intval(date('n'));
+    //             $unpaidBills = $billType->bills()
+    //                 ->where('student_id', $student->id)
+    //                 ->where('status', Bill::STATUS_UNPAID)
+    //                 ->where('month', '<=', $thisMonthInInteger)
+    //                 ->get();
+
+    //             $totalUnpaid = $unpaidBills->sum('amount');
+    //             $listMonth = $unpaidBills->pluck('translated_month')->toArray();
+
+    //             $must_pay += $totalUnpaid;
+    //             $message .= "Tagihan : *" . $billType->name . ' ' . $billType->academicYear->name . "*\n";
+    //             $message .= "Bulan : *" . implode(', ', $listMonth) . "*\n";
+    //             $message .= "Jumlah Tagihan: *Rp." . number_format($totalUnpaid, 0, ',', '.') . "*\n";
+    //             $message .= "Status Pembayaran : *" . ($totalUnpaid > 0 ? 'Belum Lunas' : 'Lunas') . "*\n";
+    //         }
+    //     }
+    //     $message .= "\n";
+    //     $message .= "--------------------------------\n";
+    //     $message .= "Total Kekurangan : *Rp." . number_format($must_pay, 0, ',', '.') . "*\n";
+    //     $message .= "--------------------------------\n";
+    //     $message .= "Note : _Jika sudah melakukan pembayaran, abaikan pesan ini_\n";
+    //     $message .= "Wassalamualaikum Wr. Wb.\n";
+    //     $message .= "*PPTQ CAHAYA TASBIH*";
+
+    //     return $message;
+    // }
 
 
     public static function sendMessageUnpaidPpdb($ppdbRegistration)
