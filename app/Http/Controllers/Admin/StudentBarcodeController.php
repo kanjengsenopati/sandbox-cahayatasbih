@@ -99,14 +99,14 @@ class StudentBarcodeController extends Controller
 
             // Resize the image to the desired dimensions in cm
             // Convert dimensions from cm to pixels
-            $widthInPixels = 6.5 * 37.8; // 6.5 cm to pixels
-            $heightInPixels = 9 * 37.8;   // 9 cm to pixels
+            $widthInPixels = 6.5 * 37.8; // 6.5 cm to pixels (now width)
+            $heightInPixels = 0.9 * 37.8; // 0.9 cm to pixels (now height)
 
             // Resize the image
             $image->resize($widthInPixels, $heightInPixels);
 
             // Create a custom filename for each barcode image
-            $fileName = $user['nis'] . '.png';
+            $fileName = $user['nis'] ? $user['nis'] . '.png' : $user['name'] . '.png';
             $filePath = $tempFolder . $fileName;
 
             // Save the resized image to the temporary folder
@@ -143,6 +143,8 @@ class StudentBarcodeController extends Controller
         return response()->download($zipFilePath)->deleteFileAfterSend(true);
     }
 
+
+
     public function changeBarcode($id)
     {
         $student = Student::findOrFail($id);
@@ -156,13 +158,21 @@ class StudentBarcodeController extends Controller
         $barcodeImage = $dns1d->getBarcodePNG($barcode, 'C128');
         $imageData = base64_decode($barcodeImage);
 
-        // Create image and save it temporarily
+        // Create image and resize it to the specified dimensions
         $image = Image::make($imageData);
-        $image->resize(650, 900);
+
+        // Convert dimensions from cm to pixels
+        $widthInPixels = 6.5 * 37.8; // 6.5 cm to pixels
+        $heightInPixels = 0.9 * 37.8; // 0.9 cm to pixels
+
+        // Resize the image
+        $image->resize($widthInPixels, $heightInPixels);
+
+        // Create a custom filename for the barcode image
         $fileName = $student->nis . '.png';
         $tempPath = storage_path('app/public/') . $fileName;
 
-        // Save the image temporarily
+        // Save the resized image temporarily
         $image->save($tempPath);
 
         // Download the barcode image and delete the file after sending
