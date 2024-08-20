@@ -78,7 +78,7 @@
                     <div class="d-flex flex-column flex-sm-row align-items-end">
                         {{-- <div class="me-sm-3 mb-3 mb-sm-0"> --}}
                             <div class="d-flex gap-2">
-                                <a href="{{ route('student-barcode.create') }}" class="btn btn-primary btn-sm"><i
+                                <a href="{{ route('student-barcode.index') }}" class="btn btn-primary btn-sm"><i
                                         class="fa fa-print me-2"></i>
                                     Barcode Santri</a>
                                 <x-action.import target="#modalImport" name="Santri" />
