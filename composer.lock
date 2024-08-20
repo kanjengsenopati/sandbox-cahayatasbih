@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "0ab29f80e11818dd8e0bd57614c39bf6",
+    "content-hash": "94abdc5d54b03fa7b0685765c4cbf29e",
     "packages": [
         {
             "name": "bacon/bacon-qr-code",
@@ -3407,6 +3407,55 @@
             "time": "2023-10-19T20:07:13+00:00"
         },
         {
+            "name": "league/flysystem-ziparchive",
+            "version": "3.28.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/thephpleague/flysystem-ziparchive.git",
+                "reference": "6b7f0448b4c6c1720d73ed905adb7020f61bdd14"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/thephpleague/flysystem-ziparchive/zipball/6b7f0448b4c6c1720d73ed905adb7020f61bdd14",
+                "reference": "6b7f0448b4c6c1720d73ed905adb7020f61bdd14",
+                "shasum": ""
+            },
+            "require": {
+                "ext-zip": "*",
+                "league/flysystem": "^3.0.0",
+                "league/mime-type-detection": "^1.0.0",
+                "php": "^8.0.2"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "League\\Flysystem\\ZipArchive\\": ""
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Frank de Jonge",
+                    "email": "info@frankdejonge.nl"
+                }
+            ],
+            "description": "ZIP filesystem adapter for Flysystem.",
+            "keywords": [
+                "Flysystem",
+                "file",
+                "files",
+                "filesystem",
+                "zip"
+            ],
+            "support": {
+                "source": "https://github.com/thephpleague/flysystem-ziparchive/tree/3.28.0"
+            },
+            "time": "2024-05-06T20:05:52+00:00"
+        },
+        {
             "name": "league/mime-type-detection",
             "version": "1.14.0",
             "source": {
@@ -4134,20 +4183,20 @@
         },
         {
             "name": "milon/barcode",
-            "version": "v10.0.1",
+            "version": "v11.0.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/milon/barcode.git",
-                "reference": "e643a713466f0109aa3ad7d29dae4900444187a5"
+                "reference": "1f4031adb52146bb7fbe88ef42214011376f9cbe"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/milon/barcode/zipball/e643a713466f0109aa3ad7d29dae4900444187a5",
-                "reference": "e643a713466f0109aa3ad7d29dae4900444187a5",
+                "url": "https://api.github.com/repos/milon/barcode/zipball/1f4031adb52146bb7fbe88ef42214011376f9cbe",
+                "reference": "1f4031adb52146bb7fbe88ef42214011376f9cbe",
                 "shasum": ""
             },
             "require": {
-                "illuminate/support": "^7.0|^8.0|^9.0|^10.0",
+                "illuminate/support": "^7.0|^8.0|^9.0|^10.0 | ^11.0",
                 "php": "^7.3 | ^8.0"
             },
             "type": "library",
@@ -4192,7 +4241,7 @@
             ],
             "support": {
                 "issues": "https://github.com/milon/barcode/issues",
-                "source": "https://github.com/milon/barcode/tree/v10.0.1"
+                "source": "https://github.com/milon/barcode/tree/v11.0.0"
             },
             "funding": [
                 {
@@ -4204,7 +4253,7 @@
                     "type": "github"
                 }
             ],
-            "time": "2023-06-16T13:03:37+00:00"
+            "time": "2024-02-28T18:14:32+00:00"
         },
         {
             "name": "mjaschen/phpgeo",

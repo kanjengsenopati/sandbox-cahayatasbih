@@ -27,12 +27,14 @@ use App\Http\Controllers\Admin\SemesterController;
 use App\Http\Controllers\Admin\ClassroomController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\OrderItemController;
+use App\Http\Controllers\Admin\SaldoBankController;
 use App\Http\Controllers\Admin\TranslateController;
 use App\Http\Controllers\Admin\DisclaimerController;
 use App\Http\Controllers\Admin\HomeSliderController;
 use App\Http\Controllers\Admin\PermissionController;
 use App\Http\Controllers\Admin\ReportBillController;
 use App\Http\Controllers\Admin\ReportUserController;
+use App\Http\Controllers\Admin\SavingBankController;
 use App\Http\Controllers\Admin\StudyGradeController;
 use App\Http\Controllers\User\PpdbHistoryController;
 use App\Http\Controllers\Admin\ImageUploadController;
@@ -55,6 +57,7 @@ use App\Http\Controllers\Admin\TermConditionController;
 use App\Http\Controllers\Admin\AppInformationController;
 use App\Http\Controllers\Admin\GradePromotionController;
 use App\Http\Controllers\Admin\MenuNavigationController;
+use App\Http\Controllers\Admin\StudentBarcodeController;
 use App\Http\Controllers\Admin\ApplicationMenuController;
 use App\Http\Controllers\Admin\OrderItemHistoryController;
 use App\Http\Controllers\Admin\PpdbRegistrationController;
@@ -66,8 +69,6 @@ use App\Http\Controllers\Admin\InformationCategoryController;
 use App\Http\Controllers\User\WaliSettingLimitSaldoController;
 use App\Http\Controllers\Admin\StudentCounselingScoreController;
 use App\Http\Controllers\Admin\ReportStudentCounselingScoreController;
-use App\Http\Controllers\Admin\SaldoBankController;
-use App\Http\Controllers\Admin\SavingBankController;
 
 /*
 |--------------------------------------------------------------------------
@@ -241,6 +242,9 @@ Route::group(['middleware' => ['auth']], function () {
     Route::resource('grade-promotion', GradePromotionController::class, ['only' => ['index', 'store']]);
     Route::post('bank/status/{id}', [BankController::class, 'status'])->name('bank.status');
     Route::resource('bank', BankController::class, ['except' => ['show']]);
+    Route::get('student-barcode/change-barcode/{id}', [StudentBarcodeController::class, 'changeBarcode'])
+        ->name('student-barcode.change-barcode');
+    Route::resource('student-barcode', StudentBarcodeController::class, ['only' => ['index', 'create', 'store']]);
 
 
     // start ppdb

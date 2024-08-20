@@ -1,4 +1,4 @@
-@extends('layouts.master', ['title' => 'Data Siswa'])
+@extends('layouts.master', ['title' => 'Barcode Santri'])
 @section('content')
 <div class="content d-flex flex-column flex-column-fluid" id="kt_content">
     <!--begin::Toolbar-->
@@ -10,7 +10,7 @@
                 data-kt-swapper-parent="{default: '#kt_content_container', 'lg': '#kt_toolbar_container'}"
                 class="page-title d-flex align-items-center flex-wrap me-3 mb-5 mb-lg-0">
                 <!--begin::Title-->
-                <h1 class="d-flex text-dark fw-bolder fs-3 align-items-center my-1"> Daftar Siswa</h1>
+                <h1 class="d-flex text-dark fw-bolder fs-3 align-items-center my-1">Data Santri</h1>
                 <!--end::Title-->
                 <!--begin::Separator-->
                 <span class="h-20px border-gray-300 border-start mx-4"></span>
@@ -19,7 +19,7 @@
                 <ul class="breadcrumb breadcrumb-separatorless fw-bold fs-7 my-1">
                     <!--begin::Item-->
                     <li class="breadcrumb-item text-muted">
-                        <a href="{{ route('student.index') }}" class="text-muted text-hover-primary">Siswa</a>
+                        <a href="{{ route('student.index') }}" class="text-muted text-hover-primary">Data Santri</a>
                     </li>
                     <!--end::Item-->
                     <!--begin::Item-->
@@ -28,7 +28,7 @@
                     </li>
                     <!--end::Item-->
                     <!--begin::Item-->
-                    <li class="breadcrumb-item text-dark">List Siswa</li>
+                    <li class="breadcrumb-item text-dark">Barcode Santri</li>
                     <!--end::Item-->
 
                 </ul>
@@ -63,28 +63,13 @@
                                 <option value="">Semua Kelas</option>
                             </select>
                         </div>
-                        <div class="mb-3">
-                            <label for="filter_status" class="form-label fw-bold">Status</label>
-                            <select class="form-select" id="filter_status">
-                                <option value="">Semua Status</option>
-                                <option value="ACTIVE">Aktif</option>
-                                <option value="INACTIVE">Tidak Aktif</option>
-                                <option value="GRADUATED">Lulus</option>
-                                <option value="DROPPED_OUT">Drop Out</option>
-                                <option value="TRANSFERRED">Pindah</option>
-                            </select>
-                        </div>
                     </div>
                     <div class="d-flex flex-column flex-sm-row align-items-end">
-                        {{-- <div class="me-sm-3 mb-3 mb-sm-0"> --}}
-                            <div class="d-flex gap-2">
-                                <a href="{{ route('student-barcode.create') }}" class="btn btn-primary btn-sm"><i
-                                        class="fa fa-print me-2"></i>
-                                    Barcode Santri</a>
-                                <x-action.import target="#modalImport" name="Santri" />
-                                {{--
-                            </div> --}}
-                            <x-action.create name="Santri" action="{{ route('student.create') }}" />
+                        <div class="me-sm-3 mb-3 mb-sm-0">
+                            <a href="{{ route('student-barcode.create') }}" class="btn btn-primary btn-sm"><i
+                                    class="fa fa-print me-2"></i>
+                                Cetak
+                                Barcode</a>
                         </div>
                     </div>
                 </div>
@@ -99,11 +84,9 @@
                                     <th style="width: 3%">No</th>
                                     <th>NIS</th>
                                     <th>Nama</th>
-                                    <th>Wali Siswa</th>
                                     <th>UPT</th>
                                     <th>Kelas</th>
-                                    <th>Saldo</th>
-                                    <th>Status</th>
+                                    <th>Barcode</th>
                                     <th class="text-center min-w-100px">Aksi</th>
                                 </tr>
                             </thead>
@@ -122,34 +105,6 @@
     </div>
     <!--end::Post-->
 </div>
-
-<div class="modal fade" id="modalImport" tabindex="-1" aria-labelledby="modalImportLabel" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <form action="{{ route('student.import') }}" method="POST" enctype="multipart/form-data">
-                @csrf
-                <div class="modal-header">
-                    <h5 class="modal-title" id="modalImportLabel">Import Data Santri</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <div class="mb-3">
-                        <label for="file" class="form-label">File Excel</label>
-                        <input class="form-control" type="file" name="file" id="file">
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <div class="me-auto">
-                        <a href="assets\media\template\import\Template Import Data Santri.xlsx"
-                            class="btn btn-light-primary"><i class="fa fa-download"></i> Template</a>
-                    </div>
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
-                    <button type="submit" class="btn btn-primary">Import</button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
 @endsection
 @push('js')
 <script>
@@ -160,7 +115,7 @@
             processing: true,
             serverSide: true,
             ajax: {
-                url: '{{ route('student.index') }}',
+                url: '{{ route('student-barcode.index') }}',
                 data: function(d) {
                     d.school_id = $('#filter_school').val();
                     d.classroom_id = $('#filter_class').val();
@@ -197,14 +152,6 @@
                     responsivePriority: -1,
                 },
                 {
-                    data: 'user.name',
-                    name: 'user.name',
-                    responsivePriority: -1,
-                    render: function(data, type, row) {
-                        return data ? data : 'Belum ada';
-                    },
-                },
-                {
                     data: 'school',
                     name: 'school',
                 },
@@ -213,13 +160,8 @@
                     name: 'classroom',
                 },
                 {
-                    data: 'saldo',
-                    name: 'saldo',
-                },
-                {
-                    data: 'status',
-                    name: 'status',
-                  
+                    data: 'barcode',
+                    name: 'barcode',
                 },
                 {
                     data: 'action',
