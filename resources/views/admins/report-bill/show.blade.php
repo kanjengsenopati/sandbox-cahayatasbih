@@ -34,6 +34,16 @@
                 <div class="card-body">
                     <form id="filter_form" method="GET">
                         <div class="row g-3">
+                            <div>
+                                <label class="form-label">Filter Tanggal</label>
+                                <div class="d-flex gap-4 align-items-end">
+                                    <div id="dateRange" class="pull-right"
+                                        style="background: #fff; cursor: pointer; padding: 5px 10px; border: 1px solid #ccc;float: top;">
+                                        <i class="glyphicon glyphicon-calendar fa fa-calendar"></i>&nbsp;
+                                        <span></span> <b class="caret"></b>
+                                    </div>
+                                </div>
+                            </div>
                             <div class="col-md-6 col-lg-3">
                                 <label for="filter_school_id" class="form-label">UPT</label>
                                 <select name="school_id" class="form-select" id="filter_school_id">
@@ -65,11 +75,6 @@
                                         role="status"></span>
                                 </button>
                             </div>
-                            {{-- <div class="col-md-6 col-lg-3">
-                                <label for="status" class="form-label">Notifikasi Tagihan Wa</label><br>
-                                <button type="button" class="btn btn-success" id="send-wa">Kirim <i
-                                        class="bi bi-whatsapp"></i></button>
-                            </div> --}}
                         </div>
                     </form>
                     <div class="d-flex gap-2 mt-4">
@@ -149,6 +154,8 @@
                         d.school_id = $('#filter_school_id').val();
                         d.classroom_id = $('#filter_classroom_id').val();
                         d.status = $('#status').val();
+                        d.start_date = start_date;
+                        d.end_date = end_date;
                     }
                 },
                 language: {
@@ -227,22 +234,6 @@
             reloadTable();
         });
 
-        // Select/Deselect all rows based on the header checkbox
-        $('#select-all').on('click', function() {
-            var rows = table.rows({ 'search': 'applied' }).nodes();
-            $('input[type="checkbox"]', rows).prop('checked', this.checked);
-        });
-
-        // Deselect header checkbox if any row is unchecked
-        $('#table-report-bill tbody').on('change', 'input[type="checkbox"]', function() {
-            if (!this.checked) {
-                var el = $('#select-all').get(0);
-                if (el && el.checked && ('indeterminate' in el)) {
-                    el.indeterminate = true;
-                }
-            }
-        });
-
         // Initial call to fetch totals
         getTotalBill();
         
@@ -280,6 +271,28 @@
                 });
             }, 2000); // Adjust this delay if needed
         });
+
+        $('#dateRange').daterangepicker({
+            startDate: moment().subtract(365, 'days'),
+            endDate: moment(),
+        ranges: {
+            'Hari Ini': [moment(), moment()],
+            'Kemarin': [moment().subtract(1, 'days'), moment().subtract(1, 'days')],
+            'Bulan Ini': [moment().startOf('month'), moment().endOf('month')],
+            'Bulan Kemarin': [moment().subtract(1, 'month').startOf('month'), moment().subtract(1, 'month').endOf('month')],
+            '7 Hari Terakhir': [moment().subtract(6, 'days'), moment()],
+            '30 Hari Terakhir': [moment().subtract(29, 'days'), moment()]
+        }
+        }, function(start, end) {
+        $('#dateRange span').html(start.format('D MMMM YYYY') + ' - ' + end.format('D MMMM YYYY'));
+        reloadTable(start.format('YYYY-MM-DD'), end.format('YYYY-MM-DD'));
+        });
+        
+        // Panggilan awal untuk date range picker
+        var start = moment().subtract(365, 'days');
+        var end = moment();
+        $('#dateRange span').html(start.format('D MMMM YYYY') + ' - ' + end.format('D MMMM YYYY'));
+        reloadTable(start.format('YYYY-MM-DD'), end.format('YYYY-MM-DD'));
        
     });
 </script>

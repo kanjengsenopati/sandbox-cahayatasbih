@@ -298,56 +298,7 @@
     $('#filter_classroom_id, #filter_academic_year_id').on('change', function() {
         reloadTable();
     });
-
-    // Mengirim notifikasi tagihan
-    // $('#send-blast-notif').on('click', function() {
-    //     var button = $(this);
-    //     changeButtonText(button, true);
-
-    //     var data = {
-    //         _token: "{{ csrf_token() }}",
-    //         school_id: $('#filter_school_id').val(),
-    //         classroom_id: $('#filter_classroom_id').val(),
-    //         academic_year_id: $('#filter_academic_year_id').val(),
-    //         bill_type_id: $('#filter_bill_type_id').val(),
-    //         status: $('#filter_status').val()
-    //     };
-
-    //     $.ajax({
-    //         url: "{{ route('report-bill.send-bill-notification') }}",
-    //         type: "POST",
-    //         data: data,
-    //         success: function(response) {
-    //             if (response.code === 200) {
-    //                 toastr.success("Berhasil mengirim notifikasi tagihan ke WhatsApp");
-    //             } else {
-    //                 toastr.error(response.message);
-    //             }
-    //         },
-    //         error: function(xhr, status, error) {
-    //             toastr.error("Terjadi kesalahan saat mengirim notifikasi: " + error);
-    //         },
-    //         complete: function() {
-    //             changeButtonText(button, false);
-    //         }
-    //     });
-    // });
-
-    // function changeButtonText(button, sending) {
-    //     var buttonText = button.find('.indicator-label');
-    //     var indicatorProgress = button.find('.indicator-progress');
-
-    //     if (sending) {
-    //         buttonText.text('Mengirim Notifikasi...');
-    //         button.attr('disabled', true);
-    //         indicatorProgress.removeClass('d-none');
-    //     } else {
-    //         buttonText.text('Kirim Notif Tagihan WA');
-    //         button.removeAttr('disabled');
-    //         indicatorProgress.addClass('d-none');
-    //     }
-    // }
-
+    
     // Inisialisasi date range picker
     $('#dateRange').daterangepicker({
         startDate: moment().subtract(365, 'days'),
