@@ -156,7 +156,7 @@
     $(document).ready(() => {
         // Initialize DataTable
         var table = $('#table-student').DataTable({
-            ordering: false,
+            ordering: true,
             processing: true,
             serverSide: true,
             ajax: {
@@ -187,6 +187,7 @@
                 {
                     data: 'nis',
                     name: 'nis',
+                    orderable: true,
                     render: function(data, type, row) {
                         return data ? data : 'Belum diisi';
                     }
@@ -194,11 +195,13 @@
                 {
                     data: 'name',
                     name: 'name',
+                    orderable: true,
                     responsivePriority: -1,
                 },
                 {
                     data: 'user.name',
                     name: 'user.name',
+                    orderable: false,
                     responsivePriority: -1,
                     render: function(data, type, row) {
                         return data ? data : 'Belum ada';
@@ -219,7 +222,6 @@
                 {
                     data: 'status',
                     name: 'status',
-                  
                 },
                 {
                     data: 'action',
