@@ -130,6 +130,7 @@ class SendNotifWaService
                     ->where('student_id', $student->id)
                     ->where('status', Bill::STATUS_UNPAID)
                     ->where('month', '<=', intval(date('n')))
+                    ->where('year', '<=', date('Y'))
                     ->orderBy('month', 'asc') // Pastikan bulan diurutkan dari yang terkecil ke yang terbesar
                     ->get();
 

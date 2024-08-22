@@ -21,12 +21,85 @@ class ReportBillController extends Controller
     /**
      * Display a listing of the resource.
      */
+    // public function index()
+    // {
+    //     if (!Auth::user()->can('Manage Laporan Tagihan')) {
+    //         return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
+    //     }
+    //     if (request()->ajax()) {
+    //         $startMonth = request()->start_date ? date('n', strtotime(request()->start_date)) : null;
+    //         $endMonth = request()->end_date ? date('n', strtotime(request()->end_date)) : null;
+    //         $startYear = request()->start_date ? date('Y', strtotime(request()->start_date)) : null;
+    //         $endYear = request()->end_date ? date('Y', strtotime(request()->end_date)) : null;
+    //         $data = BillType::with('billItem', 'academicYear', 'bills')
+    //             ->when(request()->start_date && request()->end_date, function ($query) use ($startMonth, $endMonth, $startYear, $endYear) {
+    //                 $query->whereHas('bills', function ($query) use ($startMonth, $endMonth, $startYear, $endYear) {
+    //                     $query->where('year', '>=', $startYear)
+    //                         ->where('year', '<=', $endYear)
+    //                         ->where('month', '>=', $startMonth)
+    //                         ->where('month', '<=', $endMonth);
+    //                 });
+    //             })
+    //             ->when(request()->school_id && request()->school_id != 'null', function ($query) {
+    //                 $query->whereHas('bills.student', function ($query) {
+    //                     $query->whereHas('classroom', function ($query) {
+    //                         $query->where('school_id', request()->school_id);
+    //                     });
+    //                 });
+    //             })
+    //             ->when(request()->academic_year_id && request()->academic_year_id != 'null', function ($query) {
+    //                 $query->whereHas('bills', function ($query) {
+    //                     $query->where('academic_year_id', request()->academic_year_id);
+    //                 });
+    //             })
+    //             ->when(request()->classroom_id && request()->classroom_id != 'null', function ($query) {
+    //                 $query->whereHas('bills.student', function ($query) {
+    //                     $query->where('classroom_id', request()->classroom_id);
+    //                 });
+    //             })
+    //             // ->whereHas('bills', fn ($query) => $query->where('student_id', $id))
+    //             ->latest();
+    //         if (request()->type == 'bill') {
+    //             return DataTables::of($data)
+    //                 ->addColumn('total_bill', fn($data) => $data->bills->count())
+    //                 ->addColumn('student_count', fn($data) => $data->bills->pluck('student_id')->unique()->count())
+    //                 ->editColumn('type', fn($data) => $data->type === BillType::TYPE_MONTHLY
+    //                     ? '<span class="badge badge-primary">Bulanan</span>'
+    //                     : '<span class="badge badge-secondary">Bebas</span>')
+    //                 ->addColumn('action', fn($data) => "<div class='d-flex justify-content-center'>
+    //                         <a href='" . route('report-bill.show', $data->id) . "' class='btn btn-primary btn-sm'>Lihat Detail</a>
+    //                     </div>")
+    //                 ->rawColumns(['action', 'type'])
+    //                 ->make(true);
+    //         } elseif (request()->type == 'total') {
+    //             $data = $data->get();
+    //             $total = $data->sum(fn($billType) => $billType->bills->sum('amount'));
+    //             $totalPaid = $data->sum(fn($billType) => $billType->bills->where('status', Bill::STATUS_PAID)->sum('amount'));
+
+    //             return response()->json([
+    //                 'total' => number_format($total, 0, ',', '.'),
+    //                 'total_paid' => number_format($totalPaid, 0, ',', '.'),
+    //                 'realisasion_percentage' => $total == 0 ? '0%' : number_format(($totalPaid / $total) * 100, 2, ',', '.') . '%',
+    //                 'total_unpaid' => number_format($total - $totalPaid, 0, ',', '.')
+    //             ]);
+    //         }
+    //     }
+
+    //     $schools = School::hasSchool()->orderBy('name', 'asc')->get();
+    //     $academicYears = AcademicYear::orderBy('name', 'asc')->get();
+    //     $billTypes = BillType::orderBy('name', 'asc')->get();
+
+    //     return view('admins.report-bill.index', compact('schools', 'academicYears', 'billTypes'));
+    // }
+
     public function index()
     {
         if (!Auth::user()->can('Manage Laporan Tagihan')) {
             return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
         }
+
         if (request()->ajax()) {
+            // Extract and simplify date-related logic
             $startMonth = request()->start_date ? date('n', strtotime(request()->start_date)) : null;
             $endMonth = request()->end_date ? date('n', strtotime(request()->end_date)) : null;
             $startYear = request()->start_date ? date('Y', strtotime(request()->start_date)) : null;
@@ -40,13 +113,16 @@ class ReportBillController extends Controller
                             ->where('month', '<=', $endMonth);
                     });
                 })
-                ->when(request()->school_id && request()->school_id != 'null', function ($query) {
-                    $query->whereHas('bills.student', function ($query) {
-                        $query->whereHas('classroom', function ($query) {
-                            $query->where('school_id', request()->school_id);
+                ->when(
+                    request()->school_id && request()->school_id != 'null',
+                    function ($query) {
+                        $query->whereHas('bills.student', function ($query) {
+                            $query->whereHas('classroom', function ($query) {
+                                $query->where('school_id', request()->school_id);
+                            });
                         });
-                    });
-                })
+                    }
+                )
                 ->when(request()->academic_year_id && request()->academic_year_id != 'null', function ($query) {
                     $query->whereHas('bills', function ($query) {
                         $query->where('academic_year_id', request()->academic_year_id);
@@ -57,50 +133,37 @@ class ReportBillController extends Controller
                         $query->where('classroom_id', request()->classroom_id);
                     });
                 })
-                // ->whereHas('bills', fn ($query) => $query->where('student_id', $id))
                 ->latest();
+            // ->get(); // Fetch data once here for both types
 
+            // Differentiate handling based on request type
             if (request()->type == 'bill') {
-
                 return DataTables::of($data)
-                    ->addColumn('total_bill', function ($data) {
-                        return $data->bills->count();
-                    })
-                    ->addColumn('student_count', function ($data) {
-                        return $data->bills->pluck('student_id')->unique()->count();
-                    })
-                    ->editColumn('type', function ($data) {
-                        return $data->type === BillType::TYPE_MONTHLY ? '<span class="badge badge-primary">Bulanan</span>' : '<span class="badge badge-secondary">Bebas</span>';
-                    })
-                    ->addColumn('action', function ($data) {
-                        $actionShow = route('report-bill.show', $data->id);
-                        return "<div class='d-flex justify-content-center'>" .
-                            // view('components.action.show', [
-                            //     'action' => $actionShow
-                            // ]) .
-                            // add button detail with no icon 
-                            "<a href='$actionShow' class='btn btn-primary btn-sm'>Lihat Detail</a>" .
-                            "</div>";
-                    })
+                    ->addColumn('total_bill', fn($data) => $data->bills->count())
+                    ->addColumn('student_count', fn($data) => $data->bills->pluck('student_id')->unique()->count())
+                    ->editColumn('type', fn($data) => $data->type === BillType::TYPE_MONTHLY
+                        ? '<span class="badge badge-primary">Bulanan</span>'
+                        : '<span class="badge badge-secondary">Bebas</span>')
+                    ->addColumn('action', fn($data) => "<div class='d-flex justify-content-center'>
+                            <a href='" . route('report-bill.show', $data->id) . "' class='btn btn-primary btn-sm'>Lihat Detail</a>
+                        </div>")
                     ->rawColumns(['action', 'type'])
                     ->make(true);
             } elseif (request()->type == 'total') {
-                $data = $data->get();
-                $total = 0;
-                $totalPaid = 0;
-                foreach ($data as $billType) {
-                    $total += $billType->bills->sum('amount');
-                    $totalPaid += $billType->bills->where('status', Bill::STATUS_PAID)->sum('amount');
-                }
+                // Calculate totals
+                $total = $data->sum(fn($billType) => $billType->bills->sum('amount'));
+                $totalPaid = $data->sum(fn($billType) => $billType->bills->where('status', Bill::STATUS_PAID)->sum('amount'));
+
                 return response()->json([
                     'total' => number_format($total, 0, ',', '.'),
                     'total_paid' => number_format($totalPaid, 0, ',', '.'),
-                    'realisasion_percentage' => $total == 0 ? 0 : number_format(($totalPaid / $total) * 100, 2, ',', '.') . '%',
+                    'realisasion_percentage' => $total == 0 ? '0%' : number_format(($totalPaid / $total) * 100, 2, ',', '.') . '%',
                     'total_unpaid' => number_format($total - $totalPaid, 0, ',', '.')
                 ]);
             }
         }
 
+        // Retrieve dropdown data outside of the ajax block
         $schools = School::hasSchool()->orderBy('name', 'asc')->get();
         $academicYears = AcademicYear::orderBy('name', 'asc')->get();
         $billTypes = BillType::orderBy('name', 'asc')->get();
@@ -397,7 +460,8 @@ class ReportBillController extends Controller
             $query->where('bill_type_id', $id)
                 ->where('status', Bill::STATUS_UNPAID)
                 ->where('month', '>=', 1)
-                ->where('month', '<=', date('n'));
+                ->where('month', '<=', date('n'))
+                ->where('year', '<=', date('Y'));
         })->pluck('id')->toArray();
 
         dispatch(new SendBillWhatsappNotificationJob($students, $billTypes));
