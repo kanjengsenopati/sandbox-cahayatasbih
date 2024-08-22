@@ -233,7 +233,7 @@
                     return meta.row + meta.settings._iDisplayStart + 1;
                 }},
                 { data: 'name', name: 'name' },
-                { data: 'academic_year.name', name: 'academic_year.name' },
+                { data: 'academic_year', name: 'academic_year' },
                 { data: 'type', name: 'type' },
                 { data: 'total_bill', name: 'total_bill' },
                 { data: 'student_count', name: 'student_count' },

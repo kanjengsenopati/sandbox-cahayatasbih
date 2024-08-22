@@ -31,55 +31,48 @@ class ReportBillController extends Controller
             $endMonth = request()->end_date ? date('n', strtotime(request()->end_date)) : null;
             $startYear = request()->start_date ? date('Y', strtotime(request()->start_date)) : null;
             $endYear = request()->end_date ? date('Y', strtotime(request()->end_date)) : null;
-            $data = BillType::with('billItem', 'academicYear', 'bills')
-                ->when(request()->start_date && request()->end_date, function ($query) use ($startMonth, $endMonth, $startYear, $endYear) {
-                    $query->whereHas('bills', function ($query) use ($startMonth, $endMonth, $startYear, $endYear) {
-                        $query->where('year', '>=', $startYear)
-                            ->where('year', '<=', $endYear)
-                            ->where('month', '>=', $startMonth)
-                            ->where('month', '<=', $endMonth);
-                    });
+
+            // Build the query using joins instead of whereHas
+            $data = BillType::select('bill_types.*')
+                ->join('bills', 'bills.bill_type_id', '=', 'bill_types.id')
+                ->join('students', 'students.id', '=', 'bills.student_id')
+                ->join('classrooms', 'classrooms.id', '=', 'students.classroom_id')
+                ->when(request()->school_id && request()->school_id != 'null', function ($query) {
+                    $query->where('classrooms.school_id', request()->school_id);
                 })
-                ->when(
-                    request()->school_id && request()->school_id != 'null',
-                    function ($query) {
-                        $query->whereHas('bills.student', function ($query) {
-                            $query->whereHas('classroom', function ($query) {
-                                $query->where('school_id', request()->school_id);
-                            });
-                        });
-                    }
-                )
                 ->when(request()->academic_year_id && request()->academic_year_id != 'null', function ($query) {
-                    $query->whereHas('bills', function ($query) {
-                        $query->where('academic_year_id', request()->academic_year_id);
-                    });
+                    $query->where('bills.academic_year_id', request()->academic_year_id);
                 })
                 ->when(request()->classroom_id && request()->classroom_id != 'null', function ($query) {
-                    $query->whereHas('bills.student', function ($query) {
-                        $query->where('classroom_id', request()->classroom_id);
-                    });
+                    $query->where('students.classroom_id', request()->classroom_id);
                 })
+                ->when($startYear && $endYear, function ($query) use ($startYear, $endYear, $startMonth, $endMonth) {
+                    $query->whereBetween('bills.year', [$startYear, $endYear])
+                        ->whereBetween('bills.month', [$startMonth, $endMonth]);
+                })
+                ->groupBy('bill_types.id')  // Ensures that grouping is correct for aggregate calculations
                 ->latest();
-            // ->get(); // Fetch data once here for both types
 
-            // Differentiate handling based on request type
             if (request()->type == 'bill') {
                 return DataTables::of($data)
+                    ->addColumn('academic_year', fn($data) => $data->academicYear->name)
                     ->addColumn('total_bill', fn($data) => $data->bills->count())
                     ->addColumn('student_count', fn($data) => $data->bills->pluck('student_id')->unique()->count())
                     ->editColumn('type', fn($data) => $data->type === BillType::TYPE_MONTHLY
                         ? '<span class="badge badge-primary">Bulanan</span>'
                         : '<span class="badge badge-secondary">Bebas</span>')
                     ->addColumn('action', fn($data) => "<div class='d-flex justify-content-center'>
-                            <a href='" . route('report-bill.show', $data->id) . "' class='btn btn-primary btn-sm'>Lihat Detail</a>
-                        </div>")
+                        <a href='" . route('report-bill.show', $data->id) . "' class='btn btn-primary btn-sm'>Lihat Detail</a>
+                    </div>")
                     ->rawColumns(['action', 'type'])
                     ->make(true);
             } elseif (request()->type == 'total') {
-                // Calculate totals
-                $total = $data->sum(fn($billType) => $billType->bills->sum('amount'));
-                $totalPaid = $data->sum(fn($billType) => $billType->bills->where('status', Bill::STATUS_PAID)->sum('amount'));
+                // Calculate totals without loading entire collections
+                $total = Bill::whereIn('bill_type_id', $data->pluck('id')->toArray())
+                    ->sum('amount');
+                $totalPaid = Bill::whereIn('bill_type_id', $data->pluck('id')->toArray())
+                    ->where('status', Bill::STATUS_PAID)
+                    ->sum('amount');
 
                 return response()->json([
                     'total' => number_format($total, 0, ',', '.'),
