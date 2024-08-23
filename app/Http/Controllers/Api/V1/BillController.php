@@ -114,40 +114,35 @@ class BillController extends Controller
     {
         $studentId = $request->student_id;
 
-        // Get all paid bills for the student
-        $paidBills = Bill::where('student_id', $studentId)
-            ->where('status', Bill::STATUS_PAID)
-            ->select('bill_type_id', 'amount')
+        // Get all bills for the student
+        $allBills = Bill::where('student_id', $studentId)
+            ->select('bill_type_id', 'status', 'amount')
             ->get();
 
-        $totalBill = Bill::where('student_id', $studentId)
-            ->where('status', Bill::STATUS_UNPAID)
-            ->select('bill_type_id', 'amount')
-            ->sum('amount');
+        // Calculate total unpaid bills
+        $totalBill = $allBills->where('status', Bill::STATUS_UNPAID)->sum('amount');
 
-        // Get all bill types that have any paid bills for this student
-        $billTypeIds = $paidBills->pluck('bill_type_id')->unique();
+        // Group bills by bill_type_id
+        $groupedBills = $allBills->groupBy('bill_type_id');
 
-        $billTypes = BillType::whereIn('id', $billTypeIds)
+        // Filter to get only fully paid bill types
+        $fullyPaidBillTypeIds = $groupedBills->filter(function ($typeBills) {
+            return $typeBills->every(function ($bill) {
+                return $bill->status === Bill::STATUS_PAID;
+            });
+        })->keys();
+
+        $billTypes = BillType::whereIn('id', $fullyPaidBillTypeIds)
             ->with(['billItem', 'academicYear'])
             ->latest()
             ->get();
 
-        // Get all bills for these bill types and this student
-        $allBills = Bill::where('student_id', $studentId)
-            ->whereIn('bill_type_id', $billTypeIds)
-            ->select('bill_type_id', 'status', 'amount')
-            ->get();
-
-        $billTypes = $billTypes->map(function ($billType) use ($allBills) {
-            $typeBills = $allBills->where('bill_type_id', $billType->id);
-            $billType->total_unpaid = $typeBills->where('status', Bill::STATUS_UNPAID)->sum('amount');
-            $billType->total_paid = $typeBills->where('status', Bill::STATUS_PAID)->sum('amount');
-            $billType->status = Bill::STATUS_PAID;
+        $billTypes = $billTypes->map(function ($billType) use ($groupedBills) {
+            $typeBills = $groupedBills[$billType->id];
+            $billType->total_paid = $typeBills->sum('amount');
+            $billType->total_unpaid = 0; // Always 0 for fully paid bill types
+            $billType->status = Bill::STATUS_PAID; // Always PAID for fully paid bill types
             return $billType;
-        })->filter(function ($billType) {
-            // Include bill types that have any paid amount
-            return $billType->total_paid > 0;
         })->values(); // Reset array keys
 
         $data = [
