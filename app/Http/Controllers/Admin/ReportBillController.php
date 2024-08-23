@@ -110,111 +110,13 @@ class ReportBillController extends Controller
     /**
      * Display the specified resource.
      */
+
     public function show(string $id)
     {
-        if (!Auth::user()->can('Manage Laporan Tagihan')) {
-            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
-        }
+        $this->authorize('Manage Laporan Tagihan');
 
         if (request()->ajax()) {
-            if (request()->type === 'bill') {
-                $students = Student::select('students.*')
-                    ->join('bills', 'bills.student_id', '=', 'students.id')
-                    ->where('bills.bill_type_id', $id)
-                    ->when(request()->school_id && request()->school_id !== 'null', function ($query) {
-                        return $query->join('classrooms', 'classrooms.id', '=', 'students.classroom_id')
-                            ->where('classrooms.school_id', request()->school_id);
-                    })
-                    ->when(request()->classroom_id && request()->classroom_id !== 'null', function ($query) {
-                        return $query->where('students.classroom_id', request()->classroom_id);
-                    })
-                    ->when(request()->status, function ($query) use ($id) {
-                        return $this->filterByStatus($query, request()->status, $id);
-                    })
-                    ->when(request()->start_date && request()->end_date, function ($query) {
-                        $startYear = date('Y', strtotime(request()->start_date));
-                        $endYear = date('Y', strtotime(request()->end_date));
-                        $startMonth = date('n', strtotime(request()->start_date));
-                        $endMonth = date('n', strtotime(request()->end_date));
-
-                        return $query->whereBetween('bills.year', [$startYear, $endYear])
-                            ->whereBetween('bills.month', [$startMonth, $endMonth]);
-                    })
-                    ->hasSchool()
-                    ->orderBy('students.name', 'asc')
-                    ->get();
-
-                // Initialize overall totals
-                $totalPaidSum = 0;
-                $totalUnpaidSum = 0;
-
-                $students->map(function ($student) use (&$totalPaidSum, &$totalUnpaidSum, $id) {
-                    $total = $student->bills->where('bill_type_id', $id)->sum('amount');
-                    $studentTotalPaid = $student->bills->where('bill_type_id', $id)->where('status', Bill::STATUS_PAID)->sum('amount');
-                    $studentTotalUnpaid = $total - $studentTotalPaid;
-
-                    // Update overall totals
-                    $totalPaidSum += $studentTotalPaid;
-                    $totalUnpaidSum += $studentTotalUnpaid;
-
-                    // Assign the totals and status to the student object for DataTables
-                    $student->total_paid = $studentTotalPaid;
-                    $student->total_unpaid = $studentTotalUnpaid;
-                    $student->total = $total;
-
-                    // Determine the payment status
-                    if ($studentTotalPaid === 0) {
-                        $student->status = '<span class="badge bg-danger">Belum Bayar</span>';
-                    } elseif ($studentTotalPaid === $total) {
-                        $student->status = '<span class="badge bg-success">Lunas</span>';
-                    } else {
-                        $student->status = '<span class="badge bg-warning">Belum Lunas</span>';
-                    }
-
-                    return $student;
-                });
-
-                return DataTables::of($students)
-                    ->addColumn('total_unpaid', fn($student) => $this->formatCurrency($student->total_unpaid))
-                    ->addColumn('total_paid', fn($student) => $this->formatCurrency($student->total_paid))
-                    ->addColumn('total', fn($student) => $this->formatCurrency($student->total))
-                    ->addColumn('status', fn($student) => $student->status)
-                    ->addColumn('action', fn($data) => $this->renderActions($data, $id))
-                    ->rawColumns(['status', 'action'])
-                    ->make(true);
-            }
-
-            if (request()->type === 'total') {
-                $total = Bill::where('bill_type_id', $id)
-                    ->when(request()->school_id && request()->school_id !== 'null', function ($query) {
-                        return $query->whereHas('student.classroom', fn($q) => $q->where('school_id', request()->school_id));
-                    })
-                    ->when(request()->classroom_id && request()->classroom_id !== 'null', function ($query) {
-                        return $query->whereHas('student', fn($q) => $q->where('classroom_id', request()->classroom_id));
-                    })
-                    ->when(request()->status === 'UNPAID', fn($query) => $query->where('status', Bill::STATUS_UNPAID))
-                    ->when(request()->status === 'PAID', fn($query) => $query->where('status', Bill::STATUS_PAID))
-                    ->sum('amount');
-
-                $totalPaid = Bill::where('bill_type_id', $id)
-                    ->where('status', Bill::STATUS_PAID)
-                    ->when(request()->school_id && request()->school_id !== 'null', function ($query) {
-                        return $query->whereHas('student.classroom', fn($q) => $q->where('school_id', request()->school_id));
-                    })
-                    ->when(request()->classroom_id && request()->classroom_id !== 'null', function ($query) {
-                        return $query->whereHas('student', fn($q) => $q->where('classroom_id', request()->classroom_id));
-                    })
-                    ->sum('amount');
-
-                $totalUnpaid = $total - $totalPaid;
-
-                return response()->json([
-                    'total' => number_format($total, 0, ',', '.'),
-                    'total_paid' => number_format($totalPaid, 0, ',', '.'),
-                    'realisasion_percentage' => $total == 0 ? 0 : number_format(($totalPaid / $total) * 100, 2, ',', '.') . '%',
-                    'total_unpaid' => number_format($totalUnpaid, 0, ',', '.')
-                ]);
-            }
+            return $this->handleAjaxRequest($id);
         }
 
         $billType = BillType::findOrFail($id);
@@ -222,6 +124,277 @@ class ReportBillController extends Controller
 
         return view('admins.report-bill.show', compact('billType', 'schools'));
     }
+
+    private function handleAjaxRequest(string $id)
+    {
+        $dateRange = $this->getDateRange();
+
+        if (request()->type === 'bill') {
+            return $this->getBillData($id, $dateRange);
+        }
+
+        if (request()->type === 'total') {
+            return $this->getTotalData($id, $dateRange);
+        }
+    }
+
+    private function getDateRange()
+    {
+        return [
+            'startMonth' => request()->start_date ? date('n', strtotime(request()->start_date)) : null,
+            'endMonth' => request()->end_date ? date('n', strtotime(request()->end_date)) : null,
+            'startYear' => request()->start_date ? date('Y', strtotime(request()->start_date)) : null,
+            'endYear' => request()->end_date ? date('Y', strtotime(request()->end_date)) : null,
+        ];
+    }
+
+    private function getBillData(string $id, array $dateRange)
+    {
+        $students = $this->getFilteredStudents($id, $dateRange);
+        $this->calculateStudentTotals($students, $id);
+
+        return DataTables::of($students)
+            ->addColumn('total_unpaid', fn($student) => $this->formatCurrency($student->total_unpaid))
+            ->addColumn('total_paid', fn($student) => $this->formatCurrency($student->total_paid))
+            ->addColumn('total', fn($student) => $this->formatCurrency($student->total))
+            ->addColumn('status', fn($student) => $student->status)
+            ->addColumn('action', fn($data) => $this->renderActions($data, $id))
+            ->rawColumns(['status', 'action'])
+            ->make(true);
+    }
+
+    private function getFilteredStudents(string $id, array $dateRange)
+    {
+        return Student::select('students.*')
+            ->join('bills', 'bills.student_id', '=', 'students.id')
+            ->where('bills.bill_type_id', $id)
+            // ->whereBetween('bills.month', [$dateRange['startMonth'], $dateRange['endMonth']])
+            // ->whereBetween('bills.year', [$dateRange['startYear'], $dateRange['endYear']])
+            ->when(request()->school_id && request()->school_id !== 'null', $this->schoolFilter())
+            ->when(request()->classroom_id && request()->classroom_id !== 'null', $this->classroomFilter())
+            ->when(request()->status, fn($query) => $this->filterByStatus($query, request()->status, $id))
+            // ->when($dateRange['startYear'] && $dateRange['endYear'], $this->dateRangeFilter($dateRange))
+            ->hasSchool()
+            ->orderBy('students.name', 'asc')
+            ->distinct()
+            ->get();
+    }
+
+    private function schoolFilter()
+    {
+        return function ($query) {
+            return $query->join('classrooms', 'classrooms.id', '=', 'students.classroom_id')
+                ->where('classrooms.school_id', request()->school_id);
+        };
+    }
+
+    private function classroomFilter()
+    {
+        return fn($query) => $query->where('students.classroom_id', request()->classroom_id);
+    }
+
+    private function dateRangeFilter(array $dateRange)
+    {
+        return function ($query) use ($dateRange) {
+            $query->whereBetween('bills.year', [$dateRange['startYear'], $dateRange['endYear']])
+                ->whereBetween('bills.month', [$dateRange['startMonth'], $dateRange['endMonth']]);
+        };
+    }
+
+    private function calculateStudentTotals(&$students, string $id)
+    {
+        $totalPaidSum = 0;
+        $totalUnpaidSum = 0;
+
+        $students->map(function ($student) use (&$totalPaidSum, &$totalUnpaidSum, $id) {
+            $total = $student->bills->where('bill_type_id', $id)->sum('amount');
+            $studentTotalPaid = $student->bills->where('bill_type_id', $id)->where('status', Bill::STATUS_PAID)->sum('amount');
+            $studentTotalUnpaid = $total - $studentTotalPaid;
+
+            $totalPaidSum += $studentTotalPaid;
+            $totalUnpaidSum += $studentTotalUnpaid;
+
+            $student->total_paid = $studentTotalPaid;
+            $student->total_unpaid = $studentTotalUnpaid;
+            $student->total = $total;
+            $student->status = $this->getPaymentStatus($studentTotalPaid, $total);
+
+            return $student;
+        });
+    }
+
+    private function getPaymentStatus($paid, $total)
+    {
+        if ($paid === 0) {
+            return '<span class="badge bg-danger">Belum Bayar</span>';
+        } elseif ($paid === $total) {
+            return '<span class="badge bg-success">Lunas</span>';
+        } else {
+            return '<span class="badge bg-warning">Belum Lunas</span>';
+        }
+    }
+
+    private function getTotalData(string $id, array $dateRange)
+    {
+        $billQuery = Bill::where('bill_type_id', $id)
+            ->when(request()->school_id && request()->school_id !== 'null', $this->schoolBillFilter())
+            ->when(request()->classroom_id && request()->classroom_id !== 'null', $this->classroomBillFilter())
+            ->when(request()->status === 'UNPAID', fn($query) => $query->where('status', Bill::STATUS_UNPAID))
+            ->when(request()->status === 'PAID', fn($query) => $query->where('status', Bill::STATUS_PAID))
+            ->when($dateRange['startYear'] && $dateRange['endYear'], $this->dateRangeFilter($dateRange));
+
+        $total = $billQuery->sum('amount');
+        $totalPaid = $billQuery->where('status', Bill::STATUS_PAID)->sum('amount');
+        $totalUnpaid = $total - $totalPaid;
+
+        return response()->json([
+            'total' => number_format($total, 0, ',', '.'),
+            'total_paid' => number_format($totalPaid, 0, ',', '.'),
+            'realisasion_percentage' => $total == 0 ? 0 : number_format(($totalPaid / $total) * 100, 2, ',', '.') . '%',
+            'total_unpaid' => number_format($totalUnpaid, 0, ',', '.')
+        ]);
+    }
+
+    private function schoolBillFilter()
+    {
+        return fn($query) => $query->whereHas('student.classroom', fn($q) => $q->where('school_id', request()->school_id));
+    }
+
+    private function classroomBillFilter()
+    {
+        return fn($query) => $query->whereHas('student', fn($q) => $q->where('classroom_id', request()->classroom_id));
+    }
+
+    // public function show(string $id)
+    // {
+    //     if (!Auth::user()->can('Manage Laporan Tagihan')) {
+    //         return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
+    //     }
+
+    //     if (request()->ajax()) {
+    //         $startMonth = request()->start_date ? date('n', strtotime(request()->start_date)) : null;
+    //         $endMonth = request()->end_date ? date('n', strtotime(request()->end_date)) : null;
+    //         $startYear = request()->start_date ? date('Y', strtotime(request()->start_date)) : null;
+    //         $endYear = request()->end_date ? date('Y', strtotime(request()->end_date)) : null;
+
+    //         if (request()->type === 'bill') {
+
+    //             $students = Student::select('students.*')
+    //                 ->join('bills', 'bills.student_id', '=', 'students.id')
+    //                 ->where('bills.bill_type_id', $id)
+    //                 ->when(request()->school_id && request()->school_id !== 'null', function ($query) {
+    //                     return $query->join('classrooms', 'classrooms.id', '=', 'students.classroom_id')
+    //                         ->where('classrooms.school_id', request()->school_id);
+    //                 })
+    //                 ->when(request()->classroom_id && request()->classroom_id !== 'null', function ($query) {
+    //                     return $query->where('students.classroom_id', request()->classroom_id);
+    //                 })
+    //                 ->when(request()->status, function ($query) use ($id) {
+    //                     return $this->filterByStatus($query, request()->status, $id);
+    //                 })
+    //                 // ->when(request()->start_date && request()->end_date, function ($query) {
+    //                 //     $startYear = date('Y', strtotime(request()->start_date));
+    //                 //     $endYear = date('Y', strtotime(request()->end_date));
+    //                 //     $startMonth = date('n', strtotime(request()->start_date));
+    //                 //     $endMonth = date('n', strtotime(request()->end_date));
+
+    //                 //     return $query->whereBetween('bills.year', [$startYear, $endYear])
+    //                 //         ->whereBetween('bills.month', [$startMonth, $endMonth]);
+    //                 // })
+    //                 ->when($startYear && $endYear, function ($query) use ($startYear, $endYear, $startMonth, $endMonth) {
+    //                     $query->whereBetween('bills.year', [$startYear, $endYear])
+    //                         ->whereBetween('bills.month', [$startMonth, $endMonth]);
+    //                 })
+    //                 ->hasSchool()
+    //                 ->orderBy('students.name', 'asc')
+    //                 ->get();
+
+    //             // Initialize overall totals
+    //             $totalPaidSum = 0;
+    //             $totalUnpaidSum = 0;
+
+    //             $students->map(function ($student) use (&$totalPaidSum, &$totalUnpaidSum, $id) {
+    //                 $total = $student->bills->where('bill_type_id', $id)->sum('amount');
+    //                 $studentTotalPaid = $student->bills->where('bill_type_id', $id)->where('status', Bill::STATUS_PAID)->sum('amount');
+    //                 $studentTotalUnpaid = $total - $studentTotalPaid;
+
+    //                 // Update overall totals
+    //                 $totalPaidSum += $studentTotalPaid;
+    //                 $totalUnpaidSum += $studentTotalUnpaid;
+
+    //                 // Assign the totals and status to the student object for DataTables
+    //                 $student->total_paid = $studentTotalPaid;
+    //                 $student->total_unpaid = $studentTotalUnpaid;
+    //                 $student->total = $total;
+
+    //                 // Determine the payment status
+    //                 if ($studentTotalPaid === 0) {
+    //                     $student->status = '<span class="badge bg-danger">Belum Bayar</span>';
+    //                 } elseif ($studentTotalPaid === $total) {
+    //                     $student->status = '<span class="badge bg-success">Lunas</span>';
+    //                 } else {
+    //                     $student->status = '<span class="badge bg-warning">Belum Lunas</span>';
+    //                 }
+
+    //                 return $student;
+    //             });
+
+    //             return DataTables::of($students)
+    //                 ->addColumn('total_unpaid', fn($student) => $this->formatCurrency($student->total_unpaid))
+    //                 ->addColumn('total_paid', fn($student) => $this->formatCurrency($student->total_paid))
+    //                 ->addColumn('total', fn($student) => $this->formatCurrency($student->total))
+    //                 ->addColumn('status', fn($student) => $student->status)
+    //                 ->addColumn('action', fn($data) => $this->renderActions($data, $id))
+    //                 ->rawColumns(['status', 'action'])
+    //                 ->make(true);
+    //         }
+
+    //         if (request()->type === 'total') {
+    //             $total = Bill::where('bill_type_id', $id)
+    //                 ->when(request()->school_id && request()->school_id !== 'null', function ($query) {
+    //                     return $query->whereHas('student.classroom', fn($q) => $q->where('school_id', request()->school_id));
+    //                 })
+    //                 ->when(request()->classroom_id && request()->classroom_id !== 'null', function ($query) {
+    //                     return $query->whereHas('student', fn($q) => $q->where('classroom_id', request()->classroom_id));
+    //                 })
+    //                 ->when(request()->status === 'UNPAID', fn($query) => $query->where('status', Bill::STATUS_UNPAID))
+    //                 ->when(request()->status === 'PAID', fn($query) => $query->where('status', Bill::STATUS_PAID))
+    //                 ->when($startYear && $endYear, function ($query) use ($startYear, $endYear, $startMonth, $endMonth) {
+    //                     $query->whereBetween('bills.year', [$startYear, $endYear])
+    //                         ->whereBetween('bills.month', [$startMonth, $endMonth]);
+    //                 })
+    //                 ->sum('amount');
+
+    //             $totalPaid = Bill::where('bill_type_id', $id)
+    //                 ->where('status', Bill::STATUS_PAID)
+    //                 ->when(request()->school_id && request()->school_id !== 'null', function ($query) {
+    //                     return $query->whereHas('student.classroom', fn($q) => $q->where('school_id', request()->school_id));
+    //                 })
+    //                 ->when(request()->classroom_id && request()->classroom_id !== 'null', function ($query) {
+    //                     return $query->whereHas('student', fn($q) => $q->where('classroom_id', request()->classroom_id));
+    //                 })
+    //                 ->when($startYear && $endYear, function ($query) use ($startYear, $endYear, $startMonth, $endMonth) {
+    //                     $query->whereBetween('bills.year', [$startYear, $endYear])
+    //                         ->whereBetween('bills.month', [$startMonth, $endMonth]);
+    //                 })
+    //                 ->sum('amount');
+
+    //             $totalUnpaid = $total - $totalPaid;
+
+    //             return response()->json([
+    //                 'total' => number_format($total, 0, ',', '.'),
+    //                 'total_paid' => number_format($totalPaid, 0, ',', '.'),
+    //                 'realisasion_percentage' => $total == 0 ? 0 : number_format(($totalPaid / $total) * 100, 2, ',', '.') . '%',
+    //                 'total_unpaid' => number_format($totalUnpaid, 0, ',', '.')
+    //             ]);
+    //         }
+    //     }
+
+    //     $billType = BillType::findOrFail($id);
+    //     $schools = School::hasSchool()->orderBy('name', 'asc')->get();
+
+    //     return view('admins.report-bill.show', compact('billType', 'schools'));
+    // }
 
     private function getBillTotal($studentId, $billTypeId, $status = null)
     {

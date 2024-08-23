@@ -174,17 +174,6 @@
                         </table>
                     </div>
                     <!--end::Table-->
-
-                    <!-- Add Button for WA Blast -->
-                    {{-- <div class="text-center mt-3">
-                        <button class="btn btn-success" id="send-blast-notif"><i class="bi bi-whatsapp"></i>
-                            <span class="indicator-label" id="buttonText">Kirim
-                                Notif
-                                Tagihan WA</span>
-                            <span class="indicator-progress d-none">Please wait...
-                                <span class="spinner-border spinner-border-sm align-middle ms-2"></span>
-                            </span></button>
-                    </div> --}}
                 </div>
                 <!--end::Card body-->
             </div>
@@ -204,73 +193,7 @@
 <script>
     $(document).ready(function() {
     // Inisialisasi DataTable
-    var table = initializeTable();
-
-    function initializeTable(start_date = '', end_date = '') {
-        return $('#table-report-bill').DataTable({
-            processing: true,
-            serverSide: true,
-            ajax: {
-                url: "{{ route('report-bill.index') }}",
-                data: function(d) {
-                    d.type = 'bill';
-                    d.school_id = $('#filter_school_id').val();
-                    d.classroom_id = $('#filter_classroom_id').val();
-                    d.academic_year_id = $('#filter_academic_year_id').val();
-                    d.start_date = start_date;
-                    d.end_date = end_date;
-                }
-            },
-            language: {
-                 processing: "Sedang memproses data, Silahkan ditunggu..."
-            },
-            lengthMenu: [
-            [10, 25, 50, 100, -1],
-            [10, 25, 50, 100, "Semua"]
-            ],
-            columns: [
-                { data: null, sortable: false, searchable: false, render: function(data, type, row, meta) {
-                    return meta.row + meta.settings._iDisplayStart + 1;
-                }},
-                { data: 'name', name: 'name' },
-                { data: 'academic_year', name: 'academic_year' },
-                { data: 'type', name: 'type' },
-                { data: 'total_bill', name: 'total_bill' },
-                { data: 'student_count', name: 'student_count' },
-                { data: 'action', name: 'action', orderable: false, searchable: false }
-            ]
-        });
-    }
-
-    function reloadTable(start_date = '', end_date = '') {
-        table.destroy();
-        table = initializeTable(start_date, end_date);
-        getTotalBill(start_date, end_date);
-    }
-
-    function getTotalBill(start_date = '', end_date = '') {
-        $.ajax({
-            url: "{{ route('report-bill.index') }}",
-            type: "GET",
-            dataType: 'json',
-            data: {
-                type: 'total',
-                school_id: $('#filter_school_id').val(),
-                classroom_id: $('#filter_classroom_id').val(),
-                academic_year_id: $('#filter_academic_year_id').val(),
-                start_date: start_date,
-                end_date: end_date
-            },
-            success: function(response) {
-                $('#total').text('Rp. ' + response.total);
-                $('#total_paid').text('Rp. ' + response.total_paid);
-                $('#progress-bar').css('width', response.realisasion_percentage);
-                $('#progress-bar-label').text(response.realisasion_percentage);
-                $('#total_unpaid').text('Belum Lunas: Rp. ' + response.total_unpaid);
-
-            }
-        });
-    }
+    // var table = initializeTable();
 
     $('#filter_school_id').on('change', function() {
          var school_id = $(this).val();
@@ -305,11 +228,11 @@
         endDate: moment(),
         ranges: {
             'Hari Ini': [moment(), moment()],
-            'Kemarin': [moment().subtract(1, 'days'), moment().subtract(1, 'days')],
             'Bulan Ini': [moment().startOf('month'), moment().endOf('month')],
-            'Bulan Kemarin': [moment().subtract(1, 'month').startOf('month'), moment().subtract(1, 'month').endOf('month')],
-            '7 Hari Terakhir': [moment().subtract(6, 'days'), moment()],
-            '30 Hari Terakhir': [moment().subtract(29, 'days'), moment()]
+            '3 Bulan Terakhir': [moment().subtract(3, 'month').startOf('month'), moment().subtract(1, 'month').endOf('month')],
+            '6 Bulan Terakhir': [moment().subtract(6, 'month').startOf('month'), moment().subtract(1, 'month').endOf('month')],
+            '9 Bulan Terakhir': [moment().subtract(9, 'month').startOf('month'), moment().subtract(1, 'month').endOf('month')],
+            'Tahun Ini': [moment().startOf('year'), moment().endOf('year')],
         }
     }, function(start, end) {
         $('#dateRange span').html(start.format('D MMMM YYYY') + ' - ' + end.format('D MMMM YYYY'));
@@ -322,5 +245,72 @@
     $('#dateRange span').html(start.format('D MMMM YYYY') + ' - ' + end.format('D MMMM YYYY'));
     reloadTable(start.format('YYYY-MM-DD'), end.format('YYYY-MM-DD'));
 });
+
+    function initializeTable(start_date = '', end_date = '') {
+    return $('#table-report-bill').DataTable({
+    processing: true,
+    serverSide: true,
+    ajax: {
+    url: "{{ route('report-bill.index') }}",
+    data: function(d) {
+    d.type = 'bill';
+    d.school_id = $('#filter_school_id').val();
+    d.classroom_id = $('#filter_classroom_id').val();
+    d.academic_year_id = $('#filter_academic_year_id').val();
+    d.start_date = start_date;
+    d.end_date = end_date;
+    }
+    },
+    language: {
+    processing: "Sedang memproses data, Silahkan ditunggu..."
+    },
+    lengthMenu: [
+    [10, 25, 50, 100, -1],
+    [10, 25, 50, 100, "Semua"]
+    ],
+    columns: [
+    { data: null, sortable: false, searchable: false, render: function(data, type, row, meta) {
+    return meta.row + meta.settings._iDisplayStart + 1;
+    }},
+    { data: 'name', name: 'name' },
+    { data: 'academic_year', name: 'academic_year' },
+    { data: 'type', name: 'type' },
+    { data: 'total_bill', name: 'total_bill' },
+    { data: 'student_count', name: 'student_count' },
+    { data: 'action', name: 'action', orderable: false, searchable: false }
+    ]
+    });
+    }
+    
+    function reloadTable(start_date = '', end_date = '') {
+    var table = $('#table-report-bill').DataTable();
+    table.destroy();
+    table = initializeTable(start_date, end_date);
+    getTotalBill(start_date, end_date);
+    }
+    
+    function getTotalBill(start_date = '', end_date = '') {
+    $.ajax({
+    url: "{{ route('report-bill.index') }}",
+    type: "GET",
+    dataType: 'json',
+    data: {
+    type: 'total',
+    school_id: $('#filter_school_id').val(),
+    classroom_id: $('#filter_classroom_id').val(),
+    academic_year_id: $('#filter_academic_year_id').val(),
+    start_date: start_date,
+    end_date: end_date
+    },
+    success: function(response) {
+    $('#total').text('Rp. ' + response.total);
+    $('#total_paid').text('Rp. ' + response.total_paid);
+    $('#progress-bar').css('width', response.realisasion_percentage);
+    $('#progress-bar-label').text(response.realisasion_percentage);
+    $('#total_unpaid').text('Belum Lunas: Rp. ' + response.total_unpaid);
+    
+    }
+    });
+    }
 </script>
 @endpush

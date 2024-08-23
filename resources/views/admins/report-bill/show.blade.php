@@ -140,94 +140,10 @@
 <script>
     $(document).ready(function() {
         // Initialize the table on document ready
-        var table = initializeTable();
+        // var table = initializeTable();
 
         // Function to initialize DataTable
-        function initializeTable(start_date = '', end_date = '') {
-            return $('#table-report-bill').DataTable({
-                processing: true,
-                serverSide: true,
-                ajax: {
-                    url: "{{ route('report-bill.show', $billType->id) }}",
-                    data: function(d) {
-                        d.type = 'bill';
-                        d.school_id = $('#filter_school_id').val();
-                        d.classroom_id = $('#filter_classroom_id').val();
-                        d.status = $('#status').val();
-                        d.start_date = start_date;
-                        d.end_date = end_date;
-                    }
-                },
-                language: {
-                    processing: "Sedang memproses data, Silahkan ditunggu..."
-                },
-                lengthMenu: [
-                    [10, 25, 50, 100, -1],
-                    [10, 25, 50, 100, "Semua"]
-                ],
-                columns: [
-                    { data: null, sortable: false, searchable: false, render: function(data, type, row, meta) {
-                        return meta.row + meta.settings._iDisplayStart + 1;
-                    }},
-                    { data: 'name', name: 'name' },
-                    { data: 'total', name: 'total' },
-                    { data: 'total_paid', name: 'total_paid' },
-                    { data: 'total_unpaid', name: 'total_unpaid' },
-                    { data: 'status', name: 'status', responsivePriority: -1 },
-                    { data: 'action', name: 'action', responsivePriority: -1 }
-                ]
-            });
-        }
-
-        // Function to reload DataTable
-        function reloadTable(start_date = '', end_date = '') {
-            table.destroy(); // Destroy existing DataTable
-            table = initializeTable(start_date, end_date); // Reinitialize DataTable
-            getTotalBill(start_date, end_date); // Fetch totals
-        }
-
-        // Function to get total bill information
-        function getTotalBill(start_date = '', end_date = '') {
-            $.ajax({
-                url: "{{ route('report-bill.show', $billType->id) }}",
-                type: "GET",
-                dataType: 'json',
-                data: {
-                    type: 'total',
-                    school_id: $('#filter_school_id').val(),
-                    classroom_id: $('#filter_classroom_id').val(),
-                    status: $('#status').val(),
-                },
-                success: function(response) {
-                    $('#total').text('Rp. ' + response.total);
-                    $('#total_paid').text('Rp. ' + response.total_paid);
-                    $('#progress-bar').css('width', response.realisasion_percentage);
-                    $('#progress-bar-label').text(response.realisasion_percentage);
-                    $('#total_unpaid').text('Belum Lunas: Rp. ' + response.total_unpaid);
-                }
-            });
-        }
-
-        // Event listener for school filter change
-        $('#filter_school_id').on('change', function() {
-            var school_id = $(this).val();
-            $.ajax({
-                url: "{{ route('report-bill.get-classroom') }}",
-                type: "GET",
-                data: { school_id: school_id },
-                success: function(response) {
-                    $('#filter_classroom_id').empty();
-                    if (response.data.length > 0) {
-                        $('#filter_classroom_id').append('<option value="">Semua Kelas</option>');
-                        $.each(response.data, function(key, value) {
-                            $('#filter_classroom_id').append('<option value="' + value.id + '">' + value.name + '</option>');
-                        });
-                    } else {
-                        $('#filter_classroom_id').append('<option value="">Data tidak ditemukan</option>');
-                    }
-                }
-            });
-        });
+     
 
         // Event listeners for filters
         $('#filter_school_id, #filter_classroom_id, #status').on('change', function() {
@@ -235,7 +151,7 @@
         });
 
         // Initial call to fetch totals
-        getTotalBill();
+        // getTotalBill();
         
         $('#send-wa').on('click', function() {
             const button = $('#send-wa');
@@ -273,15 +189,15 @@
         });
 
         $('#dateRange').daterangepicker({
-            startDate: moment().subtract(365, 'days'),
-            endDate: moment(),
+            startDate: moment().startOf('year'),
+            endDate: moment().endOf('year'),
         ranges: {
             'Hari Ini': [moment(), moment()],
-            'Kemarin': [moment().subtract(1, 'days'), moment().subtract(1, 'days')],
             'Bulan Ini': [moment().startOf('month'), moment().endOf('month')],
-            'Bulan Kemarin': [moment().subtract(1, 'month').startOf('month'), moment().subtract(1, 'month').endOf('month')],
-            '7 Hari Terakhir': [moment().subtract(6, 'days'), moment()],
-            '30 Hari Terakhir': [moment().subtract(29, 'days'), moment()]
+            '3 Bulan Terakhir': [moment().subtract(2, 'month').startOf('month'), moment().endOf('month')],
+            '6 Bulan Terakhir': [moment().subtract(5, 'month').startOf('month'), moment().endOf('month')],
+            '9 Bulan Terakhir': [moment().subtract(8, 'month').startOf('month'), moment().endOf('month')],
+            'Tahun Ini': [moment().startOf('year'), moment().endOf('year')],
         }
         }, function(start, end) {
         $('#dateRange span').html(start.format('D MMMM YYYY') + ' - ' + end.format('D MMMM YYYY'));
@@ -289,11 +205,98 @@
         });
         
         // Panggilan awal untuk date range picker
-        var start = moment().subtract(365, 'days');
-        var end = moment();
+        var start = moment().startOf('year');
+        var end = moment().endOf('year');
         $('#dateRange span').html(start.format('D MMMM YYYY') + ' - ' + end.format('D MMMM YYYY'));
         reloadTable(start.format('YYYY-MM-DD'), end.format('YYYY-MM-DD'));
        
+    });
+
+    function initializeTable(start_date = '', end_date = '') {
+    return $('#table-report-bill').DataTable({
+    processing: true,
+    serverSide: true,
+    ajax: {
+    url: "{{ route('report-bill.show', $billType->id) }}",
+    data: function(d) {
+    d.type = 'bill';
+    d.school_id = $('#filter_school_id').val();
+    d.classroom_id = $('#filter_classroom_id').val();
+    d.status = $('#status').val();
+    d.start_date = start_date;
+    d.end_date = end_date;
+    }
+    },
+    language: {
+    processing: "Sedang memproses data, Silahkan ditunggu..."
+    },
+    lengthMenu: [
+    [10, 25, 50, 100, -1],
+    [10, 25, 50, 100, "Semua"]
+    ],
+    columns: [
+    { data: null, sortable: false, searchable: false, render: function(data, type, row, meta) {
+    return meta.row + meta.settings._iDisplayStart + 1;
+    }},
+    { data: 'name', name: 'name' },
+    { data: 'total', name: 'total' },
+    { data: 'total_paid', name: 'total_paid' },
+    { data: 'total_unpaid', name: 'total_unpaid' },
+    { data: 'status', name: 'status', responsivePriority: -1 },
+    { data: 'action', name: 'action', responsivePriority: -1 }
+    ]
+    });
+    }
+    
+    // Function to reload DataTable
+    function reloadTable(start_date = '', end_date = '') {
+    var table = $('#table-report-bill').DataTable();
+    table.destroy(); // Destroy DataTable
+    table = initializeTable(start_date, end_date); // Reinitialize DataTable
+    getTotalBill(start_date, end_date); // Fetch totals
+    }
+    
+    // Function to get total bill information
+    function getTotalBill(start_date = '', end_date = '') {
+    $.ajax({
+    url: "{{ route('report-bill.show', $billType->id) }}",
+    type: "GET",
+    dataType: 'json',
+    data: {
+    type: 'total',
+    school_id: $('#filter_school_id').val(),
+    classroom_id: $('#filter_classroom_id').val(),
+    status: $('#status').val(),
+    },
+    success: function(response) {
+    $('#total').text('Rp. ' + response.total);
+    $('#total_paid').text('Rp. ' + response.total_paid);
+    $('#progress-bar').css('width', response.realisasion_percentage);
+    $('#progress-bar-label').text(response.realisasion_percentage);
+    $('#total_unpaid').text('Belum Lunas: Rp. ' + response.total_unpaid);
+    }
+    });
+    }
+    
+    // Event listener for school filter change
+    $('#filter_school_id').on('change', function() {
+    var school_id = $(this).val();
+    $.ajax({
+    url: "{{ route('report-bill.get-classroom') }}",
+    type: "GET",
+    data: { school_id: school_id },
+    success: function(response) {
+    $('#filter_classroom_id').empty();
+    if (response.data.length > 0) {
+    $('#filter_classroom_id').append('<option value="">Semua Kelas</option>');
+    $.each(response.data, function(key, value) {
+    $('#filter_classroom_id').append('<option value="' + value.id + '">' + value.name + '</option>');
+    });
+    } else {
+    $('#filter_classroom_id').append('<option value="">Data tidak ditemukan</option>');
+    }
+    }
+    });
     });
 </script>
 @endpush
