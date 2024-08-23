@@ -13,26 +13,34 @@ class BillController extends Controller
     {
         $studentId = $request->student_id;
 
-        $totalBill = Bill::where('student_id', $studentId)
+        // Get all unpaid bills for the student
+        $unpaidBills = Bill::where('student_id', $studentId)
             ->where('status', Bill::STATUS_UNPAID)
-            ->sum('amount');
+            ->select('bill_type_id', 'amount')
+            ->get();
 
-        $billTypes = BillType::whereHas('bills', function ($query) use ($studentId) {
-            $query->where('student_id', $studentId);
-            $query->where('status', Bill::STATUS_UNPAID);
-        })
+        $totalBill = $unpaidBills->sum('amount');
+
+        // Get bill types with unpaid bills
+        $billTypeIds = $unpaidBills->pluck('bill_type_id')->unique();
+
+        $billTypes = BillType::whereIn('id', $billTypeIds)
             ->with(['billItem', 'academicYear'])
             ->latest()
-            ->get()
-            ->map(function ($billType) use ($request) {
-                $billType->total_unpaid = $billType->bills->where('status', Bill::STATUS_UNPAID)
-                    ->where('student_id', $request->student_id)->sum('amount');
-                $billType->total_paid = $billType->bills->where('status', Bill::STATUS_PAID)
-                    ->where('student_id', $request->student_id)->sum('amount');
-                $billType->status = $billType->bills->where('status', Bill::STATUS_UNPAID)
-                    ->where('student_id', $request->student_id)->count() > 0 ? Bill::STATUS_UNPAID : Bill::STATUS_PAID;
-                return $billType;
-            });
+            ->get();
+
+        // Get all bills for the student
+        $allBills = Bill::where('student_id', $studentId)
+            ->select('bill_type_id', 'status', 'amount')
+            ->get();
+
+        $billTypes = $billTypes->map(function ($billType) use ($allBills) {
+            $typeBills = $allBills->where('bill_type_id', $billType->id);
+            $billType->total_unpaid = $typeBills->where('status', Bill::STATUS_UNPAID)->sum('amount');
+            $billType->total_paid = $typeBills->where('status', Bill::STATUS_PAID)->sum('amount');
+            $billType->status = $typeBills->contains('status', Bill::STATUS_UNPAID) ? Bill::STATUS_UNPAID : Bill::STATUS_PAID;
+            return $billType;
+        });
 
         $data = [
             'total_bill' => $totalBill,
@@ -41,6 +49,38 @@ class BillController extends Controller
 
         return $this->postSuccessResponse("Berhasil mengambil data", $data);
     }
+    // public function index(Request $request)
+    // {
+    //     $studentId = $request->student_id;
+
+    //     $totalBill = Bill::where('student_id', $studentId)
+    //         ->where('status', Bill::STATUS_UNPAID)
+    //         ->sum('amount');
+
+    //     $billTypes = BillType::whereHas('bills', function ($query) use ($studentId) {
+    //         $query->where('student_id', $studentId);
+    //         $query->where('status', Bill::STATUS_UNPAID);
+    //     })
+    //         ->with(['billItem', 'academicYear'])
+    //         ->latest()
+    //         ->get()
+    //         ->map(function ($billType) use ($request) {
+    //             $billType->total_unpaid = $billType->bills->where('status', Bill::STATUS_UNPAID)
+    //                 ->where('student_id', $request->student_id)->sum('amount');
+    //             $billType->total_paid = $billType->bills->where('status', Bill::STATUS_PAID)
+    //                 ->where('student_id', $request->student_id)->sum('amount');
+    //             $billType->status = $billType->bills->where('status', Bill::STATUS_UNPAID)
+    //                 ->where('student_id', $request->student_id)->count() > 0 ? Bill::STATUS_UNPAID : Bill::STATUS_PAID;
+    //             return $billType;
+    //         });
+
+    //     $data = [
+    //         'total_bill' => $totalBill,
+    //         'bill_types' => $billTypes,
+    //     ];
+
+    //     return $this->postSuccessResponse("Berhasil mengambil data", $data);
+    // }
 
     public function show(Request $request, $id)
     {
