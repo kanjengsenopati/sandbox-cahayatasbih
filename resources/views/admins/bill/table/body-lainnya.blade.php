@@ -25,8 +25,7 @@
     $detailPayment = $billDetail ?
     $billDetail->transactions?->first() : null;
     $modalId = "bayarKilat{$bill->id}_{$month}";
-    $showModal = $billDetail && $billDetail->status !=
-    'PAID';
+    $showModal = $billDetail && $billDetail->status != 'PAID' && $amount > 0;
     @endphp
     <td style="background-color: {{ $statusColor }}; padding: 10px; border: 2px solid white;">
         @if($showModal)

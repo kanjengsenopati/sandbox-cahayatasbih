@@ -26,32 +26,36 @@ class ReportBillController extends Controller
         }
 
         if (request()->ajax()) {
-            // Extract and simplify date-related logic
-            $startMonth = request()->start_date ? date('n', strtotime(request()->start_date)) : null;
-            $endMonth = request()->end_date ? date('n', strtotime(request()->end_date)) : null;
-            $startYear = request()->start_date ? date('Y', strtotime(request()->start_date)) : null;
-            $endYear = request()->end_date ? date('Y', strtotime(request()->end_date)) : null;
+            // Extract the start and end dates
+            $startDate = request()->start_date ? date('Y-m', strtotime(request()->start_date)) : null;
+            $endDate = request()->end_date ? date('Y-m', strtotime(request()->end_date)) : null;
 
-            // Build the query using joins instead of whereHas
+            // Build the query using joins
             $data = BillType::select('bill_types.*')
                 ->join('bills', 'bills.bill_type_id', '=', 'bill_types.id')
                 ->join('students', 'students.id', '=', 'bills.student_id')
-                ->join('classrooms', 'classrooms.id', '=', 'students.classroom_id')
-                ->when(request()->school_id && request()->school_id != 'null', function ($query) {
-                    $query->where('classrooms.school_id', request()->school_id);
-                })
-                ->when(request()->academic_year_id && request()->academic_year_id != 'null', function ($query) {
-                    $query->where('bills.academic_year_id', request()->academic_year_id);
-                })
-                ->when(request()->classroom_id && request()->classroom_id != 'null', function ($query) {
-                    $query->where('students.classroom_id', request()->classroom_id);
-                })
-                ->when($startYear && $endYear, function ($query) use ($startYear, $endYear, $startMonth, $endMonth) {
-                    $query->whereBetween('bills.year', [$startYear, $endYear])
-                        ->whereBetween('bills.month', [$startMonth, $endMonth]);
-                })
-                ->groupBy('bill_types.id')  // Ensures that grouping is correct for aggregate calculations
-                ->latest();
+                ->join('classrooms', 'classrooms.id', '=', 'students.classroom_id');
+
+            // Apply the date filters by comparing the concatenated year and month in MySQL
+            if ($startDate && $endDate) {
+                $data->whereRaw("STR_TO_DATE(CONCAT(bills.year, '-', LPAD(bills.month, 2, '0'), '-01'), '%Y-%m-%d') BETWEEN ? AND ?", [$startDate . '-01', $endDate . '-31']);
+            }
+
+            // Add filtering by school, academic year, and classroom if available
+            if (request()->school_id && request()->school_id != 'null') {
+                $data->where('classrooms.school_id', request()->school_id);
+            }
+
+            if (request()->academic_year_id && request()->academic_year_id != 'null') {
+                $data->where('bills.academic_year_id', request()->academic_year_id);
+            }
+
+            if (request()->classroom_id && request()->classroom_id != 'null') {
+                $data->where('students.classroom_id', request()->classroom_id);
+            }
+
+            // Group by and finalize the query
+            $data->groupBy('bill_types.id')->latest();
 
             if (request()->type == 'bill') {
                 return DataTables::of($data)
@@ -62,14 +66,13 @@ class ReportBillController extends Controller
                         ? '<span class="badge badge-primary">Bulanan</span>'
                         : '<span class="badge badge-secondary">Bebas</span>')
                     ->addColumn('action', fn($data) => "<div class='d-flex justify-content-center'>
-                        <a href='" . route('report-bill.show', $data->id) . "' class='btn btn-primary btn-sm'>Lihat Detail</a>
-                    </div>")
+                    <a href='" . route('report-bill.show', $data->id) . "' class='btn btn-primary btn-sm'>Lihat Detail</a>
+                </div>")
                     ->rawColumns(['action', 'type'])
                     ->make(true);
             } elseif (request()->type == 'total') {
                 // Calculate totals without loading entire collections
-                $total = Bill::whereIn('bill_type_id', $data->pluck('id')->toArray())
-                    ->sum('amount');
+                $total = Bill::whereIn('bill_type_id', $data->pluck('id')->toArray())->sum('amount');
                 $totalPaid = Bill::whereIn('bill_type_id', $data->pluck('id')->toArray())
                     ->where('status', Bill::STATUS_PAID)
                     ->sum('amount');
@@ -86,10 +89,11 @@ class ReportBillController extends Controller
         // Retrieve dropdown data outside of the ajax block
         $schools = School::hasSchool()->orderBy('name', 'asc')->get();
         $academicYears = AcademicYear::orderBy('name', 'asc')->get();
-        $billTypes = BillType::orderBy('name', 'asc')->get();
+        // $billTypes = BillType::orderBy('name', 'asc')->get();
 
-        return view('admins.report-bill.index', compact('schools', 'academicYears', 'billTypes'));
+        return view('admins.report-bill.index', compact('schools', 'academicYears'));
     }
+
 
     /**
      * Show the form for creating a new resource.
