@@ -3,12 +3,13 @@
 namespace App\Http\Controllers\Admin;
 
 use Carbon\Carbon;
+use App\Models\School;
 use App\Models\Transaction;
 use Illuminate\Http\Request;
+use App\Models\PaymentMethod;
 use Yajra\DataTables\DataTables;
 use App\Http\Controllers\Controller;
-use App\Models\PaymentMethod;
-use App\Models\School;
+use Illuminate\Support\Facades\Auth;
 
 class ReportTransactionController extends Controller
 {
@@ -18,9 +19,9 @@ class ReportTransactionController extends Controller
     public function index()
     {
 
-        // if (!Auth::user()->can('Manage Laporan Saldo Santri')) {
-        //     return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
-        // }
+        if (!Auth::user()->can('Manage Laporan Transaksi')) {
+            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
+        }
         if (request()->ajax()) {
             $data = Transaction::where('status', Transaction::STATUS_PAID)
                 ->with('student', 'student.classroom')

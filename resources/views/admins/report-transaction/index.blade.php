@@ -66,11 +66,7 @@
                                             </div>
                                             <input type="text" id="start_date" name="start_date" hidden>
                                             <input type="text" id="end_date" name="end_date" hidden>
-                                            {{-- <div id="dateRange" class="pull-right"
-                                                style="background: #fff; cursor: pointer; padding: 5px 10px; border: 1px solid #ccc;float: top;">
-                                                <i class="glyphicon glyphicon-calendar fa fa-calendar"></i>&nbsp;
-                                                <span></span> <b class="caret"></b>
-                                            </div> --}}
+
                                         </div>
                                     </div>
 
@@ -108,7 +104,7 @@
                                         Export Report
                                     </button>
                                     <!--begin::Menu-->
-                                    <div id="kt_datatable_example_export_menu"
+                                    {{-- <div id="kt_datatable_example_export_menu"
                                         class="menu menu-sub menu-sub-dropdown menu-column menu-rounded menu-gray-600 menu-state-bg-light-primary fw-semibold fs-7 w-200px py-4"
                                         data-kt-menu="true">
                                         <!--begin::Menu item-->
@@ -125,7 +121,7 @@
                                             </a>
                                         </div>
                                         <!--end::Menu item-->
-                                    </div>
+                                    </div> --}}
                                     <!--end::Menu-->
                                     <!--end::Export dropdown-->
                                 </div>
