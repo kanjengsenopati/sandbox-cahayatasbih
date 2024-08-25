@@ -462,10 +462,11 @@
 
                 @canany(['Manage Laporan Pos Kasir', 'Manage Laporan Tagihan', 'Manage Laporan Santri', 'Manage Laporan
                 Nilai Akademik', 'Manage Laporan Tahfidz',
-                'Manage Laporan Perilaku Siswa', 'Manage Laporan Saldo Santri', 'Manage Laporan Fee Aplikasi'])
+                'Manage Laporan Perilaku Siswa', 'Manage Laporan Saldo Santri', 'Manage Laporan Fee Aplikasi',
+                'Manage Laporan Transaksi'])
                 <div data-kt-menu-trigger="click" class="menu-item menu-accordion {{ request()->routeIs(['report-bill.*', 'report-student.*','report-tahfidz.*',
                     'report-student-counseling-score.*', 'report-app-fee.*',
-                    'report-saldo.*', 'report-study-grade.*', 'order-item-history.*'
+                    'report-saldo.*', 'report-study-grade.*', 'order-item-history.*', 'report-transaction.*'
                     ]) ? 'show' : '' }}">
                     <span class="menu-link ">
                         <span class="menu-icon">
@@ -484,6 +485,17 @@
                                     <span class="bullet bullet-dot"></span>
                                 </span>
                                 <span class="menu-title">POS Kasir</span>
+                            </a>
+                        </div>
+                        @endcan
+                        @can('Manage Laporan Transaksi')
+                        <div class="menu-item ">
+                            <a class="menu-link {{ request()->routeIs('report-transaction.*') ? ' active' : '' }}"
+                                href="{{ route('report-transaction.index') }}">
+                                <span class="menu-bullet">
+                                    <span class="bullet bullet-dot"></span>
+                                </span>
+                                <span class="menu-title">Transaksi</span>
                             </a>
                         </div>
                         @endcan

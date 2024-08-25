@@ -1,4 +1,4 @@
-@extends('layouts.master', ['title' => 'Laporan Saldo'])
+@extends('layouts.master', ['title' => 'Laporan Transaksi'])
 @section('content')
 <div class="content d-flex flex-column flex-column-fluid" id="kt_content">
     <!--begin::Toolbar-->
@@ -10,7 +10,7 @@
                 data-kt-swapper-parent="{default: '#kt_content_container', 'lg': '#kt_toolbar_container'}"
                 class="page-title d-flex align-items-center flex-wrap me-3 mb-5 mb-lg-0">
                 <!--begin::Title-->
-                <h1 class="d-flex text-dark fw-bolder fs-3 align-items-center my-1">Laporan</h1>
+                <h1 class="d-flex text-dark fw-bolder fs-3 align-items-center my-1">Laporan Transaksi</h1>
                 <!--end::Title-->
                 <!--begin::Separator-->
                 <span class="h-20px border-gray-300 border-start mx-4"></span>
@@ -19,8 +19,8 @@
                 <ul class="breadcrumb breadcrumb-separatorless fw-bold fs-7 my-1">
                     <!--begin::Item-->
                     <li class="breadcrumb-item text-muted">
-                        <a href="{{ route('report-saldo.index') }}" class="text-muted text-hover-primary">Laporan
-                            Saldo</a>
+                        <a href="{{ route('report-transaction.index') }}" class="text-muted text-hover-primary">Laporan
+                            Transaksi</a>
                     </li>
                     <!--end::Item-->
                     <!--begin::Item-->
@@ -29,7 +29,7 @@
                     </li>
                     <!--end::Item-->
                     <!--begin::Item-->
-                    <li class="breadcrumb-item text-dark">Data Saldo</li>
+                    <li class="breadcrumb-item text-dark">Data Transaksi</li>
                     <!--end::Item-->
                 </ul>
                 <!--end::Breadcrumb-->

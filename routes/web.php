@@ -69,6 +69,7 @@ use App\Http\Controllers\Admin\InformationCategoryController;
 use App\Http\Controllers\User\WaliSettingLimitSaldoController;
 use App\Http\Controllers\Admin\StudentCounselingScoreController;
 use App\Http\Controllers\Admin\ReportStudentCounselingScoreController;
+use App\Http\Controllers\Admin\ReportTransactionController;
 
 /*
 |--------------------------------------------------------------------------
@@ -245,6 +246,7 @@ Route::group(['middleware' => ['auth']], function () {
     Route::get('student-barcode/change-barcode/{id}', [StudentBarcodeController::class, 'changeBarcode'])
         ->name('student-barcode.change-barcode');
     Route::resource('student-barcode', StudentBarcodeController::class, ['only' => ['index', 'create', 'store']]);
+    Route::resource('report-transaction', ReportTransactionController::class, ['only' => ['index', 'show']]);
 
 
     // start ppdb

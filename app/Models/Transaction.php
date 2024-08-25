@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Traits\GeneralTrait;
 use App\Traits\UuidTrait;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Database\Eloquent\Model;
@@ -27,7 +28,7 @@ class Transaction extends Model
         self::STATUS_EXPIRED,
         self::STATUS_CANCELLED
     ];
-    use HasFactory, UuidTrait, SoftDeletes;
+    use HasFactory, UuidTrait, SoftDeletes, GeneralTrait;
 
     protected $fillable = [
         'payment_method_id',
