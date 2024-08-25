@@ -97,12 +97,12 @@
                                         </select>
                                     </div>
                                     <!--begin::Export dropdown-->
-                                    <button type="button" class="btn btn-sm btn-primary" data-kt-menu-trigger="click"
-                                        data-kt-menu-placement="bottom-end">
+                                    {{-- <button type="button" class="btn btn-sm btn-primary"
+                                        data-kt-menu-trigger="click" data-kt-menu-placement="bottom-end">
                                         <i class="ki-duotone fa fa-caret-down fs-2"><span class="path1"></span><span
                                                 class="path2"></span></i>
                                         Export Report
-                                    </button>
+                                    </button> --}}
                                     <!--begin::Menu-->
                                     {{-- <div id="kt_datatable_example_export_menu"
                                         class="menu menu-sub menu-sub-dropdown menu-column menu-rounded menu-gray-600 menu-state-bg-light-primary fw-semibold fs-7 w-200px py-4"
