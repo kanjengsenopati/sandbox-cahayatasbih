@@ -271,11 +271,11 @@
                     @foreach ($data->transactionDetails as $transaction_detail)
                     <tr>
                         <td class="text-primary" width="50%">
-                            <span>{{ $transaction_detail->bill->billType->name ?? '' }}</span>
+                            <span>{{ $transaction_detail?->bill?->billType?->name ?? '' }}</span>
                         </td>
-                        <td align="right">{{ $transaction_detail->bill->translated_month ?? '' }}</td>
-                        <td align="right">{{ $transaction_detail->bill->academicYear->name ?? '' }}</td>
-                        <td align="right">Rp{{ number_format($transaction_detail->bill->amount, 0, ',', '.') }}</td>
+                        <td align="right">{{ $transaction_detail?->bill?->translated_month ?? '' }}</td>
+                        <td align="right">{{ $transaction_detail?->bill?->year ?? '' }}</td>
+                        <td align="right">Rp{{ number_format($transaction_detail?->bill?->amount, 0, ',', '.') }}</td>
                     </tr>
                     @endforeach
                 </tbody>
@@ -330,11 +330,11 @@
                 <tr style="margin-left: auto">
                     <td width="50%">
                         Metode Pembayaran: <br />
-                        <strong>{{ $data->paymentMethod->name }}</strong>
+                        <strong>{{ $data?->paymentMethod?->name ?? }}</strong>
                     </td>
                     @if($data->admin_id)
                     <td width="50%" align="right">
-                        <strong>Petugas :</strong> <br /> {{ $data->admin->name ?? '' }}
+                        <strong>Petugas :</strong> <br /> {{ $data?->admin?->name ?? '' }}
                     </td>
                     @endif
                 </tr>
@@ -346,6 +346,11 @@
                         Jangan ragu untuk menghubungi <a href="https://cahayatasbih.or.id/" target="_blank"
                             class="text-primary text-decoration-none" style="font-weight: 600;">Puskominfo PPTQ Cahaya
                             Tasbih</a> jika Anda membutuhkan bantuan lebih lanjut.
+                    </td>
+                    {{-- add generate qrcode to route transaction.invoice with id --}}
+                    <td width="50%" align="right">
+                        <img src="data:image/png;base64, {!! base64_encode(QrCode::format('png')->size(100)->generate(route('transaction.invoice', $data->id))) !!}"
+                            alt="qrcode" />
                     </td>
                     <td width="50%" align="right" style="vertical-align: bottom">
                         <i style="font-family: 'Plus Jakarta Sans', sans-serif !important;">Terakhir diupdate:
