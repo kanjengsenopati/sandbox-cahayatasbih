@@ -118,15 +118,26 @@
 
         .badge-success {
             margin-top: 5px !important;
-            background-color: #fff2d6 !important;
-            color: #00FF00;
+            background-color: #4D0C7A !important;
+            /* Warna latar belakang yang lebih gelap */
+            color: #83FF3B !important;
+            /* Warna teks yang cerah */
             width: max-content;
             height: max-content;
-            padding: 2px 4px;
+            padding: 4px 8px;
+            /* Sedikit memperbesar padding */
             border-radius: 4px !important;
-            font-weight: 600;
-            font-size: 10px !important;
+            font-weight: 700;
+            /* Membuat font sedikit lebih tebal */
+            font-size: 16px !important;
+            /* Ukuran font yang sedikit lebih kecil dari 20px untuk keseimbangan */
             margin-bottom: -2px !important;
+            text-transform: uppercase;
+            /* Memastikan teks selalu kapital */
+            letter-spacing: 0.5px;
+            /* Menambah sedikit jarak antar huruf */
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            /* Menambah sedikit bayangan untuk dimensi */
         }
 
         tr td.badge-secondary {
