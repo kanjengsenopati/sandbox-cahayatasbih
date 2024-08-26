@@ -96,6 +96,16 @@
                                             <option value="SAVING">Tabungan</option>
                                         </select>
                                     </div>
+                                    <div>
+                                        <label class="form-label">Petugas</label>
+                                        <select name="admin_id" class="form-select form-select-sm" id="filter_admin"
+                                            onchange="reloadTable()">
+                                            <option value="">Semua</option>
+                                            @foreach($admins as $admin)
+                                            <option value="{{ $admin->id }}">{{ $admin->name }}</option>
+                                            @endforeach
+                                        </select>
+                                    </div>
                                     <!--begin::Export dropdown-->
                                     {{-- <button type="button" class="btn btn-sm btn-primary"
                                         data-kt-menu-trigger="click" data-kt-menu-placement="bottom-end">
@@ -233,7 +243,7 @@
         });
 
         // Event handlers to reload the table
-        $('#filter_school_id, #filter_classroom_id, #filter_status').on('change', function() {
+        $('#filter_school_id, #filter_classroom_id, #filter_status', '#filter_admin').on('change', function() {
             reloadTable();
         });
 
@@ -288,6 +298,7 @@
                     d.school_id = $('#filter_school_id').val();
                     d.classroom_id = $('#filter_classroom_id').val();
                     d.type = $('#filter_status').val();
+                    d.admin_id = $('#filter_admin').val();
                     d.start_date = $('#start_date').val();
                     d.end_date = $('#end_date').val();
                 }
@@ -337,6 +348,7 @@
                 school_id: $('#filter_school_id').val(),
                 classroom_id: $('#filter_classroom_id').val(),
                 type: $('#filter_status').val(),
+                admin_id: $('#filter_admin').val(),
                 start_date: $('#start_date').val(),
                 end_date: $('#end_date').val()
             },

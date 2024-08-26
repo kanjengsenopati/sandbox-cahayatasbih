@@ -3,13 +3,14 @@
 namespace App\Http\Controllers\Admin;
 
 use Carbon\Carbon;
+use App\Models\Admin;
 use App\Models\School;
 use App\Models\Transaction;
 use Illuminate\Http\Request;
 use App\Models\PaymentMethod;
 use Yajra\DataTables\DataTables;
-use App\Http\Controllers\Controller;
 use App\Models\TransactionDetail;
+use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Auth;
 
 class ReportTransactionController extends Controller
@@ -31,6 +32,9 @@ class ReportTransactionController extends Controller
                 })
                 ->when(request()->filled('end_date'), function ($query) {
                     $query->whereDate('created_at', '<=', request()->end_date);
+                })
+                ->when(request()->filled('admin_id'), function ($query) {
+                    $query->where('admin_id', request()->admin_id);
                 })
                 ->schoolFilter('school_id', request()->school_id)
                 ->classroomFilter('classroom_id', request()->classroom_id)
@@ -118,8 +122,12 @@ class ReportTransactionController extends Controller
                     ->make(true);
             }
         }
+        // ambil list admin dari transaction 
+        $admin_ids = Transaction::where('status', Transaction::STATUS_PAID)->pluck('admin_id')->unique();
+        // ambil list admin nama dari admin_ids
+        $admins = Admin::whereIn('id', $admin_ids)->select('id', 'name')->orderBy('name')->get();
         $schools = School::orderBy('name')->get();
-        return view('admins.report-transaction.index', compact('schools'));
+        return view('admins.report-transaction.index', compact('schools', 'admins'));
     }
 
     /**
