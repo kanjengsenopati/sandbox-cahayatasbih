@@ -119,7 +119,7 @@
         .badge-success {
             margin-top: 5px !important;
             background-color: #fff2d6 !important;
-            color: #4D0C7A;
+            color: #00FF00;
             width: max-content;
             height: max-content;
             padding: 2px 4px;
