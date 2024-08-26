@@ -318,7 +318,11 @@
                 <tr class="text-strong">
                     <td>STATUS PEMBAYARAN</td>
                     <td align="right">
-                        <span class="badge-success">{{ $data->status == 'PAID' ? 'LUNAS' : 'BELUM LUNAS' }}</span>
+                        @if($data->status == 'PAID')
+                        <span class="badge badge-success">LUNAS</span>
+                        @else
+                        <span class="badge badge-danger">BELUM LUNAS</span>
+                        @endif
                     </td>
                 </tr>
             </table>
@@ -327,7 +331,7 @@
         <!-- footer -->
         <footer>
             <table width="100%" class="mt-3" style="border-top: 1.25px solid rgb(232, 232, 232)">
-                <tr style="margin-left: auto">
+                <tr>
                     <td width="50%">
                         Metode Pembayaran: <br />
                         <strong>{{ $data?->paymentMethod?->name ?? '' }}</strong>
@@ -341,18 +345,21 @@
             </table>
             <table width="100%" class="mt-5">
                 <tr>
-                    <td width="50%">
+                    <td width="60%" style="vertical-align: top;">
                         Invoice ini sah dan telah diproses secara otomatis oleh sistem kami.<br>
                         Jangan ragu untuk menghubungi <a href="https://cahayatasbih.or.id/" target="_blank"
                             class="text-primary text-decoration-none" style="font-weight: 600;">Puskominfo PPTQ Cahaya
                             Tasbih</a> jika Anda membutuhkan bantuan lebih lanjut.
                     </td>
-                    {{-- add generate qrcode to route transaction.invoice with id --}}
-                    <td width="50%" align="right">
+                    <td width="40%" align="right" style="vertical-align: top;">
                         <img src="data:image/png;base64, {!! base64_encode(QrCode::format('png')->size(100)->generate(route('transaction.invoice', $data->id))) !!}"
-                            alt="qrcode" />
+                            alt="qrcode" style="display: block; margin-left: auto; margin-bottom: 10px;" />
                     </td>
-                    <td width="50%" align="right" style="vertical-align: bottom">
+                </tr>
+            </table>
+            <table width="100%" style="margin-top: 10px;">
+                <tr>
+                    <td align="right">
                         <i style="font-family: 'Plus Jakarta Sans', sans-serif !important;">Terakhir diupdate:
                             {{ \Carbon\Carbon::now()->locale('id_ID')->isoFormat('D MMMM YYYY H:mm') }}</i>
                     </td>
