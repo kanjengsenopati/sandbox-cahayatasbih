@@ -133,7 +133,7 @@
                                     <!--begin::Body-->
                                     <div class="card-body">
                                         <!--begin::Label-->
-                                        <div class="fw-bolder fs-5 text-gray-800">Total Tagihan</div>
+                                        <div class="fw-bolder fs-5 text-gray-800">Total Penerimaan Pembayaran</div>
                                         <!--end::Label-->
                                         <!--begin::Stats-->
                                         <div class="text-primary fs-3 fw-bolder" id="total-bill">Rp. 0</div>
@@ -186,6 +186,7 @@
                                             <th>Jumlah</th>
                                             <th>Metode Pembayaran</th>
                                             <th>Petugas</th>
+                                            <th>Keterangan</th>
                                         </tr>
                                     </thead>
                                     <tbody class="text-gray-600 fw-bold"></tbody>
@@ -301,11 +302,27 @@
                     }
                 },
                 { data: 'date', name: 'date', orderable: true, searchable: true },
-                { data: 'student', name: 'student', orderable: true, searchable: true },
+                 {
+                    data: 'student',
+                    name: 'student.name',
+                    orderable: true,
+                    searchable: true,
+                        render: function(data, type, row) {
+                            let studentName = data && data.name ? data.name : 'N/A';
+                            let classroomName = data && data.classroom && data.classroom.name
+                            ? data.classroom.name
+                            : '';
+                    
+                        return classroomName
+                            ? studentName + ' (' + classroomName + ')'
+                            : studentName;
+                    }
+                },
                 { data: 'type', name: 'type', orderable: true, searchable: true },
                 { data: 'amount', name: 'amount', orderable: true, searchable: true },
                 { data: 'payment_method', name: 'payment_method', orderable: true, searchable: true },
-                { data: 'staff', name: 'staff', orderable: true, searchable: true }
+                { data: 'admin.name', name: 'admin.name', orderable: true, searchable: true },
+                { data: 'item', name: 'item', orderable: true, searchable: true }
             ]
         });
     }

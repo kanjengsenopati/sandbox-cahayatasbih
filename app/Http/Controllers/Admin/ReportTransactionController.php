@@ -9,6 +9,7 @@ use Illuminate\Http\Request;
 use App\Models\PaymentMethod;
 use Yajra\DataTables\DataTables;
 use App\Http\Controllers\Controller;
+use App\Models\TransactionDetail;
 use Illuminate\Support\Facades\Auth;
 
 class ReportTransactionController extends Controller
@@ -24,7 +25,7 @@ class ReportTransactionController extends Controller
         }
         if (request()->ajax()) {
             $data = Transaction::where('status', Transaction::STATUS_PAID)
-                ->with('student', 'student.classroom')
+                ->with('student', 'student.classroom', 'paymentMethod', 'admin')
                 ->when(request()->filled('start_date'), function ($query) {
                     $query->whereDate('created_at', '>=', request()->start_date);
                 })
@@ -48,9 +49,6 @@ class ReportTransactionController extends Controller
                 ]);
             } elseif (request()->data == 'table') {
                 return DataTables::of($data)
-                    ->addColumn('student', function ($data) {
-                        return $data->student->name . ' (' . $data->student->classroom->name . ')';
-                    })
                     ->addColumn('amount', function ($data) {
                         return number_format($data->pay_amount, 0, ',', '.');
                     })
@@ -89,10 +87,34 @@ class ReportTransactionController extends Controller
                             return '-';
                         }
                     })
-                    ->addColumn('staff', function ($data) {
-                        return $data->admin?->name ?? '-';
+                    ->addColumn('item', function ($data) {
+                        $transaction_details = TransactionDetail::where('transaction_id', $data->id)->get();
+                        if ($data->type == Transaction::TYPE_BILL) {
+                            $item = '';
+                            foreach ($transaction_details as $index => $detail) {
+                                $billType = $detail->bill?->billType?->name ?? '-';
+                                $month = Carbon::createFromFormat('m', $detail->bill?->month)->translatedFormat('F');
+                                $year = $detail->bill?->year ?? '-';
+                                $item .= ($index + 1) . '. ' . $billType . ' ' . $month . ' ' . $year . '<br>';
+                            }
+                            return $item ?: '-';
+                        } elseif ($data->type == Transaction::TYPE_SALDO) {
+                            $item = '';
+                            foreach ($transaction_details as $index => $detail) {
+                                $item .= ($index + 1) . '. ' . ($detail->saldoHistory?->description ?? '-') . '<br>';
+                            }
+                            return $item ?: '-';
+                        } elseif ($data->type == Transaction::TYPE_SAVING) {
+                            $item = '';
+                            foreach ($transaction_details as $index => $detail) {
+                                $item .= ($index + 1) . '. ' . ($detail->savingHistory?->description ?? '-') . '<br>';
+                            }
+                            return $item ?: '-';
+                        } else {
+                            return '-';
+                        }
                     })
-                    ->rawColumns(['date', 'type', 'payment_method'])
+                    ->rawColumns(['date', 'type', 'payment_method', 'item'])
                     ->make(true);
             }
         }
