@@ -330,7 +330,7 @@
                 <tr style="margin-left: auto">
                     <td width="50%">
                         Metode Pembayaran: <br />
-                        <strong>{{ $data?->paymentMethod?->name ?? }}</strong>
+                        <strong>{{ $data?->paymentMethod?->name ?? '' }}</strong>
                     </td>
                     @if($data->admin_id)
                     <td width="50%" align="right">
