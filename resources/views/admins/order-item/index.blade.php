@@ -79,7 +79,7 @@
                         <!--begin::Card header-->
                         <div class="card-header">
                             <div class="card-title">
-                                <h2>Pembayaran</h2>
+                                <h3>Pembayaran</h3>
                             </div>
                         </div>
                         <!--end::Card header-->
@@ -113,7 +113,7 @@
                                                 <span class="input-group-text">
                                                     <i class="fas fa-id-card"></i>
                                                 </span>
-                                                <input class="form-control form-control-solid" name="barcode"
+                                                <input class="form-control form-control-solid" name="scan-card"
                                                     placeholder="Masukkan ID Kartu Santri" type="password"
                                                     id="scan-card" />
                                             </div>
@@ -185,9 +185,6 @@
                         </div>
                         <!--end::Card body-->
                     </div>
-
-
-
                     <!--end::Order details-->
                 </div>
                 <!--end::Aside column-->
@@ -383,7 +380,12 @@
 
         var searchProductInput = document.getElementById('search-product');
         if (searchProductInput) {
-            searchProductInput.addEventListener('input', searchProductByCode);
+            searchProductInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+            e.preventDefault(); // Prevent the default action (form submission)
+            searchProductByCode(e);
+            }
+            });
         }
     });
 
@@ -412,9 +414,6 @@
         if (products && products.length > 0) {
             products.forEach(function (product, index) {
                 var tr = document.createElement('tr');
-                // tr.innerHTML = `
-                //     <td>${product.name}</td>`;
-                // listProduct.appendChild(tr);
                 tr.innerHTML = `
                 <div class="d-flex align-items-center" data-kt-ecommerce-edit-order-filter="product"
                     data-kt-ecommerce-edit-order-id="product_${product.id}">
@@ -774,6 +773,7 @@
     // Trigger search on Enter key press
     document.getElementById('scan-card').addEventListener('keypress', function (e) {
         if (e.key === 'Enter') {
+            e.preventDefault();
             var barcode = e.target.value;
             axios.post("{{ route('order-item.search-student') }}", {
                 barcode: barcode
@@ -784,8 +784,8 @@
                     document.getElementById('student-name').value = student.name;
                     document.getElementById('saldo').value = 'Rp. ' + student.saldo.toLocaleString('id-ID');
                     // Add student id to form-payment
-                    document.getElementById('form-payment').insertAdjacentHTML('beforeend', `<input type="hidden" name="student_id"
-                        value="${student.id}">`);
+                    document.getElementById('form-payment').insertAdjacentHTML('beforeend', `<input type="hidden" name="barcode"
+                        value="${student.barcode}">`);
                     updateTotalPrice();
                     // Clear input
                     e.target.value = '';
