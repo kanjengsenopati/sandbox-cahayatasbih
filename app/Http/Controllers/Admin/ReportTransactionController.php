@@ -12,6 +12,8 @@ use Yajra\DataTables\DataTables;
 use App\Models\TransactionDetail;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Auth;
+use Maatwebsite\Excel\Facades\Excel;
+use App\Exports\ReportTransactionExport;
 
 class ReportTransactionController extends Controller
 {
@@ -176,5 +178,10 @@ class ReportTransactionController extends Controller
     public function destroy(string $id)
     {
         //
+    }
+
+    public function export()
+    {
+        return Excel::download(new ReportTransactionExport, 'Laporan Transaksi ' . request()->start_date . ' - ' . request()->end_date . '.' . request()->type);
     }
 }

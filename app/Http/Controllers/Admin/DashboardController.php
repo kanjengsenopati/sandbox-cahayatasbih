@@ -22,6 +22,7 @@ use App\Services\SendNotifWaService;
 use App\Services\NotificationService;
 use App\Models\PointOfSaleTransaction;
 use App\Jobs\SendToWhatsappNotificationJob;
+use App\Models\Bill;
 
 class DashboardController extends Controller
 {
@@ -30,23 +31,6 @@ class DashboardController extends Controller
      */
     public function index()
     {
-        // $students = Student::all();
-
-        // foreach ($students as $student) {
-        //     $newBarcode = $this->generateRandomNumber();
-        //     $student->barcode = $newBarcode;
-        //     $student->save();
-        // }
-
-        // $setting = ApplicationSetting::first();
-        // $targetMonth = $setting->target_month;
-        // $targetYear = $setting->target_year;
-
-        // delete all data student
-        // $user = User::all();
-        // foreach ($user as $u) {
-        //     $u->delete();
-        // }
 
         $total_parents = User::where('is_active', 1)->count();
         $total_students = Student::count();
@@ -54,9 +38,6 @@ class DashboardController extends Controller
             'total_parents' => $total_parents,
             'total_students' => $total_students,
         ];
-        // hitung total pemasukkan hari ini, bulan ini, tahun ini
-
-
 
         return view('admins.dashboard.index', compact(
             'data',

@@ -53,7 +53,7 @@
                     class="card-header d-flex align-items-end gap-5 flex-sm-row mb-5 justify-content-between border-0 pt-6">
                     <div class="d-flex flex-wrap justify-content-beetween gap-5">
                         <div class="mb-0">
-                            <form action="{{ route('report-saldo.export') }}" id="form-filter" method="get">
+                            <form action="#" id="form-filter" method="get">
                                 <input type="text" hidden id="type" name="type" required>
                                 <div class="d-flex flex-wrap gap-4 align-items-end">
                                     <div>
@@ -89,7 +89,7 @@
                                     </div>
                                     <div>
                                         <label class="form-label">Tipe</label>
-                                        <select name="status" class="form-select form-select-sm" id="filter_status">
+                                        <select name="type_data" class="form-select form-select-sm" id="filter_status">
                                             <option value="">Semua</option>
                                             <option value="BILL">Tagihan</option>
                                             <option value="SALDO">Saldo</option>
@@ -107,14 +107,14 @@
                                         </select>
                                     </div>
                                     <!--begin::Export dropdown-->
-                                    {{-- <button type="button" class="btn btn-sm btn-primary"
-                                        data-kt-menu-trigger="click" data-kt-menu-placement="bottom-end">
+                                    <button type="button" class="btn btn-sm btn-primary" data-kt-menu-trigger="click"
+                                        data-kt-menu-placement="bottom-end">
                                         <i class="ki-duotone fa fa-caret-down fs-2"><span class="path1"></span><span
                                                 class="path2"></span></i>
                                         Export Report
-                                    </button> --}}
+                                    </button>
                                     <!--begin::Menu-->
-                                    {{-- <div id="kt_datatable_example_export_menu"
+                                    <div id="kt_datatable_example_export_menu"
                                         class="menu menu-sub menu-sub-dropdown menu-column menu-rounded menu-gray-600 menu-state-bg-light-primary fw-semibold fs-7 w-200px py-4"
                                         data-kt-menu="true">
                                         <!--begin::Menu item-->
@@ -131,12 +131,11 @@
                                             </a>
                                         </div>
                                         <!--end::Menu item-->
-                                    </div> --}}
+                                    </div>
                                     <!--end::Menu-->
                                     <!--end::Export dropdown-->
                                 </div>
                             </form>
-                            {{-- add 3 card total topup saldo, pengurangan saldo, dan saldo tersedia --}}
 
                             <div class="d-flex gap-2 mt-4">
                                 <div class="card bg-light-primary bg-active-primary flex-grow-1">
@@ -365,5 +364,11 @@
         saldoTable.ajax.reload();
         getTotalSaldo();
     }
+
+    // onclick export button event handler to set the type and submit the form to export and action to route transaction.export
+    $('.btn-export').on('click', function() {
+        $('#type').val($(this).data('type'));
+        $('#form-filter').attr('action', "{{ route('report-transaction.export') }}").submit();
+    });
 </script>
 @endpush
