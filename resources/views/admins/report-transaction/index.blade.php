@@ -242,8 +242,8 @@
         });
 
         // Event handlers to reload the table
-        $('#filter_school_id, #filter_classroom_id, #filter_status', '#filter_admin').on('change', function() {
-            reloadTable();
+      $('#filter_school_id, #filter_classroom_id, #filter_status, #filter_admin').on('change', function() {
+         reloadTable();
         });
 
         var start = moment().startOf('month');
