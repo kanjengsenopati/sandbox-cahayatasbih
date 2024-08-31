@@ -29,4 +29,9 @@ class PaymentRate extends Model
     {
         return $this->hasMany(PaymentRateClassroom::class)->withTrashed();
     }
+
+    public function paymentRateItems()
+    {
+        return $this->hasMany(PaymentRateItem::class);
+    }
 }

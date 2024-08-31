@@ -196,6 +196,7 @@
                                             <th>Metode Pembayaran</th>
                                             <th>Petugas</th>
                                             <th>Keterangan</th>
+                                            <th>Aksi</th>
                                         </tr>
                                     </thead>
                                     <tbody class="text-gray-600 fw-bold"></tbody>
@@ -332,7 +333,8 @@
                 { data: 'amount', name: 'amount', orderable: true, searchable: true },
                 { data: 'payment_method', name: 'payment_method', orderable: true, searchable: true },
                 { data: 'admin.name', name: 'admin.name', orderable: true, searchable: true },
-                { data: 'item', name: 'item', orderable: true, searchable: true }
+                { data: 'item', name: 'item', orderable: true, searchable: true },
+                { data: 'action', name: 'action', orderable: false, searchable: false },
             ]
         });
     }

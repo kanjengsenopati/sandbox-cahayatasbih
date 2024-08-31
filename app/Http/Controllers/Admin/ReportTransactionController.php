@@ -120,7 +120,13 @@ class ReportTransactionController extends Controller
                             return '-';
                         }
                     })
-                    ->rawColumns(['date', 'type', 'payment_method', 'item'])
+                    ->addColumn('action', function ($data) {
+                        return "<div class='d-flex gap-2 flex-nowrap justify-content-center'>" .
+                            // add icon print invoice
+                            "<a href='" . route('transaction.invoice', $data->id) . "' target='_blank' class='btn btn-sm btn-primary' title='Cetak Invoice'><i class='fas fa-print'></i></a>" .
+                            "</div>";
+                    })
+                    ->rawColumns(['date', 'type', 'payment_method', 'item', 'action'])
                     ->make(true);
             }
         }

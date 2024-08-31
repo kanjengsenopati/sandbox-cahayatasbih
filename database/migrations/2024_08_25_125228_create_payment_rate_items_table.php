@@ -12,8 +12,13 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('payment_rate_items', function (Blueprint $table) {
-            $table->id();
+            $table->uuid('id')->primary();
+            $table->uuid('payment_rate_id');
+            $table->string('month');
+            $table->year('year');
+            $table->bigInteger('amount');
             $table->timestamps();
+            $table->softDeletes();
         });
     }
 

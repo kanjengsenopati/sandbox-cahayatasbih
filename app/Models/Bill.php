@@ -25,6 +25,7 @@ class Bill extends Model
         'amount',
         'status',
         'year',
+        'payment_rate_item_id',
     ];
 
     protected $casts = [

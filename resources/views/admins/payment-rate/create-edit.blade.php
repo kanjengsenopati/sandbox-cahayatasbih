@@ -82,7 +82,7 @@
                                             <div class="input-group mb-5">
                                                 <span class="input-group-text">Rp</span>
                                                 <input type="text" class="form-control form-control-solid input-money"
-                                                    name="price" id="setPrice" value="{{ @$billType->price }}" />
+                                                    name="price" id="setPrice" value="{{ @$paymentRate->amount }}" />
                                             </div>
                                             <input type="hidden" name="bill_type_id" value="{{ @$billType->id }}">
                                             <div class="alert alert-primary d-flex align-items-center p-5 mt-10 mb-10">
@@ -119,7 +119,8 @@
                                                                 <input type="text"
                                                                     class="form-control form-control-solid input-money"
                                                                     name="bulan_{{ $month }}" id="bulan_{{ $month }}"
-                                                                    placeholder="{{ $monthName }}" />
+                                                                    placeholder="{{ $monthName }}"
+                                                                    value="{{ @$paymentRate->paymentRateItems->where('month', $month)->first()->amount }}" />
                                                             </div>
                                                         </div>
                                                         <div class="col-md-6 mb-3">
@@ -245,10 +246,25 @@
 
                                 <div class="mb-10">
                                     <label class="form-label fw-bolder fs-6 text-gray-700">Kelas</label>
+                                    @if (request()->routeIs('payment-rate.create'))
                                     <select name="classrooms[]" class="form-select form-select-solid mb-3"
                                         id="classroom_id" data-control="select2" data-allow-clear="true"
                                         aria-placeholder="Pilih Kelas" multiple="multiple" required>
                                     </select>
+                                    @else
+                                    <select name="classrooms[]" class="form-select form-select-solid mb-3"
+                                        id="classroom_id" data-control="select2" data-allow-clear="true"
+                                        aria-placeholder="Pilih Kelas" multiple="multiple" required>
+                                        @foreach ($classrooms as $classroom)
+                                        <option value="{{ $classroom->id }}" @if (in_array($classroom->id,
+                                            $paymentRate?->paymentRateClassrooms?->pluck('classroom_id')->toArray()))
+                                            selected
+                                            @endif>
+                                            {{ $classroom->name }}
+                                        </option>
+                                        @endforeach
+                                    </select>
+                                    @endif
                                 </div>
                                 <div class="separator separator-dashed mb-8"></div>
                                 <div class="mb-0">

@@ -149,11 +149,9 @@ class BillTypeController extends Controller
                     return $data->paymentRateClassrooms->first()->classroom->school->name;
                 })
                 ->addColumn('action', function ($data) {
-                    $actionEdit = route('bill-type.edit', $data->id);
-                    $actionDelete = route('bill-type.destroy', $data->id);
+                    $actionEdit = route('payment-rate.edit', $data->id);
                     return "<div class='d-flex justify-content-center'>" .
-                        view('components.action.edit', ['action' => $actionEdit]) .
-                        view('components.action.delete', ['action' => $actionDelete, 'id' => $data->id]) .
+                        view('components.action.edit', ['action' => $actionEdit, 'name' => 'Jenis Bayar']) .
                         "</div>";
                 })
                 ->rawColumns(['action', 'classrooms'])
