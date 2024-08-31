@@ -488,4 +488,18 @@ class BillController extends Controller
 
         return redirect()->back()->with('success', 'Status tagihan berhasil diubah');
     }
+
+    public function deleteStudentBill(Request $request)
+    {
+        $request->validate([
+            'student_id' => 'required',
+            'bill_type_id' => 'required',
+        ]);
+
+        $student = Student::findOrFail($request->student_id);
+        $billType = BillType::findOrFail($request->bill_type_id);
+        $billType->bills()->where('student_id', $student->id)->delete();
+
+        return redirect()->back()->with('success', 'Tagihan berhasil dihapus');
+    }
 }

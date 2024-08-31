@@ -5,10 +5,12 @@ namespace App\Http\Controllers\Admin;
 use App\Models\Bill;
 use App\Models\User;
 use App\Models\School;
+use App\Models\Student;
 use App\Models\BillType;
 use App\Models\Classroom;
 use App\Models\PaymentRate;
 use Illuminate\Http\Request;
+use Yajra\DataTables\DataTables;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\Controller;
@@ -152,8 +154,189 @@ class PaymentRateController extends Controller
      */
     public function show(string $id)
     {
-        //
+
+        if (request()->ajax()) {
+            return $this->handleAjaxRequest($id);
+        }
+
+        $paymentRate = PaymentRate::findOrFail($id);
+
+        return view('admins.payment-rate.show', compact('paymentRate'));
     }
+
+    private function handleAjaxRequest(string $id)
+    {
+        $dateRange = $this->getDateRange();
+
+        if (request()->type === 'bill') {
+            return $this->getBillData($id, $dateRange);
+        }
+
+        if (request()->type === 'total') {
+            return $this->getTotalData($id, $dateRange);
+        }
+    }
+
+    private function getDateRange()
+    {
+        return [
+            'startMonth' => request()->start_date ? date('n', strtotime(request()->start_date)) : null,
+            'endMonth' => request()->end_date ? date('n', strtotime(request()->end_date)) : null,
+            'startYear' => request()->start_date ? date('Y', strtotime(request()->start_date)) : null,
+            'endYear' => request()->end_date ? date('Y', strtotime(request()->end_date)) : null,
+        ];
+    }
+
+    private function getBillData(string $id, array $dateRange)
+    {
+        $paymentRate = PaymentRate::findOrFail($id);
+        $students = $this->getFilteredStudents($paymentRate, $dateRange);
+        $this->calculateStudentTotals($students, $paymentRate);
+
+        return DataTables::of($students)
+            ->addColumn('total_unpaid', fn($student) => $this->formatCurrency($student->total_unpaid))
+            ->addColumn('total_paid', fn($student) => $this->formatCurrency($student->total_paid))
+            ->addColumn('total', fn($student) => $this->formatCurrency($student->total))
+            ->addColumn('status', fn($student) => $student->status)
+            ->addColumn('action', fn($data) => $this->renderActions($data, $paymentRate->bill_type_id))
+            ->rawColumns(['status', 'action'])
+            ->make(true);
+    }
+
+    private function getFilteredStudents($paymentRate, $dateRange)
+    {
+        return Student::select('students.*')
+            ->join('bills', 'bills.student_id', '=', 'students.id')
+            ->where('bills.bill_type_id', $paymentRate->bill_type_id)
+            ->whereHas('bills.paymentRateItems', fn($q) => $q->where('payment_rate_id', $paymentRate->id))
+            ->when(request()->school_id && request()->school_id !== 'null', $this->schoolFilter())
+            ->when(request()->classroom_id && request()->classroom_id !== 'null', $this->classroomFilter())
+            ->hasSchool()
+            ->orderBy('students.name', 'asc')
+            ->distinct()
+            ->get();
+    }
+
+    private function schoolFilter()
+    {
+        return function ($query) {
+            return $query->join('classrooms', 'classrooms.id', '=', 'students.classroom_id')
+                ->where('classrooms.school_id', request()->school_id);
+        };
+    }
+
+    private function classroomFilter()
+    {
+        return fn($query) => $query->where('students.classroom_id', request()->classroom_id);
+    }
+
+    private function dateRangeFilter(array $dateRange)
+    {
+        return function ($query) use ($dateRange) {
+            $query->whereBetween('bills.year', [$dateRange['startYear'], $dateRange['endYear']])
+                ->whereBetween('bills.month', [$dateRange['startMonth'], $dateRange['endMonth']]);
+        };
+    }
+
+    private function calculateStudentTotals(&$students, $paymentRate)
+    {
+        $totalPaidSum = 0;
+        $totalUnpaidSum = 0;
+
+        $students->map(function ($student) use (&$totalPaidSum, &$totalUnpaidSum, $paymentRate) {
+            $bills = $student->bills()->where('bill_type_id', $paymentRate->bill_type_id)
+                ->whereHas('paymentRateItems', function ($query) use ($paymentRate) {
+                    $query->where('payment_rate_id', $paymentRate->id);
+                });
+
+            $total = $bills->sum('amount');
+            $studentTotalPaid = $bills->where('status', Bill::STATUS_PAID)->sum('amount');
+            $studentTotalUnpaid = $total - $studentTotalPaid;
+
+            $totalPaidSum += $studentTotalPaid;
+            $totalUnpaidSum += $studentTotalUnpaid;
+
+            $student->total_paid = $studentTotalPaid;
+            $student->total_unpaid = $studentTotalUnpaid;
+            $student->total = $total;
+            $student->status = $this->getPaymentStatus($studentTotalPaid, $total);
+
+            return $student;
+        });
+    }
+
+
+    private function getPaymentStatus($paid, $total)
+    {
+        if ($paid === 0) {
+            return '<span class="badge bg-danger">Belum Bayar</span>';
+        } elseif ($paid === $total) {
+            return '<span class="badge bg-success">Lunas</span>';
+        } else {
+            return '<span class="badge bg-warning">Belum Lunas</span>';
+        }
+    }
+
+    private function getTotalData(string $id, array $dateRange)
+    {
+        $billQuery = Bill::where('bill_type_id', $id)
+            ->when(request()->school_id && request()->school_id !== 'null', $this->schoolBillFilter())
+            ->when(request()->classroom_id && request()->classroom_id !== 'null', $this->classroomBillFilter())
+            ->when(request()->status === 'UNPAID', fn($query) => $query->where('status', Bill::STATUS_UNPAID))
+            ->when(request()->status === 'PAID', fn($query) => $query->where('status', Bill::STATUS_PAID))
+            ->when($dateRange['startYear'] && $dateRange['endYear'], $this->dateRangeFilter($dateRange));
+
+        $total = $billQuery->sum('amount');
+        $totalPaid = $billQuery->where('status', Bill::STATUS_PAID)->sum('amount');
+        $totalUnpaid = $total - $totalPaid;
+
+        return response()->json([
+            'total' => number_format($total, 0, ',', '.'),
+            'total_paid' => number_format($totalPaid, 0, ',', '.'),
+            'realisasion_percentage' => $total == 0 ? 0 : number_format(($totalPaid / $total) * 100, 2, ',', '.') . '%',
+            'total_unpaid' => number_format($totalUnpaid, 0, ',', '.')
+        ]);
+    }
+
+    private function schoolBillFilter()
+    {
+        return fn($query) => $query->whereHas('student.classroom', fn($q) => $q->where('school_id', request()->school_id));
+    }
+
+    private function classroomBillFilter()
+    {
+        return fn($query) => $query->whereHas('student', fn($q) => $q->where('classroom_id', request()->classroom_id));
+    }
+
+    private function formatCurrency($amount)
+    {
+        return 'Rp. ' . number_format($amount, 0, ',', '.');
+    }
+
+    private function filterByStatus($query, $status, $billTypeId)
+    {
+        if ($status === 'UNPAID') {
+            return $query->whereHas('bills', fn($q) => $q->where('status', Bill::STATUS_UNPAID)->where('bill_type_id', $billTypeId));
+        } elseif ($status === 'PAID') {
+            return $query->whereDoesntHave('bills', fn($q) => $q->where('status', Bill::STATUS_UNPAID)->where('bill_type_id', $billTypeId));
+        }
+        return $query;
+    }
+
+    private function renderActions($data, $billTypeId)
+    {
+        $deleteForm = '<form action="' . route('delete-student-bill') . '" method="POST" style="display:inline;">
+            ' . csrf_field() . '
+            ' . method_field('DELETE') . '
+            <input type="hidden" name="student_id" value="' . $data->id . '">
+            <input type="hidden" name="bill_type_id" value="' . $billTypeId . '">
+            <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm(\'Apakah Anda yakin ingin menghapus tagihan siswa ini?\')">Hapus</button>
+        </form>';
+
+        return "<div class='d-flex justify-content-center'>" . $deleteForm . "</div>";
+    }
+
+
 
     /**
      * Show the form for editing the specified resource.

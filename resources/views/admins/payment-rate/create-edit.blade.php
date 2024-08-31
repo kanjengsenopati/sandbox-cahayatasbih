@@ -120,7 +120,7 @@
                                                                     class="form-control form-control-solid input-money"
                                                                     name="bulan_{{ $month }}" id="bulan_{{ $month }}"
                                                                     placeholder="{{ $monthName }}"
-                                                                    value="{{ @$paymentRate->paymentRateItems->where('month', $month)->first()->amount }}" />
+                                                                    value="{{ isset($paymentRate->paymentRateItems) && $paymentRate->paymentRateItems->where('month', $month)->first() ? $paymentRate->paymentRateItems->where('month', $month)->first()->amount : '' }}" />
                                                             </div>
                                                         </div>
                                                         <div class="col-md-6 mb-3">

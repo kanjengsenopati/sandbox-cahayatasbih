@@ -128,4 +128,9 @@ class Bill extends Model
             });
         });
     }
+
+    public function paymentRateItems()
+    {
+        return $this->belongsTo(PaymentRateItem::class, 'payment_rate_item_id');
+    }
 }

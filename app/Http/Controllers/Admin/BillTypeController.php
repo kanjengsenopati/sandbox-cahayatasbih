@@ -150,8 +150,10 @@ class BillTypeController extends Controller
                 })
                 ->addColumn('action', function ($data) {
                     $actionEdit = route('payment-rate.edit', $data->id);
+                    $actionShow = route('payment-rate.show', $data->id);
                     return "<div class='d-flex justify-content-center'>" .
                         view('components.action.edit', ['action' => $actionEdit, 'name' => 'Jenis Bayar']) .
+                        view('components.action.show', ['action' => $actionShow,]) .
                         "</div>";
                 })
                 ->rawColumns(['action', 'classrooms'])

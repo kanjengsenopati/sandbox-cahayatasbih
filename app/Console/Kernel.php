@@ -14,6 +14,7 @@ class Kernel extends ConsoleKernel
     {
         // Run the command every minute
         $schedule->command('app:auto-expired-class')->everyMinute();
+        $schedule->command('app:check-bill-class')->everyTenMinutes();
         // $schedule->command('inspire')->hourly();
     }
 

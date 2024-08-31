@@ -168,6 +168,7 @@ Route::group(['middleware' => ['auth']], function () {
 
     Route::resource('bill-item', BillItemController::class);
     Route::resource('bill-type', BillTypeController::class);
+    Route::delete('delete-student-bill', [BillController::class, 'deleteStudentBill'])->name('delete-student-bill');
     Route::resource('payment-rate', PaymentRateController::class);
     Route::post('bill.change-status', [BillController::class, 'changeStatus'])->name('bill.change-status');
     Route::resource('bill', BillController::class);
