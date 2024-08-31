@@ -220,9 +220,13 @@
                                                 </td>
                                                 <td>
                                                     @if (Auth::user()->can('Edit Status Tagihan'))
-                                                    <a onclick="changeStatus('{{ $billForMonth->id ?? '' }}', '{{ $billForMonth->status == 'PAID' ? 'UNPAID' : 'PAID' }}')"
-                                                        class="btn btn-success btn-sm">Ubah
-                                                        Status</a>
+                                                    @if ($billForMonth)
+                                                    <a onclick="changeStatus('{{ $billForMonth->id }}', '{{ $billForMonth->status == 'PAID' ? 'UNPAID' : 'PAID' }}')"
+                                                        class="btn btn-success btn-sm">Ubah Status</a>
+                                                    @else
+                                                    <span>-</span>
+                                                    <!-- Or any other fallback message -->
+                                                    @endif
                                                     @endif
                                                     @if ($billForMonth && $billForMonth->status == 'PAID')
                                                     @elseif ($billForMonth && $billForMonth->status == 'UNPAID' &&
