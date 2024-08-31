@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Models\Bill;
 use App\Models\User;
 use App\Models\School;
 use App\Models\BillType;
@@ -168,10 +169,60 @@ class PaymentRateController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, string $id)
+    public function update(PaymentRateRequest $request, $id)
     {
-        //
+        try {
+            DB::beginTransaction();
+
+            $billType = BillType::findOrFail($request->bill_type_id);
+            $paymentRate = PaymentRate::findOrFail($id);
+
+            // Update payment rate amount
+            $paymentRate->update([
+                'amount' => $request->price,
+            ]);
+
+            // Update payment rate items for each month
+            if ($billType->type == BillType::TYPE_MONTHLY) {
+                for ($month = 1; $month <= 12; $month++) {
+                    $paymentRateItem = $paymentRate?->paymentRateItems()?->where('month', $month)?->first();
+                    if ($paymentRateItem) {
+                        $paymentRateItem->update([
+                            'year' => $request->input("tahun_$month"),
+                            'amount' => $request->input("bulan_$month"),
+                        ]);
+
+                        Bill::where('payment_rate_item_id', $paymentRateItem->id)
+                            ->update(['amount' => $request->input("bulan_$month")]);
+                    }
+                }
+            } else {
+                foreach ($request->months as $month) {
+                    $paymentRateItem = $paymentRate?->paymentRateItems()?->where('month', $month)?->first();
+                    if ($paymentRateItem) {
+                        $paymentRateItem->update([
+                            'year' => $request->year,
+                            'amount' => $request->price,
+                        ]);
+
+                        // Update corresponding bills
+                        Bill::where('payment_rate_item_id', $paymentRateItem->id)
+                            ->update(['amount' => $request->price]);
+                    }
+                }
+            }
+
+            DB::commit();
+
+            return redirect()->route('bill-type.index')->with('success', 'Tarif pembayaran berhasil diperbarui');
+        } catch (\Exception $e) {
+            Log::error($e);
+            DB::rollBack();
+            return redirect()->back()->with('error', 'Terjadi kesalahan: ' . $e->getMessage())->withInput();
+        }
     }
+
+
 
     /**
      * Remove the specified resource from storage.

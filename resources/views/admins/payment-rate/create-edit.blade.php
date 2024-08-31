@@ -236,7 +236,7 @@
                                 <div class="mb-10">
                                     <label class="form-label fw-bolder fs-6 text-gray-700">Sekolah</label>
                                     <select name="school" class="form-select form-select-solid mb-3" id="school_id"
-                                        data-control="select2" aria-placeholder="Pilih Sekolah" required>
+                                        data-control="select2" aria-placeholder="Pilih Sekolah">
                                         <option value="" selected>Pilih Sekolah</option>
                                         @foreach ($schools as $school)
                                         <option value="{{ $school->id }}">{{ $school->name }}</option>
