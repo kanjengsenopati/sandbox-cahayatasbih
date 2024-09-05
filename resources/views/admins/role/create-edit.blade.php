@@ -122,7 +122,8 @@
                                             'Pengaturan Aplikasi', 'Item Bayar', 'Jenis Bayar','Laporan Pos Kasir',
                                             'Laporan Tagihan',
                                             'Laporan Santri', 'Laporan Tahfidz', 'Laporan Perilaku Siswa',
-                                            'Laporan Saldo Santri', 'Laporan Fee Aplikasi', 'Laporan Transaksi'];
+                                            'Laporan Saldo Santri', 'Laporan Fee Aplikasi', 'Laporan Transaksi',
+                                            'Kelulusan Santri'];
                                             @endphp
 
                                             @foreach ($modules as $module)

@@ -62,6 +62,8 @@ use App\Http\Controllers\Admin\ApplicationMenuController;
 use App\Http\Controllers\Admin\OrderItemHistoryController;
 use App\Http\Controllers\Admin\PpdbRegistrationController;
 use App\Http\Controllers\Admin\ReportStudyGradeController;
+use App\Http\Controllers\Admin\ReportTransactionController;
+use App\Http\Controllers\Admin\StudentGraduationController;
 use App\Http\Controllers\Admin\SubMenuNavigationController;
 use App\Http\Controllers\Admin\ApplicationSettingController;
 use App\Http\Controllers\Admin\StudentAchievementController;
@@ -69,7 +71,6 @@ use App\Http\Controllers\Admin\InformationCategoryController;
 use App\Http\Controllers\User\WaliSettingLimitSaldoController;
 use App\Http\Controllers\Admin\StudentCounselingScoreController;
 use App\Http\Controllers\Admin\ReportStudentCounselingScoreController;
-use App\Http\Controllers\Admin\ReportTransactionController;
 
 /*
 |--------------------------------------------------------------------------
@@ -242,6 +243,7 @@ Route::group(['middleware' => ['auth']], function () {
     //     ->name('report-student.search-student');
 
     Route::resource('grade-promotion', GradePromotionController::class, ['only' => ['index', 'store']]);
+    Route::resource('student-graduation', StudentGraduationController::class, ['only' => ['index', 'store']]);
     Route::post('bank/status/{id}', [BankController::class, 'status'])->name('bank.status');
     Route::resource('bank', BankController::class, ['except' => ['show']]);
     Route::get('student-barcode/change-barcode/{id}', [StudentBarcodeController::class, 'changeBarcode'])

@@ -207,11 +207,11 @@
                 @endcanany
 
                 @canany(['Manage Wali Santri', 'Manage Santri', 'Manage Sekolah','Manage PPDB', 'Manage Tahun Ajaran',
-                'Manage Kenaikan Kelas'])
-                <div data-kt-menu-trigger="click"
-                    class="menu-item menu-accordion {{ request()->routeIs(['school.*', 'academic-year.*', 'semester.*', 'study.*',
+                'Manage Kenaikan Kelas', 'Manage Kelulusan Santri']);
+                <div data-kt-menu-trigger="click" class="menu-item menu-accordion {{ request()->routeIs(['school.*', 'academic-year.*', 'semester.*', 'study.*',
                     'user.*', 'student.*',
-                      'category-item.*', 'item.*', 'stock-history.*', 'grade-promotion.*', 'ppdb.*', 'ppdb-registration.*']) ? 'show' : '' }}">
+                      'category-item.*', 'item.*', 'stock-history.*', 'grade-promotion.*', 'ppdb.*', 'ppdb-registration.*',
+                      'student-graduation.*']) ? 'show' : '' }}">
                     <span class="menu-link">
                         <span class="menu-icon">
                             <i class="fa-solid fa-school" style="color: #ffffff;"></i>
@@ -295,6 +295,17 @@
                                     <span class="bullet bullet-dot"></span>
                                 </span>
                                 <span class="menu-title">Data Kenaikan Kelas</span>
+                            </a>
+                        </div>
+                        @endcan
+                        @can('Manage Kelulusan Santri')
+                        <div class="menu-item">
+                            <a class="menu-link {{ request()->routeIs('student-graduation.*') ? ' active' : '' }}"
+                                href="{{ route('student-graduation.index') }}">
+                                <span class="menu-bullet">
+                                    <span class="bullet bullet-dot"></span>
+                                </span>
+                                <span class="menu-title">Data Kelulusan Siswa</span>
                             </a>
                         </div>
                         @endcan

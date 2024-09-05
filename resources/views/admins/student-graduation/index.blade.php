@@ -1,4 +1,4 @@
-@extends('layouts.master', ['title' => 'Kenaikan Kelas'])
+@extends('layouts.master', ['title' => 'Kelulusan Siswa'])
 @section('content')
 <div class="content d-flex flex-column flex-column-fluid" id="kt_content">
     <!--begin::Toolbar-->
@@ -10,7 +10,7 @@
                 data-kt-swapper-parent="{default: '#kt_content_container', 'lg': '#kt_toolbar_container'}"
                 class="page-title d-flex align-items-center flex-wrap me-3 mb-5 mb-lg-0">
                 <!--begin::Title-->
-                <h1 class="d-flex text-dark fw-bolder fs-3 align-items-center my-1">Data Kenaikan Kelas</h1>
+                <h1 class="d-flex text-dark fw-bolder fs-3 align-items-center my-1">Data Kelulusan Siswa</h1>
                 <!--end::Title-->
                 <!--begin::Separator-->
                 <span class="h-20px border-gray-300 border-start mx-4"></span>
@@ -19,8 +19,7 @@
                 <ul class="breadcrumb breadcrumb-separatorless fw-bold fs-7 my-1">
                     <!--begin::Item-->
                     <li class="breadcrumb-item text-muted">
-                        <a href="{{ route('student.index') }}" class="text-muted text-hover-primary">Data
-                            Siswa</a>
+                        <a href="{{ route('student.index') }}" class="text-muted text-hover-primary">Data Siswa</a>
                     </li>
                     <!--end::Item-->
                     <!--begin::Item-->
@@ -29,7 +28,7 @@
                     </li>
                     <!--end::Item-->
                     <!--begin::Item-->
-                    <li class="breadcrumb-item text-dark">Data Kenaikan Kelas</li>
+                    <li class="breadcrumb-item text-dark">Data Kelulusan Siswa</li>
                     <!--end::Item-->
                 </ul>
                 <!--end::Breadcrumb-->
@@ -47,10 +46,10 @@
         <!--begin::Container-->
         <div id="kt_content_container" class="container-xxl">
             <!--begin::Card-->
-            <div class="card mb-5">
+            <div class="card">
                 <!--begin::Card header-->
-                <div
-                    class="card-header d-flex align-items-end gap-5 flex-sm-row mb-5 justify-content-between border-0 pt-6">
+                <div class="card-header d-flex align-items-center justify-content-between border-0 pt-6">
+                    <!--begin::Card title-->
                     <div class="d-flex flex-wrap justify-content-beetween gap-5">
                         <div class="mb-0">
                             <div class="d-flex flex-wrap gap-4 align-items-end">
@@ -72,34 +71,13 @@
                             </div>
                         </div>
                     </div>
-                    <div class="mt-4 gap-2 d-flex justify-content-beetween align-items-end">
-
-                    </div>
-                    <!--end::Card title-->
-                </div>
-                <!--end::Card header-->
-                <!--begin::Card body-->
-                <!--end::Card body-->
-            </div>
-            <!--end::Card-->
-
-            <!--begin::Card-->
-            <div class="card">
-                <!--begin::Card header-->
-                <div class="card-header d-flex align-items-center justify-content-between border-0 pt-6">
-                    <!--begin::Card title-->
-                    <div class="card-title">
-
-                    </div>
-                    <div class="">
-                    </div>
                     <!--end::Card title-->
                 </div>
                 <!--end::Card header-->
                 <!--begin::Card body-->
                 <div class="card-body pt-0">
                     <!--begin::Table-->
-                    <form action="{{ route('grade-promotion.store') }}" method="post">
+                    <form action="{{ route('student-graduation.store') }}" method="POST" id="form-grade-promotion">
                         @csrf
                         <x-alert.alert-validation />
                         <div class="table-responsive">
@@ -120,26 +98,10 @@
                         </div>
                         <!--end::Table-->
                         <div class="row align-items-center mt-2">
+                            @if (Auth::user()->can('Create Kelulusan Santri'))
                             <div class="col-md-auto">
-                                <label class="form-label me-3">Pindah / Naik Ke Kelas</label>
-                            </div>
-                            <div class="col-md-auto">
-                                <select name="new_classroom_id" id="filter_new_classroom" class="form-select">
-                                    <option value="">Pilih Kelas Baru</option>
-                                </select>
-                            </div>
-                            <div class="col-md-auto">
-                                <select name="academic_year_id" id="filter_academic_year_id" class="form-select">
-                                    <option value="">Pilih Tahun Ajaran</option>
-                                    @foreach ($academicYears as $academicYear)
-                                    <option value="{{ $academicYear->id }}">{{ $academicYear->name }}</option>
-                                    @endforeach
-                                </select>
-                            </div>
-                            @if (Auth::user()->can('Create Kenaikan Kelas'))
-                            <div class="col-md-auto">
-                                <button type="submit" class="btn btn-primary" id="btn_change_classroom">Pindah
-                                    Kelas</button>
+                                <button type="submit" class="btn btn-primary" id="btn_change_classroom">Proses
+                                    Kelulusan</button>
                             </div>
                             @endif
                         </div>
