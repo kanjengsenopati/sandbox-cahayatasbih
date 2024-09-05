@@ -207,7 +207,7 @@
                 @endcanany
 
                 @canany(['Manage Wali Santri', 'Manage Santri', 'Manage Sekolah','Manage PPDB', 'Manage Tahun Ajaran',
-                'Manage Kenaikan Kelas', 'Manage Kelulusan Santri']);
+                'Manage Kenaikan Kelas', 'Manage Kelulusan Santri'])
                 <div data-kt-menu-trigger="click" class="menu-item menu-accordion {{ request()->routeIs(['school.*', 'academic-year.*', 'semester.*', 'study.*',
                     'user.*', 'student.*',
                       'category-item.*', 'item.*', 'stock-history.*', 'grade-promotion.*', 'ppdb.*', 'ppdb-registration.*',
