@@ -18,8 +18,7 @@ class BillController extends Controller
             ->where('status', Bill::STATUS_UNPAID)
             ->select('bill_type_id', 'amount')
             ->get();
-
-        $totalBill = $unpaidBills->sum('amount');
+        // $totalBill = $unpaidBills->sum('amount');
 
         // Get bill types with unpaid bills
         $billTypeIds = $unpaidBills->pluck('bill_type_id')->unique();
@@ -42,6 +41,9 @@ class BillController extends Controller
             return $billType;
         });
 
+        // count total bill from all bill types unpaid
+        $totalBill = $billTypes->sum('total_unpaid');
+
         $data = [
             'total_bill' => $totalBill,
             'bill_types' => $billTypes,
@@ -49,38 +51,6 @@ class BillController extends Controller
 
         return $this->postSuccessResponse("Berhasil mengambil data", $data);
     }
-    // public function index(Request $request)
-    // {
-    //     $studentId = $request->student_id;
-
-    //     $totalBill = Bill::where('student_id', $studentId)
-    //         ->where('status', Bill::STATUS_UNPAID)
-    //         ->sum('amount');
-
-    //     $billTypes = BillType::whereHas('bills', function ($query) use ($studentId) {
-    //         $query->where('student_id', $studentId);
-    //         $query->where('status', Bill::STATUS_UNPAID);
-    //     })
-    //         ->with(['billItem', 'academicYear'])
-    //         ->latest()
-    //         ->get()
-    //         ->map(function ($billType) use ($request) {
-    //             $billType->total_unpaid = $billType->bills->where('status', Bill::STATUS_UNPAID)
-    //                 ->where('student_id', $request->student_id)->sum('amount');
-    //             $billType->total_paid = $billType->bills->where('status', Bill::STATUS_PAID)
-    //                 ->where('student_id', $request->student_id)->sum('amount');
-    //             $billType->status = $billType->bills->where('status', Bill::STATUS_UNPAID)
-    //                 ->where('student_id', $request->student_id)->count() > 0 ? Bill::STATUS_UNPAID : Bill::STATUS_PAID;
-    //             return $billType;
-    //         });
-
-    //     $data = [
-    //         'total_bill' => $totalBill,
-    //         'bill_types' => $billTypes,
-    //     ];
-
-    //     return $this->postSuccessResponse("Berhasil mengambil data", $data);
-    // }
 
     public function show(Request $request, $id)
     {
@@ -119,8 +89,20 @@ class BillController extends Controller
             ->select('bill_type_id', 'status', 'amount')
             ->get();
 
-        // Calculate total unpaid bills
-        $totalBill = $allBills->where('status', Bill::STATUS_UNPAID)->sum('amount');
+        // ambil bill type id yang belum lunas
+        $unpaidBillTypeIds = $allBills->where('status', Bill::STATUS_UNPAID)->pluck('bill_type_id')->unique();
+
+        // loop semua bill type yang belum lunas dan hitung total unpaid dan jadikan $totalBill
+        $billTypes = BillType::whereIn('id', $unpaidBillTypeIds)
+            ->with(['billItem', 'academicYear'])
+            ->latest()
+            ->get();
+        $totalBill = 0;
+        foreach ($billTypes as $billType) {
+            $typeBills = $allBills->where('bill_type_id', $billType->id);
+            $billType->total_unpaid = $typeBills->where('status', Bill::STATUS_UNPAID)->sum('amount');
+            $totalBill += $billType->total_unpaid;
+        }
 
         // Group bills by bill_type_id
         $groupedBills = $allBills->groupBy('bill_type_id');

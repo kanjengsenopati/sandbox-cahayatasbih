@@ -22,7 +22,7 @@ class BillType extends Model
 
     public function billItem()
     {
-        return $this->belongsTo(BillItem::class);
+        return $this->belongsTo(BillItem::class)->withTrashed();
     }
 
     public function academicYear()

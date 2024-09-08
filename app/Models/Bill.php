@@ -57,7 +57,7 @@ class Bill extends Model
 
     public function billType()
     {
-        return $this->belongsTo(BillType::class);
+        return $this->belongsTo(BillType::class)->withTrashed();
     }
 
     public function student()
@@ -67,7 +67,7 @@ class Bill extends Model
 
     public function classroom()
     {
-        return $this->belongsTo(Classroom::class);
+        return $this->belongsTo(Classroom::class)->withTrashed();
     }
 
     public function academicYear()
