@@ -32,15 +32,6 @@ class DashboardController extends Controller
     public function index()
     {
 
-        // get all bill where amount is 0
-        $bills = Bill::where('amount', 0)->get();
-        dd($bills);
-        // delete bill where amount is 0
-        // foreach ($bills as $bill) {
-        //     $bill->delete();
-        // }
-        // dd('done');
-
         $total_parents = User::where('is_active', 1)->count();
         $total_students = Student::count();
         $data = [
