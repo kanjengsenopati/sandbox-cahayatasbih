@@ -90,6 +90,9 @@ class PaymentRateController extends Controller
                         foreach ($classroom->students as $student) {
                             $billAmount = $request->{"bulan_$month"}; // Get amount for current month
                             $billYear = $request->{"tahun_$month"}; // Get year for current month
+                            if ($billAmount == 0) {
+                                continue; // Skip if the bill amount is 0
+                            }
                             $paymentRateItem = $paymentRate->paymentRateItems()->where('month', $month)->first();
                             $existingBill = $student->bills()->where('bill_type_id', $billType->id)
                                 ->where('month', $month)
@@ -116,6 +119,9 @@ class PaymentRateController extends Controller
                     foreach ($classrooms as $classroom) {
                         foreach ($classroom->students as $student) {
                             $billAmount = $request->price; // Get amount for current month
+                            if ($billAmount == 0) {
+                                continue; // Skip if the bill amount is 0
+                            }
                             $billYear = $request->year;
                             $paymentRateItem = $paymentRate->paymentRateItems()->where('month', $month)->first();
                             $existingBill = $student->bills()->where('bill_type_id', $billType->id)
