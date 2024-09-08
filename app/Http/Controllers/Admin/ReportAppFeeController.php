@@ -37,7 +37,9 @@ class ReportAppFeeController extends Controller
                 ->latest();
             return DataTables::of($data)
                 ->addColumn('date', function ($data) {
-                    return $data->created_at->format('d-m-Y H:i:s');
+                    Carbon::setLocale('id');
+                    $createdAt = Carbon::parse($data->created_at);
+                    return $createdAt->translatedFormat('d F Y H:i');
                 })
                 ->editColumn('app_fee', function ($data) {
                     return 'Rp ' . number_format($data->app_fee, 0, ',', '.');
