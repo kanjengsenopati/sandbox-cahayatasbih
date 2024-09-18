@@ -133,15 +133,96 @@ class StudentBarcodeController extends Controller
 
         // Clean up the temporary barcode images
         foreach ($barcodeImages as $image) {
-            unlink($image);
+            if (file_exists($image)) {
+                unlink($image);
+            }
         }
 
         // Delete the temp folder after use
-        rmdir($tempFolder);
+        if (is_dir($tempFolder)) {
+            // Remove any remaining files
+            Storage::deleteDirectory('temp_barcodes');
+        }
 
         // Download the zip file and then delete it after sending
         return response()->download($zipFilePath)->deleteFileAfterSend(true);
     }
+
+    // public function store(Request $request)
+    // {
+    //     // Validate the incoming request
+    //     $request->validate([
+    //         'student_ids' => 'required|exists:students,id',
+    //     ]);
+
+    //     // Get the list of students based on the provided IDs
+    //     $users = Student::whereIn('id', $request->student_ids)->get();
+
+    //     // Create a temporary folder to store the barcode images
+    //     $tempFolder = storage_path('app/temp_barcodes/');
+    //     if (!file_exists($tempFolder)) {
+    //         mkdir($tempFolder, 0777, true);
+    //     }
+
+    //     // Array to hold the paths of the generated barcode images
+    //     $barcodeImages = [];
+
+    //     // Generate barcode images for each user and resize them
+    //     foreach ($users as $user) {
+    //         $dns1d = new DNS1D;
+
+    //         // Generate the barcode in base64 PNG format
+    //         $barcodeImage = $dns1d->getBarcodePNG($user['barcode'], 'C128');
+    //         $imageData = base64_decode($barcodeImage);
+
+    //         // Load the barcode image using Intervention Image
+    //         $image = Image::make($imageData);
+
+    //         // Resize the image to the desired dimensions in cm
+    //         // Convert dimensions from cm to pixels
+    //         $widthInPixels = 6.5 * 37.8; // 6.5 cm to pixels (now width)
+    //         $heightInPixels = 0.9 * 37.8; // 0.9 cm to pixels (now height)
+
+    //         // Resize the image
+    //         $image->resize($widthInPixels, $heightInPixels);
+
+    //         // Create a custom filename for each barcode image
+    //         $fileName = $user['nis'] ? $user['nis'] . '.png' : $user['name'] . '.png';
+    //         $filePath = $tempFolder . $fileName;
+
+    //         // Save the resized image to the temporary folder
+    //         $image->save($filePath);
+
+    //         // Add the image path to the array for zipping
+    //         $barcodeImages[] = $filePath;
+    //     }
+
+    //     // Zip all the barcode images
+    //     $zipFileName = 'barcodes.zip';
+    //     $zipFilePath = storage_path('app/' . $zipFileName);
+
+    //     $zip = new ZipArchive;
+    //     if ($zip->open($zipFilePath, ZipArchive::CREATE) === TRUE) {
+    //         // Add each barcode image to the zip file
+    //         foreach ($barcodeImages as $image) {
+    //             $zip->addFile($image, basename($image));
+    //         }
+
+    //         // Close the zip file
+    //         $zip->close();
+    //     }
+
+    //     // Clean up the temporary barcode images
+    //     foreach ($barcodeImages as $image) {
+    //         unlink($image);
+    //     }
+
+    //     // Delete the temp folder after use
+    //     rmdir($tempFolder);
+
+    //     // Download the zip file and then delete it after sending
+    //     return response()->download($zipFilePath)->deleteFileAfterSend(true);
+    // }
 
 
 
