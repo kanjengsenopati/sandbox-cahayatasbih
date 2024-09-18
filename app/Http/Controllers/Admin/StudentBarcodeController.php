@@ -8,6 +8,7 @@ use App\Models\Student;
 use Milon\Barcode\DNS1D;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
+use Illuminate\Support\Facades\Storage;
 use Yajra\DataTables\Facades\DataTables;
 use Intervention\Image\ImageManagerStatic as Image;
 
