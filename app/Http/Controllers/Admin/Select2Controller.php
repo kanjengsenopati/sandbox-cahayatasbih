@@ -31,6 +31,7 @@ class Select2Controller extends Controller
             'STUDY' => $this->study($request),
             'SEMESTER' => $this->semester($request),
             'STUDENT_BY_SCHOOL' => $this->studentBySchool($request),
+            'STUDENT_ACTIVE_BY_SCHOOL' => $this->studentActiveBySchool($request),
             'BANK' => $this->bank($request),
         };
         return response()->json($data);
@@ -120,6 +121,19 @@ class Select2Controller extends Controller
         return Bank::whereRaw('LOWER(name) like ?', ['%' . strtolower($request->search) . '%'])
             ->take(10)
             ->where('is_active', true)
+            ->get();
+    }
+
+    public function studentActiveBySchool($request)
+    {
+        return Student::with('classroom.school')
+            ->whereHas('classroom', function ($query) use ($request) {
+                $query->where('school_id', $request->school_id);
+            })
+            ->whereRaw('LOWER(name) like ?', ['%' . strtolower($request->search) . '%'])
+            ->hasSchool()
+            ->where('status', Student::STATUS_ACTIVE)
+            ->orderBy('name')
             ->get();
     }
 }

@@ -186,7 +186,7 @@
     delay: 300,
     data: {
     search: '', // Assuming you need a default search term
-    data_type: "STUDENT_BY_SCHOOL",
+    data_type: "STUDENT_ACTIVE_BY_SCHOOL",
     school_id: school_id
     },
     success: function (data) {
