@@ -377,7 +377,7 @@ class TransactionService
                 if ($transaction->type == Transaction::TYPE_SALDO) {
                     $student = Student::find($transaction->student_id);
                     $student->update([
-                        'saldo' => $student->saldo + $transaction->pay_amount
+                        'saldo' => $student->saldo +  $transaction->transactionDetails->first()->saldoHistory->amount
                     ]);
                     // change status to saldo history
                     $transaction->transactionDetails->first()->saldoHistory->update([
@@ -392,7 +392,7 @@ class TransactionService
 
                     $student = Student::find($transaction->student_id);
                     $student->update([
-                        'saving' => $student->saving + $transaction->pay_amount
+                        'saving' => $student->saving + $transaction->transactionDetails->first()->savingHistory->amount
                     ]);
                 } elseif ($transaction->type == Transaction::TYPE_PPDB) {
                     foreach ($transaction->transactionDetails as $detail) {

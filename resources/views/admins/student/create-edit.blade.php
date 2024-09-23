@@ -177,7 +177,7 @@
                                         </label>
                                         <input type="text" class="form-control form-control-solid" id="nisn" name="nisn"
                                             placeholder="Masukkan Nisn Siswa"
-                                            value="{{ @$student->nisn ?? old('nisn') }}" required />
+                                            value="{{ @$student->nisn ?? old('nisn') }}" />
                                     </div>
                                     <div class="fv-row mb-6">
                                         <label class="fs-6 fw-bold form-label" for="nis">
