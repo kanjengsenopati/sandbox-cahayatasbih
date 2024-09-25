@@ -221,8 +221,8 @@
                                 <td width="2%">:</td>
                                 <td>
                                     <strong>{{ $data->student?->name }}</strong> <br />
-                                   {{ $data->student?->classroom?->name }} <br />
-                                   {{ $data->student?->classroom?->school?->name }}
+                                    {{ $data->student?->classroom?->name }} <br />
+                                    {{ $data->student?->classroom?->school?->name }}
                                 </td>
                             </tr>
                         </table>
@@ -313,7 +313,7 @@
                 <tr>
                     <td>Biaya Aplikasi</td>
                     <td align="right">
-                        Rp{{ number_format($data->app_fee + ($transaction->unique_payment ?? 0), 0, ',', '.') }}
+                        Rp{{ number_format($data->app_fee + ($data->unique_payment ?? 0), 0, ',', '.') }}
                     </td>
                 </tr>
                 <tr class="text-strong border-table">
@@ -359,7 +359,8 @@
                     <td width="60%" style="vertical-align: top;">
                         Invoice bukti pembayaran ini sah dan telah diproses secara otomatis oleh sistem kami.<br>
                         Jangan ragu untuk menghubungi <a href="https://cahayatasbih.or.id/" target="_blank"
-                            class="text-primary text-decoration-none" style="font-weight: 600;">PUSKOMINFO PPTQ CAHAYA TASBIH</a> jika Anda membutuhkan bantuan lebih lanjut.
+                            class="text-primary text-decoration-none" style="font-weight: 600;">PUSKOMINFO PPTQ CAHAYA
+                            TASBIH</a> jika Anda membutuhkan bantuan lebih lanjut.
                     </td>
                     <td width="40%" align="right" style="vertical-align: top;">
                         <img src="data:image/png;base64, {!! base64_encode(QrCode::format('png')->size(100)->generate(route('transaction.invoice', $data->id))) !!}"
