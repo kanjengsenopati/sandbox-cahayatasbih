@@ -486,6 +486,13 @@ class BillController extends Controller
         $bill->status = $requestData['status'];
         $bill->save();
 
+        // delete transaction if status is unpaid
+        if ($requestData['status'] == Bill::STATUS_UNPAID && $bill->transactionDetails()?->first()->transaction) {
+            // disini multiple transaction detail dan 1 transaction
+            $transaction = $bill->transactionDetails()->first()->transaction;
+            $transaction->delete();
+        }
+
         return redirect()->back()->with('success', 'Status tagihan berhasil diubah');
     }
 

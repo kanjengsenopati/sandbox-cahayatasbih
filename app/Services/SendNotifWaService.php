@@ -73,13 +73,27 @@ class SendNotifWaService
                 break;
             case Transaction::TYPE_SAVING:
                 $message .= "4. Pembayaran : *Tabungan Santri*\n";
-                $message .= "5. Total Pembayaran : *Rp." . number_format($transaction->pay_amount, 0, ',', '.') . "*\n";
-                $message .= "6. Tabungan Terkini : *Rp." . number_format($student->saving, 0, ',', '.') . "*\n";
+
+                // Check if transactionDetails and savingHistory are not null
+                $amount = $transaction->transactionDetails->first()->savingHistory->amount ?? null;
+                $formattedAmount = $amount !== null ? number_format($amount, 0, ',', '.') : '0';
+                $message .= "5. Total Pembayaran : *Rp." . $formattedAmount . "*\n";
+
+                // Check if student saving is not null
+                $currentSaving = $student->saving ?? 0;
+                $message .= "6. Tabungan Terkini : *Rp." . number_format($currentSaving, 0, ',', '.') . "*\n";
                 break;
             case Transaction::TYPE_SALDO:
                 $message .= "4. Transaksi : *Saldo Santri*\n";
-                $message .= "5. Nominal : *Rp." . number_format($transaction->pay_amount, 0, ',', '.') . "*\n";
-                $message .= "6. Saldo Terkini : *Rp." . number_format($student->saldo, 0, ',', '.') . "*\n";
+
+                // Check if transactionDetails and saldoHistory are not null
+                $amount = $transaction?->transactionDetails?->first()?->saldoHistory?->amount;
+                $formattedAmount = $amount !== null ? number_format($amount, 0, ',', '.') : '0';
+                $message .= "5. Nominal : *Rp." . $formattedAmount . "*\n";
+
+                // Check if student saldo is not null
+                $currentSaldo = $student->saldo ?? 0;
+                $message .= "6. Saldo Terkini : *Rp." . number_format($currentSaldo, 0, ',', '.') . "*\n";
                 break;
             default:
                 $message .= "--------------------------------\n";
@@ -166,62 +180,6 @@ class SendNotifWaService
 
         return $message;
     }
-
-
-
-    // public static function sendMessageUnpaidNotification($student, $billTypes)
-    // {
-    //     $parentStudent = $student->user;
-
-    //     $message = "Assalamualaikum Bapak/Ibu " . $parentStudent->name . ",\n";
-    //     $message .= "Anda memiliki Kewajiban Administrasi Keuangan yang belum terbayar, sebagai berikut:\n";
-    //     $message .= "--------------------------------\n";
-    //     $message .= "1. NIS : *" . $student->nis . "*\n";
-    //     $message .= "2. Nama Santri : *" . $student->name . "*\n";
-    //     $message .= "3. Kelas : *" . $student->classroom->name . "*\n";
-
-    //     $must_pay = 0;
-    //     foreach ($billTypes as $billType) {
-    //         if ($billType->type == BillType::TYPE_OTHER) {
-    //             $total_unpaid = $billType->bills
-    //                 ->where('student_id', $student->id)->where('status', Bill::STATUS_UNPAID)
-    //                 ->sum('amount');
-    //             $must_pay += $total_unpaid;
-    //             $message .= "--------------------------------\n";
-    //             $message .= "Tagihan : *" . $billType->name . "*\n";
-    //             $message .= "Total Tagihan : *Rp." . number_format($billType->bills->where('student_id', $student->id)
-    //                 ->sum('amount'), 0, ',', '.') . "*\n";
-    //             $message .= "Total Kekurangan: *Rp." . number_format($total_unpaid, 0, ',', '.') . "*\n";
-    //             $message .= "Status Pembayaran : *" . ($total_unpaid > 0 ? 'Belum Lunas' : 'Lunas') . "*\n";
-    //         } else {
-    //             $thisMonthInInteger = intval(date('n'));
-    //             $unpaidBills = $billType->bills()
-    //                 ->where('student_id', $student->id)
-    //                 ->where('status', Bill::STATUS_UNPAID)
-    //                 ->where('month', '<=', $thisMonthInInteger)
-    //                 ->get();
-
-    //             $totalUnpaid = $unpaidBills->sum('amount');
-    //             $listMonth = $unpaidBills->pluck('translated_month')->toArray();
-
-    //             $must_pay += $totalUnpaid;
-    //             $message .= "Tagihan : *" . $billType->name . ' ' . $billType->academicYear->name . "*\n";
-    //             $message .= "Bulan : *" . implode(', ', $listMonth) . "*\n";
-    //             $message .= "Jumlah Tagihan: *Rp." . number_format($totalUnpaid, 0, ',', '.') . "*\n";
-    //             $message .= "Status Pembayaran : *" . ($totalUnpaid > 0 ? 'Belum Lunas' : 'Lunas') . "*\n";
-    //         }
-    //     }
-    //     $message .= "\n";
-    //     $message .= "--------------------------------\n";
-    //     $message .= "Total Kekurangan : *Rp." . number_format($must_pay, 0, ',', '.') . "*\n";
-    //     $message .= "--------------------------------\n";
-    //     $message .= "Note : _Jika sudah melakukan pembayaran, abaikan pesan ini_\n";
-    //     $message .= "Wassalamualaikum Wr. Wb.\n";
-    //     $message .= "*PPTQ CAHAYA TASBIH*";
-
-    //     return $message;
-    // }
-
 
     public static function sendMessageUnpaidPpdb($ppdbRegistration)
     {
