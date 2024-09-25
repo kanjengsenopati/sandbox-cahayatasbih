@@ -200,7 +200,7 @@
                         <img src="{{ asset('assets/media/logos/logo-full.png') }}" width="200" alt="" />
                     </td>
                     <td align="right">
-                        <h1>INVOICE</h1>
+                        <h1>INVOICE BUKTI PEMBAYARAN</h1>
                         <p class="text-primary">{{ $data->payment_code }}</p>
                     </td>
                 </tr>
@@ -211,18 +211,18 @@
                         <strong class="text-sm">Informasi Transaksi</strong>
                         <table width="100%">
                             <tr>
-                                <td style="white-space: nowrap" width="15%" class="text-muted">Pembayaran</td>
+                                <td style="white-space: nowrap" width="15%" class="text-muted">Tanggal</td>
                                 <td width="2%">:</td>
                                 <td><strong>{{ \Carbon\Carbon::parse($data->created_at)->locale('id_ID')->isoFormat('D
                                         MMMM YYYY H:mm') }}</strong></td>
                             </tr>
                             <tr>
-                                <td style="white-space: nowrap" width="15%" class="text-muted">Santri</td>
+                                <td style="white-space: nowrap" width="15%" class="text-muted">Nama Siswa/Santri</td>
                                 <td width="2%">:</td>
                                 <td>
                                     <strong>{{ $data->student?->name }}</strong> <br />
-                                    {{ $data->student?->classroom?->name }} <br />
-                                    {{ $data->student?->classroom?->school?->name }}
+                                   {{ $data->student?->classroom?->name }} <br />
+                                   {{ $data->student?->classroom?->school?->name }}
                                 </td>
                             </tr>
                         </table>
@@ -275,8 +275,8 @@
                 <thead>
                     <th>
                     <th class="text-end">Bulan</th>
-                    <th class="text-end">Tahun Ajaran</th>
-                    <th class="text-end">Jumlah</th>
+                    <th class="text-end">Tahun</th>
+                    <th class="text-end">Nominal</th>
                 </thead>
                 <tbody>
                     @foreach ($data->transactionDetails as $transaction_detail)
@@ -349,7 +349,7 @@
                     </td>
                     @if($data->admin_id)
                     <td width="50%" align="right">
-                        <strong>Petugas :</strong> <br /> {{ $data?->admin?->name ?? '' }}
+                        <strong>Nama Petugas :</strong> <br /> {{ $data?->admin?->name ?? '' }}
                     </td>
                     @endif
                 </tr>
@@ -357,10 +357,9 @@
             <table width="100%" class="mt-5">
                 <tr>
                     <td width="60%" style="vertical-align: top;">
-                        Invoice ini sah dan telah diproses secara otomatis oleh sistem kami.<br>
+                        Invoice bukti pembayaran ini sah dan telah diproses secara otomatis oleh sistem kami.<br>
                         Jangan ragu untuk menghubungi <a href="https://cahayatasbih.or.id/" target="_blank"
-                            class="text-primary text-decoration-none" style="font-weight: 600;">Puskominfo PPTQ Cahaya
-                            Tasbih</a> jika Anda membutuhkan bantuan lebih lanjut.
+                            class="text-primary text-decoration-none" style="font-weight: 600;">PUSKOMINFO PPTQ CAHAYA TASBIH</a> jika Anda membutuhkan bantuan lebih lanjut.
                     </td>
                     <td width="40%" align="right" style="vertical-align: top;">
                         <img src="data:image/png;base64, {!! base64_encode(QrCode::format('png')->size(100)->generate(route('transaction.invoice', $data->id))) !!}"

@@ -71,10 +71,10 @@
                                     </div>
 
                                     <div>
-                                        <label class="form-label">UPT</label>
+                                        <label class="form-label">Lembaga</label>
                                         <select name="school_id" class="form-select form-select-sm"
                                             id="filter_school_id">
-                                            <option value="">Semua UPT</option>
+                                            <option value="">Semua Lembaga</option>
                                             @foreach ($schools as $school)
                                             <option value="{{ $school->id }}">{{ $school->name }}</option>
                                             @endforeach
@@ -192,8 +192,8 @@
                                             <th>Tanggal</th>
                                             <th>Nama</th>
                                             <th>Tipe</th>
-                                            <th>Jumlah</th>
-                                            <th>Metode Pembayaran</th>
+                                            <th>Nominal</th>
+                                            <th>Bayar</th>
                                             <th>Petugas</th>
                                             <th>Keterangan</th>
                                             <th>Aksi</th>
