@@ -44,14 +44,18 @@ class ReportTransactionController extends Controller
                 ->hasSchool()
                 ->latest();
             if (request()->data == 'total') {
-                $total_bill = $data->where('type', Transaction::TYPE_BILL)->sum('pay_amount');
-                $total_saldo = $data->where('type', Transaction::TYPE_SALDO)->sum('pay_amount');
-                $saldo_saving = $data->where('type', Transaction::TYPE_SAVING)->sum('pay_amount');
+                // Fetch all types of transactions and sum them separately
+                $totals = $data->selectRaw("
+                SUM(CASE WHEN type = '" . Transaction::TYPE_BILL . "' THEN pay_amount ELSE 0 END) as total_bill,
+                SUM(CASE WHEN type = '" . Transaction::TYPE_SALDO . "' THEN pay_amount ELSE 0 END) as total_saldo,
+                SUM(CASE WHEN type = '" . Transaction::TYPE_SAVING . "' THEN pay_amount ELSE 0 END) as saldo_saving
+            ")
+                    ->first();
 
                 return response()->json([
-                    'total_bill' => number_format($total_bill, 0, ',', '.'),
-                    'total_saldo' => number_format($total_saldo, 0, ',', '.'),
-                    'saldo_saving' => number_format($saldo_saving, 0, ',', '.'),
+                    'total_bill' => number_format($totals->total_bill, 0, ',', '.'),
+                    'total_saldo' => number_format($totals->total_saldo, 0, ',', '.'),
+                    'saldo_saving' => number_format($totals->saldo_saving, 0, ',', '.'),
                 ]);
             } elseif (request()->data == 'table') {
                 return DataTables::of($data)

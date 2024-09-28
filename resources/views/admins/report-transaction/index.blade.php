@@ -332,7 +332,11 @@
                 { data: 'type', name: 'type', orderable: true, searchable: true },
                 { data: 'amount', name: 'amount', orderable: true, searchable: true },
                 { data: 'payment_method', name: 'payment_method', orderable: true, searchable: true },
-                { data: 'admin.name', name: 'admin.name', orderable: true, searchable: true },
+                { data: 'admin.name', name: 'admin.name',
+                    render: function(data, type, row) {
+                        return data ? data : 'N/A';
+                    },
+                 orderable: true, searchable: true },
                 { data: 'item', name: 'item', orderable: true, searchable: true },
                 { data: 'action', name: 'action', orderable: false, searchable: false },
             ]
