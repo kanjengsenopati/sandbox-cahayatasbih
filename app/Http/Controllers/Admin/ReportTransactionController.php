@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use Carbon\Carbon;
 use App\Models\Admin;
 use App\Models\School;
+use App\Models\BillType;
 use App\Models\Transaction;
 use Illuminate\Http\Request;
 use App\Models\PaymentMethod;
@@ -22,7 +23,6 @@ class ReportTransactionController extends Controller
      */
     public function index()
     {
-
         if (!Auth::user()->can('Manage Laporan Transaksi')) {
             return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
         }
@@ -41,6 +41,11 @@ class ReportTransactionController extends Controller
                 ->schoolFilter('school_id', request()->school_id)
                 ->classroomFilter('classroom_id', request()->classroom_id)
                 ->filter('type', request()->type)
+                ->when(request()->filled('bill_type_id'), function ($query) {
+                    $query->whereHas('transactionDetails.bill', function ($query) {
+                        $query->where('bill_type_id', request()->bill_type_id);
+                    });
+                })
                 ->hasSchool()
                 ->latest();
             if (request()->data == 'total') {
@@ -139,7 +144,8 @@ class ReportTransactionController extends Controller
         // ambil list admin nama dari admin_ids
         $admins = Admin::whereIn('id', $admin_ids)->select('id', 'name')->orderBy('name')->get();
         $schools = School::orderBy('name')->get();
-        return view('admins.report-transaction.index', compact('schools', 'admins'));
+        $billTypes = BillType::select('id', 'name')->orderBy('name')->get();
+        return view('admins.report-transaction.index', compact('schools', 'admins', 'billTypes'));
     }
 
     /**

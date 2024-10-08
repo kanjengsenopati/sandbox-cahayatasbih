@@ -106,6 +106,16 @@
                                             @endforeach
                                         </select>
                                     </div>
+                                    <div>
+                                        <label class="form-label">Jenis Tagihan</label>
+                                        <select name="bill_type_id" class="form-select form-select-sm"
+                                            id="filter_tipe_tagihan">
+                                            <option value="">Semua</option>
+                                            @foreach ($billTypes as $billType)
+                                            <option value="{{ $billType->id }}">{{ $billType->name }}</option>
+                                            @endforeach
+                                        </select>
+                                    </div>
                                     <!--begin::Export dropdown-->
                                     <button type="button" class="btn btn-sm btn-primary" data-kt-menu-trigger="click"
                                         data-kt-menu-placement="bottom-end">
@@ -243,8 +253,11 @@
         });
 
         // Event handlers to reload the table
-      $('#filter_school_id, #filter_classroom_id, #filter_status, #filter_admin').on('change', function() {
-         reloadTable();
+        $(document).ready(function() {
+            $('#filter_school_id, #filter_classroom_id, #filter_status, #filter_admin, #filter_tipe_tagihan').on('change',
+            function() {
+                reloadTable();
+            });
         });
 
         var start = moment().startOf('month');
@@ -301,6 +314,7 @@
                     d.admin_id = $('#filter_admin').val();
                     d.start_date = $('#start_date').val();
                     d.end_date = $('#end_date').val();
+                    d.bill_type_id = $('#filter_tipe_tagihan').val();
                 }
             },
             columns: [
@@ -355,7 +369,8 @@
                 type: $('#filter_status').val(),
                 admin_id: $('#filter_admin').val(),
                 start_date: $('#start_date').val(),
-                end_date: $('#end_date').val()
+                end_date: $('#end_date').val(),
+                bill_type_id: $('#filter_tipe_tagihan').val()
             },
             success: function(response) {
                 $('#total-bill').text('Rp. ' + response.total_bill);
