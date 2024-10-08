@@ -144,7 +144,12 @@ class ReportTransactionController extends Controller
         // ambil list admin nama dari admin_ids
         $admins = Admin::whereIn('id', $admin_ids)->select('id', 'name')->orderBy('name')->get();
         $schools = School::orderBy('name')->get();
-        $billTypes = BillType::select('id', 'name')->orderBy('name')->get();
+        $billTypes = BillType::select('id', 'name')->whereNotIn('id', [
+            '02dae620-fc2c-4bf2-9e13-c5c1950e4d48',
+            '615a34af-be2d-45f2-9830-720fea341a0c',
+            'f3a25c77-f8c0-4882-8286-571bc57bf87c',
+            'ce389861-40ab-4523-9364-3458e9dfda1d'
+        ])->get();
         return view('admins.report-transaction.index', compact('schools', 'admins', 'billTypes'));
     }
 
