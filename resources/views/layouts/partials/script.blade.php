@@ -121,17 +121,28 @@
 @endforeach
 <script>
     $(".input-money").on('keyup', function() {
-        
-        var n = parseInt($(this).val().replace(/\D/g, ''), 10) || 0
+        var n = parseInt($(this).val().replace(/\D/g, ''), 10) || 0;
         if (n > 0) {
-        var value = n.toLocaleString()
-        $(this).val(value);
+            var value = n.toLocaleString();
+            $(this).val(value);
         } else {
-        $(this).val(0);
+            $(this).val(0);
         }
-        });
-        
-        $(':submit').on('click', function(e) {
+    });
+
+    $(':submit').on('click', function(e) {
+        e.preventDefault(); // Prevent the default form submission
+
         var x = $(".input-money");
-        for (var i = 0; i < x.length; i++) { var str=x[i].value; x[i].value=str.replace(/,(?=\d{3})/g, '' ); } })
+        for (var i = 0; i < x.length; i++) {
+            var str = x[i].value;
+            x[i].value = str.replace(/,(?=\d{3})/g, '');
+        }
+
+        // Delay the form submission by 500 ms
+        setTimeout(function() {
+            // Submit the form after the delay
+            $('form').submit(); // Adjust the selector if your form has a specific ID or class
+        }, 500);
+    });
 </script>
