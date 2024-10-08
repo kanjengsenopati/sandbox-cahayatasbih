@@ -185,45 +185,43 @@
                                     <!--end::Body-->
                                 </div>
                             </div>
-                            {{-- <div class="mt-4 gap-2 d-flex justify-content-beetween align-items-end">
-
-                            </div> --}}
-                            <!--end::Card title-->
                         </div>
-                        <!--end::Card header-->
-                        <!--begin::Card body-->
-                        <div class="card-body pt-0">
-                            <!--begin::Table-->
-                            <div class="table-responsive">
-                                <table id="table-saldo" class="table align-middle table-row-dashed ">
-                                    <thead>
-                                        <tr class="text-start text-gray-400 fw-bolder fs-7 text-uppercase gs-0">
-                                            <th style="width: 5%">No</th>
-                                            <th>Tanggal</th>
-                                            <th>Nama</th>
-                                            <th>Tipe</th>
-                                            <th>Nominal</th>
-                                            <th>Bayar</th>
-                                            <th>Petugas</th>
-                                            <th>Keterangan</th>
-                                            <th>Aksi</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody class="text-gray-600 fw-bold"></tbody>
-                                </table>
-                            </div>
-                            <!--end::Table-->
-                        </div>
-                        <!--end::Card body-->
                     </div>
-                    <!--end::Card-->
                 </div>
-                <!--end::Container-->
+                <!--end::Card header-->
+                <!--begin::Card body-->
+                <div class="card-body pt-0">
+                    <!--begin::Table-->
+                    <div class="table-responsive">
+                        <table id="table-saldo" class="table table-striped border rounded gy-5 gs-7">
+                            <thead>
+                                <tr class="fw-bolder fs-6 text-gray-800 px-7">
+                                    <th style="width: 5%">No</th>
+                                    <th>Tanggal</th>
+                                    <th>Nama</th>
+                                    <th>Tipe</th>
+                                    <th>Nominal</th>
+                                    <th>Bayar</th>
+                                    <th>Petugas</th>
+                                    <th>Keterangan</th>
+                                    <th>Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody></tbody>
+                        </table>
+                    </div>
+                    <!--end::Table-->
+                </div>
+                <!--end::Card body-->
             </div>
-            <!--end::Post-->
-
+            <!--end::Card-->
         </div>
+        <!--end::Container-->
     </div>
+    <!--end::Post-->
+
+</div>
+</div>
 </div>
 @endsection
 @push('js')
@@ -304,6 +302,7 @@
         saldoTable = $('#table-saldo').DataTable({
             processing: true,
             serverSide: true,
+            responsive: true,
             ajax: {
                 url: "{{ route('report-transaction.index') }}",
                 data: function(d) {
@@ -346,7 +345,7 @@
                 { data: 'type', name: 'type', orderable: true, searchable: true },
                 { data: 'amount', name: 'amount', orderable: true, searchable: true },
                 { data: 'payment_method', name: 'payment_method', orderable: true, searchable: true },
-                { data: 'admin.name', name: 'admin.name',
+                { data: 'admin', name: 'admin',
                     render: function(data, type, row) {
                         return data ? data : 'N/A';
                     },

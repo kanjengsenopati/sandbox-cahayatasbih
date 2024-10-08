@@ -129,6 +129,9 @@ class ReportTransactionController extends Controller
                             return '-';
                         }
                     })
+                    ->addColumn('admin', function ($data) {
+                        return $data->admin?->name ?? 'N/A';
+                    })
                     ->addColumn('action', function ($data) {
                         return "<div class='d-flex gap-2 flex-nowrap justify-content-center'>" .
                             // add icon print invoice
