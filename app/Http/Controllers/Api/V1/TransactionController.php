@@ -42,17 +42,27 @@ class TransactionController extends Controller
         try {
             $paymentMethodType = PaymentMethod::find($request->payment_method_id)->type;
 
+            // check apakah masih ada transaction yang pending yang bill id nya sama tapi belum dibayar
+            $pendingTransaction = Transaction::where('status', Transaction::STATUS_PENDING_PAYMENT)
+                ->where('type', Transaction::TYPE_BILL)
+                ->whereHas('transactionDetails', function ($query) use ($request) {
+                    $query->whereIn('bill_id', $request->bill_ids);
+                })
+                ->where('payment_method_id', $request->payment_method_id)
+                ->first();
+
+            if ($pendingTransaction) {
+                return $this->failedResponse('Transaksi tagihan masih dalam proses pembayaran', 400);
+            }
+
             $transaction = TransactionService::createTransaction($request, $paymentMethodType, Transaction::TYPE_BILL);
 
             // create transaction details
-            // if ($request->bill_ids) {
             foreach ($request->bill_ids as $billId) {
                 $transaction->transactionDetails()->create([
                     'bill_id' => $billId,
                 ]);
             }
-            // }
-
 
             DB::commit();
 
