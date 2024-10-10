@@ -210,83 +210,167 @@ class TransactionService
 
     public static function createTransaction($request, $paymentMethodType, $type)
     {
-        $appSetting = ApplicationSetting::latest()->first();
-        $expiryTimeInMinutes = $appSetting->getPaymentExpireTimeInMinutesAttribute();
-        $paymentCode = 'CHT-' . now()->format('Ymd') . str_pad(Transaction::whereDate('created_at', now())->count() + 1, 3, '0', STR_PAD_LEFT);
-        $pay_amount = $request->bill_ids != null ? self::getTotalPayAmount($request->bill_ids) : $request->amount;
+        // Menggunakan locking untuk mencegah double transaksi
+        DB::transaction(function () use ($request, $paymentMethodType, $type) {
+            $appSetting = ApplicationSetting::latest()->first();
+            $expiryTimeInMinutes = $appSetting->getPaymentExpireTimeInMinutesAttribute();
 
-        $transactionData = [
-            'pay_amount' => $pay_amount,
-            'payment_code' => $paymentCode,
-            'student_id' => $request->student_id,
-            'expiry_time' => Carbon::now()->addMinutes($expiryTimeInMinutes),
-            'status' => Transaction::STATUS_PENDING,
-            'paid_at' => null,
-            'type' => $type ?? Transaction::TYPE_BILL,
-            'admin_id' => Auth::id() ?? null,
-        ];
+            // Menggunakan lock untuk menghitung jumlah transaksi yang ada
+            $transactionCount = Transaction::whereDate('created_at', now())->lockForUpdate()->count();
+            $paymentCode = 'CHT-' . now()->format('Ymd') . str_pad($transactionCount + 1, 3, '0', STR_PAD_LEFT);
+            $pay_amount = $request->bill_ids != null ? self::getTotalPayAmount($request->bill_ids) : $request->amount;
 
-        $transaction = Transaction::create(array_merge($transactionData, $request->validated()));
-
-        if ($paymentMethodType == PaymentMethod::TYPE_TRANSFER) {
-            // Generate unique payment 3 digits
-            $uniquePayment = str_pad(rand(1, 300), 3, '0', STR_PAD_LEFT);
-            $transaction->update([
-                'status' => Transaction::STATUS_PENDING_PAYMENT,
+            $transactionData = [
+                'pay_amount' => $pay_amount,
+                'payment_code' => $paymentCode,
+                'student_id' => $request->student_id,
+                'expiry_time' => Carbon::now()->addMinutes($expiryTimeInMinutes),
+                'status' => Transaction::STATUS_PENDING,
                 'paid_at' => null,
-                'unique_payment' => $uniquePayment,
-                'pay_amount' => $transaction->pay_amount + $uniquePayment
-            ]);
-            // add app fee to transaction
-            TransactionService::updateAppFee($transaction);
-            // load data all bank from billType
-            if ($transaction->type == Transaction::TYPE_BILL) {
-                $transaction->load('transactionDetails.bill.banks');
-            } else {
-                // Load necessary relationships for TYPE_SALDO and TYPE_SAVING
-                $transaction->load('student.classroom.school.topupBank.bank');
+                'type' => $type ?? Transaction::TYPE_BILL,
+                'admin_id' => Auth::id() ?? null,
+            ];
 
-                if ($transaction->type == Transaction::TYPE_SALDO) {
-                    $transaction['banks'] = $transaction?->student?->classroom->school?->saldoBank
-                        ->pluck('bank');
-                } elseif ($transaction->type == Transaction::TYPE_SAVING) {
-                    $transaction['banks'] = $transaction?->student?->classroom?->school?->savingBank
-                        ->pluck('bank');
+            $transaction = Transaction::create(array_merge($transactionData, $request->validated()));
+
+            // Logika untuk jenis pembayaran
+            if ($paymentMethodType == PaymentMethod::TYPE_TRANSFER) {
+                // Generate unique payment 3 digits
+                $uniquePayment = str_pad(rand(1, 300), 3, '0', STR_PAD_LEFT);
+                $transaction->update([
+                    'status' => Transaction::STATUS_PENDING_PAYMENT,
+                    'paid_at' => null,
+                    'unique_payment' => $uniquePayment,
+                    'pay_amount' => $transaction->pay_amount + $uniquePayment
+                ]);
+                // Tambahkan biaya aplikasi ke transaksi
+                TransactionService::updateAppFee($transaction);
+                // Load data bank dari billType
+                if ($transaction->type == Transaction::TYPE_BILL) {
+                    $transaction->load('transactionDetails.bill.banks');
+                } else {
+                    // Load hubungan yang diperlukan untuk TYPE_SALDO dan TYPE_SAVING
+                    $transaction->load('student.classroom.school.topupBank.bank');
+                    if ($transaction->type == Transaction::TYPE_SALDO) {
+                        $transaction['banks'] = $transaction?->student?->classroom->school?->saldoBank->pluck('bank');
+                    } elseif ($transaction->type == Transaction::TYPE_SAVING) {
+                        $transaction['banks'] = $transaction?->student?->classroom->school?->savingBank->pluck('bank');
+                    }
                 }
+
+                // Kirim notifikasi ke pengguna melalui WhatsApp
+                $messageWhatsapp = SendNotifWaService::sendMessagePendingTransferPayment($transaction);
+                dispatch(new SendToWhatsappNotificationJob($transaction->student?->user?->phone, $messageWhatsapp));
+                // Kirim ke semua superadmin dan bendahara
+                $contacts = Contact::where('type', Contact::TYPE_BENDAHARA)->orWhere('type', Contact::TYPE_SUPERADMIN)->get();
+                foreach ($contacts as $contact) {
+                    dispatch(new SendToWhatsappNotificationJob($contact->phone, $messageWhatsapp));
+                }
+            } elseif ($paymentMethodType == PaymentMethod::TYPE_XENDIT) {
+                TransactionService::createInvoice($transaction);
+            } elseif ($paymentMethodType == PaymentMethod::TYPE_BALANCE) {
+                $payAmount = $transaction->pay_amount;
+                $student = Student::find($request->student_id);
+                if ($student->saldo < $payAmount) {
+                    return response()->json([
+                        'status' => 'error',
+                        'message' => 'Saldo tidak mencukupi'
+                    ], 400);
+                }
+                TransactionService::payWithBalance($student, $payAmount, $transaction, $request);
+            } elseif ($paymentMethodType == PaymentMethod::TYPE_CASH) {
+                $transaction->update(['payment_method_id' => PaymentMethod::where('type', $paymentMethodType)->first()->id]);
+                TransactionService::payWithCash($transaction);
             }
 
-            // send notification to user via whatsapp
-            $messageWhatsapp = SendNotifWaService::sendMessagePendingTransferPayment($transaction);
-            dispatch(new SendToWhatsappNotificationJob($transaction->student?->user?->phone, $messageWhatsapp));
-            // send to all superadmin and bendahara
-            $contacts = Contact::where('type', Contact::TYPE_BENDAHARA)->orWhere('type', Contact::TYPE_SUPERADMIN)->get();
-            foreach ($contacts as $contact) {
-                dispatch(new SendToWhatsappNotificationJob($contact->phone, $messageWhatsapp));
+            if ($transaction->status == Transaction::STATUS_PAID && $paymentMethodType == PaymentMethod::TYPE_XENDIT) {
+                TransactionService::changeStatusToPaid($transaction);
             }
-        } elseif ($paymentMethodType == PaymentMethod::TYPE_XENDIT) {
-            TransactionService::createInvoice($transaction);
-        } elseif ($paymentMethodType == PaymentMethod::TYPE_BALANCE) {
-            $payAmount = $transaction->pay_amount;
-            $student = Student::find($request->student_id);
-            if ($student->saldo < $payAmount) {
-                return response()->json([
-                    'status' => 'error',
-                    'message' => 'Saldo tidak mencukupi'
-                ], 400);
-            }
-            TransactionService::payWithBalance($student, $payAmount, $transaction, $request);
-        } elseif ($paymentMethodType == PaymentMethod::TYPE_CASH) {
-            $transaction->update(['payment_method_id' => PaymentMethod::where('type', $paymentMethodType)
-                ->first()->id]);
-            TransactionService::payWithCash($transaction);
-        }
 
-        if ($transaction->status == Transaction::STATUS_PAID && $paymentMethodType == PaymentMethod::TYPE_XENDIT) {
-            TransactionService::changeStatusToPaid($transaction);
-        }
-
-        return $transaction;
+            return $transaction;
+        });
     }
+
+
+    // public static function createTransaction($request, $paymentMethodType, $type)
+    // {
+    //     $appSetting = ApplicationSetting::latest()->first();
+    //     $expiryTimeInMinutes = $appSetting->getPaymentExpireTimeInMinutesAttribute();
+    //     $paymentCode = 'CHT-' . now()->format('Ymd') . str_pad(Transaction::whereDate('created_at', now())->count() + 1, 3, '0', STR_PAD_LEFT);
+    //     $pay_amount = $request->bill_ids != null ? self::getTotalPayAmount($request->bill_ids) : $request->amount;
+
+    //     $transactionData = [
+    //         'pay_amount' => $pay_amount,
+    //         'payment_code' => $paymentCode,
+    //         'student_id' => $request->student_id,
+    //         'expiry_time' => Carbon::now()->addMinutes($expiryTimeInMinutes),
+    //         'status' => Transaction::STATUS_PENDING,
+    //         'paid_at' => null,
+    //         'type' => $type ?? Transaction::TYPE_BILL,
+    //         'admin_id' => Auth::id() ?? null,
+    //     ];
+
+    //     $transaction = Transaction::create(array_merge($transactionData, $request->validated()));
+
+    //     if ($paymentMethodType == PaymentMethod::TYPE_TRANSFER) {
+    //         // Generate unique payment 3 digits
+    //         $uniquePayment = str_pad(rand(1, 300), 3, '0', STR_PAD_LEFT);
+    //         $transaction->update([
+    //             'status' => Transaction::STATUS_PENDING_PAYMENT,
+    //             'paid_at' => null,
+    //             'unique_payment' => $uniquePayment,
+    //             'pay_amount' => $transaction->pay_amount + $uniquePayment
+    //         ]);
+    //         // add app fee to transaction
+    //         TransactionService::updateAppFee($transaction);
+    //         // load data all bank from billType
+    //         if ($transaction->type == Transaction::TYPE_BILL) {
+    //             $transaction->load('transactionDetails.bill.banks');
+    //         } else {
+    //             // Load necessary relationships for TYPE_SALDO and TYPE_SAVING
+    //             $transaction->load('student.classroom.school.topupBank.bank');
+
+    //             if ($transaction->type == Transaction::TYPE_SALDO) {
+    //                 $transaction['banks'] = $transaction?->student?->classroom->school?->saldoBank
+    //                     ->pluck('bank');
+    //             } elseif ($transaction->type == Transaction::TYPE_SAVING) {
+    //                 $transaction['banks'] = $transaction?->student?->classroom?->school?->savingBank
+    //                     ->pluck('bank');
+    //             }
+    //         }
+
+    //         // send notification to user via whatsapp
+    //         $messageWhatsapp = SendNotifWaService::sendMessagePendingTransferPayment($transaction);
+    //         dispatch(new SendToWhatsappNotificationJob($transaction->student?->user?->phone, $messageWhatsapp));
+    //         // send to all superadmin and bendahara
+    //         $contacts = Contact::where('type', Contact::TYPE_BENDAHARA)->orWhere('type', Contact::TYPE_SUPERADMIN)->get();
+    //         foreach ($contacts as $contact) {
+    //             dispatch(new SendToWhatsappNotificationJob($contact->phone, $messageWhatsapp));
+    //         }
+    //     } elseif ($paymentMethodType == PaymentMethod::TYPE_XENDIT) {
+    //         TransactionService::createInvoice($transaction);
+    //     } elseif ($paymentMethodType == PaymentMethod::TYPE_BALANCE) {
+    //         $payAmount = $transaction->pay_amount;
+    //         $student = Student::find($request->student_id);
+    //         if ($student->saldo < $payAmount) {
+    //             return response()->json([
+    //                 'status' => 'error',
+    //                 'message' => 'Saldo tidak mencukupi'
+    //             ], 400);
+    //         }
+    //         TransactionService::payWithBalance($student, $payAmount, $transaction, $request);
+    //     } elseif ($paymentMethodType == PaymentMethod::TYPE_CASH) {
+    //         $transaction->update(['payment_method_id' => PaymentMethod::where('type', $paymentMethodType)
+    //             ->first()->id]);
+    //         TransactionService::payWithCash($transaction);
+    //     }
+
+    //     if ($transaction->status == Transaction::STATUS_PAID && $paymentMethodType == PaymentMethod::TYPE_XENDIT) {
+    //         TransactionService::changeStatusToPaid($transaction);
+    //     }
+
+    //     return $transaction;
+    // }
 
     public static function getTotalPayAmount($billIds)
     {
