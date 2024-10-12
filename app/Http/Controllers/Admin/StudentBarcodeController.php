@@ -67,7 +67,6 @@ class StudentBarcodeController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-
     public function store(Request $request)
     {
         // Validate the incoming request
@@ -91,8 +90,8 @@ class StudentBarcodeController extends Controller
         foreach ($users as $user) {
             $dns1d = new DNS1D;
 
-            // Generate the barcode in base64 PNG format
-            $barcodeImage = $dns1d->getBarcodePNG($user['barcode'], 'C128');
+            // Generate the barcode in base64 PNG format with higher resolution
+            $barcodeImage = $dns1d->getBarcodePNG($user['barcode'], 'C128', 3, 100); // Width and height scaling
             $imageData = base64_decode($barcodeImage);
 
             // Load the barcode image using Intervention Image
@@ -103,15 +102,18 @@ class StudentBarcodeController extends Controller
             $widthInPixels = 6.5 * 37.8; // 6.5 cm to pixels (now width)
             $heightInPixels = 0.9 * 37.8; // 0.9 cm to pixels (now height)
 
-            // Resize the image
-            $image->resize($widthInPixels, $heightInPixels);
+            // Resize the image without losing quality
+            $image->resize($widthInPixels, $heightInPixels, function ($constraint) {
+                $constraint->aspectRatio();
+                $constraint->upsize(); // Prevent upsizing
+            });
 
             // Create a custom filename for each barcode image
             $fileName = $user['nis'] ? $user['nis'] . '.png' : $user['name'] . '.png';
             $filePath = $tempFolder . $fileName;
 
-            // Save the resized image to the temporary folder
-            $image->save($filePath);
+            // Save the resized image to the temporary folder in PNG format first
+            $image->save($filePath, 100, 'png'); // Save as PNG for better quality
 
             // Add the image path to the array for zipping
             $barcodeImages[] = $filePath;
@@ -148,6 +150,7 @@ class StudentBarcodeController extends Controller
         // Download the zip file and then delete it after sending
         return response()->download($zipFilePath)->deleteFileAfterSend(true);
     }
+
 
     // public function store(Request $request)
     // {
@@ -215,11 +218,16 @@ class StudentBarcodeController extends Controller
 
     //     // Clean up the temporary barcode images
     //     foreach ($barcodeImages as $image) {
-    //         unlink($image);
+    //         if (file_exists($image)) {
+    //             unlink($image);
+    //         }
     //     }
 
     //     // Delete the temp folder after use
-    //     rmdir($tempFolder);
+    //     if (is_dir($tempFolder)) {
+    //         // Remove any remaining files
+    //         Storage::deleteDirectory('temp_barcodes');
+    //     }
 
     //     // Download the zip file and then delete it after sending
     //     return response()->download($zipFilePath)->deleteFileAfterSend(true);

@@ -52,8 +52,12 @@
                 <div class="card-header d-flex align-items-center justify-content-between border-0 pt-6">
                     <!--begin::Card title-->
                     <div class="card-title">
-                        <a href="{{ route('saldo-bank.index') }}" class="btn btn-sm btn-primary">
+                        <a href="{{ route('saldo-bank.index') }}" class="btn btn-sm btn-primary me-2">
                             <i class="fa fa-gear"></i> Setting List Bank
+                        </a>
+                        <a href="#" class="btn btn-sm btn-primary" data-bs-toggle="modal"
+                            data-bs-target="#importSaldoModal">
+                            <i class="fa fa-upload"></i> Import Saldo
                         </a>
                     </div>
                     <div>
@@ -133,6 +137,39 @@
         <!--end::Container-->
     </div>
     <!--end::Post-->
+</div>
+<!-- Modal -->
+<!-- Modal -->
+<div class="modal fade" id="importSaldoModal" tabindex="-1" aria-labelledby="importSaldoModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="importSaldoModalLabel">Import Data Saldo</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form action="{{ route('saldo-history.import') }}" method="POST" enctype="multipart/form-data">
+                    @csrf
+                    <div class="mb-3">
+                        <label for="saldoFile" class="form-label">Pilih File Saldo</label>
+                        <input type="file" class="form-control" id="file" name="file" accept=".xlsx" required>
+                        <div class="form-text">Hanya file XLSX yang sesuai dengan template yang diperbolehkan.</div>
+                    </div>
+                    <div class="mb-3">
+                        <h6>Template Import Data</h6>
+                        <p>Silakan unduh template berikut untuk mengimpor data saldo:</p>
+                        <a href="{{ asset('assets\media\template\import\Template Data Import Saldo.xlsx') }}"
+                            class="btn btn-sm btn-secondary" download>Unduh
+                            Template</a>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
+                        <button type="submit" class="btn btn-primary">Import</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
 </div>
 @endsection
 @push('js')

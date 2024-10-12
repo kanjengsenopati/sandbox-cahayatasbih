@@ -10,17 +10,19 @@ use App\Models\SaldoHistory;
 use Illuminate\Http\Request;
 use App\Models\PaymentMethod;
 use Yajra\DataTables\DataTables;
+use App\Models\TransactionDetail;
 use Illuminate\Support\Facades\DB;
+use App\Imports\SaldoHistoryImport;
 use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\Controller;
 use App\Services\SendNotifWaService;
 use App\Services\TransactionService;
 use Illuminate\Support\Facades\Auth;
+use Maatwebsite\Excel\Facades\Excel;
 use App\Jobs\SendToPushNotificationJob;
 use App\Jobs\SendToWhatsappNotificationJob;
 use App\Http\Requests\Admin\SaldoHistoryRequest;
 use App\Http\Requests\Admin\UpdateStatusTopupSaldoRequest;
-use App\Models\TransactionDetail;
 
 class SaldoHistoryController extends Controller
 {
@@ -281,6 +283,31 @@ class SaldoHistoryController extends Controller
             return $this->postSuccessResponse($result['message'], $result['transaction']);
         } else {
             return $this->failedResponse($result['message']);
+        }
+    }
+
+    public function import(Request $request)
+    {
+        if (!Auth::user()->can('Edit Saldo Santri')) {
+            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
+        }
+
+        $request->validate([
+            'file' => 'required|mimes:xlsx,xls'
+        ]);
+
+        try {
+            DB::transaction(function () use ($request) {
+                Excel::import(new SaldoHistoryImport, $request->file('file'));
+            });
+
+            return redirect()->route('saldo-history.index')->with('success', 'Berhasil import data saldo');
+        } catch (\Exception $e) {
+            dd($e);
+            // Log the error message
+            Log::error('Import Saldo History Failed: ' . $e->getMessage());
+
+            return redirect()->back()->with('error', 'Gagal mengimpor data saldo. Pastikan sesuai template');
         }
     }
 }
