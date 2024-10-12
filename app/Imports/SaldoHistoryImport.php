@@ -40,7 +40,7 @@ class SaldoHistoryImport implements ToCollection, WithHeadingRow
                             'student_id' => $student->id,
                             'type' => SaldoHistory::TYPE_IN,
                             'amount' => $nominal,
-                            'description' => 'Saldo Telah Ditambahkan Oleh ' . Auth::user()->name . ' Sebesar Rp. ' . $nominal,
+                            'description' => 'Saldo Telah Ditambahkan Oleh ' . Auth::user()->name . ' Sebesar Rp. ' . number_format($nominal, 0, ',', '.'),
                             'status' => SaldoHistory::STATUS_SUCCESS,
                             'usage' => SaldoHistory::USAGE_TOPUP,
                         ]);

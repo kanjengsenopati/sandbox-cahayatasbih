@@ -303,7 +303,6 @@ class SaldoHistoryController extends Controller
 
             return redirect()->route('saldo-history.index')->with('success', 'Berhasil import data saldo');
         } catch (\Exception $e) {
-            dd($e);
             // Log the error message
             Log::error('Import Saldo History Failed: ' . $e->getMessage());
 
