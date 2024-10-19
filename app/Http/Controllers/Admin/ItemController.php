@@ -30,6 +30,9 @@ class ItemController extends Controller
                     return $data->is_active == 1 ? '<span class="badge badge-success">Aktif</span>' :
                         '<span class="badge badge-danger">Tidak Aktif</span>';
                 })
+                ->addColumn('category', function ($data) {
+                    return $data?->categoryItem?->name ?? 'N/A';
+                })
                 ->addColumn('action', function ($data) {
                     $actionEdit = route('item.edit', $data->id);
                     $actionDelete = route('item.destroy', $data->id);
@@ -38,7 +41,7 @@ class ItemController extends Controller
                         view('components.action.delete', ['action' => $actionDelete, 'id' => $data->id, 'name' => 'Barang']) .
                         "</div>";
                 })
-                ->rawColumns(['action', 'status', 'summary_price'])
+                ->rawColumns(['action', 'status', 'category'])
                 ->make(true);
         }
         return view('admins.item.index');

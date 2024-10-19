@@ -126,83 +126,102 @@
 @push('js')
 <script>
     $(document).ready(() => {
-            var table = $('#table-item').DataTable({
-                ordering: false,
-                processing: true,
-                serverSide: true,
-                ajax: "{{ route('item.index') }}",
-                language: {
-                    "paginate": {
-                        "next": "<i class='fa fa-angle-right'>",
-                        "previous": "<i class='fa fa-angle-left'>"
-                    },
-                    "loadingRecords": "Loading...",
-                    "processing": "Processing...",
+        var table = $('#table-item').DataTable({
+            ordering: true, // Enable sorting
+            processing: true,
+            serverSide: true,
+            ajax: "{{ route('item.index') }}",
+           
+            language: {
+                "paginate": {
+                    "next": "<i class='fa fa-angle-right'>",
+                    "previous": "<i class='fa fa-angle-left'>"
                 },
-                columns: [{
-                        "data": null,
-                        "sortable": false,
-                        "searchable": false,
-                        render: function(data, type, row, meta) {
-                            return meta.row + meta.settings._iDisplayStart + 1;
-                        }
-                    },
-                    {
-                        data: 'category_item.name',
-                        name: 'category_item.name',
-                        orderable: true,
-                        searchable: true
-                    },
-                    {
-                        data: 'code',
-                        name: 'code',
-                        orderable: true,
-                        searchable: true
-                    },
-                    {
-                        data: 'name',
-                        name: 'name',
-                        orderable: true,
-                        searchable: true
-                    },
-                    {
+                "loadingRecords": "Loading...",
+                "processing": "Processing...",
+            },
+            searchDelay: 500, // Set search delay to 500 ms
+            columns: [{
+                    "data": null,
+                    "sortable": false,
+                    "searchable": false,
+                    render: function(data, type, row, meta) {
+                        return meta.row + meta.settings._iDisplayStart + 1;
+                    }
+                },
+                {
+                    data: 'category',
+                    name: 'category',
+                    orderable: true,
+                    searchable: true,
+                    render: function(data) {
+                        return data ? data : 'N/A'; // Display N/A if null
+                    }
+                },
+                {
+                    data: 'code',
+                    name: 'code',
+                    orderable: true,
+                    searchable: true,
+                    render: function(data) {
+                        return data ? data : 'N/A'; // Display N/A if null
+                    }
+                },
+                {
+                    data: 'name',
+                    name: 'name',
+                    orderable: true,
+                    searchable: true,
+                    render: function(data) {
+                        return data ? data : 'N/A'; // Display N/A if null
+                    }
+                },
+                {
                     data: 'selling_price',
                     name: 'selling_price',
-                    render: function (data, type, row, meta) {
-                    var sellingPriceFormatted = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(data);
-                    var priceFormatted = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(row.price);
-                    var profitFormatted = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(row.profit);
-                    
-                    return `<small><i>Harga Jual: ${sellingPriceFormatted}
-                            <hr>
-                            Harga Beli: ${priceFormatted}
-                            <hr>
-                            Laba: ${profitFormatted}
-                            <hr>
-                        </i></small>`;
+                    render: function(data, type, row) {
+                        var sellingPriceFormatted = data ? new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(data) : 'N/A';
+                        var priceFormatted = row.price ? new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(row.price) : 'N/A';
+                        var profitFormatted = row.profit ? new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(row.profit) : 'N/A';
+                        
+                        return `<small><i>Harga Jual: ${sellingPriceFormatted}
+                                <hr>
+                                Harga Beli: ${priceFormatted}
+                                <hr>
+                                Laba: ${profitFormatted}
+                                <hr>
+                            </i></small>`;
                     }
-                    },
-                    {
-                        data: 'stock',
-                        name: 'stock',
-                        orderable: true,
-                        searchable: true
-                    },
-                    {
-                        data: 'status',
-                        name: 'status',
-                        orderable: true,
-                        searchable: true
-                    },
-                    {
-                        data: 'action',
-                        name: 'action',
-                        orderable: true,
-                        searchable: true
-                    },
-                ]
-            });
-
-        })
+                },
+                {
+                    data: 'stock',
+                    name: 'stock',
+                    orderable: true,
+                    searchable: true,
+                    render: function(data) {
+                        return data !== null ? data : 'N/A'; // Display N/A if null
+                    }
+                },
+                {
+                    data: 'status',
+                    name: 'status',
+                    orderable: true,
+                    searchable: true,
+                    render: function(data) {
+                        return data ? data : 'N/A'; // Display N/A if null
+                    }
+                },
+                {
+                    data: 'action',
+                    name: 'action',
+                    orderable: true,
+                    searchable: true,
+                    render: function(data) {
+                        return data ? data : 'N/A'; // Display N/A if null
+                    }
+                },
+            ]
+        });
+    });
 </script>
 @endpush
