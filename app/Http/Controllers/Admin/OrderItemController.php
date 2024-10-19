@@ -64,7 +64,7 @@ class OrderItemController extends Controller
                 return $data->total_selling;
             })
             ->editColumn('price', function ($data) {
-                return 'Rp. ' . number_format($data->price, 0, ',', '.');
+                return 'Rp. ' . number_format($data->selling_price, 0, ',', '.');
             })
             ->addColumn('action', function ($data) {
                 $actionEdit = route('item.edit', $data->id);
@@ -293,7 +293,7 @@ class OrderItemController extends Controller
                 $cart->admin_id = auth()->user()->id;
                 $cart->item_id = $item->id;
                 $cart->quantity = $request->quantity;
-                $cart->price = $item->price;
+                $cart->price = $item->selling_price;
                 $cart->total = $cart->quantity * $cart->price;
                 $cart->save();
             }

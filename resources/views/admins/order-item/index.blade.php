@@ -428,7 +428,7 @@
                 listProduct.appendChild(tr);
                 
                 var tdPrice = document.createElement('td');
-                tdPrice.textContent = `Rp. ${product.price.toLocaleString('id-ID')}`;
+                tdPrice.textContent = `Rp. ${product.selling_price.toLocaleString('id-ID')}`;
                 tr.appendChild(tdPrice);
                 
                 // Create td for action button
@@ -686,7 +686,7 @@
 
                 // Create td for price
                 var tdPrice = document.createElement('td');
-                tdPrice.textContent = `Rp. ${product.price.toLocaleString('id-ID')}`;
+                tdPrice.textContent = `Rp. ${product.selling_price.toLocaleString('id-ID')}`;
                 tr.appendChild(tdPrice);
 
                 // Create td for action button
@@ -726,7 +726,7 @@
                     <div class="ms-5">
                         <a class="text-gray-800 text-hover-primary fs-5 fw-bolder">${product.name}</a>
                         <div class="fw-bold fs-7">Harga: Rp.
-                            <span data-kt-ecommerce-edit-order-filter="price">${product.price.toLocaleString('id-ID')}</span>
+                            <span data-kt-ecommerce-edit-order-filter="price">${product.selling_price.toLocaleString('id-ID')}</span>
                         </div>
                         <div class="text-muted fs-7">Stok: ${product.stock}</div>
                     </div>
