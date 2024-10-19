@@ -151,8 +151,10 @@ class ItemController extends Controller
     {
         $searchTerm = strtolower($request->search);
 
+        // Limit the number of items returned to 15
         $items = Item::whereIsActive(true)
             ->whereRaw('LOWER(name) LIKE ?', ['%' . $searchTerm . '%'])
+            ->limit(15) // Add this line to limit the results
             ->get();
 
         if ($items->isEmpty()) {

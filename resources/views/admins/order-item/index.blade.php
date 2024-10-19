@@ -371,6 +371,7 @@
 @push('js')
 <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
 <script>
+    var defaultImageUrl = "{{ asset('assets/media/logos/logo.png') }}";
     var number = 1;
     var totalPrice = 0;
 
@@ -413,12 +414,12 @@
 
         if (products && products.length > 0) {
             products.forEach(function (product, index) {
-                var tr = document.createElement('tr');
+               var tr = document.createElement('tr');
                 tr.innerHTML = `
                 <div class="d-flex align-items-center" data-kt-ecommerce-edit-order-filter="product"
                     data-kt-ecommerce-edit-order-id="product_${product.id}">
                     <a class="symbol symbol-50px">
-                        <span class="symbol-label" style="background-image:url(${product.image})"></span>
+                        <span class="symbol-label" style="background-image:url(${product.image || defaultImageUrl})"></span>
                     </a>
                     <div class="ms-5">
                         <a class="text-gray-800 text-hover-primary fs-5 fw-bolder">${product.name}</a>
@@ -426,7 +427,6 @@
                     </div>
                 </div>`;
                 listProduct.appendChild(tr);
-                
                 var tdPrice = document.createElement('td');
                 tdPrice.textContent = `Rp. ${product.selling_price.toLocaleString('id-ID')}`;
                 tr.appendChild(tdPrice);
@@ -532,7 +532,7 @@
         <div class="d-flex align-items-center" data-kt-ecommerce-edit-order-filter="product"
             data-kt-ecommerce-edit-order-id="product_${product?.id || 'unknown'}">
             <a class="symbol symbol-50px">
-                <span class="symbol-label" style="background-image:url(${product?.item?.image || 'default-image.jpg'})"></span>
+                <span class="symbol-label" style="background-image:url(${product?.item?.image || defaultImageUrl})"></span>
             </a>
             <div class="ms-5">
                 <a class="text-gray-800 text-hover-primary fs-5 fw-bolder">${product?.item?.name || 'Unknown Product'}</a>
@@ -542,9 +542,9 @@
     </td>
     <td>
         <div class="d-flex justify-content-center align-items-center">
-           <a class="btn btn-icon btn-light-primary btn-sm me-2 decrement-btn"
-            onclick="updateCartQuantity('${product.id}', Math.max(1, ${product.quantity - 1}))">
-            <i class="fas fa-minus"></i>
+            <a class="btn btn-icon btn-light-primary btn-sm me-2 decrement-btn"
+                onclick="updateCartQuantity('${product.id}', Math.max(1, ${product.quantity - 1}))">
+                <i class="fas fa-minus"></i>
             </a>
             <span class="quantity">${product.quantity}</span>
             <a class="btn btn-icon btn-light-primary btn-sm ms-2 increment-btn"
@@ -557,7 +557,7 @@
     <td>Rp. ${product.price.toLocaleString('id-ID')}</td>
     <td>Rp. ${product.total.toLocaleString('id-ID')}</td>
     <td>
-      <a class="btn btn-icon btn-light-danger btn-sm" onclick="deleteProductFromCart('${product.id}')">
+        <a class="btn btn-icon btn-light-danger btn-sm" onclick="deleteProductFromCart('${product.id}')">
             <span class="svg-icon svg-icon-3"><i class="fas fa-trash"></i></span>
         </a>
     </td>`;
@@ -672,16 +672,16 @@
                 // Create td for product details
                 var tdProduct = document.createElement('td');
                 tdProduct.innerHTML = `
-                    <div class="d-flex align-items-center" data-kt-ecommerce-edit-order-filter="product"
-                        data-kt-ecommerce-edit-order-id="product_${product.id}">
-                        <a class="symbol symbol-50px">
-                            <span class="symbol-label" style="background-image:url(${product.image})"></span>
-                        </a>
-                        <div class="ms-5">
-                            <a class="text-gray-800 text-hover-primary fs-5 fw-bolder">${product.name}</a>
-                            <div class="text-muted fs-7">Stok: ${product.stock}</div>
-                        </div>
-                    </div>`;
+                <div class="d-flex align-items-center" data-kt-ecommerce-edit-order-filter="product"
+                    data-kt-ecommerce-edit-order-id="product_${product.id}">
+                    <a class="symbol symbol-50px">
+                        <span class="symbol-label" style="background-image:url(${product.image || defaultImageUrl})"></span>
+                    </a>
+                    <div class="ms-5">
+                        <a class="text-gray-800 text-hover-primary fs-5 fw-bolder">${product.name}</a>
+                        <div class="text-muted fs-7">Stok: ${product.stock}</div>
+                    </div>
+                </div>`;
                 tr.appendChild(tdProduct);
 
                 // Create td for price
