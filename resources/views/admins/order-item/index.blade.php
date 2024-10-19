@@ -617,10 +617,8 @@
         console.error('totalPrice is not a valid number');
         var formattedTotalPrice = 'Rp. 0'; // Default or error handling value
         }
-        
         var totalPriceElement = document.getElementById('total-price');
         totalPriceElement.value = formattedTotalPrice;
-        console.log(formattedTotalPrice);
 
         var remainingSaldoElement = document.getElementById('remaining-saldo');
         var saldoElement = document.getElementById('saldo');
