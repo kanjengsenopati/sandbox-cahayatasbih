@@ -607,9 +607,20 @@
         axios.get("{{ route('order-item.get-total-price') }}")
         .then(function (response) {
         var totalPrice = response.data.data;
+        // Ensure totalPrice is a number
+        totalPrice = Number(totalPrice); // Convert to number if it's a string
+        
+        // Check if conversion is successful and totalPrice is a valid number
+        if (!isNaN(totalPrice)) {
         var formattedTotalPrice = `Rp. ${totalPrice.toLocaleString('id-ID')}`;
+        } else {
+        console.error('totalPrice is not a valid number');
+        var formattedTotalPrice = 'Rp. 0'; // Default or error handling value
+        }
+        
         var totalPriceElement = document.getElementById('total-price');
         totalPriceElement.value = formattedTotalPrice;
+        console.log(formattedTotalPrice);
 
         var remainingSaldoElement = document.getElementById('remaining-saldo');
         var saldoElement = document.getElementById('saldo');
