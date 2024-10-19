@@ -212,39 +212,86 @@
         
                 // Function to initialize DataTables
                 function initializeTable(start_date = '', end_date = '') {
-                    return $('#table-saldo').DataTable({
-                        processing: true,
-                        serverSide: true,
-                        ajax: {
-                            url: "{{ route('report-saldo.index') }}",
-                            data: function(d) {
-                                // Get filter data from form elements
-                                d.type = 'table';
-                                d.school_id = $('#filter_school_id').val();
-                                d.classroom_id = $('#filter_classroom_id').val();
-                                d.status = $('#filter_status').val();
-                                d.start_date = start_date;
-                                d.end_date = end_date;
-                            }
-                        },
-                        columns: [
-                            {
-                                data: null,
-                                sortable: false,
-                                searchable: false,
-                                render: function(data, type, row, meta) {
-                                    // Render serial number
-                                    return meta.row + meta.settings._iDisplayStart + 1;
-                                }
-                            },
-                            { data: 'date', name: 'date', orderable: true, searchable: true },
-                            { data: 'student.nis', name: 'student.nis', orderable: true, searchable: true },
-                            { data: 'student.name', name: 'student.name', orderable: true, searchable: true },
-                            { data: 'amount', name: 'amount', orderable: true, searchable: true },
-                            { data: 'status', name: 'status', orderable: true, searchable: true },
-                            { data: 'description', name: 'description', orderable: true, searchable: true }
-                        ]
-                    });
+                return $('#table-saldo').DataTable({
+                processing: true,
+                serverSide: true,
+                ajax: {
+                url: "{{ route('report-saldo.index') }}",
+                data: function(d) {
+                d.type = 'table';
+                d.school_id = $('#filter_school_id').val();
+                d.classroom_id = $('#filter_classroom_id').val();
+                d.status = $('#filter_status').val();
+                d.start_date = start_date;
+                d.end_date = end_date;
+                }
+                },
+                columns: [
+                {
+                data: null,
+                sortable: false,
+                searchable: false,
+                render: function(data, type, row, meta) {
+                // Render serial number
+                return meta.row + meta.settings._iDisplayStart + 1;
+                }
+                },
+                {
+                data: 'date',
+                name: 'date',
+                orderable: true,
+                searchable: true,
+                render: function(data) {
+                return data ? data : 'No Date'; // Handle null dates
+                }
+                },
+                {
+                data: 'student.nis',
+                name: 'student.nis',
+                orderable: true,
+                searchable: true,
+                render: function(data) {
+                return data ? data : 'No NIS'; // Handle null NIS
+                }
+                },
+                {
+                data: 'student.name',
+                name: 'student.name',
+                orderable: true,
+                searchable: true,
+                render: function(data) {
+                return data ? data : 'Unknown Student'; // Handle null names
+                }
+                },
+                {
+                data: 'amount',
+                name: 'amount',
+                orderable: true,
+                searchable: true,
+                render: function(data) {
+                return data ? data : 'No Amount'; // Handle null amounts
+                }
+                },
+                {
+                data: 'status',
+                name: 'status',
+                orderable: true,
+                searchable: true,
+                render: function(data) {
+                return data ? data : 'No Status'; // Handle null status
+                }
+                },
+                {
+                data: 'description',
+                name: 'description',
+                orderable: true,
+                searchable: true,
+                render: function(data) {
+                return data ? data : 'No Description'; // Handle null descriptions
+                }
+                }
+                ]
+                });
                 }
 
                 function getTotalSaldo(start_date = '', end_date = '') {
