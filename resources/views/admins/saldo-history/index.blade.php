@@ -179,7 +179,6 @@
                 ordering: false,
                 processing: true,
                 serverSide: true,
-                // ajax: "{{ route('saldo-history.index') }}",
                 ajax: {
                     url: "{{ route('saldo-history.index') }}",
                     data: function(d) {

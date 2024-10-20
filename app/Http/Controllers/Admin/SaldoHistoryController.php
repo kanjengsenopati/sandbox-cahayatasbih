@@ -38,10 +38,13 @@ class SaldoHistoryController extends Controller
             $data = SaldoHistory::with('student')->hasSchool()->latest();
             return DataTables::of($data)
                 ->editColumn('amount', function ($data) {
+                    // Format amount menjadi rupiah dengan pemisah ribuan
+                    $formattedAmount = 'Rp ' . number_format($data->amount, 0, ',', '.');
+
                     if ($data->type === 'IN') {
-                        return '<span class="badge bg-success">+' . $data->amount . '</span>';
+                        return '<span class="badge bg-success">+' . $formattedAmount . '</span>';
                     } else {
-                        return '<span class="badge bg-danger">-' . $data->amount . '</span>';
+                        return '<span class="badge bg-danger">-' . $formattedAmount . '</span>';
                     }
                 })
                 ->editColumn('status', function ($data) {
@@ -144,6 +147,10 @@ class SaldoHistoryController extends Controller
         if (!Auth::user()->can('Create Saldo Santri')) {
             return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
         }
+
+        // Clean the request amount by removing thousand separators and commas
+        $amount = preg_replace('/[.,]/', '', $request->amount);
+        $request->merge(['amount' => $amount]);
 
         if ($request->type === SaldoHistory::TYPE_WITHDRAW) {
             // check if student has enough saldo

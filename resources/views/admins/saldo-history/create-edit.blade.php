@@ -111,7 +111,7 @@
                                     <div class="input-group">
                                         <span class="input-group-text">Rp</span>
                                         <input type="text" name="amount" id="amount"
-                                            class="form-control form-control-solid input-money"
+                                            class="form-control form-control-solid"
                                             placeholder="Masukkan Jumlah Penyesuaian"
                                             value="{{ old('amount') ?? @$stockHistory->amount }}" required />
                                     </div>
@@ -173,21 +173,22 @@
 @endsection
 @push('js')
 <script>
-    document.addEventListener('DOMContentLoaded', function () {
-        const form = document.getElementById('saldo-history');
-        const amountInput = document.getElementById('amount');
-        const submitButton = form.querySelector('[type="submit"]');
+    // ubah amount ke format rupiah di tampilan frontend saat onkeyup
+        $('#amount').on('keyup', function () {
+            var number_string = $(this).val().replace(/[^,\d]/g, '').toString(),
+                split = number_string.split(','),
+                sisa = split[0].length % 3,
+                rupiah = split[0].substr(0, sisa),
+                ribuan = split[0].substr(sisa).match(/\d{3}/gi);
 
-        submitButton.addEventListener('click', function (event) {
-            event.preventDefault();
-            
-            setTimeout(function () {
-                const rawValue = amountInput.value.replace(/[,.]/g, '');
-                amountInput.value = rawValue;
+            if (ribuan) {
+                separator = sisa ? '.' : '';
+                rupiah += separator + ribuan.join('.');
+            }
 
-                form.submit();
-            }, 500);
+            rupiah = split[1] != undefined ? rupiah + ',' + split[1] : rupiah;
+            $(this).val(rupiah);
         });
-    });
+
 </script>
 @endpush
