@@ -26,12 +26,14 @@ $student = \App\Models\Student::find(@$value ?? 0);
             },
             processResults: function (data) {
                 return {
-                results:  $.map(data, function (item) {
-                        var nisText = item.nis ? item.nis + ' - ' : '';
-                        return {
-                            text: nisText + item.name + ' - ' + item.saldo,
-                            id: item.id
-                        }
+                results: $.map(data, function (item) {
+                    var nisText = item.nis ? item.nis + ' - ' : '';
+                    // Format saldo menjadi rupiah dengan pemisah ribuan
+                    var formattedSaldo = 'Rp ' + item.saldo.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+                    return {
+                    text: nisText + item.name + ' - ' + formattedSaldo,
+                    id: item.id
+                }
                     })
                 };
             },
