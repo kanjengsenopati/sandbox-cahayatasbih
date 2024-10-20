@@ -69,8 +69,9 @@ class ReportSaldoController extends Controller
 
     protected function calculateTotals($data)
     {
-        $total_topup = $data->where('type', 'IN')->sum('amount');
-        $total_pengurangan = $data->where('type', 'OUT')->sum('amount');
+        $total_topup = $data->where('type', SaldoHistory::TYPE_IN)->where('status', SaldoHistory::STATUS_SUCCESS)->sum('amount');
+        $data = $this->querySaldoHistory()->get();
+        $total_pengurangan = $data->whereIn('type', [SaldoHistory::TYPE_OUT, SaldoHistory::TYPE_WITHDRAW])->where('status', SaldoHistory::STATUS_SUCCESS)->sum('amount');
         $saldo_tersedia = $this->calculateAvailableBalance();
 
         return response()->json([
@@ -87,15 +88,6 @@ class ReportSaldoController extends Controller
         })
             ->when(request()->filled('classroom_id'), function ($query) {
                 $query->where('classroom_id', request()->classroom_id);
-            })
-            ->when(request()->filled('status'), function ($query) {
-                $query->where('status', request()->status);
-            })
-            ->when(request()->filled('start_date'), function ($query) {
-                $query->whereDate('created_at', '>=', request()->start_date);
-            })
-            ->when(request()->filled('end_date'), function ($query) {
-                $query->whereDate('created_at', '<=', request()->end_date);
             })
             ->sum('saldo');
     }

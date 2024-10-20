@@ -164,221 +164,215 @@
                             </div> --}}
                             <!--end::Card title-->
                         </div>
-                        <!--end::Card header-->
-                        <!--begin::Card body-->
-                        <div class="card-body">
-                            <div class="card-body pt-0">
-                                <!--begin::Table-->
-                                <div class="table-responsive">
-                                    <table id="table-saldo" class="table align-middle table-row-dashed ">
-                                        <thead>
-                                            <tr class="text-start text-gray-400 fw-bolder fs-7 text-uppercase gs-0">
-                                                <th style="width: 5%">No</th>
-                                                <th>Tanggal</th>
-                                                <th>NIS</th>
-                                                <th>Nama Siswa</th>
-                                                <th>Jumlah</th>
-                                                <th>Status</th>
-                                                <th>Keterangan</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody class="text-gray-600 fw-bold"></tbody>
-                                    </table>
-                                </div>
-                                <!--end::Table-->
-                            </div>
-                        </div>
-                        <!--end::Card body-->
                     </div>
-                    <!--end::Card-->
                 </div>
-                <!--end::Container-->
+                <!--end::Card header-->
+                <!--begin::Card body-->
+                <div class="card-body">
+                    <div class="card-body pt-0">
+                        <!--begin::Table-->
+                        <div class="table-responsive">
+                            <table id="table-saldo" class="table align-middle table-row-dashed ">
+                                <thead>
+                                    <tr class="text-start text-gray-400 fw-bolder fs-7 text-uppercase gs-0">
+                                        <th style="width: 5%">No</th>
+                                        <th>Tanggal</th>
+                                        <th>NIS</th>
+                                        <th>Nama Siswa</th>
+                                        <th>Jumlah</th>
+                                        <th>Status</th>
+                                        <th>Keterangan</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="text-gray-600 fw-bold"></tbody>
+                            </table>
+                        </div>
+                        <!--end::Table-->
+                    </div>
+                </div>
+                <!--end::Card body-->
             </div>
-            <!--end::Post-->
-
+            <!--end::Card-->
         </div>
+        <!--end::Container-->
     </div>
+    <!--end::Post-->
+
+</div>
+</div>
 </div>
 @endsection
 @push('js')
-<script type="text/javascript" src="https://cdn.jsdelivr.net/momentjs/latenet/momentjs/latest/moment.min.js">
-</script>
+<script type="text/javascript" src="https://cdn.jsdelivr.net/momentjs/latenet/momentjs/latest/moment.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/locale/id.min.js"></script>
 <script>
     $(document).ready(function() {
-                // Initialize DataTables
-                let table = initializeTable();
-                getTotalSaldo();
-        
-                // Function to initialize DataTables
-                function initializeTable(start_date = '', end_date = '') {
-                return $('#table-saldo').DataTable({
+        let table = initializeTable();
+        getTotalSaldo();
+
+        function initializeTable(start_date = '', end_date = '') {
+            return $('#table-saldo').DataTable({
                 processing: true,
                 serverSide: true,
                 ajax: {
-                url: "{{ route('report-saldo.index') }}",
-                data: function(d) {
-                d.type = 'table';
-                d.school_id = $('#filter_school_id').val();
-                d.classroom_id = $('#filter_classroom_id').val();
-                d.status = $('#filter_status').val();
-                d.start_date = start_date;
-                d.end_date = end_date;
-                }
+                    url: "{{ route('report-saldo.index') }}",
+                    data: function(d) {
+                        d.type = 'table';
+                        d.school_id = $('#filter_school_id').val();
+                        d.classroom_id = $('#filter_classroom_id').val();
+                        d.status = $('#filter_status').val();
+                        d.start_date = start_date;
+                        d.end_date = end_date;
+                    }
                 },
                 columns: [
-                {
-                data: null,
-                sortable: false,
-                searchable: false,
-                render: function(data, type, row, meta) {
-                // Render serial number
-                return meta.row + meta.settings._iDisplayStart + 1;
-                }
-                },
-                {
-                data: 'date',
-                name: 'date',
-                orderable: true,
-                searchable: true,
-                render: function(data) {
-                return data ? data : 'No Date'; // Handle null dates
-                }
-                },
-                {
-                data: 'student.nis',
-                name: 'student.nis',
-                orderable: true,
-                searchable: true,
-                render: function(data) {
-                return data ? data : 'No NIS'; // Handle null NIS
-                }
-                },
-                {
-                data: 'student.name',
-                name: 'student.name',
-                orderable: true,
-                searchable: true,
-                render: function(data) {
-                return data ? data : 'Unknown Student'; // Handle null names
-                }
-                },
-                {
-                data: 'amount',
-                name: 'amount',
-                orderable: true,
-                searchable: true,
-                render: function(data) {
-                return data ? data : 'No Amount'; // Handle null amounts
-                }
-                },
-                {
-                data: 'status',
-                name: 'status',
-                orderable: true,
-                searchable: true,
-                render: function(data) {
-                return data ? data : 'No Status'; // Handle null status
-                }
-                },
-                {
-                data: 'description',
-                name: 'description',
-                orderable: true,
-                searchable: true,
-                render: function(data) {
-                return data ? data : 'No Description'; // Handle null descriptions
-                }
-                }
-                ]
-                });
-                }
-
-                function getTotalSaldo(start_date = '', end_date = '') {
-                    $.ajax({
-                        url: "{{ route('report-saldo.index') }}",
-                        type: "GET",
-                        dataType: 'json',
-                        data: {
-                            type: 'total',
-                            school_id: $('#filter_school_id').val(),
-                            classroom_id: $('#filter_classroom_id').val(),
-                            status: $('#filter_status').val(),
-                            start_date : start_date,
-                            end_date : end_date
-                        },
-                        success: function(response) {
-                            $('#total-topup').text('Rp. ' + response.total_topup);
-                            $('#total-pengurangan').text('Rp. ' + response.total_pengurangan);
-                            $('#saldo-tersedia').text('Rp. ' + response.saldo_tersedia);
+                    {
+                        data: null,
+                        sortable: false,
+                        searchable: false,
+                        render: function(data, type, row, meta) {
+                            return meta.row + meta.settings._iDisplayStart + 1;
                         }
-                    });
-                }
-        
-                // Function to reload DataTables
-                function reloadTable(start_date = '', end_date = '') {
-                    table.destroy();
-                    table = initializeTable(start_date, end_date);
-                    getTotalSaldo(start_date, end_date);
-                }
-        
-                // Fetch classroom data on school_id change
-                $('#filter_school_id').on('change', function() {
-                    var school_id = $(this).val();
-                    $.ajax({
-                        url: "{{ route('report-bill.get-classroom') }}",
-                        type: "GET",
-                        data: { school_id: school_id },
-                        success: function(response) {
-                            $('#filter_classroom_id').empty();
-                            if (response.data.length > 0) {
-                                $('#filter_classroom_id').append('<option value="">Semua Kelas</option>');
-                                $.each(response.data, function(key, value) {
-                                    $('#filter_classroom_id').append('<option value="' + value.id + '">' + value.name + '</option>');
-                                });
-                            } else {
-                                $('#filter_classroom_id').append('<option value="">Tidak ada kelas</option>');
-                            }
+                    },
+                    {
+                        data: 'date',
+                        name: 'date',
+                        orderable: true,
+                        searchable: true,
+                        render: function(data) {
+                            return data ? data : 'No Date';
                         }
-                    });
-                });
-        
-                // Event handlers to reload table
-                $('#btn_tampilkan').click(function() {
-                    reloadTable();
-                });
-        
-                $('#filter_form').submit(function(event) {
-                    event.preventDefault();
-                    reloadTable();
-                });
-        
-                $('#filter_school_id, #filter_classroom_id, #filter_status').on('change', function() {
-                    reloadTable();
-                });
-        
-                // Handle date range picker changes
-                $('#dateRange').daterangepicker({
-                    startDate: moment().subtract(365, 'days'),
-                    endDate: moment(),
-                    ranges: {
-                        'Hari Ini': [moment(), moment()],
-                        'Kemarin': [moment().subtract(1, 'days'), moment().subtract(1, 'days')],
-                        'Bulan Ini': [moment().startOf('month'), moment().endOf('month')],
-                        'Bulan Kemarin': [moment().subtract(1, 'month').startOf('month'), moment().subtract(1, 'month').endOf('month')],
-                        '7 Hari Terakhir': [moment().subtract(6, 'days'), moment()],
-                        '30 Hari Terakhir': [moment().subtract(29, 'days'), moment()]
+                    },
+                    {
+                        data: 'student.nis',
+                        name: 'student.nis',
+                        orderable: true,
+                        searchable: true,
+                        render: function(data) {
+                            return data ? data : 'No NIS';
+                        }
+                    },
+                    {
+                        data: 'student.name',
+                        name: 'student.name',
+                        orderable: true,
+                        searchable: true,
+                        render: function(data) {
+                            return data ? data : 'Unknown Student';
+                        }
+                    },
+                    {
+                        data: 'amount',
+                        name: 'amount',
+                        orderable: true,
+                        searchable: true,
+                        render: function(data) {
+                            return data ? data : 'No Amount';
+                        }
+                    },
+                    {
+                        data: 'status',
+                        name: 'status',
+                        orderable: true,
+                        searchable: true,
+                        render: function(data) {
+                            return data ? data : 'No Status';
+                        }
+                    },
+                    {
+                        data: 'description',
+                        name: 'description',
+                        orderable: true,
+                        searchable: true,
+                        render: function(data) {
+                            return data ? data : 'No Description';
+                        }
                     }
-                }, function(start, end) {
-                    $('#dateRange span').html(start.format('D MMMM YYYY') + ' - ' + end.format('D MMMM YYYY'));
-                    reloadTable(start.format('YYYY-MM-DD'), end.format('YYYY-MM-DD'));
-                });
-        
-                // Initial callback for date range picker
-                var start = moment().subtract(365, 'days');
-                var end = moment();
-                $('#dateRange span').html(start.format('D MMMM YYYY') + ' - ' + end.format('D MMMM YYYY'));
-                reloadTable(start.format('YYYY-MM-DD'), end.format('YYYY-MM-DD'));
+                ]
             });
+        }
+
+        function getTotalSaldo(start_date = '', end_date = '') {
+            $.ajax({
+                url: "{{ route('report-saldo.index') }}",
+                type: "GET",
+                dataType: 'json',
+                data: {
+                    type: 'total',
+                    school_id: $('#filter_school_id').val(),
+                    classroom_id: $('#filter_classroom_id').val(),
+                    status: $('#filter_status').val(),
+                    start_date: start_date,
+                    end_date: end_date
+                },
+                success: function(response) {
+                    $('#total-topup').text('Rp. ' + response.total_topup);
+                    $('#total-pengurangan').text('Rp. ' + response.total_pengurangan);
+                    $('#saldo-tersedia').text('Rp. ' + response.saldo_tersedia);
+                }
+            });
+        }
+
+        function reloadTable(start_date = '', end_date = '') {
+            table.destroy();
+            table = initializeTable(start_date, end_date);
+            getTotalSaldo(start_date, end_date);
+        }
+
+        $('#filter_school_id').on('change', function() {
+            var school_id = $(this).val();
+            $.ajax({
+                url: "{{ route('report-bill.get-classroom') }}",
+                type: "GET",
+                data: { school_id: school_id },
+                success: function(response) {
+                    $('#filter_classroom_id').empty();
+                    if (response.data.length > 0) {
+                        $('#filter_classroom_id').append('<option value="">Semua Kelas</option>');
+                        $.each(response.data, function(key, value) {
+                            $('#filter_classroom_id').append('<option value="' + value.id + '">' + value.name + '</option>');
+                        });
+                    } else {
+                        $('#filter_classroom_id').append('<option value="">Tidak ada kelas</option>');
+                    }
+                }
+            });
+        });
+
+        $('#btn_tampilkan').click(function() {
+            reloadTable();
+        });
+
+        $('#filter_form').submit(function(event) {
+            event.preventDefault();
+            reloadTable();
+        });
+
+        $('#filter_school_id, #filter_classroom_id, #filter_status').on('change', function() {
+            reloadTable();
+        });
+
+        $('#dateRange').daterangepicker({
+            startDate: moment().startOf('month'),
+            endDate: moment().endOf('month'),
+            ranges: {
+                'Hari Ini': [moment(), moment()],
+                'Kemarin': [moment().subtract(1, 'days'), moment().subtract(1, 'days')],
+                '7 Hari Terakhir': [moment().subtract(6, 'days'), moment()],
+                'Bulan Ini': [moment().startOf('month'), moment().endOf('month')],
+                'Bulan Kemarin': [moment().subtract(1, 'month').startOf('month'), moment().subtract(1, 'month').endOf('month')],
+                '30 Hari Terakhir': [moment().subtract(29, 'days'), moment()],
+                'Tahun Ini': [moment().startOf('year'), moment().endOf('year')],
+            }
+        }, function(start, end) {
+            $('#dateRange span').html(start.format('D MMMM YYYY') + ' - ' + end.format('D MMMM YYYY'));
+            reloadTable(start.format('YYYY-MM-DD'), end.format('YYYY-MM-DD'));
+        });
+
+        var start = moment().startOf('month');
+        var end = moment().endOf('month');
+        $('#dateRange span').html(start.format('D MMMM YYYY') + ' - ' + end.format('D MMMM YYYY'));
+        reloadTable(start.format('YYYY-MM-DD'), end.format('YYYY-MM-DD'));
+    });
 </script>
 @endpush
