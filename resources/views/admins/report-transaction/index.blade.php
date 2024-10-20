@@ -164,7 +164,7 @@
                                     <!--begin::Body-->
                                     <div class="card-body">
                                         <!--begin::Label-->
-                                        <div class="fw-bolder fs-5 text-gray-800">Total Saldo</div>
+                                        <div class="fw-bolder fs-5 text-gray-800">Penerimaan Saldo</div>
                                         <!--end::Label-->
                                         <!--begin::Stats-->
                                         <div class="text-danger fs-3 fw-bolder" id="total-saldo">Rp. 0</div>
@@ -176,7 +176,7 @@
                                     <!--begin::Body-->
                                     <div class="card-body">
                                         <!--begin::Label-->
-                                        <div class="fw-bolder fs-5 text-gray-800">Total Tabungan</div>
+                                        <div class="fw-bolder fs-5 text-gray-800">Penerimaan Tabungan</div>
                                         <!--end::Label-->
                                         <!--begin::Stats-->
                                         <div class="text-success fs-3 fw-bolder" id="total-saving">Rp. 0</div>
@@ -219,10 +219,8 @@
         <!--end::Container-->
     </div>
     <!--end::Post-->
+</div>
 
-</div>
-</div>
-</div>
 @endsection
 @push('js')
 <script>

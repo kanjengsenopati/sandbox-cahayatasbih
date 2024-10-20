@@ -70,7 +70,7 @@ class ReportSaldoController extends Controller
     protected function calculateTotals($data)
     {
         $total_topup = $data->where('type', SaldoHistory::TYPE_IN)->where('status', SaldoHistory::STATUS_SUCCESS)->sum('amount');
-        $data = $this->querySaldoHistory()->get();
+        $data = $this->querySaldoHistory();
         $total_pengurangan = $data->whereIn('type', [SaldoHistory::TYPE_OUT, SaldoHistory::TYPE_WITHDRAW])->where('status', SaldoHistory::STATUS_SUCCESS)->sum('amount');
         $saldo_tersedia = $this->calculateAvailableBalance();
 

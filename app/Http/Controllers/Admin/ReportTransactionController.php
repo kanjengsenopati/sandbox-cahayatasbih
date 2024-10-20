@@ -133,10 +133,15 @@ class ReportTransactionController extends Controller
                         return $data->admin?->name ?? 'N/A';
                     })
                     ->addColumn('action', function ($data) {
+                        $actionDelete = route('report-transaction.destroy', $data->id);
                         return "<div class='d-flex gap-2 flex-nowrap justify-content-center'>" .
                             // add icon print invoice
                             "<a href='" . route('transaction.invoice', $data->id) . "' target='_blank' class='btn btn-sm btn-primary' title='Cetak Invoice'><i class='fas fa-print'></i></a>" .
+                            // add icon delete
+                            view('components.action.delete', ['action' => $actionDelete, 'id' => $data->id, 'name' => 'Laporan Transaksi']) .
                             "</div>";
+                        // add delete action
+
                     })
                     ->rawColumns(['date', 'type', 'payment_method', 'item', 'action'])
                     ->make(true);
@@ -201,7 +206,14 @@ class ReportTransactionController extends Controller
      */
     public function destroy(string $id)
     {
-        //
+        if (!Auth::user()->can('Delete Laporan Transaksi')) {
+            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
+        }
+        $transaction = Transaction::with('transactionDetails')->findOrFail($id);
+        // delete transaction details
+        $transaction->transactionDetails()->delete();
+        $transaction->delete();
+        return redirect()->back()->with('success', 'Berhasil menghapus transaksi');
     }
 
     public function export()
