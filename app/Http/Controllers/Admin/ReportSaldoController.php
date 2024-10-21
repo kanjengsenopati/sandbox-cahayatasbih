@@ -136,11 +136,13 @@ class ReportSaldoController extends Controller
         return Excel::download(new SaldoStudentExport(), "Laporan Data Saldo Siswa." . $request->type);
     }
 
-    public function destroy(SaldoHistory $saldoHistory)
+    public function destroy($id)
     {
+
         if (!Auth::user()->can('Delete Laporan Saldo Santri')) {
             return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
         }
+        $saldoHistory = SaldoHistory::findOrFail($id);
 
         $saldoHistory->delete();
         return redirect()->back()->with('success', 'Data Riwayat Saldo Santri berhasil dihapus');
