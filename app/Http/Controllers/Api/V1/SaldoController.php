@@ -90,9 +90,9 @@ class SaldoController extends Controller
                 ->where('type', SaldoHistory::TYPE_IN)
                 ->sum('amount');
 
-            if ($saldoPending > 0) {
-                return $this->failedResponse("Maaf Anda masih memiliki saldo yang belum dibayar sebesar Rp. " . number_format($saldoPending, 0, ',', '.'));
-            }
+            // if ($saldoPending > 0) {
+            //     return $this->failedResponse("Maaf Anda masih memiliki saldo yang belum dibayar sebesar Rp. " . number_format($saldoPending, 0, ',', '.'));
+            // }
 
             $saldoHistory = $this->createSaldoHistory($request);
 
