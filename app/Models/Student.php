@@ -76,17 +76,17 @@ class Student extends Model
 
     public function saldoHistories()
     {
-        return $this->hasMany(SaldoHistory::class)->withTrashed();
+        return $this->hasMany(SaldoHistory::class);
     }
 
     public function pointOfSaleTransactions()
     {
-        return $this->hasMany(PointOfSaleTransaction::class)->withTrashed();
+        return $this->hasMany(PointOfSaleTransaction::class);
     }
 
     public function savingHistories()
     {
-        return $this->hasMany(SavingHistory::class)->withTrashed();
+        return $this->hasMany(SavingHistory::class);
     }
 
     public function scopeHasSchoolPlace($query)
