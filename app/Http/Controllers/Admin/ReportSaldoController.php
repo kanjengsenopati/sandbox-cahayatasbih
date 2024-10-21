@@ -106,7 +106,14 @@ class ReportSaldoController extends Controller
             ->addColumn('date', function ($data) {
                 return $data->created_at->translatedFormat('d F Y' . ' <br>' . 'H:i:s');
             })
-            ->rawColumns(['amount', 'status', 'date'])
+            ->addColumn('action', function ($data) {
+                $actionDelete = route('report-saldo.destroy', $data->id);
+                return "<div class='d-flex gap-2 flex-nowrap justify-content-center'>" .
+                    // add icon delete
+                    view('components.action.delete', ['action' => $actionDelete, 'id' => $data->id, 'name' => 'Laporan Saldo Santri']) .
+                    "</div>";
+            })
+            ->rawColumns(['amount', 'status', 'date', 'action'])
             ->make(true);
     }
 
@@ -127,5 +134,15 @@ class ReportSaldoController extends Controller
     public function export(Request $request)
     {
         return Excel::download(new SaldoStudentExport(), "Laporan Data Saldo Siswa." . $request->type);
+    }
+
+    public function destroy(SaldoHistory $saldoHistory)
+    {
+        if (!Auth::user()->can('Delete Laporan Saldo Santri')) {
+            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
+        }
+
+        $saldoHistory->delete();
+        return redirect()->back()->with('success', 'Data Riwayat Saldo Santri berhasil dihapus');
     }
 }

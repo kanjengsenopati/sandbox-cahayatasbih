@@ -234,6 +234,7 @@ Route::group(['middleware' => ['auth']], function () {
     Route::get('report-student-counseling-score/export', [ReportStudentCounselingScoreController::class, 'export'])
         ->name('report-student-counseling-score.export');
     Route::get('report-app-fee', [ReportAppFeeController::class, 'index'])->name('report-app-fee.index');
+    Route::delete('report-saldo/delete/{id}', [ReportSaldoController::class, 'destroy'])->name('report-saldo.destroy');
     Route::get('report-saldo', [ReportSaldoController::class, 'index'])->name('report-saldo.index');
     Route::get('report-saldo/export', [ReportSaldoController::class, 'export'])->name('report-saldo.export');
     Route::get('report-study-grade', [ReportStudyGradeController::class, 'index'])->name('report-study-grade.index');

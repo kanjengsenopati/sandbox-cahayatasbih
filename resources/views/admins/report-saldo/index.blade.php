@@ -182,6 +182,9 @@
                                         <th>Jumlah</th>
                                         <th>Status</th>
                                         <th>Keterangan</th>
+                                        @if (Auth::user()->can('Delete Laporan Saldo Santri'))
+                                        <th style="width: 10%">Aksi</th>
+                                        @endif
                                     </tr>
                                 </thead>
                                 <tbody class="text-gray-600 fw-bold"></tbody>
@@ -287,7 +290,15 @@
                         render: function(data) {
                             return data ? data : 'No Description';
                         }
+                    },
+                    @if (Auth::user()->can('Delete Laporan Saldo Santri'))
+                    {
+                    data: 'action',
+                    name: 'action',
+                    orderable: false,
+                    searchable: false,
                     }
+                    @endif
                 ]
             });
         }
