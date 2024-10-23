@@ -112,6 +112,7 @@
                                     <thead>
                                         <tr class="text-start text-gray-400 fw-bolder fs-7 text-uppercase gs-0">
                                             <th style="width: 5%">No</th>
+                                            <th>Tanggal</th>
                                             <th>Siswa</th>
                                             <th>Jumlah Pembayaran</th>
                                             <th>Kode Unik</th>
@@ -202,33 +203,53 @@
                         }
                     },
                     {
+                        data: 'date',
+                        name: 'date',
+                        orderable: true,
+                        searchable: true,
+                        render: function(data, type, row) {
+                        return data ? data : 'N/A'; // Null handler
+                        }
+                    },
+                    {
                         data: 'student.name',
                         name: 'student.name',
                         orderable: true,
-                        searchable: true
+                        searchable: true,
+                        render: function(data, type, row) {
+                        return data ? data : 'N/A'; // Null handler
+                        }
                     },
                     {
                         data: 'amount',
                         name: 'amount',
                         orderable: true,
-                        searchable: true
+                        searchable: true,
+                        render: function(data, type, row) {
+                        return data ? data : 'N/A'; // Null handler
+                        }
                     },
                     {
                         data: 'status',
                         name: 'status',
                         orderable: true,
-                        searchable: true
+                        searchable: true,
+                        render: function(data, type, row) {
+                         return data ? data : 'N/A'; // Null handler
+                        }
                     },
                     {
                         data: 'description',
                         name: 'description',
                         orderable: true,
-                        searchable: true
+                        searchable: true,
+                        render: function(data, type, row) {
+                         return data ? data : 'N/A'; // Null handler
+                        }
                     },
                 ]
             });
-
-        })
+    })
 </script>
 <script>
     $(document).ready(() => {
@@ -259,7 +280,7 @@
                             return meta.row + meta.settings._iDisplayStart + 1;
                         }
                     },
-                     {
+                    {
                         data: 'student.name',
                         name: 'student.name',
                         orderable: false,

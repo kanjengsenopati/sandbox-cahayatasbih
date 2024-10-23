@@ -37,6 +37,9 @@ class SaldoHistoryController extends Controller
         if (request()->ajax() && request()->type === 'saldo') {
             $data = SaldoHistory::with('student')->hasSchool()->latest();
             return DataTables::of($data)
+                ->addColumn('date', function ($data) {
+                    return $data->created_at->translatedFormat('d F Y' . ' <br>' . 'H:i:s');
+                })
                 ->editColumn('amount', function ($data) {
                     // Format amount menjadi rupiah dengan pemisah ribuan
                     $formattedAmount = 'Rp ' . number_format($data->amount, 0, ',', '.');
@@ -56,7 +59,7 @@ class SaldoHistoryController extends Controller
                         return '<span class="badge bg-danger">' . $data->status . '</span>';
                     }
                 })
-                ->rawColumns(['amount', 'status'])
+                ->rawColumns(['amount', 'status', 'date'])
                 ->make(true);
         }
         if (request()->ajax() && request()->type === 'topup') {
