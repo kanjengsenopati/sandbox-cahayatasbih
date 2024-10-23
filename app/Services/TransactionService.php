@@ -456,7 +456,12 @@ class TransactionService
         DB::beginTransaction();
         try {
             $transaction->update($data);
-            if ($transaction->status == Transaction::STATUS_PAID) {
+            if (request()->status == Transaction::STATUS_PAID) {
+                // change transaction status to paid
+                $transaction->update([
+                    'status' => Transaction::STATUS_PAID,
+                    'paid_at' => Carbon::now(),
+                ]);
                 if ($transaction->activeProof !== null) {
                     $transaction->activeProof->update([
                         'status' => TransactionProof::STATUS_CONFIRMED
@@ -499,7 +504,10 @@ class TransactionService
                 self::dispatchNotifications($transaction);
             }
             if ($transaction->activeProof) {
-                if ($transaction->status == Transaction::STATUS_REJECTED) {
+                if (request()->status == Transaction::STATUS_REJECTED) {
+                    $transaction->update([
+                        'status' => Transaction::STATUS_PENDING_PAYMENT,
+                    ]);
                     $transaction->activeProof->update([
                         'status' => TransactionProof::STATUS_REJECTED,
                         'note' => $data['note'],

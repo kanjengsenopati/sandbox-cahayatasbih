@@ -109,7 +109,6 @@
                     </div>
                 </div>
                 <div class="modal-footer">
-                    {{-- add button donload template in left --}}
                     <div class="me-auto">
                         <a href="assets\media\template\import\Template Import Data Wali Santri.xlsx"
                             class="btn btn-light-primary"><i class="fa fa-download"></i> Template</a>
@@ -126,99 +125,113 @@
 @push('js')
 <script>
     $(document).ready(() => {
-    var table = $('#table-user').DataTable({
-    ordering: false,
-    processing: true,
-    serverSide: true,
-    ajax: "{{ route('user.index') }}",
-    language: {
-    "paginate": {
-    "next": "<i class='fa fa-angle-right'>",
-        "previous": "<i class='fa fa-angle-left'>"
-            },
-            "loadingRecords": "Loading...",
-            "processing": "Processing...",
-            },
-            columns: [{
-            "data": null,
-            "sortable": false,
-            "searchable": false,
-            render: function(data, type, row, meta) {
-            return meta.row + meta.settings._iDisplayStart + 1;
-            }
-            },
-             {
-            data: 'avatar',
-            name: 'avatar',
-            render: function(data, type, row) {
-            if (data == null) {
-            return `<span class="symbol-label fs-2x fw-bold text-primary bg-light-primary">${row.name.charAt(0)}</span>`;
-            } else {
-            return `<img src="${data}" alt="image" class="h-50px w-50px rounded-circle" />`;
-            }
-            }
-            },
-            {
-            data: 'name',
-            name: 'name',
-            responsivePriority: -1,
-            },
-            {
-            data: 'email',
-            name: 'email'
-            },
-            {
-            data: 'phone',
-            name: 'phone'
-            },
-            {
-            data: 'gender',
-            name: 'gender',
-            render: function(data, type, row) {
-            let badgeClass = '';
-            let label = '';
-            
-            if (data == 'L') {
-            badgeClass = 'badge-light-primary';
-            label = 'Laki-laki';
-            } else if (data == 'P') {
-            badgeClass = 'badge-light-danger';
-            label = 'Perempuan';
-            } else {
-            badgeClass = 'badge-light-warning';
-            label = 'Tidak diketahui';
-            }
-            
-            return `<span class="badge ${badgeClass}">${label}</span>`;
-            },
-            },
-            {
-            data: 'is_active',
-            name: 'is_active',
-            responsivePriority: -1,
-            render: function(data, type, row) {
-            let badgeClass = '';
-            let label = '';
-            if (data == true) {
-            badgeClass = 'badge-light-success';
-            label = 'Aktif';
-            } else {
-            badgeClass = 'badge-light-danger';
-            label = 'Nonaktif';
-            }
-            return `<span class="badge ${badgeClass}">${label}</span>`;
-            },
-            },
-            {
-            data: 'action',
-            name: 'action',
-            orderable: true,
+        var table = $('#table-user').DataTable({
+            ordering: false,
+            processing: true,
+            serverSide: true,
             searchable: true,
-            responsivePriority: -1,
+            ajax: "{{ route('user.index') }}",
+            language: {
+                "paginate": {
+                    "next": "<i class='fa fa-angle-right'>",
+                    "previous": "<i class='fa fa-angle-left'>"
+                },
+                "loadingRecords": "Loading...",
+                "processing": "Processing...",
             },
+            columns: [
+                {
+                    "data": null,
+                    "sortable": false,
+                    "searchable": false,
+                    render: function(data, type, row, meta) {
+                        return meta.row + meta.settings._iDisplayStart + 1;
+                    }
+                },
+                {
+                    data: 'avatar',
+                    name: 'avatar',
+                    render: function(data, type, row) {
+                        if (data == null) {
+                            return `<span class="symbol-label fs-2x fw-bold text-primary bg-light-primary">${row.name ? row.name.charAt(0) : 'N/A'}</span>`;
+                        } else {
+                            return `<img src="${data}" alt="image" class="h-50px w-50px rounded-circle" />`;
+                        }
+                    }
+                },
+                {
+                    data: 'name',
+                    name: 'name',
+                    responsivePriority: -1,
+                    render: function(data, type, row) {
+                        return data ? data : 'N/A'; // Null handler
+                    }
+                },
+                {
+                    data: 'email',
+                    name: 'email',
+                    render: function(data, type, row) {
+                        return data ? data : 'N/A'; // Null handler
+                    }
+                },
+                {
+                    data: 'phone',
+                    name: 'phone',
+                    render: function(data, type, row) {
+                        return data ? data : 'N/A'; // Null handler
+                    }
+                },
+                {
+                    data: 'gender',
+                    name: 'gender',
+                    render: function(data, type, row) {
+                        let badgeClass = '';
+                        let label = '';
+                        
+                        if (data == 'L') {
+                            badgeClass = 'badge-light-primary';
+                            label = 'Laki-laki';
+                        } else if (data == 'P') {
+                            badgeClass = 'badge-light-danger';
+                            label = 'Perempuan';
+                        } else {
+                            badgeClass = 'badge-light-warning';
+                            label = 'Tidak diketahui';
+                        }
+                        
+                        return `<span class="badge ${badgeClass}">${label}</span>`;
+                    },
+                },
+                {
+                    data: 'is_active',
+                    name: 'is_active',
+                    searchable: false,
+                    responsivePriority: -1,
+                    render: function(data, type, row) {
+                        let badgeClass = '';
+                        let label = '';
+                        if (data == true) {
+                            badgeClass = 'badge-light-success';
+                            label = 'Aktif';
+                        } else {
+                            badgeClass = 'badge-light-danger';
+                            label = 'Nonaktif';
+                        }
+                        return `<span class="badge ${badgeClass}">${label}</span>`;
+                    },
+                },
+                {
+                    data: 'action',
+                    name: 'action',
+                    orderable: false,
+                    searchable: false,
+                    responsivePriority: -1,
+                    render: function(data, type, row) {
+                        return data ? data : 'No actions available'; // Null handler
+                    }
+                },
             ]
-            });
-                
-                })
+        });
+    })
 </script>
 @endpush
