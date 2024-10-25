@@ -24,6 +24,7 @@ use App\Services\SendNotifWaService;
 use App\Services\TransactionService;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Cache;
 use App\Jobs\SendToPushNotificationJob;
 use App\Jobs\SendToWhatsappNotificationJob;
 use App\Http\Requests\Admin\BillPaymentRequest;
@@ -186,8 +187,20 @@ class BillController extends Controller
     /**
      * Store a newly created resource in storage.
      */
+
     public function store(BillPaymentRequest $request)
     {
+        $studentId = $request->student_id; // Assuming student_id is part of the request
+        $cacheKey = "student_transaction_{$studentId}";
+
+        // Check if there's an active transaction in the cache
+        if (Cache::has($cacheKey)) {
+            return redirect()->back()->with('error', 'Transaksi sedang diproses, silakan coba lagi nanti');
+        }
+
+        // Set a cache entry to lock the transaction
+        Cache::put($cacheKey, true, now()->addMinutes(5)); // Lock for 5 minutes
+
         DB::beginTransaction();
 
         try {
@@ -198,13 +211,41 @@ class BillController extends Controller
                 TransactionService::dispatchNotifications($transaction);
             }
             DB::commit();
+
+            // Clear the cache entry
+            Cache::forget($cacheKey);
+
             return redirect()->back()->with('success', "Transaksi pembayaran berhasil");
         } catch (\Throwable $th) {
             DB::rollBack();
             Log::error($th);
+
+            // Ensure the cache entry is cleared in case of an error
+            Cache::forget($cacheKey);
+
             return redirect()->back()->with('error', "Transaksi pembayaran gagal");
         }
     }
+
+    // public function store(BillPaymentRequest $request)
+    // {
+    //     DB::beginTransaction();
+
+    //     try {
+    //         $paymentMethodType = $request->payment_method;
+
+    //         $transaction = TransactionService::createTransaction($request, $paymentMethodType, Transaction::TYPE_BILL);
+    //         if ($transaction->status == Transaction::STATUS_PAID && $transaction?->student?->user?->phone) {
+    //             TransactionService::dispatchNotifications($transaction);
+    //         }
+    //         DB::commit();
+    //         return redirect()->back()->with('success', "Transaksi pembayaran berhasil");
+    //     } catch (\Throwable $th) {
+    //         DB::rollBack();
+    //         Log::error($th);
+    //         return redirect()->back()->with('error', "Transaksi pembayaran gagal");
+    //     }
+    // }
 
     /**
      * Display the specified resource.
