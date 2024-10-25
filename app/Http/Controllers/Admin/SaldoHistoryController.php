@@ -19,6 +19,7 @@ use App\Services\SendNotifWaService;
 use App\Services\TransactionService;
 use Illuminate\Support\Facades\Auth;
 use Maatwebsite\Excel\Facades\Excel;
+use Illuminate\Support\Facades\Cache;
 use App\Jobs\SendToPushNotificationJob;
 use App\Jobs\SendToWhatsappNotificationJob;
 use App\Http\Requests\Admin\SaldoHistoryRequest;
@@ -155,13 +156,17 @@ class SaldoHistoryController extends Controller
         $amount = preg_replace('/[.,]/', '', $request->amount);
         $request->merge(['amount' => $amount]);
 
-        if ($request->type === SaldoHistory::TYPE_WITHDRAW) {
-            // check if student has enough saldo
-            $student = Student::findOrFail($request->student_id);
-            if ($student->saldo < $request->amount) {
-                return redirect()->route('saldo-history.index')->with('error', 'Saldo Santri tidak mencukupi');
-            }
+        $studentId = $request->student_id;
+        $cacheKey = "student_transaction_{$studentId}";
+
+        // Check if there's an active transaction in the cache
+        if (Cache::has($cacheKey)) {
+            return redirect()->route('saldo-history.index')->with('error', 'Transaksi sedang diproses, silakan coba lagi nanti');
         }
+
+        // Set a cache entry to lock the transaction
+        Cache::put($cacheKey, true, now()->addMinutes(5)); // Lock for 5 minutes
+
         DB::beginTransaction();
 
         try {
@@ -171,10 +176,18 @@ class SaldoHistoryController extends Controller
             $transaction = TransactionService::createTransaction($request, $paymentMethodType, Transaction::TYPE_SALDO);
 
             if ($request->type === SaldoHistory::TYPE_WITHDRAW) {
-                // reduce saldo
+                // Check if student has enough saldo
+                $student = Student::findOrFail($studentId);
+                if ($student->saldo < $request->amount) {
+                    Cache::forget($cacheKey); // Clear cache if transaction cannot proceed
+                    return redirect()->route('saldo-history.index')->with('error', 'Saldo Santri tidak mencukupi');
+                }
+
+                // Reduce saldo
                 $transaction->student->saldo -= $request->amount;
                 $transaction->student->save();
-                // make saldo history
+
+                // Make saldo history
                 $saldoHistory = SaldoHistory::create([
                     'student_id' => $transaction->student_id,
                     'amount' => $request->amount,
@@ -189,10 +202,11 @@ class SaldoHistoryController extends Controller
                     'saldo_history_id' => $saldoHistory->id
                 ]);
             } else {
-                // add saldo
+                // Add saldo
                 $transaction->student->saldo += $request->amount;
                 $transaction->student->save();
-                // make saldo history
+
+                // Make saldo history
                 $saldoHistory = SaldoHistory::create([
                     'student_id' => $transaction->student_id,
                     'amount' => $request->amount,
@@ -207,18 +221,101 @@ class SaldoHistoryController extends Controller
                     'saldo_history_id' => $saldoHistory->id
                 ]);
             }
+
             DB::commit();
 
-            $this->sendNotifications($transaction->student, $transaction->transactionDetails()?->first()?->saldoHistory);
+            // Clear the cache entry
+            Cache::forget($cacheKey);
 
+            $this->sendNotifications($transaction->student, $transaction->transactionDetails()?->first()?->saldoHistory);
 
             return redirect()->route('saldo-history.index')->with('success', 'Berhasil Topup Saldo');
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error($e);
+
+            // Ensure the cache entry is cleared in case of an error
+            Cache::forget($cacheKey);
+
             return redirect()->route('saldo-history.index')->with('error', 'Gagal Topup Saldo');
         }
     }
+
+
+    // public function store(SaldoHistoryRequest $request)
+    // {
+    //     if (!Auth::user()->can('Create Saldo Santri')) {
+    //         return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
+    //     }
+
+    //     // Clean the request amount by removing thousand separators and commas
+    //     $amount = preg_replace('/[.,]/', '', $request->amount);
+    //     $request->merge(['amount' => $amount]);
+
+    //     if ($request->type === SaldoHistory::TYPE_WITHDRAW) {
+    //         // check if student has enough saldo
+    //         $student = Student::findOrFail($request->student_id);
+    //         if ($student->saldo < $request->amount) {
+    //             return redirect()->route('saldo-history.index')->with('error', 'Saldo Santri tidak mencukupi');
+    //         }
+    //     }
+    //     DB::beginTransaction();
+
+    //     try {
+    //         $paymentMethod = PaymentMethod::where('type', PaymentMethod::TYPE_CASH)->first();
+    //         $paymentMethodType = $paymentMethod->type;
+
+    //         $transaction = TransactionService::createTransaction($request, $paymentMethodType, Transaction::TYPE_SALDO);
+
+    //         if ($request->type === SaldoHistory::TYPE_WITHDRAW) {
+    //             // reduce saldo
+    //             $transaction->student->saldo -= $request->amount;
+    //             $transaction->student->save();
+    //             // make saldo history
+    //             $saldoHistory = SaldoHistory::create([
+    //                 'student_id' => $transaction->student_id,
+    //                 'amount' => $request->amount,
+    //                 'type' => SaldoHistory::TYPE_WITHDRAW,
+    //                 'description' => $request->description ?? 'Penarikan Saldo Rp.' . number_format($request->amount, 0, ',', '.') . ' oleh ' . Auth::user()->name,
+    //                 'status' => SaldoHistory::STATUS_SUCCESS,
+    //                 'admin_id' => Auth::id()
+    //             ]);
+
+    //             $transactionDetail = TransactionDetail::create([
+    //                 'transaction_id' => $transaction->id,
+    //                 'saldo_history_id' => $saldoHistory->id
+    //             ]);
+    //         } else {
+    //             // add saldo
+    //             $transaction->student->saldo += $request->amount;
+    //             $transaction->student->save();
+    //             // make saldo history
+    //             $saldoHistory = SaldoHistory::create([
+    //                 'student_id' => $transaction->student_id,
+    //                 'amount' => $request->amount,
+    //                 'type' => SaldoHistory::TYPE_IN,
+    //                 'description' => $request->description ?? 'Topup Saldo Rp.' . number_format($request->amount, 0, ',', '.') . ' oleh ' . Auth::user()->name,
+    //                 'status' => SaldoHistory::STATUS_SUCCESS,
+    //                 'admin_id' => Auth::id()
+    //             ]);
+
+    //             $transactionDetail = TransactionDetail::create([
+    //                 'transaction_id' => $transaction->id,
+    //                 'saldo_history_id' => $saldoHistory->id
+    //             ]);
+    //         }
+    //         DB::commit();
+
+    //         $this->sendNotifications($transaction->student, $transaction->transactionDetails()?->first()?->saldoHistory);
+
+
+    //         return redirect()->route('saldo-history.index')->with('success', 'Berhasil Topup Saldo');
+    //     } catch (\Exception $e) {
+    //         DB::rollBack();
+    //         Log::error($e);
+    //         return redirect()->route('saldo-history.index')->with('error', 'Gagal Topup Saldo');
+    //     }
+    // }
 
     private function sendNotifications($student, $saldoHistory)
     {
