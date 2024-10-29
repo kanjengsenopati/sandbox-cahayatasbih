@@ -22,8 +22,8 @@ class SaldoController extends Controller
     public function index()
     {
         $studentId = request()->student_id;
-        $startDate = request()->start_date;
-        $endDate = request()->end_date;
+        $startDate = request()->start_date ?? Carbon::now()->startOfYear()->toDateString();
+        $endDate = request()->end_date ?? Carbon::now()->endOfYear()->toDateString();
 
         $student = Student::with('classroom', 'school')->findOrFail($studentId);
 
@@ -43,7 +43,7 @@ class SaldoController extends Controller
 
         return $this->postSuccessResponse("Berhasil mengambil data", [
             'student' => $student,
-            'total_spending' => $totalSpending,
+            'total_spending' => (string) $totalSpending,
             'saldo_history' => $saldoHistory
         ]);
     }
