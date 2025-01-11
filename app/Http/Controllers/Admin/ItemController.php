@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use Carbon\Carbon;
 use App\Models\Item;
 use App\Imports\ItemImport;
 use Illuminate\Http\Request;
@@ -11,6 +12,7 @@ use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Auth;
 use Maatwebsite\Excel\Facades\Excel;
+use Illuminate\Support\Facades\Cache;
 use App\Http\Requests\Admin\ItemRequest;
 
 class ItemController extends Controller
@@ -104,9 +106,11 @@ class ItemController extends Controller
         $data = $request->validated();
         if ($request->hasFile('image')) {
             file_exists($item->image) ? unlink($item->image) : null;
-            $data['image'] = 'storage/' . $request->file('image')->store('images/item', 'public');
+            $data['image'] = 'storage/' . $request->file('image')->store('images/item', ['disk' => 'public']);
         }
         $item->update($data);
+        // Invalidate the cache for the top 10 items
+        Cache::forget('top_10_items_last_month');
         return redirect()->route('item.index')->with('success', 'Barang berhasil diubah');
     }
 
@@ -120,15 +124,32 @@ class ItemController extends Controller
         }
         file_exists($item->image) ? unlink($item->image) : null;
         $item->delete();
+
+        // Invalidate the cache for the top 10 items
+        Cache::forget('top_10_items_last_month');
         return redirect()->route('item.index')->with('success', 'Barang berhasil dihapus');
     }
 
     public function searchItem(Request $request)
     {
         if (!$request->search) {
-            // show 10 product terlaris
-            $item = Item::whereIsActive(true)->withCount('pointOfSaleTransactionDetails')->orderBy('point_of_sale_transaction_details_count', 'desc')->limit(10)->get();
-            return $this->postSuccessResponse("Berhasil mengambil data", $item);
+            $cacheKey = 'top_10_items_last_month';
+
+            $items = Cache::remember($cacheKey, now()->addDays(30), function () {
+                return Item::where('stock', '>', 0)
+                    ->where('is_active', true)
+                    ->withCount(['pointOfSaleTransactionDetails' => function ($query) {
+                        $query->whereBetween('created_at', [
+                            Carbon::now()->subMonth()->startOfDay(),
+                            Carbon::now()->endOfDay()
+                        ]);
+                    }])
+                    ->orderByDesc('point_of_sale_transaction_details_count')
+                    ->limit(10)
+                    ->get();
+            });
+
+            return $this->postSuccessResponse("Berhasil mengambil data", $items);
         } else {
             if ($request->type == 'CODE') {
                 return $this->searchItemCode($request);

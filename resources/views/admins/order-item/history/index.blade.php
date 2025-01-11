@@ -70,6 +70,7 @@
                                     <thead>
                                         <tr class="text-start text-gray-400 fw-bolder fs-7 text-uppercase gs-0">
                                             <th style="width: 5%">No</th>
+                                            <th>Tanggal</th>
                                             <th class="min-w-100px">Kode Pembayaran</th>
                                             <th class="min-w-100px">Santri</th>
                                             <th class="min-w-100px">Kelas</th>
@@ -91,6 +92,7 @@
                                     <thead>
                                         <tr class="text-start text-gray-400 fw-bolder fs-7 text-uppercase gs-0">
                                             <th style="width: 5%">No</th>
+                                            <th>Tanggal</th>
                                             <th class="min-w-100px">Kode Pembayaran</th>
                                             <th class="min-w-100px">Total</th>
                                             <th class="min-w-100px">Profit</th>
@@ -263,6 +265,10 @@
                     }
                     },
                     {
+                        data: 'date',
+                        name: 'date'
+                    },
+                    {
                     data: 'payment_code',
                     name: 'payment_code'
                     },
@@ -315,6 +321,10 @@
             render: function(data, type, row, meta) {
             return meta.row + meta.settings._iDisplayStart + 1;
             }
+            },
+            {
+            data: 'date',
+            name: 'date'
             },
             {
             data: 'payment_code',

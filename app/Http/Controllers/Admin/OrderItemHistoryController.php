@@ -25,6 +25,10 @@ class OrderItemHistoryController extends Controller
         if (request()->ajax() && request()->query('type') === 'santri') {
             $data = PointOfSaleTransaction::with('pointOfSaleTransactionDetails', 'student.classroom', 'admins')->where('type', PointOfSaleTransaction::TYPE_SANTRI)->latest();
             return DataTables::of($data)
+                ->addColumn('date', function ($data) {
+                    Carbon::setLocale('id'); // Set locale to Indonesian
+                    return Carbon::parse($data->created_at)->translatedFormat('d F Y H:i:s');
+                })
                 ->editColumn('pay_amount', function ($data) {
                     return 'Rp ' . number_format($data->pay_amount, 0, ',', '.');
                 })
@@ -43,6 +47,10 @@ class OrderItemHistoryController extends Controller
         if (request()->ajax() && request()->query('type') === 'umum') {
             $data = PointOfSaleTransaction::with('pointOfSaleTransactionDetails', 'admins')->where('type', PointOfSaleTransaction::TYPE_UMUM)->latest();
             return DataTables::of($data)
+                ->addColumn('date', function ($data) {
+                    Carbon::setLocale('id'); // Set locale to Indonesian
+                    return Carbon::parse($data->created_at)->translatedFormat('d F Y H:i:s');
+                })
                 ->editColumn('pay_amount', function ($data) {
                     return 'Rp ' . number_format($data->pay_amount, 0, ',', '.');
                 })

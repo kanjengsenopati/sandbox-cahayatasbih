@@ -23,9 +23,9 @@ class Item extends Model
         'is_active',
     ];
 
-    protected $appends = [
-        'total_selling'
-    ];
+    // protected $appends = [
+    //     'total_selling'
+    // ];
 
     public function getTotalSellingAttribute()
     {
