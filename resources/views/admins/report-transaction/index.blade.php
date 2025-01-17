@@ -345,7 +345,7 @@
                 { data: 'payment_method', name: 'payment_method', orderable: true, searchable: true },
                 { data: 'admin', name: 'admin',
                     render: function(data, type, row) {
-                        return data ? data : 'N/A';
+                        return data ? data : 'CT-PAY';
                     },
                  orderable: true, searchable: true },
                 { data: 'item', name: 'item', orderable: true, searchable: true },

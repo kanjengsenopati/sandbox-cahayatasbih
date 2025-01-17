@@ -130,7 +130,7 @@ class ReportTransactionController extends Controller
                         }
                     })
                     ->addColumn('admin', function ($data) {
-                        return $data->admin?->name ?? 'N/A';
+                        return $data->admin?->name ?? '<span class="badge badge-primary">CT-PAY</span>';
                     })
                     ->addColumn('action', function ($data) {
                         $actionDelete = route('report-transaction.destroy', $data->id);
@@ -141,9 +141,8 @@ class ReportTransactionController extends Controller
                             view('components.action.delete', ['action' => $actionDelete, 'id' => $data->id, 'name' => 'Laporan Transaksi']) .
                             "</div>";
                         // add delete action
-
                     })
-                    ->rawColumns(['date', 'type', 'payment_method', 'item', 'action'])
+                    ->rawColumns(['date', 'type', 'payment_method', 'item', 'action', 'admin'])
                     ->make(true);
             }
         }
