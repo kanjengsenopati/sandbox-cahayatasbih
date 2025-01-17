@@ -68,6 +68,7 @@ use App\Http\Controllers\Admin\SubMenuNavigationController;
 use App\Http\Controllers\Admin\ApplicationSettingController;
 use App\Http\Controllers\Admin\StudentAchievementController;
 use App\Http\Controllers\Admin\InformationCategoryController;
+use App\Http\Controllers\Admin\ReportPosController;
 use App\Http\Controllers\User\WaliSettingLimitSaldoController;
 use App\Http\Controllers\Admin\StudentCounselingScoreController;
 use App\Http\Controllers\Admin\ReportStudentCounselingScoreController;
@@ -166,6 +167,7 @@ Route::group(['middleware' => ['auth']], function () {
         ->name('order-item.delete-all-cart');
     Route::resource('order-item', OrderItemController::class);
     Route::resource('order-item-history', OrderItemHistoryController::class);
+    Route::get('report-pos', [ReportPosController::class, 'index'])->name('report-pos.index');
 
     Route::resource('bill-item', BillItemController::class);
     Route::resource('bill-type', BillTypeController::class);

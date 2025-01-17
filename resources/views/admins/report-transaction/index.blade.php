@@ -147,40 +147,55 @@
                                 </div>
                             </form>
 
-                            <div class="d-flex gap-2 mt-4">
+                            <div class="d-flex flex-wrap gap-2 mt-4">
                                 <div class="card bg-light-primary bg-active-primary flex-grow-1">
                                     <!--begin::Body-->
-                                    <div class="card-body">
-                                        <!--begin::Label-->
-                                        <div class="fw-bolder fs-5 text-gray-800">Total Penerimaan Pembayaran</div>
-                                        <!--end::Label-->
-                                        <!--begin::Stats-->
-                                        <div class="text-primary fs-3 fw-bolder" id="total-bill">Rp. 0</div>
-                                        <!--end::Stats-->
+                                    <div class="card-body d-flex align-items-center">
+                                        <div class="me-3">
+                                            <i class="fas fa-money-bill-wave text-primary fs-2"></i>
+                                        </div>
+                                        <div>
+                                            <!--begin::Label-->
+                                            <div class="fw-bolder fs-5 text-gray-800">Total Penerimaan Pembayaran</div>
+                                            <!--end::Label-->
+                                            <!--begin::Stats-->
+                                            <div class="text-primary fs-3 fw-bolder" id="total-bill">Rp. 0</div>
+                                            <!--end::Stats-->
+                                        </div>
                                     </div>
                                     <!--end::Body-->
                                 </div>
                                 <div class="card bg-light-danger bg-active-danger flex-grow-1">
                                     <!--begin::Body-->
-                                    <div class="card-body">
-                                        <!--begin::Label-->
-                                        <div class="fw-bolder fs-5 text-gray-800">Penerimaan Saldo</div>
-                                        <!--end::Label-->
-                                        <!--begin::Stats-->
-                                        <div class="text-danger fs-3 fw-bolder" id="total-saldo">Rp. 0</div>
-                                        <!--end::Stats-->
+                                    <div class="card-body d-flex align-items-center">
+                                        <div class="me-3">
+                                            <i class="fas fa-wallet text-danger fs-2"></i>
+                                        </div>
+                                        <div>
+                                            <!--begin::Label-->
+                                            <div class="fw-bolder fs-5 text-gray-800">Penerimaan Saldo</div>
+                                            <!--end::Label-->
+                                            <!--begin::Stats-->
+                                            <div class="text-danger fs-3 fw-bolder" id="total-saldo">Rp. 0</div>
+                                            <!--end::Stats-->
+                                        </div>
                                     </div>
                                     <!--end::Body-->
                                 </div>
                                 <div class="card bg-light-success bg-active-success flex-grow-1">
                                     <!--begin::Body-->
-                                    <div class="card-body">
-                                        <!--begin::Label-->
-                                        <div class="fw-bolder fs-5 text-gray-800">Penerimaan Tabungan</div>
-                                        <!--end::Label-->
-                                        <!--begin::Stats-->
-                                        <div class="text-success fs-3 fw-bolder" id="total-saving">Rp. 0</div>
-                                        <!--end::Stats-->
+                                    <div class="card-body d-flex align-items-center">
+                                        <div class="me-3">
+                                            <i class="fas fa-piggy-bank text-success fs-2"></i>
+                                        </div>
+                                        <div>
+                                            <!--begin::Label-->
+                                            <div class="fw-bolder fs-5 text-gray-800">Penerimaan Tabungan</div>
+                                            <!--end::Label-->
+                                            <!--begin::Stats-->
+                                            <div class="text-success fs-3 fw-bolder" id="total-saving">Rp. 0</div>
+                                            <!--end::Stats-->
+                                        </div>
                                     </div>
                                     <!--end::Body-->
                                 </div>
@@ -198,6 +213,7 @@
                                 <tr class="fw-bolder fs-6 text-gray-800 px-7">
                                     <th style="width: 5%">No</th>
                                     <th>Tanggal</th>
+                                    <th>Kode Transaksi</th>
                                     <th>Nama</th>
                                     <th>Tipe</th>
                                     <th>Nominal</th>
@@ -324,6 +340,7 @@
                     }
                 },
                 { data: 'date', name: 'date', orderable: true, searchable: true },
+                { data: 'payment_code', name: 'payment_code', orderable: true, searchable: true },
                  {
                     data: 'student',
                     name: 'student.name',
@@ -349,7 +366,9 @@
                     },
                  orderable: true, searchable: true },
                 { data: 'item', name: 'item', orderable: true, searchable: true },
-                { data: 'action', name: 'action', orderable: false, searchable: false },
+                { data: 'action', name: 'action', orderable: false, searchable: false,
+                responsivePriority: -1
+                }
             ]
         });
     }
