@@ -165,6 +165,8 @@ Route::group(['middleware' => ['auth']], function () {
     Route::post('item/search-item', [ItemController::class, 'searchItem'])->name('item.search-item');
     Route::post('order-item/delete-all-cart', [OrderItemController::class, 'deleteAllCart'])
         ->name('order-item.delete-all-cart');
+    Route::get('order-item/get-daily-transaction', [OrderItemController::class, 'getDailyTransaction'])
+        ->name('order-item.get-daily-transaction');
     Route::resource('order-item', OrderItemController::class);
     Route::resource('order-item-history', OrderItemHistoryController::class);
     Route::get('report-pos', [ReportPosController::class, 'index'])->name('report-pos.index');

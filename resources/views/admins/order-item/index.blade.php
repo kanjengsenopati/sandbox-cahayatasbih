@@ -217,6 +217,125 @@
                         <!--end::Card header-->
                         <!--begin::Card body-->
                         <div class="card-body pt-0">
+                            <div class="d-flex justify-content-between align-items-center mb-4">
+                                <!-- Kiri: Input dan Button Cari Barang -->
+                                <div class="d-flex align-items-center gap-3">
+                                    <!-- Input untuk Kode Barang -->
+                                    <div class="position-relative">
+                                        <span class="svg-icon svg-icon-1 position-absolute ms-4">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24"
+                                                viewBox="0 0 24 24" fill="none">
+                                                <rect opacity="0.5" x="17.0365" y="15.1223" width="8.15546" height="2"
+                                                    rx="1" transform="rotate(45 17.0365 15.1223)" fill="currentColor" />
+                                                <path
+                                                    d="M11 19C6.55556 19 3 15.4444 3 11C3 6.55556 6.55556 3 11 3C15.4444 3 19 6.55556 19 11C19 15.4444 15.4444 19 11 19ZM11 5C7.53333 5 5 7.53333 5 11C5 14.4667 7.53333 17 11 17C14.4667 17 17 14.4667 17 11C17 7.53333 14.4667 5 11 5Z"
+                                                    fill="currentColor" />
+                                            </svg>
+                                        </span>
+                                        <input type="text" id="search-product"
+                                            class="form-control form-control-solid ps-14"
+                                            placeholder="Masukkan Kode Barang" />
+                                    </div>
+                                    <!-- Button Cari Barang -->
+                                    <button type="button" class="btn btn-primary" data-bs-toggle="modal"
+                                        data-bs-target="#modalListProduct">
+                                        <i class="fas fa-search"></i>
+                                        Cari Barang
+                                    </button>
+                                </div>
+
+                                <!-- Kanan: Informasi Kasir -->
+                                <div class="d-flex align-items-center">
+                                    <!-- Avatar Kasir -->
+                                    <img src="{{ Auth::user()->avatar ?? 'default-avatar.png' }}" alt="Avatar Kasir"
+                                        class="rounded-circle me-3" width="60" height="60">
+                                    <!-- Detail Kasir -->
+                                    <div class="text-end">
+                                        <h5 class="fw-bold mb-1">{{ Auth::user()->name ?? 'Nama Kasir' }}</h5>
+                                        <button type="button" class="btn btn-info btn-sm" data-bs-toggle="modal"
+                                            data-bs-target="#modalLihatTransaksi" onclick="fetchTransactionHistory()">
+                                            Lihat Transaksi
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Separator -->
+                            <div class="separator"></div>
+
+                            <!-- Tabel Produk -->
+                            <div class="table-responsive mt-4">
+                                <table class="table">
+                                    <thead>
+                                        <tr class="fw-bold fs-6 text-gray-800">
+                                            <th class="min-w-150px">Nama Barang</th>
+                                            <th class="min-w-100px">Jumlah</th>
+                                            <th class="min-w-100px">Harga</th>
+                                            <th class="min-w-100px">Total Harga</th>
+                                            <th class="min-w-100px">Aksi</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="list-product">
+                                        <div id="product-loader"
+                                            style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(255, 255, 255, 0.5); display: none;">
+                                            <div class="loader text-center"
+                                                style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);">
+                                                <div class="spinner-border text-primary" role="status">
+                                                    <span class="visually-hidden">Loading...</span>
+                                                </div>
+                                                <div>Mohon tunggu ...</div>
+                                            </div>
+                                        </div>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- Modal untuk Lihat Transaksi -->
+                        <div class="modal fade" id="modalLihatTransaksi" tabindex="-1"
+                            aria-labelledby="modalLihatTransaksiLabel" aria-hidden="true">
+                            <div class="modal-dialog modal-lg">
+                                <div class="modal-content">
+                                    <div class="modal-header">
+                                        <h5 class="modal-title" id="modalLihatTransaksiLabel">Transaksi Hari Ini
+                                        </h5>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal"
+                                            aria-label="Close"></button>
+                                    </div>
+                                    <div class="modal-body">
+                                        <!-- Loader -->
+                                        <div id="transaction-loader" style="display: none; text-align: center;">
+                                            <div class="spinner-border text-primary" role="status">
+                                                <span class="visually-hidden">Loading...</span>
+                                            </div>
+                                            <p>Memuat data transaksi...</p>
+                                        </div>
+                                        <!-- Tabel Riwayat Transaksi -->
+                                        <div class="table-responsive">
+                                            <table class="table" id="transaction-table" style="display: none;">
+                                                <thead>
+                                                    <tr class="fw-bold fs-6 text-gray-800">
+                                                        <th>No</th>
+                                                        <th class="min-w-100px">Tanggal</th>
+                                                        <th class="min-w-100px">Pembeli</th>
+                                                        <th class="min-w-100px">Item</th>
+                                                        <th class="min-w-100px">Jumlah</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody id="transaction-table-body">
+                                                    <!-- Data akan diisi secara dinamis -->
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                    <div class="modal-footer">
+                                        <button type="button" class="btn btn-secondary"
+                                            data-bs-dismiss="modal">Tutup</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {{-- <div class="card-body pt-0">
                             <div class="d-flex flex-column gap-10">
                                 <!--begin::Input group-->
                                 <div>
@@ -294,7 +413,7 @@
                                 </div>
                                 <!--end::Table-->
                             </div>
-                        </div>
+                        </div> --}}
                         <!--end::Card header-->
                     </div>
                     <!--end::Order details-->
@@ -831,5 +950,60 @@
         // set #payment_method value to 'Umum'
         document.getElementById('payment_method').value = 'Tunai';
     });
+</script>
+<script>
+    // Fungsi untuk mengambil data riwayat transaksi
+    async function fetchTransactionHistory() {
+        const loader = document.getElementById('transaction-loader');
+        const table = document.getElementById('transaction-table');
+        const tableBody = document.getElementById('transaction-table-body');
+
+        // Tampilkan loader
+        loader.style.display = 'block';
+        table.style.display = 'none';
+        tableBody.innerHTML = ''; // Kosongkan tabel
+
+        try {
+        // Panggil API untuk mendapatkan data transaksi
+        const response = await axios.get("{{ route('order-item.get-daily-transaction') }}");
+        const data = response.data.data;
+        
+        // Log data ke konsol untuk debug
+        console.log(data);
+        
+        // Periksa jika ada data
+        if (data.length > 0) {
+        data.forEach(item => {
+        // Ambil nama, kuantitas, dan harga dari item terkait
+        const itemsDetail = item.items.map(i => `${i.name} (${i.qty} x Rp ${i.price})`).join(', ');
+        
+        // Isi tabel dengan data
+        const row = `
+        <tr>
+            <td>${item.no}</td>
+            <td>${item.paid_at}</td>
+            <td>${item.student}</td>
+            <td>${itemsDetail}</td>
+            <td>${item.pay_amount}</td>
+        </tr>
+        `;
+        tableBody.innerHTML += row;
+        });
+        } else {
+        tableBody.innerHTML = `<tr>
+            <td colspan="5" class="text-center">Tidak ada data transaksi</td>
+        </tr>`;
+        }
+
+            // Tampilkan tabel
+            loader.style.display = 'none';
+            table.style.display = 'table';
+        } catch (error) {
+            console.error('Gagal memuat data transaksi:', error);
+            tableBody.innerHTML = `<tr><td colspan="5" class="text-center text-danger">Gagal memuat data transaksi</td></tr>`;
+            loader.style.display = 'none';
+            table.style.display = 'table';
+        }
+    }
 </script>
 @endpush

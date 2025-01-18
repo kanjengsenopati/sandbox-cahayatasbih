@@ -449,4 +449,35 @@ class OrderItemController extends Controller
             return $this->failedResponse("Terjadi kesalahan saat menghapus semua keranjang", null);
         }
     }
+
+    public function getDailyTransaction()
+    {
+        // Ambil transaksi yang sesuai dengan admin dan tanggal hari ini
+        $transactions = PointOfSaleTransaction::whereDate('paid_at', now())
+            ->where('admin_id', auth()->user()->id)
+            ->latest()
+            ->get();
+
+        // Map data untuk menambahkan format tambahan
+        $transactions = $transactions->map(function ($transaction, $index) {
+            return [
+                'no' => $index + 1, // Nomor urut
+                'pay_amount' => $transaction->pay_amount
+                    ? 'Rp. ' . number_format($transaction->pay_amount, 0, ',', '.')
+                    : 'Rp. 0',
+                'student' => $transaction->student ? $transaction->student->name : 'Umum',
+                'items' => $transaction->pointOfSaleTransactionDetails->map(function ($detail) {
+                    return [
+                        'name' => $detail->item->name,
+                        'qty' => $detail->quantity,
+                        'price' => 'Rp. ' . number_format($detail->price, 0, ',', '.'),
+                    ];
+                }),
+                'paid_at' => $transaction->paid_at->format('d-m-Y H:i:s'),
+            ];
+        });
+
+        // Mengembalikan respons dengan pesan sukses dan data yang diformat
+        return $this->postSuccessResponse("Data transaksi harian berhasil diambil", $transactions);
+    }
 }
