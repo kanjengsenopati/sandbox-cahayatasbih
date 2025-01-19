@@ -128,13 +128,6 @@ class TransactionService
             'payment_method_id' => PaymentMethod::where('type', PaymentMethod::TYPE_BALANCE)->first()?->id,
         ]);
 
-        // // create transaction detail with saldo history
-        // foreach ($request->bill_ids as $billId) {
-        //     $transaction->transactionDetails()->create([
-        //         'bill_id' => $billId,
-        //         'saldo_history_id' => $saldoHistory->id
-        //     ]);
-        // }
         foreach ($request->bill_ids as $billId) {
             // Cek apakah transaction detail sudah ada
             $exists = $transaction->transactionDetails()

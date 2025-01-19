@@ -59,9 +59,15 @@ class TransactionController extends Controller
 
             // create transaction details
             foreach ($request->bill_ids as $billId) {
-                $transaction->transactionDetails()->create([
-                    'bill_id' => $billId,
-                ]);
+                $exists = $transaction->transactionDetails()
+                    ->where('bill_id', $billId)
+                    ->exists();
+
+                if (!$exists) {
+                    $transaction->transactionDetails()->create([
+                        'bill_id' => $billId,
+                    ]);
+                }
             }
 
             DB::commit();
