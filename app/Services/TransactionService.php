@@ -7,9 +7,6 @@ use App\Models\Bill;
 use App\Models\User;
 use App\Models\Contact;
 use App\Models\Student;
-use App\Models\BillItem;
-use App\Models\GymClass;
-use App\Models\TopupBank;
 use Xendit\Configuration;
 use App\Models\Membership;
 use App\Models\Transaction;
@@ -31,11 +28,8 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Cache;
 use App\Jobs\SendToPushNotificationJob;
-use App\Models\GymClassBundlingHistory;
 use Xendit\Invoice\CreateInvoiceRequest;
 use App\Jobs\SendToWhatsappNotificationJob;
-use App\Models\PersonalTrainerPacketSession;
-use App\Models\PersonalTrainerPacketSessionHistory;
 
 class TransactionService
 {
@@ -51,17 +45,25 @@ class TransactionService
                     ]);
                 }
             } else {
-                // create bill on transaction detail
+                // Proses create bill on transaction detail hanya jika belum ada
                 foreach (request()->bill_ids as $billId) {
-                    TransactionDetail::create([
-                        'transaction_id' => $transaction->id,
-                        'bill_id' => $billId
-                    ]);
+                    // Cek apakah detail dengan bill_id ini sudah ada
+                    $exists = $transaction->transactionDetails()
+                        ->where('bill_id', $billId)
+                        ->exists();
+
+                    if (!$exists) {
+                        TransactionDetail::create([
+                            'transaction_id' => $transaction->id,
+                            'bill_id' => $billId
+                        ]);
+                    }
                 }
                 $transaction->refresh();
-                // update bill status with loop in transaction details
+
+                // Update status bill setelah transaction details dibuat
                 foreach ($transaction->transactionDetails as $detail) {
-                    $detail->bill->update([
+                    $detail->bill?->update([
                         'status' => Bill::STATUS_PAID
                     ]);
                 }
@@ -126,13 +128,27 @@ class TransactionService
             'payment_method_id' => PaymentMethod::where('type', PaymentMethod::TYPE_BALANCE)->first()?->id,
         ]);
 
-        // create transaction detail with saldo history
+        // // create transaction detail with saldo history
+        // foreach ($request->bill_ids as $billId) {
+        //     $transaction->transactionDetails()->create([
+        //         'bill_id' => $billId,
+        //         'saldo_history_id' => $saldoHistory->id
+        //     ]);
+        // }
         foreach ($request->bill_ids as $billId) {
-            $transaction->transactionDetails()->create([
-                'bill_id' => $billId,
-                'saldo_history_id' => $saldoHistory->id
-            ]);
+            // Cek apakah transaction detail sudah ada
+            $exists = $transaction->transactionDetails()
+                ->where('bill_id', $billId)
+                ->exists();
+
+            if (!$exists) {
+                $transaction->transactionDetails()->create([
+                    'bill_id' => $billId,
+                    'saldo_history_id' => $saldoHistory->id,
+                ]);
+            }
         }
+
 
         // update bill status with loop in transaction details
         self::changeStatusToPaid($transaction);
