@@ -93,7 +93,7 @@
             var table = $('#table-admin').DataTable({
                 ordering: false,
                 processing: true,
-                serverSide: true,
+                serverSide: false,
                 responsive: true,
                 ajax: "{{ route('admin.index') }}",
                 language: {

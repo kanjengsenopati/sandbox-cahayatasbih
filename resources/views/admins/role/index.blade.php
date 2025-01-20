@@ -100,7 +100,7 @@
             var table = $('#table-role').DataTable({
                 ordering: false,
                 processing: true,
-                serverSide: true,
+                serverSide: false,
                 responsive: true,
                 ajax: "{{ route('role.index') }}",
                 language: {
