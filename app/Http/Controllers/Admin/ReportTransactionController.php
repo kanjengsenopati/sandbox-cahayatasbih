@@ -11,6 +11,7 @@ use Illuminate\Http\Request;
 use App\Models\PaymentMethod;
 use Yajra\DataTables\DataTables;
 use App\Models\TransactionDetail;
+use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Auth;
 use Maatwebsite\Excel\Facades\Excel;
@@ -40,11 +41,15 @@ class ReportTransactionController extends Controller
                 })
                 ->schoolFilter('school_id', request()->school_id)
                 ->classroomFilter('classroom_id', request()->classroom_id)
-                ->filter('type', request()->type)
                 ->when(request()->filled('bill_type_id'), function ($query) {
-                    $query->whereHas('transactionDetails.bill', function ($query) {
-                        $query->where('bill_type_id', request()->bill_type_id);
-                    });
+                    $query->where('type', 'BILL') // Filter tipe "BILL" hanya jika `bill_type_id` ada
+                        ->whereExists(function ($subQuery) {
+                            $subQuery->select(DB::raw(1))
+                                ->from('transaction_details')
+                                ->join('bills', 'transaction_details.bill_id', '=', 'bills.id')
+                                ->whereColumn('transaction_details.transaction_id', 'transactions.id')
+                                ->where('bills.bill_type_id', request()->bill_type_id);
+                        });
                 })
                 ->hasSchool()
                 ->latest();
