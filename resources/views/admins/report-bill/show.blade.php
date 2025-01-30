@@ -201,7 +201,7 @@
         }
         }, function(start, end) {
         $('#dateRange span').html(start.format('D MMMM YYYY') + ' - ' + end.format('D MMMM YYYY'));
-        reloadTable(start.format('YYYY-MM-DD'), end.format('YYYY-MM-DD'));
+            reloadTable(start.format('YYYY-MM-DD'), end.format('YYYY-MM-DD'));
         });
         
         // Panggilan awal untuk date range picker
@@ -215,7 +215,9 @@
     function initializeTable(start_date = '', end_date = '') {
     return $('#table-report-bill').DataTable({
     processing: true,
-    serverSide: true,
+    serverSide: false,
+    responsive: true,
+    ordering: true,
     ajax: {
     url: "{{ route('report-bill.show', $billType->id) }}",
     data: function(d) {
@@ -228,7 +230,7 @@
     }
     },
     language: {
-    processing: "Sedang memproses data, Silahkan ditunggu..."
+        processing: "Sedang memproses data, Silahkan ditunggu..."
     },
     lengthMenu: [
     [10, 25, 50, 100, -1],
@@ -243,7 +245,8 @@
     { data: 'total_paid', name: 'total_paid' },
     { data: 'total_unpaid', name: 'total_unpaid' },
     { data: 'status', name: 'status', responsivePriority: -1 },
-    { data: 'action', name: 'action', responsivePriority: -1 }
+    { data: 'action', name: 'action', responsivePriority: -1,
+      orderable: false, searchable: false }
     ]
     });
     }
