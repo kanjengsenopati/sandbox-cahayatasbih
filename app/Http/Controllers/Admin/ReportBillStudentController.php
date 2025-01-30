@@ -83,7 +83,9 @@ class ReportBillStudentController extends Controller
                     ->addColumn('student', function ($data) {
                         $studentName = $data->student?->name ? $data->student->name : '-';
                         $className = $data->classroom?->name ? $data->classroom->name : '-';
-                        $avatarUrl = $data->student?->avatar ? $data->student->avatar : 'default-avatar-url'; // replace with actual default avatar url
+
+                        // Check if avatar exists, if not, use default avatar
+                        $avatarUrl = $data->student?->avatar ? $data->student->avatar : asset('assets/media/avatars/default.png');
 
                         // Return HTML structure for the card with avatar, name, and class
                         return '<div class="student-card" style="display: flex; align-items: center; gap: 10px;">
