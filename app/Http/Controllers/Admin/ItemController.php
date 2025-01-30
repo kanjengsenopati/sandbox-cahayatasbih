@@ -136,14 +136,20 @@ class ItemController extends Controller
             $cacheKey = 'top_10_items_last_month';
 
             $items = Cache::remember($cacheKey, now()->addDays(30), function () {
+                $startOfLastMonth = Carbon::now()->subMonth()->startOfDay();
+                $endOfLastMonth = Carbon::now()->subMonth()->endOfDay();
+
                 return Item::where('stock', '>', 0)
                     ->where('is_active', true)
-                    ->withCount(['pointOfSaleTransactionDetails' => function ($query) {
-                        $query->whereBetween('created_at', [
-                            Carbon::now()->subMonth()->startOfDay(),
-                            Carbon::now()->endOfDay()
-                        ]);
+                    ->with(['pointOfSaleTransactionDetails' => function ($query) use ($startOfLastMonth, $endOfLastMonth) {
+                        $query->whereBetween('created_at', [$startOfLastMonth, $endOfLastMonth])
+                            ->take(50); // Limit to 50 records
                     }])
+                    ->withCount([
+                        'pointOfSaleTransactionDetails' => function ($query) use ($startOfLastMonth, $endOfLastMonth) {
+                            $query->whereBetween('created_at', [$startOfLastMonth, $endOfLastMonth]);
+                        }
+                    ])
                     ->orderByDesc('point_of_sale_transaction_details_count')
                     ->limit(10)
                     ->get();
