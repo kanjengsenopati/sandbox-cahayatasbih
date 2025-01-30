@@ -477,7 +477,7 @@
                 'Manage Laporan Transaksi'])
                 <div data-kt-menu-trigger="click" class="menu-item menu-accordion {{ request()->routeIs(['report-bill.*', 'report-student.*','report-tahfidz.*',
                     'report-student-counseling-score.*', 'report-app-fee.*',
-                    'report-saldo.*', 'report-study-grade.*', 'order-item-history.*', 'report-transaction.*'
+                    'report-saldo.*', 'report-study-grade.*', 'order-item-history.*', 'report-transaction.*', 'report-bill-student.*'
                     ]) ? 'show' : '' }}">
                     <span class="menu-link ">
                         <span class="menu-icon">
@@ -518,6 +518,15 @@
                                     <span class="bullet bullet-dot"></span>
                                 </span>
                                 <span class="menu-title">Tagihan</span>
+                            </a>
+                        </div>
+                        <div class="menu-item ">
+                            <a class="menu-link {{ request()->routeIs('report-bill-student.*') ? ' active' : '' }}"
+                                href="{{ route('report-bill-student.index') }}">
+                                <span class="menu-bullet">
+                                    <span class="bullet bullet-dot"></span>
+                                </span>
+                                <span class="menu-title">Tagihan Santri</span>
                             </a>
                         </div>
                         @endcan

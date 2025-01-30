@@ -68,6 +68,7 @@ use App\Http\Controllers\Admin\SubMenuNavigationController;
 use App\Http\Controllers\Admin\ApplicationSettingController;
 use App\Http\Controllers\Admin\StudentAchievementController;
 use App\Http\Controllers\Admin\InformationCategoryController;
+use App\Http\Controllers\Admin\ReportBillStudentController;
 use App\Http\Controllers\Admin\ReportPosController;
 use App\Http\Controllers\User\WaliSettingLimitSaldoController;
 use App\Http\Controllers\Admin\StudentCounselingScoreController;
@@ -226,6 +227,7 @@ Route::group(['middleware' => ['auth']], function () {
     Route::get('report-bill/get-data', [ReportBillController::class, 'getData'])->name('report-bill.get-data');
     Route::get('report-bill/send-wa/{id}', [ReportBillController::class, 'sendWa'])->name('report-bill.send-wa');
     Route::resource('report-bill', ReportBillController::class, ['only' => ['index', 'show']])->names('report-bill');
+    Route::resource('report-bill-student', ReportBillStudentController::class, ['only' => ['index']])->names('report-bill-student');
     // end report bill
 
     // start report student

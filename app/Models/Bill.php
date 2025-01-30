@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Traits\GeneralTrait;
 use Carbon\Carbon;
 use App\Traits\UuidTrait;
 use Illuminate\Support\Facades\Auth;
@@ -14,7 +15,7 @@ class Bill extends Model
 
     const STATUS_UNPAID = 'UNPAID';
     const STATUS_PAID = 'PAID';
-    use HasFactory, UuidTrait, SoftDeletes;
+    use HasFactory, UuidTrait, SoftDeletes, GeneralTrait;
 
     protected $fillable = [
         'bill_type_id',
