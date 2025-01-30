@@ -16,7 +16,7 @@ class ReportBillStudentController extends Controller
 {
     public function index()
     {
-        if (!Auth::user()->can('Manage Laporan Transaksi')) {
+        if (!Auth::user()->can('Manage Laporan Tagihan')) {
             return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
         }
 
@@ -69,16 +69,19 @@ class ReportBillStudentController extends Controller
                 // Fetch all types of transactions and sum them separately
                 $totals = $data->selectRaw("
                 SUM(CASE WHEN status = '" . Bill::STATUS_PAID . "' THEN amount ELSE 0 END) as total_paid,
-                SUM(CASE WHEN status = '" . Bill::STATUS_UNPAID . "' THEN amount ELSE 0 END) as total_unpaid
+                SUM(CASE WHEN status = '" . Bill::STATUS_UNPAID . "' THEN amount ELSE 0 END) as total_unpaid,
+                SUM(amount) as total
             ")->first();
 
                 // Format the totals using number_format
                 $formattedTotalPaid = number_format($totals->total_paid, 0, ',', '.');
                 $formattedTotalUnpaid = number_format($totals->total_unpaid, 0, ',', '.');
+                $formattedTotal = number_format($totals->total, 0, ',', '.');
 
                 return response()->json([
                     'total_paid' => $formattedTotalPaid,
                     'total_unpaid' => $formattedTotalUnpaid,
+                    'target_revenue' => $formattedTotal
                 ]);
             } elseif (request()->data == 'table') {
                 return DataTables::of($data)

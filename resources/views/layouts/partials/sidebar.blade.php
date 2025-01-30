@@ -520,13 +520,13 @@
                                 <span class="menu-title">Tagihan</span>
                             </a>
                         </div>
-                        <div class="menu-item ">
+                        <div class="menu-item">
                             <a class="menu-link {{ request()->routeIs('report-bill-student.*') ? ' active' : '' }}"
                                 href="{{ route('report-bill-student.index') }}">
                                 <span class="menu-bullet">
                                     <span class="bullet bullet-dot"></span>
                                 </span>
-                                <span class="menu-title">Tagihan Santri</span>
+                                <span class="menu-title">Tagihan Pembayaran</span>
                             </a>
                         </div>
                         @endcan

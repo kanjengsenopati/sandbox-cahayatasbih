@@ -109,6 +109,24 @@
                             </form>
 
                             <div class="d-flex flex-wrap gap-2 mt-4">
+                                <!-- Card for "Target Pemasukan" (Revenue Target) -->
+                                <div class="card bg-light-warning bg-active-warning flex-grow-1">
+                                    <!--begin::Body-->
+                                    <div class="card-body d-flex align-items-center">
+                                        <div class="me-3">
+                                            <i class="fas fa-bullseye text-warning fs-2"></i>
+                                        </div>
+                                        <div>
+                                            <!--begin::Label-->
+                                            <div class="fw-bolder fs-5 text-gray-800">Target Pemasukan</div>
+                                            <!--end::Label-->
+                                            <!--begin::Stats-->
+                                            <div class="text-warning fs-3 fw-bolder" id="target-revenue">Rp. 0</div>
+                                            <!--end::Stats-->
+                                        </div>
+                                    </div>
+                                    <!--end::Body-->
+                                </div>
                                 <!-- Card for "Lunas" (Paid) -->
                                 <div class="card bg-light-primary bg-active-primary flex-grow-1">
                                     <!--begin::Body-->
@@ -146,6 +164,8 @@
                                     </div>
                                     <!--end::Body-->
                                 </div>
+
+
                             </div>
                         </div>
                     </div>
@@ -312,6 +332,7 @@
             success: function(response) {
                 $('#total-paid').text('Rp. ' + response.total_paid);
                 $('#total-unpaid').text('Rp. ' + response.total_unpaid);
+                $('#target-revenue').text('Rp. ' + response.target_revenue);
             }
         });
     }
