@@ -97,34 +97,14 @@
                                             @endforeach
                                         </select>
                                     </div>
-                                    <!--begin::Export dropdown-->
-                                    {{-- <button type="button" class="btn btn-sm btn-primary"
-                                        data-kt-menu-trigger="click" data-kt-menu-placement="bottom-end">
-                                        <i class="ki-duotone fa fa-caret-down fs-2"><span class="path1"></span><span
-                                                class="path2"></span></i>
-                                        Export Report
-                                    </button>
-                                    <!--begin::Menu-->
-                                    <div id="kt_datatable_example_export_menu"
-                                        class="menu menu-sub menu-sub-dropdown menu-column menu-rounded menu-gray-600 menu-state-bg-light-primary fw-semibold fs-7 w-200px py-4"
-                                        data-kt-menu="true">
-                                        <!--begin::Menu item-->
-                                        <div class="menu-item px-3">
-                                            <a type="button" class="menu-link btn-export px-3" data-type="xlsx">
-                                                Export as Excel
-                                            </a>
-                                        </div>
-                                        <!--end::Menu item-->
-                                        <!--begin::Menu item-->
-                                        <div class="menu-item px-3">
-                                            <a type="button" class="menu-link btn-export px-3" data-type="csv">
-                                                Export as CSV
-                                            </a>
-                                        </div>
-                                        <!--end::Menu item-->
-                                    </div> --}}
-                                    <!--end::Menu-->
-                                    <!--end::Export dropdown-->
+                                    <div>
+                                        <label class="form-label">Status</label>
+                                        <select name="status" class="form-select form-select-sm" id="filter_status">
+                                            <option value="">Semua</option>
+                                            <option value="PAID">Lunas</option>
+                                            <option value="UNPAID">Belum Lunas</option>
+                                        </select>
+                                    </div>
                                 </div>
                             </form>
 
@@ -229,8 +209,8 @@
         });
 
         // Event handlers to reload the table
-        $(document).ready(function() {
-            $('#filter_school_id, #filter_classroom_id,#filter_admin, #filter_tipe_tagihan').on('change',
+       $(document).ready(function() {
+        $('#filter_school_id, #filter_classroom_id, #filter_admin, #filter_tipe_tagihan, #filter_status').on('change',
             function() {
                 reloadTable();
             });
@@ -280,6 +260,7 @@
             serverSide: true,
             responsive: true,
             orderable: true,
+            searchDelay: 300,
             ajax: {
                 url: "{{ route('report-bill-student.index') }}",
                 data: function(d) {
@@ -289,6 +270,7 @@
                     d.start_date = $('#start_date').val();
                     d.end_date = $('#end_date').val();
                     d.bill_type_id = $('#filter_tipe_tagihan').val();
+                    d.status = $('#filter_status').val();
                 }
             },
             columns: [
@@ -324,7 +306,8 @@
                 admin_id: $('#filter_admin').val(),
                 start_date: $('#start_date').val(),
                 end_date: $('#end_date').val(),
-                bill_type_id: $('#filter_tipe_tagihan').val()
+                bill_type_id: $('#filter_tipe_tagihan').val(),
+                status: $('#filter_status').val(),
             },
             success: function(response) {
                 $('#total-paid').text('Rp. ' + response.total_paid);

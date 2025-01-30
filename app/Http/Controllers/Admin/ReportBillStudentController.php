@@ -16,7 +16,7 @@ class ReportBillStudentController extends Controller
 {
     public function index()
     {
-        if (!Auth::user()->can('Manage Laporan Tagihan')) {
+        if (!Auth::user()->can('Manage Laporan Transaksi')) {
             return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
         }
 
@@ -51,6 +51,17 @@ class ReportBillStudentController extends Controller
                 ->classroomFilter('classroom_id', request()->classroom_id)
                 ->when(request()->filled('bill_type_id'), function ($query) {
                     $query->where('bill_type_id', request()->bill_type_id);
+                })
+                // Apply the status filter only if it's filled
+                ->when(request()->filled('status'), function ($query) {
+                    $query->where('status', request()->status);
+                })
+                // Apply search on student name if provided
+                ->when(request()->has('search') && is_array(request()->search) && isset(request()->search['value']), function ($query) {
+                    $searchTerm = request()->search['value'];
+                    $query->whereHas('student', function ($subQuery) use ($searchTerm) {
+                        $subQuery->where('name', 'like', '%' . $searchTerm . '%');
+                    });
                 })
                 ->latest();
 
