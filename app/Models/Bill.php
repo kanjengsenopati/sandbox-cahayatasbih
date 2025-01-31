@@ -78,8 +78,28 @@ class Bill extends Model
 
     public function getTranslatedMonthAttribute()
     {
-        return Carbon::createFromFormat('m', $this->month)->translatedFormat('F');
+        $months = [
+            1 => 'Januari',
+            2 => 'Februari',
+            3 => 'Maret',
+            4 => 'April',
+            5 => 'Mei',
+            6 => 'Juni',
+            7 => 'Juli',
+            8 => 'Agustus',
+            9 => 'September',
+            10 => 'Oktober',
+            11 => 'November',
+            12 => 'Desember',
+        ];
+
+        return $months[$this->month] ?? null; // Return the month name or null if month is invalid
     }
+
+    // public function getTranslatedMonthAttribute()
+    // {
+    //     return Carbon::createFromFormat('m', $this->month)->translatedFormat('F');
+    // }
 
     public function getTranslatedStatusAttribute()
     {
