@@ -50,7 +50,7 @@ class ReportBillStudentController extends Controller
                 ->schoolFilter('school_id', request()->school_id)
                 ->classroomFilter('classroom_id', request()->classroom_id)
                 ->when(request()->filled('bill_type_id'), function ($query) {
-                    $query->where('bill_type_id', request()->bill_type_id);
+                    $query->whereIn('bill_type_id', request()->bill_type_id); // Menggunakan whereIn untuk array
                 })
                 // Apply the status filter only if it's filled
                 ->when(request()->filled('status'), function ($query) {
