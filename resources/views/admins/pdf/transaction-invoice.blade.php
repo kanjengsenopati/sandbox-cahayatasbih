@@ -306,10 +306,12 @@
                     </td>
                 </tr>
 
+                @if ($data->xendit_fee > 0)
                 <tr>
                     <td>Biaya Transaksi</td>
                     <td align="right">Rp{{ number_format($data->xendit_fee, 0, ',', '.') }}</td>
                 </tr>
+                @endif
                 @if ($data->app_fee > 0)
                 <tr>
                     <td>Biaya Aplikasi</td>
