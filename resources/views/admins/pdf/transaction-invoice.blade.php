@@ -242,7 +242,7 @@
                 <tbody>
                     @foreach ($data->transactionDetails as $transaction_detail)
                     <tr>
-                        <td class="text-primary" width="50%">
+                        <td class="text-primary" width="40%">
                             <span>Saldo</span>
                         </td>
                         <td align="right">Rp. {{ number_format($transaction_detail->saldoHistory->amount, 0, ',', '.')
@@ -281,7 +281,7 @@
                 <tbody>
                     @foreach ($data->transactionDetails as $transaction_detail)
                     <tr>
-                        <td class="text-primary" width="50%">
+                        <td class="text-primary" width="40%">
                             <span>{{ $transaction_detail?->bill?->billType?->name ?? '' }}</span>
                         </td>
                         <td align="right">{{ $transaction_detail?->bill?->translated_month ?? '' }}</td>
@@ -310,12 +310,22 @@
                     <td>Biaya Transaksi</td>
                     <td align="right">Rp{{ number_format($data->xendit_fee, 0, ',', '.') }}</td>
                 </tr>
+                @if ($data->app_fee > 0)
                 <tr>
                     <td>Biaya Aplikasi</td>
                     <td align="right">
-                        Rp{{ number_format($data->app_fee + ($data->unique_payment ?? 0), 0, ',', '.') }}
+                        Rp{{ number_format($data->app_fee, 0, ',', '.') }}
                     </td>
                 </tr>
+                @endif
+                @if ($data->unique_payment > 0)
+                <tr>
+                    <td>Kode Unik Transaksi</td>
+                    <td align="right">
+                        Rp{{ number_format($data->unique_payment, 0, ',', '.') }}
+                    </td>
+                </tr>
+                @endif
                 <tr class="text-strong border-table">
                     <td>TOTAL TAGIHAN</td>
                     @php
@@ -349,7 +359,7 @@
                     </td>
                     @if($data->admin_id)
                     <td width="50%" align="right">
-                        <strong>Nama Petugas :</strong> <br /> {{ $data?->admin?->name ?? '' }}
+                        <strong>Nama Petugas :</strong> <br /> {{ $data?->admin?->name ?? 'CT-PAY' }}
                     </td>
                     @endif
                 </tr>
