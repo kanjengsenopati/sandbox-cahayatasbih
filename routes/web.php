@@ -21,12 +21,14 @@ use App\Http\Controllers\User\WaliAuthController;
 use App\Http\Controllers\User\WaliPpdbController;
 use App\Http\Controllers\Admin\BillItemController;
 use App\Http\Controllers\Admin\BillTypeController;
+use App\Http\Controllers\Admin\CashFlowController;
 use App\Http\Controllers\Admin\PpdbTypeController;
 use App\Http\Controllers\Admin\ScheduleController;
 use App\Http\Controllers\Admin\SemesterController;
 use App\Http\Controllers\Admin\ClassroomController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\OrderItemController;
+use App\Http\Controllers\Admin\ReportPosController;
 use App\Http\Controllers\Admin\SaldoBankController;
 use App\Http\Controllers\Admin\TranslateController;
 use App\Http\Controllers\Admin\DisclaimerController;
@@ -57,20 +59,20 @@ use App\Http\Controllers\Admin\TermConditionController;
 use App\Http\Controllers\Admin\AppInformationController;
 use App\Http\Controllers\Admin\GradePromotionController;
 use App\Http\Controllers\Admin\MenuNavigationController;
+use App\Http\Controllers\Admin\PosTransactionController;
 use App\Http\Controllers\Admin\StudentBarcodeController;
 use App\Http\Controllers\Admin\ApplicationMenuController;
+use App\Http\Controllers\Admin\CashFlowCategoryController;
 use App\Http\Controllers\Admin\OrderItemHistoryController;
 use App\Http\Controllers\Admin\PpdbRegistrationController;
 use App\Http\Controllers\Admin\ReportStudyGradeController;
+use App\Http\Controllers\Admin\ReportBillStudentController;
 use App\Http\Controllers\Admin\ReportTransactionController;
 use App\Http\Controllers\Admin\StudentGraduationController;
 use App\Http\Controllers\Admin\SubMenuNavigationController;
 use App\Http\Controllers\Admin\ApplicationSettingController;
 use App\Http\Controllers\Admin\StudentAchievementController;
 use App\Http\Controllers\Admin\InformationCategoryController;
-use App\Http\Controllers\Admin\PosTransactionController;
-use App\Http\Controllers\Admin\ReportBillStudentController;
-use App\Http\Controllers\Admin\ReportPosController;
 use App\Http\Controllers\User\WaliSettingLimitSaldoController;
 use App\Http\Controllers\Admin\StudentCounselingScoreController;
 use App\Http\Controllers\Admin\ReportStudentCounselingScoreController;
@@ -269,6 +271,13 @@ Route::group(['middleware' => ['auth']], function () {
     Route::resource('ppdb-registration', PpdbRegistrationController::class);
     Route::resource('menu-navigation', MenuNavigationController::class);
     Route::resource('submenu-navigation', SubMenuNavigationController::class);
+
+    // start cashflow
+    Route::resource('cashflow-category', CashFlowCategoryController::class);
+    // Define the routes
+    Route::post('cashflow/approve/{id}', [CashFlowController::class, 'approve'])->name('cashflow.approve');
+    Route::post('cashflow/reject/{id}', [CashFlowController::class, 'reject'])->name('cashflow.reject');
+    Route::resource('cashflow', CashFlowController::class);
 });
 
 

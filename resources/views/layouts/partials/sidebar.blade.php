@@ -207,11 +207,11 @@
                 @endcanany
 
                 @canany(['Manage Wali Santri', 'Manage Santri', 'Manage Sekolah','Manage PPDB', 'Manage Tahun Ajaran',
-                'Manage Kenaikan Kelas', 'Manage Kelulusan Santri'])
+                'Manage Kenaikan Kelas', 'Manage Kelulusan Santri', 'Manage Kategori Arus Kas'])
                 <div data-kt-menu-trigger="click" class="menu-item menu-accordion {{ request()->routeIs(['school.*', 'academic-year.*', 'semester.*', 'study.*',
                     'user.*', 'student.*',
                       'category-item.*', 'item.*', 'stock-history.*', 'grade-promotion.*', 'ppdb.*', 'ppdb-registration.*',
-                      'student-graduation.*']) ? 'show' : '' }}">
+                      'student-graduation.*', 'cashflow-category.*']) ? 'show' : '' }}">
                     <span class="menu-link">
                         <span class="menu-icon">
                             <i class="fa-solid fa-school" style="color: #ffffff;"></i>
@@ -349,16 +349,28 @@
                             </a>
                         </div>
                         @endcan
+
+                        @can('Manage Kategori Arus Kas')
+                        <div class="menu-item ">
+                            <a class="menu-link {{ request()->routeIs('cashflow-category.*') ? ' active' : '' }}"
+                                href="{{ route('cashflow-category.index') }}">
+                                <span class="menu-bullet">
+                                    <span class="bullet bullet-dot"></span>
+                                </span>
+                                <span class="menu-title">Kategori Arus Kas</span>
+                            </a>
+                        </div>
+                        @endcan
                     </div>
                 </div>
                 @endcanany
 
                 @canany(['Manage Saldo Santri', 'Manage Tabungan Santri','Manage Jadwal', 'Manage Tahfidz',
                 'Manage Pos Kasir', 'Manage Tagihan', 'Manage Perilaku Santri', 'Manage Nilai Pelajaran',
-                'Manage Prestasi Santri', 'Manage Nilai Santri'])
+                'Manage Prestasi Santri', 'Manage Nilai Santri', 'Manage Arus Kas'])
                 <div data-kt-menu-trigger="click" class="menu-item menu-accordion {{ request()->routeIs(['bill.*', 'saldo-history.*', 'saving-history.*', 'order-item.*', 'study-grade.*',
                     'tahfidz.*', 'student-counseling-score.*', 'schedule.*','saldo-bank.*', 'saving-bank.*', 'student-achievement.*',
-                    'study-grade.*']) ? 'show' : '' }}">
+                    'study-grade.*', 'cashflow.*']) ? 'show' : '' }}">
                     <span class=" menu-link ">
                         <span class=" menu-icon">
                             <i class="fa-solid fa-edit" style="color: #ffffff;"></i>
@@ -408,6 +420,17 @@
                                     <span class="bullet bullet-dot"></span>
                                 </span>
                                 <span class="menu-title">POS Kasir</span>
+                            </a>
+                        </div>
+                        @endcan
+                        @can('Manage Arus Kas')
+                        <div class="menu-item">
+                            <a class="menu-link {{ request()->routeIs('cashflow.*') ? ' active' : '' }}"
+                                href="{{ route('cashflow.index') }}">
+                                <span class="menu-bullet">
+                                    <span class="bullet bullet-dot"></span>
+                                </span>
+                                <span class="menu-title">Arus Kas</span>
                             </a>
                         </div>
                         @endcan
