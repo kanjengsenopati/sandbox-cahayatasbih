@@ -2,15 +2,18 @@
 
 namespace App\Http\Controllers\Admin;
 
+use Carbon\Carbon;
 use App\Models\Admin;
 use App\Models\CashFlow;
+use App\Models\Transaction;
 use Illuminate\Http\Request;
 use App\Models\CashFlowCategory;
 use Yajra\DataTables\DataTables;
+use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Controller;
-use App\Http\Requests\Admin\CashFlowRequest;
-use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
+use App\Http\Requests\Admin\CashFlowRequest;
+use App\Models\Bill;
 
 class CashFlowController extends Controller
 {
@@ -81,7 +84,21 @@ class CashFlowController extends Controller
                 ->rawColumns(['action', 'status', 'proof', 'type'])
                 ->make(true);
         }
-        return view('admins.cashflow.index');
+        $billAppFee = [
+            '0a33726f-d9e7-4e78-bb09-db99e81314dd',
+            'da831a2d-069f-46fa-b44d-d7b2cb6a9a8e',
+            'a4e65f7e-c265-4da5-96a9-92076e33f141',
+        ];
+
+        $totalIncomes = Bill::whereIn('bill_type_id', $billAppFee)->where('status', 'PAID')->sum('amount');
+
+        $totalExpenses = CashFlow::where('type', CashFlow::TYPE_EXPENSE)->where('status', CashFlow::STATUS_APPROVED)->sum('amount');
+
+        $remainingBalances = max($totalIncomes - $totalExpenses, 0);
+
+        $totalCashflows = Bill::whereIn('bill_type_id', $billAppFee)->sum('amount');
+
+        return view('admins.cashflow.index', compact('totalIncomes', 'totalExpenses', 'remainingBalances', 'totalCashflows'));
     }
 
     /**

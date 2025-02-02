@@ -1,68 +1,106 @@
 @extends('layouts.master', ['title' => 'Data Arus Kas'])
+
 @push('css')
 <!-- Include Lightbox2 CSS -->
 <link href="https://cdn.jsdelivr.net/npm/lightbox2@2.11.3/dist/css/lightbox.min.css" rel="stylesheet" />
 @endpush
+
 @section('content')
 <div class="content d-flex flex-column flex-column-fluid" id="kt_content">
     <!--begin::Toolbar-->
     <div class="toolbar" id="kt_toolbar">
-        <!--begin::Container-->
         <div id="kt_toolbar_container" class="container-fluid d-flex flex-stack">
-            <!--begin::Page title-->
             <div data-kt-swapper="true" data-kt-swapper-mode="prepend"
                 data-kt-swapper-parent="{default: '#kt_content_container', 'lg': '#kt_toolbar_container'}"
                 class="page-title d-flex align-items-center flex-wrap me-3 mb-5 mb-lg-0">
-                <!--begin::Title-->
                 <h1 class="d-flex text-dark fw-bolder fs-3 align-items-center my-1">Data Arus Kas</h1>
-                <!--end::Title-->
-                <!--begin::Separator-->
                 <span class="h-20px border-gray-300 border-start mx-4"></span>
-                <!--end::Separator-->
-                <!--begin::Breadcrumb-->
                 <ul class="breadcrumb breadcrumb-separatorless fw-bold fs-7 my-1">
-                    <!--begin::Item-->
                     <li class="breadcrumb-item text-muted">
                         <a href="{{ route('cashflow.index') }}" class="text-muted text-hover-primary">Arus Kas</a>
                     </li>
-                    <!--end::Item-->
-                    <!--begin::Item-->
                     <li class="breadcrumb-item">
                         <span class="bullet bg-gray-300 w-5px h-2px"></span>
                     </li>
-                    <!--end::Item-->
-                    <!--begin::Item-->
                     <li class="breadcrumb-item text-dark">Arus Kas</li>
-                    <!--end::Item-->
                 </ul>
-                <!--end::Breadcrumb-->
             </div>
-            <!--end::Page title-->
-            <!--begin::Actions-->
-
-            <!--end::Actions-->
         </div>
-        <!--end::Container-->
     </div>
     <!--end::Toolbar-->
+
     <!--begin::Post-->
     <div class="post d-flex flex-column-fluid">
-        <!--begin::Container-->
         <div id="kt_content_container" class="container-xxl">
+            <!--begin::Cards-->
+            <div class="row mb-5">
+                <!-- Penerimaan Pembayaran -->
+                <div class="col-md-3">
+                    <div class="card bg-success text-white" style="height: 200px;">
+                        <div class="card-body d-flex flex-column align-items-center justify-content-center text-center">
+                            <i class="bi bi-wallet2 fs-3 text-white mb-3"></i> <!-- White icon on success background -->
+                            <div>
+                                <h5 class="card-title text-white mb-2">Penerimaan Pembayaran</h5>
+                                <p class="card-text fs-2" id="total-payment">Rp {{ number_format($totalIncomes, 0, ',',
+                                    '.') }}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- Pengeluaran -->
+                <div class="col-md-3">
+                    <div class="card bg-danger text-white" style="height: 200px;">
+                        <div class="card-body d-flex flex-column align-items-center justify-content-center text-center">
+                            <i class="bi bi-credit-card fs-3 text-white mb-3"></i>
+                            <!-- White icon on danger background -->
+                            <div>
+                                <h5 class="card-title text-white mb-2">Pengeluaran</h5>
+                                <p class="card-text fs-2" id="total-expenses">Rp {{ number_format($totalExpenses, 0,
+                                    ',', '.') }}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- Sisa Saldo -->
+                <div class="col-md-3">
+                    <div class="card bg-primary text-white" style="height: 200px;">
+                        <div class="card-body d-flex flex-column align-items-center justify-content-center text-center">
+                            <i class="bi bi-bank fs-3 text-white mb-3"></i> <!-- White icon on primary background -->
+                            <div>
+                                <h5 class="card-title text-white mb-2">Sisa Saldo</h5>
+                                <p class="card-text fs-2" id="remaining-balance">Rp {{ number_format($remainingBalances,
+                                    0, ',',
+                                    '.') }}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- Total Arus Kas -->
+                <div class="col-md-3">
+                    <div class="card bg-info text-white" style="height: 200px;">
+                        <div class="card-body d-flex flex-column align-items-center justify-content-center text-center">
+                            <i class="bi bi-currency-exchange fs-3 text-white mb-3"></i>
+                            <!-- White icon on info background -->
+                            <div>
+                                <h5 class="card-title text-white mb-2">Target Arus Kas</h5>
+                                <p class="card-text fs-2" id="total-cashflow">Rp {{ number_format($totalCashflows, 0,
+                                    ',', '.') }}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!--end::Cards-->
+
             <!--begin::Card-->
             <div class="card">
-                <!--begin::Card header-->
                 <div class="card-header d-flex align-items-center justify-content-between border-0 pt-6">
-                    <!--begin::Card title-->
-                    <div class="card-title">
-                    </div>
+                    <div class="card-title"></div>
                     <x-action.create name="Arus Kas" action="{{ route('cashflow.create') }}" />
-                    <!--end::Card title-->
                 </div>
-                <!--end::Card header-->
-                <!--begin::Card body-->
                 <div class="card-body pt-0">
-                    <!--begin::Table-->
                     <div class="table-responsive">
                         <table id="table-cashflow" class="table align-middle table-row-dashed ">
                             <thead>
@@ -83,18 +121,14 @@
                             <tbody class="text-gray-600 fw-bold"></tbody>
                         </table>
                     </div>
-                    <!--end::Table-->
                 </div>
-                <!--end::Card body-->
             </div>
             <!--end::Card-->
-            <!--begin::Modals-->
-
         </div>
-        <!--end::Container-->
     </div>
     <!--end::Post-->
 </div>
+
 <!-- Reject Modal -->
 <div class="modal fade" id="rejectModal" tabindex="-1" aria-labelledby="rejectModalLabel" aria-hidden="true">
     <div class="modal-dialog">
@@ -119,113 +153,110 @@
     </div>
 </div>
 @endsection
+
 @push('js')
-<!-- Include Lightbox2 JS -->
 <script src="https://cdn.jsdelivr.net/npm/lightbox2@2.11.3/dist/js/lightbox.min.js"></script>
 <script>
     $(document).ready(() => {
-            var table = $('#table-cashflow').DataTable({
-                ordering: false,
-                processing: true,
-                serverSide: false,
-                responsive: true,
-                ajax: "{{ route('cashflow.index') }}",
-                language: {
-                    "paginate": {
-                        "next": "<i class='fa fa-angle-right'>",
-                        "previous": "<i class='fa fa-angle-left'>"
-                    },
-                    "loadingRecords": "Loading...",
-                    "processing": "Processing...",
+        var table = $('#table-cashflow').DataTable({
+            ordering: false,
+            processing: true,
+            serverSide: false,
+            responsive: true,
+            ajax: "{{ route('cashflow.index') }}",
+            language: {
+                "paginate": {
+                    "next": "<i class='fa fa-angle-right'>",
+                    "previous": "<i class='fa fa-angle-left'>"
                 },
-                columns: [{
-                        "data": null,
-                        "sortable": false,
-                        "searchable": false,
-                        render: function(data, type, row, meta) {
-                            return meta.row + meta.settings._iDisplayStart + 1;
-                        },
-                        responsivePriority: -1
+                "loadingRecords": "Loading...",
+                "processing": "Processing...",
+            },
+            columns: [{
+                    "data": null,
+                    "sortable": false,
+                    "searchable": false,
+                    render: function(data, type, row, meta) {
+                        return meta.row + meta.settings._iDisplayStart + 1;
                     },
-                   {
-                        data: 'date',
-                        name: 'date',
-                        orderable: true,
-                        searchable: true,
-                        responsivePriority: -1
-                    },
-                    {
-                        data: 'payment_code',
-                        name: 'payment_code',
-                        orderable: true,
-                        searchable: true,
-                        responsivePriority: -1
-                    },
-                    {
-                        data: 'type',
-                        name: 'type',
-                        orderable: true,
-                        searchable: true,
-                        responsivePriority: -1
-                    },
-                    {
-                        data: 'category',
-                        name: 'category',
-                        orderable: true,
-                        searchable: true
-                    },
-                    {
-                        data: 'from_to',
-                        name: 'from_to',
-                        orderable: true,
-                        searchable: true,
-                        responsivePriority: -1
-                    },
-                    {
-                        data: 'amount',
-                        name: 'amount',
-                        orderable: true,
-                        searchable: true
-                    },
-                    
-                    {
-                        data: 'status',
-                        name: 'status',
-                        orderable: true,
-                        searchable: true,
-                        responsivePriority: -1
-                    },
-                    {
-                        data: 'description',
-                        name: 'description',
-                        orderable: true,
-                        searchable: true
-                    },
-                    {
-                        data: 'proof',
-                        name: 'proof',
-                        orderable: true,
-                        searchable: true
-                    },
-                    {
-                        data: 'action',
-                        name: 'action',
-                        orderable: true,
-                        searchable: true,
-                        responsivePriority: -1
-                    },
-                ]
-            });
-
-        })
+                    responsivePriority: -1
+                },
+               {
+                    data: 'date',
+                    name: 'date',
+                    orderable: true,
+                    searchable: true,
+                    responsivePriority: -1
+                },
+                {
+                    data: 'payment_code',
+                    name: 'payment_code',
+                    orderable: true,
+                    searchable: true,
+                    responsivePriority: -1
+                },
+                {
+                    data: 'type',
+                    name: 'type',
+                    orderable: true,
+                    searchable: true,
+                    responsivePriority: -1
+                },
+                {
+                    data: 'category',
+                    name: 'category',
+                    orderable: true,
+                    searchable: true
+                },
+                {
+                    data: 'from_to',
+                    name: 'from_to',
+                    orderable: true,
+                    searchable: true,
+                    responsivePriority: -1
+                },
+                {
+                    data: 'amount',
+                    name: 'amount',
+                    orderable: true,
+                    searchable: true
+                },
+                {
+                    data: 'status',
+                    name: 'status',
+                    orderable: true,
+                    searchable: true,
+                    responsivePriority: -1
+                },
+                {
+                    data: 'description',
+                    name: 'description',
+                    orderable: true,
+                    searchable: true
+                },
+                {
+                    data: 'proof',
+                    name: 'proof',
+                    orderable: true,
+                    searchable: true
+                },
+                {
+                    data: 'action',
+                    name: 'action',
+                    orderable: true,
+                    searchable: true,
+                    responsivePriority: -1
+                },
+            ]
+        });
+    })
 </script>
+
 <script>
     $(document).ready(function() {
         // Approve action
         $(document).on('click', '.approve-btn', function() {
             var cashflowId = $(this).data('id');
-
-            // Show SweetAlert2 confirmation
             Swal.fire({
                 title: 'Apakah Anda yakin?',
                 text: 'Anda akan menyetujui arus kas ini!',
@@ -235,26 +266,19 @@
                 cancelButtonText: 'Batal'
             }).then(async (result) => {
                 if (result.isConfirmed) {
-                    // Send the approval request using Axios
                     try {
                         const response = await axios.post('/cashflow/approve/' + cashflowId, {
                             _token: "{{ csrf_token() }}",
                             status: 'APPROVED'
                         });
-
-                        // Show SweetAlert2 success message
                         Swal.fire({
                             icon: 'success',
                             title: 'Sukses!',
                             text: response.data.message,
                             confirmButtonText: 'Ok'
                         });
-
-                        location.reload(); // Reload the page or update the row dynamically
+                        location.reload(); 
                     } catch (error) {
-                        console.error("There was an error approving the request:", error);
-
-                        // Show SweetAlert2 error message
                         Swal.fire({
                             icon: 'error',
                             title: 'Terjadi Kesalahan!',
@@ -277,25 +301,20 @@
             e.preventDefault();
             var cashflowId = $('#reject_cashflow_id').val();
             var statusReason = $('#status_reason').val();
-
             try {
                 const response = await axios.post('/cashflow/reject/' + cashflowId, {
                     _token: "{{ csrf_token() }}",
                     status: 'REJECTED',
                     reason: statusReason
                 });
-
                 Swal.fire({
                     icon: 'success',
                     title: 'Ditolak!',
                     text: response.data.message,
                     confirmButtonText: 'Ok'
                 });
-
                 location.reload();
             } catch (error) {
-                console.error("There was an error rejecting the request:", error);
-
                 Swal.fire({
                     icon: 'error',
                     title: 'Terjadi Kesalahan!',
