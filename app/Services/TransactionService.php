@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use Exception;
 use Carbon\Carbon;
 use App\Models\Bill;
 use App\Models\User;
@@ -476,19 +477,42 @@ class TransactionService
                         'status' => TransactionProof::STATUS_CONFIRMED
                     ]);
                 }
+                // check unique payment
+                if ($transaction->unique_payment > 0) {
+                    $student = Student::find($transaction->student_id);
+
+                    // Buat history untuk unique payment
+                    SaldoService::addHistory(
+                        $student,
+                        $transaction->unique_payment,
+                        SaldoHistory::TYPE_IN,
+                        SaldoHistory::USAGE_TOPUP,
+                        SaldoHistory::STATUS_SUCCESS,
+                        'Pengembalian Kode Unik Transaksi Sebesar Rp.' . number_format($transaction->unique_payment, 0, ',', '.')
+                    );
+
+                    // Update saldo siswa secara atomic untuk unique payment
+                    $student->increment('saldo', $transaction->unique_payment);
+                }
                 // change bill status to paid
                 if ($transaction->type == Transaction::TYPE_BILL) {
                     $transaction->transactionDetails->each(function ($detail) {
                         $detail->bill->update(['status' => Bill::STATUS_PAID]);
                     });
                 }
+                // Proses transaksi berdasarkan tipe
                 if ($transaction->type == Transaction::TYPE_SALDO) {
                     $student = Student::find($transaction->student_id);
-                    $student->update([
-                        'saldo' => $student->saldo +  $transaction->transactionDetails->first()->saldoHistory->amount
-                    ]);
-                    // change status to saldo history
-                    $transaction->transactionDetails->first()->saldoHistory->update([
+                    $transactionDetail = $transaction?->transactionDetails?->first();
+
+                    // Tentukan amount yang akan ditambahkan (hanya untuk saldo biasa)
+                    $amountToAdd = $transactionDetail?->saldoHistory?->amount ?? throw new Exception('Saldo history not found');
+
+                    // Update saldo siswa secara atomic
+                    $student->increment('saldo', $amountToAdd);
+
+                    // Update status saldo history jika ada
+                    $transactionDetail?->saldoHistory?->update([
                         'status' => SaldoHistory::STATUS_SUCCESS
                     ]);
                 } elseif ($transaction->type == Transaction::TYPE_SAVING) {
