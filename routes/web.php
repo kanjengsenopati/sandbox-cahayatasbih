@@ -231,6 +231,8 @@ Route::group(['middleware' => ['auth']], function () {
     Route::get('report-bill/get-data', [ReportBillController::class, 'getData'])->name('report-bill.get-data');
     Route::get('report-bill/send-wa/{id}', [ReportBillController::class, 'sendWa'])->name('report-bill.send-wa');
     Route::resource('report-bill', ReportBillController::class, ['only' => ['index', 'show']])->names('report-bill');
+    Route::post('send-bill-whatsapp-notification', [ReportBillStudentController::class, 'sendBillWhatsappNotification'])
+        ->name('send-bill-whatsapp-notification');
     Route::resource('report-bill-student', ReportBillStudentController::class, ['only' => ['index']])->names('report-bill-student');
     // end report bill
 

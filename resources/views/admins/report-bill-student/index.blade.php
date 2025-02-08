@@ -104,6 +104,12 @@
                                             <option value="UNPAID">Belum Lunas</option>
                                         </select>
                                     </div>
+                                    <div>
+                                        <!-- Add WhatsApp Blast Button -->
+                                        <button type="button" id="btn-wa-blast" class="btn btn-success btn-sm">
+                                            <i class="fab fa-whatsapp"></i> Kirim WA Blast Tagihan
+                                        </button>
+                                    </div>
                                 </div>
                             </form>
 
@@ -181,6 +187,7 @@
                                     <th>Tagihan</th>
                                     <th>Periode</th>
                                     <th>Santri</th>
+                                    <th>Notifikasi</th>
                                     <th>Jumlah</th>
                                     <th>Status</th>
                                     <th>Aksi</th>
@@ -279,7 +286,7 @@
             serverSide: true,
             responsive: true,
             orderable: true,
-            searchDelay: 300,
+            searchDelay: 500,
             ajax: {
                 url: "{{ route('report-bill-student.index') }}",
                 data: function(d) {
@@ -304,6 +311,7 @@
                 { data: 'bill_type', name: 'bill_type', orderable: true, searchable: true },
                 { data: 'period', name: 'period', orderable: true, searchable: true },
                 { data: 'student', name: 'student', orderable: true, searchable: true },
+                { data: 'notification', name: 'notification', orderable: true, searchable: true },
                 { data: 'amount', name: 'amount', orderable: true, searchable: true },
                 { data: 'status', name: 'status', orderable: true, searchable: true },
                 { data: 'action', name: 'action', orderable: false, searchable: false,
@@ -354,6 +362,82 @@
         $('#filter_tipe_tagihan').select2({
             placeholder: 'Pilih tagihan', // Placeholder
             allowClear: true // Menambahkan opsi untuk menghapus pilihan
+        });
+    });
+
+   document.getElementById('btn-wa-blast').addEventListener('click', function () {
+        // Collect filter values from the form
+        const schoolId = document.getElementById('filter_school_id').value;
+        const classroomId = document.getElementById('filter_classroom_id').value;
+        const billTypeIds = Array.from(document.getElementById('filter_tipe_tagihan').selectedOptions).map(option =>
+        option.value);
+        const status = document.getElementById('filter_status').value;
+        const startDate = document.getElementById('start_date').value;
+        const endDate = document.getElementById('end_date').value;
+
+        // Show SweetAlert confirmation dialog
+        Swal.fire({
+        title: 'Konfirmasi',
+        text: 'Apakah Anda yakin ingin mengirim WA Blast Tagihan?',
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonText: 'Ya, Kirim',
+        cancelButtonText: 'Batal',
+        reverseButtons: true,
+        }).then((result) => {
+        if (result.isConfirmed) {
+        // Show loading indicator
+        Swal.fire({
+        title: 'Mohon Tunggu',
+        text: 'WA Blast Sedang Dikirim, Mohon Tunggu Sebentar...',
+        icon: 'info',
+        allowOutsideClick: false,
+        didOpen: () => {
+        Swal.showLoading(); // Show loading spinner
+        },
+        });
+
+        // Prepare data for the backend request
+        const data = {
+        school_id: schoolId,
+        classroom_id: classroomId,
+        bill_type_id: billTypeIds,
+        status: status,
+        start_date: startDate,
+        end_date: endDate
+        };
+
+        // Send an Axios POST request to the server
+        axios.post('/send-bill-whatsapp-notification', data, {
+        headers: {
+        'Content-Type': 'application/json',
+        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+        }
+        })
+        .then(response => {
+        if (response.data.success) {
+        Swal.fire({
+        icon: 'success',
+        title: 'Berhasil',
+        text: 'WA Blast berhasil dikirim!',
+        });
+        } else {
+        Swal.fire({
+        icon: 'error',
+        title: 'Gagal',
+        text: 'Gagal mengirim WA Blast: ' + response.data.message,
+        });
+        }
+        })
+        .catch(error => {
+        console.error('Error:', error);
+        Swal.fire({
+        icon: 'error',
+        title: 'Terjadi Kesalahan',
+        text: 'Terjadi kesalahan saat mengirim WA Blast.',
+        });
+        });
+        }
         });
     });
 </script>

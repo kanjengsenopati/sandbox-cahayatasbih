@@ -89,6 +89,11 @@ class Student extends Model
         return $this->hasMany(SavingHistory::class);
     }
 
+    public function studentBillNotifications()
+    {
+        return $this->hasMany(StudentBillNotification::class);
+    }
+
     public function scopeHasSchoolPlace($query)
     {
         // if auth user have school_id, then use it

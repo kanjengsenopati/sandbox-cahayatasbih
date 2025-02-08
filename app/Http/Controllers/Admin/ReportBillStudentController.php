@@ -2,15 +2,21 @@
 
 namespace App\Http\Controllers\Admin;
 
+use Exception;
 use Carbon\Carbon;
 use App\Models\Bill;
 use App\Models\School;
+use App\Models\Student;
 use App\Models\BillType;
 use Illuminate\Http\Request;
 use Yajra\DataTables\DataTables;
 use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Controller;
+use App\Services\SendNotifWaService;
 use Illuminate\Support\Facades\Auth;
+use App\Models\StudentBillNotification;
+use App\Jobs\SendToWhatsappNotificationJob;
+use App\Jobs\SendBillWhatsappNotificationJob;
 
 class ReportBillStudentController extends Controller
 {
@@ -130,6 +136,17 @@ class ReportBillStudentController extends Controller
                         // Add the translated month and year
                         return $months[$data->month] . ' ' . $data->year;
                     })
+                    ->addColumn('notification', function ($data) {
+                        // Retrieve the notification status for the student
+                        $notification = $data?->student?->studentBillNotifications?->first();
+
+                        // Determine the badge content based on the notification status
+                        $badge = $notification
+                            ? '<span class="badge badge-success">Dikirim ' . Carbon::parse($notification->sent_at)->diffForHumans() . '</span>'
+                            : '<span class="badge badge-danger">Belum Dikirim</span>';
+
+                        return $badge;
+                    })
                     ->addColumn('action', function ($data) {
                         $actionDelete = route('report-transaction.destroy', $data->id);
                         return "<div class='d-flex gap-2 flex-nowrap justify-content-center'>" .
@@ -138,7 +155,7 @@ class ReportBillStudentController extends Controller
                             "</div>";
                         // add delete action
                     })
-                    ->rawColumns(['date', 'amount', 'action', 'student', 'status'])
+                    ->rawColumns(['date', 'amount', 'action', 'student', 'status', 'notification'])
                     ->make(true);
             }
         }
@@ -151,5 +168,48 @@ class ReportBillStudentController extends Controller
             'ce389861-40ab-4523-9364-3458e9dfda1d'
         ])->get();
         return view('admins.report-bill-student.index', compact('schools', 'billTypes'));
+    }
+
+    public function sendBillWhatsappNotification()
+    {
+        try {
+            // Ambil data siswa yang memiliki tagihan belum dibayar
+            $students = Student::whereHas('bills', function ($query) {
+                $query->where('status', Bill::STATUS_UNPAID);
+            })->latest()->get();
+
+            // Iterasi setiap siswa
+            foreach ($students as $student) {
+                // Panggil fungsi untuk mendapatkan pesan
+                $message = SendNotifWaService::sendAllBillInvoice($student);
+
+                // Periksa apakah $message tidak null dan nomor telepon tersedia
+                if ($message !== null && $student->user?->phone) {
+                    // Kirim notifikasi hanya jika $message ada
+                    dispatch(new SendToWhatsappNotificationJob($student->user->phone, $message));
+
+                    // Simpan atau perbarui log notifikasi ke tabel student_bill_notifications
+                    StudentBillNotification::updateOrCreate(
+                        [
+                            'student_id' => $student->id, // Kunci unik untuk mencari entri
+                        ],
+                        [
+                            'message' => $message, // Data yang akan diperbarui atau dibuat
+                            'status' => StudentBillNotification::STATUS_SUCCESS,
+                            'sent_at' => now(),
+                        ]
+                    );
+                }
+            }
+
+            // Kembalikan respons sukses
+            return response()->json(['success' => true, 'message' => 'WA Blast berhasil dikirim.']);
+        } catch (Exception $e) {
+            // Tangani kesalahan dan kembalikan respons error
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal mengirim WA Blast: ' . $e->getMessage(),
+            ], 500); // HTTP status code 500 untuk server error
+        }
     }
 }

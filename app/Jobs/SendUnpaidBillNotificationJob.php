@@ -12,14 +12,12 @@ use Illuminate\Queue\SerializesModels;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
-use Illuminate\Contracts\Queue\ShouldBeUnique;
 
-class SendBillWhatsappNotificationJob implements ShouldQueue
+class SendUnpaidBillNotificationJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
     protected $students;
-    protected $billTypes;
     protected $deviceId;
     protected $url;
 
@@ -27,10 +25,9 @@ class SendBillWhatsappNotificationJob implements ShouldQueue
     /**
      * Create a new job instance.
      */
-    public function __construct($students, $billTypes)
+    public function __construct($students)
     {
         $this->students = $students;
-        $this->billTypes = $billTypes;
         $this->deviceId = ApplicationSetting::latest()->value('device_id');
         $this->url = ApplicationSetting::latest()->value('link_whatsapp') . 'send';
     }
@@ -41,10 +38,9 @@ class SendBillWhatsappNotificationJob implements ShouldQueue
     public function handle()
     {
         try {
-            foreach ($this->students as $student_id) {
-                $student = Student::find($student_id);
-                $message = SendNotifWaService::sendMessageUnpaidNotification($student, $this->billTypes);
-                $this->sendToWhatsapp($student->user?->phone, $message);
+            foreach ($this->students as $student) {
+                $message = SendNotifWaService::sendAllBillInvoice($student);
+                dispatch(new SendToWhatsappNotificationJob($student->user->phone, $message));
             }
         } catch (\Exception $e) {
             Log::error('Failed to send WhatsApp notification: ' . $e);

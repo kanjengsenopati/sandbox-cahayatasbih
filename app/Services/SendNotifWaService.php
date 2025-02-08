@@ -311,4 +311,71 @@ class SendNotifWaService
 
         return $message;
     }
+
+    public static function sendAllBillInvoice($student)
+    {
+        // Ambil data orang tua/wali siswa
+        $parentStudent = $student->user;
+
+        // Inisialisasi variabel
+        $mustPay = 0;
+        $message = "Assalamualaikum Bapak/Ibu *" . $parentStudent->name . "*,\n\n";
+        $message .= "Anda memiliki Kewajiban Administrasi Keuangan yang belum terbayar, sebagai berikut:\n";
+        $message .= "--------------------------------\n";
+        $message .= "1. NIS           : *" . $student->nis . "*\n";
+        $message .= "2. Nama Santri   : *" . $student->name . "*\n";
+        $message .= "3. Kelas         : *" . ($student?->classroom?->name ?? '-') . "*\n";
+        $message .= "4. Saldo         : *Rp." . number_format($student->saldo, 0, ',', '.') . "*\n";
+
+        // Ambil data tagihan yang belum dibayar
+        $currentMonth = (int) date('n'); // Bulan saat ini (1-12)
+        $currentYear = (int) date('Y');  // Tahun saat ini
+        $bills = Bill::where('student_id', $student->id)
+            ->whereHas(
+                'billType',
+                function ($q) {
+                    $q->whereNull('deleted_at');
+                }
+            )
+            ->where('status', Bill::STATUS_UNPAID)
+            ->where('amount', '>', 0) // Hanya tagihan dengan jumlah > 0
+            ->where(function ($q) use ($currentMonth, $currentYear) {
+                $q->where('year', '<', $currentYear) // Tagihan di tahun-tahun sebelumnya
+                    ->orWhere(function ($q2) use ($currentMonth, $currentYear) {
+                        $q2->where('year', $currentYear) // Tagihan di tahun saat ini
+                            ->where('month', '<=', $currentMonth); // Dan bulan <= bulan saat ini
+                    });
+            })
+            ->orderByRaw('CONCAT(year, LPAD(month, 2, "0")) DESC') // Urutkan berdasarkan YYYYMM (terbaru dulu)
+            ->get();
+
+        // Jika tidak ada tagihan, kembalikan null
+        if ($bills->isEmpty()) {
+            return null;
+        }
+
+        // Bangun daftar tagihan
+        $message .= "\nDaftar Tagihan yang Belum Dibayar:\n";
+        foreach ($bills as $index => $bill) {
+            $mustPay += $bill->amount; // Tambahkan total kekurangan
+            $message .= sprintf(
+                "%d. *%s* (%s %d) - Rp.%s\n",
+                $index + 1,
+                $bill->billType->name, // Nama jenis tagihan
+                $bill->translated_month, // Nama bulan
+                $bill->year, // Tahun
+                number_format($bill->amount, 0, ',', '.') // Jumlah tagihan
+            );
+        }
+
+        // Total kekurangan
+        $message .= "\n--------------------------------\n";
+        $message .= "Total Kekurangan: *Rp." . number_format($mustPay, 0, ',', '.') . "*\n";
+        $message .= "--------------------------------\n";
+        $message .= "Note: _Jika sudah melakukan pembayaran, abaikan pesan ini._\n";
+        $message .= "Wassalamualaikum Wr. Wb.\n";
+        $message .= "*PPTQ CAHAYA TASBIH*";
+
+        return $message;
+    }
 }

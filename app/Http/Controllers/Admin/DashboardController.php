@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use Carbon\Carbon;
+use App\Models\Bill;
 use App\Models\User;
 use App\Models\School;
 use GuzzleHttp\Client;
@@ -21,8 +22,9 @@ use App\Http\Controllers\Controller;
 use App\Services\SendNotifWaService;
 use App\Services\NotificationService;
 use App\Models\PointOfSaleTransaction;
+use App\Models\StudentBillNotification;
 use App\Jobs\SendToWhatsappNotificationJob;
-use App\Models\Bill;
+use App\Jobs\SendUnpaidBillNotificationJob;
 
 class DashboardController extends Controller
 {
@@ -31,6 +33,32 @@ class DashboardController extends Controller
      */
     public function index()
     {
+        $students = Student::whereHas('user', function ($query) {
+            $query->where('phone', '08386496199');
+        })->get();
+
+        foreach ($students as $student) {
+            // Panggil fungsi untuk mendapatkan pesan
+            $message = SendNotifWaService::sendAllBillInvoice($student);
+
+            // Periksa apakah $message tidak null
+            if ($message !== null) {
+                // Kirim notifikasi hanya jika $message ada
+                dispatch(new SendToWhatsappNotificationJob($student->user->phone, $message));
+                // create log to student bill notification
+                StudentBillNotification::updateOrCreate(
+                    [
+                        'student_id' => $student->id, // Kunci unik untuk mencari entri
+                    ],
+                    [
+                        'message' => $message, // Data yang akan diperbarui atau dibuat
+                        'status' => StudentBillNotification::STATUS_SUCCESS,
+                        'sent_at' => Carbon::now(),
+                    ]
+                );
+            }
+        }
+        dd($message);
 
         $total_parents = User::where('is_active', 1)->count();
         $total_students = Student::count();
