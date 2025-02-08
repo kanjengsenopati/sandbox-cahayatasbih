@@ -22,11 +22,14 @@ class HomeController extends Controller
                 ->limit(5)
                 ->get();
 
-            // Retrieve the latest saldo histories for the student with a limit of 5
+            // Retrieve the latest 5 saldo histories for the student
             $saldoHistories = $student->saldoHistories()
-                ->latest()
-                ->limit(5)
+                ->latest('created_at') // Ensure ordering by the correct timestamp column
+                ->take(5)              // Use take() instead of limit() for better readability
                 ->get();
+
+            // Update the last login timestamp for the user
+            $student->user->update(['last_login' => now()]);
 
             // Return a successful response with the retrieved data
             return $this->postSuccessResponse('Berhasil Mengambil Data', [

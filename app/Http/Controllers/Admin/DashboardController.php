@@ -20,6 +20,7 @@ use App\Models\WhiteBlowingSystem;
 use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\Controller;
 use App\Services\SendNotifWaService;
+use Illuminate\Support\Facades\Http;
 use App\Services\NotificationService;
 use App\Models\PointOfSaleTransaction;
 use App\Models\StudentBillNotification;
@@ -31,45 +32,49 @@ class DashboardController extends Controller
     /**
      * Display a listing of the resource.
      */
+
     public function index()
     {
-        $students = Student::whereHas('user', function ($query) {
-            $query->where('phone', '08386496199');
-        })->get();
+        try {
+            // Total active parents (wali santri aktif)
+            $totalActiveParents = User::where('is_active', 1)->count();
 
-        foreach ($students as $student) {
-            // Panggil fungsi untuk mendapatkan pesan
-            $message = SendNotifWaService::sendAllBillInvoice($student);
+            // Total students
+            $totalStudents = Student::count();
 
-            // Periksa apakah $message tidak null
-            if ($message !== null) {
-                // Kirim notifikasi hanya jika $message ada
-                dispatch(new SendToWhatsappNotificationJob($student->user->phone, $message));
-                // create log to student bill notification
-                StudentBillNotification::updateOrCreate(
-                    [
-                        'student_id' => $student->id, // Kunci unik untuk mencari entri
-                    ],
-                    [
-                        'message' => $message, // Data yang akan diperbarui atau dibuat
-                        'status' => StudentBillNotification::STATUS_SUCCESS,
-                        'sent_at' => Carbon::now(),
-                    ]
-                );
+            // Fetch prayer times for Demak using Aladhan API
+            $response = Http::get('http://api.aladhan.com/v1/timingsByCity', [
+                'city' => 'Demak',
+                'country' => 'ID',
+                'method' => 5, // Method 5 is the default method in Indonesia
+            ]);
+
+            $prayerTimes = [];
+            if ($response->successful()) {
+                $data = $response->json();
+                $prayerTimes = $data['data']['timings'];
             }
+
+            // Prepare data to pass to the view
+            $data = [
+                'total_parents' => $totalActiveParents,
+                'total_students' => $totalStudents,
+            ];
+
+            return view('admins.dashboard.index', compact(
+                'data',
+                'prayerTimes'
+            ));
+        } catch (\Exception $e) {
+            // Handle errors gracefully
+            return view('admins.dashboard.index', [
+                'data' => [
+                    'total_parents' => 0,
+                    'total_students' => 0,
+                ],
+                'prayerTimes' => [],
+            ])->withErrors(['error' => 'Gagal memuat data dashboard.']);
         }
-        dd($message);
-
-        $total_parents = User::where('is_active', 1)->count();
-        $total_students = Student::count();
-        $data = [
-            'total_parents' => $total_parents,
-            'total_students' => $total_students,
-        ];
-
-        return view('admins.dashboard.index', compact(
-            'data',
-        ));
     }
 
     public function generateRandomNumber()

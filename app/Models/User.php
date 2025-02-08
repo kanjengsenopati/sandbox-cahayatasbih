@@ -30,6 +30,7 @@ class User extends Authenticatable
         'gender',
         'fcm_token',
         'password',
+        'last_login',
     ];
 
     /**
