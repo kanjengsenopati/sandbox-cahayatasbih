@@ -319,13 +319,15 @@ class SendNotifWaService
 
         // Inisialisasi variabel
         $mustPay = 0;
-        $message = "Assalamualaikum Bapak/Ibu *" . $parentStudent->name . "*,\n\n";
+
+        // Gunakan null coalescing operator (??) untuk menangani null
+        $message = "Assalamualaikum Bapak/Ibu *" . ($parentStudent?->name ?? '-') . "*,\n\n";
         $message .= "Anda memiliki Kewajiban Administrasi Keuangan yang belum terbayar, sebagai berikut:\n";
         $message .= "--------------------------------\n";
-        $message .= "1. NIS           : *" . $student->nis . "*\n";
-        $message .= "2. Nama Santri   : *" . $student->name . "*\n";
+        $message .= "1. NIS           : *" . ($student->nis ?? '-') . "*\n";
+        $message .= "2. Nama Santri   : *" . ($student->name ?? '-') . "*\n";
         $message .= "3. Kelas         : *" . ($student?->classroom?->name ?? '-') . "*\n";
-        $message .= "4. Saldo         : *Rp." . number_format($student->saldo, 0, ',', '.') . "*\n";
+        $message .= "4. Saldo         : *Rp." . number_format($student->saldo ?? 0, 0, ',', '.') . "*\n";
 
         // Ambil data tagihan yang belum dibayar
         $currentMonth = (int) date('n'); // Bulan saat ini (1-12)
@@ -358,13 +360,15 @@ class SendNotifWaService
         $message .= "\nDaftar Tagihan yang Belum Dibayar:\n";
         foreach ($bills as $index => $bill) {
             $mustPay += $bill->amount; // Tambahkan total kekurangan
+
+            // Gunakan null coalescing operator untuk menangani null pada billType
             $message .= sprintf(
                 "%d. *%s* (%s %d) - Rp.%s\n",
                 $index + 1,
-                $bill->billType->name, // Nama jenis tagihan
-                $bill->translated_month, // Nama bulan
-                $bill->year, // Tahun
-                number_format($bill->amount, 0, ',', '.') // Jumlah tagihan
+                ($bill->billType?->name ?? '-'), // Nama jenis tagihan
+                ($bill->translated_month ?? '-'), // Nama bulan
+                ($bill->year ?? '-'), // Tahun
+                number_format($bill->amount ?? 0, 0, ',', '.') // Jumlah tagihan
             );
         }
 
