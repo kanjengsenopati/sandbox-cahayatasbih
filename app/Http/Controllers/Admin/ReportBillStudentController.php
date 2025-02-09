@@ -179,14 +179,15 @@ class ReportBillStudentController extends Controller
             })->latest()->get();
 
             // Iterasi setiap siswa
-            foreach ($students as $student) {
+            foreach ($students as $index => $student) {
                 // Panggil fungsi untuk mendapatkan pesan
                 $message = SendNotifWaService::sendAllBillInvoice($student);
 
                 // Periksa apakah $message tidak null dan nomor telepon tersedia
                 if ($message !== null && $student->user?->phone) {
-                    // Kirim notifikasi hanya jika $message ada
-                    dispatch(new SendToWhatsappNotificationJob($student->user->phone, $message));
+                    // Kirim notifikasi dengan delay 1 detik per siswa
+                    dispatch(new SendToWhatsappNotificationJob($student->user->phone, $message))
+                        ->delay(now()->addSeconds($index)); // Delay bertambah sesuai urutan siswa
 
                     // Simpan atau perbarui log notifikasi ke tabel student_bill_notifications
                     StudentBillNotification::updateOrCreate(
