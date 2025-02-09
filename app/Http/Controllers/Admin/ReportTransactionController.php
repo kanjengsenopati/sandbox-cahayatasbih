@@ -48,7 +48,7 @@ class ReportTransactionController extends Controller
                                 ->from('transaction_details')
                                 ->join('bills', 'transaction_details.bill_id', '=', 'bills.id')
                                 ->whereColumn('transaction_details.transaction_id', 'transactions.id')
-                                ->where('bills.bill_type_id', request()->bill_type_id);
+                                ->whereIn('bills.bill_type_id', request()->input('bill_type_id', [])); // Gunakan `whereIn` untuk array
                         });
                 })
                 ->hasSchool()

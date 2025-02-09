@@ -108,9 +108,9 @@
                                     </div>
                                     <div>
                                         <label class="form-label">Jenis Tagihan</label>
-                                        <select name="bill_type_id" class="form-select form-select-sm"
-                                            id="filter_tipe_tagihan">
-                                            <option value="">Semua</option>
+                                        <select name="bill_type_id[]" id="filter_tipe_tagihan"
+                                            class="form-select form-select-sm" id="filter_tipe_tagihan"
+                                            multiple="multiple" <option value="">Semua</option>
                                             @foreach ($billTypes as $billType)
                                             <option value="{{ $billType->id }}">{{ $billType->name }}</option>
                                             @endforeach
@@ -406,6 +406,15 @@
     $('.btn-export').on('click', function() {
         $('#type').val($(this).data('type'));
         $('#form-filter').attr('action', "{{ route('report-transaction.export') }}").submit();
+    });
+</script>
+<script>
+    $(document).ready(function() {
+    // Menginisialisasi Select2 pada elemen select
+        $('#filter_tipe_tagihan').select2({
+            placeholder: 'Pilih Tagihan', // Placeholder
+            allowClear: true // Menambahkan opsi untuk menghapus pilihan
+        });
     });
 </script>
 @endpush
