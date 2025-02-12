@@ -101,7 +101,6 @@
                                     <th>Nama</th>
                                     <th>Wali Siswa</th>
                                     <th>UPT</th>
-                                    <th>Kelas</th>
                                     <th>Saldo</th>
                                     <th>Status</th>
                                     <th class="text-center min-w-100px">Aksi</th>
@@ -158,7 +157,8 @@
         var table = $('#table-student').DataTable({
             ordering: true,
             processing: true,
-            serverSide: true,
+            serverSide: false,
+            searchDelay: 500,
             ajax: {
                 url: '{{ route('student.index') }}',
                 data: function(d) {
@@ -193,8 +193,8 @@
                     }
                 },
                 {
-                    data: 'name',
-                    name: 'name',
+                    data: 'student',
+                    name: 'student',
                     orderable: true,
                     responsivePriority: -1,
                 },
@@ -210,10 +210,6 @@
                 {
                     data: 'school',
                     name: 'school',
-                },
-                {
-                    data: 'classroom',
-                    name: 'classroom',
                 },
                 {
                     data: 'saldo',

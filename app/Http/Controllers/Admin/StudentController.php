@@ -73,12 +73,28 @@ class StudentController extends Controller
                             return '<span class="badge bg-secondary">Tidak Diketahui</span>';
                     }
                 })
+                ->addColumn('student', function ($data) {
+                    $studentName = $data?->name ? $data->name : '-';
+                    $className = $data->classroom?->name ? $data->classroom->name : '-';
+
+                    // Check if avatar exists, if not, use default avatar
+                    $avatarUrl = $data?->avatar ? $data->avatar : asset('assets/media/avatars/default.png');
+
+                    // Return HTML structure for the card with avatar, name, and class
+                    return '<div class="student-card" style="display: flex; align-items: center; gap: 10px;">
+                        <img src="' . $avatarUrl . '" alt="Avatar" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover;">
+                        <div>
+                            <div><strong>' . $studentName . '</strong></div>
+                            <div>' . $className . '</div>
+                        </div>
+                    </div>';
+                })
                 ->addColumn('parent', function ($data) {
                     $userName = $data->user ? $data->user?->name : '-';
                     $userPhone = $data->user ? $data->user?->phone : '-';
 
                     // Check if avatar exists, if not, use default avatar
-                    $avatarUrl = $data->user ? $data->user?->avatar : asset('assets/media/avatars/default.png');
+                    $avatarUrl = $data->user?->avatar ? $data->user?->avatar : asset('assets/media/avatars/default.png');
 
                     // Check if the phone number starts with '0'
                     $whatsappLink = null;
@@ -114,7 +130,7 @@ class StudentController extends Controller
                         view('components.action.delete', ['action' => $actionDelete, 'id' => $data->id, 'name' => 'Santri']) .
                         "</div>";
                 })
-                ->rawColumns(['action', 'saldo', 'classroom', 'school', 'status', 'parent'])
+                ->rawColumns(['action', 'saldo', 'classroom', 'school', 'status', 'parent', 'student'])
                 ->make(true);
         }
         $schools = School::hasSchool()->orderBy('name')->get();
