@@ -109,26 +109,37 @@ class TransactionService
 
     public static function payWithBalance($student, $pay_amount, $transaction, $request)
     {
+        // Hitung saldo sebelum transaksi
+        $balanceBefore = $student->saldo;
+
+        // Kurangi saldo siswa dengan jumlah pembayaran
         $student->update([
             'saldo' => $student->saldo - $pay_amount
         ]);
-        // tambahin history
+
+        // Hitung saldo setelah transaksi
+        $balanceAfter = $student->saldo;
+
+        // Tambahkan history saldo dengan balance_before dan balance_after
         $saldoHistory = SaldoHistory::create([
             'student_id' => $student->id,
             'amount' => $pay_amount,
             'type' => SaldoHistory::TYPE_OUT,
             'description' => 'Pembayaran Tagihan Sebesar Rp.' . number_format($pay_amount, 0, ',', '.'),
             'status' => SaldoHistory::STATUS_SUCCESS,
-            'usage' => SaldoHistory::USAGE_BILL
+            'usage' => SaldoHistory::USAGE_BILL,
+            'balance_before' => $balanceBefore ?? 0, // Saldo sebelum transaksi
+            'balance_after' => $balanceAfter ?? 0, // Saldo setelah transaksi
         ]);
 
-        // update transaction status
+        // Update status transaksi
         $transaction->update([
             'status' => Transaction::STATUS_PAID,
             'paid_at' => Carbon::now(),
             'payment_method_id' => PaymentMethod::where('type', PaymentMethod::TYPE_BALANCE)->first()?->id,
         ]);
 
+        // Loop untuk menambahkan detail transaksi jika belum ada
         foreach ($request->bill_ids as $billId) {
             // Cek apakah transaction detail sudah ada
             $exists = $transaction->transactionDetails()
@@ -143,8 +154,7 @@ class TransactionService
             }
         }
 
-
-        // update bill status with loop in transaction details
+        // Update status tagihan menjadi "Paid"
         self::changeStatusToPaid($transaction);
     }
 

@@ -30,7 +30,9 @@ class SaldoHistory extends Model
         'amount',
         'description',
         'status',
-        'usage'
+        'usage',
+        'balance_before',
+        'balance_after',
     ];
 
     public function student()

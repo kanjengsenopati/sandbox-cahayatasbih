@@ -179,8 +179,10 @@
                                         <th>Tanggal</th>
                                         <th>NIS</th>
                                         <th>Nama Siswa</th>
-                                        <th>Jumlah</th>
+                                        <th>Nominal</th>
                                         <th>Status</th>
+                                        <th>Saldo Awal</th>
+                                        <th>Saldo Akhir</th>
                                         <th>Keterangan</th>
                                         @if (Auth::user()->can('Delete Laporan Saldo Santri'))
                                         <th style="width: 10%">Aksi</th>
@@ -280,6 +282,24 @@
                         searchable: true,
                         render: function(data) {
                             return data ? data : 'No Status';
+                        }
+                    },
+                    {
+                        data: 'balance_before',
+                        name: 'balance_before',
+                        orderable: true,
+                        searchable: true,
+                        render: function(data) {
+                            return data ? data : '-';
+                        }
+                    },
+                    {
+                        data: 'balance_after',
+                        name: 'balance_after',
+                        orderable: true,
+                        searchable: true,
+                        render: function(data) {
+                            return data ? data : '-';
                         }
                     },
                     {

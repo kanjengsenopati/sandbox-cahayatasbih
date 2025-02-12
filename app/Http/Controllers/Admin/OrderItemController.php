@@ -139,44 +139,26 @@ class OrderItemController extends Controller
                 return $cart->item->profit * $cart->quantity;
             });
 
-            // Get student data
+            // Get student data and process payment
             if ($request->payment_method == PointOfSaleTransaction::PAYMENT_SALDO) {
+                // Fetch the student by barcode
                 $student = Student::where('barcode', $request->barcode)->first();
-                if ($student->saldo < $total) {
-                    return redirect()->back()->with('error', 'Maaf, Saldo Santri tidak mencukupi');
+
+                // Validate student's balance, block status, and daily limit
+                if (!$this->validateStudentForTransaction($student, $total)) {
+                    return redirect()->back()->with('error', 'Maaf, transaksi tidak dapat diproses.');
                 }
 
-                // check if student is blocked
-                if ($student->is_blocked) {
-                    return redirect()->back()->with('error', 'Maaf, Saldo Santri diblokir oleh Wali Santri');
-                }
-
-                if ($student->daily_limit > 0) {
-
-                    // Check if student has reached the daily limit
-                    $totalThisDay = PointOfSaleTransaction::where('student_id', $student->id)
-                        ->whereDate('paid_at', now())
-                        ->where('status', PointOfSaleTransaction::STATUS_SUCCESS)
-                        ->sum('pay_amount') ?? 0;
-
-                    if ($student->daily_limit < $totalThisDay + $total) {
-                        return redirect()->back()->with('error', 'Maaf, Siswa telah mencapai batas transaksi harian');
-                    }
-                }
-
-                // Deduct student's balance
+                // Calculate balances before and after the transaction
+                $balanceBefore = $student->saldo;
                 $student->saldo -= $total;
+                $balanceAfter = $student->saldo;
+
+                // Save the updated student balance
                 $student->save();
 
-                // Add history saldo
-                $history = SaldoHistory::create([
-                    'student_id' => $student->id,
-                    'type' => 'OUT',
-                    'amount' => $total,
-                    'description' => 'Pembayaran Pembelian Barang Rp. ' . number_format($total, 0, ',', '.'),
-                    'status' => 'SUCCESS',
-                    'usage' => SaldoHistory::USAGE_POS,
-                ]);
+                // Record the transaction in SaldoHistory
+                $history = $this->recordSaldoHistory($student, $total, $balanceBefore, $balanceAfter);
             }
 
             $paymentCode = 'POS-' . now()->format('Ymd') . str_pad(PointOfSaleTransaction::whereDate('paid_at', now())->count() + 1, 3, '0', STR_PAD_LEFT);
@@ -223,7 +205,55 @@ class OrderItemController extends Controller
         }
     }
 
+    private function validateStudentForTransaction($student, $total): bool
+    {
+        // Check if student exists
+        if (!$student) {
+            session()->flash('error', 'Santri tidak ditemukan.');
+            return false;
+        }
 
+        // Check if student has sufficient balance
+        if ($student->saldo < $total) {
+            session()->flash('error', 'Maaf, Saldo Santri tidak mencukupi.');
+            return false;
+        }
+
+        // Check if student is blocked
+        if ($student->is_blocked) {
+            session()->flash('error', 'Maaf, Saldo Santri diblokir oleh Wali Santri.');
+            return false;
+        }
+
+        // Check daily transaction limit
+        if ($student->daily_limit > 0) {
+            $totalThisDay = PointOfSaleTransaction::where('student_id', $student->id)
+                ->whereDate('paid_at', now())
+                ->where('status', PointOfSaleTransaction::STATUS_SUCCESS)
+                ->sum('pay_amount') ?? 0;
+
+            if ($student->daily_limit < $totalThisDay + $total) {
+                session()->flash('error', 'Maaf, Siswa telah mencapai batas transaksi harian.');
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private function recordSaldoHistory($student, $total, $balanceBefore, $balanceAfter)
+    {
+        return SaldoHistory::create([
+            'student_id' => $student->id,
+            'type' => 'OUT',
+            'amount' => $total,
+            'description' => 'Pembayaran Pembelian Barang Rp. ' . number_format($total, 0, ',', '.'),
+            'status' => 'SUCCESS',
+            'usage' => SaldoHistory::USAGE_POS,
+            'balance_before' => $balanceBefore ?? 0,
+            'balance_after' => $balanceAfter ?? 0,
+        ]);
+    }
     /**
      * Display the specified resource.
      */

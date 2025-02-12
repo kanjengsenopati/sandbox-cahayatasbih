@@ -106,6 +106,12 @@ class ReportSaldoController extends Controller
             ->addColumn('date', function ($data) {
                 return $data->created_at->translatedFormat('d F Y' . ' <br>' . 'H:i:s');
             })
+            ->editColumn('balance_before', function ($data) {
+                return '<span class="badge bg-info">Rp ' . number_format($data->balance_before, 0, ',', '.') . '</span>';
+            })
+            ->editColumn('balance_after', function ($data) {
+                return '<span class="badge bg-info">Rp ' . number_format($data->balance_after, 0, ',', '.') . '</span>';
+            })
             ->addColumn('action', function ($data) {
                 $actionDelete = route('report-saldo.destroy', $data->id);
                 return "<div class='d-flex gap-2 flex-nowrap justify-content-center'>" .
@@ -113,7 +119,7 @@ class ReportSaldoController extends Controller
                     view('components.action.delete', ['action' => $actionDelete, 'id' => $data->id, 'name' => 'Laporan Saldo Santri']) .
                     "</div>";
             })
-            ->rawColumns(['amount', 'status', 'date', 'action'])
+            ->rawColumns(['amount', 'status', 'date', 'action', 'balance_before', 'balance_after'])
             ->make(true);
     }
 

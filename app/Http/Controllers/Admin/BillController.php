@@ -227,26 +227,6 @@ class BillController extends Controller
         }
     }
 
-    // public function store(BillPaymentRequest $request)
-    // {
-    //     DB::beginTransaction();
-
-    //     try {
-    //         $paymentMethodType = $request->payment_method;
-
-    //         $transaction = TransactionService::createTransaction($request, $paymentMethodType, Transaction::TYPE_BILL);
-    //         if ($transaction->status == Transaction::STATUS_PAID && $transaction?->student?->user?->phone) {
-    //             TransactionService::dispatchNotifications($transaction);
-    //         }
-    //         DB::commit();
-    //         return redirect()->back()->with('success', "Transaksi pembayaran berhasil");
-    //     } catch (\Throwable $th) {
-    //         DB::rollBack();
-    //         Log::error($th);
-    //         return redirect()->back()->with('error', "Transaksi pembayaran gagal");
-    //     }
-    // }
-
     /**
      * Display the specified resource.
      */

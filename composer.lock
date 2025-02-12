@@ -2460,20 +2460,20 @@
         },
         {
             "name": "laravel/octane",
-            "version": "v2.1.1",
+            "version": "v2.2.7",
             "source": {
                 "type": "git",
                 "url": "https://github.com/laravel/octane.git",
-                "reference": "6dbb1d81aa13be7af764f1efbf48861237cf25a0"
+                "reference": "9f36957a2166ba13fd9787246fbba061f307a3f6"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/laravel/octane/zipball/6dbb1d81aa13be7af764f1efbf48861237cf25a0",
-                "reference": "6dbb1d81aa13be7af764f1efbf48861237cf25a0",
+                "url": "https://api.github.com/repos/laravel/octane/zipball/9f36957a2166ba13fd9787246fbba061f307a3f6",
+                "reference": "9f36957a2166ba13fd9787246fbba061f307a3f6",
                 "shasum": ""
             },
             "require": {
-                "laminas/laminas-diactoros": "^3.0.0",
+                "laminas/laminas-diactoros": "^3.0",
                 "laravel/framework": "^10.10.1",
                 "laravel/serializable-closure": "^1.3.0",
                 "nesbot/carbon": "^2.66.0",
@@ -2505,16 +2505,16 @@
             ],
             "type": "library",
             "extra": {
-                "branch-alias": {
-                    "dev-master": "2.x-dev"
-                },
                 "laravel": {
-                    "providers": [
-                        "Laravel\\Octane\\OctaneServiceProvider"
-                    ],
                     "aliases": {
                         "Octane": "Laravel\\Octane\\Facades\\Octane"
-                    }
+                    },
+                    "providers": [
+                        "Laravel\\Octane\\OctaneServiceProvider"
+                    ]
+                },
+                "branch-alias": {
+                    "dev-master": "2.x-dev"
                 }
             },
             "autoload": {
@@ -2534,6 +2534,7 @@
             ],
             "description": "Supercharge your Laravel application's performance.",
             "keywords": [
+                "frankenphp",
                 "laravel",
                 "octane",
                 "roadrunner",
@@ -2543,7 +2544,7 @@
                 "issues": "https://github.com/laravel/octane/issues",
                 "source": "https://github.com/laravel/octane"
             },
-            "time": "2023-10-18T14:16:52+00:00"
+            "time": "2024-01-08T14:58:30+00:00"
         },
         {
             "name": "laravel/passport",

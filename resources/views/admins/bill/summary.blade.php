@@ -125,7 +125,7 @@
                                     <thead>
                                         <tr class="text-start text-muted fw-bolder fs-7 text-uppercase gs-0">
                                             <th style="width: 5%;">No</th>
-                                            <th class="min-w-125px">Bulan</th>
+                                            <th class="min-w-125px">Periode</th>
                                             <th class="min-w-125px">Tagihan</th>
                                             <th class="min-w-125px">Metode Pembayaran</th>
                                             <th>Status</th>
@@ -134,6 +134,20 @@
                                     </thead>
                                     <tbody class="text-gray-600">
                                         @foreach (array_merge(range(7, 12), range(1, 6)) as $month)
+                                        @php
+                                        $billForMonth = $bills->where('month', $month)->first();
+                                        $amount = $billForMonth ? number_format($billForMonth->amount, 0, ',', '.') : 0;
+                                        $transaction = $billForMonth?->transactions?->first();
+                                        $adminName = $transaction?->admin?->name ?? '';
+                                        $paidAt = $transaction?->paid_at;
+                                        $paymentMethodType = $transaction?->paymentMethod?->type;
+                                        $paymentMethodName = $transaction?->paymentMethod?->name ?? '';
+                                        $status = $billForMonth ? $billForMonth->translated_status : 'UNPAID';
+                                        $isPaid = $billForMonth && $billForMonth->status == 'PAID';
+                                        $isUnpaid = $billForMonth && $billForMonth->status == 'UNPAID';
+                                        $paymentLink = $billForMonth?->transactions?->first()?->payment_link;
+                                        @endphp
+
                                         <tr>
                                             <form action="{{ route('bill.store') }}" method="post" class="form-bayar"
                                                 enctype="multipart/form-data">
@@ -141,70 +155,35 @@
                                                 <td>{{ $loop->iteration }}</td>
                                                 <th class="min-w-125px">
                                                     {{ \Carbon\Carbon::create()->month($month)->translatedFormat('F') }}
+                                                    - {{ $billForMonth->year ?? '' }}
                                                 </th>
-                                                @php
-                                                $billForMonth = $bills->where('month', $month)->first();
-                                                $amount = $billForMonth ? number_format($billForMonth->amount, 0, ',',
-                                                '.') : 0;
-                                                @endphp
+
                                                 <input type="hidden" name="bill_ids[]"
                                                     value="{{ $billForMonth->id ?? '' }}">
                                                 <input type="hidden" name="pay_amount"
                                                     value="{{ $billForMonth->amount ?? '' }}">
                                                 <input type="hidden" name="student_id" value="{{ $student->id ?? '' }}">
-                                                <td>Rp {{ $amount ?? '' }}</td>
+                                                <td>Rp {{ $amount }}</td>
                                                 <td>
-                                                    @if ($billForMonth && $billForMonth->status == 'PAID')
-                                                    @if(optional($billForMonth->transactions->first())->paymentMethod?->type
-                                                    == 'CASH')
+                                                    @if ($isPaid)
                                                     <span class="badge badge-success">
-                                                        @if ($billForMonth?->transactions?->first()?->admin)
-                                                        Tunai Melalui {{
-                                                        $billForMonth->transactions->first()->admin->name ?? '' }}
-                                                        @endif
-                                                        @if($billForMonth->transactions?->first()?->paid_at)
-                                                        <br>Dibayar {{ $billForMonth->transactions->first()->paid_at }}
-                                                        @endif
-                                                    </span>
-                                                    @elseif(optional($billForMonth->transactions->first())->paymentMethod?->type
-                                                    == 'TRANSFER')
-                                                    <span class="badge badge-success">
-                                                        @if ($billForMonth?->transactions?->first()?->admin)
-                                                        Transfer Diverifikasi oleh {{
-                                                        $billForMonth->transactions->first()->admin->name ?? '' }}
-                                                        @endif
-                                                        @if($billForMonth->transactions?->first()?->paid_at)
-                                                        <br>Dibayar {{ $billForMonth->transactions->first()->paid_at }}
-                                                        @endif
-                                                    </span>
-                                                    @elseif(optional($billForMonth?->transactions?->first())->paymentMethod?->type
-                                                    == "BALANCE")
-                                                    <span class="badge badge-success">
-                                                        @php
-                                                        $transaction = $billForMonth?->transactions?->first();
-                                                        $adminName = $transaction?->admin?->name ?? '';
-                                                        $paidAt = $transaction?->paid_at;
-                                                        @endphp
-
+                                                        @if ($paymentMethodType == 'CASH')
+                                                        Tunai Melalui {{ $adminName }}
+                                                        @elseif ($paymentMethodType == 'TRANSFER')
+                                                        Transfer Diverifikasi oleh {{ $adminName }}
+                                                        @elseif ($paymentMethodType == 'BALANCE')
                                                         @if ($transaction?->admin_id)
                                                         Debit Saldo melalui {{ $adminName }}
                                                         @else
                                                         Debit Saldo
                                                         @endif
-
+                                                        @else
+                                                        {{ $paymentMethodName }}
+                                                        @endif
                                                         @if ($paidAt)
                                                         <br>Dibayar {{ $paidAt }}
                                                         @endif
                                                     </span>
-                                                    @else
-                                                    <span class="badge badge-success">
-                                                        {{ $billForMonth->transactions->first()->paymentMethod->name ??
-                                                        '' }}
-                                                        @if($billForMonth->transactions?->first()?->paid_at)
-                                                        <br>Dibayar {{ $billForMonth->transactions->first()->paid_at }}
-                                                        @endif
-                                                    </span>
-                                                    @endif
                                                     @else
                                                     <select class="form-select payment-method-select"
                                                         name="payment_method" required>
@@ -216,23 +195,20 @@
                                                     </select>
                                                     @endif
                                                 </td>
-                                                <td>{{ $billForMonth ? $billForMonth->translated_status : 'UNPAID'}}
-                                                </td>
+                                                <td>{{ $status }}</td>
                                                 <td>
                                                     @if (Auth::user()->can('Edit Status Tagihan'))
                                                     @if ($billForMonth)
-                                                    <a onclick="changeStatus('{{ $billForMonth->id }}', '{{ $billForMonth->status == 'PAID' ? 'UNPAID' : 'PAID' }}')"
+                                                    <a onclick="changeStatus('{{ $billForMonth->id }}', '{{ $isPaid ? 'UNPAID' : 'PAID' }}')"
                                                         class="btn btn-success btn-sm">Ubah Status</a>
                                                     @else
                                                     <span>-</span>
-                                                    <!-- Or any other fallback message -->
                                                     @endif
                                                     @endif
-                                                    @if ($billForMonth && $billForMonth->status == 'PAID')
-                                                    @elseif ($billForMonth && $billForMonth->status == 'UNPAID' &&
-                                                    $billForMonth->transactions->first()?->payment_link)
-                                                    <a href="{{ $billForMonth->transactions->first()->payment_link }}"
-                                                        class="btn btn-primary btn-sm">Ke Halaman Pembayaran</a>
+                                                    @if ($isPaid)
+                                                    @elseif ($isUnpaid && $paymentLink)
+                                                    <a href="{{ $paymentLink }}" class="btn btn-primary btn-sm">Ke
+                                                        Halaman Pembayaran</a>
                                                     @elseif ($billForMonth)
                                                     <button onclick="disableButton(this)"
                                                         class="btn btn-primary btn-bayar btn-sm">Bayar</button>
