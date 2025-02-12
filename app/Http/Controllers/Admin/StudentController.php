@@ -73,6 +73,35 @@ class StudentController extends Controller
                             return '<span class="badge bg-secondary">Tidak Diketahui</span>';
                     }
                 })
+                ->addColumn('parent', function ($data) {
+                    $userName = $data->user ? $data->user?->name : '-';
+                    $userPhone = $data->user ? $data->user?->phone : '-';
+
+                    // Check if avatar exists, if not, use default avatar
+                    $avatarUrl = $data->user ? $data->user?->avatar : asset('assets/media/avatars/default.png');
+
+                    // Check if the phone number starts with '0'
+                    $whatsappLink = null;
+                    if ($userPhone !== '-' && substr($userPhone, 0, 1) === '0') {
+                        // Replace the leading '0' with the country code (e.g., '62' for Indonesia)
+                        $formattedPhone = '62' . substr($userPhone, 1);
+                        $whatsappLink = 'https://wa.me/' . $formattedPhone;
+                    }
+
+                    // Return HTML structure for the card with avatar, name, and class
+                    return '<div class="student-card" style="display: flex; align-items: center; gap: 10px;">
+                        <img src="' . $avatarUrl . '" alt="Avatar" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover;">
+                        <div>
+                            <div><strong>' . $userName . '</strong></div>
+                            <div>' .
+                        ($whatsappLink
+                            ? '<a href="' . $whatsappLink . '" target="_blank" style="text-decoration: none; color: inherit;">' . $userPhone . '</a>'
+                            : $userPhone
+                        ) .
+                        '</div>
+                        </div>
+                    </div>';
+                })
                 ->addColumn('action', function ($data) {
                     $actionShow = route('student.show', $data->id);
                     // $actionEdit = route('student.edit', $data->id);
@@ -85,7 +114,7 @@ class StudentController extends Controller
                         view('components.action.delete', ['action' => $actionDelete, 'id' => $data->id, 'name' => 'Santri']) .
                         "</div>";
                 })
-                ->rawColumns(['action', 'saldo', 'classroom', 'school', 'status'])
+                ->rawColumns(['action', 'saldo', 'classroom', 'school', 'status', 'parent'])
                 ->make(true);
         }
         $schools = School::hasSchool()->orderBy('name')->get();
@@ -181,7 +210,7 @@ class StudentController extends Controller
         }
         if (request()->ajax() && request()->type === 'bill') {
             $data = BillType::with('billItem', 'academicYear', 'bills')
-                ->whereHas('bills', fn ($query) => $query->where('student_id', $id))
+                ->whereHas('bills', fn($query) => $query->where('student_id', $id))
                 ->latest()
                 ->get();
 
@@ -295,7 +324,8 @@ class StudentController extends Controller
         $qrCodeBase64 = base64_encode($qrCode);
         $pdf = PDF::loadView('admins.student-card.index', [
             'background' => $background,
-            'student' => $student, 'qrCode' => $qrCodeBase64
+            'student' => $student,
+            'qrCode' => $qrCodeBase64
         ])
             ->setPaper('a4', 'landscape');
 

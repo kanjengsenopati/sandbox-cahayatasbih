@@ -199,8 +199,8 @@
                     responsivePriority: -1,
                 },
                 {
-                    data: 'user.name',
-                    name: 'user.name',
+                    data: 'parent',
+                    name: 'parent',
                     orderable: false,
                     responsivePriority: -1,
                     render: function(data, type, row) {
