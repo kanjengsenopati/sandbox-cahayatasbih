@@ -68,12 +68,11 @@
                             <thead>
                                 <tr class="fw-bolder fs-6 text-gray-800 border-bottom border-gray-200">
                                     <th width="3%">No</th>
-                                    <th class="w-10px pe-2">Avatar</th>
                                     <th>Nama</th>
                                     <th>Email</th>
-                                    <th>No HP</th>
-                                    <th>Gender</th>
+                                    <th>Jenis Kelamin</th>
                                     <th>Status</th>
+                                    <th>Akses</th>
                                     <th class="text-center min-w-100px">Aksi</th>
                                 </tr>
                             </thead>
@@ -126,9 +125,9 @@
 <script>
     $(document).ready(() => {
         var table = $('#table-user').DataTable({
-            ordering: false,
+            ordering: true,
             processing: true,
-            serverSide: true,
+            serverSide: false,
             searchable: true,
             ajax: "{{ route('user.index') }}",
             language: {
@@ -149,17 +148,6 @@
                     }
                 },
                 {
-                    data: 'avatar',
-                    name: 'avatar',
-                    render: function(data, type, row) {
-                        if (data == null) {
-                            return `<span class="symbol-label fs-2x fw-bold text-primary bg-light-primary">${row.name ? row.name.charAt(0) : 'N/A'}</span>`;
-                        } else {
-                            return `<img src="${data}" alt="image" class="h-50px w-50px rounded-circle" />`;
-                        }
-                    }
-                },
-                {
                     data: 'name',
                     name: 'name',
                     responsivePriority: -1,
@@ -170,13 +158,6 @@
                 {
                     data: 'email',
                     name: 'email',
-                    render: function(data, type, row) {
-                        return data ? data : 'N/A'; // Null handler
-                    }
-                },
-                {
-                    data: 'phone',
-                    name: 'phone',
                     render: function(data, type, row) {
                         return data ? data : 'N/A'; // Null handler
                     }
@@ -203,22 +184,12 @@
                     },
                 },
                 {
-                    data: 'is_active',
-                    name: 'is_active',
-                    searchable: false,
-                    responsivePriority: -1,
-                    render: function(data, type, row) {
-                        let badgeClass = '';
-                        let label = '';
-                        if (data == true) {
-                            badgeClass = 'badge-light-success';
-                            label = 'Aktif';
-                        } else {
-                            badgeClass = 'badge-light-danger';
-                            label = 'Nonaktif';
-                        }
-                        return `<span class="badge ${badgeClass}">${label}</span>`;
-                    },
+                    data: 'status',
+                    name: 'status',
+                },
+                {
+                    data: 'last_login',
+                    name: 'last_login',
                 },
                 {
                     data: 'action',

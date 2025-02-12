@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use Carbon\Carbon;
 use App\Models\User;
 use Illuminate\Http\Request;
 use App\Imports\UserImportData;
@@ -26,6 +27,41 @@ class UserController extends Controller
         if (request()->ajax()) {
             $data = User::latest();
             return DataTables::of($data)
+                ->addColumn('name', function ($data) {
+                    $userName = $data ? $data?->name : '-';
+                    $userPhone = $data ? $data?->phone : '-';
+
+                    // Check if avatar exists, if not, use default avatar
+                    $avatarUrl = $data?->avatar ? $data?->avatar : asset('assets/media/avatars/default.png');
+
+                    // Check if the phone number starts with '0'
+                    $whatsappLink = null;
+                    if ($userPhone !== '-' && substr($userPhone, 0, 1) === '0') {
+                        // Replace the leading '0' with the country code (e.g., '62' for Indonesia)
+                        $formattedPhone = '62' . substr($userPhone, 1);
+                        $whatsappLink = 'https://wa.me/' . $formattedPhone;
+                    }
+
+                    // Return HTML structure for the card with avatar, name, and class
+                    return '<div class="student-card" style="display: flex; align-items: center; gap: 10px;">
+                        <img src="' . $avatarUrl . '" alt="Avatar" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover;">
+                        <div>
+                            <div><strong>' . $userName . '</strong></div>
+                            <div>' .
+                        ($whatsappLink
+                            ? '<a href="' . $whatsappLink . '" target="_blank" style="text-decoration: none; color: inherit;">' . $userPhone . '</a>'
+                            : $userPhone
+                        ) .
+                        '</div>
+                        </div>
+                    </div>';
+                })
+                ->addColumn('status', function ($data) {
+                    return $data->last_login ? '<span class="badge badge-success">Aktif</span>' : '<span class="badge badge-danger">Tidak Aktif</span>';
+                })
+                ->editColumn('last_login', function ($data) {
+                    return $data->last_login ? Carbon::parse($data->last_login)->diffForHumans() : '-';
+                })
                 ->addColumn('action', function ($data) {
                     $actionEdit = route('user.edit', $data->id);
                     $actionDelete = route('user.destroy', $data->id);
@@ -34,7 +70,7 @@ class UserController extends Controller
                         view('components.action.delete', ['action' => $actionDelete, 'id' => $data->id, 'name' => 'Wali Santri']) .
                         "</div>";
                 })
-                ->rawColumns(['action'])
+                ->rawColumns(['action', 'name', 'status'])
                 ->make(true);
         }
         return view('admins.user.index');
