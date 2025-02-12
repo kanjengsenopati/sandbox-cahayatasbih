@@ -95,6 +95,8 @@
                                             <th class="min-w-100px" style="width: 22%">Siswa</th>
                                             <th class="min-w-100px" style="width: 22%">Jumlah</th>
                                             <th class="min-w-100px" style="width: 22%">Status</th>
+                                            <th>Saldo Awal</th>
+                                            <th>Saldo Akhir</th>
                                             <th class="min-w-100px" style="width: 22%">Keterangan</th>
                                             {{-- <th class="text-center min-w-100px" style="width: 22%">Aksi</th> --}}
                                         </tr>
@@ -114,7 +116,7 @@
                                         <tr class="text-start text-gray-400 fw-bolder fs-7 text-uppercase gs-0">
                                             <th style="width: 5%">No</th>
                                             <th>Siswa</th>
-                                            <th>Jumlah Pembayaran</th>
+                                            <th>Nominal</th>
                                             <th>Kode Unik</th>
                                             <th>Bukti Transfer</th>
                                             <th>Status</th>
@@ -237,6 +239,14 @@
                         render: function(data, type, row) {
                          return data ? data : 'N/A'; // Null handler
                         }
+                    },
+                    {
+                        data: 'balance_before',
+                        name: 'balance_before'
+                    },
+                    {
+                        data: 'balance_after',
+                        name: 'balance_after'
                     },
                     {
                         data: 'description',
