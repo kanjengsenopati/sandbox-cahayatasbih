@@ -19,7 +19,7 @@
                 <ul class="breadcrumb breadcrumb-separatorless fw-bold fs-7 my-1">
                     <!--begin::Item-->
                     <li class="breadcrumb-item text-muted">
-                        <a href="{{ route('user.index') }}" class="text-muted text-hover-primary">User</a>
+                        <a href="{{ route('user.index') }}" class="text-muted text-hover-primary">Wali</a>
                     </li>
                     <!--end::Item-->
                     <!--begin::Item-->
@@ -28,7 +28,7 @@
                     </li>
                     <!--end::Item-->
                     <!--begin::Item-->
-                    <li class="breadcrumb-item text-dark">List User</li>
+                    <li class="breadcrumb-item text-dark">Data Wali Santri</li>
                     <!--end::Item-->
 
                 </ul>
@@ -43,21 +43,61 @@
         <!--begin::Container-->
         <div id="kt_content_container" class="container-xxl">
             <!--begin::Card-->
-            <div class="card">
+            <div class="card mb-5">
                 <!--begin::Card header-->
                 <div
-                    class="card-header d-flex align-items-end gap-5 flex-sm-row mb-5 justify-content-between border-0 pt-6">
-                    <div class="d-flex flex-wrap justify-content-beetween gap-5">
-                        <x-action.import target="#modalImport" name="Wali Santri" />
-                        <div class="mb-0">
-
-                        </div>
+                    class="card-header d-flex flex-column flex-sm-row align-items-end justify-content-between border-0 pt-6">
+                    <!-- Filter Section -->
+                    <div class="d-flex flex-wrap gap-4 align-items-end mb-4 mb-sm-0">
+                        <form action="#" id="form-filter" method="get">
+                            <input type="text" hidden id="type" name="type" required>
+                            <div class="d-flex flex-wrap gap-4 align-items-end">
+                                <div>
+                                    <label class="form-label">Status</label>
+                                    <select name="status" class="form-select form-select-sm" id="filter_status">
+                                        <option value="">Semua</option>
+                                        <option value="ACTIVE">Aktif</option> <!-- Opsi untuk Aktif -->
+                                        <option value="INACTIVE">Tidak Aktif</option> <!-- Opsi untuk Tidak Aktif -->
+                                    </select>
+                                </div>
+                            </div>
+                        </form>
                     </div>
-                    <div class="mt-4 gap-2 d-flex justify-content-beetween align-items-end">
 
+                    <!-- Action Buttons -->
+                    <div class="d-flex flex-wrap gap-4 align-items-end">
+                        <x-action.import target="#modalImport" name="Wali Santri" />
                         <x-action.create name="Wali Santri" action="{{ route('user.create') }}" />
                     </div>
-                    <!--end::Card title-->
+
+                    <!-- Stats Cards -->
+                    <div class="d-flex flex-wrap gap-4 mt-4 w-100">
+                        <!-- Card for "Wali Santri Aktif" -->
+                        <div class="card bg-light-success flex-grow-1">
+                            <div class="card-body d-flex align-items-center">
+                                <div class="me-3">
+                                    <i class="fas fa-user-check text-success fs-2"></i> <!-- Ikon untuk aktif -->
+                                </div>
+                                <div>
+                                    <div class="fw-bolder fs-5 text-gray-800">Wali Santri Aktif</div>
+                                    <div class="text-success fs-3 fw-bolder" id="active-parents">0</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Card for "Wali Santri Tidak Aktif" -->
+                        <div class="card bg-light-danger flex-grow-1">
+                            <div class="card-body d-flex align-items-center">
+                                <div class="me-3">
+                                    <i class="fas fa-user-times text-danger fs-2"></i> <!-- Ikon untuk tidak aktif -->
+                                </div>
+                                <div>
+                                    <div class="fw-bolder fs-5 text-gray-800">Wali Santri Tidak Aktif</div>
+                                    <div class="text-danger fs-3 fw-bolder" id="inactive-parents">0</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
                 <!--end::Card header-->
                 <!--begin::Card body-->
@@ -129,7 +169,13 @@
             processing: true,
             serverSide: false,
             searchable: true,
-            ajax: "{{ route('user.index') }}",
+            ajax: {
+                url: '{{ route('user.index') }}',
+                data: function(d) {
+                    d.status = $('#filter_status').val();
+                    d.type = 'table';
+                }
+            },
             language: {
                 "paginate": {
                     "next": "<i class='fa fa-angle-right'>",
@@ -202,6 +248,22 @@
                     }
                 },
             ]
+        });
+
+        $('#filter_status').on('change', function() {
+            table.ajax.reload();
+        });
+
+        $.ajax({
+            url: '{{ route('user.index') }}',
+            type: 'GET',
+            data: {
+                type: 'statistic'
+            },
+            success: function(response) {
+                $('#active-parents').text(response.active);
+                $('#inactive-parents').text(response.inactive);
+            }
         });
     })
 </script>

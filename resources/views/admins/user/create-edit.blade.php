@@ -23,7 +23,7 @@
                     <!--end::Item-->
                     <!--begin::Item-->
                     <a class="breadcrumb-item" href="{{ route('user.index') }}">
-                        <li class="breadcrumb-item text-muted">User</li>
+                        <li class="breadcrumb-item text-muted">Wali Santri</li>
                     </a>
                     <!--end::Item-->
                     <li class="breadcrumb-item">
@@ -31,7 +31,7 @@
                     </li>
                     <!--begin::Item-->
                     <li class="breadcrumb-item text-dark">
-                        {{ request()->routeIs('user.create') ? 'Tambah User' : 'Edit User' }}</li>
+                        {{ request()->routeIs('user.create') ? 'Tambah Wali Santri' : 'Edit Wali Santri' }}</li>
                     <!--end::Item-->
                 </ul>
                 <!--end::Breadcrumb-->
@@ -53,12 +53,6 @@
                     <!--begin::Contacts-->
                     <div class="card card-flush h-lg-100" id="kt_contacts_main">
                         <!--begin::Card header-->
-                        <div class="card-header pt-7" id="kt_chat_contacts_header">
-                            <!--begin::Card title-->
-                            <div class="card-title">
-                            </div>
-                            <!--end::Card title-->
-                        </div>
                         <!--end::Card header-->
                         <!--begin::Card body-->
                         <div class="card-body pt-5">
