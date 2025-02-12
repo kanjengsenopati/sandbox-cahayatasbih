@@ -10,7 +10,11 @@
                 data-kt-swapper-parent="{default: '#kt_content_container', 'lg': '#kt_toolbar_container'}"
                 class="page-title d-flex align-items-center flex-wrap me-3 mb-5 mb-lg-0">
                 <!--begin::Title-->
-                <h1 class="d-flex text-dark fw-bolder fs-3 align-items-center my-1"> Daftar User</h1>
+                <h1 class="d-flex text-dark fw-bolder fs-3 align-items-center my-1">Data Wali Santri
+                    <!--begin::Separator-->
+                    <span class="h-20px border-gray-300 border-end ms-4"></span>
+                    <!--end::Separator-->
+                </h1>
                 <!--end::Title-->
                 <!--begin::Separator-->
                 <span class="h-20px border-gray-300 border-start mx-4"></span>
