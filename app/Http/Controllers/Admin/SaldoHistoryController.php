@@ -154,6 +154,7 @@ class SaldoHistoryController extends Controller
 
     public function store(SaldoHistoryRequest $request)
     {
+        // Authorization check
         if (!Auth::user()->can('Create Saldo Santri')) {
             return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
         }
@@ -176,56 +177,21 @@ class SaldoHistoryController extends Controller
         DB::beginTransaction();
 
         try {
-            $paymentMethod = PaymentMethod::where('type', PaymentMethod::TYPE_CASH)->first();
+            // Fetch payment method
+            $paymentMethod = PaymentMethod::where('type', PaymentMethod::TYPE_CASH)->firstOrFail();
             $paymentMethodType = $paymentMethod->type;
 
+            // Create transaction
             $transaction = TransactionService::createTransaction($request, $paymentMethodType, Transaction::TYPE_SALDO);
 
+            // Fetch student
+            $student = Student::findOrFail($studentId);
+
+            // Handle withdrawal or top-up
             if ($request->type === SaldoHistory::TYPE_WITHDRAW) {
-                // Check if student has enough saldo
-                $student = Student::findOrFail($studentId);
-                if ($student->saldo < $request->amount) {
-                    Cache::forget($cacheKey); // Clear cache if transaction cannot proceed
-                    return redirect()->route('saldo-history.index')->with('error', 'Saldo Santri tidak mencukupi');
-                }
-
-                // Reduce saldo
-                $transaction->student->saldo -= $request->amount;
-                $transaction->student->save();
-
-                // Make saldo history
-                $saldoHistory = SaldoHistory::create([
-                    'student_id' => $transaction->student_id,
-                    'amount' => $request->amount,
-                    'type' => SaldoHistory::TYPE_WITHDRAW,
-                    'description' => $request->description ?? 'Penarikan Saldo Rp.' . number_format($request->amount, 0, ',', '.') . ' oleh ' . Auth::user()->name,
-                    'status' => SaldoHistory::STATUS_SUCCESS,
-                    'admin_id' => Auth::id()
-                ]);
-
-                $transactionDetail = TransactionDetail::create([
-                    'transaction_id' => $transaction->id,
-                    'saldo_history_id' => $saldoHistory->id
-                ]);
+                $this->handleWithdrawal($student, $request, $transaction);
             } else {
-                // Add saldo
-                $transaction->student->saldo += $request->amount;
-                $transaction->student->save();
-
-                // Make saldo history
-                $saldoHistory = SaldoHistory::create([
-                    'student_id' => $transaction->student_id,
-                    'amount' => $request->amount,
-                    'type' => SaldoHistory::TYPE_IN,
-                    'description' => $request->description ?? 'Topup Saldo Rp.' . number_format($request->amount, 0, ',', '.') . ' oleh ' . Auth::user()->name,
-                    'status' => SaldoHistory::STATUS_SUCCESS,
-                    'admin_id' => Auth::id()
-                ]);
-
-                $transactionDetail = TransactionDetail::create([
-                    'transaction_id' => $transaction->id,
-                    'saldo_history_id' => $saldoHistory->id
-                ]);
+                $this->handleTopUp($student, $request, $transaction);
             }
 
             DB::commit();
@@ -233,7 +199,8 @@ class SaldoHistoryController extends Controller
             // Clear the cache entry
             Cache::forget($cacheKey);
 
-            $this->sendNotifications($transaction->student, $transaction->transactionDetails()?->first()?->saldoHistory);
+            // Send notifications
+            $this->sendNotifications($transaction->student, $transaction->transactionDetails()->first()->saldoHistory);
 
             return redirect()->route('saldo-history.index')->with('success', 'Berhasil Topup Saldo');
         } catch (\Exception $e) {
@@ -245,6 +212,72 @@ class SaldoHistoryController extends Controller
 
             return redirect()->route('saldo-history.index')->with('error', 'Gagal Topup Saldo');
         }
+    }
+
+    /**
+     * Handle withdrawal logic.
+     */
+    protected function handleWithdrawal(Student $student, $request, $transaction)
+    {
+        // Check if student has enough saldo
+        if ($student->saldo < $request->amount) {
+            throw new \Exception('Saldo Santri tidak mencukupi');
+        }
+
+        $balanceBefore = $student->saldo ?? 0;
+
+        // Reduce saldo
+        $student->saldo -= $request->amount;
+        $student->save();
+
+        $balanceAfter = $student->saldo ?? 0;
+
+        // Create saldo history
+        $this->createSaldoHistory($transaction, $request, SaldoHistory::TYPE_WITHDRAW, $balanceBefore, $balanceAfter);
+    }
+
+    /**
+     * Handle top-up logic.
+     */
+    protected function handleTopUp(Student $student, $request, $transaction)
+    {
+        $balanceBefore = $student->saldo ?? 0;
+
+        // Add saldo
+        $student->saldo += $request->amount;
+        $student->save();
+
+        $balanceAfter = $student->saldo ?? 0;
+
+        // Create saldo history
+        $this->createSaldoHistory($transaction, $request, SaldoHistory::TYPE_IN, $balanceBefore, $balanceAfter);
+    }
+
+    /**
+     * Create saldo history record.
+     */
+    protected function createSaldoHistory($transaction, $request, $type, $balanceBefore, $balanceAfter)
+    {
+        $description = $request->description ?? ($type === SaldoHistory::TYPE_WITHDRAW
+            ? 'Penarikan Saldo Rp.' . number_format($request->amount, 0, ',', '.') . ' oleh ' . Auth::user()->name
+            : 'Topup Saldo Rp.' . number_format($request->amount, 0, ',', '.') . ' oleh ' . Auth::user()->name);
+
+        $saldoHistory = SaldoHistory::create([
+            'student_id' => $transaction->student_id,
+            'amount' => $request->amount,
+            'type' => $type,
+            'description' => $description,
+            'status' => SaldoHistory::STATUS_SUCCESS,
+            'admin_id' => Auth::id(),
+            'balance_before' => $balanceBefore,
+            'balance_after' => $balanceAfter,
+        ]);
+
+        // Create transaction detail
+        TransactionDetail::create([
+            'transaction_id' => $transaction->id,
+            'saldo_history_id' => $saldoHistory->id,
+        ]);
     }
 
     private function sendNotifications($student, $saldoHistory)

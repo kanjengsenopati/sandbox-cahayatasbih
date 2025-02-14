@@ -514,6 +514,7 @@ class TransactionService
                 if ($transaction->type == Transaction::TYPE_SALDO) {
                     $student = Student::find($transaction->student_id);
                     $transactionDetail = $transaction?->transactionDetails?->first();
+                    $saldoBefore = $student->saldo;
 
                     // Tentukan amount yang akan ditambahkan (hanya untuk saldo biasa)
                     $amountToAdd = $transactionDetail?->saldoHistory?->amount ?? throw new Exception('Saldo history not found');
@@ -523,7 +524,9 @@ class TransactionService
 
                     // Update status saldo history jika ada
                     $transactionDetail?->saldoHistory?->update([
-                        'status' => SaldoHistory::STATUS_SUCCESS
+                        'status' => SaldoHistory::STATUS_SUCCESS,
+                        'balance_before' => $saldoBefore ?? 0,
+                        'balance_after' => $student->saldo ?? 0,
                     ]);
                 } elseif ($transaction->type == Transaction::TYPE_SAVING) {
                     foreach ($transaction->transactionDetails as $detail) {
