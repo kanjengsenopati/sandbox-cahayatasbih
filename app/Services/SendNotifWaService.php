@@ -348,7 +348,7 @@ class SendNotifWaService
                             ->where('month', '<=', $currentMonth); // Dan bulan <= bulan saat ini
                     });
             })
-            ->orderByRaw('CONCAT(year, LPAD(month, 2, "0")) DESC') // Urutkan berdasarkan YYYYMM (terbaru dulu)
+            ->orderByRaw('CONCAT(year, LPAD(month, 2, "0")) ASC') // Urutkan berdasarkan YYYYMM (terlama dulu)
             ->get();
 
         // Jika tidak ada tagihan, kembalikan null
@@ -356,29 +356,59 @@ class SendNotifWaService
             return null;
         }
 
+        // Kelompokkan tagihan berdasarkan jenis tagihan
+        $groupedBills = [];
+        foreach ($bills as $bill) {
+            $billTypeName = $bill->billType?->name ?? '-';
+            if (!isset($groupedBills[$billTypeName])) {
+                $groupedBills[$billTypeName] = [];
+            }
+            $groupedBills[$billTypeName][] = $bill;
+        }
+
+        // Urutkan jenis tagihan berdasarkan abjad
+        ksort($groupedBills);
+
         // Bangun daftar tagihan
         $message .= "\nDaftar Tagihan yang Belum Dibayar:\n";
-        foreach ($bills as $index => $bill) {
-            $mustPay += $bill->amount; // Tambahkan total kekurangan
+        $index = 1;
+        foreach ($groupedBills as $billTypeName => $bills) {
+            $message .= $index . ". " . $billTypeName . "\n";
 
-            // Gunakan null coalescing operator untuk menangani null pada billType
-            $message .= sprintf(
-                "%d. *%s* (%s %d) - Rp.%s\n",
-                $index + 1,
-                ($bill->billType?->name ?? '-'), // Nama jenis tagihan
-                ($bill->translated_month ?? '-'), // Nama bulan
-                ($bill->year ?? '-'), // Tahun
-                number_format($bill->amount ?? 0, 0, ',', '.') // Jumlah tagihan
-            );
+            // Urutkan tagihan dalam kelompok berdasarkan tahun dan bulan (dari yang terlama)
+            usort($bills, function ($a, $b) {
+                return $a->year <=> $b->year ?: $a->month <=> $b->month;
+            });
+
+            // Sub-index untuk penomoran a, b, c, dst.
+            $subIndex = 'a';
+            foreach ($bills as $bill) {
+                $mustPay += $bill->amount; // Tambahkan total kekurangan
+
+                // Gunakan null coalescing operator untuk menangani null pada billType
+                $message .= sprintf(
+                    "      %s. %s %d - Rp.%s\n", // Tambahkan spasi atau tab untuk indentasi
+                    $subIndex, // Sub-index (a, b, c, dst.)
+                    ($bill->translated_month ?? '-'), // Nama bulan
+                    ($bill->year ?? '-'), // Tahun
+                    number_format($bill->amount ?? 0, 0, ',', '.') // Jumlah tagihan
+                );
+
+                // Increment sub-index (a -> b, b -> c, dst.)
+                $subIndex++;
+            }
+            $index++;
         }
 
         // Total kekurangan
+
         $message .= "\n--------------------------------\n";
         $message .= "Total Kekurangan: *Rp." . number_format($mustPay, 0, ',', '.') . "*\n";
         $message .= "--------------------------------\n";
-        $message .= "Note: _Jika sudah melakukan pembayaran, abaikan pesan ini._\n";
+        $message .= "Note: Mohon untuk segera melakukan pembayaran sesuai rincian di atas,\ndan atas perhatiannya, kami ucapkan terima kasih.\n\n"; // Perbaikan format note
         $message .= "Wassalamualaikum Wr. Wb.\n";
         $message .= "*PPTQ CAHAYA TASBIH*";
+
 
         return $message;
     }

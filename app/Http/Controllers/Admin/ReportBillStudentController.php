@@ -17,6 +17,7 @@ use Illuminate\Support\Facades\Auth;
 use App\Models\StudentBillNotification;
 use App\Jobs\SendToWhatsappNotificationJob;
 use App\Jobs\SendBillWhatsappNotificationJob;
+use App\Jobs\SendUnpaidBillNotificationJob;
 use Illuminate\Support\Facades\Log;
 
 class ReportBillStudentController extends Controller
@@ -174,20 +175,13 @@ class ReportBillStudentController extends Controller
     public function sendBillWhatsappNotification()
     {
         try {
-            // Ambil data siswa yang memiliki tagihan belum dibayar
-            $students = Student::whereHas('bills', function ($query) {
-                $query->where('status', Bill::STATUS_UNPAID);
-            })->latest()->get();
+            dispatch(new SendUnpaidBillNotificationJob());
 
-            // Iterasi setiap siswa dan kirim notifikasi
-            foreach ($students as $index => $student) {
-                $this->processStudentNotification($student, $index);
-            }
-
-            // Kembalikan respons sukses
-            return response()->json(['success' => true, 'message' => 'WA Blast berhasil dikirim.']);
-        } catch (Exception $e) {
-            // Log error dan kembalikan respons error
+            return response()->json([
+                'success' => true,
+                'message' => 'WA Blast sedang diproses di queue.'
+            ]);
+        } catch (\Exception $e) {
             Log::error('Gagal mengirim WA Blast: ' . $e->getMessage(), [
                 'trace' => $e->getTraceAsString(),
             ]);
@@ -195,44 +189,7 @@ class ReportBillStudentController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Gagal mengirim WA Blast: ' . $e->getMessage(),
-            ], 500); // HTTP status code 500 untuk server error
-        }
-    }
-
-    /**
-     * Proses pengiriman notifikasi untuk satu siswa.
-     *
-     * @param Student $student
-     * @param int $index
-     */
-    private function processStudentNotification(Student $student, int $index)
-    {
-        // Pastikan siswa memiliki user dan nomor telepon
-        if (!$student->user || !$student->user->phone) {
-            Log::warning("Siswa dengan ID {$student->id} tidak memiliki user atau nomor telepon.");
-            return;
-        }
-
-        // Dapatkan pesan notifikasi
-        $message = SendNotifWaService::sendAllBillInvoice($student);
-
-        // Jika pesan tidak null, kirim notifikasi dan simpan log
-        if ($message !== null) {
-            // Kirim notifikasi dengan delay sesuai urutan siswa
-            dispatch(new SendToWhatsappNotificationJob($student->user->phone, $message))
-                ->delay(now()->addSeconds($index));
-
-            // Simpan atau perbarui log notifikasi
-            StudentBillNotification::updateOrCreate(
-                ['student_id' => $student->id],
-                [
-                    'message' => $message,
-                    'status' => StudentBillNotification::STATUS_SUCCESS,
-                    'sent_at' => now(),
-                ]
-            );
-        } else {
-            Log::warning("Pesan notifikasi untuk siswa dengan ID {$student->id} kosong.");
+            ], 500);
         }
     }
 }
