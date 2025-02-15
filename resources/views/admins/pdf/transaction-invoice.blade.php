@@ -220,9 +220,21 @@
                                 <td style="white-space: nowrap" width="15%" class="text-muted">Nama Siswa/Santri</td>
                                 <td width="2%">:</td>
                                 <td>
-                                    <strong>{{ $data->student?->name }}</strong> <br />
-                                    {{ $data->student?->classroom?->name }} <br />
-                                    {{ $data->student?->classroom?->school?->name }}
+                                    <strong>{{ $data->student?->name }}</strong>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td style="white-space: nowrap" width="15%" class="text-muted">Kelas</td>
+                                <td width="2%">:</td>
+                                <td>
+                                    {{ $data->student?->classroom?->name ?? '' }}
+                                </td>
+                            </tr>
+                            <tr>
+                                <td style="white-space: nowrap" width="15%" class="text-muted">Lembaga</td>
+                                <td width="2%">:</td>
+                                <td>
+                                    {{ $data->student?->classroom?->school?->name ?? '' }}
                                 </td>
                             </tr>
                         </table>
@@ -232,7 +244,7 @@
         </header>
         <!-- main -->
         <main class="mt-4">
-            <table width="100%" style="border-bottom: 2px solid rgb(232, 232, 232)" cellspacing="0">
+            <table width="100%" style="border-bottom: 2px solid rgb(65, 59, 59)" cellspacing="0">
                 @if ($data->type == 'SALDO')
                 <thead>
                     <th>Nama Pembayaran</th>
@@ -273,7 +285,7 @@
                 </tbody>
                 @elseif ($data->type == 'BILL')
                 <thead>
-                    <th>
+                    <th>Item Tagihan</th>
                     <th class="text-end">Bulan</th>
                     <th class="text-end">Tahun</th>
                     <th class="text-end">Nominal</th>
