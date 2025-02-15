@@ -7,6 +7,7 @@ use App\Models\Admin;
 use App\Models\School;
 use App\Models\BillType;
 use App\Models\Transaction;
+use App\Models\SaldoHistory;
 use Illuminate\Http\Request;
 use App\Models\PaymentMethod;
 use Yajra\DataTables\DataTables;
@@ -57,14 +58,15 @@ class ReportTransactionController extends Controller
                 // Fetch all types of transactions and sum them separately
                 $totals = $data->selectRaw("
                 SUM(CASE WHEN type = '" . Transaction::TYPE_BILL . "' THEN pay_amount ELSE 0 END) as total_bill,
-                SUM(CASE WHEN type = '" . Transaction::TYPE_SALDO . "' THEN pay_amount ELSE 0 END) as total_saldo,
                 SUM(CASE WHEN type = '" . Transaction::TYPE_SAVING . "' THEN pay_amount ELSE 0 END) as saldo_saving
             ")
                     ->first();
 
                 return response()->json([
                     'total_bill' => number_format($totals->total_bill, 0, ',', '.'),
-                    'total_saldo' => number_format($totals->total_saldo, 0, ',', '.'),
+                    'total_saldo' => number_format($data->where('type', Transaction::TYPE_SALDO)->whereHas('transactionDetails.saldoHistory', function ($query) {
+                        $query->where('type', SaldoHistory::TYPE_IN);
+                    })->sum('pay_amount'), 0, ',', '.'),
                     'saldo_saving' => number_format($totals->saldo_saving, 0, ',', '.'),
                 ]);
             } elseif (request()->data == 'table') {
@@ -87,7 +89,11 @@ class ReportTransactionController extends Controller
                         if ($data->type == Transaction::TYPE_BILL) {
                             return '<span class="badge badge-primary">Tagihan</span>';
                         } elseif ($data->type == Transaction::TYPE_SALDO) {
-                            return '<span class="badge badge-success">Saldo</span>';
+                            if ($data->transactionDetails?->first()->saldoHistory?->type == SaldoHistory::TYPE_IN) {
+                                return '<span class="badge badge-success">Top Up Saldo</span>';
+                            } else {
+                                return '<span class="badge badge-danger">Tarik Saldo</span>';
+                            }
                         } elseif ($data->type == Transaction::TYPE_SAVING) {
                             return '<span class="badge badge-info">Tabungan</span>';
                         } else {

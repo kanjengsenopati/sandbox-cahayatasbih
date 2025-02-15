@@ -156,7 +156,7 @@
                                         </div>
                                         <div>
                                             <!--begin::Label-->
-                                            <div class="fw-bolder fs-5 text-gray-800">Total Penerimaan Pembayaran</div>
+                                            <div class="fw-bolder fs-5 text-gray-800">Penerimaan Pembayaran</div>
                                             <!--end::Label-->
                                             <!--begin::Stats-->
                                             <div class="text-primary fs-3 fw-bolder" id="total-bill">Rp. 0</div>
