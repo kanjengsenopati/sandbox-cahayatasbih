@@ -26,8 +26,8 @@ class SaldoService
             'description' => $description,
             'usage' => $usage,
             'status' => $status,
-            'saldo_before' => $saldoBefore,
-            'saldo_after' => $saldoAfter,
+            'balance_before' => $saldoBefore ?? 0,
+            'balance_after' => $saldoAfter ?? 0,
         ]);
     }
 }
