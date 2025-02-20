@@ -87,32 +87,29 @@
                     <div class="card-title"></div>
                     <x-action.create name="Arus Kas" action="{{ route('cashflow.create') }}" />
                 </div> --}}
-                <div
-                    class="card-header d-flex align-items-end gap-5 flex-sm-row mb-5 justify-content-between border-0 pt-6">
-                    <div class="d-flex flex-wrap justify-content-beetween gap-5">
-                        <div class="mb-0">
-                            <form action="#" id="form-filter" method="get">
-                                <input type="text" hidden id="type" name="type" required>
-                                <div class="d-flex flex-wrap gap-4 align-items-end">
-                                    <div>
-                                        <label class="form-label">Filter Tanggal</label>
-                                        <div class="d-flex gap-4 align-items-end">
-                                            <div id="dateRange" class="pull-right"
-                                                style="background: #fff; cursor: pointer; padding: 5px 10px; border: 1px solid #ccc;float: top;">
-                                                <i class="glyphicon glyphicon-calendar fa fa-calendar"></i>&nbsp;
-                                                <span></span> <b class="caret"></b>
-                                            </div>
-                                            <input type="text" id="start_date" name="start_date" hidden>
-                                            <input type="text" id="end_date" name="end_date" hidden>
-
-                                        </div>
+                <div class="card-header d-flex justify-content-between align-items-center mb-5 border-0 pt-6">
+                    <!-- Filter Date Range di Kiri -->
+                    <div class="d-flex align-items-center gap-4">
+                        <form action="#" id="form-filter" method="get" class="d-flex align-items-center gap-4">
+                            <input type="text" hidden id="type" name="type" required>
+                            <div>
+                                <label class="form-label mb-1">Filter Tanggal</label>
+                                <div class="d-flex gap-2 align-items-center">
+                                    <div id="dateRange" class="pull-right"
+                                        style="background: #fff; cursor: pointer; padding: 5px 10px; border: 1px solid #ccc;">
+                                        <i class="glyphicon glyphicon-calendar fa fa-calendar"></i>&nbsp;
+                                        <span></span> <b class="caret"></b>
                                     </div>
-                                    <!--end::Menu-->
-                                    <!--end::Export dropdown-->
+                                    <input type="text" id="start_date" name="start_date" hidden>
+                                    <input type="text" id="end_date" name="end_date" hidden>
                                 </div>
-                            </form>
+                            </div>
+                        </form>
+                    </div>
 
-                        </div>
+                    <!-- Button Tambah di Kanan -->
+                    <div>
+                        <x-action.create name="Arus Kas" action="{{ route('cashflow.create') }}" />
                     </div>
                 </div>
 
@@ -350,8 +347,8 @@
     });
 </script>
 <script>
-    var start = moment().startOf('month');
-    var end = moment().endOf('month');
+    var start = moment().startOf('year');
+    var end = moment().endOf('year');
 
     // Initialize date range picker
     $('#dateRange').daterangepicker({
