@@ -35,7 +35,7 @@ class SendUnpaidBillNotificationJob implements ShouldQueue
     {
         try {
             // Ambil data siswa yang memiliki tagihan belum dibayar
-            $students = Student::whereHas('bills', function ($query) {
+            $students = Student::where('status', Student::STATUS_ACTIVE)->whereHas('bills', function ($query) {
                 $query->where('status', Bill::STATUS_UNPAID);
             })->latest()->get();
 
