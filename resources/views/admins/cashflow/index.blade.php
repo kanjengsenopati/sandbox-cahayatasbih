@@ -34,59 +34,46 @@
         <div id="kt_content_container" class="container-xxl">
             <!--begin::Cards-->
             <div class="row mb-5">
-                <!-- Penerimaan Pembayaran -->
                 <div class="col-md-3">
                     <div class="card bg-success text-white" style="height: 200px;">
                         <div class="card-body d-flex flex-column align-items-center justify-content-center text-center">
-                            <i class="bi bi-wallet2 fs-3 text-white mb-3"></i> <!-- White icon on success background -->
+                            <i class="bi bi-wallet2 fs-3 text-white mb-3"></i>
                             <div>
                                 <h5 class="card-title text-white mb-2">Penerimaan Pembayaran</h5>
-                                <p class="card-text fs-2" id="total-payment">Rp {{ number_format($totalIncomes, 0, ',',
-                                    '.') }}</p>
+                                <p class="card-text fs-2" id="total-payment">Rp 0</p>
                             </div>
                         </div>
                     </div>
                 </div>
-                <!-- Pengeluaran -->
                 <div class="col-md-3">
                     <div class="card bg-danger text-white" style="height: 200px;">
                         <div class="card-body d-flex flex-column align-items-center justify-content-center text-center">
                             <i class="bi bi-credit-card fs-3 text-white mb-3"></i>
-                            <!-- White icon on danger background -->
                             <div>
                                 <h5 class="card-title text-white mb-2">Pengeluaran</h5>
-                                <p class="card-text fs-2" id="total-expenses">Rp {{ number_format($totalExpenses, 0,
-                                    ',', '.') }}
-                                </p>
+                                <p class="card-text fs-2" id="total-expenses">Rp 0</p>
                             </div>
                         </div>
                     </div>
                 </div>
-                <!-- Sisa Saldo -->
                 <div class="col-md-3">
                     <div class="card bg-primary text-white" style="height: 200px;">
                         <div class="card-body d-flex flex-column align-items-center justify-content-center text-center">
-                            <i class="bi bi-bank fs-3 text-white mb-3"></i> <!-- White icon on primary background -->
+                            <i class="bi bi-bank fs-3 text-white mb-3"></i>
                             <div>
                                 <h5 class="card-title text-white mb-2">Sisa Saldo</h5>
-                                <p class="card-text fs-2" id="remaining-balance">Rp {{ number_format($remainingBalances,
-                                    0, ',',
-                                    '.') }}</p>
+                                <p class="card-text fs-2" id="remaining-balance">Rp 0</p>
                             </div>
                         </div>
                     </div>
                 </div>
-                <!-- Total Arus Kas -->
                 <div class="col-md-3">
                     <div class="card bg-info text-white" style="height: 200px;">
                         <div class="card-body d-flex flex-column align-items-center justify-content-center text-center">
                             <i class="bi bi-currency-exchange fs-3 text-white mb-3"></i>
-                            <!-- White icon on info background -->
                             <div>
                                 <h5 class="card-title text-white mb-2">Target Arus Kas</h5>
-                                <p class="card-text fs-2" id="total-cashflow">Rp {{ number_format($totalCashflows, 0,
-                                    ',', '.') }}
-                                </p>
+                                <p class="card-text fs-2" id="total-cashflow">Rp 0</p>
                             </div>
                         </div>
                     </div>
@@ -96,10 +83,40 @@
 
             <!--begin::Card-->
             <div class="card">
-                <div class="card-header d-flex align-items-center justify-content-between border-0 pt-6">
+                {{-- <div class="card-header d-flex align-items-center justify-content-between border-0 pt-6">
                     <div class="card-title"></div>
                     <x-action.create name="Arus Kas" action="{{ route('cashflow.create') }}" />
+                </div> --}}
+                <div
+                    class="card-header d-flex align-items-end gap-5 flex-sm-row mb-5 justify-content-between border-0 pt-6">
+                    <div class="d-flex flex-wrap justify-content-beetween gap-5">
+                        <div class="mb-0">
+                            <form action="#" id="form-filter" method="get">
+                                <input type="text" hidden id="type" name="type" required>
+                                <div class="d-flex flex-wrap gap-4 align-items-end">
+                                    <div>
+                                        <label class="form-label">Filter Tanggal</label>
+                                        <div class="d-flex gap-4 align-items-end">
+                                            <div id="dateRange" class="pull-right"
+                                                style="background: #fff; cursor: pointer; padding: 5px 10px; border: 1px solid #ccc;float: top;">
+                                                <i class="glyphicon glyphicon-calendar fa fa-calendar"></i>&nbsp;
+                                                <span></span> <b class="caret"></b>
+                                            </div>
+                                            <input type="text" id="start_date" name="start_date" hidden>
+                                            <input type="text" id="end_date" name="end_date" hidden>
+
+                                        </div>
+                                    </div>
+                                    <!--end::Menu-->
+                                    <!--end::Export dropdown-->
+                                </div>
+                            </form>
+
+                        </div>
+                    </div>
                 </div>
+
+
                 <div class="card-body pt-0">
                     <div class="table-responsive">
                         <table id="table-cashflow" class="table align-middle table-row-dashed ">
@@ -163,7 +180,14 @@
             processing: true,
             serverSide: false,
             responsive: true,
-            ajax: "{{ route('cashflow.index') }}",
+            ajax: {
+                url: '{{ route('cashflow.index') }}',
+                data: function(d) {
+                    d.type = 'data';
+                    d.start_date = $('#start_date').val();
+                    d.end_date = $('#end_date').val();
+                }
+            },
             language: {
                 "paginate": {
                     "next": "<i class='fa fa-angle-right'>",
@@ -323,6 +347,71 @@
                 });
             }
         });
+    });
+</script>
+<script>
+    var start = moment().startOf('month');
+    var end = moment().endOf('month');
+
+    // Initialize date range picker
+    $('#dateRange').daterangepicker({
+        startDate: start,
+        endDate: end,
+        ranges: {
+            'Hari Ini': [moment(), moment()],
+            'Kemarin': [moment().subtract(1, 'days'), moment().subtract(1, 'days')],
+            'Bulan Ini': [moment().startOf('month'), moment().endOf('month')],
+            'Bulan Kemarin': [moment().subtract(1, 'month').startOf('month'), moment().subtract(1, 'month').endOf('month')],
+            '3 Bulan Terakhir': [moment().subtract(3, 'month').startOf('month'), moment().endOf('month')],
+            '6 Bulan Terakhir': [moment().subtract(6, 'month').startOf('month'), moment().endOf('month')],
+            '9 Bulan Terakhir': [moment().subtract(9, 'month').startOf('month'), moment().endOf('month')],
+            'Tahun Ini': [moment().startOf('year'), moment().endOf('year')],
+            'Tahun Kemarin': [moment().subtract(1, 'year').startOf('year'), moment().subtract(1, 'year').endOf('year')],
+        }
+    }, function(start, end) {
+        $('#dateRange span').html(start.format('D/MM/YYYY') + ' - ' + end.format('D/MM/YYYY'));
+        $('#start_date').val(start.format('YYYY-MM-DD'));
+        $('#end_date').val(end.format('YYYY-MM-DD'));
+        
+        // Panggil fungsi load data
+        loadCashflowData();
+    });
+
+    // Set initial values
+    $('#start_date').val(start.format('YYYY-MM-DD'));
+    $('#end_date').val(end.format('YYYY-MM-DD'));
+    $('#dateRange span').html(start.format('D/MM/YYYY') + ' - ' + end.format('D/MM/YYYY'));
+
+    // Fungsi kanggo ngeload data nganggo Axios
+    function loadCashflowData() {
+        axios.get("{{ route('cashflow.index') }}", {
+            params: {
+                type: 'summary',
+                start_date: $('#start_date').val(),
+                end_date: $('#end_date').val(),
+            }
+        })
+        .then(function (response) {
+            // Update nilai pada kartu informasi
+            $('#total-payment').text('Rp ' + response.data.total_incomes.toLocaleString());
+            $('#total-expenses').text('Rp ' + response.data.total_expenses.toLocaleString());
+            $('#remaining-balance').text('Rp ' + response.data.remaining_balances.toLocaleString());
+            $('#total-cashflow').text('Rp ' + response.data.total_cashflows.toLocaleString());
+
+            // Reload DataTables bila diperlukan
+            if ($.fn.DataTable.isDataTable('#table-cashflow')) {
+                $('#table-cashflow').DataTable().ajax.reload();
+            }
+        })
+        .catch(function (error) {
+            console.error(error);
+            alert('Gagal memuat data arus kas.');
+        });
+    }
+
+    // Panggil fungsi pertama kali saat halaman dimuat
+    $(document).ready(function() {
+        loadCashflowData();
     });
 </script>
 @endpush

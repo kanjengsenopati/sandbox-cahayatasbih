@@ -25,11 +25,24 @@ class CashFlowController extends Controller
         if (!Auth::user()->can('Manage Arus Kas')) {
             return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
         }
-        if (request()->ajax()) {
-            $data = CashFlow::latest();
+
+        if (request()->ajax() && request()->type == 'data') {
+            $data = CashFlow::when(request()->filled('start_date') && request()->filled('end_date'), function ($query) {
+                $query->whereBetween('date', [request()->start_date, request()->end_date]);
+            })
+                ->when(request()->filled('category'), function ($query) {
+                    $query->where('cashflow_category_id', request()->category);
+                })
+                ->when(request()->filled('status'), function ($query) {
+                    $query->where('status', request()->status);
+                })
+                ->latest();
+
             return DataTables::of($data)
                 ->editColumn('type', function ($data) {
-                    return $data->type == CashFlow::TYPE_INCOME ? '<span class="badge bg-primary">Pemasukan</span>' : '<span class="badge bg-danger">Pengeluaran</span>';
+                    return $data->type == CashFlow::TYPE_INCOME
+                        ? '<span class="badge bg-primary">Pemasukan</span>'
+                        : '<span class="badge bg-danger">Pengeluaran</span>';
                 })
                 ->editColumn('date', function ($data) {
                     return Carbon::parse($data->date)->translatedFormat('d F Y');
@@ -44,13 +57,12 @@ class CashFlowController extends Controller
                     return $data->sender?->name . ' -> ' . $data->receiver?->name;
                 })
                 ->addColumn('status', function ($data) {
-                    if ($data->status == 'PENDING') {
-                        return "<span class='badge bg-warning'>Menunggu Konfirmasi</span>";
-                    } elseif ($data->status == 'APPROVED') {
-                        return "<span class='badge bg-success'>Disetujui</span>";
-                    } elseif ($data->status == 'REJECTED') {
-                        return "<span class='badge bg-danger'>Ditolak - " . $data->reason . "</span>";
-                    }
+                    return match ($data->status) {
+                        'PENDING' => "<span class='badge bg-warning'>Menunggu Konfirmasi</span>",
+                        'APPROVED' => "<span class='badge bg-success'>Disetujui</span>",
+                        'REJECTED' => "<span class='badge bg-danger'>Ditolak - " . $data->reason . "</span>",
+                        default => '-',
+                    };
                 })
                 ->addColumn('proof', function ($data) {
                     if ($data->proof_of_payment) {
@@ -61,20 +73,17 @@ class CashFlowController extends Controller
                     return '-';
                 })
                 ->addColumn('action', function ($data) {
-                    $actionEdit = route('cashflow.edit', $data->id);
-                    $actionDelete = route('cashflow.destroy', $data->id);
-
                     $action = "";
 
-                    // Check if the current user is the receiver and status is pending
                     if (Auth::id() == $data->receiver_id && $data->status == CashFlow::STATUS_PENDING) {
-                        // Show buttons to approve or reject
                         $action .= "<button class='btn btn-success btn-sm approve-btn' data-id='" . $data->id . "'>Terima</button>&nbsp;";
                         $action .= "<button class='btn btn-danger btn-sm reject-btn' data-id='" . $data->id . "' data-bs-toggle='modal' data-bs-target='#rejectModal'>Tolak</button>";
                     }
 
                     if (Auth::id() == $data->sender_id && in_array($data->status, [CashFlow::STATUS_PENDING, CashFlow::STATUS_REJECTED])) {
-                        // Add the edit and delete buttons from the existing components
+                        $actionEdit = route('cashflow.edit', $data->id);
+                        $actionDelete = route('cashflow.destroy', $data->id);
+
                         $action .= view('components.action.edit', ['action' => $actionEdit, 'name' => 'Arus Kas']) . '&nbsp;';
                         $action .= view('components.action.delete', ['action' => $actionDelete, 'id' => $data->id, 'name' => 'Arus Kas']);
                     }
@@ -84,21 +93,67 @@ class CashFlowController extends Controller
                 ->rawColumns(['action', 'status', 'proof', 'type'])
                 ->make(true);
         }
+
+        if (request()->type == 'summary') {
+            return $this->summary();
+        }
+
+        return view('admins.cashflow.index');
+    }
+
+
+    public function summary()
+    {
         $billAppFee = [
             '0a33726f-d9e7-4e78-bb09-db99e81314dd',
             'da831a2d-069f-46fa-b44d-d7b2cb6a9a8e',
             'a4e65f7e-c265-4da5-96a9-92076e33f141',
         ];
 
-        $totalIncomes = Bill::whereIn('bill_type_id', $billAppFee)->where('status', 'PAID')->sum('amount');
+        $startDate = request()->filled('start_date') ? Carbon::parse(request()->start_date) : null;
+        $endDate = request()->filled('end_date') ? Carbon::parse(request()->end_date) : null;
 
-        $totalExpenses = CashFlow::where('type', CashFlow::TYPE_EXPENSE)->where('status', CashFlow::STATUS_APPROVED)->sum('amount');
+        // Menggabungkan query untuk totalIncomes dan totalCashflows
+        $billQuery = Bill::whereIn('bill_type_id', $billAppFee)
+            ->when($startDate, function ($query) use ($startDate) {
+                $query->where(function ($subQuery) use ($startDate) {
+                    $subQuery->where('year', '>', $startDate->year)
+                        ->orWhere(function ($subSubQuery) use ($startDate) {
+                            $subSubQuery->where('year', '=', $startDate->year)
+                                ->where('month', '>=', $startDate->month);
+                        });
+                });
+            })
+            ->when($endDate, function ($query) use ($endDate) {
+                $query->where(function ($subQuery) use ($endDate) {
+                    $subQuery->where('year', '<', $endDate->year)
+                        ->orWhere(function ($subSubQuery) use ($endDate) {
+                            $subSubQuery->where('year', '=', $endDate->year)
+                                ->where('month', '<=', $endDate->month);
+                        });
+                });
+            });
+
+        $totalIncomes = (clone $billQuery)
+            ->where('status', 'PAID')
+            ->sum('amount');
+
+        $totalCashflows = $billQuery->sum('amount');
+
+        $totalExpenses = CashFlow::where('type', CashFlow::TYPE_EXPENSE)
+            ->where('status', CashFlow::STATUS_APPROVED)
+            ->when($startDate, fn($query) => $query->whereDate('date', '>=', $startDate->toDateString()))
+            ->when($endDate, fn($query) => $query->whereDate('date', '<=', $endDate->toDateString()))
+            ->sum('amount');
 
         $remainingBalances = max($totalIncomes - $totalExpenses, 0);
 
-        $totalCashflows = Bill::whereIn('bill_type_id', $billAppFee)->sum('amount');
-
-        return view('admins.cashflow.index', compact('totalIncomes', 'totalExpenses', 'remainingBalances', 'totalCashflows'));
+        return response()->json([
+            'total_incomes' => number_format($totalIncomes, 0, ',', '.'),
+            'total_expenses' => number_format($totalExpenses, 0, ',', '.'),
+            'remaining_balances' => number_format($remainingBalances, 0, ',', '.'),
+            'total_cashflows' => number_format($totalCashflows, 0, ',', '.'),
+        ]);
     }
 
     /**
