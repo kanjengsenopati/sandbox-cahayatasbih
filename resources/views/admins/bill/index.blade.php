@@ -193,6 +193,11 @@
                                                 :&nbsp;
                                                 <span>{{ @$student->classroom->name ?? '' }}</span>
                                             </div>
+                                            <div class="mb-3">
+                                                <span class="fw-bold text-muted">Status</span>
+                                                :&nbsp;
+                                                <span>{{ @$student->translatedStatus() ?? '' }}</span>
+                                            </div>
                                         </div>
                                         <div class="separator mb-6"></div>
                                         <div class="d-flex justify-content-end"></div>

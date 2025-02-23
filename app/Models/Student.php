@@ -161,4 +161,16 @@ class Student extends Model
             });
         });
     }
+
+    public function translatedStatus(): string
+    {
+        return match ($this->status) {
+            'ACTIVE' => 'Aktif',
+            'INACTIVE' => 'Tidak Aktif',
+            'GRADUATED' => 'Lulus',
+            'TRANSFERRED' => 'Pindah',
+            'DROPPED_OUT' => 'Keluar',
+            default => 'Tidak Diketahui',
+        };
+    }
 }

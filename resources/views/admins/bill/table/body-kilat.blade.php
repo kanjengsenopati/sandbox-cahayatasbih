@@ -22,7 +22,10 @@
 @foreach ($billMonth as $bill)
 <tr>
     <td style="padding: 10px; border: 2px solid white;" class="text-center">{{ $loop->iteration }}</td>
-    <td style="padding: 10px; border: 2px solid white;" class="text-center">{{ $bill->name }}</td>
+    <td style="padding: 10px; border: 2px solid white;" class="text-center">
+        {{ $bill->name }} <br>
+        {{ $bill->academicYear->name ?? '-' }}
+    </td>
     <td style="padding: 10px; border: 2px solid white;" class="text-center">Rp {{ number_format($bill->total_unpaid, 0,
         ',', '.') }}</td>
     @foreach (array_merge(range(7, 12), range(1, 6)) as $month)

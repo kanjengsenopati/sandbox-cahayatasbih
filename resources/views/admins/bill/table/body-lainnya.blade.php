@@ -1,7 +1,9 @@
 @foreach ($billOthers as $bill)
 <tr>
     <td style="padding: 10px; border: 2px solid white;" class="text-center">{{ $loop->iteration }}</td>
-    <td style="padding: 10px; border: 2px solid white;" class="text-center">{{ $bill->name ?? '' }}
+    <td style="padding: 10px; border: 2px solid white;" class="text-center">
+        {{ $bill->name ?? '' }} <br>
+        {{ $bill->academicYear->name ?? '-' }}
     </td>
     <td style="padding: 10px; border: 2px solid white;" class="text-center">Rp {{
         number_format($bill->total_unpaid,
