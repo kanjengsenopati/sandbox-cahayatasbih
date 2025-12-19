@@ -47,9 +47,15 @@
                     <span>{{ $student['status'] }}</span>
                 </span>
 
+                <!-- Changed Icon Logic: Plus/Minus -->
                 <div class="w-8 h-8 rounded-full bg-slate-50 flex items-center justify-center text-slate-400 group-hover:bg-primary-600 group-hover:text-white transition-all duration-300 transform shadow-sm border border-slate-100"
-                     :class="{'rotate-180 bg-primary-600 text-white': expandedRowId === '{{ $student['id'] }}'}">
-                    <i class="ph-bold ph-caret-down"></i>
+                     :class="{'bg-primary-100 text-primary-700': expandedRowId === '{{ $student['id'] }}'}">
+                     
+                     <!-- Minus Icon (Shown when open) -->
+                    <i class="ph-bold ph-minus text-lg" x-show="expandedRowId === '{{ $student['id'] }}'"></i>
+                    
+                    <!-- Plus Icon (Shown when closed) -->
+                    <i class="ph-bold ph-plus text-lg" x-show="expandedRowId !== '{{ $student['id'] }}'"></i>
                 </div>
             </div>
         </button>
@@ -61,25 +67,31 @@
                 <!-- Summary Grid of Months -->
                 <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 mb-6">
                     @foreach($student['months'] as $month)
-                        <div class="relative rounded-xl p-3 text-center border transition-all duration-200 group/month {{ $month['status'] === 'paid' ? 'bg-white border-emerald-200 shadow-sm shadow-emerald-900/5' : ($month['status'] === 'unpaid' && $month['isPast'] ? 'bg-slate-50 border-slate-200 opacity-60' : 'bg-white border-rose-100') }}">
-                            <div class="text-[10px] font-bold uppercase tracking-wider mb-2 {{ $month['status'] === 'paid' ? 'text-emerald-700' : 'text-slate-400' }}">
+                        <div class="relative rounded-xl p-3 text-center border transition-all duration-200 group/month {{ $month['status'] === 'paid' ? 'bg-emerald-500 border-emerald-500 shadow-md shadow-emerald-500/20' : ($month['status'] === 'unpaid' && $month['isPast'] ? 'bg-red-600 border-red-600 text-white shadow-md shadow-red-500/20' : 'bg-white border-rose-100') }}">
+                            <div class="text-[10px] font-bold uppercase tracking-wider mb-2 {{ $month['status'] === 'paid' ? 'text-white/90' : ($month['status'] === 'unpaid' && $month['isPast'] ? 'text-white/90' : 'text-slate-400') }}">
                                 {{ $month['name'] }}
                             </div>
                             
                             <div class="flex items-center justify-center mb-1">
                                 @if($month['status'] === 'paid')
-                                    <div class="inline-flex items-center justify-center w-9 h-9 rounded-full bg-emerald-100 text-emerald-600 shadow-inner group-hover/month:scale-110 transition-transform">
+                                    <div class="inline-flex items-center justify-center w-9 h-9 rounded-full bg-white/20 text-white shadow-inner group-hover/month:scale-110 transition-transform">
                                         <i class="ph-bold ph-check text-lg"></i>
                                     </div>
                                 @else
-                                    <div class="inline-flex items-center justify-center w-9 h-9 rounded-full bg-slate-100 text-slate-300 shadow-inner {{ !$month['isPast'] ? 'bg-rose-50 text-rose-300' : '' }}">
-                                        <i class="ph-bold ph-x text-lg"></i>
+                                    <div class="inline-flex items-center justify-center w-9 h-9 rounded-full shadow-inner {{ ($month['status'] === 'unpaid' && $month['isPast']) ? 'bg-white/20 text-white' : ($month['isPast'] ? 'bg-rose-50 text-rose-300' : 'bg-slate-100 text-slate-300') }}">
+                                        @if($month['status'] === 'unpaid' && $month['isPast'])
+                                            <i class="ph-bold ph-x text-lg"></i>
+                                        @else
+                                            <i class="ph-bold ph-x text-lg"></i>
+                                        @endif
                                     </div>
                                 @endif
                             </div>
 
                             @if($month['status'] === 'paid')
-                                <div class="text-[10px] text-emerald-600 font-bold bg-emerald-50 inline-block px-2 py-0.5 rounded-full mt-1">LUNAS</div>
+                                <div class="text-[10px] text-white font-bold bg-white/20 inline-block px-2 py-0.5 rounded-full mt-1">LUNAS</div>
+                            @elseif($month['status'] === 'unpaid' && $month['isPast'])
+                                <div class="text-[10px] text-white font-bold bg-white/20 inline-block px-2 py-0.5 rounded-full mt-1">BELUM</div>
                             @else
                                 <div class="text-[10px] text-slate-400 font-medium mt-1">Tagihan</div>
                             @endif
@@ -103,6 +115,19 @@
                             </div>
                         </div>
                         
+                        <div class="hidden md:block h-12 w-px bg-white/10"></div>
+                        
+                        <!-- Middle Section: Tagihan Berjalan -->
+                         <div class="flex items-center gap-4 w-full md:w-auto">
+                            <div class="p-3.5 bg-orange-500/20 rounded-xl backdrop-blur-sm border border-orange-400/20 shadow-lg">
+                                <i class="ph-fill ph-clock-countdown text-2xl text-orange-200"></i>
+                            </div>
+                            <div>
+                                <p class="text-orange-200 text-xs font-bold uppercase tracking-wider mb-0.5">Tagihan Berjalan</p>
+                                <p class="text-xl font-bold tracking-tight text-white">{{ $student['summary']['current_due_formatted'] }}</p>
+                            </div>
+                        </div>
+
                         <div class="hidden md:block h-12 w-px bg-white/10"></div>
 
                         <div class="flex items-center gap-4 w-full md:w-auto">

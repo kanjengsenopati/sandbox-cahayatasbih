@@ -10,7 +10,7 @@
 
     <meta property="og:type" content="website">
     <meta property="og:url" content="{{ url()->current() }}">
-    <meta property="og:title" content="🔍 Cek Pembayaran SPP Santri">
+    <meta property="og:title" content="🔍 Cek Status Pembayaran">
     <meta property="og:description" content="Cek tagihan dan riwayat pembayaran putra-putri Anda di PPTQ Cahaya Tasbih. Klik di sini untuk melihat rinciannya.">
     <meta property="og:image" content="{{ asset('assets/media/logos/logo.png') }}">
     <meta property="og:image:width" content="1200">
@@ -23,12 +23,17 @@
     <meta property="twitter:image" content="{{ asset('assets/media/logos/logo.png') }}">
 
     <link rel="icon" type="image/png" href="{{ asset('assets/media/logos/logo.png') }}">
-    <title>Cek Pembayaran SPP - PPTQ Cahaya Tasbih</title>
+    <title>Cek Status Pembayaran - PPTQ Cahaya Tasbih</title>
     
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- PWA -->
+    <link rel="manifest" href="{{ asset('manifest.json') }}">
+    <meta name="theme-color" content="#9333ea">
+    <link rel="apple-touch-icon" href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.0.3/src/bold/mosque-bold.svg">
         <link rel="apple-touch-icon" sizes="57x57" href="{{ asset('assets/media/logos/favicon/apple-icon-57x57.png') }}">
     <link rel="apple-touch-icon" sizes="60x60" href="{{ asset('assets/media/logos/favicon/apple-icon-60x60.png') }}">
     <link rel="apple-touch-icon" sizes="72x72" href="{{ asset('assets/media/logos/favicon/apple-icon-72x72.png') }}">
@@ -129,7 +134,7 @@
             <div class="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-primary-500 to-primary-700 text-white shadow-lg shadow-primary-200 mb-4">
                 <i class="ph-bold ph-mosque text-3xl"></i>
             </div>
-            <h1 class="text-2xl md:text-3xl font-bold text-slate-900 tracking-tight mb-1">Cek Pembayaran SPP Santri</h1>
+            <h1 class="text-2xl md:text-3xl font-bold text-slate-900 tracking-tight mb-1">CEK STATUS PEMBAYARAN</h1>
             <p class="text-primary-700 font-medium opacity-90">PPTQ Cahaya Tasbih</p>
         </header>
 
@@ -147,7 +152,7 @@
                             <input 
                                 type="text" 
                                 x-model.debounce.750ms="searchQuery"
-                                placeholder="Cari Nama atau NIS..." 
+                                placeholder="Ketik Nama Santri" 
                                 class="w-full text-base placeholder-slate-400 border-none outline-none focus:ring-0 text-slate-700 bg-transparent"
                             >
                             <button 
@@ -160,7 +165,7 @@
                         </div>
 
                         <!-- Filters -->
-                        <div class="grid grid-cols-2 divide-x divide-slate-200/60 border-t md:border-t-0 border-slate-200/60 md:w-auto w-full">
+                        <div class="grid grid-cols-2 lg:grid-cols-3 divide-x divide-slate-200/60 border-t md:border-t-0 border-slate-200/60 md:w-auto w-full">
                             <div class="px-1 md:px-2 py-1 md:py-0 relative">
                                 <i class="ph ph-buildings absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"></i>
                                 <select 
@@ -168,7 +173,7 @@
                                     @change="onUnitChange()"
                                     class="w-full bg-transparent hover:bg-slate-50 text-slate-600 font-medium text-sm py-2.5 pl-9 rounded-lg border-none focus:ring-0 cursor-pointer transition-colors outline-none truncate"
                                 >
-                                    <option value="">Semua Unit</option>
+                                    <option value="">Semua Lembaga</option>
                                     @foreach($schools as $school)
                                         <option value="{{ $school->id }}" {{ request('unit') == $school->id ? 'selected' : '' }}>{{ $school->name }}</option>
                                     @endforeach
@@ -186,6 +191,21 @@
                                     <template x-for="cls in availableClasses" :key="cls.id">
                                         <option :value="cls.id" x-text="cls.name"></option>
                                     </template>
+                                </select>
+                            </div>
+                             <!-- NEW SEGMENT: Academic Year Filter -->
+                            <div class="px-1 md:px-2 py-1 md:py-0 border-t md:border-t-0 md:border-l border-slate-200/60 relative w-full md:w-auto col-span-2 lg:col-span-1">
+                                <i class="ph ph-calendar-blank absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none"></i>
+                                <select 
+                                    x-model="selectedYear" 
+                                    @change="fetchStudents()"
+                                    class="w-full bg-transparent hover:bg-slate-50 text-slate-600 font-medium text-sm py-2.5 pl-9 rounded-lg border-none focus:ring-0 cursor-pointer transition-colors outline-none truncate"
+                                >
+                                    @foreach($academicYears as $year)
+                                        <option value="{{ $year->id }}" {{ (request('academic_year_id') == $year->id || (!request('academic_year_id') && $year->is_active)) ? 'selected' : '' }}>
+                                            {{ $year->name }} {{ $year->is_active ? '(Aktif)' : '' }}
+                                        </option>
+                                    @endforeach
                                 </select>
                             </div>
                         </div>
@@ -287,6 +307,7 @@
                 searchQuery: '{{ request("search") }}',
                 selectedUnit: '{{ request("unit") }}',
                 selectedClass: '{{ request("class_id") }}',
+                selectedYear: '{{ request("academic_year_id") ?? ($academicYears->firstWhere("is_active", 1)->id ?? $academicYears->first()->id) }}',
                 showInvoiceModal: false,
                 activeStudent: null,
                 availableClasses: @json($classes),
@@ -305,7 +326,7 @@
                     this.selectedClass = '';
                     if (this.selectedUnit) {
                         try {
-                            const response = await axios.get('{{ route("payment-check.get-classes") }}', { params: { school_id: this.selectedUnit } });
+                            const response = await axios.get('{{ route("public.spp.get-classes") }}', { params: { school_id: this.selectedUnit } });
                             this.availableClasses = response.data;
                         } catch (error) { this.availableClasses = []; }
                     } else { this.availableClasses = []; }
@@ -320,8 +341,9 @@
                     if (this.searchQuery) params.append('search', this.searchQuery);
                     if (this.selectedUnit) params.append('unit', this.selectedUnit);
                     if (this.selectedClass) params.append('class_id', this.selectedClass);
+                    if (this.selectedYear) params.append('academic_year_id', this.selectedYear);
                     
-                    const targetUrl = url || '{{ route("payment-check.index") }}';
+                    const targetUrl = url || '{{ route("public.spp.index") }}';
                     
                     if (!isAppend) {
                          const newUrl = `${window.location.pathname}?${params.toString()}`;
@@ -334,7 +356,8 @@
                             params: isAppend ? {} : {
                                 search: this.searchQuery,
                                 unit: this.selectedUnit,
-                                class_id: this.selectedClass
+                                class_id: this.selectedClass,
+                                academic_year_id: this.selectedYear
                             }
                         };
                         

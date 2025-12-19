@@ -289,6 +289,6 @@ Route::get('about-us', [PrivacyPolicyController::class, 'aboutUs'])->name('about
 Route::get('transaction/invoice/{id}', [TransactionController::class, 'invoice'])->name('transaction.invoice');
 
 Route::controller(App\Http\Controllers\User\PaymentCheckController::class)->group(function () {
-    Route::get('/cek-spp', 'index')->name('payment-check.index');
-    Route::get('/cek-spp/get-classes', 'getClasses')->name('payment-check.get-classes');
+    Route::get('/status-pembayaran', 'index')->name('public.spp.index');
+    Route::get('/status-pembayaran/get-classes', 'getClasses')->name('public.spp.get-classes');
 });

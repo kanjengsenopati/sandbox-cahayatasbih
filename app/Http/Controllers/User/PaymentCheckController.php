@@ -19,22 +19,38 @@ class PaymentCheckController extends Controller
     public function index(Request $request)
     {
         // 1. Get Master Data for Filters
-        $schools = School::orderBy('name')->get(); 
+        $schools = School::whereNotIn('id', ["37ca75d4-4a87-4856-be8e-f78e2672134f", "ca3d1ef1-a2ec-4a2b-81ce-72a2299e068c"])->orderBy('name')->get();
+
+        // New Logic: Fetch Academic Years correctly sorted (Active First, then Newest)
+        $academicYears = AcademicYear::orderByRaw('is_active DESC, created_at DESC')->get();
 
         // 2. Active Academic Year (for SPP Grid)
-        $activeYear = AcademicYear::where('is_active', true)->first();
-        $startYear = $activeYear ? (int)explode('/', $activeYear->name)[0] : (int)date('Y');
+        // If filter is present, use it. Otherwise default to current active year.
+        if ($request->filled('academic_year_id')) {
+            $selectedYear = $academicYears->firstWhere('id', $request->academic_year_id);
+        } else {
+            // Default to Active
+            $selectedYear = $academicYears->firstWhere('is_active', true) ?? $academicYears->first();
+        }
+
+        // Determine Start Year for grid generation
+        $startYear = $selectedYear ? (int)explode('/', $selectedYear->name)[0] : (int)date('Y');
         
         // 3. Query Students with Filters
         $students = collect([]);
 
         // Default empty or filtered query
-        if ($request->has('search') || $request->has('unit') || $request->has('class_id')) {
+        if ($request->has('search') || $request->has('unit') || $request->has('class_id') || $request->has('academic_year_id')) {
             $query = Student::query()
                 ->select('students.*')
-                ->with(['user', 'classroom.school', 'bills' => function($q) use ($activeYear) {
-                    $q->where('academic_year_id', $activeYear?->id)
-                      ->whereHas('billType', function($bt) {
+                ->with(['user', 'classroom.school', 'bills' => function($q) use ($selectedYear) {
+                    
+                    // Filter by selected Academic Year ID
+                    if ($selectedYear) {
+                         $q->where('academic_year_id', $selectedYear->id);
+                    }
+                      
+                     $q->whereHas('billType', function($bt) {
                           $bt->where('name', 'LIKE', '%SYAHRIAH%');
                       })
                       ->orderBy('year', 'desc')
@@ -67,11 +83,12 @@ class PaymentCheckController extends Controller
         }
 
         // 4. Transform Data for Frontend
-        // We handle transformation on the collection inside the paginator to preserve pagination links
-        $transformedCollection = $students->getCollection()->map(function ($student) use ($startYear) {
+        $realNow = Carbon::now();
+        $transformedCollection = $students->getCollection()->map(function ($student) use ($startYear, $realNow) {
             $months = [];
             $totalBill = 0;
             $totalPaid = 0;
+            $currentDue = 0;
             
             $monthSequence = [7, 8, 9, 10, 11, 12, 1, 2, 3, 4, 5, 6];
             
@@ -82,6 +99,10 @@ class PaymentCheckController extends Controller
                 $status = 'unpaid';
                 $amount = 0;
                 $paidDate = '-';
+
+                // Check if this month is Due (Past or Current Month)
+                // Logic: Year < CurrentYear OR (Year == CurrentYear AND Month <= CurrentMonth)
+                $isDue = ($year < $realNow->year) || ($year == $realNow->year && $m <= $realNow->month);
                 
                 if ($bill) {
                     $amount = $bill->amount;
@@ -89,13 +110,15 @@ class PaymentCheckController extends Controller
                         $status = 'paid';
                         $totalPaid += $bill->amount;
                         $paidDate = $bill->paid_date ? Carbon::parse($bill->paid_date)->format('d/m/Y') : '-';
-                    } 
+                    } else {
+                        // Unpaid and Due/Overdue
+                        if ($isDue) {
+                             $currentDue += $bill->amount;
+                        }
+                    }
                     $totalBill += $bill->amount;
                 }
 
-                $dateObj = Carbon::createFromDate($year, $m, 1)->endOfMonth();
-                $isPast = $dateObj->isPast();
-                
                 $monthNames = [
                     1 => 'Jan', 2 => 'Feb', 3 => 'Mar', 4 => 'Apr', 5 => 'Mei', 6 => 'Jun',
                     7 => 'Jul', 8 => 'Agu', 9 => 'Sep', 10 => 'Okt', 11 => 'Nov', 12 => 'Des'
@@ -107,7 +130,7 @@ class PaymentCheckController extends Controller
                     'year' => $year,
                     'name' => $monthNames[$m] . ' ' . substr($year, -2),
                     'status' => $status,
-                    'isPast' => $isPast,
+                    'isPast' => $isDue, // Passing 'isDue' logic as 'isPast' to frontend
                     'amount' => $amount,
                     'amount_formatted' => 'Rp ' . number_format($amount, 0, ',', '.'),
                     'paid_date' => $paidDate
@@ -117,8 +140,42 @@ class PaymentCheckController extends Controller
             $waLink = null;
             if ($student->user && $student->user->phone) {
                 $phone = preg_replace('/^0/', '62', preg_replace('/[^0-9]/', '', $student->user->phone));
+                
                 if ($phone) {
-                    $waLink = "https://wa.me/{$phone}?text=Assalamu'alaikum, berikut tagihan SPP untuk santri {$student->name} (NIS: {$student->nis})";
+                    // Generate Detail Message
+                    $unpaidBills = $student->bills->where('status', '!=', 'PAID')->sortBy(function($bill) {
+                        return $bill->year * 100 + $bill->month; // Simple sort YYYYMM
+                    });
+
+                    if ($unpaidBills->isNotEmpty()) {
+                         $msg = "Assalamu'alaikum.\n";
+                         $msg .= "Tagihan SPP Ananda: *" . strtoupper($student->name) . "* (NIS: {$student->nis})\n\n";
+                         $msg .= "Rincian Belum Lunas:\n";
+
+                         $indonesianMonths = [
+                            1 => 'Januari', 2 => 'Februari', 3 => 'Maret', 4 => 'April', 5 => 'Mei', 6 => 'Juni',
+                            7 => 'Juli', 8 => 'Agustus', 9 => 'September', 10 => 'Oktober', 11 => 'November', 12 => 'Desember'
+                         ];
+
+                         foreach ($unpaidBills as $bill) {
+                             $monthName = $indonesianMonths[$bill->month] ?? $bill->month;
+                             $amount = 'Rp ' . number_format($bill->amount, 0, ',', '.');
+                             $msg .= "- {$monthName} {$bill->year}: {$amount}\n";
+                         }
+
+                         $totalUnpaid = $unpaidBills->sum('amount');
+                         $totalFormatted = 'Rp ' . number_format($totalUnpaid, 0, ',', '.');
+
+                         $msg .= "\nTotal: *{$totalFormatted}*\n";
+                         $msg .= "Mohon segera diselesaikan. Terima kasih.";
+                         
+                         $waLink = "https://wa.me/{$phone}?text=" . urlencode($msg);
+                    } else {
+                        // All Paid Case
+                         $msg = "Assalamu'alaikum.\n";
+                         $msg .= "Terima kasih, pembayaran SPP Ananda *" . strtoupper($student->name) . "* (NIS: {$student->nis}) sudah LUNAS semua.\n";
+                         $waLink = "https://wa.me/{$phone}?text=" . urlencode($msg);
+                    }
                 }
             }
 
@@ -134,6 +191,7 @@ class PaymentCheckController extends Controller
                 'summary' => [
                     'total' => $totalBill,
                     'paid' => $totalPaid,
+                    'current_due_formatted' => 'Rp ' . number_format($currentDue, 0, ',', '.'),
                     'total_formatted' => 'Rp ' . number_format($totalBill, 0, ',', '.'),
                     'paid_formatted' => 'Rp ' . number_format($totalPaid, 0, ',', '.'),
                     'remaining_formatted' => 'Rp ' . number_format($totalBill - $totalPaid, 0, ',', '.')
@@ -158,6 +216,7 @@ class PaymentCheckController extends Controller
         // Full Page Load
         return view('public-payment.index', [
             'schools' => $schools,
+            'academicYears' => $academicYears,
             'classes' => $classes,
             'students' => $students
         ]);
