@@ -287,3 +287,8 @@ Route::get('privacy-policy', [PrivacyPolicyController::class, 'index'])->name('p
 Route::get('term-condition', [PrivacyPolicyController::class, 'termCondition'])->name('term-condition');
 Route::get('about-us', [PrivacyPolicyController::class, 'aboutUs'])->name('about-us');
 Route::get('transaction/invoice/{id}', [TransactionController::class, 'invoice'])->name('transaction.invoice');
+
+Route::controller(App\Http\Controllers\User\PaymentCheckController::class)->group(function () {
+    Route::get('/cek-spp', 'index')->name('payment-check.index');
+    Route::get('/cek-spp/get-classes', 'getClasses')->name('payment-check.get-classes');
+});
