@@ -149,7 +149,7 @@ class PaymentCheckController extends Controller
 
                     if ($unpaidBills->isNotEmpty()) {
                          $msg = "Assalamu'alaikum.\n";
-                         $msg .= "Tagihan SPP Ananda: *" . strtoupper($student->name) . "* (NIS: {$student->nis})\n\n";
+                         $msg .= "Tagihan Syahriah Ananda: *" . strtoupper($student->name) . "* (NIS: {$student->nis})\n\n";
                          $msg .= "Rincian Belum Lunas:\n";
 
                          $indonesianMonths = [
@@ -173,7 +173,7 @@ class PaymentCheckController extends Controller
                     } else {
                         // All Paid Case
                          $msg = "Assalamu'alaikum.\n";
-                         $msg .= "Terima kasih, pembayaran SPP Ananda *" . strtoupper($student->name) . "* (NIS: {$student->nis}) sudah LUNAS semua.\n";
+                         $msg .= "Terima kasih, pembayaran Syahriah Ananda *" . strtoupper($student->name) . "* (NIS: {$student->nis}) sudah LUNAS semua.\n";
                          $waLink = "https://wa.me/{$phone}?text=" . urlencode($msg);
                     }
                 }

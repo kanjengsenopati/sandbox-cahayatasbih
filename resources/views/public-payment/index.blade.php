@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="title" content="Cek Pembayaran SPP & Syahriah - PPTQ Cahaya Tasbih">
-    <meta name="description" content="Pantau status pembayaran SPP dan tagihan Syahriah santri secara real-time. Mudah, transparan, dan dapat diakses kapan saja tanpa login.">
-    <meta name="keywords" content="spp, pptq cahaya tasbih, cek spp online, pembayaran santri, syahriah">
+    <meta name="title" content="Cek Pembayaran & Syahriah - PPTQ Cahaya Tasbih">
+    <meta name="description" content="Pantau status pembayaran dan tagihan Syahriah santri secara real-time. Mudah, transparan, dan dapat diakses kapan saja tanpa login.">
+    <meta name="keywords" content="pptq cahaya tasbih, cek pembayaran online, pembayaran santri, syahriah">
     <meta name="author" content="PPTQ Cahaya Tasbih">
 
     <meta property="og:type" content="website">
@@ -18,8 +18,8 @@
 
     <meta property="twitter:card" content="summary_large_image">
     <meta property="twitter:url" content="{{ url()->current() }}">
-    <meta property="twitter:title" content="Cek Pembayaran SPP & Syahriah - PPTQ Cahaya Tasbih">
-    <meta property="twitter:description" content="Pantau status pembayaran SPP dan tagihan Syahriah santri secara real-time.">
+    <meta property="twitter:title" content="Cek Pembayaran & Syahriah - PPTQ Cahaya Tasbih">
+    <meta property="twitter:description" content="Pantau status pembayaran dan tagihan Syahriah santri secara real-time.">
     <meta property="twitter:image" content="{{ asset('assets/media/logos/logo.png') }}">
 
     <link rel="icon" type="image/png" href="{{ asset('assets/media/logos/logo.png') }}">
@@ -264,7 +264,7 @@
                 <div class="px-6 py-5 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
                     <div class="flex items-center gap-3">
                         <div class="w-10 h-10 rounded-lg bg-primary-600 text-white flex items-center justify-center"><i class="ph-bold ph-mosque text-xl"></i></div>
-                        <div><h3 class="font-bold text-slate-900 text-lg leading-tight">Rincian Pembayaran SPP</h3><p class="text-xs text-slate-500 font-medium">PPTQ Cahaya Tasbih</p></div>
+                        <div><h3 class="font-bold text-slate-900 text-lg leading-tight">Rincian Pembayaran Syahriah</h3><p class="text-xs text-slate-500 font-medium">PPTQ Cahaya Tasbih</p></div>
                     </div>
                     <button @click="showInvoiceModal = false" class="text-slate-400 hover:text-slate-600 transition-colors no-print"><i class="ph-bold ph-x text-xl"></i></button>
                 </div>
@@ -273,23 +273,33 @@
                     <div class="bg-slate-50 rounded-xl p-4 border border-slate-100 mb-6 grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div><p class="text-[10px] uppercase font-bold text-slate-400 tracking-wider mb-1">Nama Santri</p><p class="font-bold text-slate-800 truncate" x-text="activeStudent?.name"></p></div>
                         <div><p class="text-[10px] uppercase font-bold text-slate-400 tracking-wider mb-1">NIS / Kelas</p><p class="font-semibold text-slate-700"><span x-text="activeStudent?.nis"></span> &bull; <span x-text="activeStudent?.class"></span></p></div>
-                        <div><p class="text-[10px] uppercase font-bold text-slate-400 tracking-wider mb-1">Unit Sekolah</p><span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-primary-100 text-primary-700" x-text="activeStudent?.unit"></span></div>
+                        <div><p class="text-[10px] uppercase font-bold text-slate-400 tracking-wider mb-1">Lembaga</p><span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-primary-100 text-primary-700" x-text="activeStudent?.unit"></span></div>
                     </div>
-                    <div class="border rounded-lg overflow-hidden md:overflow-visible">
-                        <table class="w-full text-sm text-left">
-                            <thead class="bg-slate-50 text-slate-500 border-b font-semibold"><tr><th class="px-4 py-3 w-10 text-center">No</th><th class="px-4 py-3">Bulan</th><th class="px-4 py-3 text-center">Status</th><th class="px-4 py-3 text-right">Nominal</th><th class="px-4 py-3 text-right">Tgl Bayar</th></tr></thead>
-                            <tbody class="divide-y divide-slate-100">
-                                <template x-for="(month, index) in activeStudent?.months" :key="index">
-                                    <tr class="group hover:bg-slate-50/50">
-                                        <td class="px-4 py-2.5 text-center text-slate-400" x-text="index + 1"></td>
-                                        <td class="px-4 py-2.5 font-medium text-slate-700" x-text="month.name"></td>
-                                        <td class="px-4 py-2.5 text-center"><span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide border" :class="month.status === 'paid' ? 'bg-emerald-50 text-emerald-700 border-emerald-100' : 'bg-slate-100 text-slate-500 border-slate-200'"><span x-text="month.status === 'paid' ? 'Lunas' : 'Belum'"></span></span></td>
-                                        <td class="px-4 py-2.5 text-right font-medium" x-text="month.amount_formatted"></td>
-                                        <td class="px-4 py-2.5 text-right text-slate-500 text-xs" x-text="month.paid_date"></td>
+                    <div class="border rounded-lg overflow-hidden">
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-sm text-left whitespace-nowrap">
+                                <thead class="bg-slate-50 text-slate-500 border-b font-semibold">
+                                    <tr>
+                                        <th class="px-4 py-3 w-10 text-center">No</th>
+                                        <th class="px-4 py-3">Bulan</th>
+                                        <th class="px-4 py-3 text-center">Status</th>
+                                        <th class="px-4 py-3 text-right">Nominal</th>
+                                        <th class="px-4 py-3 text-right">Tgl Bayar</th>
                                     </tr>
-                                </template>
-                            </tbody>
-                        </table>
+                                </thead>
+                                <tbody class="divide-y divide-slate-100">
+                                    <template x-for="(month, index) in activeStudent?.months" :key="index">
+                                        <tr class="group hover:bg-slate-50/50">
+                                            <td class="px-4 py-2.5 text-center text-slate-400" x-text="index + 1"></td>
+                                            <td class="px-4 py-2.5 font-medium text-slate-700" x-text="month.name"></td>
+                                            <td class="px-4 py-2.5 text-center"><span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wide border" :class="month.status === 'paid' ? 'bg-emerald-50 text-emerald-700 border-emerald-100' : 'bg-slate-100 text-slate-500 border-slate-200'"><span x-text="month.status === 'paid' ? 'Lunas' : 'Belum'"></span></span></td>
+                                            <td class="px-4 py-2.5 text-right font-medium" x-text="month.amount_formatted"></td>
+                                            <td class="px-4 py-2.5 text-right text-slate-500 text-xs" x-text="month.paid_date"></td>
+                                        </tr>
+                                    </template>
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
                 <div class="px-6 py-4 bg-slate-50 border-t border-slate-100 flex justify-end gap-3 no-print">

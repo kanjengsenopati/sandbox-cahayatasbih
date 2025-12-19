@@ -35,10 +35,10 @@
                 </div>
             </div>
 
-            <div class="flex items-center justify-between md:justify-end gap-3 md:pl-0 pl-16">
+            <div class="flex items-center justify-between md:justify-end gap-2 md:gap-3 md:pl-0 pl-14 w-full md:w-auto">
                 <!-- Status Badge -->
                 <span 
-                    class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold border shadow-sm {{ $student['status'] === 'Lunas' ? 'bg-emerald-50 text-emerald-700 border-emerald-100' : 'bg-rose-50 text-rose-700 border-rose-100' }}"
+                    class="inline-flex items-center gap-1.5 px-2.5 py-1 md:px-3 md:py-1.5 rounded-full text-[10px] md:text-xs font-bold border shadow-sm {{ $student['status'] === 'Lunas' ? 'bg-emerald-50 text-emerald-700 border-emerald-100' : 'bg-rose-50 text-rose-700 border-rose-100' }}"
                 >
                     <span class="relative flex h-2 w-2">
                         <span class="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 {{ $student['status'] === 'Lunas' ? 'bg-emerald-400' : 'bg-rose-400' }}"></span>
@@ -47,9 +47,14 @@
                     <span>{{ $student['status'] }}</span>
                 </span>
 
+                <!-- SYAHRIAH Label -->
+                <span class="bg-purple-600 text-white font-bold text-[10px] px-2 py-0.5 md:px-3 md:py-1 rounded-full tracking-wider shadow-sm">
+                    SYAHRIAH
+                </span>
+
                 <!-- Changed Icon Logic: Plus/Minus -->
-                <div class="w-8 h-8 rounded-full bg-slate-50 flex items-center justify-center text-slate-400 group-hover:bg-primary-600 group-hover:text-white transition-all duration-300 transform shadow-sm border border-slate-100"
-                     :class="{'bg-primary-100 text-primary-700': expandedRowId === '{{ $student['id'] }}'}">
+                <div class="w-8 h-8 rounded-full flex items-center justify-center transition-all duration-300 transform shadow-md"
+                     :class="expandedRowId === '{{ $student['id'] }}' ? 'bg-purple-800 text-white rotate-180' : 'bg-purple-600 text-white hover:bg-purple-700 hover:scale-105'">
                      
                      <!-- Minus Icon (Shown when open) -->
                     <i class="ph-bold ph-minus text-lg" x-show="expandedRowId === '{{ $student['id'] }}'"></i>
@@ -105,13 +110,14 @@
                     <div class="absolute bottom-0 left-0 w-24 h-24 bg-purple-500/20 rounded-full blur-xl -ml-5 -mb-5"></div>
                     
                     <div class="relative flex flex-col md:flex-row items-center justify-between gap-6">
+                        <!-- Left Section: Sudah Terbayar -->
                         <div class="flex items-center gap-4 w-full md:w-auto">
-                            <div class="p-3.5 bg-white/10 rounded-xl backdrop-blur-sm border border-white/5 shadow-lg">
-                                <i class="ph-fill ph-wallet text-2xl text-primary-200"></i>
+                            <div class="p-3.5 bg-emerald-500/20 rounded-xl backdrop-blur-sm border border-emerald-400/20 shadow-lg">
+                                <i class="ph-fill ph-check-circle text-2xl text-emerald-300"></i>
                             </div>
                             <div>
-                                <p class="text-primary-200 text-xs font-bold uppercase tracking-wider mb-0.5">Total Tagihan</p>
-                                <p class="text-xl font-bold tracking-tight">{{ $student['summary']['total_formatted'] }}</p>
+                                <p class="text-emerald-100/80 text-xs font-bold uppercase tracking-wider mb-0.5">Sudah Terbayar</p>
+                                <p class="text-xl font-bold tracking-tight text-white">{{ $student['summary']['paid_formatted'] }}</p>
                             </div>
                         </div>
                         
@@ -130,12 +136,13 @@
 
                         <div class="hidden md:block h-12 w-px bg-white/10"></div>
 
+                        <!-- Right Section: Sisa Tagihan -->
                         <div class="flex items-center gap-4 w-full md:w-auto">
                             <div class="p-3.5 bg-rose-500/20 rounded-xl backdrop-blur-sm border border-rose-400/20 shadow-lg">
                                 <i class="ph-fill ph-warning-circle text-2xl text-rose-300"></i>
                             </div>
                             <div>
-                                <p class="text-rose-200 text-xs font-bold uppercase tracking-wider mb-0.5">Sisa Tagihan</p>
+                                <p class="text-rose-200 text-xs font-bold uppercase tracking-wider mb-0.5">Total Sisa Tagihan</p>
                                 <p class="text-xl font-bold tracking-tight text-white">{{ $student['summary']['remaining_formatted'] }}</p>
                             </div>
                         </div>
