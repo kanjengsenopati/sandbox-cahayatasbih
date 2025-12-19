@@ -3,25 +3,45 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="title" content="Cek Pembayaran SPP & Syahriah - PPTQ Cahaya Tasbih">
+    <meta name="description" content="Pantau status pembayaran SPP dan tagihan Syahriah santri secara real-time. Mudah, transparan, dan dapat diakses kapan saja tanpa login.">
+    <meta name="keywords" content="spp, pptq cahaya tasbih, cek spp online, pembayaran santri, syahriah">
+    <meta name="author" content="PPTQ Cahaya Tasbih">
+
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="{{ url()->current() }}">
+    <meta property="og:title" content="🔍 Cek Pembayaran SPP Santri">
+    <meta property="og:description" content="Cek tagihan dan riwayat pembayaran putra-putri Anda di PPTQ Cahaya Tasbih. Klik di sini untuk melihat rinciannya.">
+    <meta property="og:image" content="{{ asset('assets/media/logos/logo.png') }}">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+
+    <meta property="twitter:card" content="summary_large_image">
+    <meta property="twitter:url" content="{{ url()->current() }}">
+    <meta property="twitter:title" content="Cek Pembayaran SPP & Syahriah - PPTQ Cahaya Tasbih">
+    <meta property="twitter:description" content="Pantau status pembayaran SPP dan tagihan Syahriah santri secara real-time.">
+    <meta property="twitter:image" content="{{ asset('assets/media/logos/logo.png') }}">
+
+    <link rel="icon" type="image/png" href="{{ asset('assets/media/logos/logo.png') }}">
     <title>Cek Pembayaran SPP - PPTQ Cahaya Tasbih</title>
     
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="apple-touch-icon" sizes="57x57" href="assets/media/logos/favicon/apple-icon-57x57.png">
-    <link rel="apple-touch-icon" sizes="60x60" href="assets/media/logos/favicon/apple-icon-60x60.png">
-    <link rel="apple-touch-icon" sizes="72x72" href="assets/media/logos/favicon/apple-icon-72x72.png">
-    <link rel="apple-touch-icon" sizes="76x76" href="assets/media/logos/favicon/apple-icon-76x76.png">
-    <link rel="apple-touch-icon" sizes="114x114" href="assets/media/logos/favicon/apple-icon-114x114.png">
-    <link rel="apple-touch-icon" sizes="120x120" href="assets/media/logos/favicon/apple-icon-120x120.png">
-    <link rel="apple-touch-icon" sizes="144x144" href="assets/media/logos/favicon/apple-icon-144x144.png">
-    <link rel="apple-touch-icon" sizes="152x152" href="assets/media/logos/favicon/apple-icon-152x152.png">
-    <link rel="apple-touch-icon" sizes="180x180" href="assets/media/logos/favicon/apple-icon-180x180.png">
+        <link rel="apple-touch-icon" sizes="57x57" href="{{ asset('assets/media/logos/favicon/apple-icon-57x57.png') }}">
+    <link rel="apple-touch-icon" sizes="60x60" href="{{ asset('assets/media/logos/favicon/apple-icon-60x60.png') }}">
+    <link rel="apple-touch-icon" sizes="72x72" href="{{ asset('assets/media/logos/favicon/apple-icon-72x72.png') }}">
+    <link rel="apple-touch-icon" sizes="76x76" href="{{ asset('assets/media/logos/favicon/apple-icon-76x76.png') }}">
+    <link rel="apple-touch-icon" sizes="114x114" href="{{ asset('assets/media/logos/favicon/apple-icon-114x114.png') }}">
+    <link rel="apple-touch-icon" sizes="120x120" href="{{ asset('assets/media/logos/favicon/apple-icon-120x120.png') }}">
+    <link rel="apple-touch-icon" sizes="144x144" href="{{ asset('assets/media/logos/favicon/apple-icon-144x144.png') }}">
+    <link rel="apple-touch-icon" sizes="152x152" href="{{ asset('assets/media/logos/favicon/apple-icon-152x152.png') }}">
+    <link rel="apple-touch-icon" sizes="180x180" href="{{ asset('assets/media/logos/favicon/apple-icon-180x180.png') }}">
     <link rel="icon" type="imageassets/media/logos/favicon/png" sizes="192x192"
-        href="assets/media/logos/favicon/android-icon-192x192.png">
+        href="{{ asset('assets/media/logos/favicon/android-icon-192x192.png') }}">
     <link rel="icon" type="imageassets/media/logos/favicon/png" sizes="32x32"
-        href="assets/media/logos/favicon/favicon-32x32.png">
+        href="{{ asset('assets/media/logos/favicon/favicon-32x32.png') }}">
     <link rel="icon" type="imageassets/media/logos/favicon/png" sizes="96x96"
         href="assets/media/logos/favicon/favicon-96x96.png">
     <link rel="icon" type="imageassets/media/logos/favicon/png" sizes="16x16"
