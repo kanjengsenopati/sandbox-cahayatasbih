@@ -15,6 +15,9 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\BillItemRequest;
 use Illuminate\Support\Facades\Auth;
 use App\Jobs\SendBillWhatsappNotificationJob;
+use Maatwebsite\Excel\Facades\Excel;
+use App\Exports\ReportBillDetailExport;
+use Carbon\Carbon;
 
 class ReportBillController extends Controller
 {
@@ -80,7 +83,8 @@ class ReportBillController extends Controller
                 return response()->json([
                     'total' => number_format($total, 0, ',', '.'),
                     'total_paid' => number_format($totalPaid, 0, ',', '.'),
-                    'realisasion_percentage' => $total == 0 ? '0%' : number_format(($totalPaid / $total) * 100, 2, ',', '.') . '%',
+                    'realisasion_percentage' => $total == 0 ? 0 : ($totalPaid / $total) * 100, // Return float for calculations
+                    'realisasion_percentage_text' => $total == 0 ? '0%' : number_format(($totalPaid / $total) * 100, 2, ',', '.') . '%',
                     'total_unpaid' => number_format($total - $totalPaid, 0, ',', '.')
                 ]);
             }
@@ -127,6 +131,91 @@ class ReportBillController extends Controller
         $schools = School::hasSchool()->orderBy('name', 'asc')->get();
 
         return view('admins.report-bill.show', compact('billType', 'schools'));
+    }
+
+    public function export(string $id)
+    {
+        $this->authorize('Manage Laporan Tagihan');
+
+        // 1. Determine Years based on Academic Year Filter or Current Year
+        $startYear = date('Y');
+        if (request()->academic_year_id) {
+            $academicYear = AcademicYear::find(request()->academic_year_id);
+            if ($academicYear) {
+                // Assumes format "2024/2025"
+                $parts = explode('/', $academicYear->name);
+                if (count($parts) >= 1) {
+                    $startYear = (int) trim($parts[0]);
+                }
+            }
+        }
+        $endYear = $startYear + 1;
+
+        // 2. Generate Periods (July Y to June Y+1)
+        $periods = [];
+        $currentDate = Carbon::create($startYear, 7, 1); // 1 July StartYear
+        $endDate = Carbon::create($endYear, 6, 30);      // 30 June EndYear
+        
+        $months = [
+            1 => 'Januari', 2 => 'Februari', 3 => 'Maret', 4 => 'April',
+            5 => 'Mei', 6 => 'Juni', 7 => 'Juli', 8 => 'Agustus',
+            9 => 'September', 10 => 'Oktober', 11 => 'November', 12 => 'Desember',
+        ];
+
+        while ($currentDate->lte($endDate)) {
+            $periods[] = [
+                'month' => $currentDate->month,
+                'year' => $currentDate->year,
+                'label' => ($months[$currentDate->month] ?? $currentDate->month) . ' ' . $currentDate->year,
+            ];
+            $currentDate->addMonth();
+        }
+
+        // 3. Query Students with Bills filtered by this range
+        $query = Student::select('students.*', 'classrooms.name as classroom_name')
+            ->join('classrooms', 'classrooms.id', '=', 'students.classroom_id')
+            ->join('bills', 'bills.student_id', '=', 'students.id')
+            ->where('bills.bill_type_id', $id)
+            ->when(request()->school_id && request()->school_id !== 'null', function ($q) {
+                $q->where('classrooms.school_id', request()->school_id);
+            })
+            ->when(request()->classroom_id && request()->classroom_id !== 'null', function ($q) {
+                $q->where('students.classroom_id', request()->classroom_id);
+            })
+            ->when(request()->academic_year_id && request()->academic_year_id !== 'null', function ($q) {
+                // Optional: Filter students who strictly have bills linked to this academic_year_id
+                // But usually the date range filter on bills is enough and safer for "report" purposes across boundaries
+                 $q->where('bills.academic_year_id', request()->academic_year_id);
+            })
+            ->when(request()->status, fn($q) => $this->filterByStatus($q, request()->status, $id))
+            ->with(['classroom', 'bills' => function ($q) use ($id, $startYear, $endYear) {
+                $q->where('bill_type_id', $id)
+                  ->where(function ($sub) use ($startYear, $endYear) {
+                      // July of Start Year onwards (July - Dec)
+                      $sub->where(function ($k) use ($startYear) {
+                          $k->where('year', $startYear)->where('month', '>=', 7);
+                      })
+                      // Up to June of End Year (Jan - June)
+                      ->orWhere(function ($k) use ($endYear) {
+                          $k->where('year', $endYear)->where('month', '<=', 6);
+                      });
+                  });
+            }])
+            ->orderBy('classrooms.name', 'asc')
+            ->orderBy('students.name', 'asc')
+            ->distinct();
+
+        $students = $query->get();
+
+        // 4. Calculate Totals based on the filtered bills
+        $this->calculateStudentTotals($students, $id);
+
+        // 5. Dynamic Filename
+        $billTypeName = BillType::where('id', $id)->value('name') ?? 'Tagihan';
+        $safeName = preg_replace('/[^A-Za-z0-9 _-]/', '', $billTypeName); // Sanitize filename
+        $fileName = "Laporan Tagihan {$safeName}.xlsx";
+
+        return Excel::download(new ReportBillDetailExport($students, $periods, $id), $fileName);
     }
 
     private function handleAjaxRequest(string $id)
@@ -211,15 +300,42 @@ class ReportBillController extends Controller
         $totalUnpaidSum = 0;
 
         $students->map(function ($student) use (&$totalPaidSum, &$totalUnpaidSum, $id) {
-            $total = $student->bills->where('bill_type_id', $id)->sum('amount');
-            $studentTotalPaid = $student->bills->where('bill_type_id', $id)->where('status', Bill::STATUS_PAID)->sum('amount');
+            // Use the already eager loaded 'bills' collection.
+            // In the 'export' method, this collection is already filtered by date range and bill_type_id.
+            // In 'getBillData' (ajax), it might be all bills or lazy loaded.
+            
+            // We filter by bill_type_id again just to be safe if this method is used elsewhere 
+            // where the relation wasn't pre-filtered by type.
+            // The collection filter operation is fast and in-memory.
+            $bills = $student->bills->where('bill_type_id', $id);
+
+            $total = $bills->sum('amount');
+            $studentTotalPaid = $bills->where('status', Bill::STATUS_PAID)->sum('amount');
+            
             $studentTotalUnpaid = $total - $studentTotalPaid;
+
+            // Hitung Tagihan Berjalan (Current Due)
+            // Sisa tagihan yg bulan & tahunnya <= Saat ini
+            $nowYear = date('Y');
+            $nowMonth = date('n');
+
+            $currentDue = $bills->filter(function ($bill) use ($nowYear, $nowMonth) {
+                // Hanya hitung yang BELUM LUNAS
+                if ($bill->status == Bill::STATUS_PAID) return false;
+
+                // Cek apakah periode bill <= Saat ini
+                if ($bill->year < $nowYear) return true;
+                if ($bill->year == $nowYear && $bill->month <= $nowMonth) return true;
+                
+                return false;
+            })->sum('amount');
 
             $totalPaidSum += $studentTotalPaid;
             $totalUnpaidSum += $studentTotalUnpaid;
 
             $student->total_paid = $studentTotalPaid;
             $student->total_unpaid = $studentTotalUnpaid;
+            $student->current_due = $currentDue; // New Field 
             $student->total = $total;
             $student->status = $this->getPaymentStatus($studentTotalPaid, $total);
 
@@ -254,7 +370,8 @@ class ReportBillController extends Controller
         return response()->json([
             'total' => number_format($total, 0, ',', '.'),
             'total_paid' => number_format($totalPaid, 0, ',', '.'),
-            'realisasion_percentage' => $total == 0 ? 0 : number_format(($totalPaid / $total) * 100, 2, ',', '.') . '%',
+            'realisasion_percentage' => $total == 0 ? 0 : ($totalPaid / $total) * 100, // Return float
+            'realisasion_percentage_text' => $total == 0 ? '0%' : number_format(($totalPaid / $total) * 100, 2, ',', '.') . '%',
             'total_unpaid' => number_format($totalUnpaid, 0, ',', '.')
         ]);
     }

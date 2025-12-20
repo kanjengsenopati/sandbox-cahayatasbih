@@ -1,103 +1,157 @@
 @extends('layouts.master', ['title' => 'Detail Laporan Tagihan'])
 
 @section('content')
-<div class="content d-flex flex-column flex-column-fluid" id="kt_content">
-    <div class="toolbar" id="kt_toolbar">
-        <div id="kt_toolbar_container" class="container-fluid d-flex flex-stack">
-            <div data-kt-swapper="true" data-kt-swapper-mode="prepend"
-                data-kt-swapper-parent="{default: '#kt_content_container', 'lg': '#kt_toolbar_container'}"
-                class="page-title d-flex align-items-center flex-wrap me-3 mb-5 mb-lg-0">
-                <h1 class="d-flex text-dark fw-bolder fs-3 align-items-center my-1">Laporan Tagihan Pembayaran</h1>
-                <span class="h-20px border-gray-300 border-start mx-4"></span>
+<div class="content d-flex flex-column flex-column-fluid bg-light" id="kt_content" style="background-color: #f8f9fa;">
+    <!-- Modern Header & Breadcrumb -->
+    <div class="toolbar py-5 pb-lg-15" id="kt_toolbar">
+        <div id="kt_toolbar_container" class="container-xxl d-flex flex-stack flex-wrap">
+            <div class="page-title d-flex flex-column me-3">
+                <h1 class="d-flex text-dark fw-bolder fs-2 my-1">
+                    {{ $billType->name ?? 'Laporan Tagihan' }}
+                </h1>
                 <ul class="breadcrumb breadcrumb-separatorless fw-bold fs-7 my-1">
                     <li class="breadcrumb-item text-muted">
-                        <a href="{{ route('report-bill.index') }}" class="text-muted text-hover-primary">Laporan
-                            Tagihan</a>
+                        <a href="{{ route('dashboard') }}" class="text-muted text-hover-primary">Home</a>
                     </li>
                     <li class="breadcrumb-item">
-                        <span class="bullet bg-gray-300 w-5px h-2px"></span>
+                        <span class="bullet bg-gray-200 w-5px h-2px"></span>
                     </li>
-                    <li class="breadcrumb-item text-dark">Detail {{ $billType->name ?? '' }}</li>
+                    <li class="breadcrumb-item text-muted">
+                        <a href="{{ route('report-bill.index') }}" class="text-muted text-hover-primary">Laporan</a>
+                    </li>
+                    <li class="breadcrumb-item">
+                        <span class="bullet bg-gray-200 w-5px h-2px"></span>
+                    </li>
+                    <li class="breadcrumb-item text-dark">Detail</li>
                 </ul>
             </div>
         </div>
     </div>
 
-    <div class="post d-flex flex-column-fluid">
+    <div class="post d-flex flex-column-fluid position-relative mt-n10">
         <div id="kt_content_container" class="container-xxl">
-            <div class="card mb-5">
-                <div class="card-header d-flex align-items-center justify-content-between border-0 pt-6">
-                    <div class="card-title">
-                        <h4 class="text-dark">{{ $billType->name ?? '' }}</h4>
-                    </div>
-                </div>
-                <div class="card-body">
-                    <form id="filter_form" method="GET">
-                        <div class="row g-3">
-                            <div>
-                                <label class="form-label">Filter Tanggal</label>
-                                <div class="d-flex gap-4 align-items-end">
-                                    <div id="dateRange" class="pull-right"
-                                        style="background: #fff; cursor: pointer; padding: 5px 10px; border: 1px solid #ccc;float: top;">
-                                        <i class="glyphicon glyphicon-calendar fa fa-calendar"></i>&nbsp;
-                                        <span></span> <b class="caret"></b>
+            
+            <!-- Smart Filter & Action Toolbar -->
+            <div class="card shadow-sm border-0 mb-8 rounded-3">
+                <div class="card-body py-4">
+                    <form id="filter_form" class="w-100">
+                        <div class="d-flex flex-column flex-xl-row justify-content-between align-items-xl-end gap-5">
+                            <!-- Left: Filters -->
+                            <div class="d-flex flex-column flex-md-row gap-4 flex-grow-1">
+                                <div class="flex-grow-1">
+                                    <label class="form-label fs-7 fw-bolder text-uppercase text-gray-500 mb-1">Periode</label>
+                                    <div class="input-group input-group-solid border rounded-3 overflow-hidden">
+                                        <span class="input-group-text border-0 bg-white pe-0"><i class="fa fa-calendar-alt text-primary"></i></span>
+                                        <div id="dateRange" class="form-control form-control-solid bg-white border-0 fw-bold ps-2" style="cursor: pointer;">
+                                            <span>Loading...</span>
+                                        </div>
                                     </div>
                                 </div>
+                                <div class="flex-grow-1" style="min-width: 180px;">
+                                    <label class="form-label fs-7 fw-bolder text-uppercase text-gray-500 mb-1">UPT</label>
+                                    <select name="school_id" class="form-select form-select-solid bg-white border" id="filter_school_id">
+                                        <option value="">Semua UPT</option>
+                                        @foreach ($schools as $school)
+                                            <option value="{{ $school->id }}">{{ $school->name }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                                <div class="flex-grow-1" style="min-width: 150px;">
+                                    <label class="form-label fs-7 fw-bolder text-uppercase text-gray-500 mb-1">Kelas</label>
+                                    <select name="classroom_id" class="form-select form-select-solid bg-white border" id="filter_classroom_id">
+                                        <option value="">Semua Kelas</option>
+                                    </select>
+                                </div>
+                                <div class="flex-grow-1" style="min-width: 150px;">
+                                    <label class="form-label fs-7 fw-bolder text-uppercase text-gray-500 mb-1">Status</label>
+                                    <select name="class_id" class="form-select form-select-solid bg-white border" id="status">
+                                        <option value="">Semua Status</option>
+                                        <option value="PAID">Lunas</option>
+                                        <option value="UNPAID">Belum Lunas</option>
+                                    </select>
+                                </div>
                             </div>
-                            <div class="col-md-6 col-lg-3">
-                                <label for="filter_school_id" class="form-label">UPT</label>
-                                <select name="school_id" class="form-select" id="filter_school_id">
-                                    <option value="">Semua UPT</option>
-                                    @foreach ($schools as $school)
-                                    <option value="{{ $school->id }}">{{ $school->name }}</option>
-                                    @endforeach
-                                </select>
-                            </div>
-                            <div class="col-md-6 col-lg-3">
-                                <label for="filter_classroom_id" class="form-label">Kelas</label>
-                                <select name="classroom_id" class="form-select" id="filter_classroom_id">
-                                    <option value="">Semua Kelas</option>
-                                </select>
-                            </div>
-                            <div class="col-md-6 col-lg-3">
-                                <label for="status" class="form-label">Status</label>
-                                <select name="status" class="form-select" id="status">
-                                    <option value="">Semua Status</option>
-                                    <option value="PAID">Lunas</option>
-                                    <option value="UNPAID">Belum Lunas</option>
-                                </select>
-                            </div>
-                            <div class="col-md-6 col-lg-3">
-                                <label for="status" class="form-label">Notifikasi Tagihan Wa</label><br>
-                                <button type="button" class="btn btn-success" id="send-wa">
-                                    Kirim <i class="bi bi-whatsapp"></i>
-                                    <span id="spinner" class="spinner-border spinner-border-sm" style="display: none;"
-                                        role="status"></span>
-                                </button>
+                            
+                            <!-- Right: Actions -->
+                            <div class="d-flex gap-2 border-start ps-xl-5 pt-4 pt-xl-0">
+                                <div class="d-flex flex-column w-100">
+                                    <label class="form-label fs-7 fw-bolder text-uppercase text-gray-500 mb-1 d-none d-xl-block">Aksi</label>
+                                    <div class="d-flex gap-2">
+                                        <button type="button" class="btn btn-light-primary border border-primary fw-bold" id="btn-export">
+                                            <i class="fa fa-file-excel me-2"></i> Export
+                                        </button>
+                                        <button type="button" class="btn btn-success fw-bold" id="send-wa">
+                                            <i class="fab fa-whatsapp me-2 fs-4"></i> Kirim WA
+                                            <span id="spinner" class="spinner-border spinner-border-sm ms-2" style="display: none;" role="status"></span>
+                                        </button>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </form>
-                    <div class="d-flex gap-2 mt-4">
-                        <div class="card bg-light-primary bg-active-primary flex-grow-1">
-                            <div class="card-body">
-                                <div class="fw-bolder fs-5 text-gray-800">Target Pemasukkan</div>
-                                <div class="text-primary fs-3 fw-bolder" id="total">Rp. 0</div>
+                </div>
+            </div>
+
+            <!-- Premium Statistics Cards -->
+            <div class="row g-5 g-xl-8 mb-8">
+                <!-- Target Card -->
+                <div class="col-md-6">
+                    <div class="card border-0 shadow-sm rounded-3 h-100 position-relative overflow-hidden bg-white">
+                        <div class="position-absolute top-0 start-0 bottom-0 bg-primary" style="width: 4px;"></div>
+                        <div class="card-body p-5 ps-8">
+                            <div class="d-flex align-items-center mb-3">
+                                <div class="symbol symbol-45px me-4">
+                                    <span class="symbol-label bg-light-primary">
+                                        <i class="fa fa-bullseye text-primary fs-3"></i>
+                                    </span>
+                                </div>
+                                <div>
+                                    <div class="fs-7 text-uppercase fw-bold text-gray-500 spacing-1">Target Pemasukkan</div>
+                                    <div class="fs-2x fw-bolder text-dark" id="total">Rp 0</div>
+                                </div>
+                            </div>
+                            <div class="text-muted fs-7">
+                                Total potensi pendapatan dari seluruh siswa terdaftar.
                             </div>
                         </div>
+                    </div>
+                </div>
 
-                        <div class="card bg-light-success bg-active-success flex-grow-1">
-                            <div class="card-body">
-                                <div class="fw-bolder fs-5 text-gray-800">Realisasi Pemasukkan</div>
-                                <div class="text-success fs-3 fw-bolder" id="total_paid">Rp. 0</div>
-                                <div class="progress">
-                                    <div class="progress-bar" role="progressbar" aria-valuenow="0" id="progress-bar"
-                                        aria-valuemin="0" aria-valuemax="100">
-                                        <div class="progress-bar-label" id="progress-bar-label">0%</div>
+                <!-- Realization Card -->
+                <div class="col-md-6">
+                    <div class="card border-0 shadow-sm rounded-3 h-100 position-relative overflow-hidden bg-white">
+                         <div class="position-absolute top-0 start-0 bottom-0 bg-success" style="width: 4px;"></div>
+                        <div class="card-body p-5 ps-8">
+                            <div class="d-flex flex-column">
+                                <div class="d-flex align-items-center justify-content-between mb-2">
+                                    <div>
+                                        <div class="fs-7 text-uppercase fw-bold text-gray-500 spacing-1">Realisasi Pemasukkan</div>
+                                        <div class="fs-2x fw-bolder text-dark" id="total_paid">Rp 0</div>
+                                    </div>
+                                    <div class="symbol symbol-45px">
+                                        <span class="symbol-label bg-light-success">
+                                            <i class="fa fa-wallet text-success fs-3"></i>
+                                        </span>
                                     </div>
                                 </div>
-                                <p class="text-center mt-3">
-                                <div class="text-danger" id="total_unpaid">Rp. 0</div>
-                                </p>
+                                
+                                <!-- Modern Progress Bar -->
+                                <div class="d-flex flex-column mt-3">
+                                    <div class="d-flex justify-content-between align-items-end mb-1">
+                                        <span class="fw-bold text-gray-600 fs-7">Progress</span>
+                                        <span class="fw-bolder text-dark fs-7" id="progress-bar-label">0%</span>
+                                    </div>
+                                    <div class="progress h-8px w-100 rounded-pill bg-light">
+                                        <div class="progress-bar bg-success rounded-pill" role="progressbar" id="progress-bar"
+                                             style="width: 0%; transition: width 1s ease;"
+                                             aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
+                                        </div>
+                                    </div>
+                                    <div class="d-flex align-items-center justify-content-end mt-2">
+                                        <span class="text-gray-500 fs-8 me-2">Kekurangan:</span>
+                                        <span class="badge bg-light-danger text-danger fw-bold fs-7" id="total_unpaid">Rp 0</span>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -188,6 +242,26 @@
             }, 2000); // Adjust this delay if needed
         });
 
+        $('#btn-export').on('click', function(e) {
+            e.preventDefault();
+            let school_id = $('#filter_school_id').val();
+            let classroom_id = $('#filter_classroom_id').val();
+            let status = $('#status').val();
+            let start_date = $('#dateRange').data('daterangepicker').startDate.format('YYYY-MM-DD');
+            let end_date = $('#dateRange').data('daterangepicker').endDate.format('YYYY-MM-DD');
+            
+            let url = "{{ route('report-bill.export', $billType->id) }}";
+            let params = new URLSearchParams({
+                start_date: start_date,
+                end_date: end_date,
+                school_id: school_id,
+                classroom_id: classroom_id,
+                status: status
+            });
+            
+            window.location.href = url + "?" + params.toString();
+        });
+
         $('#dateRange').daterangepicker({
             startDate: moment().startOf('year'),
             endDate: moment().endOf('year'),
@@ -261,24 +335,44 @@
     
     // Function to get total bill information
     function getTotalBill(start_date = '', end_date = '') {
-    $.ajax({
-    url: "{{ route('report-bill.show', $billType->id) }}",
-    type: "GET",
-    dataType: 'json',
-    data: {
-    type: 'total',
-    school_id: $('#filter_school_id').val(),
-    classroom_id: $('#filter_classroom_id').val(),
-    status: $('#status').val(),
-    },
-    success: function(response) {
-    $('#total').text('Rp. ' + response.total);
-    $('#total_paid').text('Rp. ' + response.total_paid);
-    $('#progress-bar').css('width', response.realisasion_percentage);
-    $('#progress-bar-label').text(response.realisasion_percentage);
-    $('#total_unpaid').text('Belum Lunas: Rp. ' + response.total_unpaid);
-    }
-    });
+        $.ajax({
+            url: "{{ route('report-bill.show', $billType->id) }}",
+            type: "GET",
+            dataType: 'json',
+            data: {
+                type: 'total',
+                school_id: $('#filter_school_id').val(),
+                classroom_id: $('#filter_classroom_id').val(),
+                status: $('#status').val(),
+                start_date: start_date, // Kirim parameter tanggal
+                end_date: end_date      // Kirim parameter tanggal
+            },
+            success: function(response) {
+                $('#total').text('Rp. ' + response.total);
+                $('#total_paid').text('Rp. ' + response.total_paid);
+                
+                // Progress Bar Logic Fix: Logic Percentage Float
+                let percentage = parseFloat(response.realisasion_percentage);
+                let percentageText = response.realisasion_percentage_text;
+                
+                $('#progress-bar').css('width', percentage + '%');
+                $('#progress-bar-label').text(percentageText);
+                
+                // Progress Bar Color Logic
+                let progressBar = $('#progress-bar');
+                progressBar.removeClass('bg-warning bg-success bg-primary');
+                
+                if (percentage < 50) {
+                    progressBar.addClass('bg-warning'); // Orange
+                } else if (percentage > 80) {
+                    progressBar.addClass('bg-success'); // Green
+                } else {
+                    progressBar.addClass('bg-primary'); // Default Purple
+                }
+
+                $('#total_unpaid').text(response.total_unpaid);
+            }
+        });
     }
     
     // Event listener for school filter change

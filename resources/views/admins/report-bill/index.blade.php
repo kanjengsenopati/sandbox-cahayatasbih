@@ -59,37 +59,36 @@
                 <!--end::Card header-->
                 <!--begin::Card body-->
                 <div class="card-body">
-                    <form id="filter_form" method="GET">
-                        <div class="row g-3">
-                            <div>
-                                <label class="form-label">Filter Tanggal</label>
-                                <div class="d-flex gap-4 align-items-end">
-                                    <div id="dateRange" class="pull-right"
-                                        style="background: #fff; cursor: pointer; padding: 5px 10px; border: 1px solid #ccc;float: top;">
-                                        <i class="glyphicon glyphicon-calendar fa fa-calendar"></i>&nbsp;
-                                        <span></span> <b class="caret"></b>
+                    <form id="filter_form" method="GET" class="mb-5">
+                        <div class="row align-items-end g-3 p-4 bg-white rounded shadow-sm border border-gray-200">
+                            <div class="col-md-3">
+                                <label class="form-label text-muted fs-7 fw-bold mb-2 text-uppercase ls-1">Range Tanggal</label>
+                                <div class="position-relative">
+                                    <div id="dateRange" class="form-control form-control-solid d-flex align-items-center justify-content-between cursor-pointer border-0 bg-light-primary">
+                                        <span class="text-gray-600 fw-bold fs-6 ps-1">Loading...</span>
+                                        <i class="fa fa-calendar text-primary ms-2 fs-5"></i>
                                     </div>
                                 </div>
                             </div>
-                            <div class="col-md-6 col-lg-3">
-                                <label for="filter_school_id" class="form-label">UPT</label>
-                                <select name="school_id" class="form-select" id="filter_school_id">
+                            <div class="col-md-3">
+                                <label for="filter_school_id" class="form-label text-muted fs-7 fw-bold mb-2 text-uppercase ls-1">Unit Pendidikan (UPT)</label>
+                                <select name="school_id" class="form-select form-select-solid border-0 bg-light" id="filter_school_id">
                                     <option value="">Semua UPT</option>
                                     @foreach ($schools as $school)
                                     <option value="{{ $school->id }}">{{ $school->name }}</option>
                                     @endforeach
                                 </select>
                             </div>
-                            <div class="col-md-6 col-lg-3">
-                                <label for="filter_classroom_id" class="form-label">Kelas</label>
-                                <select name="classroom_id" class="form-select" id="filter_classroom_id">
+                            <div class="col-md-3">
+                                <label for="filter_classroom_id" class="form-label text-muted fs-7 fw-bold mb-2 text-uppercase ls-1">Kelas</label>
+                                <select name="classroom_id" class="form-select form-select-solid border-0 bg-light" id="filter_classroom_id">
                                     <option value="">Semua Kelas</option>
                                 </select>
                             </div>
-                            <div class="col-md-6 col-lg-3">
-                                <label for="filter_academic_year_id" class="form-label">Tahun Ajaran</label>
-                                <select name="academic_year_id" class="form-select" id="filter_academic_year_id">
-                                    <option value="">Semua Tahun Ajaran</option>
+                            <div class="col-md-3">
+                                <label for="filter_academic_year_id" class="form-label text-muted fs-7 fw-bold mb-2 text-uppercase ls-1">Tahun Ajaran</label>
+                                <select name="academic_year_id" class="form-select form-select-solid border-0 bg-light" id="filter_academic_year_id">
+                                    <option value="">Semua Perioede</option>
                                     @foreach ($academicYears as $academicYear)
                                     <option value="{{ $academicYear->id }}">{{ $academicYear->name }}</option>
                                     @endforeach
@@ -97,40 +96,66 @@
                             </div>
                         </div>
                     </form>
-                    <div class="d-flex gap-2 mt-4">
-                        <div class="card bg-light-primary bg-active-primary flex-grow-1">
-                            <!--begin::Body-->
-                            <div class="card-body">
-                                <!--begin::Label-->
-                                <div class="fw-bolder fs-5 text-gray-800">Target Pemasukkan</div>
-                                <!--end::Label-->
-                                <!--begin::Stats-->
-                                <div class="text-primary fs-3 fw-bolder" id="total">Rp. 0</div>
-                                <!--end::Stats-->
-                            </div>
-                            <!--end::Body-->
-                        </div>
 
-                        <div class="card bg-light-success bg-active-success flex-grow-1">
-                            <!--begin::Body-->
-                            <div class="card-body">
-                                <!--begin::Label-->
-                                <div class="fw-bolder fs-5 text-gray-800">Realisasi Pemasukkan</div>
-                                <!--end::Label-->
-                                <!--begin::Stats-->
-                                <div class="text-success fs-3 fw-bolder" id="total_paid">Rp. 0</div>
-                                <div class="progress">
-                                    <div class="progress-bar" role="progressbar" aria-valuenow="0" id="progress-bar"
-                                        aria-valuemin="0" aria-valuemax="100">
-                                        <div class="progress-bar-label" id="progress-bar-label">0%</div>
+                    <!-- Summary Cards -->
+                    <div class="row g-4">
+                        <!-- Target Card -->
+                        <div class="col-md-6">
+                            <div class="card h-100 border-0 shadow-sm" style="background: linear-gradient(135deg, #F3F0FF 0%, #FFFFFF 100%); border-radius: 12px;">
+                                <div class="card-body p-5">
+                                    <div class="d-flex justify-content-between align-items-start mb-4">
+                                        <div class="d-flex flex-column">
+                                            <span class="text-uppercase tracking-wider fw-bold text-gray-500 fs-8 ls-1 mb-1">Target Pemasukkan</span>
+                                            <span class="fw-bolder fs-2x text-dark tracking-tight" id="total">Rp 0</span>
+                                        </div>
+                                        <div class="d-flex align-items-center justify-content-center bg-white rounded-circle shadow-sm" style="width: 48px; height: 48px;">
+                                            <i class="fa fa-bullseye fs-2 text-primary"></i>
+                                        </div>
+                                    </div>
+                                    <div class="d-flex align-items-center">
+                                        <div class="badge bg-light-primary text-primary px-3 py-2 rounded-pill fs-7 fw-bolder">
+                                            Goal
+                                        </div>
+                                        <span class="text-muted ms-3 fs-7">Total seluruh tagihan tercatat</span>
                                     </div>
                                 </div>
-                                <p class="text-center mt-3">
-                                <div class="text-danger" id="total_unpaid">Rp. 0</div>
-                                </p>
-                                <!--end::Stats-->
                             </div>
-                            <!--end::Body-->
+                        </div>
+
+                        <!-- Realization Card -->
+                        <div class="col-md-6">
+                            <div class="card h-100 border-0 shadow-sm" style="background: linear-gradient(135deg, #F0FFF4 0%, #FFFFFF 100%); border-radius: 12px;">
+                                <div class="card-body p-5">
+                                    <div class="d-flex justify-content-between align-items-start mb-2">
+                                        <div class="d-flex flex-column">
+                                            <span class="text-uppercase tracking-wider fw-bold text-gray-500 fs-8 ls-1 mb-1">Realisasi Pemasukkan</span>
+                                            <span class="fw-bolder fs-2x text-dark tracking-tight" id="total_paid">Rp 0</span>
+                                        </div>
+                                        <div class="d-flex align-items-center justify-content-center bg-white rounded-circle shadow-sm" style="width: 48px; height: 48px;">
+                                            <i class="fa fa-wallet fs-2 text-success"></i>
+                                        </div>
+                                    </div>
+
+                                    <!-- Progress Section -->
+                                    <div class="mt-3">
+                                        <div class="d-flex justify-content-between align-items-center mb-1">
+                                            <span class="text-gray-600 fw-bold fs-7">Progress</span>
+                                            <span class="fw-bold fs-7 text-dark" id="progress-bar-label">0%</span>
+                                        </div>
+                                        <div class="progress h-10px w-100 rounded-pill bg-light-success">
+                                            <div class="progress-bar rounded-pill" role="progressbar" id="progress-bar"
+                                                style="width: 0%; transition: width 0.6s ease;"
+                                                aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="mt-3 pt-3 border-top border-gray-100 d-flex align-items-center">
+                                        <span class="text-muted fs-7 me-2">Sisa Tagihan:</span>
+                                        <span class="text-danger fw-bolder fs-6 bg-light-danger px-2 py-1 rounded" id="total_unpaid">Rp 0</span>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -290,27 +315,45 @@
     }
     
     function getTotalBill(start_date = '', end_date = '') {
-    $.ajax({
-    url: "{{ route('report-bill.index') }}",
-    type: "GET",
-    dataType: 'json',
-    data: {
-    type: 'total',
-    school_id: $('#filter_school_id').val(),
-    classroom_id: $('#filter_classroom_id').val(),
-    academic_year_id: $('#filter_academic_year_id').val(),
-    start_date: start_date,
-    end_date: end_date
-    },
-    success: function(response) {
-    $('#total').text('Rp. ' + response.total);
-    $('#total_paid').text('Rp. ' + response.total_paid);
-    $('#progress-bar').css('width', response.realisasion_percentage);
-    $('#progress-bar-label').text(response.realisasion_percentage);
-    $('#total_unpaid').text('Belum Lunas: Rp. ' + response.total_unpaid);
-    
-    }
-    });
+        $.ajax({
+            url: "{{ route('report-bill.index') }}",
+            type: "GET",
+            dataType: 'json',
+            data: {
+                type: 'total',
+                school_id: $('#filter_school_id').val(),
+                classroom_id: $('#filter_classroom_id').val(),
+                academic_year_id: $('#filter_academic_year_id').val(),
+                start_date: start_date,
+                end_date: end_date
+            },
+            success: function(response) {
+                // Formatting values
+                $('#total').text('Rp. ' + response.total);
+                $('#total_paid').text('Rp. ' + response.total_paid);
+                
+                // Progress Bar Logic
+                let percentage = parseFloat(response.realisasion_percentage);
+                let percentageText = response.realisasion_percentage_text;
+                
+                $('#progress-bar').css('width', percentage + '%');
+                $('#progress-bar-label').text(percentageText);
+                
+                // Progress Bar Color
+                let progressBar = $('#progress-bar');
+                progressBar.removeClass('bg-warning bg-success bg-primary bg-danger');
+                
+                if (percentage < 50) {
+                    progressBar.addClass('bg-warning'); // Orange/Yellow
+                } else if (percentage > 80) {
+                    progressBar.addClass('bg-success'); // Green
+                } else {
+                    progressBar.addClass('bg-primary'); // Default (Purple/Blue)
+                }
+
+                $('#total_unpaid').text('Rp. ' + response.total_unpaid);
+            }
+        });
     }
 </script>
 @endpush
