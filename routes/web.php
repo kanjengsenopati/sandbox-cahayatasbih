@@ -28,6 +28,8 @@ use App\Http\Controllers\Admin\SemesterController;
 use App\Http\Controllers\Admin\ClassroomController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\OrderItemController;
+use App\Http\Controllers\Admin\PpdbTrackController;
+use App\Http\Controllers\Admin\PpdbWavesController;
 use App\Http\Controllers\Admin\ReportPosController;
 use App\Http\Controllers\Admin\SaldoBankController;
 use App\Http\Controllers\Admin\TranslateController;
@@ -65,6 +67,7 @@ use App\Http\Controllers\Admin\ApplicationMenuController;
 use App\Http\Controllers\Admin\CashFlowCategoryController;
 use App\Http\Controllers\Admin\OrderItemHistoryController;
 use App\Http\Controllers\Admin\PpdbRegistrationController;
+use App\Http\Controllers\Admin\RegistrationController;
 use App\Http\Controllers\Admin\ReportStudyGradeController;
 use App\Http\Controllers\Admin\ReportBillStudentController;
 use App\Http\Controllers\Admin\ReportTransactionController;
@@ -179,6 +182,12 @@ Route::group(['middleware' => ['auth']], function () {
     Route::resource('bill-item', BillItemController::class);
     Route::resource('bill-type', BillTypeController::class);
     Route::delete('delete-student-bill', [BillController::class, 'deleteStudentBill'])->name('delete-student-bill');
+    Route::get('payment-rate/get-bill-details', [PaymentRateController::class, 'getBillDetails'])
+        ->name('payment-rate.get-bill-details');
+    Route::post('payment-rate/delete-bill', [PaymentRateController::class, 'deleteBill'])
+        ->name('payment-rate.delete-bill');
+    Route::post('payment-rate/delete-bills-mass', [PaymentRateController::class, 'deleteBillsMass'])
+        ->name('payment-rate.delete-bills-mass');
     Route::resource('payment-rate', PaymentRateController::class);
     Route::post('bill.change-status', [BillController::class, 'changeStatus'])->name('bill.change-status');
     Route::resource('bill', BillController::class);
@@ -272,8 +281,32 @@ Route::group(['middleware' => ['auth']], function () {
     Route::resource('ppdb-type', PpdbTypeController::class);
     Route::resource('ppdb', PpdbController::class);
     Route::resource('ppdb-registration', PpdbRegistrationController::class);
+    Route::resource('registrations', RegistrationController::class)->only(['index', 'show']);
     Route::resource('menu-navigation', MenuNavigationController::class);
     Route::resource('submenu-navigation', SubMenuNavigationController::class);
+
+    // ppdb new
+    Route::resource('ppdb-waves', PpdbWavesController::class);
+    Route::resource('ppdb-track', PpdbTrackController::class);
+
+    // PSB Management (Penerimaan Santri Baru)
+    Route::prefix('psb')->name('psb.')->group(function () {
+        // Registration Management
+        Route::get('/', [\App\Http\Controllers\Admin\AdminPsbController::class, 'index'])->name('index');
+        Route::get('/registrations/{id}', [\App\Http\Controllers\Admin\AdminPsbController::class, 'show'])->name('show');
+        Route::put('/registrations/{id}/status', [\App\Http\Controllers\Admin\AdminPsbController::class, 'updateStatus'])->name('update-status');
+        Route::post('/verify-kta/{userId}', [\App\Http\Controllers\Admin\AdminPsbController::class, 'verifyKta'])->name('verify-kta');
+        Route::get('/classrooms/{schoolId}', [\App\Http\Controllers\Admin\AdminPsbController::class, 'getClassrooms'])->name('classrooms');
+
+        // Wave Management
+        Route::get('/waves/{id}', [\App\Http\Controllers\Admin\AdminWaveController::class, 'show'])->name('waves.show');
+
+        // Track Management (nested under Wave)
+        Route::post('/waves/{waveId}/tracks', [\App\Http\Controllers\Admin\AdminWaveController::class, 'storeTrack'])->name('waves.tracks.store');
+        Route::get('/waves/{waveId}/tracks/{trackId}', [\App\Http\Controllers\Admin\AdminWaveController::class, 'getTrack'])->name('waves.tracks.get');
+        Route::put('/waves/{waveId}/tracks/{trackId}', [\App\Http\Controllers\Admin\AdminWaveController::class, 'updateTrack'])->name('waves.tracks.update');
+        Route::delete('/waves/{waveId}/tracks/{trackId}', [\App\Http\Controllers\Admin\AdminWaveController::class, 'destroyTrack'])->name('waves.tracks.destroy');
+    });
 
     // start cashflow
     Route::resource('cashflow-category', CashFlowCategoryController::class);

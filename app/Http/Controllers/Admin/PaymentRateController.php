@@ -200,11 +200,13 @@ class PaymentRateController extends Controller
         $this->calculateStudentTotals($students, $paymentRate);
 
         return DataTables::of($students)
+            ->addColumn('classroom', fn($student) => $student->classroom->name ?? '-')
             ->addColumn('total_unpaid', fn($student) => $this->formatCurrency($student->total_unpaid))
             ->addColumn('total_paid', fn($student) => $this->formatCurrency($student->total_paid))
             ->addColumn('total', fn($student) => $this->formatCurrency($student->total))
             ->addColumn('status', fn($student) => $student->status)
             ->addColumn('action', fn($data) => $this->renderActions($data, $paymentRate->bill_type_id))
+            ->addColumn('id', fn($student) => $student->id)
             ->rawColumns(['status', 'action'])
             ->make(true);
     }
@@ -426,5 +428,126 @@ class PaymentRateController extends Controller
         $school = School::findOrFail($request->school_id);
         $classrooms = Classroom::where('school_id', $school->id)->orderBy('name')->get();
         return response()->json($classrooms);
+    }
+
+    /**
+     * Get bill details for a student
+     */
+    public function getBillDetails(Request $request)
+    {
+        try {
+            $bills = Bill::where('student_id', $request->student_id)
+                ->where('bill_type_id', $request->bill_type_id)
+                ->whereHas('paymentRateItems', function ($q) use ($request) {
+                    $q->where('payment_rate_id', $request->payment_rate_id);
+                })
+                ->orderByRaw("CASE 
+                    WHEN month >= 7 THEN month - 6 
+                    ELSE month + 6 
+                END")
+                ->orderBy('year')
+                ->get()
+                ->map(function ($bill) {
+                    return [
+                        'id' => $bill->id,
+                        'month' => $bill->month,
+                        'year' => $bill->year,
+                        'amount' => $bill->amount,
+                        'status' => $bill->status,
+                        'translated_month' => $bill->translated_month,
+                        'status_badge' => $bill->status === Bill::STATUS_PAID
+                            ? '<span class="badge bg-success">Lunas</span>'
+                            : '<span class="badge bg-danger">Belum Lunas</span>'
+                    ];
+                });
+
+            return response()->json([
+                'success' => true,
+                'bills' => $bills
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal memuat data tagihan: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Delete a single bill
+     */
+    public function deleteBill(Request $request)
+    {
+        try {
+            $bill = Bill::findOrFail($request->bill_id);
+
+            if ($bill->status === Bill::STATUS_PAID) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Tidak dapat menghapus tagihan yang sudah dibayar'
+                ], 400);
+            }
+
+            $bill->delete();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Tagihan berhasil dihapus'
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Delete Bill Error: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Terjadi kesalahan saat menghapus tagihan'
+            ], 500);
+        }
+    }
+
+    /**
+     * Mass delete bills
+     */
+    public function deleteBillsMass(Request $request)
+    {
+        try {
+            DB::beginTransaction();
+
+            $billIds = $request->bill_ids;
+
+            if (empty($billIds)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Tidak ada tagihan yang dipilih'
+                ], 400);
+            }
+
+            // Check if any bills are already paid
+            $paidBills = Bill::whereIn('id', $billIds)
+                ->where('status', Bill::STATUS_PAID)
+                ->count();
+
+            if ($paidBills > 0) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Beberapa tagihan sudah dibayar dan tidak dapat dihapus'
+                ], 400);
+            }
+
+            // Delete bills
+            Bill::whereIn('id', $billIds)->delete();
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Berhasil menghapus ' . count($billIds) . ' tagihan'
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Mass Delete Bills Error: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Terjadi kesalahan saat menghapus tagihan'
+            ], 500);
+        }
     }
 }
