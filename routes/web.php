@@ -188,6 +188,8 @@ Route::group(['middleware' => ['auth']], function () {
         ->name('payment-rate.delete-bill');
     Route::post('payment-rate/delete-bills-mass', [PaymentRateController::class, 'deleteBillsMass'])
         ->name('payment-rate.delete-bills-mass');
+    Route::post('payment-rate/update-bill', [PaymentRateController::class, 'updateBill'])
+        ->name('payment-rate.update-bill');
     Route::resource('payment-rate', PaymentRateController::class);
     Route::post('bill.change-status', [BillController::class, 'changeStatus'])->name('bill.change-status');
     Route::resource('bill', BillController::class);

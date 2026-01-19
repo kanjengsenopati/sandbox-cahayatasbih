@@ -9,24 +9,61 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class PpdbRegistration extends Model
 {
-    const STATUS_PENDING = "PENDING";
-    const STATUS_PAID = "PAID";
-    const STATUS_REJECTED = "REJECTED";
-    const STATUS_APPROVED = "APPROVED";
+    const STATUS_ACCEPTED = 'ACCEPTED';
+    const STATUS_KTA_REVISION = 'KTA_REVISION';
+    const STATUS_REJECTED = 'REJECTED';
+    const STATUS_PENDING  = 'PENDING';
     use HasFactory, UuidTrait, SoftDeletes;
 
     protected $fillable = [
         'user_id',
-        'ppdb_id',
-        'no_reg',
-        'register_fee',
+        'ppdb_track_id',
+        'registration_code',
         'status',
         'payment_status',
-        'note',
+        'payment_proof',
+        'admin_note',
+        'name',
+        'nisn',
+        'nik',
+        'birth_place',
+        'birth_date',
+        'gender',
+        'student_phone',
+        'student_email',
+        'address_street',
+        'rt',
+        'rw',
+        'village',
+        'district',
+        'city',
+        'postal_code',
+        'kk_number',
+        'father_name',
+        'father_nik',
+        'father_status',
+        'father_job',
+        'mother_name',
+        'mother_nik',
+        'mother_status',
+        'mother_job',
+        'parent_phone',
+        'is_mdti_member',
+        'mdti_branch',
+        'mdti_group',
+        'origin_school',
+        'origin_school_address',
+        'medical_history',
+        'achievements',
+        'gov_assistance',
+        'hobby',
+        'ambition',
+        'motivation',
+        'kta',
     ];
 
     protected $appends = [
-        'translated_status',
+        'registration_type',
     ];
 
     public function user()
@@ -34,44 +71,13 @@ class PpdbRegistration extends Model
         return $this->belongsTo(User::class)->withTrashed();
     }
 
-    public function ppdb()
+    public function track()
     {
-        return $this->belongsTo(Ppdb::class)->withTrashed();
+        return $this->belongsTo(PpdbTrack::class, 'ppdb_track_id')->withTrashed();
     }
 
-    public function ppdbStudents()
+    public function getRegistrationTypeAttribute()
     {
-        return $this->hasMany(PpdbStudent::class)->withTrashed();
-    }
-
-    public function ppdbParents()
-    {
-        return $this->hasMany(PpdbParent::class)->withTrashed();
-    }
-
-    public function transactionDetails()
-    {
-        return $this->hasMany(TransactionDetail::class)->withTrashed();
-    }
-
-    public function ppdbDocument()
-    {
-        return $this->hasOne(PpdbDocument::class)->withTrashed();
-    }
-
-    public function getTranslatedStatusAttribute()
-    {
-        switch ($this->status) {
-            case self::STATUS_PENDING:
-                return 'Menunggu Pembayaran';
-            case self::STATUS_PAID:
-                return 'Menunggu Konfirmasi';
-            case self::STATUS_REJECTED:
-                return 'Tidak Lolos';
-            case self::STATUS_APPROVED:
-                return 'Lolos';
-            default:
-                return '-';
-        }
+        return $this->track ? $this->track->name : '-';
     }
 }

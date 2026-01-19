@@ -56,6 +56,18 @@
                     </a>
                 </div>
 
+                <!-- @can('Manage PPDB')
+                <div class="menu-item">
+                    <a class="menu-link {{ request()->routeIs('admin.registrations.*') ? ' active' : '' }}"
+                        href="{{ route('registrations.index') }}">
+                        <span class="menu-icon">
+                            <i class="fa-solid fa-users" style="color: #ffffff;"></i>
+                        </span>
+                        <span class="menu-title">Pendaftaran PPDB</span>
+                    </a>
+                </div>
+                @endcan -->
+
                 @canany(['Manage Role', 'Manage Admin', 'Manage Informasi', 'Manage Metode Pembayaran','Manage Menu
                 Aplikasi', 'Manage Kontak Bantuan', 'Manage Bank', 'Manage Pengaturan Aplikasi', 'Item Bayar',
                 'Manage Jenis Bayar'])

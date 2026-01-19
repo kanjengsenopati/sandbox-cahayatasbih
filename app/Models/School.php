@@ -13,11 +13,28 @@ class School extends Model
     const TYPE_SMP = 'SMP';
     const TYPE_MA = 'MA';
     const TYPE_PONDOK = 'PONDOK';
+    const TYPE_DEMO = 'DEMO';
     use HasFactory, UuidTrait, SoftDeletes;
 
     protected $fillable = [
-        'name'
+        'name',
+        'type',
+        'slug',
+        'address',
+        'description',
+        'features',
+        'icon_name',
     ];
+
+    public static function getListType()
+    {
+        return [
+            self::TYPE_SMP => 'SMP',
+            self::TYPE_MA => 'MA',
+            self::TYPE_PONDOK => 'PONDOK',
+            self::TYPE_DEMO => 'DEMO',
+        ];
+    }
 
     public function admin()
     {

@@ -31,6 +31,11 @@ class User extends Authenticatable
         'fcm_token',
         'password',
         'last_login',
+        'status',
+        'kta',
+        'member_branch',
+        'member_group',
+        'rejection_note',
     ];
 
     /**

@@ -27,7 +27,15 @@ class BillTypeController extends Controller
         }
 
         if (request()->ajax()) {
-            $data = BillType::with('billItem', 'academicYear', 'billTypeBank')->latest();
+            $data = BillType::with('billItem', 'academicYear', 'billTypeBank')
+                ->when(request()->academic_year_id, function ($query) {
+                    $query->where('academic_year_id', request()->academic_year_id);
+                })
+                ->when(request()->type, function ($query) {
+                    $query->where('type', request()->type);
+                })
+                ->latest();
+
             return DataTables::of($data)
                 ->addColumn('payment_rates', function ($data) {
                     // show button to link to payment rate
@@ -35,16 +43,18 @@ class BillTypeController extends Controller
                     return "<i class='fas fa-money-bill-wave'></i> <a href='$action'>Tarif Pembayaran</a>";
                 })
                 ->editColumn('type', function ($data) {
-                    return $data->type == BillType::TYPE_MONTHLY ? '<span class="badge badge-primary">Bulanan</span>' :
-                        '<span class="badge badge-secondary">Bebas</span>';
+                    if ($data->type == BillType::TYPE_MONTHLY) {
+                        return '<span class="badge badge-light-primary fw-bolder px-2 py-1">Bulanan</span>';
+                    }
+                    return '<span class="badge badge-light-success fw-bolder px-2 py-1">Bebas</span>';
                 })
                 ->addColumn('bank', function ($data) {
                     $bank = "";
                     if ($data->billTypeBank->isEmpty()) {
-                        return "<span class='badge bg-danger m-1'>Belum ada bank</span>";
+                        return "<span class='badge badge-light-danger m-1'>Belum ada bank</span>";
                     } else {
                         foreach ($data->billTypeBank as $value) {
-                            $bank .= "<span class='badge bg-success m-1'>{$value->bank?->name} - {$value->bank?->account_number}</span>";
+                            $bank .= "<span class='badge badge-light-info m-1'>{$value->bank?->name} - {$value->bank?->account_number}</span>";
                         }
                     }
                     return $bank;
@@ -56,7 +66,7 @@ class BillTypeController extends Controller
                 ->addColumn('action', function ($data) {
                     $actionEdit = route('bill-type.edit', $data->id);
                     $actionDelete = route('bill-type.destroy', $data->id);
-                    return "<div class='d-flex justify-content-center'>" .
+                    return "<div class='d-flex justify-content-center gap-2'>" .
                         view('components.action.edit', ['action' => $actionEdit, 'name' => 'Jenis Bayar']) .
                         view('components.action.delete', ['action' => $actionDelete, 'id' => $data->id, 'name' => 'Jenis Bayar']) .
                         "</div>";
@@ -64,7 +74,8 @@ class BillTypeController extends Controller
                 ->rawColumns(['action', 'type', 'payment_rates', 'bank'])
                 ->make(true);
         }
-        return view('admins.bill-type.index');
+        $academicYears = AcademicYear::orderBy('name', 'DESC')->get();
+        return view('admins.bill-type.index', compact('academicYears'));
     }
 
     /**
@@ -129,11 +140,14 @@ class BillTypeController extends Controller
             return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
         }
         if (request()->ajax()) {
-            $academicYear = AcademicYear::whereIsActive(true)->first();
             $data = PaymentRate::with('billType', 'paymentRateClassrooms')
-                ->where('bill_type_id', $billType->id)->whereHas('billType', function ($query) use ($academicYear) {
-                    $query->where('academic_year_id', $academicYear->id);
-                })->latest()->get();
+                ->where('bill_type_id', $billType->id)
+                ->when(request()->academic_year_id, function ($query) {
+                    $query->whereHas('billType', function ($q) {
+                        $q->where('academic_year_id', request()->academic_year_id);
+                    });
+                })
+                ->latest()->get();
             return DataTables::of($data)
                 ->editColumn('amount', function ($data) {
                     return 'Rp. ' . number_format($data->amount, 0, ',', '.');
@@ -151,15 +165,18 @@ class BillTypeController extends Controller
                 ->addColumn('action', function ($data) {
                     $actionEdit = route('payment-rate.edit', $data->id);
                     $actionShow = route('payment-rate.show', $data->id);
+                    $actionDelete = route('payment-rate.destroy', $data->id);
                     return "<div class='d-flex justify-content-center'>" .
                         view('components.action.edit', ['action' => $actionEdit, 'name' => 'Jenis Bayar']) .
                         view('components.action.show', ['action' => $actionShow,]) .
+                        view('components.action.delete', ['action' => $actionDelete, 'id' => $data->id, 'name' => 'Jenis Bayar']) .
                         "</div>";
                 })
                 ->rawColumns(['action', 'classrooms'])
                 ->make(true);
         }
-        return view('admins.bill-type.show', compact('billType'));
+        $academicYears = AcademicYear::orderBy('name', 'DESC')->get();
+        return view('admins.bill-type.show', compact('billType', 'academicYears'));
     }
 
     /**

@@ -1,4 +1,4 @@
-@extends('layouts.master', ['title' => 'Data Sekolah'])
+@extends('layouts.master', ['title' => 'Gelombang PPDB'])
 @section('content')
 <div class="content d-flex flex-column flex-column-fluid" id="kt_content">
     <!--begin::Toolbar-->
@@ -10,7 +10,7 @@
                 data-kt-swapper-parent="{default: '#kt_content_container', 'lg': '#kt_toolbar_container'}"
                 class="page-title d-flex align-items-center flex-wrap me-3 mb-5 mb-lg-0">
                 <!--begin::Title-->
-                <h1 class="d-flex text-dark fw-bolder fs-3 align-items-center my-1">Data Sekolah</h1>
+                <h1 class="d-flex text-dark fw-bolder fs-3 align-items-center my-1">Gelombang PPDB</h1>
                 <!--end::Title-->
                 <!--begin::Separator-->
                 <span class="h-20px border-gray-300 border-start mx-4"></span>
@@ -19,7 +19,7 @@
                 <ul class="breadcrumb breadcrumb-separatorless fw-bold fs-7 my-1">
                     <!--begin::Item-->
                     <li class="breadcrumb-item text-muted">
-                        <a href="{{ route('school.index') }}" class="text-muted text-hover-primary">Master Data</a>
+                        <a href="{{ route('ppdb-waves.index') }}" class="text-muted text-hover-primary">Master Data</a>
                     </li>
                     <!--end::Item-->
                     <!--begin::Item-->
@@ -28,7 +28,7 @@
                     </li>
                     <!--end::Item-->
                     <!--begin::Item-->
-                    <li class="breadcrumb-item text-dark">Data Sekolah</li>
+                    <li class="breadcrumb-item text-dark">Gelombang PPDB</li>
                     <!--end::Item-->
                 </ul>
                 <!--end::Breadcrumb-->
@@ -51,9 +51,9 @@
                 <div class="card-header d-flex align-items-center justify-content-between border-0 pt-6">
                     <!--begin::Card title-->
                     <div class="card-title">
-                        {{-- <h3 class="text-dark">Sekolah</h3> --}}
+                        {{-- <h3 class="text-dark">Gelombang PPDB</h3> --}}
                     </div>
-                    <x-action.create name="Sekolah" action="{{ route('school.create') }}" />
+                    <x-action.create name="Gelombang PPDB" action="{{ route('ppdb-waves.create') }}" />
                     <!--end::Card title-->
                 </div>
                 <!--end::Card header-->
@@ -61,15 +61,14 @@
                 <div class="card-body pt-0">
                     <!--begin::Table-->
                     <div class="table-responsive">
-                        <table id="table-school" class="table align-middle table-row-dashed ">
+                        <table id="table-ppdb-waves" class="table align-middle table-row-dashed ">
                             <thead>
                                 <tr class="text-start text-gray-400 fw-bolder fs-7 text-uppercase gs-0">
                                     <th style="width: 5%">No</th>
                                     <th>Nama</th>
-                                    <th>Tipe</th>
-                                    <th>Keterangan</th>
-                                    <th>Keunggulan</th>
-                                    <th>Alamat</th>
+                                    <th>Tahun Ajaran</th>
+                                    <th>Periode</th>
+                                    <th>Status</th>
                                     <th class="text-center min-w-100px" style="width: 22%">Aksi</th>
                                 </tr>
                             </thead>
@@ -92,12 +91,11 @@
 @push('js')
 <script>
     $(document).ready(() => {
-            var table = $('#table-school').DataTable({
+            var table = $('#table-ppdb-waves').DataTable({
                 ordering: false,
                 processing: true,
                 serverSide: true,
-                responsive: true,
-                ajax: "{{ route('school.index') }}",
+                ajax: "{{ route('ppdb-waves.index') }}",
                 language: {
                     "paginate": {
                         "next": "<i class='fa fa-angle-right'>",
@@ -106,15 +104,6 @@
                     "loadingRecords": "Loading...",
                     "processing": "Processing...",
                 },
-                columnDefs: [
-                    { responsivePriority: 1, targets: 0 }, // No
-                    { responsivePriority: 2, targets: 1 }, // Nama
-                    { responsivePriority: 3, targets: 2 }, // Tipe
-                    { responsivePriority: 4, targets: 3 }, // Alamat
-                    { responsivePriority: 5, targets: 6 }, // Aksi
-                    { responsivePriority: 6, targets: 4 }, // Keterangan
-                    { responsivePriority: 7, targets: 5 }, // Fitur
-                ],
                 columns: [{
                         "data": null,
                         "sortable": false,
@@ -128,21 +117,16 @@
                         name: 'name'
                     },
                     {
-                        data: 'type',
-                        name: 'type'
-                    },
-                   
-                    {
-                        data: 'description',
-                        name: 'description'
+                        data: 'academic_year.name',
+                        name: 'academic_year.name'
                     },
                     {
-                        data: 'features_display',
-                        name: 'features_display'
+                        data: 'period',
+                        name: 'period'
                     },
-                     {
-                        data: 'address',
-                        name: 'address'
+                    {
+                        data: 'status',
+                        name: 'status'
                     },
                     {
                         data: 'action',

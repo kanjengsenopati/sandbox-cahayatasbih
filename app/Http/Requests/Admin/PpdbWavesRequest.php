@@ -4,7 +4,7 @@ namespace App\Http\Requests\Admin;
 
 use Illuminate\Foundation\Http\FormRequest;
 
-class SchoolRequest extends FormRequest
+class PpdbWavesRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -22,13 +22,11 @@ class SchoolRequest extends FormRequest
     public function rules(): array
     {
         return [
+            'academic_year_id' => 'required|exists:academic_years,id',
             'name' => 'required|string|max:255',
-            'type' => 'required|in:' . implode(',', array_keys(\App\Models\School::getListType())),
-            'address' => 'nullable|string|max:500',
-            'description' => 'required|string|max:1000',
-            'features' => 'nullable|array',
-            'features.*' => 'string|max:255',
-            'icon_name' => 'nullable|string|max:255',
+            'start_date' => 'required|date',
+            'end_date' => 'required|date|after_or_equal:start_date',
+            'is_active' => 'required|boolean',
         ];
     }
 }

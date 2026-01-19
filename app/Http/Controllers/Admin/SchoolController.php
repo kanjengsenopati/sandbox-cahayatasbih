@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Models\School;
+use Illuminate\Support\Str;
 use Illuminate\Http\Request;
 use Yajra\DataTables\DataTables;
 use App\Http\Controllers\Controller;
@@ -37,6 +38,10 @@ class SchoolController extends Controller
                         view('components.action.delete', ['action' => $actionDelete, 'id' => $data->id, 'name' => 'Sekolah']) .
                         "</div>";
                 })
+                ->addColumn('features_display', function ($school) {
+                    $features = json_decode($school->features, true) ?? [];
+                    return implode(', ', $features);
+                })
                 ->rawColumns(['action'])
                 ->make(true);
         }
@@ -51,7 +56,9 @@ class SchoolController extends Controller
         if (!Auth::user()->can('Create Sekolah')) {
             return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
         }
-        return view('admins.school.create-edit');
+
+        $types = School::getListType();
+        return view('admins.school.create-edit', compact('types'));
     }
 
     /**
@@ -62,7 +69,15 @@ class SchoolController extends Controller
         if (!Auth::user()->can('Create Sekolah')) {
             return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
         }
-        School::create($request->validated());
+        $data = $request->validated();
+        $data['slug'] = Str::slug($request->name);
+        // check if slug exists
+        $count = School::where('slug', $data['slug'])->count();
+        if ($count > 0) {
+            $data['slug'] = $data['slug'] . '-' . ($count + 1);
+        }
+        $data['features'] = json_encode(array_filter($request->features ?? [], fn($f) => !empty(trim($f))));
+        School::create($data);
         return redirect()->route('school.index')->with('success', 'Sekolah berhasil ditambahkan');
     }
 
@@ -100,7 +115,8 @@ class SchoolController extends Controller
         if (!Auth::user()->can('Edit Sekolah')) {
             return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
         }
-        return view('admins.school.create-edit', compact('school'));
+        $types = School::getListType();
+        return view('admins.school.create-edit', compact('school', 'types'));
     }
 
     /**
@@ -111,8 +127,16 @@ class SchoolController extends Controller
         if (!Auth::user()->can('Edit Sekolah')) {
             return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
         }
-        $school->update($request->validated());
-        return redirect()->route('school.index')->with('success', 'Sekolah berhasil diubah');
+        $data = $request->validated();
+        $data['slug'] = Str::slug($request->name);
+        // check if slug exists
+        $count = School::where('slug', $data['slug'])->where('id', '!=', $school->id)->count();
+        if ($count > 0) {
+            $data['slug'] = $data['slug'] . '-' . ($count + 1);
+        }
+        $data['features'] = json_encode(array_filter($request->features ?? [], fn($f) => !empty(trim($f))));
+        $school->update($data);
+        return redirect()->route('school.index')->with('success', 'Data sekolah berhasil diperbarui');
     }
 
     /**

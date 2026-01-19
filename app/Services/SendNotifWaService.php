@@ -412,4 +412,55 @@ class SendNotifWaService
 
         return $message;
     }
+
+    public static function sendMessageAcceptedPpdb($registration)
+    {
+        $parent = $registration->user;
+
+        $message = "APLIKASI PPTQ CAHAYA TASBIH\n";
+        $message .= "--------------------------------\n";
+        $message .= "*-PENGUMUMAN HASIL PPDB-*\n";
+        $message .= "--------------------------------\n";
+        $message .= "Assalamu'alaikum Bapak / Ibu " . $parent->name . ",\n\n";
+
+        $message .= "Alhamdulillah, calon peserta didik berikut:\n";
+        $message .= "*Nama:* " . $registration->name . "\n";
+        $message .= "*Nomor Registrasi:* " . $registration->registration_code . "\n";
+        $message .= "*Jalur PPDB:* " . $registration->registration_type . "\n";
+        $message .= "*Status:* *DITERIMA*\n\n";
+
+        $message .= "Tahap selanjutnya adalah *DAFTAR ULANG* sesuai jadwal dan ketentuan yang berlaku.\n";
+        $message .= "Apabila tidak melakukan daftar ulang sesuai jadwal, maka status kelulusan *dianggap gugur*.\n\n";
+
+        $message .= "Informasi lengkap mengenai jadwal, berkas, dan ketentuan daftar ulang dapat diakses melalui aplikasi PPDB atau dengan datang langsung ke sekolah.\n";
+        $message .= "--------------------------------\n";
+        $message .= "Terima kasih atas kepercayaan Bapak / Ibu kepada PPTQ Cahaya Tasbih.\n";
+        $message .= "Wassalamu'alaikum warahmatullahi wabarakatuh.\n";
+        $message .= "--------------------------------\n";
+        $message .= "_*Pesan ini dikirim otomatis, tidak perlu dibalas*_\n";
+
+        return $message;
+    }
+
+    public static function sendMessageRejectedPpdb($registration)
+    {
+        $parent = $registration->user;
+
+        $message = "APLIKASI PPTQ CAHAYA TASBIH\n";
+        $message .= "--------------------------------\n";
+        $message .= "*-PENGUMUMAN HASIL PPDB-*\n";
+        $message .= "--------------------------------\n";
+        $message .= "Assalamu'alaikum Bapak / Ibu {$parent->name},\n\n";
+        $message .= "Dengan hormat kami sampaikan bahwa pendaftaran PPDB atas nama:\n";
+        $message .= "*Nama:* {$registration->name}\n";
+        $message .= "*Nomor Registrasi:* {$registration->registration_code}\n";
+        $message .= "*Status:* *DITOLAK*\n\n";
+        $message .= "Alasan:\n";
+        $message .= "{$registration->admin_note}\n\n";
+        $message .= "Terima kasih atas partisipasi Bapak / Ibu dalam PPDB PPTQ Cahaya Tasbih.\n";
+        $message .= "--------------------------------\n";
+        $message .= "_*Pesan ini dikirim otomatis, tidak perlu dibalas*_\n";
+
+        return $message;
+    }
 }
