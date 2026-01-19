@@ -1,4 +1,4 @@
-@extends('layouts.master', ['title' => 'Data Sekolah'])
+@extends('layouts.master', ['title' => 'Data Gelombang PPDB'])
 @section('content')
 <!--begin::Content-->
 <div class="content d-flex flex-column flex-column-fluid" id="kt_content">
@@ -11,7 +11,7 @@
                 data-kt-swapper-parent="{default: '#kt_content_container', 'lg': '#kt_toolbar_container'}"
                 class="page-title d-flex align-items-center flex-wrap me-3 mb-5 mb-lg-0">
                 <!--begin::Title-->
-                <h1 class="d-flex text-dark fw-bolder fs-3 align-items-center my-1">Data Sekolah</h1>
+                <h1 class="d-flex text-dark fw-bolder fs-3 align-items-center my-1">Data Gelombang PPDB</h1>
                 <!--end::Title-->
                 <!--begin::Separator-->
                 <span class="h-20px border-gray-300 border-start mx-4"></span>
@@ -22,9 +22,9 @@
 
                     <!--end::Item-->
                     <!--begin::Item-->
-                    <a class="breadcrumb-item" href="{{ route('school.index') }}">
+                    <a class="breadcrumb-item" href="{{ route('ppdb-waves.index') }}">
                         <li class="text-muted">
-                            Sekolah
+                            Gelombang PPDB
                         </li>
                     </a>
                     <!--end::Item-->
@@ -35,7 +35,7 @@
                     <!--end::Item-->
                     <!--begin::Item-->
                     <li class="breadcrumb-item text-dark">
-                        {{ request()->routeIs('school.create') ? 'Tambah Sekolah' : 'Edit Sekolah' }}</li>
+                        {{ request()->routeIs('ppdb-waves.create') ? 'Tambah Gelombang PPDB' : 'Edit Gelombang PPDB' }}</li>
                     <!--end::Item-->
                 </ul>
                 <!--end::Breadcrumb-->
@@ -63,7 +63,7 @@
                             <!--begin::Card title-->
                             <div class="card-title">
                                 <h1 class="d-flex text-dark fw-bolder fs-3 align-items-center">{{
-                                    request()->routeIs('school.create') ? 'Tambah Sekolah' : 'Edit Sekolah' }}
+                                    request()->routeIs('ppdb-waves.create') ? 'Tambah Gelombang PPDB' : 'Edit Gelombang PPDB' }}
                                 </h1>
                             </div>
                             <!--end::Card title-->
@@ -73,115 +73,93 @@
                         <div class="card-body pt-5">
                             <!--begin::Form-->
                             <x-alert.alert-validation />
-                            @php
-                                $featuresArray = isset($school) && $school->features ? json_decode($school->features, true) ?? [] : (old('features') ?? []);
-                            @endphp
-                            <form id="school"
-                                action="{{ request()->routeIs('school.create') ? route('school.store') : route('school.update', @$school->id) }}"
+                            <form id="ppdb-waves"
+                                action="{{ request()->routeIs('ppdb-waves.create') ? route('ppdb-waves.store') : route('ppdb-waves.update', @$ppdbWaves->id) }}"
                                 method="POST" enctype="multipart/form-data">
                                 @csrf
                                 <x-form.put-method />
                                 <!--begin::Input group-->
-                                <div class="row g-7">
-                                <div class="col-md-6 mb-7">
+                                <div class="fv-row mb-7">
                                     <!--begin::Label-->
                                     <label class="fs-6 fw-bold form-label mt-3" for="name">
-                                        <span class="required">Nama Sekolah</span>
+                                        <span class="required">Nama Gelombang PPDB</span>
                                         <i class="fas fa-exclamation-circle ms-1 fs-7" data-bs-toggle="tooltip"
-                                            title="Nama Sekolah"></i>
+                                            title="Nama Gelombang PPDB"></i>
                                     </label>
                                     <!--end::Label-->
                                     <!--begin::Input-->
                                     <input type="text" class="form-control form-control-solid" name="name" id="name"
-                                        placeholder="Masukkan Nama Sekolah" value="{{ @$school->name ?? old('name') }}"
+                                        placeholder="Masukkan Nama Gelombang PPDB" value="{{ @$ppdbWaves->name ?? old('name') }}"
                                         required />
                                     <!--end::Input-->
                                 </div>
 
-                                <div class="col-md-6 mb-7">
+                                <div class="fv-row mb-7">
                                     <!--begin::Label-->
-                                    <label class="fs-6 fw-bold form-label mt-3" for="type">
-                                        <span class="required">Tipe Sekolah</span>
+                                    <label class="fs-6 fw-bold form-label mt-3" for="academic_year_id">
+                                        <span class="required">Tahun Ajaran</span>
                                         <i class="fas fa-exclamation-circle ms-1 fs-7" data-bs-toggle="tooltip"
-                                            title="Tipe Sekolah"></i>
+                                            title="Pilih Tahun Ajaran"></i>
                                     </label>
                                     <!--end::Label-->
                                     <!--begin::Input-->
-                                    <select name="type" id="type" class="form-select form-select-solid"
-                                        data-control="select2" data-placeholder="Pilih Tipe Sekolah">
+                                    <select name="academic_year_id" id="academic_year_id" class="form-select form-select-solid"
+                                        data-control="select2" data-placeholder="Pilih Tahun Ajaran" required>
                                         <option></option>
-                                        @foreach ($types as $key => $type)
-                                        <option value="{{ $key }}" {{ (isset($school) && $school->type == $key) || old('type') == $key ? 'selected' : '' }}>
-                                            {{ $type }}</option>
+                                        @foreach ($academicYears as $academicYear)
+                                            <option value="{{ $academicYear->id }}"
+                                                {{ (isset($ppdbWaves) && $ppdbWaves->academic_year_id == $academicYear->id) || old('academic_year_id') == $academicYear->id ? 'selected' : '' }}>
+                                                {{ $academicYear->name }}
+                                            </option>
                                         @endforeach
                                     </select>
                                     <!--end::Input-->
                                 </div>
 
-                                 <div class="col-md-6 mb-7">
+                                 <div class="fv-row mb-7">
                                     <!--begin::Label-->
-                                    <label class="fs-6 fw-bold form-label mt-3" for="address">
-                                        <span class="required">Alamat Sekolah</span>
+                                    <label class="fs-6 fw-bold form-label mt-3" for="start_date">
+                                        <span class="required">Periode Mulai</span>
                                         <i class="fas fa-exclamation-circle ms-1 fs-7" data-bs-toggle="tooltip"
-                                            title="Alamat Sekolah"></i>
+                                            title="Periode Mulai Gelombang PPDB"></i>
                                     </label>
                                     <!--end::Label-->
                                     <!--begin::Input-->
-                                    <textarea class="form-control form-control-solid" name="address" id="address"
-                                        placeholder="Masukkan Alamat Sekolah" rows="3">{{ @$school->address ?? old('address') }}</textarea>
+                                    <input type="date" class="form-control form-control-solid" name="start_date" id="start_date"
+                                        placeholder="Masukkan Periode Mulai Gelombang PPDB" value="{{ @$ppdbWaves->start_date ?? old('start_date') }}"
+                                        required />
+                                    <!--end::Input-->
+                                </div>
+                                 <div class="fv-row mb-7">
+                                    <!--begin::Label-->
+                                    <label class="fs-6 fw-bold form-label mt-3" for="end_date">
+                                        <span class="required">Periode Selesai</span>
+                                        <i class="fas fa-exclamation-circle ms-1 fs-7" data-bs-toggle="tooltip"
+                                            title="Periode Selesai Gelombang PPDB"></i>
+                                    </label>
+                                    <!--end::Label-->
+                                    <!--begin::Input-->
+                                    <input type="date" class="form-control form-control-solid" name="end_date" id="end_date"
+                                        placeholder="Masukkan Periode Selesai Gelombang PPDB" value="{{ @$ppdbWaves->end_date ?? old('end_date') }}"
+                                        required />
                                     <!--end::Input-->
                                 </div>
 
-                                <div class="col-md-6 mb-7">
+                                   <div class="fv-row mb-7">
                                     <!--begin::Label-->
-                                    <label class="fs-6 fw-bold form-label mt-3" for="description">
-                                        <span class="required">Keterangan</span>
+                                    <label class="fs-6 fw-bold form-label mt-3" for="is_active">
+                                        <span class="required">Status Gelombang PPDB</span>
                                         <i class="fas fa-exclamation-circle ms-1 fs-7" data-bs-toggle="tooltip"
-                                            title="Keterangan yang tampil di halaman PSB"></i>
+                                            title="Status Gelombang PPDB"></i>
                                     </label>
                                     <!--end::Label-->
                                     <!--begin::Input-->
-                                    <textarea class="form-control form-control-solid" name="description" id="description"
-                                        placeholder="Masukkan Keterangan Sekolah" rows="3">{{ @$school->description ?? old('description') }}</textarea>
+                                    <select name="is_active" id="is_active" class="form-select form-select-solid"
+                                       data-placeholder="Pilih Status Gelombang PPDB" required>
+                                        <option value="1" {{ (isset($ppdbWaves) && $ppdbWaves->is_active == 1) || old('is_active') == '1' ? 'selected' : '' }}>Aktif</option>
+                                        <option value="0" {{ (isset($ppdbWaves) && $ppdbWaves->is_active == 0) || old('is_active') == '0' ? 'selected' : '' }}>Tidak Aktif</option>
+                                    </select>
                                     <!--end::Input-->
-                                </div>
-
-                                <div class="col-md-6 mb-7">
-                                    <!--begin::Label-->
-                                    <label class="fs-6 fw-bold form-label mt-3" for="features">
-                                        <span>Keunggulan</span>
-                                        <i class="fas fa-exclamation-circle ms-1 fs-7" data-bs-toggle="tooltip"
-                                            title="List Keunggulan yang tampil di web PSB"></i>
-                                    </label>
-                                    <!--end::Label-->
-                                    <!--begin::Input-->
-                                    <div id="features-container">
-                                        @if($featuresArray)
-                                        @foreach($featuresArray as $feature)
-                                        <div class="input-group mb-2">
-                                            <input type="text" class="form-control form-control-solid" name="features[]" value="{{ $feature }}" placeholder="Masukkan fitur">
-                                            <button type="button" class="btn btn-danger remove-feature">Hapus</button>
-                                        </div>
-                                        @endforeach
-                                        @endif
-                                        <button type="button" class="btn btn-success mb-2" id="add-feature-btn">Tambah Keunggulan</button>
-                                    </div>
-                                    <!--end::Input-->
-                                </div>
-
-                                <div class="col-md-6 mb-7">
-                                    <!--begin::Label-->
-                                    <label class="fs-6 fw-bold form-label mt-3" for="icon_name">
-                                        <span>Icon Name</span>
-                                        <i class="fas fa-exclamation-circle ms-1 fs-7" data-bs-toggle="tooltip"
-                                            title="Icon yang akan digunakan untuk tampil di PSB"></i>
-                                    </label>
-                                    <!--end::Label-->
-                                    <!--begin::Input-->
-                                    <input type="text" class="form-control form-control-solid" name="icon_name" id="icon_name"
-                                        placeholder="Masukkan Nama Icon" value="{{ @$school->icon_name ?? old('icon_name') }}" />
-                                    <!--end::Input-->
-                                </div>
                                 </div>
                                 <!--end::Input group-->
                                 <!--begin::Separator-->
@@ -190,7 +168,7 @@
                                 <!--begin::Action buttons-->
                                 <div class="d-flex justify-content-end">
                                     <!--begin::Button-->
-                                    <a href="{{ route('school.index') }}">
+                                    <a href="{{ route('ppdb-waves.index') }}">
                                         <button type="button" class="btn btn-sm btn-secondary me-3">Batal</button>
                                     </a>
                                     <!--end::Button-->
@@ -221,26 +199,4 @@
 </div>
 <!--end::Content-->
 <!--end::Wrapper-->
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    const container = document.getElementById('features-container');
-    const addBtn = document.getElementById('add-feature-btn');
-
-    addBtn.addEventListener('click', function() {
-        const newInputGroup = document.createElement('div');
-        newInputGroup.className = 'input-group mb-2';
-        newInputGroup.innerHTML = `
-            <input type="text" class="form-control form-control-solid" name="features[]" placeholder="Masukkan fitur">
-            <button type="button" class="btn btn-danger remove-feature">Hapus</button>
-        `;
-        container.insertBefore(newInputGroup, addBtn);
-    });
-
-    container.addEventListener('click', function(e) {
-        if (e.target.classList.contains('remove-feature')) {
-            e.target.closest('.input-group').remove();
-        }
-    });
-});
-</script>
 @endsection

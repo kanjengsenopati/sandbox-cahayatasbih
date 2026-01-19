@@ -333,33 +333,70 @@ class BillController extends Controller
 
     public function summaryBill()
     {
-        $requestData = request()->only(['student_id', 'bill_type_id']);
+        $requestData = request()->validate([
+            'student_id'   => 'required|exists:students,id',
+            'bill_type_id' => 'required|exists:bill_types,id',
+        ]);
 
         $student = Student::findOrFail($requestData['student_id']);
         $billType = BillType::findOrFail($requestData['bill_type_id']);
 
-        $billType->load(['bills' => function ($query) use ($student, $billType) {
-            $query->where('student_id', $student->id)->where('bill_type_id', $billType->id);
-        }]);
-
-        $totalBill = $billType->bills->sum('amount');
-        $totalPaid = $billType->bills->where('status', Bill::STATUS_PAID)->sum('amount');
-        $totalUnpaid = $billType->bills->where('status', Bill::STATUS_UNPAID)->sum('amount');
-
-        $billType->total_bill = $totalBill ?? 0;
-        $billType->total_paid = $totalPaid ?? 0;
-        $billType->total_unpaid = $totalUnpaid ?? 0;
-
-        $bills = Bill::with('transactions')->where('student_id', $requestData['student_id'])
-            ->where('bill_type_id', $requestData['bill_type_id'])
-            ->orderBy('month', 'asc')
+        $bills = Bill::with('transactions')
+            ->where('student_id', $student->id)
+            ->where('bill_type_id', $billType->id)
+            ->orderBy('month')
             ->get();
 
+        $totalBill   = $bills->sum('amount');
+        $totalPaid   = $bills->where('status', Bill::STATUS_PAID)->sum('amount');
+        $totalUnpaid = $bills->where('status', Bill::STATUS_UNPAID)->sum('amount');
+
+        $summary = [
+            'total_bill'   => $totalBill,
+            'total_paid'   => $totalPaid,
+            'total_unpaid' => $totalUnpaid,
+        ];
 
         $paymentMethods = PaymentMethod::latest()->get();
 
-        return view('admins.bill.summary', compact('student', 'billType', 'bills', 'paymentMethods'));
+        return view('admins.bill.summary', compact(
+            'student',
+            'billType',
+            'bills',
+            'summary',
+            'paymentMethods'
+        ));
     }
+
+    // public function summaryBill()
+    // {
+    //     $requestData = request()->only(['student_id', 'bill_type_id']);
+
+    //     $student = Student::findOrFail($requestData['student_id']);
+    //     $billType = BillType::findOrFail($requestData['bill_type_id']);
+
+    //     $billType->load(['bills' => function ($query) use ($student, $billType) {
+    //         $query->where('student_id', $student->id)->where('bill_type_id', $billType->id);
+    //     }]);
+
+    //     $totalBill = $billType->bills->sum('amount');
+    //     $totalPaid = $billType->bills->where('status', Bill::STATUS_PAID)->sum('amount');
+    //     $totalUnpaid = $billType->bills->where('status', Bill::STATUS_UNPAID)->sum('amount');
+
+    //     $billType->total_bill = $totalBill ?? 0;
+    //     $billType->total_paid = $totalPaid ?? 0;
+    //     $billType->total_unpaid = $totalUnpaid ?? 0;
+
+    //     $bills = Bill::with('transactions')->where('student_id', $requestData['student_id'])
+    //         ->where('bill_type_id', $requestData['bill_type_id'])
+    //         ->orderBy('month', 'asc')
+    //         ->get();
+
+
+    //     $paymentMethods = PaymentMethod::latest()->get();
+
+    //     return view('admins.bill.summary', compact('student', 'billType', 'bills', 'paymentMethods'));
+    // }
 
     public function changeStatus()
     {

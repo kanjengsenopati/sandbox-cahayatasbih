@@ -9,12 +9,14 @@ use App\Models\Student;
 use App\Models\BillType;
 use App\Models\Classroom;
 use App\Models\PaymentRate;
+use Illuminate\Support\Str;
 use Illuminate\Http\Request;
 use Yajra\DataTables\DataTables;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\Controller;
 use App\Services\SendNotifWaService;
+use Illuminate\Support\Facades\Cache;
 use App\Http\Requests\Admin\PaymentRateRequest;
 
 class PaymentRateController extends Controller
@@ -39,121 +41,248 @@ class PaymentRateController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-
     public function store(PaymentRateRequest $request)
     {
+        // 1. ATOMIC LOCK: Mencegah tombol diklik 2x (Anti Double Submit)
+        // Kunci akan aktif selama 10 detik untuk user yang sedang login ini.
+        $lock = Cache::lock('store_payment_rate_' . auth()->id(), 10);
+
+        if (!$lock->get()) {
+            return redirect()->back()->with('error', 'Proses sedang berjalan, mohon tunggu sebentar...');
+        }
+
         try {
             DB::beginTransaction();
 
             $billType = BillType::findOrFail($request->bill_type_id);
 
+            // 2. Buat Parent Payment Rate
             $paymentRate = $billType->paymentRates()->create([
                 'amount' => $request->price,
             ]);
 
-            // create payment rate classroom
-            foreach ($request->classrooms as $classroom) {
+            // 3. Attach Classrooms
+            // Kita loop manual untuk create agar trigger event (jika ada) tetap jalan, 
+            // tapi karena ini ringan, tidak masalah di loop.
+            foreach ($request->classrooms as $classroomId) {
                 $paymentRate->paymentRateClassrooms()->create([
-                    'classroom_id' => $classroom,
+                    'classroom_id' => $classroomId,
                 ]);
             }
 
-            // create payment rate item for each month
-            $months = [];
-            if ($billType->type == BillType::TYPE_MONTHLY) {
-                $months = range(1, 12);
-                foreach ($months as $month) {
-                    $paymentRate->paymentRateItems()->create([
-                        'month' => $month,
-                        'year' => $request->{"tahun_$month"},
-                        'amount' => $request->{"bulan_$month"},
-                    ]);
-                }
-            } else {
-                $months = $request->months;
-                foreach ($months as $month) {
-                    $paymentRate->paymentRateItems()->create([
-                        'month' => $month,
-                        'year' => $request->year,
-                        'amount' => $request->price,
-                    ]);
+            // 4. Create Payment Rate Items & Build Memory Map
+            // Kita simpan ID item yang baru dibuat ke array agar tidak perlu query ulang nanti.
+            $months = ($billType->type == BillType::TYPE_MONTHLY) ? range(1, 12) : $request->months;
+            $rateItemsMap = []; // Format: "bulan_tahun" => ID
+
+            foreach ($months as $month) {
+                $amount = ($billType->type == BillType::TYPE_MONTHLY) ? $request->{"bulan_$month"} : $request->price;
+                $year   = ($billType->type == BillType::TYPE_MONTHLY) ? $request->{"tahun_$month"} : $request->year;
+
+                $item = $paymentRate->paymentRateItems()->create([
+                    'month'  => $month,
+                    'year'   => $year,
+                    'amount' => $amount,
+                ]);
+
+                // Key untuk map: "1_2026", "2_2026", dst.
+                $rateItemsMap["{$month}_{$year}"] = $item->id;
+            }
+
+            // 5. DATA FETCHING (OPTIMASI BERAT)
+            // Ambil semua santri dari kelas terpilih + Load Bill yang sudah ada
+            // Tujuannya agar pengecekan "Bill Sudah Ada?" dilakukan di memori RAM (Cepat), bukan Database Query.
+            $classrooms = Classroom::with(['students' => function ($q) use ($billType) {
+                $q->select('id', 'classroom_id') // Select kolom seperlunya
+                    ->with(['bills' => function ($b) use ($billType) {
+                        $b->where('bill_type_id', $billType->id)
+                            ->select('student_id', 'month', 'year'); // Load history tagihan tipe ini saja
+                    }]);
+            }])->whereIn('id', $request->classrooms)->get();
+
+            $billsToInsert = [];
+            $timestamp = now(); // Waktu create seragam
+
+            // 6. LOGIC PEMBUATAN TAGIHAN (IN-MEMORY PROCESSING)
+            foreach ($months as $month) {
+                // Tentukan Tahun & Nominal
+                $targetYear = ($billType->type == BillType::TYPE_MONTHLY) ? $request->{"tahun_$month"} : $request->year;
+                $targetAmount = ($billType->type == BillType::TYPE_MONTHLY) ? $request->{"bulan_$month"} : $request->price;
+
+                // Skip jika nominal 0
+                if ($targetAmount == 0) continue;
+
+                // Ambil ID Item dari Map (Tanpa Query)
+                $rateItemId = $rateItemsMap["{$month}_{$targetYear}"] ?? null;
+
+                foreach ($classrooms as $classroom) {
+                    foreach ($classroom->students as $student) {
+
+                        // Cek Duplicate via Collection (RAM), bukan DB Query
+                        // "Apakah student ini sudah punya bill di bulan X tahun Y?"
+                        $exists = $student->bills
+                            ->where('month', $month)
+                            ->where('year', $targetYear)
+                            ->first();
+
+                        if (!$exists) {
+                            $billsToInsert[] = [
+                                'id'                 => Str::uuid()->toString(),
+                                'bill_type_id'       => $billType->id,
+                                'classroom_id'       => $classroom->id,
+                                'student_id'         => $student->id,
+                                'academic_year_id'   => $billType->academic_year_id,
+                                'month'              => $month,
+                                'year'               => $targetYear,
+                                'amount'             => $targetAmount,
+                                'status'             => Bill::STATUS_UNPAID,
+                                'payment_rate_item_id' => $rateItemId,
+                                'created_at'         => $timestamp,
+                                'updated_at'         => $timestamp,
+                            ];
+                        }
+                    }
                 }
             }
 
-            // create bill to all student where classroom_id in classrooms
-            $classrooms = Classroom::whereIn('id', $request->classrooms)->get();
-            $months = [];
-            if ($billType->type == BillType::TYPE_MONTHLY) {
-                $months = range(1, 12);
-                foreach ($months as $month) {
-                    foreach ($classrooms as $classroom) {
-                        foreach ($classroom->students as $student) {
-                            $billAmount = $request->{"bulan_$month"}; // Get amount for current month
-                            $billYear = $request->{"tahun_$month"}; // Get year for current month
-                            if ($billAmount == 0) {
-                                continue; // Skip if the bill amount is 0
-                            }
-                            $paymentRateItem = $paymentRate->paymentRateItems()->where('month', $month)->first();
-                            $existingBill = $student->bills()->where('bill_type_id', $billType->id)
-                                ->where('month', $month)
-                                ->where('year', $billYear)
-                                ->first();
-                            if (!$existingBill) {
-                                $student->bills()->create([
-                                    'bill_type_id' => $billType->id,
-                                    'classroom_id' => $classroom->id,
-                                    'academic_year_id' => $billType->academic_year_id,
-                                    'month' => $month,
-                                    'year' => $billYear,
-                                    'amount' => $billAmount,
-                                    'status' => 'UNPAID',
-                                    'payment_rate_item_id' => $paymentRateItem?->id ?? null,
-                                ]);
-                            }
-                        }
-                    }
-                }
-            } else {
-                $months = $request->months;
-                foreach ($months as $month) {
-                    foreach ($classrooms as $classroom) {
-                        foreach ($classroom->students as $student) {
-                            $billAmount = $request->price; // Get amount for current month
-                            if ($billAmount == 0) {
-                                continue; // Skip if the bill amount is 0
-                            }
-                            $billYear = $request->year;
-                            $paymentRateItem = $paymentRate->paymentRateItems()->where('month', $month)->first();
-                            $existingBill = $student->bills()->where('bill_type_id', $billType->id)
-                                ->where('month', $month)
-                                ->where('year', $billYear)
-                                ->first();
-                            if (!$existingBill) {
-                                $student->bills()->create([
-                                    'bill_type_id' => $billType->id,
-                                    'classroom_id' => $classroom->id,
-                                    'academic_year_id' => $billType->academic_year_id,
-                                    'month' => $month,
-                                    'year' => $billYear,
-                                    'amount' => $billAmount,
-                                    'status' => 'UNPAID',
-                                    'payment_rate_item_id' => $paymentRateItem?->id ?? null,
-                                ]);
-                            }
-                        }
-                    }
+            // 7. BULK INSERT (EKSEKUSI FINAL)
+            // Memasukkan ribuan data dalam potongan-potongan kecil (Chunk) agar aman.
+            if (!empty($billsToInsert)) {
+                foreach (array_chunk($billsToInsert, 500) as $chunk) {
+                    Bill::insert($chunk);
                 }
             }
 
             DB::commit();
+            $lock->release(); // Lepas kunci manual agar user bisa input lagi segera jika mau
 
-            return redirect()->route('bill-type.index')->with('success', 'Tarif pembayaran berhasil ditambahkan');
+            return redirect()->route('bill-type.show', $billType->id)
+                ->with('success', 'Tarif pembayaran dan tagihan berhasil digenerate.');
         } catch (\Exception $e) {
-            Log::error($e);
             DB::rollBack();
-            return redirect()->back()->with('error', 'Terjadi kesalahan: ' . $e->getMessage())->withInput();
+            $lock->release(); // Lepas kunci jika error
+            Log::error("Error Generate Tagihan: " . $e->getMessage());
+
+            return redirect()->back()
+                ->with('error', 'Terjadi kesalahan: ' . $e->getMessage())
+                ->withInput();
         }
     }
+
+    // public function store(PaymentRateRequest $request)
+    // {
+    //     try {
+    //         DB::beginTransaction();
+
+    //         $billType = BillType::findOrFail($request->bill_type_id);
+
+    //         $paymentRate = $billType->paymentRates()->create([
+    //             'amount' => $request->price,
+    //         ]);
+
+    //         // create payment rate classroom
+    //         foreach ($request->classrooms as $classroom) {
+    //             $paymentRate->paymentRateClassrooms()->create([
+    //                 'classroom_id' => $classroom,
+    //             ]);
+    //         }
+
+    //         // create payment rate item for each month
+    //         $months = [];
+    //         if ($billType->type == BillType::TYPE_MONTHLY) {
+    //             $months = range(1, 12);
+    //             foreach ($months as $month) {
+    //                 $paymentRate->paymentRateItems()->create([
+    //                     'month' => $month,
+    //                     'year' => $request->{"tahun_$month"},
+    //                     'amount' => $request->{"bulan_$month"},
+    //                 ]);
+    //             }
+    //         } else {
+    //             $months = $request->months;
+    //             foreach ($months as $month) {
+    //                 $paymentRate->paymentRateItems()->create([
+    //                     'month' => $month,
+    //                     'year' => $request->year,
+    //                     'amount' => $request->price,
+    //                 ]);
+    //             }
+    //         }
+
+    //         // create bill to all student where classroom_id in classrooms
+    //         $classrooms = Classroom::whereIn('id', $request->classrooms)->get();
+    //         $months = [];
+    //         if ($billType->type == BillType::TYPE_MONTHLY) {
+    //             $months = range(1, 12);
+    //             foreach ($months as $month) {
+    //                 foreach ($classrooms as $classroom) {
+    //                     foreach ($classroom->students as $student) {
+    //                         $billAmount = $request->{"bulan_$month"}; // Get amount for current month
+    //                         $billYear = $request->{"tahun_$month"}; // Get year for current month
+    //                         if ($billAmount == 0) {
+    //                             continue; // Skip if the bill amount is 0
+    //                         }
+    //                         $paymentRateItem = $paymentRate->paymentRateItems()->where('month', $month)->first();
+    //                         $existingBill = $student->bills()->where('bill_type_id', $billType->id)
+    //                             ->where('month', $month)
+    //                             ->where('year', $billYear)
+    //                             ->first();
+    //                         if (!$existingBill) {
+    //                             $student->bills()->create([
+    //                                 'bill_type_id' => $billType->id,
+    //                                 'classroom_id' => $classroom->id,
+    //                                 'academic_year_id' => $billType->academic_year_id,
+    //                                 'month' => $month,
+    //                                 'year' => $billYear,
+    //                                 'amount' => $billAmount,
+    //                                 'status' => 'UNPAID',
+    //                                 'payment_rate_item_id' => $paymentRateItem?->id ?? null,
+    //                             ]);
+    //                         }
+    //                     }
+    //                 }
+    //             }
+    //         } else {
+    //             $months = $request->months;
+    //             foreach ($months as $month) {
+    //                 foreach ($classrooms as $classroom) {
+    //                     foreach ($classroom->students as $student) {
+    //                         $billAmount = $request->price; // Get amount for current month
+    //                         if ($billAmount == 0) {
+    //                             continue; // Skip if the bill amount is 0
+    //                         }
+    //                         $billYear = $request->year;
+    //                         $paymentRateItem = $paymentRate->paymentRateItems()->where('month', $month)->first();
+    //                         $existingBill = $student->bills()->where('bill_type_id', $billType->id)
+    //                             ->where('month', $month)
+    //                             ->where('year', $billYear)
+    //                             ->first();
+    //                         if (!$existingBill) {
+    //                             $student->bills()->create([
+    //                                 'bill_type_id' => $billType->id,
+    //                                 'classroom_id' => $classroom->id,
+    //                                 'academic_year_id' => $billType->academic_year_id,
+    //                                 'month' => $month,
+    //                                 'year' => $billYear,
+    //                                 'amount' => $billAmount,
+    //                                 'status' => 'UNPAID',
+    //                                 'payment_rate_item_id' => $paymentRateItem?->id ?? null,
+    //                             ]);
+    //                         }
+    //                     }
+    //                 }
+    //             }
+    //         }
+
+    //         DB::commit();
+
+    //         return redirect()->route('bill-type.index')->with('success', 'Tarif pembayaran berhasil ditambahkan');
+    //     } catch (\Exception $e) {
+    //         Log::error($e);
+    //         DB::rollBack();
+    //         return redirect()->back()->with('error', 'Terjadi kesalahan: ' . $e->getMessage())->withInput();
+    //     }
+    // }
 
     /**
      * Display the specified resource.
@@ -195,93 +324,79 @@ class PaymentRateController extends Controller
 
     private function getBillData(string $id, array $dateRange)
     {
-        $paymentRate = PaymentRate::findOrFail($id);
-        $students = $this->getFilteredStudents($paymentRate, $dateRange);
-        $this->calculateStudentTotals($students, $paymentRate);
+        $paymentRate = PaymentRate::with(['paymentRateItems'])->findOrFail($id);
 
-        return DataTables::of($students)
+        // Get all relevant payment rate item IDs once
+        $paymentRateItemIds = $paymentRate->paymentRateItems->pluck('id')->toArray();
+
+        // Base query on Students
+        $query = Student::query()
+            ->select('students.*')
+            ->with(['classroom' => function ($q) {
+                // Optimize loading classroom
+                $q->select('id', 'name');
+            }])
+            // Optimization: Calculate aggregates in DB using withSum/withCount or raw selects
+            // We use withSum for readability and Laravel conventions
+            ->withSum(['bills as total' => function ($q) use ($paymentRate, $paymentRateItemIds, $dateRange) {
+                $q->where('bill_type_id', $paymentRate->bill_type_id)
+                    ->whereIn('payment_rate_item_id', $paymentRateItemIds);
+
+                if ($dateRange['startYear'] && $dateRange['endYear']) {
+                    ($this->dateRangeFilter($dateRange))($q);
+                }
+            }], 'amount')
+            ->withSum(['bills as total_paid' => function ($q) use ($paymentRate, $paymentRateItemIds, $dateRange) {
+                $q->where('bill_type_id', $paymentRate->bill_type_id)
+                    ->whereIn('payment_rate_item_id', $paymentRateItemIds)
+                    ->where('status', Bill::STATUS_PAID);
+
+                if ($dateRange['startYear'] && $dateRange['endYear']) {
+                    ($this->dateRangeFilter($dateRange))($q);
+                }
+            }], 'amount')
+            // Only include students who ACTUALLY have bills for this payment rate
+            ->whereHas('bills', function ($q) use ($paymentRate, $paymentRateItemIds) {
+                $q->where('bill_type_id', $paymentRate->bill_type_id)
+                    ->whereIn('payment_rate_item_id', $paymentRateItemIds);
+            });
+
+        // Apply School Filter
+        if (request()->school_id && request()->school_id !== 'null') {
+            $query->whereHas('classroom', function ($q) {
+                $q->where('school_id', request()->school_id);
+            });
+        }
+
+        // Apply Classroom Filter
+        if (request()->classroom_id && request()->classroom_id !== 'null') {
+            $query->where('classroom_id', request()->classroom_id);
+        }
+
+        return DataTables::of($query)
             ->addColumn('classroom', fn($student) => $student->classroom->name ?? '-')
-            ->addColumn('total_unpaid', fn($student) => $this->formatCurrency($student->total_unpaid))
-            ->addColumn('total_paid', fn($student) => $this->formatCurrency($student->total_paid))
-            ->addColumn('total', fn($student) => $this->formatCurrency($student->total))
-            ->addColumn('status', fn($student) => $student->status)
-            ->addColumn('action', fn($data) => $this->renderActions($data, $paymentRate->bill_type_id))
+            ->addColumn('total_unpaid', function ($student) {
+                return $this->formatCurrency(($student->total ?? 0) - ($student->total_paid ?? 0));
+            })
+            ->addColumn('total_paid', fn($student) => $this->formatCurrency($student->total_paid ?? 0))
+            ->addColumn('total', fn($student) => $this->formatCurrency($student->total ?? 0))
+            ->addColumn('status', function ($student) {
+                return $this->getPaymentStatus($student->total_paid ?? 0, $student->total ?? 0);
+            })
+            ->addColumn('action', fn($student) => $this->renderActions($student, $paymentRate->bill_type_id))
             ->addColumn('id', fn($student) => $student->id)
-            ->rawColumns(['status', 'action'])
+            ->rawColumns(['status', 'action']) // 'action' and 'status' contain HTML
             ->make(true);
     }
 
-    private function getFilteredStudents($paymentRate, $dateRange)
-    {
-        return Student::select('students.*')
-            ->join('bills', 'bills.student_id', '=', 'students.id')
-            ->where('bills.bill_type_id', $paymentRate->bill_type_id)
-            ->whereHas('bills.paymentRateItems', fn($q) => $q->where('payment_rate_id', $paymentRate->id))
-            ->when(request()->school_id && request()->school_id !== 'null', $this->schoolFilter())
-            ->when(request()->classroom_id && request()->classroom_id !== 'null', $this->classroomFilter())
-            ->hasSchool()
-            ->orderBy('students.name', 'asc')
-            ->distinct()
-            ->get();
-    }
-
-    private function schoolFilter()
-    {
-        return function ($query) {
-            return $query->join('classrooms', 'classrooms.id', '=', 'students.classroom_id')
-                ->where('classrooms.school_id', request()->school_id);
-        };
-    }
-
-    private function classroomFilter()
-    {
-        return fn($query) => $query->where('students.classroom_id', request()->classroom_id);
-    }
-
-    private function dateRangeFilter(array $dateRange)
-    {
-        return function ($query) use ($dateRange) {
-            $query->whereBetween('bills.year', [$dateRange['startYear'], $dateRange['endYear']])
-                ->whereBetween('bills.month', [$dateRange['startMonth'], $dateRange['endMonth']]);
-        };
-    }
-
-    private function calculateStudentTotals(&$students, $paymentRate)
-    {
-        $totalPaidSum = 0;
-        $totalUnpaidSum = 0;
-
-        $students->map(function ($student) use (&$totalPaidSum, &$totalUnpaidSum, $paymentRate) {
-            $bills = $student->bills()->where('bill_type_id', $paymentRate->bill_type_id)
-                ->whereHas('paymentRateItems', function ($query) use ($paymentRate) {
-                    $query->where('payment_rate_id', $paymentRate->id);
-                });
-
-            $total = $bills->sum('amount');
-            $studentTotalPaid = $bills->where('status', Bill::STATUS_PAID)->sum('amount');
-            $studentTotalUnpaid = $total - $studentTotalPaid;
-
-            $totalPaidSum += $studentTotalPaid;
-            $totalUnpaidSum += $studentTotalUnpaid;
-
-            $student->total_paid = $studentTotalPaid;
-            $student->total_unpaid = $studentTotalUnpaid;
-            $student->total = $total;
-            $student->status = $this->getPaymentStatus($studentTotalPaid, $total);
-
-            return $student;
-        });
-    }
-
-
     private function getPaymentStatus($paid, $total)
     {
-        if ($paid === 0) {
-            return '<span class="badge bg-danger">Belum Bayar</span>';
-        } elseif ($paid === $total) {
-            return '<span class="badge bg-success">Lunas</span>';
+        if ($paid == 0) {
+            return '<span class="badge badge-light-danger fw-bolder px-2 py-1">Belum Bayar</span>';
+        } elseif ($paid >= $total && $total > 0) {
+            return '<span class="badge badge-light-success fw-bolder px-2 py-1">Lunas</span>';
         } else {
-            return '<span class="badge bg-warning">Belum Lunas</span>';
+            return '<span class="badge badge-light-warning fw-bolder px-2 py-1">Belum Lunas</span>';
         }
     }
 
@@ -314,6 +429,31 @@ class PaymentRateController extends Controller
     private function classroomBillFilter()
     {
         return fn($query) => $query->whereHas('student', fn($q) => $q->where('classroom_id', request()->classroom_id));
+    }
+
+    private function dateRangeFilter(array $dateRange)
+    {
+        return function ($query) use ($dateRange) {
+            $startMonth = $dateRange['startMonth'];
+            $endMonth = $dateRange['endMonth'];
+            $startYear = $dateRange['startYear'];
+            $endYear = $dateRange['endYear'];
+
+            $query->where(function ($q) use ($startMonth, $endMonth, $startYear, $endYear) {
+                if ($startYear == $endYear) {
+                    $q->where('year', $startYear)
+                        ->whereBetween('month', [$startMonth, $endMonth]);
+                } else {
+                    $q->where(function ($q2) use ($startMonth, $startYear) {
+                        $q2->where('year', $startYear)
+                            ->where('month', '>=', $startMonth);
+                    })->orWhere(function ($q2) use ($endMonth, $endYear) {
+                        $q2->where('year', $endYear)
+                            ->where('month', '<=', $endMonth);
+                    })->orWhereBetween('year', [$startYear + 1, $endYear - 1]);
+                }
+            });
+        };
     }
 
     private function formatCurrency($amount)
@@ -362,65 +502,142 @@ class PaymentRateController extends Controller
      */
     public function update(PaymentRateRequest $request, $id)
     {
+        // 1. ATOMIC LOCK (Konsistensi)
+        $lock = Cache::lock('update_payment_rate_' . auth()->id(), 10);
+
+        if (!$lock->get()) {
+            return redirect()->back()->with('error', 'Proses update sedang berjalan, mohon tunggu...');
+        }
+
+        DB::beginTransaction();
         try {
-            DB::beginTransaction();
-
             $billType = BillType::findOrFail($request->bill_type_id);
-            $paymentRate = PaymentRate::findOrFail($id);
 
-            // Update payment rate amount
+            // Load PaymentRate beserta Items-nya sekaligus (Eager Load)
+            // agar tidak perlu query berkali-kali di dalam loop.
+            $paymentRate = PaymentRate::with('paymentRateItems')->findOrFail($id);
+
+            // Update nominal di induk (hanya referensi)
             $paymentRate->update([
                 'amount' => $request->price,
             ]);
 
-            // Update payment rate items for each month
+            // Siapkan Collection Items agar pencarian di loop dilakukan di RAM (Cepat)
+            // Gunakan keyBy('month') agar mudah dipanggil: $items[1], $items[2], dst.
+            $items = $paymentRate->paymentRateItems->keyBy('month');
+
             if ($billType->type == BillType::TYPE_MONTHLY) {
                 for ($month = 1; $month <= 12; $month++) {
-                    $paymentRateItem = $paymentRate?->paymentRateItems()?->where('month', $month)?->first();
-                    if ($paymentRateItem) {
-                        $paymentRateItem->update([
-                            'year' => $request->input("tahun_$month"),
-                            'amount' => $request->input("bulan_$month"),
+                    // Ambil item dari memori RAM (bukan query DB lagi)
+                    $item = $items->get($month);
+
+                    if ($item) {
+                        $newAmount = $request->input("bulan_$month");
+                        $newYear   = $request->input("tahun_$month");
+
+                        // 1. Update Master Data Tarif (Item)
+                        $item->update([
+                            'year'   => $newYear,
+                            'amount' => $newAmount,
                         ]);
 
-                        Bill::where('payment_rate_item_id', $paymentRateItem->id)
-                            ->update(['amount' => $request->input("bulan_$month")]);
+                        // 2. SAFETY UPDATE BILLS (PENTING!)
+                        // Hanya update tagihan siswa yang statusnya MASIH UNPAID.
+                        // Tagihan yang sudah PAID tidak boleh diubah agar laporan keuangan valid.
+                        Bill::where('payment_rate_item_id', $item->id)
+                            ->where('status', Bill::STATUS_UNPAID) // <--- PENJAGA GAWANG
+                            ->update([
+                                'amount' => $newAmount,
+                                'year'   => $newYear // Update tahun juga jika berubah
+                            ]);
                     }
                 }
             } else {
+                // Tipe Bebas / Non-Bulanan
                 foreach ($request->months as $month) {
-                    $paymentRateItem = $paymentRate?->paymentRateItems()?->where('month', $month)?->first();
-                    if ($paymentRateItem) {
-                        $paymentRateItem->update([
-                            'year' => $request->year,
+                    $item = $items->get($month);
+
+                    if ($item) {
+                        // 1. Update Master Data Tarif
+                        $item->update([
+                            'year'   => $request->year,
                             'amount' => $request->price,
                         ]);
 
-                        // Update corresponding bills
-                        Bill::where('payment_rate_item_id', $paymentRateItem->id)
-                            ->update(['amount' => $request->price]);
+                        // 2. SAFETY UPDATE BILLS
+                        Bill::where('payment_rate_item_id', $item->id)
+                            ->where('status', Bill::STATUS_UNPAID) // <--- PENJAGA GAWANG
+                            ->update([
+                                'amount' => $request->price,
+                                'year'   => $request->year
+                            ]);
                     }
                 }
             }
 
             DB::commit();
+            $lock->release();
 
-            return redirect()->route('bill-type.index')->with('success', 'Tarif pembayaran berhasil diperbarui');
+            return redirect()->route('bill-type.show', $billType->id)
+                ->with('success', 'Tarif pembayaran berhasil diperbarui. (Catatan: Tagihan yang sudah lunas tidak ikut berubah)');
         } catch (\Exception $e) {
-            Log::error($e);
             DB::rollBack();
+            $lock->release();
+            Log::error("Error Update PaymentRate: " . $e->getMessage());
             return redirect()->back()->with('error', 'Terjadi kesalahan: ' . $e->getMessage())->withInput();
         }
     }
-
-
-
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(string $id)
+    public function destroy($id)
     {
-        //
+        // 1. ATOMIC LOCK
+        $lock = Cache::lock('destroy_payment_rate_' . auth()->id(), 10);
+
+        if (!$lock->get()) {
+            return redirect()->back()->with('error', 'Proses penghapusan sedang berjalan, mohon tunggu...');
+        }
+
+        DB::beginTransaction();
+        try {
+            $paymentRate = PaymentRate::findOrFail($id);
+
+            // 2. SAFETY CHECK: Cek apakah ada tagihan yang statusnya SUDAH DIBAYAR?
+            // PERUBAHAN DI SINI: Gunakan 'paymentRateItems' (pakai 's') sesuai nama function di Model Bill Anda.
+            $hasPaidBills = Bill::whereHas('paymentRateItems', function ($q) use ($id) {
+                $q->where('payment_rate_id', $id);
+            })->where('status', Bill::STATUS_PAID)->exists();
+
+            if ($hasPaidBills) {
+                $lock->release();
+                return redirect()->back()->with('error', 'GAGAL HAPUS! Terdapat siswa yang sudah membayar tagihan ini. Harap batalkan pembayaran siswa tersebut terlebih dahulu.');
+            }
+
+            // 3. HAPUS BILLS (Direct Query)
+            // Bagian ini TIDAK PERLU DIUBAH karena langsung pakai nama tabel database ('payment_rate_items'), bukan nama relasi Eloquent.
+            Bill::whereIn('payment_rate_item_id', function ($query) use ($id) {
+                $query->select('id')
+                    ->from('payment_rate_items') // Nama tabel di database (biasanya plural)
+                    ->where('payment_rate_id', $id);
+            })->delete();
+
+            // 4. Hapus Item & Classrooms
+            $paymentRate->paymentRateItems()->delete();
+            $paymentRate->paymentRateClassrooms()->delete();
+
+            // 5. Hapus Induk
+            $paymentRate->delete();
+
+            DB::commit();
+            $lock->release();
+
+            return redirect()->back()->with('success', 'Data tarif dan seluruh tagihan berhasil dihapus bersih.');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            $lock->release();
+            return redirect()->back()->with('error', 'Terjadi kesalahan: ' . $e->getMessage());
+        }
     }
 
     public function getClassroom(Request $request)
@@ -547,6 +764,43 @@ class PaymentRateController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Terjadi kesalahan saat menghapus tagihan'
+            ], 500);
+        }
+    }
+
+    /**
+     * Update a single bill amount
+     */
+    public function updateBill(Request $request)
+    {
+        try {
+            $request->validate([
+                'bill_id' => 'required|exists:bills,id',
+                'amount' => 'required|numeric|min:0'
+            ]);
+
+            $bill = Bill::findOrFail($request->bill_id);
+
+            if ($bill->status === Bill::STATUS_PAID) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Tidak dapat mengubah tagihan yang sudah dibayar'
+                ], 400);
+            }
+
+            $bill->update([
+                'amount' => $request->amount
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Tagihan berhasil diperbarui'
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Update Bill Error: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Terjadi kesalahan saat memperbarui tagihan'
             ], 500);
         }
     }
