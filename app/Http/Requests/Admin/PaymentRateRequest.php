@@ -21,10 +21,21 @@ class PaymentRateRequest extends FormRequest
      */
     public function rules(): array
     {
-        return [
+        $rules = [
             'bill_type_id' => 'required|exists:bill_types,id',
             'price' => 'required|numeric',
-            'classrooms' => 'required|array',
+            'type' => 'required|in:REGULAR,TRANSFER',
         ];
+
+        // Validation for CREATE only
+        if ($this->isMethod('post')) {
+            $rules['classrooms'] = 'required_if:type,REGULAR|array';
+            $rules['students'] = 'required_if:type,TRANSFER|array';
+            
+            // For monthly, we can allow price to be 0 or null technically if months are filled, 
+            // but the form usually forces a value. keeping price required is safer.
+        }
+
+        return $rules;
     }
 }
