@@ -73,24 +73,148 @@
 
             <!--begin::Card body-->
             <div class="card-body pt-0">
-                <!--begin::Table-->
-                <div class="table-responsive">
-                    <table id="table-bill-type" class="table table-row-bordered table-row-gray-300 align-middle gs-0 gy-4">
-                        <thead class="bg-light">
-                            <tr class="fw-bolder text-muted fs-7 text-uppercase">
-                                <th class="ps-4 min-w-50px rounded-start">No</th>
-                                <th class="min-w-150px">Sekolah</th>
-                                <th class="min-w-150px">Kelas</th>
-                                <th class="min-w-125px">Total Tagihan</th>
-                                <th class="text-center min-w-100px rounded-end">Aksi</th>
-                            </tr>
-                        </thead>
-                        <tbody class="fw-bold text-gray-600">
-                            <!-- Data populated by DataTables -->
-                        </tbody>
-                    </table>
+                
+                <!--begin::Nav Tabs-->
+                <ul class="nav nav-tabs nav-line-tabs mb-5 fs-6">
+                    <li class="nav-item">
+                        <a class="nav-link active" data-bs-toggle="tab" href="#tab_regular">
+                            Siswa Reguler
+                            <span class="badge badge-light-success ms-2">{{ $regularRates->count() }}</span>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" data-bs-toggle="tab" href="#tab_transfer">
+                            Siswa Pindahan
+                            <span class="badge badge-light-warning ms-2">{{ $transferRates->count() }}</span>
+                        </a>
+                    </li>
+                </ul>
+                <!--end::Nav Tabs-->
+
+                <!--begin::Tab Content-->
+                <div class="tab-content" id="myTabContent">
+                    
+                    <!--begin::Tab Pane Regular-->
+                    <div class="tab-pane fade show active" id="tab_regular" role="tabpanel">
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle gs-0 gy-4">
+                                <thead class="bg-light">
+                                    <tr class="fw-bolder text-muted fs-7 text-uppercase">
+                                        <th class="ps-4 min-w-50px rounded-start">No</th>
+                                        <th class="min-w-150px">Sekolah</th>
+                                        <th class="min-w-200px">Kelas</th>
+                                        <th class="min-w-125px">Total Tagihan</th>
+                                        <th class="text-center min-w-100px rounded-end">Aksi</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @forelse($regularRates as $rate)
+                                    <tr>
+                                        <td class="ps-4">
+                                            <span class="text-dark fw-bolder">{{ $loop->iteration }}</span>
+                                        </td>
+                                        <td>
+                                            <span class="text-gray-800 fw-bold d-block fs-6">
+                                                {{ $rate->paymentRateClassrooms->first()->classroom->school->name ?? '-' }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            @foreach($rate->paymentRateClassrooms as $prClassroom)
+                                                <span class="badge badge-light-success fw-bolder m-1">
+                                                    {{ $prClassroom->classroom->name }}
+                                                </span>
+                                            @endforeach
+                                        </td>
+                                        <td>
+                                            <span class="badge badge-light-success fs-7 fw-bolder">Rp. {{ number_format($rate->amount, 0, ',', '.') }}</span>
+                                        </td>
+                                        <td class="text-center">
+                                            <div class="d-flex justify-content-center gap-2">
+                                                @include('components.action.edit', ['action' => route('payment-rate.edit', $rate->id), 'name' => 'Jenis Bayar'])
+                                                @include('components.action.show', ['action' => route('payment-rate.show', $rate->id)])
+                                                @include('components.action.delete', ['action' => route('payment-rate.destroy', $rate->id), 'id' => $rate->id, 'name' => 'Jenis Bayar'])
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    @empty
+                                    <tr>
+                                        <td colspan="5" class="text-center py-10">
+                                            <div class="d-flex flex-column align-items-center">
+                                                <i class="fas fa-search fs-1 text-gray-300 mb-4"></i>
+                                                <span class="text-muted fw-bold fs-6">Belum ada data tarif reguler.</span>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    @endforelse
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <!--end::Tab Pane Regular-->
+
+                    <!--begin::Tab Pane Transfer-->
+                    <div class="tab-pane fade" id="tab_transfer" role="tabpanel">
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle gs-0 gy-4">
+                                <thead class="bg-light">
+                                    <tr class="fw-bolder text-muted fs-7 text-uppercase">
+                                        <th class="ps-4 min-w-50px rounded-start">No</th>
+                                        <th class="min-w-150px">Sekolah</th>
+                                        <th class="min-w-200px">Nama Siswa</th>
+                                        <th class="min-w-125px">Total Tagihan</th>
+                                        <th class="text-center min-w-100px rounded-end">Aksi</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @forelse($transferRates as $rate)
+                                    <tr>
+                                        <td class="ps-4">
+                                            <span class="text-dark fw-bolder">{{ $loop->iteration }}</span>
+                                        </td>
+                                        <td>
+                                            <span class="text-gray-800 fw-bold d-block fs-6">
+                                                {{ $rate->paymentRateStudents->first()->student->classroom->school->name ?? '-' }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            @foreach($rate->paymentRateStudents as $prStudent)
+                                                <div class="d-flex align-items-center mb-1">
+                                                    <span class="badge badge-light-warning fw-bolder me-2">
+                                                        {{ $prStudent->student->name }}
+                                                    </span>
+                                                    <span class="text-muted fs-8">({{ $prStudent->student->nis ?? '-' }})</span>
+                                                </div>
+                                            @endforeach
+                                        </td>
+                                        <td>
+                                            <span class="badge badge-light-success fs-7 fw-bolder">Rp. {{ number_format($rate->amount, 0, ',', '.') }}</span>
+                                        </td>
+                                        <td class="text-center">
+                                            <div class="d-flex justify-content-center gap-2">
+                                                @include('components.action.edit', ['action' => route('payment-rate.edit', $rate->id), 'name' => 'Jenis Bayar'])
+                                                @include('components.action.show', ['action' => route('payment-rate.show', $rate->id)])
+                                                @include('components.action.delete', ['action' => route('payment-rate.destroy', $rate->id), 'id' => $rate->id, 'name' => 'Jenis Bayar'])
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    @empty
+                                    <tr>
+                                        <td colspan="5" class="text-center py-10">
+                                            <div class="d-flex flex-column align-items-center">
+                                                <i class="fas fa-user-slash fs-1 text-gray-300 mb-4"></i>
+                                                <span class="text-muted fw-bold fs-6">Belum ada data tarif susulan/pindahan.</span>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    @endforelse
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <!--end::Tab Pane Transfer-->
+
                 </div>
-                <!--end::Table-->
+                <!--end::Tab Content-->
             </div>
             <!--end::Card body-->
         </div>
@@ -103,66 +227,19 @@
 @push('js')
 <script>
     $(document).ready(function() {
-        var table = $('#table-bill-type').DataTable({
-            processing: true,
-            serverSide: true,
-            ordering: false, // Maintain original simplified ordering
-            ajax: {
-                url: "{{ route('bill-type.show', $billType->id) }}",
-                data: function(d) {
-                    d.academic_year_id = $('#filter_academic_year').val();
-                }
-            },
-            language: {
-                paginate: {
-                    next: "<i class='fa fa-angle-right'></i>",
-                    previous: "<i class='fa fa-angle-left'></i>"
-                },
-                processing: '<div class="d-flex justify-content-center"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div></div>',
-                emptyTable: "Tidak ada data tersedia",
-            },
-            dom: '<"d-flex justify-content-between align-items-center mx-0 row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>>t<"d-flex justify-content-between align-items-center mx-0 row"<"col-sm-12 col-md-6"i><"col-sm-12 col-md-6"p>>',
-            columns: [{
-                    data: null,
-                    sortable: false,
-                    searchable: false,
-                    className: 'ps-4',
-                    render: function(data, type, row, meta) {
-                        return '<span class="text-gray-800 fw-bolder">' + (meta.row + meta.settings._iDisplayStart + 1) + '</span>';
-                    }
-                },
-                {
-                    data: 'school',
-                    name: 'school',
-                    render: function(data) {
-                        return '<div class="d-flex flex-column"><span class="text-gray-800 fw-bolder mb-1">' + data + '</span></div>';
-                    }
-                },
-                {
-                    data: 'classrooms',
-                    name: 'classrooms',
-                    // Rendered as badges by controller
-                },
-                {
-                    data: 'amount',
-                    name: 'amount',
-                    render: function(data) {
-                        return '<span class="badge badge-light-success fs-7 fw-bolder">' + data + '</span>';
-                    }
-                },
-                {
-                    data: 'action',
-                    name: 'action',
-                    orderable: false,
-                    searchable: false,
-                    className: 'text-center'
-                },
-            ]
+        // Handle Filter Change
+        $('#filter_academic_year').change(function() {
+            var yearId = $(this).val();
+            var url = new URL(window.location.href);
+            if(yearId) {
+                url.searchParams.set('academic_year_id', yearId);
+            } else {
+                url.searchParams.delete('academic_year_id');
+            }
+            window.location.href = url.toString();
         });
 
-        $('#filter_academic_year').change(function() {
-            table.draw();
-        });
+        // Initialize tooltips/other components if needed (Metronic usually handles this globally)
     });
 </script>
 @endpush

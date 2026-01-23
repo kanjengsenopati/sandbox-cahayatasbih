@@ -139,44 +139,36 @@ class BillTypeController extends Controller
         if (!Auth::user()->can('Manage Jenis Bayar')) {
             return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
         }
-        if (request()->ajax()) {
-            $data = PaymentRate::with('billType', 'paymentRateClassrooms')
-                ->where('bill_type_id', $billType->id)
-                ->when(request()->academic_year_id, function ($query) {
-                    $query->whereHas('billType', function ($q) {
-                        $q->where('academic_year_id', request()->academic_year_id);
-                    });
-                })
-                ->latest()->get();
-            return DataTables::of($data)
-                ->editColumn('amount', function ($data) {
-                    return 'Rp. ' . number_format($data->amount, 0, ',', '.');
-                })
-                ->addColumn('classrooms', function ($data) {
-                    $classrooms = "";
-                    foreach ($data->paymentRateClassrooms as $classroom) {
-                        $classrooms .= "<span class='badge bg-success m-1'>{$classroom->classroom->name}</span>";
-                    }
-                    return $classrooms;
-                })
-                ->addColumn('school', function ($data) {
-                    return $data->paymentRateClassrooms->first()->classroom->school->name;
-                })
-                ->addColumn('action', function ($data) {
-                    $actionEdit = route('payment-rate.edit', $data->id);
-                    $actionShow = route('payment-rate.show', $data->id);
-                    $actionDelete = route('payment-rate.destroy', $data->id);
-                    return "<div class='d-flex justify-content-center'>" .
-                        view('components.action.edit', ['action' => $actionEdit, 'name' => 'Jenis Bayar']) .
-                        view('components.action.show', ['action' => $actionShow,]) .
-                        view('components.action.delete', ['action' => $actionDelete, 'id' => $data->id, 'name' => 'Jenis Bayar']) .
-                        "</div>";
-                })
-                ->rawColumns(['action', 'classrooms'])
-                ->make(true);
-        }
+
+        $academicYearId = request('academic_year_id');
+
+        // Regular Rates (Classroom Based)
+        $regularRates = PaymentRate::with(['billType', 'paymentRateClassrooms.classroom.school'])
+            ->where('bill_type_id', $billType->id)
+            ->where('type', 'REGULAR')
+            ->when($academicYearId, function ($query) use ($academicYearId) {
+                $query->whereHas('billType', function ($q) use ($academicYearId) {
+                    $q->where('academic_year_id', $academicYearId);
+                });
+            })
+            ->latest()
+            ->get();
+
+        // Transfer Rates (Student Based)
+        $transferRates = PaymentRate::with(['billType', 'paymentRateStudents.student'])
+            ->where('bill_type_id', $billType->id)
+            ->where('type', 'TRANSFER')
+            ->when($academicYearId, function ($query) use ($academicYearId) {
+                $query->whereHas('billType', function ($q) use ($academicYearId) {
+                    $q->where('academic_year_id', $academicYearId);
+                });
+            })
+            ->latest()
+            ->get();
+
         $academicYears = AcademicYear::orderBy('name', 'DESC')->get();
-        return view('admins.bill-type.show', compact('billType', 'academicYears'));
+
+        return view('admins.bill-type.show', compact('billType', 'academicYears', 'regularRates', 'transferRates'));
     }
 
     /**

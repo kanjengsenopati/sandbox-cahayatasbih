@@ -59,15 +59,24 @@ class PaymentRateController extends Controller
             // 2. Buat Parent Payment Rate
             $paymentRate = $billType->paymentRates()->create([
                 'amount' => $request->price,
+                'type' => $request->type,
             ]);
 
             // 3. Attach Classrooms
             // Kita loop manual untuk create agar trigger event (jika ada) tetap jalan, 
             // tapi karena ini ringan, tidak masalah di loop.
-            foreach ($request->classrooms as $classroomId) {
-                $paymentRate->paymentRateClassrooms()->create([
-                    'classroom_id' => $classroomId,
-                ]);
+            if ($request->type == PaymentRate::TYPE_REGULAR) {
+                foreach ($request->classrooms as $classroomId) {
+                    $paymentRate->paymentRateClassrooms()->create([
+                        'classroom_id' => $classroomId,
+                    ]);
+                }
+            } else {
+                 foreach ($request->students as $studentId) {
+                    $paymentRate->paymentRateStudents()->create([
+                        'student_id' => $studentId,
+                    ]);
+                }
             }
 
             // 4. Create Payment Rate Items & Build Memory Map
@@ -76,9 +85,16 @@ class PaymentRateController extends Controller
             $rateItemsMap = []; // Format: "bulan_tahun" => ID
 
             foreach ($months as $month) {
-                $amount = ($billType->type == BillType::TYPE_MONTHLY) ? $request->{"bulan_$month"} : $request->price;
-                $year   = ($billType->type == BillType::TYPE_MONTHLY) ? $request->{"tahun_$month"} : $request->year;
+                // Ensure amount is not null, default to 0
+                $amountInput = ($billType->type == BillType::TYPE_MONTHLY) ? $request->{"bulan_$month"} : $request->price;
+                $amount = $amountInput ? (int) str_replace('.', '', $amountInput) : 0;
+                
+                // Ensure year is set (fallback to academic year logic if needed, but request should have it)
+                $year = ($billType->type == BillType::TYPE_MONTHLY) ? $request->{"tahun_$month"} : $request->year;
 
+                // Optimization: Maybe don't create item if amount is 0? 
+                // But the user might want to see "0" in the edit form later.
+                // For now, just fix the crash.
                 $item = $paymentRate->paymentRateItems()->create([
                     'month'  => $month,
                     'year'   => $year,
@@ -90,58 +106,41 @@ class PaymentRateController extends Controller
             }
 
             // 5. DATA FETCHING (OPTIMASI BERAT)
-            // Ambil semua santri dari kelas terpilih + Load Bill yang sudah ada
-            // Tujuannya agar pengecekan "Bill Sudah Ada?" dilakukan di memori RAM (Cepat), bukan Database Query.
-            $classrooms = Classroom::with(['students' => function ($q) use ($billType) {
-                $q->select('id', 'classroom_id') // Select kolom seperlunya
-                    ->with(['bills' => function ($b) use ($billType) {
-                        $b->where('bill_type_id', $billType->id)
-                            ->select('student_id', 'month', 'year'); // Load history tagihan tipe ini saja
-                    }]);
-            }])->whereIn('id', $request->classrooms)->get();
+            // Init variables
+            $classrooms = collect([]);
+            
+            if ($request->type == PaymentRate::TYPE_REGULAR) {
+                // Ambil semua santri dari kelas terpilih + Load Bill yang sudah ada
+                $classrooms = Classroom::with(['students' => function ($q) use ($billType) {
+                    $q->select('id', 'classroom_id') // Select kolom seperlunya
+                        ->with(['bills' => function ($b) use ($billType) {
+                            $b->where('bill_type_id', $billType->id)
+                                ->select('student_id', 'month', 'year'); // Load history tagihan tipe ini saja
+                        }]);
+                }])->whereIn('id', $request->classrooms)->get();
+            }
 
             $billsToInsert = [];
             $timestamp = now(); // Waktu create seragam
 
             // 6. LOGIC PEMBUATAN TAGIHAN (IN-MEMORY PROCESSING)
-            foreach ($months as $month) {
-                // Tentukan Tahun & Nominal
-                $targetYear = ($billType->type == BillType::TYPE_MONTHLY) ? $request->{"tahun_$month"} : $request->year;
-                $targetAmount = ($billType->type == BillType::TYPE_MONTHLY) ? $request->{"bulan_$month"} : $request->price;
-
-                // Skip jika nominal 0
-                if ($targetAmount == 0) continue;
-
-                // Ambil ID Item dari Map (Tanpa Query)
-                $rateItemId = $rateItemsMap["{$month}_{$targetYear}"] ?? null;
-
+            if ($paymentRate->type == PaymentRate::TYPE_REGULAR) {
+                // Logic Regular (Classroom Based)
                 foreach ($classrooms as $classroom) {
                     foreach ($classroom->students as $student) {
-
-                        // Cek Duplicate via Collection (RAM), bukan DB Query
-                        // "Apakah student ini sudah punya bill di bulan X tahun Y?"
-                        $exists = $student->bills
-                            ->where('month', $month)
-                            ->where('year', $targetYear)
-                            ->first();
-
-                        if (!$exists) {
-                            $billsToInsert[] = [
-                                'id'                 => Str::uuid()->toString(),
-                                'bill_type_id'       => $billType->id,
-                                'classroom_id'       => $classroom->id,
-                                'student_id'         => $student->id,
-                                'academic_year_id'   => $billType->academic_year_id,
-                                'month'              => $month,
-                                'year'               => $targetYear,
-                                'amount'             => $targetAmount,
-                                'status'             => Bill::STATUS_UNPAID,
-                                'payment_rate_item_id' => $rateItemId,
-                                'created_at'         => $timestamp,
-                                'updated_at'         => $timestamp,
-                            ];
-                        }
+                         $this->generateBillsForStudent($student, $billsToInsert, $months, $billType, $request, $rateItemsMap, $timestamp);
                     }
+                }
+            } else {
+                // Logic Transfer (Student Based)
+                // Fetch students directly (Moved out of loop for efficiency)
+                 $students = Student::with(['bills' => function ($b) use ($billType) {
+                     $b->where('bill_type_id', $billType->id)
+                         ->select('student_id', 'month', 'year'); 
+                 }])->whereIn('id', $request->students)->get();
+
+                foreach ($students as $student) {
+                     $this->generateBillsForStudent($student, $billsToInsert, $months, $billType, $request, $rateItemsMap, $timestamp);
                 }
             }
 
@@ -386,7 +385,7 @@ class PaymentRateController extends Controller
      */
     public function update(PaymentRateRequest $request, $id)
     {
-        // 1. ATOMIC LOCK (Konsistensi)
+        // 1. ATOMIC LOCK
         $lock = Cache::lock('update_payment_rate_' . auth()->id(), 10);
 
         if (!$lock->get()) {
@@ -396,74 +395,271 @@ class PaymentRateController extends Controller
         DB::beginTransaction();
         try {
             $billType = BillType::findOrFail($request->bill_type_id);
-
-            // Load PaymentRate beserta Items-nya sekaligus (Eager Load)
-            // agar tidak perlu query berkali-kali di dalam loop.
             $paymentRate = PaymentRate::with('paymentRateItems')->findOrFail($id);
 
-            // Update nominal di induk (hanya referensi)
-            $paymentRate->update([
-                'amount' => $request->price,
-            ]);
+            // ------------------------------------------------------------------
+            // A. HANDLE RELATIONSHIPS (ADD/REMOVE TARGETS)
+            // ------------------------------------------------------------------
+            
+            // 1. Existing Targets (Data Lama)
+            $existingTargetIds = [];
+            if ($paymentRate->type == PaymentRate::TYPE_REGULAR) {
+                $existingTargetIds = $paymentRate->paymentRateClassrooms()->pluck('classroom_id')->toArray();
+            } else {
+                $existingTargetIds = $paymentRate->paymentRateStudents()->pluck('student_id')->toArray();
+            }
 
-            // Siapkan Collection Items agar pencarian di loop dilakukan di RAM (Cepat)
-            // Gunakan keyBy('month') agar mudah dipanggil: $items[1], $items[2], dst.
+            // 2. Submitted Targets (Data Baru dari Form)
+            $submittedTargetIds = [];
+            if ($paymentRate->type == PaymentRate::TYPE_REGULAR) {
+                $submittedTargetIds = $request->classrooms ?? [];
+            } else {
+                $submittedTargetIds = $request->students ?? [];
+            }
+
+            // 3. Identify Additions & Removals
+            $targetsToRemove = array_diff($existingTargetIds, $submittedTargetIds);
+            $targetsToAdd    = array_diff($submittedTargetIds, $existingTargetIds);
+
+            // 4. PROCESS REMOVALS (Detaching)
+            if (!empty($targetsToRemove)) {
+                
+                // A. Check for PAID bills on these targets
+                $queryCheckPaid = Bill::where('bill_type_id', $billType->id)
+                                    ->where('status', Bill::STATUS_PAID);
+
+                if ($paymentRate->type == PaymentRate::TYPE_REGULAR) {
+                    $queryCheckPaid->whereIn('classroom_id', $targetsToRemove);
+                } else {
+                    $queryCheckPaid->whereIn('student_id', $targetsToRemove);
+                }
+
+                if ($queryCheckPaid->exists()) {
+                    // Start: Create detailed error message
+                     $failMessage = "Gagal menghapus target karena sudah ada tagihan yang LUNAS/DIBAYAR.";
+                     // Optional: Get names for better error
+                     if ($paymentRate->type == PaymentRate::TYPE_REGULAR) {
+                         $names = Classroom::whereIn('id', $targetsToRemove)->limit(3)->pluck('name')->implode(', ');
+                         $failMessage .= " (Kelas: $names...)";
+                     }
+                     throw new \Exception($failMessage . " Harap batalkan pembayaran terlebih dahulu.");
+                }
+
+                // B. Delete UNPAID Bills (Clean up orphan data)
+                $queryDeleteBills = Bill::where('bill_type_id', $billType->id)
+                                        ->where('status', Bill::STATUS_UNPAID);
+
+                if ($paymentRate->type == PaymentRate::TYPE_REGULAR) {
+                    $queryDeleteBills->whereIn('classroom_id', $targetsToRemove);
+                } else {
+                    $queryDeleteBills->whereIn('student_id', $targetsToRemove);
+                }
+                
+                // Execute Delete
+                $queryDeleteBills->delete();
+
+                // C. Detach Pivot Relations
+                if ($paymentRate->type == PaymentRate::TYPE_REGULAR) {
+                    $paymentRate->paymentRateClassrooms()->whereIn('classroom_id', $targetsToRemove)->delete();
+                } else {
+                    $paymentRate->paymentRateStudents()->whereIn('student_id', $targetsToRemove)->delete();
+                }
+            }
+
+            // 5. PROCESS ADDITIONS (Attaching)
+            if (!empty($targetsToAdd)) {
+                if ($paymentRate->type == PaymentRate::TYPE_REGULAR) {
+                    foreach ($targetsToAdd as $classId) {
+                        $paymentRate->paymentRateClassrooms()->create(['classroom_id' => $classId]);
+                    }
+                } else {
+                    foreach ($targetsToAdd as $studentId) {
+                        $paymentRate->paymentRateStudents()->create(['student_id' => $studentId]);
+                    }
+                }
+            }
+            
+            // ------------------------------------------------------------------
+            // B. RE-FETCH STUDENTS FOR BILL SYNC
+            // ------------------------------------------------------------------
+            // Now that relations are updated, we fetch ALL currently relevant students
+            $students = collect([]);
+            if ($paymentRate->type == PaymentRate::TYPE_REGULAR) {
+                $allClassroomIds = $paymentRate->paymentRateClassrooms()->pluck('classroom_id');
+                $students = Student::whereIn('classroom_id', $allClassroomIds)
+                                   ->where('status', 'ACTIVE') 
+                                   ->get();
+            } else {
+                $allStudentIds = $paymentRate->paymentRateStudents()->pluck('student_id');
+                $students = Student::whereIn('id', $allStudentIds)
+                                   ->where('status', 'ACTIVE')
+                                   ->get();
+            }
+
+            // ------------------------------------------------------------------
+            // C. UPDATE NOMINALS & SYNC BILLS (Create/Update Logic from before)
+            // ------------------------------------------------------------------
+            
+            // Update Parent Type (Should be same, but explicitly safe)
+            $paymentRate->update(['type' => $request->type]);
+
+            // Prepare for loop
+            $totalAmount = 0;
             $items = $paymentRate->paymentRateItems->keyBy('month');
+            $timestamp = now();
 
+            // LOGIC FOR MONTHLY TYPE
             if ($billType->type == BillType::TYPE_MONTHLY) {
                 for ($month = 1; $month <= 12; $month++) {
-                    // Ambil item dari memori RAM (bukan query DB lagi)
+                    $rawAmount = $request->input("bulan_$month");
+                    $year      = $request->input("tahun_$month");
+                    
+                    // Sanitize amount (remove dots)
+                    $cleanAmount = (int) str_replace('.', '', $rawAmount ?? 0);
+                    $totalAmount += $cleanAmount;
+
+                    // Get or Create PaymentRateItem
                     $item = $items->get($month);
-
-                    if ($item) {
-                        $newAmount = $request->input("bulan_$month");
-                        $newYear   = $request->input("tahun_$month");
-
-                        // 1. Update Master Data Tarif (Item)
-                        $item->update([
-                            'year'   => $newYear,
-                            'amount' => $newAmount,
+                    if (!$item) {
+                        $item = $paymentRate->paymentRateItems()->create([
+                            'month'  => $month,
+                            'year'   => $year,
+                            'amount' => $cleanAmount,
                         ]);
+                    } else {
+                        $item->update([
+                            'year'   => $year,
+                            'amount' => $cleanAmount,
+                        ]);
+                    }
 
-                        // 2. SAFETY UPDATE BILLS (PENTING!)
-                        // Hanya update tagihan siswa yang statusnya MASIH UNPAID.
-                        // Tagihan yang sudah PAID tidak boleh diubah agar laporan keuangan valid.
+                    // --- SYNC BILLS LOGIC ---
+                    if ($cleanAmount > 0) {
+                        // CASE B: UPDATE EXISTING UNPAID BILLS
                         Bill::where('payment_rate_item_id', $item->id)
-                            ->where('status', Bill::STATUS_UNPAID) // <--- PENJAGA GAWANG
+                            ->where('status', Bill::STATUS_UNPAID)
                             ->update([
-                                'amount' => $newAmount,
-                                'year'   => $newYear // Update tahun juga jika berubah
+                                'amount' => $cleanAmount,
+                                'year'   => $year
                             ]);
+
+                        // CASE A: CREATE NEW BILLS FOR MISSING STUDENTS (New Targets OR New Months)
+                        // 1. Get IDs of students who ALREADY have a bill for this Item
+                        $existingBillStudentIds = Bill::where('payment_rate_item_id', $item->id)
+                            ->pluck('student_id')
+                            ->toArray();
+                        
+                        // 2. Find students who need a bill created
+                        $studentsToCreate = $students->whereNotIn('id', $existingBillStudentIds);
+                        
+                        $billsToInsert = [];
+                        foreach ($studentsToCreate as $student) {
+                            $billsToInsert[] = [
+                                'id'                 => Str::uuid()->toString(),
+                                'bill_type_id'       => $billType->id,
+                                'classroom_id'       => $student->classroom_id,
+                                'student_id'         => $student->id,
+                                'academic_year_id'   => $billType->academic_year_id,
+                                'month'              => $month,
+                                'year'               => $year,
+                                'amount'             => $cleanAmount,
+                                'status'             => Bill::STATUS_UNPAID,
+                                'payment_rate_item_id' => $item->id,
+                                'created_at'         => $timestamp,
+                                'updated_at'         => $timestamp,
+                            ];
+                        }
+
+                        // Bulk Insert (Chunked for safety)
+                        if (!empty($billsToInsert)) {
+                            foreach (array_chunk($billsToInsert, 500) as $chunk) {
+                                Bill::insert($chunk);
+                            }
+                        }
+
+                    } else {
+                        // CASE C: AMOUNT IS 0 -> DELETE UNPAID BILLS
+                         Bill::where('payment_rate_item_id', $item->id)
+                            ->where('status', Bill::STATUS_UNPAID)
+                            ->delete();
                     }
                 }
+                
+                // Update Total Amount on Parent
+                $paymentRate->update(['amount' => $totalAmount]);
+
             } else {
-                // Tipe Bebas / Non-Bulanan
-                foreach ($request->months as $month) {
-                    $item = $items->get($month);
+                // LOGIC FOR FREE / NON-MONTHLY TYPE
+                $cleanPrice = (int) str_replace('.', '', $request->price ?? 0);
+                
+                // Usually Free Type has specific selected months in $request->months
+                if ($request->has('months')) {
+                    foreach ($request->months as $month) {
+                        $year = $request->year ?? date('Y');
 
-                    if ($item) {
-                        // 1. Update Master Data Tarif
-                        $item->update([
-                            'year'   => $request->year,
-                            'amount' => $request->price,
-                        ]);
-
-                        // 2. SAFETY UPDATE BILLS
-                        Bill::where('payment_rate_item_id', $item->id)
-                            ->where('status', Bill::STATUS_UNPAID) // <--- PENJAGA GAWANG
-                            ->update([
-                                'amount' => $request->price,
-                                'year'   => $request->year
+                         // Get or Create Item
+                        $item = $items->get($month);
+                        
+                        if (!$item) {
+                             $item = $paymentRate->paymentRateItems()->create([
+                                'month'  => $month,
+                                'year'   => $year,
+                                'amount' => $cleanPrice,
                             ]);
+                        } else {
+                            $item->update([
+                                'year'   => $year,
+                                'amount' => $cleanPrice,
+                            ]);
+                        }
+                        
+                        // --- SYNC BILLS ---
+                        if ($cleanPrice > 0) {
+                            // Update Existing
+                             Bill::where('payment_rate_item_id', $item->id)
+                                ->where('status', Bill::STATUS_UNPAID)
+                                ->update(['amount' => $cleanPrice, 'year' => $year]);
+                            
+                            // Create Missing
+                            $existingBillStudentIds = Bill::where('payment_rate_item_id', $item->id)->pluck('student_id')->toArray();
+                            $studentsToCreate = $students->whereNotIn('id', $existingBillStudentIds);
+                            
+                            $billsToInsert = [];
+                            foreach ($studentsToCreate as $student) {
+                                $billsToInsert[] = [
+                                    'id'                 => Str::uuid()->toString(),
+                                    'bill_type_id'       => $billType->id,
+                                    'classroom_id'       => $student->classroom_id,
+                                    'student_id'         => $student->id,
+                                    'academic_year_id'   => $billType->academic_year_id,
+                                    'month'              => $month,
+                                    'year'               => $year,
+                                    'amount'             => $cleanPrice,
+                                    'status'             => Bill::STATUS_UNPAID,
+                                    'payment_rate_item_id' => $item->id,
+                                    'created_at'         => $timestamp,
+                                    'updated_at'         => $timestamp,
+                                ];
+                            }
+                             if (!empty($billsToInsert)) {
+                                foreach (array_chunk($billsToInsert, 500) as $chunk) {
+                                    Bill::insert($chunk);
+                                }
+                            }
+                        } else {
+                             Bill::where('payment_rate_item_id', $item->id)->where('status', Bill::STATUS_UNPAID)->delete();
+                        }
                     }
                 }
+
+                $paymentRate->update(['amount' => $cleanPrice]);
             }
 
             DB::commit();
             $lock->release();
 
             return redirect()->route('bill-type.show', $billType->id)
-                ->with('success', 'Tarif pembayaran berhasil diperbarui. (Catatan: Tagihan yang sudah lunas tidak ikut berubah)');
+                ->with('success', 'Tarif pembayaran berhasil diperbarui. Tagihan siswa telah disinkronkan.');
         } catch (\Exception $e) {
             DB::rollBack();
             $lock->release();
@@ -506,9 +702,10 @@ class PaymentRateController extends Controller
                     ->where('payment_rate_id', $id);
             })->delete();
 
-            // 4. Hapus Item & Classrooms
+            // 4. Hapus Item & Classrooms & Students
             $paymentRate->paymentRateItems()->delete();
             $paymentRate->paymentRateClassrooms()->delete();
+            $paymentRate->paymentRateStudents()->delete();
 
             // 5. Hapus Induk
             $paymentRate->delete();
@@ -529,6 +726,27 @@ class PaymentRateController extends Controller
         $school = School::findOrFail($request->school_id);
         $classrooms = Classroom::where('school_id', $school->id)->orderBy('name')->get();
         return response()->json($classrooms);
+    }
+
+    public function getStudent(Request $request)
+    {
+        $school = School::findOrFail($request->school_id);
+        $billTypeId = $request->bill_type_id;
+
+        $students = Student::whereHas('classroom', function($q) use ($school) {
+            $q->where('school_id', $school->id);
+        })
+        ->when($billTypeId, function($q) use ($billTypeId) {
+            $q->whereDoesntHave('bills', function($subQ) use ($billTypeId) {
+                $subQ->where('bill_type_id', $billTypeId);
+            });
+        })
+        ->where('status', 'ACTIVE')
+        ->orderBy('name')
+        ->select('id', 'name', 'nis')
+        ->get();
+
+        return response()->json($students);
     }
 
     /**
@@ -686,6 +904,93 @@ class PaymentRateController extends Controller
                 'success' => false,
                 'message' => 'Terjadi kesalahan saat memperbarui tagihan'
             ], 500);
+        }
+    }
+
+    private function generateBillsForStudent($student, &$billsToInsert, $months, $billType, $request, $rateItemsMap, $timestamp)
+    {
+        foreach ($months as $month) {
+            // Tentukan Tahun & Nominal
+            $targetYear = ($billType->type == BillType::TYPE_MONTHLY) ? $request->{"tahun_$month"} : $request->year;
+            $targetAmount = ($billType->type == BillType::TYPE_MONTHLY) ? $request->{"bulan_$month"} : $request->price;
+
+            // Skip jika nominal 0
+            if ($targetAmount == 0) continue;
+
+            // Ambil ID Item dari Map (Tanpa Query)
+            $rateItemId = $rateItemsMap["{$month}_{$targetYear}"] ?? null;
+
+            // Cek Duplicate via Collection (RAM), bukan DB Query
+            // "Apakah student ini sudah punya bill di bulan X tahun Y?"
+            $exists = $student->bills
+                ->where('month', $month)
+                ->where('year', $targetYear)
+                ->first();
+
+            if (!$exists) {
+                $billsToInsert[] = [
+                    'id'                 => Str::uuid()->toString(),
+                    'bill_type_id'       => $billType->id,
+                    'classroom_id'       => $student->classroom_id,
+                    'student_id'         => $student->id,
+                    'academic_year_id'   => $billType->academic_year_id,
+                    'month'              => $month,
+                    'year'               => $targetYear,
+                    'amount'             => $targetAmount,
+                    'status'             => Bill::STATUS_UNPAID,
+                    'payment_rate_item_id' => $rateItemId,
+                    'created_at'         => $timestamp,
+                    'updated_at'         => $timestamp,
+                ];
+            }
+        }
+    }
+
+    private function generateBillsForNewItem($paymentRate, $newItem, $billType)
+    {
+        $students = collect([]);
+
+        if ($paymentRate->type == PaymentRate::TYPE_REGULAR) {
+            $classroomIds = $paymentRate->paymentRateClassrooms->pluck('classroom_id');
+            $students = Student::whereIn('classroom_id', $classroomIds)->where('status', 'ACTIVE')->get();
+        } else {
+            $studentIds = $paymentRate->paymentRateStudents->pluck('student_id');
+            $students = Student::whereIn('id', $studentIds)->where('status', 'ACTIVE')->get();
+        }
+
+        $billsToInsert = [];
+        $timestamp = now();
+
+        foreach ($students as $student) {
+             // Check if bill exists
+             $exists = Bill::where('student_id', $student->id)
+                ->where('bill_type_id', $billType->id)
+                ->where('month', $newItem->month)
+                ->where('year', $newItem->year)
+                ->exists();
+
+             if(!$exists) {
+                $billsToInsert[] = [
+                    'id'                 => Str::uuid()->toString(),
+                    'bill_type_id'       => $billType->id,
+                    'classroom_id'       => $student->classroom_id,
+                    'student_id'         => $student->id,
+                    'academic_year_id'   => $billType->academic_year_id,
+                    'month'              => $newItem->month,
+                    'year'               => $newItem->year,
+                    'amount'             => $newItem->amount,
+                    'status'             => Bill::STATUS_UNPAID,
+                    'payment_rate_item_id' => $newItem->id,
+                    'created_at'         => $timestamp,
+                    'updated_at'         => $timestamp,
+                ];
+             }
+        }
+
+        if (!empty($billsToInsert)) {
+            foreach (array_chunk($billsToInsert, 500) as $chunk) {
+                Bill::insert($chunk);
+            }
         }
     }
 }

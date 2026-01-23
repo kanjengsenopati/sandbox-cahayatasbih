@@ -77,9 +77,78 @@
                                     </div>
                                 </div>
                             </div>
-                        </div>
+                            </div>
+                            
+
                     </div>
                     <!--end::Info Card-->
+
+                    <!--begin::Category Card-->
+                    <!--begin::Category Card-->
+                    @if(isset($paymentRate))
+                    <div class="alert alert-warning d-flex align-items-center p-5 mb-5">
+                        <i class="ki-duotone ki-shield-cross fs-2hx text-warning me-4"><span class="path1"></span><span class="path2"></span><span class="path3"></span></i>
+                        <div class="d-flex flex-column">
+                            <h4 class="mb-1 text-dark">Mode Edit Terbatas</h4>
+                            <span>Perhatian: Kategori Tarif dan Sekolah tidak dapat diubah untuk menjaga konsistensi data. Jika ingin mengubahnya, silakan hapus dan buat baru.</span>
+                        </div>
+                    </div>
+                    @endif
+
+                    <div class="card shadow-sm rounded-4 border-0 mb-5">
+                        <div class="card-header border-0 pt-6">
+                            <h3 class="card-title fw-bolder text-dark">Kategori Tarif</h3>
+                        </div>
+                        <div class="card-body pt-0">
+                            <!-- Hidden Input for Edit Mode -->
+                            @if(isset($paymentRate))
+                                <input type="hidden" name="type" value="{{ $paymentRate->type }}">
+                            @endif
+
+                            <div class="row g-5" data-kt-buttons="true" data-kt-buttons-target="[data-kt-button='true']">
+                                <!-- Regular Option -->
+                                <div class="col-md-6">
+                                    <label class="btn btn-outline btn-outline-dashed btn-active-light-primary d-flex flex-stack text-start p-6 {{ (!isset($paymentRate) || @$paymentRate->type == 'REGULAR') ? 'active' : '' }} {{ isset($paymentRate) ? 'disabled opacity-50 pe-none' : '' }}" data-kt-button="true">
+                                        <div class="d-flex align-items-center me-2">
+                                            <div class="form-check form-check-custom form-check-solid form-check-primary me-6">
+                                                <input class="form-check-input" type="radio" name="type" value="REGULAR" {{ (!isset($paymentRate) || @$paymentRate->type == 'REGULAR') ? 'checked' : '' }} {{ isset($paymentRate) ? 'disabled' : '' }} />
+                                            </div>
+                                            <div class="flex-grow-1">
+                                                <h2 class="d-flex align-items-center fs-3 fw-bolder flex-wrap">
+                                                    Siswa Reguler
+                                                </h2>
+                                                <div class="fw-bold opacity-50">
+                                                    Tarif untuk satu kelas penuh
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </label>
+                                </div>
+                                <!-- Transfer Option -->
+                                <div class="col-md-6">
+                                    <label class="btn btn-outline btn-outline-dashed btn-active-light-warning d-flex flex-stack text-start p-6 {{ (@$paymentRate->type == 'TRANSFER') ? 'active' : '' }} {{ isset($paymentRate) ? 'disabled opacity-50 pe-none' : '' }}" data-kt-button="true">
+                                        <div class="d-flex align-items-center me-2">
+                                            <div class="form-check form-check-custom form-check-solid form-check-warning me-6">
+                                                <input class="form-check-input" type="radio" name="type" value="TRANSFER" {{ (@$paymentRate->type == 'TRANSFER') ? 'checked' : '' }} {{ isset($paymentRate) ? 'disabled' : '' }} />
+                                            </div>
+                                            <div class="flex-grow-1">
+                                                <h2 class="d-flex align-items-center fs-3 fw-bolder flex-wrap">
+                                                    Siswa Pindahan
+                                                </h2>
+                                                <div class="fw-bold opacity-50">
+                                                    Tarif untuk siswa spesifik
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </label>
+                                </div>
+                            </div>
+                            <div class="form-text mt-5" id="type_helper">
+                                {{ (!isset($paymentRate) || @$paymentRate->type == 'REGULAR') ? 'Tarif akan diterapkan untuk semua siswa dalam kelas yang dipilih.' : 'Tarif hanya akan diterapkan untuk siswa tertentu yang dipilih.' }}
+                            </div>
+                        </div>
+                    </div>
+                    <!--end::Category Card-->
 
                     <!--begin::Nominal Card-->
                     <div class="card shadow-sm rounded-4 border-0 mb-5">
@@ -220,45 +289,120 @@
                             <h3 class="card-title fw-bolder text-dark">Target Pembayaran</h3>
                         </div>
                         <div class="card-body pt-0">
+                            
+                            <!-- Alert Edit Mode -->
+                            @if(isset($paymentRate))
+                            <div class="alert alert-warning d-flex align-items-center p-4 mb-5">
+                                <i class="ki-duotone ki-information fs-2hx text-warning me-4"><span class="path1"></span><span class="path2"></span><span class="path3"></span></i>
+                                <div class="d-flex flex-column">
+                                    <span class="fw-bold fs-7">Mode Edit hanya untuk perubahan nominal. Untuk menambah/menghapus target, silakan buat baru atau hapus tarif ini.</span>
+                                </div>
+                            </div>
+                            @endif
+
                             <!-- Sekolah -->
                             <div class="mb-5">
                                 <label class="form-label fw-bold fs-6 text-gray-700">Sekolah</label>
-                                <select name="school_id" class="form-select form-select-solid" id="school_id"
-                                    data-control="select2" data-placeholder="Pilih Sekolah">
+                                <select name="school_id" class="form-select form-select-solid {{ isset($paymentRate) ? 'bg-light' : '' }}" id="school_id"
+                                    data-control="select2" data-placeholder="Pilih Sekolah" {{ isset($paymentRate) ? 'disabled' : '' }}>
                                     <option></option>
+                                    @php
+                                        $selectedSchoolId = null;
+                                        if (isset($paymentRate)) {
+                                            if ($paymentRate->type == 'REGULAR' && $paymentRate->paymentRateClassrooms->isNotEmpty()) {
+                                                $selectedSchoolId = $paymentRate->paymentRateClassrooms->first()->classroom->school_id ?? null;
+                                            } elseif ($paymentRate->type == 'TRANSFER' && $paymentRate->paymentRateStudents->isNotEmpty()) {
+                                                $selectedSchoolId = $paymentRate->paymentRateStudents->first()->student->classroom->school_id ?? null;
+                                            }
+                                        }
+                                    @endphp
                                     @foreach ($schools as $school)
-                                    <option value="{{ $school->id }}" {{ (isset($paymentRate) && $paymentRate->paymentRateClassrooms->first()->classroom->school_id == $school->id) ? 'selected' : '' }}>
+                                    <option value="{{ $school->id }}" {{ ($selectedSchoolId == $school->id) ? 'selected' : '' }}>
                                         {{ $school->name }}
                                     </option>
                                     @endforeach
                                 </select>
+                                @if(isset($paymentRate))
+                                    <input type="hidden" name="school_id" value="{{ $selectedSchoolId }}">
+                                @endif
                             </div>
 
-                            <!-- Kelas -->
-                            <div class="mb-5">
-                                <div class="d-flex justify-content-between align-items-center mb-2">
-                                    <label class="form-label fw-bold fs-6 text-gray-700 mb-0">Kelas</label>
-                                    <button type="button" class="btn btn-sm btn-light-primary py-1 px-2 fs-8" id="btn-select-all-classrooms">
-                                        Select All
-                                    </button>
-                                </div>
-                                <select name="classrooms[]" class="form-select form-select-solid"
-                                    id="classroom_id" data-control="select2" data-close-on-select="false"
-                                    data-placeholder="Ketik untuk mencari kelas..." data-allow-clear="true"
-                                    multiple="multiple" required>
-                                    @if(isset($classrooms))
-                                    @foreach ($classrooms as $classroom)
-                                    <option value="{{ $classroom->id }}"
-                                        @if (in_array($classroom->id, $paymentRate->paymentRateClassrooms->pluck('classroom_id')->toArray())) selected @endif>
-                                        {{ $classroom->name }}
-                                    </option>
-                                    @endforeach
+                            <!-- EDIT MODE: READ-ONLY TARGETS -->
+                            @if(isset($paymentRate))
+                                <div class="mb-5 bg-light rounded p-4 border border-dashed border-gray-300">
+                                    <label class="form-label fw-bold fs-6 text-gray-700 mb-2">Target Terpilih (Read-Only)</label>
+                                    
+                                    @if($paymentRate->type == 'REGULAR')
+                                        <div class="d-flex flex-wrap gap-2">
+                                            @foreach($paymentRate->paymentRateClassrooms as $prClass)
+                                                <span class="badge badge-primary fs-7">{{ $prClass->classroom->name }}</span>
+                                            @endforeach
+                                        </div>
+                                    @else
+                                        <div class="d-flex flex-column gap-2">
+                                            @foreach($paymentRate->paymentRateStudents as $prStudent)
+                                                <div class="d-flex align-items-center bg-white p-2 rounded border">
+                                                    <div class="symbol symbol-30px me-3">
+                                                        <div class="symbol-label fs-6 fw-bold bg-light-warning text-warning">
+                                                            {{ substr($prStudent->student->name, 0, 1) }}
+                                                        </div>
+                                                    </div>
+                                                    <div class="d-flex flex-column">
+                                                        <span class="fw-bold text-gray-800 fs-7">{{ $prStudent->student->name }}</span>
+                                                        <span class="text-muted fs-8">{{ $prStudent->student->nis ?? '-' }}</span>
+                                                    </div>
+                                                </div>
+                                            @endforeach
+                                        </div>
                                     @endif
-                                </select>
-                                <div class="form-text mt-2">
-                                    Pilih satu atau lebih kelas yang akan dikenakan tarif ini.
                                 </div>
-                            </div>
+                            
+                            @else
+                                <!-- CREATE MODE: INPUT TARGETS -->
+                                <!-- Kelas Wrapper -->
+                                <div class="mb-5" id="classroom_wrapper">
+                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                        <label class="form-label fw-bold fs-6 text-gray-700 mb-0">Kelas</label>
+                                        <button type="button" class="btn btn-sm btn-light-primary py-1 px-2 fs-8" id="btn-select-all-classrooms">
+                                            Select All
+                                        </button>
+                                    </div>
+                                    <select name="classrooms[]" class="form-select form-select-solid"
+                                        id="classroom_id" data-control="select2" data-close-on-select="false"
+                                        data-placeholder="Ketik untuk mencari kelas..." data-allow-clear="true"
+                                        multiple="multiple">
+                                        @if(isset($classrooms))
+                                        @foreach ($classrooms as $classroom)
+                                        <option value="{{ $classroom->id }}">
+                                            {{ $classroom->name }}
+                                        </option>
+                                        @endforeach
+                                        @endif
+                                    </select>
+                                    <div class="form-text mt-2">
+                                        Pilih satu atau lebih kelas yang akan dikenakan tarif ini.
+                                    </div>
+                                </div>
+
+                                <!-- Student Wrapper -->
+                                <div class="mb-5 d-none" id="student_wrapper">
+                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                        <label class="form-label fw-bold fs-6 text-gray-700 mb-0">Siswa</label>
+                                        <button type="button" class="btn btn-sm btn-light-primary py-1 px-2 fs-8" id="btn-select-all-students">
+                                            Select All
+                                        </button>
+                                    </div>
+                                    <select name="students[]" class="form-select form-select-solid"
+                                        id="student_id" data-control="select2" data-close-on-select="false"
+                                        data-placeholder="Ketik untuk mencari siswa..." data-allow-clear="true"
+                                        multiple="multiple">
+                                    </select>
+                                    <div class="form-text mt-2">
+                                        Pilih siswa spesifik untuk tarif ini.
+                                    </div>
+                                </div>
+                            @endif
+
                         </div>
                     </div>
                     <!--end::Target Card-->
@@ -288,18 +432,20 @@
     $(document).ready(function() {
 
         // 1. Handle School Change -> Fetch Classrooms
+        // 1. Handle School Change -> Fetch Classrooms AND Students
         $('#school_id').on('change', function() {
             var school_id = $(this).val();
             var classroomSelect = $('#classroom_id');
+            var studentSelect = $('#student_id');
 
             // Clear current options
             classroomSelect.empty().trigger('change');
+            studentSelect.empty().trigger('change');
 
             if (school_id) {
+                // Fetch Classrooms
                 axios.get("{{ route('payment-rate.get-classroom') }}", {
-                        params: {
-                            school_id: school_id
-                        }
+                        params: { school_id: school_id }
                     })
                     .then(function(response) {
                         if (response.data.length > 0) {
@@ -308,24 +454,55 @@
                                 classroomSelect.append(newOption);
                             });
                             classroomSelect.trigger('change');
-                        } else {
-                            // Optional: notify no classes found
                         }
                     })
-                    .catch(function(error) {
-                        console.error(error);
-                        Swal.fire({
-                            text: "Gagal mengambil data kelas.",
-                            icon: "error",
-                            buttonsStyling: false,
-                            confirmButtonText: "Ok",
-                            customClass: {
-                                confirmButton: "btn btn-primary"
-                            }
-                        });
-                    });
+                    .catch(function(error) { console.error(error); });
+                
+                // Fetch Students
+                var billTypeId = $('input[name="bill_type_id"]').val();
+                axios.get("{{ route('payment-rate.get-student') }}", {
+                        params: { 
+                            school_id: school_id,
+                            bill_type_id: billTypeId
+                        }
+                    })
+                    .then(function(response) {
+                         if (response.data.length > 0) {
+                            $.each(response.data, function(key, value) {
+                                var text = value.name + ' - ' + (value.nis ?? '');
+                                var newOption = new Option(text, value.id, false, false);
+                                studentSelect.append(newOption);
+                            });
+                            studentSelect.trigger('change');
+                        }
+                    })
+                    .catch(function(error) { console.error(error); });
             }
         });
+
+        // Toggle Classroom / Student based on Category Type
+        $('input[name="type"]').on('change', function() {
+            var type = $(this).val();
+            if (type === 'REGULAR') {
+                $('#classroom_wrapper').removeClass('d-none');
+                $('#student_wrapper').addClass('d-none');
+                $('#type_helper').text('Tarif akan diterapkan untuk semua siswa dalam kelas yang dipilih.');
+                $('#classroom_id').prop('required', true);
+                $('#student_id').prop('required', false);
+            } else {
+                 $('#classroom_wrapper').addClass('d-none');
+                 $('#student_wrapper').removeClass('d-none');
+                 $('#type_helper').text('Tarif hanya akan diterapkan untuk siswa tertentu yang dipilih.');
+                 $('#classroom_id').prop('required', false);
+                 $('#student_id').prop('required', true);
+            }
+        });
+
+        // Trigger change on load to set initial state
+        var initialType = $('input[name="type"]:checked').val();
+        if (initialType) {
+            $('input[name="type"][value="' + initialType + '"]').trigger('change');
+        }
 
         // 2. Handle 'Select All' Classrooms
         $('#btn-select-all-classrooms').click(function() {
@@ -370,6 +547,44 @@
             var price = $(this).val();
             // Loop through inputs with id pattern 'bulan_X'
             $('[id^="bulan_"]').val(price);
+        });
+
+        // 4. Form Validation
+        $('#payment-rate-form').on('submit', function(e) {
+            // Check based on inputs availability
+            var isMonthly = $('input[id^="bulan_"]').length > 0;
+            var isValid = false;
+
+            if (isMonthly) {
+                // Check if at least one month has a value
+                $('input[id^="bulan_"]').each(function() {
+                    var val = $(this).val().replace(/\./g, ''); // Remove currency formatting if any
+                    if (val && parseInt(val) > 0) {
+                        isValid = true;
+                        return false; // Break loop
+                    }
+                });
+            } else {
+                // Check if single price has value (Bebas Type)
+                var val = $('#setPrice').val().replace(/\./g, '');
+                if (val && parseInt(val) > 0) {
+                    isValid = true;
+                }
+            }
+
+            if (!isValid) {
+                e.preventDefault();
+                Swal.fire({
+                    text: "Harap isi minimal 1 rincian pembayaran (Bulan atau Total Tagihan).",
+                    icon: "warning",
+                    buttonsStyling: false,
+                    confirmButtonText: "Ok, Mengerti",
+                    customClass: {
+                        confirmButton: "btn btn-primary"
+                    }
+                });
+                return false;
+            }
         });
     });
 </script>

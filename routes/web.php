@@ -138,6 +138,8 @@ Route::group(['middleware' => ['auth']], function () {
     Route::get('bill/summary-bill', [BillController::class, 'summaryBill'])->name('bill.summary-bill');
     Route::get('payment-rate/get-classroom', [PaymentRateController::class, 'getClassroom'])
         ->name('payment-rate.get-classroom');
+    Route::get('payment-rate/get-student', [PaymentRateController::class, 'getStudent'])
+        ->name('payment-rate.get-student');
     Route::get('select2', [Select2Controller::class, 'index'])->name('select2');
     Route::resource('permission', PermissionController::class, ['except' => ['show']]);
     Route::resource('role', RoleController::class);

@@ -13,11 +13,14 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class PaymentRate extends Model
 {
+    const TYPE_REGULAR = 'REGULAR';
+    const TYPE_TRANSFER = 'TRANSFER';
     use HasFactory, UuidTrait, SoftDeletes;
 
     protected $fillable = [
         'bill_type_id',
         'amount',
+        'type',
     ];
 
     protected $casts = [
@@ -32,6 +35,11 @@ class PaymentRate extends Model
     public function paymentRateClassrooms()
     {
         return $this->hasMany(PaymentRateClassroom::class)->withTrashed();
+    }
+
+    public function paymentRateStudents()
+    {
+        return $this->hasMany(PaymentRateStudent::class)->withTrashed();
     }
 
     public function paymentRateItems()
@@ -50,5 +58,15 @@ class PaymentRate extends Model
             'id',                   // Local Key di tabel asal (payment_rates.id)
             'id'                    // Local Key di tabel perantara (payment_rate_items.id)
         );
+    }
+
+    // Opsional: Accessor untuk label yang ramah user
+    public function getTypeLabelAttribute()
+    {
+        return match($this->type) {
+            self::TYPE_REGULAR => 'Reguler',
+            self::TYPE_TRANSFER => 'Susulan / Pindahan',
+            default => 'Lainnya',
+        };
     }
 }
