@@ -177,6 +177,7 @@ Route::group(['middleware' => ['auth']], function () {
     Route::get('order-item/get-daily-transaction', [OrderItemController::class, 'getDailyTransaction'])
         ->name('order-item.get-daily-transaction');
     Route::resource('order-item', OrderItemController::class);
+    Route::get('order-item-history/print/{id}', [OrderItemHistoryController::class, 'print'])->name('order-item-history.print');
     Route::resource('order-item-history', OrderItemHistoryController::class);
     Route::get('report-pos', [ReportPosController::class, 'index'])->name('report-pos.index');
     Route::get('pos-transaction', [PosTransactionController::class, 'index'])->name('pos-transaction.index');

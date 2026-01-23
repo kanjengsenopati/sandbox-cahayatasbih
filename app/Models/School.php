@@ -26,6 +26,11 @@ class School extends Model
         'icon_name',
     ];
 
+    public function students()
+    {
+        return $this->hasManyThrough(Student::class, Classroom::class);
+    }
+
     public static function getListType()
     {
         return [

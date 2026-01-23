@@ -1,293 +1,180 @@
 @extends('layouts.master', ['title' => 'Detail Transaksi'])
+
 @section('content')
+    <!-- MAIN CONTENT (WEB VIEW) -->
     <div class="content d-flex flex-column flex-column-fluid" id="kt_content">
         <!--begin::Toolbar-->
         <div class="toolbar" id="kt_toolbar">
             <div id="kt_toolbar_container" class="container-fluid d-flex flex-stack">
-                <div data-kt-swapper="true" data-kt-swapper-mode="prepend"
-                    data-kt-swapper-parent="{default: '#kt_content_container', 'lg': '#kt_toolbar_container'}"
-                    class="page-title d-flex align-items-center flex-wrap me-3 mb-5 mb-lg-0">
+                <div class="page-title d-flex align-items-center flex-wrap me-3 mb-5 mb-lg-0">
                     <h1 class="d-flex text-dark fw-bolder fs-3 align-items-center my-1">Detail Transaksi</h1>
                     <span class="h-20px border-gray-300 border-start mx-4"></span>
                     <ul class="breadcrumb breadcrumb-separatorless fw-bold fs-7 my-1">
-                        <a class="breadcrumb-item" href="{{ route('order-item-history.index') }}">
-                            <li class="breadcrumb-item text-muted">Transaksi</li>
-                        </a>
-                        <li class="breadcrumb-item">
-                            <span class="bullet bg-gray-300 w-5px h-2px"></span>
-                        </li>
-                        <li class="breadcrumb-item text-dark">Detail Transaksi</li>
+                        <li class="breadcrumb-item text-muted"> <a href="{{ route('order-item-history.index') }}" class="text-muted text-hover-primary">Riwayat Penjualan</a> </li>
+                        <li class="breadcrumb-item"> <span class="bullet bg-gray-300 w-5px h-2px"></span> </li>
+                        <li class="breadcrumb-item text-dark">Invoice #{{ $order->payment_code }}</li>
                     </ul>
                 </div>
             </div>
         </div>
-        <!--end::Toolbar-->
 
         <div class="post d-flex flex-column-fluid" id="kt_post">
             <div id="kt_content_container" class="container-xxl">
-
-                <!-- Header Card dengan Status -->
-                <div class="card mb-5 shadow-sm border-0">
-                    <div class="card-body p-6">
-                        <div class="row align-items-center">
-                            <div class="col-md-8">
-                                <div class="d-flex align-items-center mb-2">
-                                    <h2 class="fw-bold text-dark mb-0 me-3">{{ $order->payment_code ?? '-' }}</h2>
-                                    @if ($order->status == 'PENDING')
-                                        <span class="badge badge-light-warning px-4 py-2 fs-6">
-                                            <i class="fas fa-clock me-1"></i> Menunggu Pembayaran
-                                        </span>
-                                    @elseif ($order->status == 'SUCCESS')
-                                        <span class="badge badge-light-success px-4 py-2 fs-6">
-                                            <i class="fas fa-check-circle me-1"></i> Pembayaran Berhasil
-                                        </span>
-                                    @elseif ($order->status == 'FAILED')
-                                        <span class="badge badge-light-danger px-4 py-2 fs-6">
-                                            <i class="fas fa-times-circle me-1"></i> Pembayaran Gagal
-                                        </span>
+                
+                <div class="row g-5 g-xl-8">
+                    <!-- LEFT COLUMN: Rincian Pesanan -->
+                    <div class="col-lg-8">
+                        <div class="card border-0 shadow-sm rounded-4 mb-5">
+                            <!-- Header Card -->
+                            <div class="card-header border-0 pt-6 pb-0">
+                                <h3 class="card-title fw-bolder text-dark fs-2">
+                                    Invoice <span class="text-muted fw-bold ms-2 fs-4">#{{ $order->payment_code }}</span>
+                                </h3>
+                                <div class="card-toolbar">
+                                    @if ($order->status == 'SUCCESS')
+                                        <span class="badge badge-light-success fs-7 fw-bolder px-3 py-2">LUNAS / PAID</span>
+                                    @elseif ($order->status == 'PENDING')
+                                        <span class="badge badge-light-warning fs-7 fw-bolder px-3 py-2">PENDING</span>
+                                    @else
+                                        <span class="badge badge-light-danger fs-7 fw-bolder px-3 py-2">GAGAL</span>
                                     @endif
                                 </div>
-                                <div class="text-muted fs-7">
-                                    <i
-                                        class="fas fa-calendar-alt me-2"></i>{{ $order->created_at ? $order->created_at->format('d M Y, H:i') : '-' }}
-                                </div>
                             </div>
-                            <div class="col-md-4 text-md-end mt-3 mt-md-0">
-                                <div class="fs-7 text-muted mb-1">Total Pembayaran</div>
-                                <div class="fs-2x fw-bold text-primary">Rp
-                                    {{ number_format($order->pay_amount, 0, ',', '.') }}</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
 
-                <div class="row g-5">
-                    <!-- Left Column - Transaction & Student Info -->
-                    <div class="col-lg-8">
-                        <!-- Transaction Details Card -->
-                        <div class="card shadow-sm border-0 mb-5">
-                            <div class="card-header bg-light border-0 py-4">
-                                <h3 class="card-title fw-bold m-0">
-                                    <i class="fas fa-receipt text-primary me-2"></i>Informasi Transaksi
-                                </h3>
-                            </div>
-                            <div class="card-body p-6">
-                                <div class="row g-4">
-                                    <div class="col-md-6">
-                                        <div class="d-flex align-items-start mb-4">
-                                            <div class="symbol symbol-40px me-3">
-                                                <span class="symbol-label bg-light-primary">
-                                                    <i class="fas fa-hashtag text-primary"></i>
-                                                </span>
-                                            </div>
-                                            <div class="flex-grow-1">
-                                                <div class="text-muted fs-7 mb-1">Nomor Transaksi</div>
-                                                <div class="fw-bold fs-6">{{ $order->payment_code ?? '-' }}</div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <div class="d-flex align-items-start mb-4">
-                                            <div class="symbol symbol-40px me-3">
-                                                <span class="symbol-label bg-light-info">
-                                                    @if ($order?->admins?->avatar)
-                                                        <img src="{{ asset($order->admins->avatar) }}" alt="avatar"
-                                                            class="img-fluid rounded-circle"
-                                                            style="width: 40px; height: 40px; object-fit: cover;">
-                                                    @else
-                                                        <i class="fas fa-user text-info"></i>
-                                                    @endif
-                                                </span>
-                                            </div>
-                                            <div class="flex-grow-1">
-                                                <div class="text-muted fs-7 mb-1">Kasir</div>
-                                                <div class="fw-bold fs-6">{{ $order?->admins?->name ?? '-' }}</div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <div class="d-flex align-items-start mb-4">
-                                            <div class="symbol symbol-40px me-3">
-                                                <span class="symbol-label bg-light-success">
-                                                    <i class="fas fa-chart-line text-success"></i>
-                                                </span>
-                                            </div>
-                                            <div class="flex-grow-1">
-                                                <div class="text-muted fs-7 mb-1">Profit</div>
-                                                <div class="fw-bold fs-6 text-success">Rp
-                                                    {{ number_format($order->profit, 0, ',', '.') }}</div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <div class="d-flex align-items-start mb-4">
-                                            <div class="symbol symbol-40px me-3">
-                                                <span class="symbol-label bg-light-warning">
-                                                    <i class="fas fa-tag text-warning"></i>
-                                                </span>
-                                            </div>
-                                            <div class="flex-grow-1">
-                                                <div class="text-muted fs-7 mb-1">Tipe Transaksi</div>
-                                                <div class="fw-bold fs-6">{{ $order->type ?? '-' }}</div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        @if ($order->type == 'SANTRI' && $order->student)
-                            <!-- Student Info Card -->
-                            <div class="card shadow-sm border-0 mb-5">
-                                <div class="card-header bg-light border-0 py-4">
-                                    <h3 class="card-title fw-bold m-0">
-                                        <i class="fas fa-user-graduate text-primary me-2"></i>Informasi Santri
-                                    </h3>
-                                </div>
-                                <div class="card-body p-6">
-                                    <div class="row g-4">
-                                        <div class="col-md-6">
-                                            <div class="d-flex align-items-start mb-4">
-                                                <div class="symbol symbol-40px me-3">
-                                                    <span class="symbol-label bg-light-primary">
-                                                        <i class="fas fa-id-card text-primary"></i>
-                                                    </span>
-                                                </div>
-                                                <div class="flex-grow-1">
-                                                    <div class="text-muted fs-7 mb-1">NIS</div>
-                                                    <div class="fw-bold fs-6">{{ $order->student->nis ?? '-' }}</div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-6">
-                                            <div class="d-flex align-items-start mb-4">
-                                                <div class="symbol symbol-40px me-3">
-                                                    <span class="symbol-label bg-light-info">
-                                                        <i class="fas fa-user text-info"></i>
-                                                    </span>
-                                                </div>
-                                                <div class="flex-grow-1">
-                                                    <div class="text-muted fs-7 mb-1">Nama Lengkap</div>
-                                                    <div class="fw-bold fs-6">{{ $order->student?->name ?? '-' }}</div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-6">
-                                            <div class="d-flex align-items-start mb-4">
-                                                <div class="symbol symbol-40px me-3">
-                                                    <span class="symbol-label bg-light-success">
-                                                        <i class="fas fa-chalkboard text-success"></i>
-                                                    </span>
-                                                </div>
-                                                <div class="flex-grow-1">
-                                                    <div class="text-muted fs-7 mb-1">Kelas</div>
-                                                    <div class="fw-bold fs-6">
-                                                        {{ $order->student?->classroom->name ?? '-' }}</div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-6">
-                                            <div class="d-flex align-items-start mb-4">
-                                                <div class="symbol symbol-40px me-3">
-                                                    <span class="symbol-label bg-light-warning">
-                                                        <i class="fas fa-school text-warning"></i>
-                                                    </span>
-                                                </div>
-                                                <div class="flex-grow-1">
-                                                    <div class="text-muted fs-7 mb-1">Sekolah</div>
-                                                    <div class="fw-bold fs-6">
-                                                        {{ $order->student?->classroom?->school->name ?? '-' }}</div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-6">
-                                            <div class="d-flex align-items-start">
-                                                <div class="symbol symbol-40px me-3">
-                                                    <span class="symbol-label bg-light-danger">
-                                                        <i class="fas fa-venus-mars text-danger"></i>
-                                                    </span>
-                                                </div>
-                                                <div class="flex-grow-1">
-                                                    <div class="text-muted fs-7 mb-1">Jenis Kelamin</div>
-                                                    <div class="fw-bold fs-6">
-                                                        {{ $order->student?->gender == 'L' ? 'Laki-Laki' : 'Perempuan' }}
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        @endif
-
-                        <!-- Purchase List Card -->
-                        <div class="card shadow-sm border-0">
-                            <div class="card-header bg-light border-0 py-4">
-                                <h3 class="card-title fw-bold m-0">
-                                    <i class="fas fa-shopping-cart text-primary me-2"></i>Daftar Pembelian
-                                </h3>
-                            </div>
-                            <div class="card-body p-0">
+                            <!-- Body Card: Table Items -->
+                            <div class="card-body py-4">
                                 <div class="table-responsive">
-                                    <table id="table-student"
-                                        class="table table-row-bordered table-row-gray-100 align-middle gs-0 gy-3 mb-0">
-                                        <thead>
-                                            <tr class="fw-bold text-muted bg-light">
-                                                <th class="ps-6 rounded-start" style="width: 50px">No</th>
-                                                <th>Nama Item</th>
-                                                <th class="text-center" style="width: 100px">Qty</th>
-                                                <th class="text-end" style="width: 150px">Harga</th>
-                                                <th class="text-end pe-6 rounded-end" style="width: 150px">Total</th>
+                                    <table id="table-student" class="table table-hover align-middle gs-0 gy-4">
+                                        <thead class="border-bottom border-gray-200 fs-7 fw-bolder bg-light">
+                                            <tr class="text-start text-muted text-uppercase gs-0">
+                                                <th class="ps-4 min-w-50px rounded-start">No</th>
+                                                <th class="min-w-150px">Produk</th>
+                                                <th class="min-w-50px text-center">Qty</th>
+                                                <th class="min-w-100px text-end">Harga</th>
+                                                <th class="min-w-100px text-end pe-4 rounded-end">Subtotal</th>
                                             </tr>
                                         </thead>
-                                        <tbody></tbody>
+                                        <tbody class="fs-6 fw-bold text-gray-700">
+                                            <!-- Data Loaded by DataTables via AJAX -->
+                                        </tbody>
                                     </table>
                                 </div>
                             </div>
+
+                            <!-- Footer Card: Summary -->
+                            <div class="card-footer bg-light border-0 rounded-bottom-4 p-5">
+                                <div class="d-flex justify-content-end">
+                                    <div class="d-flex flex-column w-md-300px">
+                                        <div class="d-flex justify-content-between mb-3">
+                                            <span class="text-muted fw-bold">Subtotal</span>
+                                            <span class="text-dark fw-bolder">Rp {{ number_format($order->pay_amount - ($order->tax ?? 0), 0, ',', '.') }}</span>
+                                        </div>
+                                        @if(isset($order->profit))
+                                        <div class="d-flex justify-content-between mb-3">
+                                            <span class="text-muted fw-bold">Profit (Est.)</span>
+                                            <span class="text-success fw-bolder">Rp {{ number_format($order->profit, 0, ',', '.') }}</span>
+                                        </div>
+                                        @endif
+                                        <div class="separator separator-dashed border-gray-300 mb-3"></div>
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <span class="text-dark fw-bold fs-4">Grand Total</span>
+                                            <span class="text-primary fw-bolder fs-2tx">Rp {{ number_format($order->pay_amount, 0, ',', '.') }}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
-                    <!-- Right Column - Summary -->
+                    <!-- RIGHT COLUMN: Konteks & Aksi -->
                     <div class="col-lg-4">
-                        <!-- Summary Card -->
-                        <div class="card shadow-sm border-0 sticky-top" style="top: 20px;">
-                            <div class="card-header bg-primary border-0 py-4">
-                                <h3 class="card-title fw-bold text-white m-0">
-                                    <i class="fas fa-calculator me-2"></i>Ringkasan Pembayaran
-                                </h3>
-                            </div>
-                            <div class="card-body p-6">
-                                <div
-                                    class="d-flex justify-content-between align-items-center mb-4 pb-4 border-bottom border-gray-300">
-                                    <span class="text-muted fs-6">Subtotal</span>
-                                    <span class="fw-bold fs-5">Rp
-                                        {{ number_format($order->pay_amount - ($order->tax ?? 0), 0, ',', '.') }}</span>
-                                </div>
-                                @if (isset($order->tax) && $order->tax > 0)
-                                    <div
-                                        class="d-flex justify-content-between align-items-center mb-4 pb-4 border-bottom border-gray-300">
-                                        <span class="text-muted fs-6">Pajak</span>
-                                        <span class="fw-bold fs-5">Rp {{ number_format($order->tax, 0, ',', '.') }}</span>
-                                    </div>
-                                @endif
-                                <div
-                                    class="d-flex justify-content-between align-items-center mb-4 pb-4 border-bottom border-gray-300">
-                                    <span class="text-muted fs-6">Profit</span>
-                                    <span class="fw-bold fs-5 text-success">Rp
-                                        {{ number_format($order->profit, 0, ',', '.') }}</span>
-                                </div>
-                                <div class="d-flex justify-content-between align-items-center">
-                                    <span class="fw-bold fs-4">Total</span>
-                                    <span class="fw-bolder fs-2 text-primary">Rp
-                                        {{ number_format($order->pay_amount, 0, ',', '.') }}</span>
-                                </div>
-                            </div>
-                            <div class="card-footer border-0 bg-light py-4">
-                                <a href="{{ route('order-item-history.index') }}" class="btn btn-light-primary w-100">
-                                    <i class="fas fa-arrow-left me-2"></i>Kembali ke Daftar
+                         <!-- Card 3: Actions -->
+                        <div class="card border-0 shadow-sm rounded-4 mb-5 ">
+                            <div class="card-body p-5">
+                                <a href="{{ route('order-item-history.print', $order->id) }}" target="_blank" class="btn btn-primary w-100 mb-3 fs-5 fw-bold btn-block hover-scale">
+                                    <i class="fas fa-print me-2"></i> Cetak Struk (PDF)
+                                </a>
+                                <a href="{{ route('order-item-history.index') }}" class="btn btn-outline btn-outline-secondary w-100 fw-bold btn-block">
+                                    <i class="fas fa-arrow-left me-2"></i> Kembali
                                 </a>
                             </div>
                         </div>
+
+                        
+                        <!-- Card 1: Profil Santri (Jika Ada) -->
+                        @if ($order->type == 'SANTRI' && $order->student)
+                        <div class="card border-0 shadow-sm rounded-4 mb-5 border-start border-4 border-primary">
+                            <div class="card-body p-5">
+                                <div class="d-flex flex-column align-items-center mb-4">
+                                    <div class="symbol symbol-75px symbol-circle mb-3">
+                                        <div class="symbol-label fs-2 fw-bold bg-light-primary text-primary">
+                                            {{ substr($order->student->name, 0, 1) }}
+                                        </div>
+                                    </div>
+                                    <h3 class="fw-bolder text-dark mb-1">{{ $order->student->name }}</h3>
+                                    <span class="text-muted fw-bold">{{ $order->student->nis ?? '-' }}</span>
+                                </div>
+                                
+                                <div class="d-flex flex-stack mb-2 bg-light rounded p-3">
+                                    <span class="text-muted fw-bold">Kelas</span>
+                                    <span class="badge badge-light-primary fw-bolder fs-7">{{ $order->student->classroom->name ?? '-' }}</span>
+                                </div>
+                                <div class="d-flex flex-stack bg-light rounded p-3">
+                                    <span class="text-muted fw-bold">Sekolah</span>
+                                    <span class="text-gray-800 fw-bold fs-7 text-end">{{ $order->student->classroom->school->name ?? '-' }}</span>
+                                </div>
+                            </div>
+                        </div>
+                        @else
+                         <div class="card border-0 shadow-sm rounded-4 mb-5 border-start border-4 border-success">
+                            <div class="card-body p-5">
+                                <div class="d-flex flex-column align-items-center mb-4">
+                                     <div class="symbol symbol-75px symbol-circle mb-3">
+                                        <div class="symbol-label fs-2 fw-bold bg-light-success text-success">
+                                            <i class="fas fa-users fs-1"></i>
+                                        </div>
+                                    </div>
+                                    <h3 class="fw-bolder text-dark mb-1">Pelanggan Umum</h3>
+                                    <span class="text-muted fw-bold">Non-Santri (Guest)</span>
+                                </div>
+                            </div>
+                        </div>
+                        @endif
+
+                        <!-- Card 2: Informasi Kasir & Waktu -->
+                        <div class="card border-0 shadow-sm rounded-4 mb-5">
+                            <div class="card-header border-0 min-h-50px pt-4">
+                                <h3 class="card-title fw-bold text-gray-700 fs-5">Informasi Order</h3>
+                            </div>
+                            <div class="card-body pt-2 pb-5">
+                                <!-- Kasir -->
+                                <div class="d-flex align-items-center mb-4">
+                                    <div class="symbol symbol-35px me-3">
+                                        <div class="symbol-label bg-light-info">
+                                            <i class="fas fa-user-tie text-info"></i>
+                                        </div>
+                                    </div>
+                                    <div class="d-flex flex-column">
+                                        <span class="text-muted fw-bold fs-7">Kasir</span>
+                                        <span class="text-dark fw-bolder">{{ $order->admins->name ?? 'Admin' }}</span>
+                                    </div>
+                                </div>
+                                <!-- Waktu -->
+                                <div class="d-flex align-items-center mb-4">
+                                    <div class="symbol symbol-35px me-3">
+                                        <div class="symbol-label bg-light-warning">
+                                            <i class="fas fa-clock text-warning"></i>
+                                        </div>
+                                    </div>
+                                    <div class="d-flex flex-column">
+                                        <span class="text-muted fw-bold fs-7">Waktu Transaksi</span>
+                                        <span class="text-dark fw-bolder">{{ $order->created_at->format('d M Y, H:i') }}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                       
                     </div>
                 </div>
 
@@ -297,80 +184,69 @@
 @endsection
 
 @push('js')
-    <script>
-        $(document).ready(() => {
-            var table = $('#table-student').DataTable({
-                ordering: false,
-                processing: true,
-                serverSide: true,
-                ajax: {
-                    url: '{{ route('order-item-history.show', $order->id) }}',
-                },
-                language: {
-                    "paginate": {
-                        "next": "<i class='fa fa-angle-right'></i>",
-                        "previous": "<i class='fa fa-angle-left'></i>"
-                    },
-                    "loadingRecords": "Memuat data...",
-                    "processing": "Memproses...",
-                    "search": "Cari:",
-                    "lengthMenu": "Tampilkan _MENU_ data",
-                    "info": "Menampilkan _START_ sampai _END_ dari _TOTAL_ data",
-                    "infoEmpty": "Menampilkan 0 sampai 0 dari 0 data",
-                    "zeroRecords": "Data tidak ditemukan",
-                    "emptyTable": "Tidak ada data yang tersedia"
-                },
-                columns: [{
-                        "data": null,
-                        "sortable": false,
-                        "searchable": false,
-                        "className": "ps-6",
-                        render: function(data, type, row, meta) {
-                            return meta.row + meta.settings._iDisplayStart + 1;
-                        }
-                    },
-                    {
-                        data: 'item.name',
-                        name: 'item.name',
-                        render: function(data, type, row) {
-                            return `<div class="d-flex align-items-center">
-                                <div class="symbol symbol-35px me-3">
-                                    <span class="symbol-label bg-light-primary">
-                                        <i class="fas fa-box text-primary fs-6"></i>
-                                    </span>
-                                </div>
-                                <div class="fw-bold">${data ?? '-'}</div>
-                            </div>`;
-                        }
-                    },
-                    {
-                        data: 'quantity',
-                        name: 'quantity',
-                        className: 'text-center',
-                        render: function(data, type, row) {
-                            return `<span class="badge badge-light-primary fs-7 fw-bold">${data ?? 0}</span>`;
-                        }
-                    },
-                    {
-                        data: 'price',
-                        name: 'price',
-                        className: 'text-end',
-                        render: function(data, type, row) {
-                            return data ? '<span class="fw-semibold">Rp ' + data.toString().replace(
-                                /\B(?=(\d{3})+(?!\d))/g, ".") + '</span>' : '-';
-                        }
-                    },
-                    {
-                        data: 'total_price',
-                        name: 'total_price',
-                        className: 'text-end pe-6',
-                        render: function(data, type, row) {
-                            return data ? '<span class="fw-bold text-dark">Rp ' + data.toString()
-                                .replace(/\B(?=(\d{3})+(?!\d))/g, ".") + '</span>' : '-';
-                        }
+<script>
+    $(document).ready(() => {
+        // DATATABLE INIT
+        var table = $('#table-student').DataTable({
+            destroy: true,
+            ordering: false,
+            processing: true,
+            serverSide: true,
+            ajax: {
+                url: '{{ route('order-item-history.show', $order->id) }}',
+            },
+            dom: 't', 
+            paging: false, 
+            language: {
+                "zeroRecords": "Data tidak ditemukan",
+                "emptyTable": "Tidak ada item pembelian",
+                "processing": '<div class="d-flex justify-content-center align-items-center"><div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div><span class="ms-2">Memuat data...</span></div>'
+            },
+            columns: [
+                {
+                    data: null,
+                    sortable: false,
+                    className: "ps-4",
+                    render: function(data, type, row, meta) {
+                        return meta.row + 1;
                     }
-                ]
-            });
+                },
+                {
+                    data: 'item.name',
+                    name: 'item.name',
+                    render: function(data, type, row) {
+                        return `<div class="d-flex flex-column">
+                                    <span class="fw-bolder text-dark fs-6">${data ?? '-'}</span>
+                                    <span class="text-muted fs-8 fw-bold">${row.item.category_item ? row.item.category_item.name : '-'}</span>
+                                </div>`;
+                    }
+                },
+                {
+                    data: 'quantity',
+                    name: 'quantity',
+                    className: 'text-center',
+                    render: function(data) {
+                        return `<span class="fw-bold text-gray-700">${data}</span>`;
+                    }
+                },
+                {
+                    data: 'price',
+                    name: 'price',
+                    className: 'text-end',
+                    render: function(data) {
+                        return `<span class="text-gray-600 fw-bold">Rp ${new Intl.NumberFormat('id-ID').format(data)}</span>`;
+                    }
+                },
+                {
+                    data: 'total',
+                    name: 'total',
+                    className: 'text-end pe-4',
+                    render: function(data) {
+                        return `<span class="text-dark fw-bolder">Rp ${new Intl.NumberFormat('id-ID').format(data)}</span>`;
+                    }
+                }
+            ]
         });
-    </script>
+    });
+</script>
 @endpush

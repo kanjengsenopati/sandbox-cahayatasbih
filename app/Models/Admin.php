@@ -28,7 +28,8 @@ class Admin extends Authenticatable
         'avatar',
         'is_active',
         'role_id',
-        'school_id'
+        'school_id',
+        'last_login_at',
     ];
 
     /**

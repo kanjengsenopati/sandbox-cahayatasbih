@@ -49,4 +49,8 @@ class PointOfSaleTransaction extends Model
     {
         return $this->hasMany(PointOfSaleTransactionDetail::class)->withTrashed();
     }
+    public function saldoHistory()
+    {
+        return $this->belongsTo(SaldoHistory::class, 'saldo_history_id', 'id')->withTrashed();
+    }
 }

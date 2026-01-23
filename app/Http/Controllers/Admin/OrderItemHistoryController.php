@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\Auth;
 use App\Models\PointOfSaleTransaction;
 use App\Models\PointOfSaleTransactionDetail;
 use Illuminate\Support\Facades\Cache;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class OrderItemHistoryController extends Controller
 {
@@ -160,7 +161,12 @@ class OrderItemHistoryController extends Controller
                 return $data->admins?->name ?? '-';
             })
             ->addColumn('action', function ($data) {
-                return '<a href="' . route('order-item-history.show', $data->id) . '" class="btn btn-primary btn-sm">Detail</a>';
+                return '
+                    <a href="' . route('order-item-history.print', $data->id) . '" target="_blank" class="btn btn-warning btn-sm me-1" title="Cetak Struk">
+                       <i class="fas fa-print"></i>
+                    </a>
+                    <a href="' . route('order-item-history.show', $data->id) . '" class="btn btn-primary btn-sm">Detail</a>
+                ';
             })
             ->rawColumns(['action'])
             ->make(true);
@@ -203,7 +209,12 @@ class OrderItemHistoryController extends Controller
                 return $data->admins?->name ?? '-';
             })
             ->addColumn('action', function ($data) {
-                return '<a href="' . route('order-item-history.show', $data->id) . '" class="btn btn-primary btn-sm">Detail</a>';
+                return '
+                    <a href="' . route('order-item-history.print', $data->id) . '" target="_blank" class="btn btn-warning btn-sm me-1" title="Cetak Struk">
+                       <i class="fas fa-print"></i>
+                    </a>
+                    <a href="' . route('order-item-history.show', $data->id) . '" class="btn btn-primary btn-sm">Detail</a>
+                ';
             })
             ->rawColumns(['action'])
             ->make(true);
@@ -603,6 +614,7 @@ class OrderItemHistoryController extends Controller
     /**
      * Display the specified resource.
      */
+
     public function show(string $id)
     {
         if (!Auth::user()->can('Manage Laporan Pos Kasir')) {
@@ -610,18 +622,21 @@ class OrderItemHistoryController extends Controller
         }
 
         if (request()->ajax()) {
-            $order = PointOfSaleTransactionDetail::with('pointOfSaleTransaction', 'item')->where('point_of_sale_transaction_id', $id)->latest();
+            $order = PointOfSaleTransactionDetail::with('pointOfSaleTransaction', 'item.categoryItem')->where('point_of_sale_transaction_id', $id)->latest();
             return DataTables::of($order)
-                ->editColumn('price', function ($data) {
-                    return number_format($data->price, 0, ',', '.');
-                })
-                ->editColumn('total_price', function ($data) {
-                    return number_format($data->total, 0, ',', '.');
-                })
                 ->make(true);
         }
-        $order = PointOfSaleTransaction::with('pointOfSaleTransactionDetails', 'student', 'admins')->findOrFail($id);
+        $order = PointOfSaleTransaction::with('pointOfSaleTransactionDetails','saldoHistory', 'student', 'admins')->findOrFail($id);
         return view('admins.order-item.history.show', compact('order'));
+    }
+
+    public function print($id) {
+        $order = PointOfSaleTransaction::with('pointOfSaleTransactionDetails.item', 'student', 'admins', 'saldoHistory')->findOrFail($id);
+        
+        $customPaper = array(0,0,226,600);
+        
+        $pdf = Pdf::loadView('admins.order-item.history.print', compact('order'))->setPaper($customPaper);
+        return $pdf->stream('receipt-'.$order->payment_code.'.pdf');
     }
 
 

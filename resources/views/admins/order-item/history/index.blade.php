@@ -993,6 +993,7 @@
                 ordering: false,
                 processing: true,
                 serverSide: true,
+                deferLoading: 0, // Prevent initial load
                 ajax: {
                     url: '{{ route('order-item-history.index') }}',
                     data: function(d) {
@@ -1052,6 +1053,7 @@
                 ordering: false,
                 processing: true,
                 serverSide: true,
+                deferLoading: 0, // Prevent initial load
                 ajax: {
                     url: '{{ route('order-item-history.index') }}',
                     data: function(d) {
@@ -1096,6 +1098,16 @@
                         name: 'revenue'
                     }
                 ]
+            });
+
+            // Trigger load on tab click
+            $('a[data-bs-toggle="tab"]').on('shown.bs.tab', function (e) {
+                var target = $(e.target).attr("href"); // activated tab
+                if (target === '#kt_tab_umum') {
+                    tableUmum.draw();
+                } else if (target === '#kt_tab_detail') {
+                    tableTopItems.draw();
+                }
             });
 
             // Sales & Profit Chart
