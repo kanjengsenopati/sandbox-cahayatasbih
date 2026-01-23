@@ -15,8 +15,7 @@ class Bill extends Model
 
     const STATUS_UNPAID = 'UNPAID';
     const STATUS_PAID = 'PAID';
-    use HasFactory, UuidTrait, SoftDeletes, GeneralTrait;
-
+    use HasFactory, UuidTrait, SoftDeletes;
     protected $fillable = [
         'bill_type_id',
         'student_id',

@@ -118,7 +118,9 @@
                             @php
                             setlocale(LC_TIME, 'id_ID');
                             $startMonth = 7; // Juli
-                            $year = date('Y');
+                            // Use academic year start_year/end_year if available, else default to current logic
+                            $startYear = $billType->academicYear->start_year ?? date('Y');
+                            $endYear = $billType->academicYear->end_year ?? ($startYear + 1);
                             @endphp
 
                             <div class="row">
@@ -126,11 +128,17 @@
                                     @php
                                     $month=($startMonth + $i - 1) % 12 + 1;
                                     $monthName=\Carbon\Carbon::createFromDate(null, $month, 1)->translatedFormat('F');
-                                    $displayYear = $month >= 7 ? $year : $year + 1;
-                                    // Handle edit values
-                                    $existingAmount = isset($paymentRate->paymentRateItems)
-                                    ? ($paymentRate->paymentRateItems->where('month', $month)->first()->amount ?? '')
-                                    : '';
+                                    
+                                    // Logic: Jul-Dec uses Start Year, Jan-Jun uses End Year
+                                    $defaultYear = $month >= 7 ? $startYear : $endYear;
+                                    
+                                    // Handle edit values (if modifying existing payment rate item)
+                                    $existingItem = isset($paymentRate->paymentRateItems) 
+                                        ? $paymentRate->paymentRateItems->where('month', $month)->first() 
+                                        : null;
+                                        
+                                    $existingAmount = $existingItem->amount ?? '';
+                                    $displayYear = $existingItem->year ?? $defaultYear;
                                     @endphp
                                     <div class="col-md-6 mb-4">
                                         <div class="bg-light rounded p-4 border border-gray-200">
@@ -145,9 +153,9 @@
                                                     </div>
                                                 </div>
                                                 <div class="col-5">
-                                                    <input type="text" class="form-control form-control-sm form-control-solid input-year text-center"
+                                                    <input type="number" class="form-control form-control-sm form-control-solid input-year text-center"
                                                         name="tahun_{{ $month }}" id="tahun_{{ $month }}"
-                                                        value="{{ $displayYear }}" readonly />
+                                                        value="{{ $displayYear }}" placeholder="Tahun" required />
                                                 </div>
                                             </div>
                                         </div>
@@ -186,7 +194,7 @@
                                         <label for="year" class="form-label fs-6 fw-bold text-gray-700">Tahun</label>
                                         <input type="number" name="year" id="year"
                                             class="form-control form-control-solid" placeholder="Tahun"
-                                            value="{{ date('Y') }}" required>
+                                            value="{{ $billType->academicYear->start_year ?? date('Y') }}" required>
                                     </div>
                                 </div>
                             </div>

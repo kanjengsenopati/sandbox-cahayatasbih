@@ -133,37 +133,66 @@
                                 <div class="card card-flush h-lg-100" id="kt_contacts_main">
                                     <div class="card-body pt-5">
                                         <form action="{{ route('bill.index') }}" method="GET">
-                                            <div class="fv-row mb-7 d-flex align-items-center">
-                                                <label class="fs-6 fw-bold form-label mt-3 me-3 col-2" for="school_id">
-                                                    <span class="required">Unit Pendidikan</span>
+                                            <!-- Unit Pendidikan -->
+                                            <div class="row mb-4">
+                                                <label class="col-md-3 col-form-label fw-bold fs-6 required" for="school_id">
+                                                    Unit Pendidikan
                                                 </label>
-                                                <select name="school_id" name="school_id"
-                                                    class="form-control form-control-solid flex-grow-1" id="school_id">
-                                                    <option value="">Pilih Unit Pendidikan</option>
-                                                    @foreach ($schools as $school)
-                                                    <option value="{{ $school->id }}" {{ request('school_id')==$school->
-                                                        id ?
-                                                        'selected' : '' }}>
-                                                        {{ $school->name }}</option>
-                                                    @endforeach
-                                                </select>
+                                                <div class="col-md-9">
+                                                    <select name="school_id" class="form-select form-select-solid" id="school_id">
+                                                        <option value="">Pilih Unit Pendidikan</option>
+                                                        @foreach ($schools as $school)
+                                                        <option value="{{ $school->id }}" {{ request('school_id')==$school->id ? 'selected' : '' }}>
+                                                            {{ $school->name }}
+                                                        </option>
+                                                        @endforeach
+                                                    </select>
+                                                </div>
                                             </div>
-                                            <div class="fv-row mb-7 d-flex align-items-center">
-                                                <label class="fs-6 fw-bold form-label mt-3 me-3 col-2" for="name">
-                                                    <span class="required">NIS/NISN/Nama</span>
+
+                                            <!-- Tahun Ajaran -->
+                                            <div class="row mb-4">
+                                                <label class="col-md-3 col-form-label fw-bold fs-6" for="academic_year_id">
+                                                    Tahun Ajaran
                                                 </label>
-                                                <select name="student_id" id="student_id"
-                                                    class="form-select form-select-solid" id="student_id">
-                                                    <option value="">Pilih Siswa</option>
-                                                </select>
-                                                <button id="btn-cari" class="btn btn-sm btn-primary ms-3"
-                                                    style="height: 40px; width: 100px;" type="submit">
-                                                    <span class="indicator-label" id="buttonText">Tampilkan</span>
-                                                    <span class="indicator-progress d-none">Please wait...
-                                                        <span
-                                                            class="spinner-border spinner-border-sm align-middle ms-2"></span>
-                                                    </span>
-                                                </button>
+                                                <div class="col-md-9">
+                                                    <select name="academic_year_id" id="academic_year_id" class="form-select form-select-solid">
+                                                        <option value="">Semua Tahun Ajaran</option>
+                                                        @foreach ($academicYears as $year)
+                                                            <option value="{{ $year->id }}" {{ request('academic_year_id') == $year->id ? 'selected' : '' }}>
+                                                                {{ $year->name }}
+                                                            </option>
+                                                        @endforeach
+                                                    </select>
+                                                </div>
+                                            </div>
+
+                                            <!-- Siswa & Button -->
+                                            <div class="row mb-4">
+                                                <label class="col-md-3 col-form-label fw-bold fs-6 required" for="student_id">
+                                                    NIS/NISN/Nama
+                                                </label>
+                                                <div class="col-md-9">
+                                                    <div class="d-flex flex-column flex-md-row gap-3">
+                                                        <div class="flex-grow-1">
+                                                            <select name="student_id" id="student_id" class="form-select form-select-solid">
+                                                                @if(request('student_id') && isset($student))
+                                                                    <option value="{{ $student->id }}" selected>
+                                                                        {{ $student->nis ? $student->nis . ' - ' : '' }}{{ $student->name }} - {{ $student->classroom->name ?? '' }}
+                                                                    </option>
+                                                                @else
+                                                                    <option value="">Pilih Siswa</option>
+                                                                @endif
+                                                            </select>
+                                                        </div>
+                                                        <button id="btn-cari" class="btn btn-primary w-100 w-md-auto" type="submit">
+                                                            <span class="indicator-label" id="buttonText">Tampilkan</span>
+                                                            <span class="indicator-progress d-none">
+                                                                <span class="spinner-border spinner-border-sm align-middle ms-2"></span>
+                                                            </span>
+                                                        </button>
+                                                    </div>
+                                                </div>
                                             </div>
                                         </form>
                                     </div>
@@ -176,7 +205,13 @@
                                             <div class="mb-3">
                                                 <span class="fw-bold text-muted">Tahun Ajaran</span>
                                                 :&nbsp;
-                                                <span><b>Semua Tahun Ajaran</b></span>
+                                                <span><b>
+                                                    @if(request('academic_year_id'))
+                                                        {{ $academicYears->where('id', request('academic_year_id'))->first()->name ?? 'Semua Tahun Ajaran' }}
+                                                    @else
+                                                        Semua Tahun Ajaran
+                                                    @endif
+                                                </b></span>
                                             </div>
                                             <div class="mb-3">
                                                 <span class="fw-bold text-muted">NIS</span>
@@ -242,27 +277,13 @@
                                                     <div class="tab-content" id="myTabContent">
                                                         <div class="tab-pane fade show active" id="kt_tab_pane_4"
                                                             role="tabpanel">
-                                                            <div class="table-responsive">
-                                                                <table class="table  gy-7 gs-7">
-                                                                    <thead>
-                                                                        @include('admins.bill.table.header-kilat')
-                                                                    </thead>
-                                                                    <tbody>
-                                                                        @include('admins.bill.table.body-kilat')
-                                                                    </tbody>
-                                                                </table>
+                                                            <div class="py-3">
+                                                                @include('admins.bill.table.body-kilat')
                                                             </div>
                                                         </div>
                                                         <div class="tab-pane fade" id="kt_tab_pane_5" role="tabpanel">
-                                                            <div class="table-responsive">
-                                                                <table class="table gy-7 gs-7">
-                                                                    <thead>
-                                                                        @include('admins.bill.table.header-kilat')
-                                                                    </thead>
-                                                                    <tbody>
-                                                                        @include('admins.bill.table.body-lainnya')
-                                                                    </tbody>
-                                                                </table>
+                                                            <div class="py-3">
+                                                                @include('admins.bill.table.body-lainnya')
                                                             </div>
                                                         </div>
                                                     </div>

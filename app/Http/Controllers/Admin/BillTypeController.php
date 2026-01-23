@@ -107,10 +107,10 @@ class BillTypeController extends Controller
         try {
             $validated = $request->validated();
             $billType = BillType::create($validated);
-
-            // If request has billTypeBanks, create new BillTypeBank entries
-            if ($request->billTypeBanks) {
-                $billType->billTypeBank()->createMany($request->billTypeBanks);
+            if ($request->has('bank_ids')) {
+                foreach ($request->bank_ids as $bankId) {
+                    $billType->billTypeBank()->create(['bank_id' => $bankId]);
+                }
             }
 
             // Commit the transaction

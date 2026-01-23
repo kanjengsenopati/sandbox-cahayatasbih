@@ -24,9 +24,13 @@ class AcademicYearRequest extends FormRequest
         return match ($this->method()) {
             'POST' => [
                 'name' => ['required', 'string', 'unique:academic_years', 'max:255'],
+                'start_year' => ['required', 'numeric', 'digits:4'],
+                'end_year' => ['required', 'numeric', 'digits:4'],
             ],
             'PUT', 'PATCH' => [
                 'name' => ['required', 'string', 'max:255', 'unique:academic_years,name,' . $this->academic_year->id],
+                'start_year' => ['required', 'numeric', 'digits:4'],
+                'end_year' => ['required', 'numeric', 'digits:4'],
             ],
             default => [],
         };
@@ -42,6 +46,12 @@ class AcademicYearRequest extends FormRequest
             'name.string' => 'Tahun Akademik harus berupa string',
             'name.unique' => 'Tahun Akademik sudah ada',
             'name.max' => 'Tahun Akademik maksimal 255 karakter',
+            'start_year.required' => 'Tahun Mulai tidak boleh kosong',
+            'start_year.numeric' => 'Tahun Mulai harus berupa angka',
+            'start_year.digits' => 'Tahun Mulai harus 4 digit',
+            'end_year.required' => 'Tahun Selesai tidak boleh kosong',
+            'end_year.numeric' => 'Tahun Selesai harus berupa angka',
+            'end_year.digits' => 'Tahun Selesai harus 4 digit',
         ];
     }
 }
