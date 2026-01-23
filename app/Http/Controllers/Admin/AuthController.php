@@ -18,6 +18,9 @@ class AuthController extends Controller
     {
         if (Auth::guard('web')->attempt($request->validated(), $request->remember)) {
             if (Auth::guard('web')->user()->is_active) {
+                Auth::guard('web')->user()->update([
+                    'last_login_at' => now(),
+                ]);
                 return  redirect()->intended('dashboard');
             } else {
                 Auth::guard('web')->logout();

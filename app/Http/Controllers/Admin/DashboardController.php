@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Jobs\SendToPushNotificationJob;
 use App\Jobs\SendToWhatsappNotificationJob;
 use App\Jobs\SendUnpaidBillNotificationJob;
+use App\Models\Admin;
 use App\Models\ApplicationSetting;
 use App\Models\Article;
 use App\Models\Bill;
@@ -14,6 +15,7 @@ use App\Models\HistoryDownload;
 use App\Models\PointOfSaleTransaction;
 use App\Models\PpdbRegistration;
 use App\Models\School;
+use App\Models\Schedule;
 use App\Models\Student;
 use App\Models\StudentBillNotification;
 use App\Models\Transaction;
@@ -37,43 +39,82 @@ class DashboardController extends Controller
     public function index()
     {
         try {
-            // Total active parents (wali santri aktif)
-            $totalActiveParents = User::where('is_active', 1)->count();
+            // 1. Key Metrics
+            $totalSantri = Student::where('status', Student::STATUS_ACTIVE)->count();
+            // Assuming Admin has is_active column or counting all
+            $totalStaff = Admin::where('is_active', 1)->count();
+            $totalWali = User::where('is_active', 1)->count();
+            $totalKelas = Classroom::whereNotIn('school_id', ['37ca75d4-4a87-4856-be8e-f78e2672134f', 'ca3d1ef1-a2ec-4a2b-81ce-72a2299e068c'])->count();
 
-            // Total students
-            $totalStudents = Student::count();
+            // 2. School Data (Deep Dive)
+            $schoolData = School::whereNotIn('id', ['37ca75d4-4a87-4856-be8e-f78e2672134f', 'ca3d1ef1-a2ec-4a2b-81ce-72a2299e068c'])->withCount([
+                'classroom as total_classes',
+                'students as total_students' => function ($query) {
+                    $query->where('status', Student::STATUS_ACTIVE);
+                },
+                'students as count_l' => function ($query) {
+                    $query->where('status', Student::STATUS_ACTIVE)->where('gender', 'L');
+                },
+                'students as count_p' => function ($query) {
+                    $query->where('status', Student::STATUS_ACTIVE)->where('gender', 'P');
+                },
+            ])->get();
 
-            // Fetch prayer times for Demak using Aladhan API
-            $response = Http::get('http://api.aladhan.com/v1/timingsByCity', [
-                'city' => 'Demak',
-                'country' => 'ID',
-                'method' => 5, // Method 5 is the default method in Indonesia
-            ]);
-
-            $prayerTimes = [];
-            if ($response->successful()) {
-                $data = $response->json();
-                $prayerTimes = $data['data']['timings'];
-            }
-
-            // Prepare data to pass to the view
-            $data = [
-                'total_parents' => $totalActiveParents,
-                'total_students' => $totalStudents,
+            // 3. Gender Ratio (Chart)
+            $totalLaki = Student::where('status', Student::STATUS_ACTIVE)->where('gender', 'L')->count();
+            $totalPerempuan = Student::where('status', Student::STATUS_ACTIVE)->where('gender', 'P')->count();
+            $genderRatio = [
+                'l' => $totalLaki,
+                'p' => $totalPerempuan,
             ];
 
+            // 4. Activity (Login Today)
+            $today = Carbon::today();
+            // Using last_login_at for Admin (as per prompt) and last_login for User (as per Model)
+            // Note: Ensure columns exist in DB.
+            $staffLoginToday = Admin::whereDate('last_login_at', $today)->count();
+            $waliLoginToday = User::whereDate('last_login', $today)->count();
+
+            $loginActivity = [
+                'staff_count' => $staffLoginToday,
+                'staff_total' => $totalStaff,
+                'staff_percentage' => $totalStaff > 0 ? round(($staffLoginToday / $totalStaff) * 100) : 0,
+                'wali_count' => $waliLoginToday,
+                'wali_total' => $totalWali,
+                'wali_percentage' => $totalWali > 0 ? round(($waliLoginToday / $totalWali) * 100) : 0,
+            ];
+
+            // 5. Agenda & Schedule
+            $upcomingSchedules = Schedule::with('school')
+                ->whereDate('date', '>=', Carbon::today())
+                ->orderBy('date', 'asc')
+                ->limit(5)
+                ->get();
+
             return view('admins.dashboard.index', compact(
-                'data',
-                'prayerTimes'
+                'totalSantri',
+                'totalStaff',
+                'totalWali',
+                'totalKelas',
+                'schoolData',
+                'genderRatio',
+                'loginActivity',
+                'upcomingSchedules'
             ));
         } catch (\Exception $e) {
-            // Handle errors gracefully
+            Log::error($e->getMessage());
             return view('admins.dashboard.index', [
-                'data' => [
-                    'total_parents' => 0,
-                    'total_students' => 0,
+                'totalSantri' => 0,
+                'totalStaff' => 0,
+                'totalWali' => 0,
+                'totalKelas' => 0,
+                'schoolData' => [],
+                'genderRatio' => ['l' => 0, 'p' => 0],
+                'loginActivity' => [
+                    'staff_count' => 0, 'staff_total' => 0, 'staff_percentage' => 0,
+                    'wali_count' => 0, 'wali_total' => 0, 'wali_percentage' => 0
                 ],
-                'prayerTimes' => [],
+                'upcomingSchedules' => collect([])
             ])->withErrors(['error' => 'Gagal memuat data dashboard.']);
         }
     }
