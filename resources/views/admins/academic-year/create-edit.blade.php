@@ -81,18 +81,46 @@
                                 <x-form.put-method />
                                 <!--begin::Input group-->
                                 <div class="fv-row mb-7">
-                                    <!--begin::Label-->
-                                    <label class="fs-6 fw-bold form-label mt-3" for="name">
-                                        <span class="required">Tahun Ajaran</span>
-                                        <i class="fas fa-exclamation-circle ms-1 fs-7" data-bs-toggle="tooltip"
-                                            title="Masukkan Tahun Ajaran Yang Valid"></i>
-                                    </label>
-                                    <!--end::Label-->
-                                    <!--begin::Input-->
-                                    <input type="text" class="form-control form-control-solid" name="name" id="name"
-                                        placeholder="Format: 2021/2022"
-                                        value="{{ @$academicYear->name ?? old('name') }}" required />
-                                    <!--end::Input-->
+                                    <div class="row">
+                                        <div class="col-md-12">
+                                            <!--begin::Label-->
+                                            <label class="fs-6 fw-bold form-label mt-3" for="name">
+                                                <span class="required">Tahun Ajaran</span>
+                                                <i class="fas fa-exclamation-circle ms-1 fs-7" data-bs-toggle="tooltip"
+                                                    title="Masukkan Tahun Ajaran Yang Valid"></i>
+                                            </label>
+                                            <!--end::Label-->
+                                            <!--begin::Input-->
+                                            <input type="text" class="form-control form-control-solid" name="name"
+                                                id="name" placeholder="Format: 2021/2022"
+                                                value="{{ @$academicYear->name ?? old('name') }}" required />
+                                            <!--end::Input-->
+                                        </div>
+                                        <div class="col-md-6">
+                                            <!--begin::Label-->
+                                            <label class="fs-6 fw-bold form-label mt-3" for="start_year">
+                                                <span class="required">Tahun Mulai</span>
+                                            </label>
+                                            <!--end::Label-->
+                                            <!--begin::Input-->
+                                            <input type="number" class="form-control form-control-solid" name="start_year"
+                                                id="start_year" placeholder="Contoh: 2021"
+                                                value="{{ @$academicYear->start_year ?? old('start_year') }}" required />
+                                            <!--end::Input-->
+                                        </div>
+                                        <div class="col-md-6">
+                                            <!--begin::Label-->
+                                            <label class="fs-6 fw-bold form-label mt-3" for="end_year">
+                                                <span class="required">Tahun Selesai</span>
+                                            </label>
+                                            <!--end::Label-->
+                                            <!--begin::Input-->
+                                            <input type="number" class="form-control form-control-solid" name="end_year"
+                                                id="end_year" placeholder="Contoh: 2022"
+                                                value="{{ @$academicYear->end_year ?? old('end_year') }}" required />
+                                            <!--end::Input-->
+                                        </div>
+                                    </div>
                                 </div>
                                 <!--end::Input group-->
                                 <!--begin::Separator-->

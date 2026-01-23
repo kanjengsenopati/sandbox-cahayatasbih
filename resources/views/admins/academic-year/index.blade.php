@@ -68,6 +68,8 @@
                                 <tr class="text-start text-gray-400 fw-bolder fs-7 text-uppercase gs-0">
                                     <th style="width: 5%">No</th>
                                     <th>Tahun Ajaran</th>
+                                    <th>Mulai</th>
+                                    <th>Selesai</th>
                                     <th>Status</th>
                                     <th class="text-center min-w-100px" style="width: 22%">Aksi</th>
                                 </tr>
@@ -115,6 +117,14 @@
                      {
                         data: 'name',
                         name: 'name'
+                    },
+                    {
+                        data: 'start_year',
+                        name: 'start_year'
+                    },
+                    {
+                        data: 'end_year',
+                        name: 'end_year'
                     },
                     {
                         data: 'status',
