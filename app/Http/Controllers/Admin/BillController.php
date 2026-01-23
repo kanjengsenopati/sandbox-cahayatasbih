@@ -42,29 +42,37 @@ class BillController extends Controller
         }
 
         $schools = School::orderBy('name')->hasSchool()->get();
+        // Dapatkan semua Tahun Ajaran untuk filter
+        $academicYears = \App\Models\AcademicYear::orderBy('start_year', 'desc')->get();
 
         if ($studentId = request()->student_id) {
             $student = Student::findOrFail($studentId);
+            $academicYearId = request()->academic_year_id;
 
-            $billMonth = $this->getBills($studentId, BillType::TYPE_MONTHLY);
-            $billOthers = $this->getBills($studentId, BillType::TYPE_OTHER);
+            $billMonth = $this->getBills($studentId, BillType::TYPE_MONTHLY, $academicYearId);
+            $billOthers = $this->getBills($studentId, BillType::TYPE_OTHER, $academicYearId);
 
-            return view('admins.bill.index', compact('student', 'billMonth', 'billOthers', 'schools'));
+            return view('admins.bill.index', compact('student', 'billMonth', 'billOthers', 'schools', 'academicYears'));
         }
 
         if (request()->ajax()) {
             return $this->getTransactionData();
         }
 
-        return view('admins.bill.index', compact('schools'));
+        return view('admins.bill.index', compact('schools', 'academicYears'));
     }
 
-    private function getBills($studentId, $type)
+    private function getBills($studentId, $type, $academicYearId = null)
     {
-        return BillType::with('billItem', 'academicYear', 'bills')
+        $query = BillType::with(['billItem', 'academicYear', 'bills' => fn($query) => $query->where('student_id', $studentId)->with(['transactions.admin', 'transactions.user'])])
             ->where('type', $type)
-            ->whereHas('bills', fn($query) => $query->where('student_id', $studentId))
-            ->latest()
+            ->whereHas('bills', fn($query) => $query->where('student_id', $studentId));
+
+        if ($academicYearId) {
+            $query->where('academic_year_id', $academicYearId);
+        }
+
+        return $query->latest()
             ->get()
             ->map(fn($item) => $this->calculateBillTotals($item, $studentId));
     }
