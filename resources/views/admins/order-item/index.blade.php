@@ -246,9 +246,6 @@
 
                                 <!-- Kanan: Informasi Kasir -->
                                 <div class="d-flex align-items-center">
-                                    <!-- Avatar Kasir -->
-                                    <img src="{{ Auth::user()->avatar ?? 'default-avatar.png' }}" alt="Avatar Kasir"
-                                        class="rounded-circle me-3" width="60" height="60">
                                     <!-- Detail Kasir -->
                                     <div class="text-end">
                                         <h5 class="fw-bold mb-1">{{ Auth::user()->name ?? 'Nama Kasir' }}</h5>

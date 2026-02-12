@@ -15,6 +15,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Auth;
 use App\Models\PointOfSaleTransaction;
 use App\Models\PointOfSaleTransactionDetail;
+use Illuminate\Support\Facades\Cache;
 
 class OrderItemController extends Controller
 {
@@ -102,80 +103,99 @@ class OrderItemController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-
     public function store(Request $request)
     {
+        // 1. Authorization
         if (!Auth::user()->can('Create Pos Kasir')) {
-            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
+            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses.');
         }
+
+        // 2. Validation
         $request->validate([
             'payment_method' => 'required',
-            // 'student_id' => 'required_if:payment_method,Saldo|nullable|exists:students,id',
             'barcode' => 'required_if:payment_method,Saldo|nullable',
         ]);
 
-        // Use database transaction to ensure data consistency
+        $adminId = auth()->id();
+
+        // 3. IDEMPOTENCY CHECK (Atomic Lock)
+        // Kunci proses berdasarkan Admin ID selama 10 detik.
+        // Ini mencegah double click pada tombol submit.
+        $lockKey = 'pos_submit_lock_' . $adminId;
+        $lock = Cache::lock($lockKey, 10);
+
+        if (!$lock->get()) {
+            return redirect()->back()->with('error', 'Transaksi sedang diproses, mohon tunggu sebentar.');
+        }
+
         DB::beginTransaction();
 
         try {
-
             if ($request->payment_method == PointOfSaleTransaction::PAYMENT_SALDO && !$request->barcode) {
-                return redirect()->back()->with('error', 'Maaf, Pembayaran Saldo harus scan barcode siswa');
+                throw new \Exception('Pembayaran Saldo harus scan barcode siswa');
             }
 
-            $adminId = auth()->user()->id;
+            // 4. OPTIMASI N+1: Gunakan Eager Loading 'item'
+            $carts = PointOfSaleCart::with('item') // Load relasi item di sini
+                ->where('admin_id', $adminId)
+                ->get();
 
-            // Get cart data
-            $carts = PointOfSaleCart::where('admin_id', $adminId)->get();
             if ($carts->isEmpty()) {
-                return redirect()->back()->with('error', 'Keranjang masih kosong');
+                throw new \Exception('Keranjang masih kosong');
             }
 
-            // Calculate total omzet
+            // Calculate totals (Memory efficient)
             $total = $carts->sum('total');
+            
+            // N+1 Fixed: Karena 'item' sudah di-load, akses ini tidak query lagi ke DB
+            $totalProfit = $carts->sum(fn($cart) => $cart->item->profit * $cart->quantity);
 
-            // calculate total profit on all cart from $cart->item->profit
-            $totalProfit = $carts->sum(function ($cart) {
-                return $cart->item->profit * $cart->quantity;
-            });
+            $student = null;
+            $historyId = null;
 
-            // Get student data and process payment
+            // Process Payment
             if ($request->payment_method == PointOfSaleTransaction::PAYMENT_SALDO) {
-                // Fetch the student by barcode
-                $student = Student::where('barcode', $request->barcode)->first();
+                // 5. DATA CONSISTENCY: Gunakan lockForUpdate()
+                // Ini mencegah saldo dipotong ganda jika ada race condition database
+                $student = Student::where('barcode', $request->barcode)->lockForUpdate()->first();
 
-                // Validate student's balance, block status, and daily limit
+                // Pindahkan validasi ke dalam try-catch agar pesan error tertangkap rapi
                 if (!$this->validateStudentForTransaction($student, $total)) {
-                    return redirect()->back()->with('error', 'Maaf, transaksi tidak dapat diproses.');
+                    // Pesan error sudah di-flash di dalam function validate
+                    throw new \Exception(session('error') ?? 'Validasi siswa gagal.');
                 }
 
-                // Calculate balances before and after the transaction
                 $balanceBefore = $student->saldo;
                 $student->saldo -= $total;
                 $balanceAfter = $student->saldo;
-
-                // Save the updated student balance
                 $student->save();
 
-                // Record the transaction in SaldoHistory
                 $history = $this->recordSaldoHistory($student, $total, $balanceBefore, $balanceAfter);
+                $historyId = $history->id;
             }
 
-            $paymentCode = 'POS-' . now()->format('Ymd') . str_pad(PointOfSaleTransaction::whereDate('paid_at', now())->count() + 1, 3, '0', STR_PAD_LEFT);
-            // Save transaction data
+            // Generate Transaction Code
+            // Optimasi: Count bisa berat jika data jutaan, tapi oke untuk skala menengah.
+            // Alternatif: Gunakan UUID atau Timestamp precision tinggi jika sangat ramai.
+            $countToday = PointOfSaleTransaction::whereDate('paid_at', now())->count() + 1;
+            $paymentCode = 'POS-' . now()->format('Ymd') . str_pad($countToday, 3, '0', STR_PAD_LEFT);
+
+            // Save Transaction
             $transaction = PointOfSaleTransaction::create([
-                'student_id' => $request->payment_method == PointOfSaleTransaction::PAYMENT_SALDO ? $student->id : null,
+                'student_id' => $student ? $student->id : null,
                 'admin_id' => $adminId,
                 'payment_code' => $paymentCode,
                 'pay_amount' => $total,
                 'paid_at' => now(),
                 'status' => PointOfSaleTransaction::STATUS_SUCCESS,
-                'saldo_history_id' => $request->payment_method == PointOfSaleTransaction::PAYMENT_SALDO ? $history->id : null,
+                'saldo_history_id' => $historyId,
                 'profit' => $totalProfit,
-                'type' => $request->payment_method == PointOfSaleTransaction::PAYMENT_SALDO ? PointOfSaleTransaction::TYPE_SANTRI : PointOfSaleTransaction::TYPE_UMUM,
+                'type' => $request->payment_method == PointOfSaleTransaction::PAYMENT_SALDO 
+                            ? PointOfSaleTransaction::TYPE_SANTRI 
+                            : PointOfSaleTransaction::TYPE_UMUM,
             ]);
 
-            // Add transaction details
+            // Save Details
             $transactionDetails = $carts->map(function ($cart) {
                 return [
                     'item_id' => $cart->item_id,
@@ -187,52 +207,58 @@ class OrderItemController extends Controller
 
             $transaction->pointOfSaleTransactionDetails()->createMany($transactionDetails);
 
-            // Delete cart
-            $carts->each->delete();
+            // 6. OPTIMASI DELETE: Hapus bulk via Query Builder (1 Query)
+            // Jangan gunakan $carts->each->delete() (N Query)
+            PointOfSaleCart::where('admin_id', $adminId)->delete();
 
-            // Commit the transaction
             DB::commit();
+            
+            // Release lock segera setelah sukses
+            $lock->release();
 
-            if ($request->payment_method == PointOfSaleTransaction::PAYMENT_SALDO) {
-                return redirect()->route('order-item.index')->with('success', 'Yeay! Transaksi berhasil, Saldo ' . $student->name . ' dikurangi Rp. ' . number_format($total, 0, ',', '.'));
-            } else {
-                return redirect()->route('order-item.index')->with('success', 'Yeay! Transaksi berhasil');
+            $message = 'Yeay! Transaksi berhasil';
+            if ($student) {
+                $message .= ', Saldo ' . $student->name . ' dikurangi Rp. ' . number_format($total, 0, ',', '.');
             }
+
+            return redirect()->route('order-item.index')->with('success', $message);
+
         } catch (\Exception $e) {
-            // If an exception occurs, rollback the transaction
             DB::rollback();
-            return redirect()->back()->with('error', 'Transaksi gagal: ' . $e->getMessage());
+            // Release lock jika gagal
+            $lock->release();
+            
+            return redirect()->back()->with('error', $e->getMessage());
         }
     }
 
     private function validateStudentForTransaction($student, $total): bool
     {
-        // Check if student exists
         if (!$student) {
             session()->flash('error', 'Santri tidak ditemukan.');
             return false;
         }
 
-        // Check if student has sufficient balance
         if ($student->saldo < $total) {
             session()->flash('error', 'Maaf, Saldo Santri tidak mencukupi.');
             return false;
         }
 
-        // Check if student is blocked
         if ($student->is_blocked) {
             session()->flash('error', 'Maaf, Saldo Santri diblokir oleh Wali Santri.');
             return false;
         }
 
-        // Check daily transaction limit
         if ($student->daily_limit > 0) {
+            // Optimasi: Cek transaksi harian
+            // Karena kita sudah pakai lockForUpdate di $student, 
+            // kalkulasi ini relatif aman selama transaksi lain juga me-lock row student yang sama.
             $totalThisDay = PointOfSaleTransaction::where('student_id', $student->id)
                 ->whereDate('paid_at', now())
                 ->where('status', PointOfSaleTransaction::STATUS_SUCCESS)
-                ->sum('pay_amount') ?? 0;
+                ->sum('pay_amount');
 
-            if ($student->daily_limit < $totalThisDay + $total) {
+            if ($student->daily_limit < ($totalThisDay + $total)) {
                 session()->flash('error', 'Maaf, Siswa telah mencapai batas transaksi harian.');
                 return false;
             }
@@ -254,6 +280,108 @@ class OrderItemController extends Controller
             'balance_after' => $balanceAfter ?? 0,
         ]);
     }
+
+    // public function store(Request $request)
+    // {
+    //     if (!Auth::user()->can('Create Pos Kasir')) {
+    //         return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
+    //     }
+    //     $request->validate([
+    //         'payment_method' => 'required',
+    //         // 'student_id' => 'required_if:payment_method,Saldo|nullable|exists:students,id',
+    //         'barcode' => 'required_if:payment_method,Saldo|nullable',
+    //     ]);
+
+    //     // Use database transaction to ensure data consistency
+    //     DB::beginTransaction();
+
+    //     try {
+
+    //         if ($request->payment_method == PointOfSaleTransaction::PAYMENT_SALDO && !$request->barcode) {
+    //             return redirect()->back()->with('error', 'Maaf, Pembayaran Saldo harus scan barcode siswa');
+    //         }
+
+    //         $adminId = auth()->user()->id;
+
+    //         // Get cart data
+    //         $carts = PointOfSaleCart::where('admin_id', $adminId)->get();
+    //         if ($carts->isEmpty()) {
+    //             return redirect()->back()->with('error', 'Keranjang masih kosong');
+    //         }
+
+    //         // Calculate total omzet
+    //         $total = $carts->sum('total');
+
+    //         // calculate total profit on all cart from $cart->item->profit
+    //         $totalProfit = $carts->sum(function ($cart) {
+    //             return $cart->item->profit * $cart->quantity;
+    //         });
+
+    //         // Get student data and process payment
+    //         if ($request->payment_method == PointOfSaleTransaction::PAYMENT_SALDO) {
+    //             // Fetch the student by barcode
+    //             $student = Student::where('barcode', $request->barcode)->first();
+
+    //             // Validate student's balance, block status, and daily limit
+    //             if (!$this->validateStudentForTransaction($student, $total)) {
+    //                 return redirect()->back()->with('error', 'Maaf, transaksi tidak dapat diproses.');
+    //             }
+
+    //             // Calculate balances before and after the transaction
+    //             $balanceBefore = $student->saldo;
+    //             $student->saldo -= $total;
+    //             $balanceAfter = $student->saldo;
+
+    //             // Save the updated student balance
+    //             $student->save();
+
+    //             // Record the transaction in SaldoHistory
+    //             $history = $this->recordSaldoHistory($student, $total, $balanceBefore, $balanceAfter);
+    //         }
+
+    //         $paymentCode = 'POS-' . now()->format('Ymd') . str_pad(PointOfSaleTransaction::whereDate('paid_at', now())->count() + 1, 3, '0', STR_PAD_LEFT);
+    //         // Save transaction data
+    //         $transaction = PointOfSaleTransaction::create([
+    //             'student_id' => $request->payment_method == PointOfSaleTransaction::PAYMENT_SALDO ? $student->id : null,
+    //             'admin_id' => $adminId,
+    //             'payment_code' => $paymentCode,
+    //             'pay_amount' => $total,
+    //             'paid_at' => now(),
+    //             'status' => PointOfSaleTransaction::STATUS_SUCCESS,
+    //             'saldo_history_id' => $request->payment_method == PointOfSaleTransaction::PAYMENT_SALDO ? $history->id : null,
+    //             'profit' => $totalProfit,
+    //             'type' => $request->payment_method == PointOfSaleTransaction::PAYMENT_SALDO ? PointOfSaleTransaction::TYPE_SANTRI : PointOfSaleTransaction::TYPE_UMUM,
+    //         ]);
+
+    //         // Add transaction details
+    //         $transactionDetails = $carts->map(function ($cart) {
+    //             return [
+    //                 'item_id' => $cart->item_id,
+    //                 'quantity' => $cart->quantity,
+    //                 'price' => $cart->price,
+    //                 'total' => $cart->total,
+    //             ];
+    //         })->toArray();
+
+    //         $transaction->pointOfSaleTransactionDetails()->createMany($transactionDetails);
+
+    //         // Delete cart
+    //         $carts->each->delete();
+
+    //         // Commit the transaction
+    //         DB::commit();
+
+    //         if ($request->payment_method == PointOfSaleTransaction::PAYMENT_SALDO) {
+    //             return redirect()->route('order-item.index')->with('success', 'Yeay! Transaksi berhasil, Saldo ' . $student->name . ' dikurangi Rp. ' . number_format($total, 0, ',', '.'));
+    //         } else {
+    //             return redirect()->route('order-item.index')->with('success', 'Yeay! Transaksi berhasil');
+    //         }
+    //     } catch (\Exception $e) {
+    //         // If an exception occurs, rollback the transaction
+    //         DB::rollback();
+    //         return redirect()->back()->with('error', 'Transaksi gagal: ' . $e->getMessage());
+    //     }
+    // }
     /**
      * Display the specified resource.
      */
