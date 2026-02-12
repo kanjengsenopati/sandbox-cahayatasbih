@@ -415,8 +415,10 @@ class TransactionService
         dispatch(new SendToPushNotificationJob($title, $body, $transaction->student->user, $transaction));
         dispatch(new SendToWhatsappNotificationJob($transaction->student->user->phone, $messageWhatsapp));
         $contacts = Contact::where('type', Contact::TYPE_BENDAHARA)->orWhere('type', Contact::TYPE_SUPERADMIN)->get();
-        foreach ($contacts as $contact) {
-            dispatch(new SendToWhatsappNotificationJob($contact->phone, $messageWhatsapp));
+        if ($contacts->isNotEmpty()) {
+            foreach ($contacts as $contact) {
+                dispatch(new SendToWhatsappNotificationJob($contact->phone, $messageWhatsapp));
+            }
         }
     }
 

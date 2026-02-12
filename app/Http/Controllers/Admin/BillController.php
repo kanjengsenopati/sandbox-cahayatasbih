@@ -11,6 +11,7 @@ use App\Models\BillType;
 use App\Models\Transaction;
 use App\Models\SaldoHistory;
 
+use Exception;
 use Illuminate\Http\Request;
 use App\Models\PaymentMethod;
 use App\Models\SavingHistory;
@@ -195,45 +196,99 @@ class BillController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-
     public function store(BillPaymentRequest $request)
     {
-        $studentId = $request->student_id; // Assuming student_id is part of the request
-        $cacheKey = "student_transaction_{$studentId}";
+        $studentId = $request->student_id;
+        // Saran: Tambahkan bill_id agar user bisa bayar tagihan LAIN secara bersamaan
+        // $billId = $request->bill_id; 
+        // $lockKey = "pay_lock_{$studentId}_{$billId}"; 
+        
+        $lockKey = "student_transaction_{$studentId}";
 
-        // Check if there's an active transaction in the cache
-        if (Cache::has($cacheKey)) {
-            return redirect()->back()->with('error', 'Transaksi sedang diproses, silakan coba lagi nanti');
+        // COBA DAPATKAN KUNCI (ATOMIC)
+        // block(0) artinya: Coba lock, jika gagal langsung return false (jangan tunggu).
+        // owner: method ini memegang kunci selama 5 menit (300 detik) jika terjadi crash.
+        $lock = Cache::lock($lockKey, 300);
+
+        if (!$lock->get()) {
+            // Jika gagal dapat kunci (artinya ada transaksi lain sedang jalan)
+            return redirect()->back()->with('error', 'Transaksi sedang diproses, mohon tunggu sebentar.');
         }
 
-        // Set a cache entry to lock the transaction
-        Cache::put($cacheKey, true, now()->addMinutes(5)); // Lock for 5 minutes
-
+        // --- MULAI AREA AMAN ---
         DB::beginTransaction();
 
         try {
             $paymentMethodType = $request->payment_method;
 
+            // Validasi Logika Bisnis Tambahan (Double Check Database)
+            foreach ($request->bill_ids as $billId) {
+                $isPaid = Bill::where('id', $billId)->where('status', 'PAID')->exists();
+                if($isPaid) throw new Exception("Tagihan dengan ID {$billId} sudah lunas");
+            }
+
             $transaction = TransactionService::createTransaction($request, $paymentMethodType, Transaction::TYPE_BILL);
+            
             if ($transaction->status == Transaction::STATUS_PAID && $transaction?->student?->user?->phone) {
                 TransactionService::dispatchNotifications($transaction);
             }
+            
             DB::commit();
 
-            // Clear the cache entry
-            Cache::forget($cacheKey);
+            // Lepas kunci agar user bisa transaksi lagi
+            $lock->release();
 
             return redirect()->back()->with('success', "Transaksi pembayaran berhasil");
+
         } catch (\Throwable $th) {
             DB::rollBack();
             Log::error($th);
 
-            // Ensure the cache entry is cleared in case of an error
-            Cache::forget($cacheKey);
+            // Lepas kunci jika error, supaya user tidak terkunci 5 menit
+            $lock->release();
 
-            return redirect()->back()->with('error', "Transaksi pembayaran gagal");
+            return redirect()->back()->with('error', "Transaksi pembayaran gagal: " . $th->getMessage());
         }
     }
+
+    // public function store(BillPaymentRequest $request)
+    // {
+    //     $studentId = $request->student_id; // Assuming student_id is part of the request
+    //     $cacheKey = "student_transaction_{$studentId}";
+
+    //     // Check if there's an active transaction in the cache
+    //     if (Cache::has($cacheKey)) {
+    //         return redirect()->back()->with('error', 'Transaksi sedang diproses, silakan coba lagi nanti');
+    //     }
+
+    //     // Set a cache entry to lock the transaction
+    //     Cache::put($cacheKey, true, now()->addMinutes(5)); // Lock for 5 minutes
+
+    //     DB::beginTransaction();
+
+    //     try {
+    //         $paymentMethodType = $request->payment_method;
+
+    //         $transaction = TransactionService::createTransaction($request, $paymentMethodType, Transaction::TYPE_BILL);
+    //         if ($transaction->status == Transaction::STATUS_PAID && $transaction?->student?->user?->phone) {
+    //             TransactionService::dispatchNotifications($transaction);
+    //         }
+    //         DB::commit();
+
+    //         // Clear the cache entry
+    //         Cache::forget($cacheKey);
+
+    //         return redirect()->back()->with('success', "Transaksi pembayaran berhasil");
+    //     } catch (\Throwable $th) {
+    //         DB::rollBack();
+    //         Log::error($th);
+
+    //         // Ensure the cache entry is cleared in case of an error
+    //         Cache::forget($cacheKey);
+
+    //         return redirect()->back()->with('error', "Transaksi pembayaran gagal");
+    //     }
+    // }
 
     /**
      * Display the specified resource.
