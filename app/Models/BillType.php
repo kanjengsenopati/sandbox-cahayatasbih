@@ -44,4 +44,17 @@ class BillType extends Model
     {
         return $this->hasMany(BillTypeBank::class);
     }
+
+    protected static function boot()
+    {
+        parent::boot();
+
+        static::deleting(function ($billType) {
+            $billType->bills()->delete();
+        });
+
+        static::restoring(function ($billType) {
+            $billType->bills()->withTrashed()->restore();
+        });
+    }
 }

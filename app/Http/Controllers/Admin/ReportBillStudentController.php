@@ -85,7 +85,8 @@ class ReportBillStudentController extends Controller
      */
     private function buildBillQuery()
     {
-        return Bill::when(request()->filled('start_date'), function ($query) {
+        return Bill::whereHas('billType')
+            ->when(request()->filled('start_date'), function ($query) {
                 $startDate = Carbon::parse(request()->start_date);
                 $query->where(function ($sub) use ($startDate) {
                     $sub->where('year', '>', $startDate->year)
