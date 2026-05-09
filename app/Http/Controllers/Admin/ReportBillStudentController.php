@@ -409,11 +409,17 @@ class ReportBillStudentController extends Controller
         $query = $this->buildBillQuery()->where('student_id', $studentId);
         $bills = $query->with(['billType', 'academicYear'])->get();
 
-        $details = $bills->map(function ($bill) {
+        $details = $bills->map(function ($bill) use ($studentId) {
             $monthName = self::MONTH_NAMES[$bill->month] ?? 'Invalid';
             $statusBadge = $bill->status == 'UNPAID'
                 ? '<span class="badge badge-light-danger fs-8">Belum Lunas</span>'
                 : '<span class="badge badge-light-success fs-8">Lunas</span>';
+
+            $actionBtn = '';
+            if ($bill->status == 'UNPAID') {
+                $payUrl = route('bill.index') . '?student_id=' . $studentId . '&academic_year_id=' . $bill->academic_year_id;
+                $actionBtn = '<a href="' . $payUrl . '" class="btn btn-sm btn-primary py-1 px-3" target="_blank">Bayar</a>';
+            }
 
             return [
                 'bill_type'     => $bill->billType?->name ?? '-',
@@ -421,6 +427,7 @@ class ReportBillStudentController extends Controller
                 'period'        => $monthName . ' ' . $bill->year,
                 'amount'        => 'Rp ' . number_format($bill->amount, 0, ',', '.'),
                 'status'        => $statusBadge,
+                'action'        => $actionBtn,
             ];
         });
 

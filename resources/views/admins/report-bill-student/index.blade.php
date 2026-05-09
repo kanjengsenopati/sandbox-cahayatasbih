@@ -218,8 +218,8 @@
                                 <table id="table-rekap" class="table table-striped border rounded gy-5 gs-7">
                                     <thead>
                                         <tr class="fw-bolder fs-6 text-gray-800 px-7">
-                                            <th style="width: 3%"></th>
-                                            <th style="width:5%">No</th>
+                                            <th></th>
+                                            <th>No</th>
                                             <th>Santri</th>
                                             <th>Jml Tagihan</th>
                                             <th>Total Tagihan</th>
@@ -227,7 +227,6 @@
                                             <th>Belum Lunas</th>
                                             <th>Tunggakan</th>
                                             <th>Realisasi</th>
-                                            <th>Status</th>
                                         </tr>
                                     </thead>
                                     <tbody></tbody>
@@ -421,20 +420,22 @@ function initializeRekapTable() {
                                     '<th class="px-3">Periode</th>' +
                                     '<th class="px-3">Nominal</th>' +
                                     '<th class="px-3 text-center">Status</th>' +
+                                    '<th class="px-3 text-center">Aksi</th>' +
                                 '</tr>' +
                             '</thead>' +
                             '<tbody>';
                     
                     if(data.length === 0) {
-                        html += '<tr><td colspan="5" class="text-center text-muted">Tidak ada rincian data.</td></tr>';
+                        html += '<tr><td colspan="6" class="text-center text-muted">Tidak ada rincian data.</td></tr>';
                     } else {
                         data.forEach(function(item) {
                             html += '<tr>' +
-                                '<td class="px-3">' + item.bill_type + '</td>' +
-                                '<td class="px-3">' + item.academic_year + '</td>' +
-                                '<td class="px-3">' + item.period + '</td>' +
-                                '<td class="px-3 fw-bold">' + item.amount + '</td>' +
-                                '<td class="px-3 text-center">' + item.status + '</td>' +
+                                '<td class="px-3 align-middle">' + item.bill_type + '</td>' +
+                                '<td class="px-3 align-middle">' + item.academic_year + '</td>' +
+                                '<td class="px-3 align-middle">' + item.period + '</td>' +
+                                '<td class="px-3 fw-bold align-middle">' + item.amount + '</td>' +
+                                '<td class="px-3 text-center align-middle">' + item.status + '</td>' +
+                                '<td class="px-3 text-center align-middle">' + (item.action ? item.action : '-') + '</td>' +
                             '</tr>';
                         });
                     }
