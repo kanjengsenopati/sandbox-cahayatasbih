@@ -71,6 +71,7 @@ class ReportBillStudentController extends Controller
             'table'       => $this->getTable(),
             'rekap_total' => $this->getRekapTotal(),
             'rekap_table' => $this->getRekapTable(),
+            'rekap_detail'=> $this->getRekapDetail(),
             default       => response()->json(['error' => 'Invalid data type'], 400),
         };
     }
@@ -392,6 +393,36 @@ class ReportBillStudentController extends Controller
             })
             ->rawColumns(['student', 'total_paid_display', 'total_unpaid_display', 'current_due_display', 'status', 'percentage'])
             ->make(true);
+    }
+
+    /**
+     * Details for Tab 2 — individual bills for a specific student.
+     */
+    private function getRekapDetail()
+    {
+        $studentId = request()->student_id;
+        if (!$studentId) {
+            return response()->json([]);
+        }
+
+        $query = $this->buildBillQuery()->where('student_id', $studentId);
+        $bills = $query->with('billType')->get();
+
+        $details = $bills->map(function ($bill) {
+            $monthName = self::MONTH_NAMES[$bill->month] ?? 'Invalid';
+            $statusBadge = $bill->status == 'UNPAID'
+                ? '<span class="badge badge-light-danger fs-8">Belum Lunas</span>'
+                : '<span class="badge badge-light-success fs-8">Lunas</span>';
+
+            return [
+                'bill_type' => $bill->billType?->name ?? '-',
+                'period'    => $monthName . ' ' . $bill->year,
+                'amount'    => 'Rp ' . number_format($bill->amount, 0, ',', '.'),
+                'status'    => $statusBadge,
+            ];
+        });
+
+        return response()->json($details);
     }
 
     // =========================================================================

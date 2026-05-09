@@ -205,6 +205,7 @@
                                 <table id="table-rekap" class="table table-striped border rounded gy-5 gs-7">
                                     <thead>
                                         <tr class="fw-bolder fs-6 text-gray-800 px-7">
+                                            <th style="width: 3%"></th>
                                             <th style="width:5%">No</th>
                                             <th>Santri</th>
                                             <th>Jml Tagihan</th>
@@ -353,6 +354,13 @@ function initializeRekapTable() {
             data: function(d) { Object.assign(d, getFilterData()); d.data = 'rekap_table'; }
         },
         columns: [
+            {
+                className: 'details-control text-center cursor-pointer',
+                orderable: false,
+                searchable: false,
+                data: null,
+                defaultContent: '<i class="fas fa-chevron-right fs-5 text-primary"></i>'
+            },
             { data: null, sortable: false, searchable: false, render: function(data, type, row, meta) { return meta.row + meta.settings._iDisplayStart + 1; } },
             { data: 'student', name: 'student' },
             { data: 'bill_count_display', name: 'bill_count', orderable: true, searchable: false },
@@ -363,6 +371,70 @@ function initializeRekapTable() {
             { data: 'percentage', name: 'percentage', orderable: false, searchable: false },
             { data: 'status', name: 'status', orderable: false, searchable: false }
         ]
+    });
+
+    // Add event listener for opening and closing details
+    $('#table-rekap tbody').on('click', 'td.details-control', function () {
+        var tr = $(this).closest('tr');
+        var row = rekapTable.row(tr);
+        var icon = $(this).find('i');
+
+        if (row.child.isShown()) {
+            // This row is already open - close it
+            row.child.hide();
+            tr.removeClass('shown');
+            icon.removeClass('fa-chevron-down').addClass('fa-chevron-right');
+        } else {
+            // Open this row
+            icon.removeClass('fa-chevron-right').addClass('fa-spinner fa-spin'); // Loading state
+            
+            var params = getFilterData();
+            params.data = 'rekap_detail';
+            params.student_id = row.data().id;
+
+            $.ajax({
+                url: "{{ route('report-bill-student.index') }}",
+                type: "GET",
+                dataType: 'json',
+                data: params,
+                success: function(data) {
+                    var html = '<div class="p-4 bg-light rounded" style="margin-left: 50px;">' +
+                        '<h6 class="mb-3 text-muted">Rincian Tagihan</h6>' +
+                        '<table class="table table-sm table-bordered table-striped" style="width: auto; min-width: 60%;">' +
+                            '<thead class="bg-secondary">' +
+                                '<tr>' +
+                                    '<th class="px-3">Tagihan</th>' +
+                                    '<th class="px-3">Periode</th>' +
+                                    '<th class="px-3">Nominal</th>' +
+                                    '<th class="px-3 text-center">Status</th>' +
+                                '</tr>' +
+                            '</thead>' +
+                            '<tbody>';
+                    
+                    if(data.length === 0) {
+                        html += '<tr><td colspan="4" class="text-center text-muted">Tidak ada rincian data.</td></tr>';
+                    } else {
+                        data.forEach(function(item) {
+                            html += '<tr>' +
+                                '<td class="px-3">' + item.bill_type + '</td>' +
+                                '<td class="px-3">' + item.period + '</td>' +
+                                '<td class="px-3 fw-bold">' + item.amount + '</td>' +
+                                '<td class="px-3 text-center">' + item.status + '</td>' +
+                            '</tr>';
+                        });
+                    }
+
+                    html += '</tbody></table></div>';
+                    row.child(html).show();
+                    tr.addClass('shown');
+                    icon.removeClass('fa-spinner fa-spin').addClass('fa-chevron-down');
+                },
+                error: function() {
+                    icon.removeClass('fa-spinner fa-spin').addClass('fa-chevron-right');
+                    Swal.fire('Error', 'Gagal memuat detail tagihan', 'error');
+                }
+            });
+        }
     });
 }
 
