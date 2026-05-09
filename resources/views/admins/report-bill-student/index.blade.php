@@ -93,18 +93,31 @@
 
                 <div class="card-body pt-0">
                     {{-- Tabs Navigation --}}
-                    <ul class="nav nav-tabs" id="reportTab" role="tablist">
-                        <li class="nav-item" role="presentation">
-                            <a class="nav-link active" id="data-tagihan-tab" data-bs-toggle="tab" href="#data-tagihan" role="tab" aria-controls="data-tagihan" aria-selected="true">
-                                <i class="fas fa-list me-2"></i>Data Tagihan
-                            </a>
-                        </li>
-                        <li class="nav-item" role="presentation">
-                            <a class="nav-link" id="rekap-santri-tab" data-bs-toggle="tab" href="#rekap-santri" role="tab" aria-controls="rekap-santri" aria-selected="false">
-                                <i class="fas fa-chart-bar me-2"></i>Rekap Per-Santri
-                            </a>
-                        </li>
-                    </ul>
+                    <div class="d-flex bg-light rounded p-2 mb-5" style="width: fit-content;">
+                        <ul class="nav nav-pills nav-pills-custom" id="reportTab" role="tablist">
+                            <li class="nav-item" role="presentation">
+                                <a class="nav-link active px-4 py-2 fw-bolder text-gray-600 me-2" id="data-tagihan-tab" data-bs-toggle="pill" href="#data-tagihan" role="tab" aria-controls="data-tagihan" aria-selected="true" style="transition: all 0.3s; border-radius: 8px;">
+                                    <i class="fas fa-list me-2"></i>Data Tagihan
+                                </a>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <a class="nav-link px-4 py-2 fw-bolder text-gray-600" id="rekap-santri-tab" data-bs-toggle="pill" href="#rekap-santri" role="tab" aria-controls="rekap-santri" aria-selected="false" style="transition: all 0.3s; border-radius: 8px;">
+                                    <i class="fas fa-chart-bar me-2"></i>Rekap Per-Santri
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+                    
+                    <style>
+                        .nav-pills-custom .nav-link.active {
+                            background-color: #009ef7;
+                            color: white !important;
+                            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+                        }
+                        .nav-pills-custom .nav-link:not(.active):hover {
+                            background-color: #e4e6ef;
+                        }
+                    </style>
 
                     <div class="tab-content" id="reportTabContent">
                         {{-- TAB 1: Data Tagihan --}}
@@ -288,7 +301,7 @@ $(document).ready(function() {
     getTotalSaldo();
 
     // Lazy-load Tab 2 on first click
-    $('a[data-bs-toggle="tab"]').on('shown.bs.tab', function(e) {
+    $('a[data-bs-toggle="pill"]').on('shown.bs.tab', function(e) {
         if (e.target.id === 'rekap-santri-tab' && !rekapInitialized) {
             initializeRekapTable();
             getRekapTotal();
@@ -404,6 +417,7 @@ function initializeRekapTable() {
                             '<thead class="bg-secondary">' +
                                 '<tr>' +
                                     '<th class="px-3">Tagihan</th>' +
+                                    '<th class="px-3">Tahun Ajaran</th>' +
                                     '<th class="px-3">Periode</th>' +
                                     '<th class="px-3">Nominal</th>' +
                                     '<th class="px-3 text-center">Status</th>' +
@@ -412,11 +426,12 @@ function initializeRekapTable() {
                             '<tbody>';
                     
                     if(data.length === 0) {
-                        html += '<tr><td colspan="4" class="text-center text-muted">Tidak ada rincian data.</td></tr>';
+                        html += '<tr><td colspan="5" class="text-center text-muted">Tidak ada rincian data.</td></tr>';
                     } else {
                         data.forEach(function(item) {
                             html += '<tr>' +
                                 '<td class="px-3">' + item.bill_type + '</td>' +
+                                '<td class="px-3">' + item.academic_year + '</td>' +
                                 '<td class="px-3">' + item.period + '</td>' +
                                 '<td class="px-3 fw-bold">' + item.amount + '</td>' +
                                 '<td class="px-3 text-center">' + item.status + '</td>' +

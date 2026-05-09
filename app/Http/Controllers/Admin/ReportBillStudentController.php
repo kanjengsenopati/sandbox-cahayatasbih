@@ -406,7 +406,7 @@ class ReportBillStudentController extends Controller
         }
 
         $query = $this->buildBillQuery()->where('student_id', $studentId);
-        $bills = $query->with('billType')->get();
+        $bills = $query->with(['billType', 'academicYear'])->get();
 
         $details = $bills->map(function ($bill) {
             $monthName = self::MONTH_NAMES[$bill->month] ?? 'Invalid';
@@ -415,10 +415,11 @@ class ReportBillStudentController extends Controller
                 : '<span class="badge badge-light-success fs-8">Lunas</span>';
 
             return [
-                'bill_type' => $bill->billType?->name ?? '-',
-                'period'    => $monthName . ' ' . $bill->year,
-                'amount'    => 'Rp ' . number_format($bill->amount, 0, ',', '.'),
-                'status'    => $statusBadge,
+                'bill_type'     => $bill->billType?->name ?? '-',
+                'academic_year' => $bill->academicYear?->name ?? '-',
+                'period'        => $monthName . ' ' . $bill->year,
+                'amount'        => 'Rp ' . number_format($bill->amount, 0, ',', '.'),
+                'status'        => $statusBadge,
             ];
         });
 
