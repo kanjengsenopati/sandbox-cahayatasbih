@@ -380,8 +380,7 @@ function initializeRekapTable() {
             { data: 'total_paid_display', name: 'total_paid', orderable: true, searchable: false },
             { data: 'total_unpaid_display', name: 'total_unpaid', orderable: true, searchable: false },
             { data: 'current_due_display', name: 'current_due_amount', orderable: true, searchable: false },
-            { data: 'percentage', name: 'percentage', orderable: false, searchable: false },
-            { data: 'status', name: 'status', orderable: false, searchable: false }
+            { data: 'percentage', name: 'percentage', orderable: false, searchable: false }
         ]
     });
 

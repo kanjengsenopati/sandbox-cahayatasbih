@@ -374,15 +374,6 @@ class ReportBillStudentController extends Controller
                 }
                 return '<span class="text-muted">-</span>';
             })
-            ->addColumn('status', function ($row) {
-                if ($row->current_due_amount > 0) {
-                    return '<span class="badge badge-light-danger fw-bolder text-danger">Melewati Tempo</span>';
-                }
-                if ($row->total_unpaid > 0) {
-                    return '<span class="badge badge-light-warning fw-bolder text-warning">Belum Lunas</span>';
-                }
-                return '<span class="badge badge-light-success fw-bolder text-success">Lunas</span>';
-            })
             ->addColumn('percentage', function ($row) {
                 if ($row->total_bill == 0) return '0%';
                 $pct = ($row->total_paid / $row->total_bill) * 100;
@@ -392,7 +383,7 @@ class ReportBillStudentController extends Controller
                     <span class="fw-bold text-' . $color . '" style="min-width:40px">' . number_format($pct, 0) . '%</span>
                 </div>';
             })
-            ->rawColumns(['student', 'total_paid_display', 'total_unpaid_display', 'current_due_display', 'status', 'percentage'])
+            ->rawColumns(['student', 'total_paid_display', 'total_unpaid_display', 'current_due_display', 'percentage'])
             ->make(true);
     }
 
