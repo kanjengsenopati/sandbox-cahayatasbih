@@ -81,10 +81,10 @@ class ReportBillStudentController extends Controller
                 SUM(amount) as total
             ")->first();
 
-                // Format the totals using number_format
-                $formattedTotalPaid = number_format($totals->total_paid, 0, ',', '.');
-                $formattedTotalUnpaid = number_format($totals->total_unpaid, 0, ',', '.');
-                $formattedTotal = number_format($totals->total, 0, ',', '.');
+                // Format the totals using number_format, handling nulls for PHP 8.1+ compatibility
+                $formattedTotalPaid = number_format($totals->total_paid ?? 0, 0, ',', '.');
+                $formattedTotalUnpaid = number_format($totals->total_unpaid ?? 0, 0, ',', '.');
+                $formattedTotal = number_format($totals->total ?? 0, 0, ',', '.');
 
                 return response()->json([
                     'total_paid' => $formattedTotalPaid,
@@ -135,8 +135,9 @@ class ReportBillStudentController extends Controller
                             12 => 'Desember'
                         ];
 
-                        // Add the translated month and year
-                        return $months[$data->month] . ' ' . $data->year;
+                        // Add the translated month and year with fallback
+                        $monthName = $months[$data->month] ?? 'Invalid Month (' . $data->month . ')';
+                        return $monthName . ' ' . $data->year;
                     })
                     ->addColumn('notification', function ($data) {
                         // Retrieve the notification status for the student
@@ -157,7 +158,7 @@ class ReportBillStudentController extends Controller
                             "</div>";
                         // add delete action
                     })
-                    ->rawColumns(['date', 'amount', 'action', 'student', 'status', 'notification'])
+                    ->rawColumns(['amount', 'action', 'student', 'status', 'notification'])
                     ->make(true);
             }
         }
