@@ -43,9 +43,9 @@ class PaymentRateController extends Controller
      */
     public function store(PaymentRateRequest $request)
     {
-        // 1. ATOMIC LOCK: Mencegah tombol diklik 2x (Anti Double Submit)
-        // Kunci akan aktif selama 10 detik untuk user yang sedang login ini.
-        $lock = Cache::lock('store_payment_rate_' . auth()->id(), 10);
+        // 1. ATOMIC LOCK: Mencegah tombol diklik 2x (Anti Double Submit) & Race Condition antar admin
+        // Kunci berbasis bill_type_id untuk mencegah 2 admin men-generate tagihan yang sama
+        $lock = Cache::lock('store_payment_rate_bill_type_' . $request->bill_type_id, 10);
 
         if (!$lock->get()) {
             return redirect()->back()->with('error', 'Proses sedang berjalan, mohon tunggu sebentar...');
@@ -385,8 +385,8 @@ class PaymentRateController extends Controller
      */
     public function update(PaymentRateRequest $request, $id)
     {
-        // 1. ATOMIC LOCK
-        $lock = Cache::lock('update_payment_rate_' . auth()->id(), 10);
+        // 1. ATOMIC LOCK berbasis ID payment rate untuk mencegah race condition
+        $lock = Cache::lock('update_payment_rate_' . $id, 10);
 
         if (!$lock->get()) {
             return redirect()->back()->with('error', 'Proses update sedang berjalan, mohon tunggu...');
@@ -672,8 +672,8 @@ class PaymentRateController extends Controller
      */
     public function destroy($id)
     {
-        // 1. ATOMIC LOCK
-        $lock = Cache::lock('destroy_payment_rate_' . auth()->id(), 10);
+        // 1. ATOMIC LOCK berbasis ID payment rate
+        $lock = Cache::lock('destroy_payment_rate_' . $id, 10);
 
         if (!$lock->get()) {
             return redirect()->back()->with('error', 'Proses penghapusan sedang berjalan, mohon tunggu...');
