@@ -1,56 +1,28 @@
 @extends('layouts.master', ['title' => 'Laporan Tagihan Siswa'])
 @section('content')
 <div class="content d-flex flex-column flex-column-fluid" id="kt_content">
-    <!--begin::Toolbar-->
     <div class="toolbar" id="kt_toolbar">
-        <!--begin::Container-->
         <div id="kt_toolbar_container" class="container-fluid d-flex flex-stack">
-            <!--begin::Page title-->
             <div data-kt-swapper="true" data-kt-swapper-mode="prepend"
                 data-kt-swapper-parent="{default: '#kt_content_container', 'lg': '#kt_toolbar_container'}"
                 class="page-title d-flex align-items-center flex-wrap me-3 mb-5 mb-lg-0">
-                <!--begin::Title-->
                 <h1 class="d-flex text-dark fw-bolder fs-3 align-items-center my-1">Laporan</h1>
-                <!--end::Title-->
-                <!--begin::Separator-->
                 <span class="h-20px border-gray-300 border-start mx-4"></span>
-                <!--end::Separator-->
-                <!--begin::Breadcrumb-->
                 <ul class="breadcrumb breadcrumb-separatorless fw-bold fs-7 my-1">
-                    <!--begin::Item-->
                     <li class="breadcrumb-item text-muted">
-                        <a href="{{ route('report-bill-student.index') }}" class="text-muted text-hover-primary">Laporan
-                            Tagihan Santri</a>
+                        <a href="{{ route('report-bill-student.index') }}" class="text-muted text-hover-primary">Laporan Tagihan Santri</a>
                     </li>
-                    <!--end::Item-->
-                    <!--begin::Item-->
-                    <li class="breadcrumb-item">
-                        <span class="bullet bg-gray-300 w-5px h-2px"></span>
-                    </li>
-                    <!--end::Item-->
-                    <!--begin::Item-->
+                    <li class="breadcrumb-item"><span class="bullet bg-gray-300 w-5px h-2px"></span></li>
                     <li class="breadcrumb-item text-dark">Data Tagihan</li>
-                    <!--end::Item-->
                 </ul>
-                <!--end::Breadcrumb-->
             </div>
-            <!--end::Page title-->
-            <!--begin::Actions-->
-
-            <!--end::Actions-->
         </div>
-        <!--end::Container-->
     </div>
-    <!--end::Toolbar-->
-    <!--begin::Post-->
+
     <div class="post d-flex flex-column-fluid">
-        <!--begin::Container-->
         <div id="kt_content_container" class="container-xxl">
-            <!--begin::Card-->
             <div class="card mb-5">
-                <!--begin::Card header-->
-                <div
-                    class="card-header d-flex align-items-end gap-5 flex-sm-row mb-5 justify-content-between border-0 pt-6">
+                <div class="card-header d-flex align-items-end gap-5 flex-sm-row mb-5 justify-content-between border-0 pt-6">
                     <div class="d-flex flex-wrap justify-content-beetween gap-5">
                         <div class="mb-0">
                             <form action="#" id="form-filter" method="get">
@@ -66,14 +38,20 @@
                                             </div>
                                             <input type="text" id="start_date" name="start_date" hidden>
                                             <input type="text" id="end_date" name="end_date" hidden>
-
                                         </div>
                                     </div>
-
+                                    <div>
+                                        <label class="form-label">Tahun Ajaran</label>
+                                        <select name="academic_year_id" class="form-select form-select-sm" id="filter_academic_year_id">
+                                            <option value="">Semua Tahun Ajaran</option>
+                                            @foreach ($academicYears as $ay)
+                                            <option value="{{ $ay->id }}">{{ $ay->name }}</option>
+                                            @endforeach
+                                        </select>
+                                    </div>
                                     <div>
                                         <label class="form-label">Lembaga</label>
-                                        <select name="school_id" class="form-select form-select-sm"
-                                            id="filter_school_id">
+                                        <select name="school_id" class="form-select form-select-sm" id="filter_school_id">
                                             <option value="">Semua Lembaga</option>
                                             @foreach ($schools as $school)
                                             <option value="{{ $school->id }}">{{ $school->name }}</option>
@@ -82,15 +60,13 @@
                                     </div>
                                     <div>
                                         <label class="form-label">Kelas</label>
-                                        <select name="classroom_id" class="form-select form-select-sm"
-                                            id="filter_classroom_id">
+                                        <select name="classroom_id" class="form-select form-select-sm" id="filter_classroom_id">
                                             <option value="">Semua Kelas</option>
                                         </select>
                                     </div>
                                     <div>
                                         <label class="form-label">Tagihan</label>
-                                        <select name="bill_type_id[]" class="form-select form-select-sm"
-                                            id="filter_tipe_tagihan" multiple="multiple">
+                                        <select name="bill_type_id[]" class="form-select form-select-sm" id="filter_tipe_tagihan" multiple="multiple">
                                             @foreach ($billTypes as $billType)
                                             <option value="{{ $billType->id }}">{{ $billType->name }}</option>
                                             @endforeach
@@ -105,340 +81,340 @@
                                         </select>
                                     </div>
                                     <div>
-                                        <!-- Add WhatsApp Blast Button -->
                                         <button type="button" id="btn-wa-blast" class="btn btn-success btn-sm">
                                             <i class="fab fa-whatsapp"></i> Kirim WA Blast Tagihan
                                         </button>
                                     </div>
                                 </div>
                             </form>
+                        </div>
+                    </div>
+                </div>
 
-                            <div class="d-flex flex-wrap gap-2 mt-4"
-                                style="border: 1px solid #e0e0e0; padding: 16px; border-radius: 8px;">
-                                <!-- Card for "Target Pemasukan" (Revenue Target) -->
+                <div class="card-body pt-0">
+                    {{-- Tabs Navigation --}}
+                    <ul class="nav nav-tabs" id="reportTab" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <a class="nav-link active" id="data-tagihan-tab" data-bs-toggle="tab" href="#data-tagihan" role="tab" aria-controls="data-tagihan" aria-selected="true">
+                                <i class="fas fa-list me-2"></i>Data Tagihan
+                            </a>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <a class="nav-link" id="rekap-santri-tab" data-bs-toggle="tab" href="#rekap-santri" role="tab" aria-controls="rekap-santri" aria-selected="false">
+                                <i class="fas fa-chart-bar me-2"></i>Rekap Per-Santri
+                            </a>
+                        </li>
+                    </ul>
+
+                    <div class="tab-content" id="reportTabContent">
+                        {{-- TAB 1: Data Tagihan --}}
+                        <div class="tab-pane fade show active" id="data-tagihan" role="tabpanel" aria-labelledby="data-tagihan-tab">
+                            {{-- Summary Cards --}}
+                            <div class="d-flex flex-wrap gap-2 mt-4 mb-4" style="border: 1px solid #e0e0e0; padding: 16px; border-radius: 8px;">
                                 <div class="card bg-light-warning bg-active-danger flex-grow-1">
-                                    <!--begin::Body-->
                                     <div class="card-body d-flex align-items-center">
-                                        <div class="me-3">
-                                            <!-- Ubah warna ikon menjadi merah -->
-                                            <i class="fas fa-bullseye text-danger fs-2"></i>
-                                        </div>
+                                        <div class="me-3"><i class="fas fa-bullseye text-danger fs-2"></i></div>
                                         <div>
-                                            <!--begin::Label-->
                                             <div class="fw-bolder fs-5 text-gray-800">Target Pemasukan</div>
-                                            <!--end::Label-->
-                                            <!--begin::Stats-->
-                                            <!-- Ubah warna nominal menjadi merah -->
                                             <div class="text-danger fs-3 fw-bolder" id="target-revenue">Rp. 0</div>
-                                            <!--end::Stats-->
                                         </div>
                                     </div>
-                                    <!--end::Body-->
                                 </div>
-                                <!-- Card for "Lunas" (Paid) -->
                                 <div class="card bg-light-primary bg-active-primary flex-grow-1">
-                                    <!--begin::Body-->
                                     <div class="card-body d-flex align-items-center">
-                                        <div class="me-3">
-                                            <i class="fas fa-check-circle text-primary fs-2"></i>
-                                        </div>
+                                        <div class="me-3"><i class="fas fa-check-circle text-primary fs-2"></i></div>
                                         <div>
-                                            <!--begin::Label-->
                                             <div class="fw-bolder fs-5 text-gray-800">Lunas</div>
-                                            <!--end::Label-->
-                                            <!--begin::Stats-->
                                             <div class="text-primary fs-3 fw-bolder" id="total-paid">Rp. 0</div>
-                                            <!--end::Stats-->
                                         </div>
                                     </div>
-                                    <!--end::Body-->
                                 </div>
-                                <!-- Card for "Belum Lunas" (Unpaid) -->
                                 <div class="card bg-light-danger bg-active-danger flex-grow-1">
-                                    <!--begin::Body-->
                                     <div class="card-body d-flex align-items-center">
-                                        <div class="me-3">
-                                            <i class="fas fa-times-circle text-danger fs-2"></i>
-                                        </div>
+                                        <div class="me-3"><i class="fas fa-times-circle text-danger fs-2"></i></div>
                                         <div>
-                                            <!--begin::Label-->
                                             <div class="fw-bolder fs-5 text-gray-800">Belum Lunas</div>
-                                            <!--end::Label-->
-                                            <!--begin::Stats-->
                                             <div class="text-danger fs-3 fw-bolder" id="total-unpaid">Rp. 0</div>
-                                            <!--end::Stats-->
                                         </div>
                                     </div>
-                                    <!--end::Body-->
                                 </div>
+                            </div>
+                            {{-- DataTable --}}
+                            <div class="table-responsive">
+                                <table id="table-saldo" class="table table-striped border rounded gy-5 gs-7">
+                                    <thead>
+                                        <tr class="fw-bolder fs-6 text-gray-800 px-7">
+                                            <th style="width: 5%">No</th>
+                                            <th>Tagihan</th>
+                                            <th>Periode</th>
+                                            <th>Santri</th>
+                                            <th>Notifikasi</th>
+                                            <th>Jumlah</th>
+                                            <th>Status</th>
+                                            <th>Aksi</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody></tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        {{-- TAB 2: Rekap Per-Santri --}}
+                        <div class="tab-pane fade" id="rekap-santri" role="tabpanel" aria-labelledby="rekap-santri-tab">
+                            {{-- Summary Cards Rekap --}}
+                            <div class="d-flex flex-wrap gap-2 mt-4 mb-4" style="border: 1px solid #e0e0e0; padding: 16px; border-radius: 8px;">
+                                <div class="card bg-light-info flex-grow-1">
+                                    <div class="card-body d-flex align-items-center">
+                                        <div class="me-3"><i class="fas fa-users text-info fs-2"></i></div>
+                                        <div>
+                                            <div class="fw-bolder fs-5 text-gray-800">Total Santri</div>
+                                            <div class="text-info fs-3 fw-bolder" id="rekap-total-students">0</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="card bg-light-warning flex-grow-1">
+                                    <div class="card-body d-flex align-items-center">
+                                        <div class="me-3"><i class="fas fa-bullseye text-warning fs-2"></i></div>
+                                        <div>
+                                            <div class="fw-bolder fs-5 text-gray-800">Total Tagihan</div>
+                                            <div class="text-warning fs-3 fw-bolder" id="rekap-total-amount">Rp. 0</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="card bg-light-success flex-grow-1">
+                                    <div class="card-body d-flex align-items-center">
+                                        <div class="me-3"><i class="fas fa-check-circle text-success fs-2"></i></div>
+                                        <div>
+                                            <div class="fw-bolder fs-5 text-gray-800">Total Lunas</div>
+                                            <div class="text-success fs-3 fw-bolder" id="rekap-total-paid">Rp. 0</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="card bg-light-danger flex-grow-1">
+                                    <div class="card-body d-flex align-items-center">
+                                        <div class="me-3"><i class="fas fa-exclamation-circle text-danger fs-2"></i></div>
+                                        <div>
+                                            <div class="fw-bolder fs-5 text-gray-800">Belum Lunas</div>
+                                            <div class="text-danger fs-3 fw-bolder" id="rekap-total-unpaid">Rp. 0</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {{-- DataTable Rekap --}}
+                            <div class="table-responsive">
+                                <table id="table-rekap" class="table table-striped border rounded gy-5 gs-7">
+                                    <thead>
+                                        <tr class="fw-bolder fs-6 text-gray-800 px-7">
+                                            <th style="width:5%">No</th>
+                                            <th>Santri</th>
+                                            <th>Jml Tagihan</th>
+                                            <th>Total Tagihan</th>
+                                            <th>Total Lunas</th>
+                                            <th>Belum Lunas</th>
+                                            <th>Tunggakan</th>
+                                            <th>Realisasi</th>
+                                            <th>Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody></tbody>
+                                </table>
                             </div>
                         </div>
                     </div>
                 </div>
-                <!--end::Card header-->
-                <!--begin::Card body-->
-                <div class="card-body pt-0">
-                    <!--begin::Table-->
-                    <div class="table-responsive">
-                        <table id="table-saldo" class="table table-striped border rounded gy-5 gs-7">
-                            <thead>
-                                <tr class="fw-bolder fs-6 text-gray-800 px-7">
-                                    <th style="width: 5%">No</th>
-                                    <th>Tagihan</th>
-                                    <th>Periode</th>
-                                    <th>Santri</th>
-                                    <th>Notifikasi</th>
-                                    <th>Jumlah</th>
-                                    <th>Status</th>
-                                    <th>Aksi</th>
-                                </tr>
-                            </thead>
-                            <tbody></tbody>
-                        </table>
-                    </div>
-                    <!--end::Table-->
-                </div>
-                <!--end::Card body-->
             </div>
-            <!--end::Card-->
         </div>
-        <!--end::Container-->
     </div>
-    <!--end::Post-->
 </div>
-
 @endsection
+
 @push('js')
 <script>
-    var saldoTable;
+var saldoTable, rekapTable;
+var rekapInitialized = false;
 
-    $(document).ready(function() {
-        // Fetch classroom data on school_id change
-        $('#filter_school_id').on('change', function() {
-            let school_id = $(this).val();
-            $.ajax({
-                url: "{{ route('report-bill.get-classroom') }}",
-                type: "GET",
-                data: { school_id: school_id },
-                success: function(response) {
-                    $('#filter_classroom_id').empty();
-                    if (response.data.length > 0) {
-                        $('#filter_classroom_id').append('<option value="">Semua Kelas</option>');
-                        $.each(response.data, function(key, value) {
-                            $('#filter_classroom_id').append('<option value="' + value.id + '">' + value.name + '</option>');
-                        });
-                    } else {
-                        $('#filter_classroom_id').append('<option value="">Tidak ada kelas</option>');
-                    }
-                }
-            });
-        });
-
-        // Event handlers to reload the table
-       $(document).ready(function() {
-        $('#filter_school_id, #filter_classroom_id, #filter_admin, #filter_tipe_tagihan, #filter_status').on('change',
-            function() {
-                reloadTable();
-            });
-        });
-
-        var start = moment().startOf('month');
-        var end = moment().endOf('month');
-
-        // Initialize date range picker
-        $('#dateRange').daterangepicker({
-            startDate: start,
-            endDate: end,
-            ranges: {
-                'Bulan Ini': [moment().startOf('month'), moment().endOf('month')],
-                'Bulan Kemarin': [moment().subtract(1, 'month').startOf('month'), moment().subtract(1, 'month').endOf('month')],
-                '3 Bulan Terakhir': [moment().subtract(3, 'month').startOf('month'), moment().endOf('month')],
-                '6 Bulan Terakhir': [moment().subtract(6, 'month').startOf('month'), moment().endOf('month')],
-                '9 Bulan Terakhir': [moment().subtract(9, 'month').startOf('month'), moment().endOf('month')],
-                'Tahun Ini': [moment().startOf('year'), moment().endOf('year')],
-                'Tahun Kemarin': [moment().subtract(1, 'year').startOf('year'), moment().subtract(1, 'year').endOf('year')],
-            }
-        }, function(start, end) {
-            $('#dateRange span').html(start.format('D/MM/YYYY') + ' - ' + end.format('D/MM/YYYY'));
-            $('#start_date').val(start.format('YYYY-MM-DD'));
-            $('#end_date').val(end.format('YYYY-MM-DD'));
-            reloadTable();
-        });
-
-        // Set initial values
-        $('#start_date').val(start.format('YYYY-MM-DD'));
-        $('#end_date').val(end.format('YYYY-MM-DD'));
-        $('#dateRange span').html(start.format('D/MM/YYYY') + ' - ' + end.format('D/MM/YYYY'));
-
-        // Initialize table
-        initializeTable();
-
-        // Initial total saldo calculation
-        getTotalSaldo();
-    });
-
-    function initializeTable() {
-        if ($.fn.DataTable.isDataTable('#table-saldo')) {
-            $('#table-saldo').DataTable().destroy();
-        }
-        saldoTable = $('#table-saldo').DataTable({
-            processing: true,
-            serverSide: true,
-            responsive: true,
-            orderable: true,
-            searchDelay: 500,
-            ajax: {
-                url: "{{ route('report-bill-student.index') }}",
-                data: function(d) {
-                    d.data = 'table';
-                    d.school_id = $('#filter_school_id').val();
-                    d.classroom_id = $('#filter_classroom_id').val();
-                    d.start_date = $('#start_date').val();
-                    d.end_date = $('#end_date').val();
-                    d.bill_type_id = $('#filter_tipe_tagihan').val();
-                    d.status = $('#filter_status').val();
-                }
-            },
-            columns: [
-                {
-                    data: null,
-                    sortable: false,
-                    searchable: false,
-                    render: function(data, type, row, meta) {
-                        return meta.row + meta.settings._iDisplayStart + 1;
-                    }
-                },
-                { data: 'bill_type', name: 'bill_type', orderable: true, searchable: true },
-                { data: 'period', name: 'period', orderable: true, searchable: true },
-                { data: 'student', name: 'student', orderable: true, searchable: true },
-                { data: 'notification', name: 'notification', orderable: true, searchable: true },
-                { data: 'amount', name: 'amount', orderable: true, searchable: true },
-                { data: 'status', name: 'status', orderable: true, searchable: true },
-                { data: 'action', name: 'action', orderable: false, searchable: false,
-                responsivePriority: -1
-                }
-            ]
-        });
-    }
-
-    function getTotalSaldo() {
+$(document).ready(function() {
+    // School -> Classroom cascade
+    $('#filter_school_id').on('change', function() {
         $.ajax({
-            url: "{{ route('report-bill-student.index') }}",
+            url: "{{ route('report-bill.get-classroom') }}",
             type: "GET",
-            dataType: 'json',
-            data: {
-                data: 'total',
-                school_id: $('#filter_school_id').val(),
-                classroom_id: $('#filter_classroom_id').val(),
-                admin_id: $('#filter_admin').val(),
-                start_date: $('#start_date').val(),
-                end_date: $('#end_date').val(),
-                bill_type_id: $('#filter_tipe_tagihan').val(),
-                status: $('#filter_status').val(),
-            },
+            data: { school_id: $(this).val() },
             success: function(response) {
-                $('#total-paid').text('Rp. ' + response.total_paid);
-                $('#total-unpaid').text('Rp. ' + response.total_unpaid);
-                $('#target-revenue').text('Rp. ' + response.target_revenue);
+                $('#filter_classroom_id').empty().append('<option value="">Semua Kelas</option>');
+                $.each(response.data, function(key, value) {
+                    $('#filter_classroom_id').append('<option value="' + value.id + '">' + value.name + '</option>');
+                });
             }
         });
-    }
-
-    // Function to reload DataTables and get total saldo
-    function reloadTable() {
-        saldoTable.ajax.reload();
-        getTotalSaldo();
-    }
-
-    // onclick export button event handler to set the type and submit the form to export and action to route transaction.export
-    $('.btn-export').on('click', function() {
-        $('#type').val($(this).data('type'));
-        $('#form-filter').attr('action', "{{ route('report-transaction.export') }}").submit();
-    });
-</script>
-<script>
-    $(document).ready(function() {
-        // Menginisialisasi Select2 pada elemen select
-        $('#filter_tipe_tagihan').select2({
-            placeholder: 'Pilih tagihan', // Placeholder
-            allowClear: true // Menambahkan opsi untuk menghapus pilihan
-        });
     });
 
-   document.getElementById('btn-wa-blast').addEventListener('click', function () {
-        // Collect filter values from the form
-        const schoolId = document.getElementById('filter_school_id').value;
-        const classroomId = document.getElementById('filter_classroom_id').value;
-        const billTypeIds = Array.from(document.getElementById('filter_tipe_tagihan').selectedOptions).map(option =>
-        option.value);
-        const status = document.getElementById('filter_status').value;
-        const startDate = document.getElementById('start_date').value;
-        const endDate = document.getElementById('end_date').value;
+    // Filter change handlers
+    $('#filter_school_id, #filter_classroom_id, #filter_tipe_tagihan, #filter_status, #filter_academic_year_id').on('change', function() {
+        reloadAllTables();
+    });
 
-        // Show SweetAlert confirmation dialog
-        Swal.fire({
-        title: 'Konfirmasi',
-        text: 'Apakah Anda yakin ingin mengirim WA Blast Tagihan?',
-        icon: 'question',
-        showCancelButton: true,
-        confirmButtonText: 'Ya, Kirim',
-        cancelButtonText: 'Batal',
-        reverseButtons: true,
-        }).then((result) => {
-        if (result.isConfirmed) {
-        // Show loading indicator
-        Swal.fire({
-        title: 'Mohon Tunggu',
-        text: 'WA Blast Sedang Dikirim, Mohon Tunggu Sebentar...',
-        icon: 'info',
-        allowOutsideClick: false,
-        didOpen: () => {
-        Swal.showLoading(); // Show loading spinner
+    // Date range picker
+    var start = moment().startOf('month');
+    var end = moment().endOf('month');
+
+    $('#dateRange').daterangepicker({
+        startDate: start, endDate: end,
+        ranges: {
+            'Bulan Ini': [moment().startOf('month'), moment().endOf('month')],
+            'Bulan Kemarin': [moment().subtract(1, 'month').startOf('month'), moment().subtract(1, 'month').endOf('month')],
+            '3 Bulan Terakhir': [moment().subtract(3, 'month').startOf('month'), moment().endOf('month')],
+            '6 Bulan Terakhir': [moment().subtract(6, 'month').startOf('month'), moment().endOf('month')],
+            'Tahun Ini': [moment().startOf('year'), moment().endOf('year')],
+            'Tahun Kemarin': [moment().subtract(1, 'year').startOf('year'), moment().subtract(1, 'year').endOf('year')],
+        }
+    }, function(s, e) {
+        $('#dateRange span').html(s.format('D/MM/YYYY') + ' - ' + e.format('D/MM/YYYY'));
+        $('#start_date').val(s.format('YYYY-MM-DD'));
+        $('#end_date').val(e.format('YYYY-MM-DD'));
+        reloadAllTables();
+    });
+
+    $('#start_date').val(start.format('YYYY-MM-DD'));
+    $('#end_date').val(end.format('YYYY-MM-DD'));
+    $('#dateRange span').html(start.format('D/MM/YYYY') + ' - ' + end.format('D/MM/YYYY'));
+
+    // Select2
+    $('#filter_tipe_tagihan').select2({ placeholder: 'Pilih tagihan', allowClear: true });
+
+    // Init Tab 1
+    initializeTable();
+    getTotalSaldo();
+
+    // Lazy-load Tab 2 on first click
+    $('a[data-bs-toggle="tab"]').on('shown.bs.tab', function(e) {
+        if (e.target.id === 'rekap-santri-tab' && !rekapInitialized) {
+            initializeRekapTable();
+            getRekapTotal();
+            rekapInitialized = true;
+        }
+    });
+});
+
+function getFilterData() {
+    return {
+        school_id: $('#filter_school_id').val(),
+        classroom_id: $('#filter_classroom_id').val(),
+        start_date: $('#start_date').val(),
+        end_date: $('#end_date').val(),
+        bill_type_id: $('#filter_tipe_tagihan').val(),
+        status: $('#filter_status').val(),
+        academic_year_id: $('#filter_academic_year_id').val(),
+    };
+}
+
+// ===================== TAB 1 =====================
+function initializeTable() {
+    if ($.fn.DataTable.isDataTable('#table-saldo')) { $('#table-saldo').DataTable().destroy(); }
+    saldoTable = $('#table-saldo').DataTable({
+        processing: true, serverSide: true, responsive: true, searchDelay: 500,
+        ajax: {
+            url: "{{ route('report-bill-student.index') }}",
+            data: function(d) { Object.assign(d, getFilterData()); d.data = 'table'; }
         },
-        });
-
-        // Prepare data for the backend request
-        const data = {
-        school_id: schoolId,
-        classroom_id: classroomId,
-        bill_type_id: billTypeIds,
-        status: status,
-        start_date: startDate,
-        end_date: endDate
-        };
-
-        // Send an Axios POST request to the server
-        axios.post('/send-bill-whatsapp-notification', data, {
-        headers: {
-        'Content-Type': 'application/json',
-        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-        }
-        })
-        .then(response => {
-        if (response.data.success) {
-        Swal.fire({
-        icon: 'success',
-        title: 'Berhasil',
-        text: 'WA Blast berhasil dikirim!',
-        });
-        } else {
-        Swal.fire({
-        icon: 'error',
-        title: 'Gagal',
-        text: 'Gagal mengirim WA Blast: ' + response.data.message,
-        });
-        }
-        })
-        .catch(error => {
-        console.error('Error:', error);
-        Swal.fire({
-        icon: 'error',
-        title: 'Terjadi Kesalahan',
-        text: 'Terjadi kesalahan saat mengirim WA Blast.',
-        });
-        });
-        }
-        });
+        columns: [
+            { data: null, sortable: false, searchable: false, render: function(data, type, row, meta) { return meta.row + meta.settings._iDisplayStart + 1; } },
+            { data: 'bill_type', name: 'bill_type' },
+            { data: 'period', name: 'period' },
+            { data: 'student', name: 'student' },
+            { data: 'notification', name: 'notification' },
+            { data: 'amount', name: 'amount' },
+            { data: 'status', name: 'status' },
+            { data: 'action', name: 'action', orderable: false, searchable: false, responsivePriority: -1 }
+        ]
     });
+}
+
+function getTotalSaldo() {
+    var params = getFilterData();
+    params.data = 'total';
+    $.ajax({
+        url: "{{ route('report-bill-student.index') }}", type: "GET", dataType: 'json', data: params,
+        success: function(r) {
+            $('#total-paid').text('Rp. ' + r.total_paid);
+            $('#total-unpaid').text('Rp. ' + r.total_unpaid);
+            $('#target-revenue').text('Rp. ' + r.target_revenue);
+        }
+    });
+}
+
+// ===================== TAB 2 =====================
+function initializeRekapTable() {
+    if ($.fn.DataTable.isDataTable('#table-rekap')) { $('#table-rekap').DataTable().destroy(); }
+    rekapTable = $('#table-rekap').DataTable({
+        processing: true, serverSide: true, responsive: true, searchDelay: 500,
+        ajax: {
+            url: "{{ route('report-bill-student.index') }}",
+            data: function(d) { Object.assign(d, getFilterData()); d.data = 'rekap_table'; }
+        },
+        columns: [
+            { data: null, sortable: false, searchable: false, render: function(data, type, row, meta) { return meta.row + meta.settings._iDisplayStart + 1; } },
+            { data: 'student', name: 'student' },
+            { data: 'bill_count_display', name: 'bill_count', orderable: true, searchable: false },
+            { data: 'total_bill_display', name: 'total_bill', orderable: true, searchable: false },
+            { data: 'total_paid_display', name: 'total_paid', orderable: true, searchable: false },
+            { data: 'total_unpaid_display', name: 'total_unpaid', orderable: true, searchable: false },
+            { data: 'current_due_display', name: 'current_due_amount', orderable: true, searchable: false },
+            { data: 'percentage', name: 'percentage', orderable: false, searchable: false },
+            { data: 'status', name: 'status', orderable: false, searchable: false }
+        ]
+    });
+}
+
+function getRekapTotal() {
+    var params = getFilterData();
+    params.data = 'rekap_total';
+    $.ajax({
+        url: "{{ route('report-bill-student.index') }}", type: "GET", dataType: 'json', data: params,
+        success: function(r) {
+            $('#rekap-total-students').text(r.total_students + ' Santri');
+            $('#rekap-total-amount').text('Rp. ' + r.total_amount);
+            $('#rekap-total-paid').text('Rp. ' + r.total_paid);
+            $('#rekap-total-unpaid').text('Rp. ' + r.total_unpaid);
+        }
+    });
+}
+
+// ===================== RELOAD =====================
+function reloadAllTables() {
+    if (saldoTable) { saldoTable.ajax.reload(); }
+    getTotalSaldo();
+    if (rekapInitialized && rekapTable) { rekapTable.ajax.reload(); getRekapTotal(); }
+}
+</script>
+
+{{-- WA Blast Script --}}
+<script>
+document.getElementById('btn-wa-blast').addEventListener('click', function () {
+    const data = {
+        school_id: document.getElementById('filter_school_id').value,
+        classroom_id: document.getElementById('filter_classroom_id').value,
+        bill_type_id: Array.from(document.getElementById('filter_tipe_tagihan').selectedOptions).map(o => o.value),
+        status: document.getElementById('filter_status').value,
+        start_date: document.getElementById('start_date').value,
+        end_date: document.getElementById('end_date').value,
+    };
+
+    Swal.fire({
+        title: 'Konfirmasi', text: 'Apakah Anda yakin ingin mengirim WA Blast Tagihan?',
+        icon: 'question', showCancelButton: true, confirmButtonText: 'Ya, Kirim', cancelButtonText: 'Batal', reverseButtons: true,
+    }).then((result) => {
+        if (result.isConfirmed) {
+            Swal.fire({ title: 'Mohon Tunggu', text: 'WA Blast Sedang Dikirim...', icon: 'info', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
+            axios.post('/send-bill-whatsapp-notification', data, {
+                headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content') }
+            }).then(response => {
+                Swal.fire({ icon: response.data.success ? 'success' : 'error', title: response.data.success ? 'Berhasil' : 'Gagal', text: response.data.message });
+            }).catch(error => {
+                Swal.fire({ icon: 'error', title: 'Terjadi Kesalahan', text: 'Terjadi kesalahan saat mengirim WA Blast.' });
+            });
+        }
+    });
+});
 </script>
 @endpush
