@@ -218,8 +218,8 @@
                                 <table id="table-rekap" class="table table-striped border rounded gy-5 gs-7">
                                     <thead>
                                         <tr class="fw-bolder fs-6 text-gray-800 px-7">
-                                            <th></th>
-                                            <th>No</th>
+                                            <th style="width: 20px;">#</th>
+                                            <th>No.</th>
                                             <th>Santri</th>
                                             <th>Jml Tagihan</th>
                                             <th>Total Tagihan</th>

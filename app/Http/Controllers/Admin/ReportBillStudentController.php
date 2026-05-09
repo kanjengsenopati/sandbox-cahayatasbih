@@ -164,7 +164,18 @@ class ReportBillStudentController extends Controller
             ->addColumn('student', function ($row) {
                 $studentName = $row->student?->name ?? '-';
                 $className   = $row->classroom?->name ?? '-';
-                $avatarUrl   = $row->student?->avatar ? asset($row->student->avatar) : asset('assets/media/avatars/default.png');
+                
+                $avatar = $row->student?->avatar;
+                if ($avatar) {
+                    if (!str_starts_with($avatar, 'http') && !str_starts_with($avatar, 'storage/') && !str_starts_with($avatar, 'assets/')) {
+                        $avatarUrl = asset('storage/images/avatar/' . $avatar);
+                    } else {
+                        $avatarUrl = asset($avatar);
+                    }
+                } else {
+                    $avatarUrl = asset('assets/media/avatars/default.png');
+                }
+
                 return '<div class="student-card" style="display:flex;align-items:center;gap:10px;">
                     <img src="' . $avatarUrl . '" alt="Avatar" style="width:40px;height:40px;border-radius:50%;object-fit:cover;">
                     <div><div><strong>' . $studentName . '</strong></div><div>' . $className . '</div></div>
@@ -352,7 +363,17 @@ class ReportBillStudentController extends Controller
             ->filterColumn('bill_count', function () {})
 
             ->addColumn('student', function ($row) {
-                $avatarUrl = $row->avatar ? asset($row->avatar) : asset('assets/media/avatars/default.png');
+                $avatar = $row->avatar;
+                if ($avatar) {
+                    if (!str_starts_with($avatar, 'http') && !str_starts_with($avatar, 'storage/') && !str_starts_with($avatar, 'assets/')) {
+                        $avatarUrl = asset('storage/images/avatar/' . $avatar);
+                    } else {
+                        $avatarUrl = asset($avatar);
+                    }
+                } else {
+                    $avatarUrl = asset('assets/media/avatars/default.png');
+                }
+
                 return '<div class="student-card" style="display:flex;align-items:center;gap:10px;">
                     <img src="' . $avatarUrl . '" alt="Avatar" style="width:40px;height:40px;border-radius:50%;object-fit:cover;">
                     <div><div><strong>' . e($row->name) . '</strong></div><div>' . e($row->classroom_name) . '</div></div>
