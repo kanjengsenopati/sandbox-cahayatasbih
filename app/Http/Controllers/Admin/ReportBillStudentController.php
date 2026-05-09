@@ -164,7 +164,7 @@ class ReportBillStudentController extends Controller
             ->addColumn('student', function ($row) {
                 $studentName = $row->student?->name ?? '-';
                 $className   = $row->classroom?->name ?? '-';
-                $avatarUrl   = $row->student?->avatar ?: asset('assets/media/avatars/default.png');
+                $avatarUrl   = $row->student?->avatar ? asset($row->student->avatar) : asset('assets/media/avatars/default.png');
                 return '<div class="student-card" style="display:flex;align-items:center;gap:10px;">
                     <img src="' . $avatarUrl . '" alt="Avatar" style="width:40px;height:40px;border-radius:50%;object-fit:cover;">
                     <div><div><strong>' . $studentName . '</strong></div><div>' . $className . '</div></div>
@@ -352,7 +352,7 @@ class ReportBillStudentController extends Controller
             ->filterColumn('bill_count', function () {})
 
             ->addColumn('student', function ($row) {
-                $avatarUrl = $row->avatar ?: asset('assets/media/avatars/default.png');
+                $avatarUrl = $row->avatar ? asset($row->avatar) : asset('assets/media/avatars/default.png');
                 return '<div class="student-card" style="display:flex;align-items:center;gap:10px;">
                     <img src="' . $avatarUrl . '" alt="Avatar" style="width:40px;height:40px;border-radius:50%;object-fit:cover;">
                     <div><div><strong>' . e($row->name) . '</strong></div><div>' . e($row->classroom_name) . '</div></div>
