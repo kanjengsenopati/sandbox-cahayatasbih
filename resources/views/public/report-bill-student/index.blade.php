@@ -40,7 +40,7 @@
             text-transform: uppercase;
             font-size: 0.9rem;
             font-weight: 600;
-            letter-spacing: 0.1rem;
+            letter-spacing: -0.01rem;
             border-bottom: 1px border-dashed #eff2f5;
         }
  
@@ -142,7 +142,7 @@
         <div class="card-body pt-0">
             <table class="table align-middle table-row-dashed fs-6 gy-5" id="report_table">
                 <thead>
-                    <tr class="text-start text-gray-400 fw-bolder fs-7 text-uppercase gs-0">
+                    <tr class="text-start text-gray-800 fw-boldest fs-7 text-uppercase gs-0">
                         <th class="w-10px pe-2"></th>
                         <th class="min-w-50px">NO</th>
                         <th class="min-w-200px">SANTRI</th>
@@ -225,7 +225,7 @@
             var html = '<div class="nested-table">' +
                 '<h6 class="fw-bolder mb-3">Rincian Item Tagihan</h6>' +
                 '<table class="table table-sm table-row-dashed fs-7 gy-3">' +
-                '<thead><tr class="text-start text-gray-400 fw-bolder fs-8 text-uppercase">' +
+                '<thead><tr class="text-start text-gray-800 fw-boldest fs-8 text-uppercase">' +
                 '<th class="w-20px ps-3">NO</th>' +
                 '<th>Nama Tagihan</th>' +
                 '<th>Tahun Ajaran</th>' +
