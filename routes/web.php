@@ -108,6 +108,10 @@ Route::prefix('wali')->group(function () {
         Route::get('switch-student/{id}', [WaliDashboardController::class, 'switchStudent'])->name('wali.switch-student');
         Route::get('history', [WaliDashboardController::class, 'history'])->name('wali.history');
         Route::get('bills', [WaliDashboardController::class, 'bills'])->name('wali.bills');
+        Route::get('bills/{id}', [WaliDashboardController::class, 'billDetail'])->name('wali.bill-detail');
+        Route::post('checkout', [WaliDashboardController::class, 'checkout'])->name('wali.checkout');
+        Route::get('payment/{id}', [WaliDashboardController::class, 'payment'])->name('wali.payment');
+        Route::post('payment/{id}/upload-proof', [WaliDashboardController::class, 'uploadProof'])->name('wali.upload-proof');
         Route::get('limit', [WaliDashboardController::class, 'limit'])->name('wali.limit');
         Route::post('limit', [WaliDashboardController::class, 'updateLimit'])->name('wali.update-limit');
         Route::get('topup', [WaliDashboardController::class, 'topup'])->name('wali.topup');

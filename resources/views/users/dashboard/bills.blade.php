@@ -11,38 +11,49 @@
     </div>
 
     <!-- Active Student Summary -->
-    <div class="card-premium flex items-center gap-4 mb-8 bg-blue-600 text-white border-0 shadow-lg shadow-blue-100">
-        <img src="{{ url($activeStudent->avatar ?: 'assets/media/avatars/default.png') }}" class="w-12 h-12 rounded-xl object-cover border-2 border-white/20" alt="">
-        <div>
-            <div class="text-[10px] font-black uppercase tracking-widest text-blue-100/60 mb-0.5">Menampilkan Tagihan</div>
-            <div class="text-base font-bold">{{ $activeStudent->name }}</div>
+    <div class="card-premium flex items-center gap-4 mb-8 bg-blue-600 text-white border-0 shadow-lg shadow-blue-100 relative overflow-hidden">
+        <div class="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16 blur-2xl"></div>
+        <img src="{{ url($activeStudent->avatar ?: 'assets/media/avatars/default.png') }}" class="w-14 h-14 rounded-2xl object-cover border-2 border-white/20 relative z-10" alt="">
+        <div class="relative z-10">
+            <div class="text-[10px] font-black uppercase tracking-widest text-blue-100/60 mb-0.5">Nama Santri / Siswa</div>
+            <div class="text-base font-bold leading-tight mb-1">{{ $activeStudent->name }}</div>
+            <div class="text-[10px] font-bold text-blue-100/80">Kelas : {{ $activeStudent->classroom->name ?? '-' }}</div>
         </div>
     </div>
 
-    <!-- Bill List -->
-    <div class="space-y-4">
-        @forelse($bills as $bill)
-        <div class="card-premium p-5 border-l-4 border-l-orange-400">
-            <div class="flex justify-between items-start mb-4">
-                <div class="flex-1 overflow-hidden">
-                    <div class="text-[9px] font-black uppercase tracking-widest text-blue-600 mb-1">{{ $bill->billType->billItem->name }}</div>
-                    <div class="text-base font-extrabold text-slate-900 truncate">{{ $bill->translated_month }} {{ $bill->year }}</div>
-                    <div class="text-[10px] text-slate-400 font-bold mt-1">TA: {{ $bill->billType->academicYear->year }}</div>
+    <!-- Tab Selector (Optional, but images show Tagihan/Riwayat) -->
+    <div class="flex border-b border-slate-100 mb-6">
+        <button class="flex-1 py-3 text-sm font-black text-blue-600 border-b-2 border-blue-600 uppercase tracking-widest">Tagihan</button>
+        <a href="{{ route('wali.history') }}" class="flex-1 py-3 text-sm font-bold text-slate-400 uppercase tracking-widest text-center">Riwayat</a>
+    </div>
+
+    <!-- Search -->
+    <div class="relative mb-8">
+        <i class="fas fa-search absolute left-5 top-1/2 -translate-y-1/2 text-slate-400 text-sm"></i>
+        <input type="text" placeholder="Cari Data" class="w-full bg-slate-100 border-0 rounded-2xl py-4 pl-12 pr-5 text-sm font-medium focus:ring-2 focus:ring-blue-600/20 transition-all">
+    </div>
+
+    <!-- Grouped Bill List -->
+    <div class="space-y-5">
+        @forelse($groupedBills as $group)
+        <div class="card-premium p-6 border-l-4 border-l-blue-600">
+            <div class="flex justify-between items-start mb-6">
+                <div class="flex-1 pr-4">
+                    <h3 class="text-sm font-black text-slate-900 uppercase leading-snug mb-1">{{ $group['name'] }}</h3>
+                    <div class="text-lg font-black text-slate-900">Rp{{ number_format($group['total'], 0, ',', '.') }}</div>
                 </div>
-                <div class="text-right">
-                    <div class="text-base font-black text-slate-900">Rp{{ number_format($bill->amount, 0, ',', '.') }}</div>
-                    <div class="text-[9px] font-bold uppercase tracking-widest text-orange-500 mt-1">Belum Lunas</div>
-                </div>
+                <a href="{{ route('wali.bill-detail', $group['bill_type_id']) }}" class="bg-blue-600 text-white px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest active:scale-95 transition-transform shadow-md shadow-blue-100">Bayar</a>
             </div>
             
-            <div class="h-[1px] bg-slate-50 mb-4"></div>
-            
-            <div class="flex justify-between items-center">
-                <div class="text-[10px] text-slate-400 font-medium">
-                    <i class="far fa-calendar-alt mr-1"></i>
-                    Periode: {{ $bill->translated_month }} {{ $bill->year }}
+            <div class="grid grid-cols-2 gap-4">
+                <div class="bg-emerald-50 rounded-2xl p-3 border border-emerald-100/50">
+                    <div class="text-[9px] font-black text-emerald-600/70 uppercase tracking-widest mb-1">Sudah Dibayarkan</div>
+                    <div class="text-xs font-black text-emerald-600">Rp{{ number_format($group['paid'], 0, ',', '.') }}</div>
                 </div>
-                <button class="bg-blue-600 text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest active:scale-95 transition-transform">Bayar</button>
+                <div class="bg-orange-50 rounded-2xl p-3 border border-orange-100/50">
+                    <div class="text-[9px] font-black text-orange-600/70 uppercase tracking-widest mb-1">Kekurangan</div>
+                    <div class="text-xs font-black text-orange-600">Rp{{ number_format($group['unpaid'], 0, ',', '.') }}</div>
+                </div>
             </div>
         </div>
         @empty
@@ -55,18 +66,5 @@
         </div>
         @endforelse
     </div>
-
-    <!-- Total Summary Floating Card -->
-    @if($bills->count() > 0)
-    <div class="fixed bottom-24 left-6 right-6 z-40">
-        <div class="bg-slate-900 rounded-3xl p-5 shadow-2xl flex justify-between items-center">
-            <div>
-                <div class="text-slate-400 text-[9px] font-black uppercase tracking-widest mb-1">Total Belum Bayar</div>
-                <div class="text-white text-lg font-black">Rp{{ number_format($bills->sum('amount'), 0, ',', '.') }}</div>
-            </div>
-            <button class="btn-primary py-3 !shadow-none">Bayar Semua</button>
-        </div>
-    </div>
-    @endif
 </div>
 @endsection

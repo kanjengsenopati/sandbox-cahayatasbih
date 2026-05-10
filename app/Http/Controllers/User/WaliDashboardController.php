@@ -10,9 +10,14 @@ use App\Models\SaldoHistory;
 use App\Models\SavingHistory;
 use App\Models\Transaction;
 use App\Models\PaymentMethod;
+use App\Models\BillType;
+use App\Models\TransactionDetail;
+use App\Models\TransactionProof;
 use App\Services\TransactionService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Carbon\Carbon;
+use Illuminate\Support\Str;
 
 class WaliDashboardController extends Controller
 {
@@ -68,12 +73,10 @@ class WaliDashboardController extends Controller
 
         $paymentMethod = PaymentMethod::findOrFail($request->payment_method_id);
         
-        // Mocking a Request object for TransactionService if needed, or ensuring request has the right keys
         $request->merge(['pay_amount' => $request->amount]);
         
         $transaction = TransactionService::createTransaction($request, $paymentMethod->type, Transaction::TYPE_SALDO);
         
-        // Check if transaction is an instance of Transaction or a Response
         if ($transaction instanceof \Illuminate\Http\JsonResponse) {
             return redirect()->back()->with('error', $transaction->getData()->message);
         }
@@ -111,14 +114,127 @@ class WaliDashboardController extends Controller
 
         if (!$activeStudent) return redirect()->route('wali.app');
 
-        $bills = Bill::with('billType.billItem', 'billType.academicYear')
+        $groupedBills = Bill::with(['billType.billItem', 'billType.academicYear'])
             ->where('student_id', $activeStudent->id)
-            ->where('status', 'UNPAID')
+            ->get()
+            ->groupBy('bill_type_id')
+            ->map(function ($items) {
+                $first = $items->first();
+                return [
+                    'bill_type_id' => $first->bill_type_id,
+                    'name' => ($first->billType->billItem->name ?? 'Tagihan') . ' - ' . ($first->billType->academicYear->year ?? ''),
+                    'total' => $items->sum('amount'),
+                    'paid' => $items->where('status', 'PAID')->sum('amount'),
+                    'unpaid' => $items->where('status', 'UNPAID')->sum('amount'),
+                    'items_count' => $items->count(),
+                    'unpaid_count' => $items->where('status', 'UNPAID')->count(),
+                ];
+            });
+
+        return view('users.dashboard.bills', compact('activeStudent', 'groupedBills'));
+    }
+
+    public function billDetail($id)
+    {
+        $activeStudentId = session('active_student_id');
+        $user = Auth::guard('wali')->user();
+        $activeStudent = Student::where('user_id', $user->id)
+            ->where('id', $activeStudentId ?: Student::where('user_id', $user->id)->first()?->id)
+            ->first();
+
+        $billType = BillType::with(['billItem', 'academicYear'])->findOrFail($id);
+        
+        $bills = Bill::where('student_id', $activeStudent->id)
+            ->where('bill_type_id', $id)
             ->orderBy('year', 'asc')
             ->orderBy('month', 'asc')
             ->get();
 
-        return view('users.dashboard.bills', compact('activeStudent', 'bills'));
+        $summary = [
+            'total' => $bills->sum('amount'),
+            'paid' => $bills->where('status', 'PAID')->sum('amount'),
+            'unpaid' => $bills->where('status', 'UNPAID')->sum('amount'),
+        ];
+
+        return view('users.dashboard.bill-detail', compact('activeStudent', 'billType', 'bills', 'summary'));
+    }
+
+    public function checkout(Request $request)
+    {
+        $request->validate([
+            'bill_ids' => 'required|array',
+            'bill_ids.*' => 'exists:bills,id'
+        ]);
+
+        $bills = Bill::whereIn('id', $request->bill_ids)->get();
+        $totalAmount = $bills->sum('amount');
+        
+        $uniqueDigits = rand(100, 999);
+        $payAmount = $totalAmount + $uniqueDigits;
+        
+        $activeStudentId = session('active_student_id');
+        $student = Student::find($activeStudentId);
+
+        $paymentCode = 'INV-' . strtoupper(Str::random(8));
+
+        $transaction = Transaction::create([
+            'student_id' => $student->id,
+            'payment_code' => $paymentCode,
+            'pay_amount' => $payAmount,
+            'unique_payment' => $uniqueDigits,
+            'status' => 'PENDING_PAYMENT',
+            'type' => 'BILL',
+            'expiry_time' => Carbon::now()->addDays(1),
+        ]);
+
+        foreach ($bills as $bill) {
+            TransactionDetail::create([
+                'transaction_id' => $transaction->id,
+                'bill_id' => $bill->id,
+            ]);
+        }
+
+        return redirect()->route('wali.payment', $transaction->id);
+    }
+
+    public function payment($id)
+    {
+        $transaction = Transaction::with(['transactionDetails.bill.billType', 'student'])->findOrFail($id);
+        
+        $billTypeId = $transaction->transactionDetails->first()?->bill?->bill_type_id;
+        $banks = [];
+        if ($billTypeId) {
+            $banks = \App\Models\BillTypeBank::with('bank')->where('bill_type_id', $billTypeId)->get();
+        }
+
+        $proof = TransactionProof::where('transaction_id', $id)->first();
+
+        return view('users.dashboard.payment', compact('transaction', 'banks', 'proof'));
+    }
+
+    public function uploadProof(Request $request, $id)
+    {
+        $request->validate([
+            'proof' => 'required|image|max:2048'
+        ]);
+
+        $transaction = Transaction::findOrFail($id);
+        
+        if ($request->hasFile('proof')) {
+            $path = $request->file('proof')->store('proofs', 'public');
+            
+            TransactionProof::updateOrCreate(
+                ['transaction_id' => $id],
+                [
+                    'proof_path' => $path,
+                    'status' => 'PENDING',
+                ]
+            );
+
+            return redirect()->back()->with('success', 'Bukti pembayaran berhasil diunggah. Tunggu konfirmasi admin.');
+        }
+
+        return redirect()->back()->with('error', 'Gagal mengunggah bukti.');
     }
 
     public function limit()
