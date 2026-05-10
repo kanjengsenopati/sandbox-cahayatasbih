@@ -27,36 +27,44 @@
 
     <!-- Summary Card -->
     <div class="px-5 mb-6">
-        <div class="card-premium p-5 shadow-sm">
-            <h2 class="text-[14px] font-black text-slate-900 uppercase tracking-tight leading-snug mb-4">{{ $billType->name }} {{ $billType->academicYear->name ?? '' }}</h2>
+        <div class="card-premium overflow-hidden shadow-sm">
+            <!-- Card Header -->
+            <div class="bg-gradient-to-r from-slate-900 to-slate-800 px-5 py-4">
+                <h2 class="text-[13px] font-black text-white uppercase tracking-tight leading-snug">{{ $billType->name }} {{ $billType->academicYear->name ?? '' }}</h2>
+            </div>
             
-            <div class="mb-4">
-                <div class="text-[10px] text-slate-400 font-bold uppercase tracking-widest mb-1">Total Tagihan</div>
-                <div class="text-[26px] font-black text-slate-900 leading-none tabular-nums">Rp{{ number_format($summary['total'], 0, ',', '.') }}</div>
-            </div>
-
-            <div class="flex gap-6 mb-4">
-                <div>
-                    <div class="text-[10px] text-slate-400 font-bold uppercase tracking-widest mb-0.5">Sudah Bayar</div>
-                    <div class="text-[14px] font-black text-slate-900 tabular-nums">Rp{{ number_format($summary['paid'], 0, ',', '.') }}</div>
+            <div class="p-5">
+                <!-- Total -->
+                <div class="mb-3">
+                    <div class="text-[9px] text-slate-400 font-black uppercase tracking-widest mb-0.5">Total Tagihan</div>
+                    <div class="text-[28px] font-black text-slate-900 leading-none tabular-nums tracking-tight">Rp{{ number_format($summary['total'], 0, ',', '.') }}</div>
                 </div>
-                <div>
-                    <div class="text-[10px] text-slate-400 font-bold uppercase tracking-widest mb-0.5">Belum Bayar</div>
-                    <div class="text-[14px] font-black text-red-600 tabular-nums">Rp{{ number_format($summary['unpaid'], 0, ',', '.') }}</div>
-                </div>
-            </div>
 
-            <div>
-                <div class="text-[10px] text-slate-400 font-bold uppercase tracking-widest mb-1">Status</div>
-                @if($summary['unpaid'] == 0)
-                    <span class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-100 text-emerald-700 rounded-lg text-[10px] font-black uppercase tracking-widest">
-                        <i class="fas fa-check-circle text-[8px]"></i> Lunas
-                    </span>
-                @else
-                    <span class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-orange-100 text-orange-700 rounded-lg text-[10px] font-black uppercase tracking-widest">
-                        <i class="fas fa-clock text-[8px]"></i> Proses Bayar
-                    </span>
-                @endif
+                <!-- Paid / Unpaid - Full Width Grid -->
+                <div class="grid grid-cols-2 gap-0 mb-3">
+                    <div class="pr-4 border-r border-slate-100">
+                        <div class="text-[9px] text-slate-400 font-black uppercase tracking-widest mb-0.5">Sudah Bayar</div>
+                        <div class="text-[15px] font-black text-slate-900 tabular-nums tracking-tight">Rp{{ number_format($summary['paid'], 0, ',', '.') }}</div>
+                    </div>
+                    <div class="pl-4">
+                        <div class="text-[9px] text-slate-400 font-black uppercase tracking-widest mb-0.5">Belum Bayar</div>
+                        <div class="text-[15px] font-black text-red-600 tabular-nums tracking-tight">Rp{{ number_format($summary['unpaid'], 0, ',', '.') }}</div>
+                    </div>
+                </div>
+
+                <!-- Status -->
+                <div>
+                    <div class="text-[9px] text-slate-400 font-black uppercase tracking-widest mb-1">Status</div>
+                    @if($summary['unpaid'] == 0)
+                        <span class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-500 text-white rounded-lg text-[9px] font-black uppercase tracking-widest shadow-sm">
+                            <i class="fas fa-check-circle text-[7px]"></i> Lunas
+                        </span>
+                    @else
+                        <span class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-orange-500 text-white rounded-lg text-[9px] font-black uppercase tracking-widest shadow-sm">
+                            <i class="fas fa-clock text-[7px]"></i> Proses Bayar
+                        </span>
+                    @endif
+                </div>
             </div>
         </div>
     </div>
