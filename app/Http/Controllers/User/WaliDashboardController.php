@@ -122,7 +122,8 @@ class WaliDashboardController extends Controller
                 $first = $items->first();
                 return [
                     'bill_type_id' => $first->bill_type_id,
-                    'name' => ($first->billType->billItem->name ?? 'Tagihan') . ' - ' . ($first->billType->academicYear->year ?? ''),
+                    'bill_type_name' => $first->billType->name ?? 'Tagihan',
+                    'academic_year' => $first->billType->academicYear->name ?? '-',
                     'total' => $items->sum('amount'),
                     'paid' => $items->where('status', 'PAID')->sum('amount'),
                     'unpaid' => $items->where('status', 'UNPAID')->sum('amount'),
