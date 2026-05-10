@@ -26,7 +26,7 @@
             <div class="flex justify-between items-start mb-4">
                 <div class="flex-1 overflow-hidden">
                     <div class="text-[9px] font-black uppercase tracking-widest text-blue-600 mb-1">{{ $bill->billType->billItem->name }}</div>
-                    <div class="text-base font-extrabold text-slate-900 truncate">{{ $bill->month }} {{ $bill->year }}</div>
+                    <div class="text-base font-extrabold text-slate-900 truncate">{{ $bill->translated_month }} {{ $bill->year }}</div>
                     <div class="text-[10px] text-slate-400 font-bold mt-1">TA: {{ $bill->billType->academicYear->year }}</div>
                 </div>
                 <div class="text-right">
@@ -40,7 +40,7 @@
             <div class="flex justify-between items-center">
                 <div class="text-[10px] text-slate-400 font-medium">
                     <i class="far fa-calendar-alt mr-1"></i>
-                    Jatuh Tempo: {{ \Carbon\Carbon::parse($bill->due_date)->translatedFormat('d M Y') }}
+                    Periode: {{ $bill->translated_month }} {{ $bill->year }}
                 </div>
                 <button class="bg-blue-600 text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest active:scale-95 transition-transform">Bayar</button>
             </div>

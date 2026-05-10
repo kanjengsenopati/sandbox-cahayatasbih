@@ -114,7 +114,8 @@ class WaliDashboardController extends Controller
         $bills = Bill::with('billType.billItem', 'billType.academicYear')
             ->where('student_id', $activeStudent->id)
             ->where('status', 'UNPAID')
-            ->orderBy('due_date', 'asc')
+            ->orderBy('year', 'asc')
+            ->orderBy('month', 'asc')
             ->get();
 
         return view('users.dashboard.bills', compact('activeStudent', 'bills'));
