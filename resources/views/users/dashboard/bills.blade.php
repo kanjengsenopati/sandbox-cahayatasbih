@@ -11,13 +11,15 @@
     </div>
 
     <!-- Active Student Summary -->
-    <div class="card-premium flex items-center gap-4 mb-8 bg-blue-600 text-white border-0 shadow-lg shadow-blue-100 relative overflow-hidden">
+    <div class="card-premium flex items-center gap-4 mb-6 bg-blue-600 text-white border-0 shadow-lg shadow-blue-100 relative overflow-hidden p-5">
         <div class="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16 blur-2xl"></div>
-        <img src="{{ url($activeStudent->avatar ?: 'assets/media/avatars/default.png') }}" class="w-14 h-14 rounded-2xl object-cover border-2 border-white/20 relative z-10" alt="">
-        <div class="relative z-10">
-            <div class="text-[10px] font-black uppercase tracking-widest text-blue-100/60 mb-0.5">Nama Santri / Siswa</div>
-            <div class="text-base font-bold leading-tight mb-1">{{ $activeStudent->name }}</div>
-            <div class="text-[10px] font-bold text-blue-100/80">Kelas : {{ $activeStudent->classroom->name ?? '-' }}</div>
+        <div class="w-12 h-12 rounded-2xl bg-white/20 border border-white/20 flex items-center justify-center text-xl relative z-10">
+            <i class="fas fa-user-graduate"></i>
+        </div>
+        <div class="relative z-10 flex-1">
+            <div class="text-[9px] font-black uppercase tracking-widest text-blue-100/60 mb-0.5">Nama Santri / Siswa</div>
+            <div class="text-base font-black leading-tight">{{ $activeStudent->name }}</div>
+            <div class="text-[9px] font-bold text-blue-100/80 mt-0.5">Kelas : {{ $activeStudent->classroom->name ?? '-' }}</div>
         </div>
     </div>
 
@@ -34,25 +36,25 @@
     </div>
 
     <!-- Grouped Bill List -->
-    <div class="space-y-5">
+    <div class="space-y-3">
         @forelse($groupedBills as $group)
-        <div class="card-premium p-6 border-l-4 border-l-blue-600">
-            <div class="flex justify-between items-start mb-6">
+        <div class="card-premium p-4 border-l-4 border-l-blue-600 shadow-sm">
+            <div class="flex justify-between items-center mb-4">
                 <div class="flex-1 pr-4">
-                    <h3 class="text-sm font-black text-slate-900 uppercase leading-snug mb-1">{{ $group['name'] }}</h3>
-                    <div class="text-lg font-black text-slate-900">Rp{{ number_format($group['total'], 0, ',', '.') }}</div>
+                    <h3 class="text-[11px] font-black text-slate-400 uppercase tracking-tight mb-0.5">{{ $group['name'] }}</h3>
+                    <div class="text-[19px] font-black text-slate-900 tracking-tight leading-none">Rp{{ number_format($group['total'], 0, ',', '.') }}</div>
                 </div>
-                <a href="{{ route('wali.bill-detail', $group['bill_type_id']) }}" class="bg-blue-600 text-white px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest active:scale-95 transition-transform shadow-md shadow-blue-100">Bayar</a>
+                <a href="{{ route('wali.bill-detail', $group['bill_type_id']) }}" class="bg-blue-600 text-white px-5 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest active:scale-95 transition-transform shadow-md shadow-blue-200">Bayar</a>
             </div>
             
-            <div class="grid grid-cols-2 gap-4">
-                <div class="bg-emerald-50 rounded-2xl p-3 border border-emerald-100/50">
-                    <div class="text-[9px] font-black text-emerald-600/70 uppercase tracking-widest mb-1">Sudah Dibayarkan</div>
-                    <div class="text-xs font-black text-emerald-600">Rp{{ number_format($group['paid'], 0, ',', '.') }}</div>
+            <div class="grid grid-cols-2 gap-3">
+                <div class="bg-emerald-50/50 rounded-xl p-2.5 border border-emerald-100/40">
+                    <div class="text-[8px] font-black text-emerald-600/70 uppercase tracking-wider mb-1">Sudah Dibayar</div>
+                    <div class="text-[11px] font-black text-emerald-600">Rp{{ number_format($group['paid'], 0, ',', '.') }}</div>
                 </div>
-                <div class="bg-orange-50 rounded-2xl p-3 border border-orange-100/50">
-                    <div class="text-[9px] font-black text-orange-600/70 uppercase tracking-widest mb-1">Kekurangan</div>
-                    <div class="text-xs font-black text-orange-600">Rp{{ number_format($group['unpaid'], 0, ',', '.') }}</div>
+                <div class="bg-orange-50/50 rounded-xl p-2.5 border border-orange-100/40">
+                    <div class="text-[8px] font-black text-orange-600/70 uppercase tracking-wider mb-1">Kekurangan</div>
+                    <div class="text-[11px] font-black text-orange-600">Rp{{ number_format($group['unpaid'], 0, ',', '.') }}</div>
                 </div>
             </div>
         </div>

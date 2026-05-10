@@ -11,44 +11,46 @@
     </div>
 
     <!-- Student Info Card -->
-    <div class="px-6 mb-8">
+    <div class="px-6 mb-6">
         <div class="card-premium flex items-center gap-4 bg-blue-600 text-white border-0 shadow-lg shadow-blue-100 p-5 relative overflow-hidden">
             <div class="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16 blur-2xl"></div>
-            <img src="{{ url($activeStudent->avatar ?: 'assets/media/avatars/default.png') }}" class="w-12 h-12 rounded-xl object-cover border-2 border-white/20 relative z-10" alt="">
-            <div class="relative z-10">
+            <div class="w-10 h-10 rounded-xl bg-white/20 border border-white/20 flex items-center justify-center text-lg relative z-10">
+                <i class="fas fa-user-graduate"></i>
+            </div>
+            <div class="relative z-10 flex-1">
                 <div class="text-[9px] font-black uppercase tracking-widest text-blue-100/60 mb-0.5">Nama Siswa / Santri</div>
-                <div class="text-sm font-bold leading-tight">{{ $activeStudent->name }}</div>
-                <div class="text-[9px] font-bold text-blue-100/80">Kelas : {{ $activeStudent->classroom->name ?? '-' }}</div>
+                <div class="text-sm font-black leading-tight">{{ $activeStudent->name }}</div>
+                <div class="text-[9px] font-bold text-blue-100/80 mt-0.5">Kelas : {{ $activeStudent->classroom->name ?? '-' }}</div>
             </div>
         </div>
     </div>
 
     <!-- Summary Section -->
-    <div class="px-6 mb-8">
-        <h2 class="text-base font-black text-slate-900 uppercase tracking-tight mb-4">{{ $billType->billItem->name }} - {{ $billType->academicYear->year }}</h2>
-        <div class="flex justify-between items-end mb-6">
+    <div class="px-6 mb-6">
+        <h2 class="text-[13px] font-black text-slate-900 uppercase tracking-tight mb-3">{{ $billType->billItem->name }} - {{ $billType->academicYear->year }}</h2>
+        <div class="flex justify-between items-end mb-4">
             <div>
-                <div class="text-[10px] text-slate-400 font-bold uppercase tracking-widest mb-1">Total Tagihan</div>
-                <div class="text-xl font-black text-slate-900">Rp{{ number_format($summary['total'], 0, ',', '.') }}</div>
+                <div class="text-[9px] text-slate-400 font-black uppercase tracking-widest mb-1">Total Tagihan</div>
+                <div class="text-2xl font-black text-slate-900 leading-none tabular-nums">Rp{{ number_format($summary['total'], 0, ',', '.') }}</div>
             </div>
             <div class="text-right">
-                <div class="text-[10px] text-slate-400 font-bold uppercase tracking-widest mb-1">Status</div>
+                <div class="text-[9px] text-slate-400 font-black uppercase tracking-widest mb-1">Status</div>
                 @if($summary['unpaid'] == 0)
-                    <span class="px-3 py-1 bg-emerald-100 text-emerald-600 rounded-lg text-[9px] font-black uppercase">Lunas</span>
+                    <span class="px-3 py-1 bg-emerald-100 text-emerald-600 rounded-lg text-[9px] font-black uppercase tracking-widest">Lunas</span>
                 @else
-                    <span class="px-3 py-1 bg-orange-100 text-orange-600 rounded-lg text-[9px] font-black uppercase">Proses Bayar</span>
+                    <span class="px-3 py-1 bg-orange-100 text-orange-600 rounded-lg text-[9px] font-black uppercase tracking-widest">Proses Bayar</span>
                 @endif
             </div>
         </div>
 
-        <div class="grid grid-cols-2 gap-4">
-            <div>
-                <div class="text-[10px] text-slate-400 font-bold uppercase tracking-widest mb-1">Sudah Bayar</div>
-                <div class="text-sm font-black text-slate-900">Rp{{ number_format($summary['paid'], 0, ',', '.') }}</div>
+        <div class="grid grid-cols-2 gap-3">
+            <div class="bg-slate-50 p-2.5 rounded-xl border border-slate-100">
+                <div class="text-[8px] text-slate-400 font-black uppercase tracking-widest mb-1">Sudah Bayar</div>
+                <div class="text-xs font-black text-slate-900">Rp{{ number_format($summary['paid'], 0, ',', '.') }}</div>
             </div>
-            <div>
-                <div class="text-[10px] text-slate-400 font-bold uppercase tracking-widest mb-1">Belum Bayar</div>
-                <div class="text-sm font-black text-red-600">Rp{{ number_format($summary['unpaid'], 0, ',', '.') }}</div>
+            <div class="bg-red-50 p-2.5 rounded-xl border border-red-100/50">
+                <div class="text-[8px] text-red-400 font-black uppercase tracking-widest mb-1 text-red-400/70">Belum Bayar</div>
+                <div class="text-xs font-black text-red-600">Rp{{ number_format($summary['unpaid'], 0, ',', '.') }}</div>
             </div>
         </div>
     </div>
@@ -65,9 +67,9 @@
             </label>
         </div>
 
-        <div class="px-6 space-y-4">
+        <div class="px-6 space-y-2.5">
             @foreach($bills as $bill)
-            <div class="card-premium !p-4 flex items-center gap-4 border-l-4 {{ $bill->status == 'PAID' ? 'border-l-emerald-500' : 'border-l-blue-600' }}">
+            <div class="card-premium !p-3.5 flex items-center gap-4 border-l-4 {{ $bill->status == 'PAID' ? 'border-l-emerald-500' : 'border-l-blue-600' }} shadow-sm">
                 @if($bill->status == 'UNPAID')
                     <input type="checkbox" name="bill_ids[]" value="{{ $bill->id }}" class="bill-checkbox w-5 h-5 rounded-md border-slate-300 text-blue-600 focus:ring-blue-600 transition-all">
                 @else
@@ -77,16 +79,16 @@
                 @endif
                 
                 <div class="flex-1">
-                    <div class="text-[10px] font-bold text-slate-400 mb-0.5">Rp{{ number_format($bill->amount, 0, ',', '.') }}</div>
-                    <div class="text-sm font-black text-slate-900">Tagihan {{ $bill->translated_month }} {{ $bill->year }}</div>
+                    <div class="text-[9px] font-black text-slate-400 mb-0.5 tracking-wider">Rp{{ number_format($bill->amount, 0, ',', '.') }}</div>
+                    <div class="text-[13px] font-black text-slate-900 leading-tight">Tagihan {{ $bill->translated_month }} {{ $bill->year }}</div>
                 </div>
 
                 @if($bill->status == 'PAID')
-                    <span class="bg-emerald-500 text-white px-4 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest">Lunas</span>
+                    <span class="bg-emerald-500 text-white px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest">Lunas</span>
                 @else
-                    <div class="text-right">
-                        <button type="button" class="bg-blue-600 text-white px-4 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest mb-1">Bayar</button>
-                        <div class="text-[9px] font-bold text-red-600 uppercase tracking-tighter">Belum Bayar</div>
+                    <div class="text-right flex flex-col items-end gap-1">
+                        <button type="button" class="bg-blue-600 text-white px-4 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest shadow-sm shadow-blue-100">Bayar</button>
+                        <div class="text-[8px] font-black text-red-600 uppercase tracking-tighter">Belum Bayar</div>
                     </div>
                 @endif
             </div>
