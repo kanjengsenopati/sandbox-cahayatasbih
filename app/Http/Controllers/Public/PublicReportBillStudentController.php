@@ -26,11 +26,12 @@ class PublicReportBillStudentController extends Controller
             $query = $adminController->buildRekapQuery();
             $data = $query->get();
  
-            // Fetch the bill breakdown for dynamic columns
+            // Fetch the individual bill details for the nested table
             $studentIds = $data->pluck('id');
             
             if ($studentIds->isNotEmpty()) {
-                $billBreakdown = \App\Models\Bill::whereIn('student_id', $studentIds)
+                $billBreakdown = \App\Models\Bill::with(['billType', 'academicYear'])
+                    ->whereIn('student_id', $studentIds)
                     ->when($request->filled('start_date'), function ($q) use ($request) {
                         $startDate = \Carbon\Carbon::parse($request->start_date);
                         $startPeriod = (int)($startDate->year . str_pad($startDate->month, 2, '0', STR_PAD_LEFT));
@@ -43,18 +44,21 @@ class PublicReportBillStudentController extends Controller
                     })
                     ->when($request->filled('academic_year_id'), fn($q) => $q->where('academic_year_id', $request->academic_year_id))
                     ->when($request->filled('bill_type_id'), fn($q) => $q->whereIn('bill_type_id', $request->bill_type_id))
-                    ->select('student_id', 'bill_type_id', \DB::raw('SUM(amount) as total'))
-                    ->groupBy('student_id', 'bill_type_id')
                     ->get();
  
-                $billTypeIds = $billBreakdown->pluck('bill_type_id')->unique();
-                $billTypes = BillType::whereIn('id', $billTypeIds)->get()->keyBy('id');
- 
                 $pivotedData = $billBreakdown->groupBy('student_id')->map(function ($items) {
-                    return $items->pluck('total', 'bill_type_id');
+                    return $items->map(function($bill) {
+                        return [
+                            'bill_type_name' => $bill->billType?->name ?? '-',
+                            'academic_year'  => $bill->academicYear?->name ?? '-',
+                            'month'          => $bill->month,
+                            'year'           => $bill->year,
+                            'amount'         => $bill->amount,
+                            'status'         => $bill->status,
+                        ];
+                    });
                 });
             } else {
-                $billTypes = collect();
                 $pivotedData = collect();
             }
  
@@ -70,7 +74,7 @@ class PublicReportBillStudentController extends Controller
                 $academicYear = AcademicYear::find($request->academic_year_id);
             }
  
-            return view('public.report-bill-student.index', compact('data', 'totals', 'filters', 'academicYear', 'billTypes', 'pivotedData'));
+            return view('public.report-bill-student.index', compact('data', 'totals', 'filters', 'academicYear', 'pivotedData'));
         } catch (\Exception $e) {
             return response()->view('errors.404', [], 404);
         }

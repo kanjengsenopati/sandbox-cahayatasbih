@@ -217,20 +217,41 @@
         var table = document.getElementById('report_table');
         var datatable;
  
+        var monthNames = ["", "Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
+ 
         var format = function (d, breakdown) {
             var html = '<div class="nested-table">' +
                 '<h6 class="fw-bolder mb-3">Rincian Item Tagihan</h6>' +
                 '<table class="table table-sm table-row-dashed fs-7 gy-3">' +
-                '<thead><tr class="text-start text-gray-400 fw-bolder fs-8 text-uppercase"><th>Nama Tagihan</th><th class="text-end">Nominal</th></tr></thead>' +
+                '<thead><tr class="text-start text-gray-400 fw-bolder fs-8 text-uppercase">' +
+                '<th class="w-20px ps-3">NO</th>' +
+                '<th>Nama Tagihan</th>' +
+                '<th>Tahun Ajaran</th>' +
+                '<th>Bulan & Tahun</th>' +
+                '<th class="text-end">Nominal</th>' +
+                '<th class="text-center">Status</th>' +
+                '</tr></thead>' +
                 '<tbody>';
  
-            if (breakdown && Object.keys(breakdown).length > 0) {
-                for (var typeId in breakdown) {
-                    var typeName = window.billTypes[typeId] || 'Tagihan';
-                    html += '<tr><td>' + typeName + '</td><td class="text-end fw-bold">Rp ' + new Intl.NumberFormat('id-ID').format(breakdown[typeId]) + '</td></tr>';
-                }
+            if (breakdown && breakdown.length > 0) {
+                breakdown.forEach(function(bill, index) {
+                    var statusBadge = bill.status === "PAID" 
+                        ? '<span class="badge badge-light-success fs-9 px-3 py-1">Lunas</span>' 
+                        : '<span class="badge badge-light-danger fs-9 px-3 py-1">Belum Lunas</span>';
+                    
+                    var monthName = monthNames[bill.month] || bill.month;
+                    
+                    html += '<tr>' +
+                        '<td class="ps-3 text-muted">' + (index + 1) + '</td>' +
+                        '<td class="fw-boldest text-gray-800">' + bill.bill_type_name + '</td>' +
+                        '<td>' + bill.academic_year + '</td>' +
+                        '<td>' + monthName + ' ' + bill.year + '</td>' +
+                        '<td class="text-end fw-boldest text-dark">Rp ' + new Intl.NumberFormat('id-ID').format(bill.amount) + '</td>' +
+                        '<td class="text-center">' + statusBadge + '</td>' +
+                        '</tr>';
+                });
             } else {
-                html += '<tr><td colspan="2" class="text-center text-muted">Tidak ada rincian.</td></tr>';
+                html += '<tr><td colspan="6" class="text-center text-muted py-4">Tidak ada rincian data.</td></tr>';
             }
  
             html += '</tbody></table></div>';
@@ -292,7 +313,6 @@
     }();
  
     // Data for nested table
-    window.billTypes = @json($billTypes->pluck('name', 'id'));
     window.pivotedData = @json($pivotedData);
  
     $(document).ready(function() {
