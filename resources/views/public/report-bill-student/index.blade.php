@@ -4,310 +4,198 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Laporan Tagihan Santri | {{ config('app.name') }}</title>
+    
+    <!--begin::Fonts-->
     <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Poppins:300,400,500,600,700" />
+    <!--end::Fonts-->
+ 
+    <!--begin::Global Stylesheets Bundle(used by all pages)-->
     <link href="{{ asset('assets/plugins/global/plugins.bundle.css') }}" rel="stylesheet" type="text/css" />
     <link href="{{ asset('assets/css/style.bundle.css') }}" rel="stylesheet" type="text/css" />
+    <!--end::Global Stylesheets Bundle-->
+ 
+    <link href="{{ asset('assets/plugins/custom/datatables/datatables.bundle.css') }}" rel="stylesheet" type="text/css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
  
     <style>
+        /* Legacy Theme Colors */
         :root {
-            --pakrt-primary: #2563eb;
-            --pakrt-success: #10b981;
-            --pakrt-error: #dc2626;
-            --pakrt-slate-900: #0f172a;
-            --pakrt-slate-800: #1e293b;
-            --pakrt-slate-700: #334155;
-            --pakrt-slate-600: #475569;
-            --pakrt-slate-500: #64748b;
-            --pakrt-slate-400: #94a3b8;
-            --pakrt-radius: 24px;
+            --kt-primary: #8a63d2;
+            --kt-primary-light: #f4f1fa;
         }
  
         body {
-            background-color: #f8fafc;
+            background-color: #f5f8fa;
             font-family: 'Poppins', sans-serif;
-            color: var(--pakrt-slate-700);
-            -webkit-font-smoothing: antialiased;
         }
  
-        .header-gradient {
-            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-            padding: 40px 0 100px;
-            color: white;
+        .card {
+            border: none;
+            box-shadow: 0 0 20px 0 rgba(76, 87, 125, 0.02);
+            border-radius: 0.475rem;
+        }
+ 
+        .table.dataTable thead th {
+            color: #b5b5c3 !important;
+            text-transform: uppercase;
+            font-size: 0.9rem;
+            font-weight: 600;
+            letter-spacing: 0.1rem;
+            border-bottom: 1px border-dashed #eff2f5;
+        }
+ 
+        .table.dataTable tbody td {
+            border-bottom: 1px border-dashed #eff2f5;
+            padding: 1rem 0.75rem;
+        }
+ 
+        .details-control {
+            cursor: pointer;
             text-align: center;
         }
  
-        .main-container {
-            margin-top: -60px;
-            padding-bottom: 60px;
-        }
- 
-        .premium-card {
-            background: white;
-            border-radius: var(--pakrt-radius);
-            border: none;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.04);
-            overflow: hidden;
-        }
- 
-        .stat-card {
-            border-radius: 20px;
-            padding: 20px;
-            height: 100%;
-            transition: all 0.3s ease;
-            border: 1px solid rgba(0,0,0,0.02);
-            background: white;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.02);
-        }
- 
-        .stat-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 8px 24px rgba(0,0,0,0.06);
-        }
- 
-        .search-container {
-            position: relative;
-            max-width: 400px;
-            margin: 0 auto 24px;
-        }
- 
-        .search-input {
-            border-radius: 16px;
-            padding: 12px 20px 12px 45px;
-            border: 1px solid #e2e8f0;
-            width: 100%;
-            transition: all 0.3s ease;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.02);
-        }
- 
-        .search-input:focus {
-            outline: none;
-            border-color: var(--pakrt-primary);
-            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.1);
-        }
- 
-        .search-icon {
-            position: absolute;
-            left: 18px;
-            top: 50%;
-            transform: translateY(-50%);
-            color: var(--pakrt-slate-400);
-        }
- 
-        /* Table Styles */
-        .table-responsive {
-            border-radius: 16px;
-        }
- 
-        .table thead th {
-            background-color: #f8fafc;
-            color: var(--pakrt-slate-500);
-            text-transform: uppercase;
-            font-size: 11px;
-            letter-spacing: 1px;
-            font-weight: 700;
-            border: none;
-            padding: 18px 15px;
-            white-space: nowrap;
-        }
- 
-        .table tbody td {
-            padding: 18px 15px;
-            vertical-align: middle;
-            border-bottom: 1px solid #f1f5f9;
-        }
- 
-        .table tbody tr:hover {
-            background-color: #fcfdfe;
-        }
- 
-        /* Mobile Experience */
-        @media (max-width: 991px) {
-            .table-desktop {
-                display: none;
-            }
-            
-            .mobile-card-container {
-                display: block;
-            }
- 
-            .mobile-student-card {
-                background: white;
-                border-radius: 20px;
-                padding: 20px;
-                margin-bottom: 16px;
-                border: 1px solid #f1f5f9;
-                box-shadow: 0 2px 8px rgba(0,0,0,0.02);
-            }
- 
-            .mobile-row {
-                display: flex;
-                justify-content: space-between;
-                padding: 8px 0;
-                border-bottom: 1px dashed #f1f5f9;
-            }
- 
-            .mobile-row:last-child {
-                border-bottom: none;
-            }
- 
-            .mobile-label {
-                font-size: 12px;
-                color: var(--pakrt-slate-500);
-                font-weight: 600;
-            }
- 
-            .mobile-value {
-                font-size: 13px;
-                font-weight: 700;
-                color: var(--pakrt-slate-800);
-            }
-        }
- 
-        @media (min-width: 992px) {
-            .mobile-card-container {
-                display: none;
-            }
-        }
- 
-        .student-info {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
- 
         .student-avatar {
-            width: 40px;
-            height: 40px;
-            border-radius: 12px;
-            object-fit: cover;
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            margin-right: 10px;
         }
  
-        .amount-positive { color: var(--pakrt-success); font-weight: 700; }
-        .amount-negative { color: var(--pakrt-error); font-weight: 700; }
-        .amount-zero { color: var(--pakrt-slate-300); font-weight: 400; }
+        .nested-table {
+            background-color: #f9f9f9;
+            border-radius: 8px;
+            margin: 10px 0 10px 50px;
+            padding: 15px;
+            border: 1px solid #eee;
+        }
  
-        .progress-compact {
-            height: 6px;
-            border-radius: 3px;
-            background-color: #f1f5f9;
+        .badge-light-success {
+            background-color: #e8fff3;
+            color: #50cd89;
+        }
+ 
+        .badge-light-danger {
+            background-color: #fff5f8;
+            color: #f1416c;
+        }
+ 
+        .header-title {
+            background-color: white;
+            padding: 20px 0;
+            border-bottom: 1px solid #eff2f5;
+            margin-bottom: 30px;
         }
     </style>
 </head>
-<body>
+<body id="kt_body" class="header-fixed header-tablet-and-mobile-fixed aside-enabled aside-fixed">
  
-<div class="header-gradient">
+<div class="header-title">
     <div class="container">
-        <h1 class="fw-boldest mb-2 text-white">Rekap Pembayaran Santri</h1>
-        <p class="fs-6 text-white opacity-75">
-            {{ $academicYear ? 'Tahun Ajaran ' . $academicYear->name : 'Semua Tahun Ajaran' }}
-        </p>
+        <div class="d-flex align-items-center justify-content-between">
+            <div>
+                <h1 class="text-dark fw-bolder fs-3 mb-0">Laporan Pembayaran Santri</h1>
+                <div class="text-muted fs-7 fw-bold mt-1">
+                    {{ $academicYear ? 'Tahun Ajaran ' . $academicYear->name : 'Semua Tahun Ajaran' }}
+                </div>
+            </div>
+            <div>
+                <img src="{{ asset('assets/media/logos/logo-1.svg') }}" class="h-40px" alt="">
+            </div>
+        </div>
     </div>
 </div>
  
-<div class="container main-container">
-    <!-- Search Bar -->
-    <div class="search-container">
-        <i class="fas fa-search search-icon"></i>
-        <input type="text" id="studentSearch" class="search-input" placeholder="Cari nama santri...">
+<div class="container mb-10">
+    <!-- Stats Row -->
+    <div class="row g-5 mb-8">
+        <div class="col-md-4">
+            <div class="card p-6 border-start border-primary border-4">
+                <div class="text-muted fw-boldest fs-7 uppercase">TOTAL TAGIHAN</div>
+                <div class="text-dark fs-2 fw-bolder mt-1">Rp {{ number_format($totals['total_amount'], 0, ',', '.') }}</div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card p-6 border-start border-success border-4">
+                <div class="text-muted fw-boldest fs-7 uppercase">TOTAL TERBAYAR</div>
+                <div class="text-success fs-2 fw-bolder mt-1">Rp {{ number_format($totals['total_paid'], 0, ',', '.') }}</div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card p-6 border-start border-danger border-4">
+                <div class="text-muted fw-boldest fs-7 uppercase">SISA TAGIHAN</div>
+                <div class="text-danger fs-2 fw-bolder mt-1">Rp {{ number_format($totals['total_unpaid'], 0, ',', '.') }}</div>
+            </div>
+        </div>
     </div>
  
-    <div class="premium-card p-6 p-lg-8">
-        <!-- Stats Row -->
-        <div class="row g-4 mb-8">
-            <div class="col-6 col-lg-4">
-                <div class="stat-card bg-blue-50">
-                    <div class="d-flex align-items-center mb-2">
-                        <i class="fas fa-file-invoice-dollar text-primary me-2 fs-7"></i>
-                        <span class="text-slate-500 fw-bold fs-9 tracking-widest uppercase">TAGIHAN</span>
-                    </div>
-                    <div class="text-slate-900 fs-4 fs-lg-3 fw-boldest">Rp {{ number_format($totals['total_amount'], 0, ',', '.') }}</div>
-                </div>
-            </div>
-            <div class="col-6 col-lg-4">
-                <div class="stat-card bg-emerald-50">
-                    <div class="d-flex align-items-center mb-2">
-                        <i class="fas fa-check-circle text-success me-2 fs-7"></i>
-                        <span class="text-slate-500 fw-bold fs-9 tracking-widest uppercase">TERBAYAR</span>
-                    </div>
-                    <div class="text-emerald-600 fs-4 fs-lg-3 fw-boldest">Rp {{ number_format($totals['total_paid'], 0, ',', '.') }}</div>
-                </div>
-            </div>
-            <div class="col-12 col-lg-4">
-                <div class="stat-card bg-rose-50">
-                    <div class="d-flex align-items-center mb-2">
-                        <i class="fas fa-exclamation-circle text-danger me-2 fs-7"></i>
-                        <span class="text-slate-500 fw-bold fs-9 tracking-widest uppercase">SISA</span>
-                    </div>
-                    <div class="text-danger fs-4 fs-lg-3 fw-boldest">Rp {{ number_format($totals['total_unpaid'], 0, ',', '.') }}</div>
+    <div class="card card-flush">
+        <div class="card-header align-items-center py-5 gap-2 gap-md-5">
+            <div class="card-title">
+                <div class="d-flex align-items-center position-relative my-1">
+                    <span class="svg-icon svg-icon-1 position-absolute ms-4">
+                        <i class="fas fa-search"></i>
+                    </span>
+                    <input type="text" data-kt-report-table-filter="search" class="form-control form-control-solid w-250px ps-14" placeholder="Cari Santri..." />
                 </div>
             </div>
         </div>
- 
-        <!-- Desktop Table -->
-        <div class="table-responsive table-desktop">
-            <table class="table align-middle" id="reportTable">
+        <div class="card-body pt-0">
+            <table class="table align-middle table-row-dashed fs-6 gy-5" id="report_table">
                 <thead>
-                    <tr>
-                        <th class="ps-4">NO</th>
-                        <th>SANTRI</th>
-                        @foreach($billTypes as $type)
-                        <th class="text-center">{{ $type->name }}</th>
-                        @endforeach
-                        <th>TOTAL</th>
-                        <th>TERBAYAR</th>
-                        <th>SISA</th>
-                        <th class="pe-4">REALISASI</th>
+                    <tr class="text-start text-gray-400 fw-bolder fs-7 text-uppercase gs-0">
+                        <th class="w-10px pe-2"></th>
+                        <th class="min-w-50px">NO</th>
+                        <th class="min-w-200px">SANTRI</th>
+                        <th class="text-end min-w-100px">TOTAL</th>
+                        <th class="text-end min-w-100px text-success">LUNAS</th>
+                        <th class="text-end min-w-100px text-danger">SISA</th>
+                        <th class="text-end min-w-150px">REALISASI</th>
                     </tr>
                 </thead>
-                <tbody class="fw-bold">
+                <tbody class="fw-bold text-gray-600">
                     @foreach($data as $index => $row)
-                    <tr class="student-row" data-name="{{ strtolower($row->name) }}">
-                        <td class="ps-4 text-slate-400 fs-8">{{ $index + 1 }}</td>
+                    @php
+                        $avatar = $row->avatar;
+                        if ($avatar) {
+                            if (!str_starts_with($avatar, 'http') && !str_starts_with($avatar, 'storage/') && !str_starts_with($avatar, 'assets/')) {
+                                $avatarUrl = asset('storage/images/avatar/' . $avatar);
+                            } else {
+                                $avatarUrl = asset($avatar);
+                            }
+                        } else {
+                            $avatarUrl = asset('assets/media/avatars/default.png');
+                        }
+                        
+                        $pct = $row->total_bill == 0 ? 0 : ($row->total_paid / $row->total_bill) * 100;
+                        $color = $pct >= 100 ? 'success' : ($pct >= 50 ? 'warning' : 'danger');
+                    @endphp
+                    <tr data-student-id="{{ $row->id }}">
+                        <td class="details-control">
+                            <i class="fas fa-chevron-right text-primary"></i>
+                        </td>
+                        <td>{{ $index + 1 }}</td>
                         <td>
-                            <div class="student-info">
-                                @php
-                                    $avatar = $row->avatar;
-                                    if ($avatar) {
-                                        if (!str_starts_with($avatar, 'http') && !str_starts_with($avatar, 'storage/') && !str_starts_with($avatar, 'assets/')) {
-                                            $avatarUrl = asset('storage/images/avatar/' . $avatar);
-                                        } else {
-                                            $avatarUrl = asset($avatar);
-                                        }
-                                    } else {
-                                        $avatarUrl = asset('assets/media/avatars/default.png');
-                                    }
-                                @endphp
+                            <div class="d-flex align-items-center">
                                 <img src="{{ $avatarUrl }}" class="student-avatar" alt="">
-                                <div>
-                                    <div class="text-slate-900 fs-7 fw-boldest mb-0">{{ $row->name }}</div>
-                                    <div class="text-slate-400 fs-9">{{ $row->classroom_name }}</div>
+                                <div class="d-flex flex-column">
+                                    <span class="text-gray-800 text-hover-primary mb-1">{{ $row->name }}</span>
+                                    <span class="text-muted fs-7">{{ $row->classroom_name }}</span>
                                 </div>
                             </div>
                         </td>
-                        @foreach($billTypes as $type)
-                        @php
-                            $amt = $pivotedData[$row->id][$type->id] ?? 0;
-                        @endphp
-                        <td class="text-center fs-8 {{ $amt > 0 ? 'text-slate-700' : 'text-slate-200' }}">
-                            {{ $amt > 0 ? 'Rp ' . number_format($amt, 0, ',', '.') : '-' }}
-                        </td>
-                        @endforeach
-                        <td class="fs-7">Rp {{ number_format($row->total_bill, 0, ',', '.') }}</td>
-                        <td class="fs-7 text-emerald-600">Rp {{ number_format($row->total_paid, 0, ',', '.') }}</td>
-                        <td class="fs-7 text-danger">
+                        <td class="text-end">Rp {{ number_format($row->total_bill, 0, ',', '.') }}</td>
+                        <td class="text-end text-success">Rp {{ number_format($row->total_paid, 0, ',', '.') }}</td>
+                        <td class="text-end text-danger">
                             {{ $row->total_unpaid > 0 ? 'Rp ' . number_format($row->total_unpaid, 0, ',', '.') : '-' }}
                         </td>
-                        <td class="pe-4">
-                            @php
-                                $pct = $row->total_bill == 0 ? 0 : ($row->total_paid / $row->total_bill) * 100;
-                                $color = $pct >= 100 ? 'success' : ($pct >= 50 ? 'warning' : 'danger');
-                            @endphp
-                            <div class="d-flex align-items-center gap-2">
-                                <div class="progress progress-compact flex-grow-1">
-                                    <div class="progress-bar bg-{{ $color }}" style="width: {{ min($pct, 100) }}%"></div>
+                        <td class="text-end">
+                            <div class="d-flex flex-column w-100 me-2">
+                                <div class="d-flex flex-stack mb-2">
+                                    <span class="text-muted me-2 fs-7 fw-bold">{{ round($pct) }}%</span>
                                 </div>
-                                <span class="text-{{ $color }} fs-9 fw-boldest">{{ round($pct) }}%</span>
+                                <div class="progress h-6px w-100">
+                                    <div class="progress-bar bg-{{ $color }}" role="progressbar" style="width: {{ min($pct, 100) }}%"></div>
+                                </div>
                             </div>
                         </td>
                     </tr>
@@ -315,88 +203,100 @@
                 </tbody>
             </table>
         </div>
- 
-        <!-- Mobile Cards -->
-        <div class="mobile-card-container">
-            @foreach($data as $index => $row)
-            <div class="mobile-student-card student-row" data-name="{{ strtolower($row->name) }}">
-                <div class="d-flex align-items-center gap-3 mb-4">
-                    <img src="{{ $avatarUrl }}" class="student-avatar" alt="">
-                    <div>
-                        <div class="text-slate-900 fs-6 fw-boldest">{{ $row->name }}</div>
-                        <div class="text-slate-400 fs-8">{{ $row->classroom_name }}</div>
-                    </div>
-                    <div class="ms-auto text-slate-300 fs-9 fw-bold">#{{ $index + 1 }}</div>
-                </div>
-                
-                <div class="mobile-details mb-4">
-                    @foreach($billTypes as $type)
-                    @php $amt = $pivotedData[$row->id][$type->id] ?? 0; @endphp
-                    @if($amt > 0)
-                    <div class="mobile-row">
-                        <span class="mobile-label">{{ $type->name }}</span>
-                        <span class="mobile-value">Rp {{ number_format($amt, 0, ',', '.') }}</span>
-                    </div>
-                    @endif
-                    @endforeach
-                </div>
- 
-                <div class="bg-light rounded-4 p-4">
-                    <div class="mobile-row border-0 py-1">
-                        <span class="mobile-label">TOTAL</span>
-                        <span class="mobile-value">Rp {{ number_format($row->total_bill, 0, ',', '.') }}</span>
-                    </div>
-                    <div class="mobile-row border-0 py-1">
-                        <span class="mobile-label">TERBAYAR</span>
-                        <span class="mobile-value text-emerald-600">Rp {{ number_format($row->total_paid, 0, ',', '.') }}</span>
-                    </div>
-                    <div class="mobile-row border-0 py-1">
-                        <span class="mobile-label">SISA</span>
-                        <span class="mobile-value text-danger">Rp {{ number_format($row->total_unpaid, 0, ',', '.') }}</span>
-                    </div>
-                    
-                    @php
-                        $pct = $row->total_bill == 0 ? 0 : ($row->total_paid / $row->total_bill) * 100;
-                        $color = $pct >= 100 ? 'success' : ($pct >= 50 ? 'warning' : 'danger');
-                    @endphp
-                    <div class="mt-3">
-                        <div class="d-flex justify-content-between align-items-center mb-1">
-                            <span class="fs-9 fw-boldest text-slate-400 uppercase tracking-widest">REALISASI</span>
-                            <span class="text-{{ $color }} fs-8 fw-boldest">{{ round($pct) }}%</span>
-                        </div>
-                        <div class="progress progress-compact">
-                            <div class="progress-bar bg-{{ $color }}" style="width: {{ min($pct, 100) }}%"></div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            @endforeach
-        </div>
- 
-        <div class="bg-light p-6 text-center border-top mt-8">
-            <p class="text-slate-400 fs-9 mb-0">Laporan ini dibuat otomatis oleh sistem pada {{ date('d F Y H:i') }}</p>
-            <p class="text-slate-300 fs-10 mt-1">Sistem Informasi Cahaya Tasbih</p>
-        </div>
     </div>
 </div>
  
 <script src="{{ asset('assets/plugins/global/plugins.bundle.js') }}"></script>
 <script src="{{ asset('assets/js/scripts.bundle.js') }}"></script>
+<script src="{{ asset('assets/plugins/custom/datatables/datatables.bundle.js') }}"></script>
  
 <script>
-    // Search Functionality
-    document.getElementById('studentSearch').addEventListener('input', function(e) {
-        const term = e.target.value.toLowerCase();
-        const rows = document.querySelectorAll('.student-row');
-        
-        rows.forEach(row => {
-            const name = row.getAttribute('data-name');
-            if (name.includes(term)) {
-                row.style.display = '';
+    "use strict";
+ 
+    var KTReportTable = function () {
+        var table = document.getElementById('report_table');
+        var datatable;
+ 
+        var format = function (d, breakdown) {
+            var html = '<div class="nested-table">' +
+                '<h6 class="fw-bolder mb-3">Rincian Item Tagihan</h6>' +
+                '<table class="table table-sm table-row-dashed fs-7 gy-3">' +
+                '<thead><tr class="text-start text-gray-400 fw-bolder fs-8 text-uppercase"><th>Nama Tagihan</th><th class="text-end">Nominal</th></tr></thead>' +
+                '<tbody>';
+ 
+            if (breakdown && Object.keys(breakdown).length > 0) {
+                for (var typeId in breakdown) {
+                    var typeName = window.billTypes[typeId] || 'Tagihan';
+                    html += '<tr><td>' + typeName + '</td><td class="text-end fw-bold">Rp ' + new Intl.NumberFormat('id-ID').format(breakdown[typeId]) + '</td></tr>';
+                }
             } else {
-                row.style.display = 'none';
+                html += '<tr><td colspan="2" class="text-center text-muted">Tidak ada rincian.</td></tr>';
             }
-        });
+ 
+            html += '</tbody></table></div>';
+            return html;
+        };
+ 
+        var initDatatable = function () {
+            datatable = $(table).DataTable({
+                "info": false,
+                'order': [],
+                'pageLength': 10,
+                'lengthMenu': [10, 15, 25, 20], // As requested: 10 default, 15, 25, 20
+                'columnDefs': [
+                    { orderable: false, targets: 0 },
+                ]
+            });
+ 
+            // Expand all rows by default as requested
+            datatable.rows().every(function () {
+                var row = this;
+                var studentId = $(row.node()).data('student-id');
+                var breakdown = window.pivotedData[studentId];
+                row.child(format(row.data(), breakdown)).show();
+                $(row.node()).addClass('shown');
+                $(row.node()).find('.details-control i').removeClass('fa-chevron-right').addClass('fa-chevron-down');
+            });
+ 
+            // Handle search
+            const filterSearch = document.querySelector('[data-kt-report-table-filter="search"]');
+            filterSearch.addEventListener('keyup', function (e) {
+                datatable.search(e.target.value).draw();
+            });
+ 
+            // Click listener for details control
+            $('#report_table tbody').on('click', 'td.details-control', function () {
+                var tr = $(this).closest('tr');
+                var row = datatable.row(tr);
+                var studentId = tr.data('student-id');
+                var breakdown = window.pivotedData[studentId];
+ 
+                if (row.child.isShown()) {
+                    row.child.hide();
+                    tr.removeClass('shown');
+                    $(this).find('i').removeClass('fa-chevron-down').addClass('fa-chevron-right');
+                } else {
+                    row.child(format(row.data(), breakdown)).show();
+                    tr.addClass('shown');
+                    $(this).find('i').removeClass('fa-chevron-right').addClass('fa-chevron-down');
+                }
+            });
+        };
+ 
+        return {
+            init: function () {
+                if (!table) { return; }
+                initDatatable();
+            }
+        };
+    }();
+ 
+    // Data for nested table
+    window.billTypes = @json($billTypes->pluck('name', 'id'));
+    window.pivotedData = @json($pivotedData);
+ 
+    $(document).ready(function() {
+        KTReportTable.init();
     });
 </script>
 </body>
