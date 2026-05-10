@@ -132,7 +132,10 @@ class WaliDashboardController extends Controller
                 ];
             });
 
-        return view('users.dashboard.bills', compact('activeStudent', 'groupedBills'));
+        $unpaidBills = $groupedBills->filter(fn($g) => $g['unpaid'] > 0)->values();
+        $paidBills = $groupedBills->filter(fn($g) => $g['unpaid'] == 0)->values();
+
+        return view('users.dashboard.bills', compact('activeStudent', 'unpaidBills', 'paidBills'));
     }
 
     public function billDetail($id)
