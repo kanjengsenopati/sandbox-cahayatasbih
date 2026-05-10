@@ -46,17 +46,31 @@ class PublicReportBillStudentController extends Controller
                     ->when($request->filled('bill_type_id'), fn($q) => $q->whereIn('bill_type_id', $request->bill_type_id))
                     ->get();
  
-                $pivotedData = $billBreakdown->groupBy('student_id')->map(function ($items) {
-                    return $items->map(function($bill) {
+                $pivotedData = $billBreakdown->groupBy('student_id')->map(function ($studentBills) {
+                    // Group by Bill Type and Academic Year
+                    return $studentBills->groupBy(function($bill) {
+                        return $bill->bill_type_id . '_' . $bill->academic_year_id . '_' . $bill->status;
+                    })->map(function($groupedBills) {
+                        $first = $groupedBills->first();
+                        
+                        // Sort bills by period (year * 100 + month)
+                        $sorted = $groupedBills->sortBy(function($b) {
+                            return $b->year * 100 + $b->month;
+                        });
+
                         return [
-                            'bill_type_name' => $bill->billType?->name ?? '-',
-                            'academic_year'  => $bill->academicYear?->name ?? '-',
-                            'month'          => $bill->month,
-                            'year'           => $bill->year,
-                            'amount'         => $bill->amount,
-                            'status'         => $bill->status,
+                            'bill_type_name' => $first->billType?->name ?? '-',
+                            'academic_year'  => $first->academicYear?->name ?? '-',
+                            'months'         => $sorted->map(function($b) {
+                                return [
+                                    'month' => $b->month,
+                                    'year'  => $b->year
+                                ];
+                            })->toArray(),
+                            'amount'         => $groupedBills->sum('amount'),
+                            'status'         => $first->status,
                         ];
-                    });
+                    })->values();
                 });
             } else {
                 $pivotedData = collect();

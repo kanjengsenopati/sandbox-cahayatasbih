@@ -239,13 +239,25 @@
                         ? '<span class="badge badge-light-success fs-9 px-3 py-1">Lunas</span>' 
                         : '<span class="badge badge-light-danger fs-9 px-3 py-1">Belum Lunas</span>';
                     
-                    var monthName = monthNames[bill.month] || bill.month;
+                    // Group months by year for display
+                    var monthYearStr = "";
+                    var yearGroups = {};
+                    bill.months.forEach(function(m) {
+                        if (!yearGroups[m.year]) yearGroups[m.year] = [];
+                        yearGroups[m.year].push(monthNames[m.month]);
+                    });
+
+                    var formattedGroups = [];
+                    for (var year in yearGroups) {
+                        formattedGroups.push(yearGroups[year].join(", ") + " " + year);
+                    }
+                    monthYearStr = formattedGroups.join("; ");
                     
                     html += '<tr>' +
                         '<td class="ps-3 text-muted">' + (index + 1) + '</td>' +
                         '<td class="fw-boldest text-gray-800">' + bill.bill_type_name + '</td>' +
                         '<td>' + bill.academic_year + '</td>' +
-                        '<td>' + monthName + ' ' + bill.year + '</td>' +
+                        '<td>' + monthYearStr + '</td>' +
                         '<td class="text-end fw-boldest text-dark">Rp ' + new Intl.NumberFormat('id-ID').format(bill.amount) + '</td>' +
                         '<td class="text-center">' + statusBadge + '</td>' +
                         '</tr>';
