@@ -18,4 +18,13 @@ class WaliDashboardController extends Controller
         $students = Student::where('user_id', Auth::guard('wali')->user()->id)->orderBy('name', 'asc')->get();
         return view('users.dashboard.index', compact('informations', 'students'));
     }
+
+    public function app()
+    {
+        $informations = Information::with(
+            'informationCategory'
+        )->where('is_active', true)->latest()->take(5)->get();
+        $students = Student::where('user_id', Auth::guard('wali')->user()->id)->orderBy('name', 'asc')->get();
+        return view('users.dashboard.app', compact('informations', 'students'));
+    }
 }

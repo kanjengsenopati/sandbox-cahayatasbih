@@ -104,6 +104,7 @@ Route::prefix('wali')->group(function () {
     Route::post('register', [WaliAuthController::class, 'store'])->name('wali.register.store');
 
     Route::middleware('wali')->group(function () {
+        Route::get('app', [WaliDashboardController::class, 'app'])->name('wali.app');
         Route::get('dashboard', [WaliDashboardController::class, 'index'])->name('wali.dashboard');
         Route::resource('ppdb', WaliPpdbController::class)->names('wali.ppdb');
         Route::get('ppdb-history/pay/{id}', [PpdbHistoryController::class, 'pay'])->name('wali.ppdb-history.pay');
