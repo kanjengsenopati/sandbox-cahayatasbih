@@ -66,7 +66,7 @@ class PublicReportBillStudentController extends Controller
                                     'month' => $b->month,
                                     'year'  => $b->year
                                 ];
-                            })->toArray(),
+                            })->values()->toArray(),
                             'amount'         => $groupedBills->sum('amount'),
                             'status'         => $first->status,
                         ];

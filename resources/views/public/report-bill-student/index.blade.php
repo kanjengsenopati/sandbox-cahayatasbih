@@ -99,7 +99,7 @@
                 </div>
             </div>
             <div>
-                <img src="{{ asset('assets/media/logos/logo-1.svg') }}" class="h-40px" alt="">
+                <img src="{{ url('assets/media/logos/logo.png') }}" class="h-40px" alt="">
             </div>
         </div>
     </div>
@@ -157,13 +157,15 @@
                     @php
                         $avatar = $row->avatar;
                         if ($avatar) {
-                            if (!str_starts_with($avatar, 'http') && !str_starts_with($avatar, 'storage/') && !str_starts_with($avatar, 'assets/')) {
-                                $avatarUrl = asset('storage/images/avatar/' . $avatar);
+                            if (str_starts_with($avatar, 'http')) {
+                                $avatarUrl = $avatar;
+                            } elseif (str_starts_with($avatar, 'storage/') || str_starts_with($avatar, 'assets/')) {
+                                $avatarUrl = url($avatar);
                             } else {
-                                $avatarUrl = asset($avatar);
+                                $avatarUrl = url('storage/images/avatar/' . $avatar);
                             }
                         } else {
-                            $avatarUrl = asset('assets/media/avatars/default.png');
+                            $avatarUrl = url('assets/media/avatars/default.png');
                         }
                         
                         $pct = $row->total_bill == 0 ? 0 : ($row->total_paid / $row->total_bill) * 100;
