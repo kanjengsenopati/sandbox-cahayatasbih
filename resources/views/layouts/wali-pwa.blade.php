@@ -68,7 +68,7 @@
             .card-premium { @apply bg-white rounded-3xl shadow-premium p-5 border border-slate-50; }
             .glass-nav { @apply backdrop-blur-xl bg-white/90 border-t border-slate-100; }
             
-            .btn-primary { @apply bg-blue-600 text-white font-bold py-4 px-6 rounded-2xl shadow-lg shadow-blue-200 active:scale-95 transition-all; }
+            .btn-primary { @apply bg-blue-600 text-white font-bold py-4 px-6 rounded-2xl shadow-lg shadow-blue-200 active:scale-95 transition-all disabled:bg-slate-300; }
             .input-premium { @apply w-full bg-slate-50 border-0 rounded-2xl py-4 px-5 text-slate-900 font-semibold placeholder:text-slate-400 focus:ring-2 focus:ring-blue-600/20 transition-all; }
         }
         
@@ -79,35 +79,51 @@
             background: linear-gradient(135deg, #2563EB 0%, #1d4ed8 100%);
         }
         
-        /* Hide scrollbar */
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     </style>
     
-    <!-- FontAwesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
-<body class="bg-slate-50 text-slate-900 selection:bg-blue-100 selection:text-blue-700">
+<body class="bg-slate-50 text-slate-900 overflow-x-hidden">
 
-    <main class="max-w-md mx-auto min-h-screen relative overflow-x-hidden">
+    <main class="max-w-md mx-auto min-h-screen relative">
         @yield('content')
     </main>
 
     <!-- PWA Install Prompt (Premium Bottom Sheet style) -->
     <div id="pwa-install-prompt" class="fixed inset-0 z-[100] flex items-end justify-center p-5 transform translate-y-full transition-transform duration-700 ease-in-out hidden">
-        <div class="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onclick="dismissInstallPrompt()"></div>
-        <div class="bg-white w-full max-w-sm rounded-[32px] p-8 relative z-10 shadow-2xl">
-            <div class="w-16 h-1 bg-slate-200 rounded-full mx-auto mb-8"></div>
+        <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onclick="dismissInstallPrompt()"></div>
+        <div class="bg-white w-full max-w-sm rounded-[40px] p-8 relative z-10 shadow-2xl">
+            <div class="w-16 h-1.5 bg-slate-100 rounded-full mx-auto mb-8"></div>
             <div class="text-center mb-8">
-                <div class="w-20 h-20 bg-blue-600 rounded-3xl mx-auto flex items-center justify-center text-white text-4xl shadow-xl shadow-blue-100 mb-6">
-                    <i class="fas fa-mosque"></i>
+                <div class="w-24 h-24 bg-blue-600 rounded-[32px] mx-auto flex items-center justify-center text-white text-5xl shadow-xl shadow-blue-100 mb-6 relative overflow-hidden">
+                    <i class="fas fa-mosque relative z-10"></i>
+                    <div class="absolute top-0 right-0 w-full h-full bg-white/10 skew-x-12 translate-x-1/2"></div>
                 </div>
-                <h3 class="text-xl font-extrabold text-slate-900 mb-2">Pasang Aplikasi Wali</h3>
-                <p class="text-slate-500 text-sm leading-relaxed px-4">Nikmati kemudahan akses portal santri langsung dari layar utama Anda.</p>
+                <h3 class="text-2xl font-black text-slate-900 mb-2">Pasang Aplikasi</h3>
+                <p class="text-slate-500 text-sm leading-relaxed px-4">Akses Portal Wali Santri lebih cepat, aman, dan praktis langsung dari layar utama HP Anda.</p>
             </div>
-            <div class="space-y-3">
+            
+            <!-- Android / Desktop Install -->
+            <div id="android-install-area" class="hidden space-y-3">
                 <button id="btn-install-pwa" class="w-full btn-primary">Install Sekarang</button>
-                <button onclick="dismissInstallPrompt()" class="w-full py-4 text-slate-400 font-bold text-sm uppercase tracking-widest">Nanti Saja</button>
+                <button onclick="dismissInstallPrompt()" class="w-full py-4 text-slate-400 font-bold text-xs uppercase tracking-[0.2em]">Nanti Saja</button>
+            </div>
+
+            <!-- iOS Manual Install Instructions -->
+            <div id="ios-install-area" class="hidden">
+                <div class="bg-slate-50 rounded-3xl p-5 border border-slate-100 mb-6">
+                    <div class="flex items-start gap-4 mb-4">
+                        <div class="w-8 h-8 bg-white rounded-lg flex items-center justify-center text-slate-400 shadow-sm"><i class="fas fa-share-square"></i></div>
+                        <p class="text-xs text-slate-600 font-medium">1. Klik tombol <span class="font-bold text-slate-900">Share</span> di bagian bawah browser Safari.</p>
+                    </div>
+                    <div class="flex items-start gap-4">
+                        <div class="w-8 h-8 bg-white rounded-lg flex items-center justify-center text-slate-400 shadow-sm"><i class="fas fa-plus-square"></i></div>
+                        <p class="text-xs text-slate-600 font-medium">2. Pilih menu <span class="font-bold text-slate-900">Add to Home Screen</span> (Tambah ke Layar Utama).</p>
+                    </div>
+                </div>
+                <button onclick="dismissInstallPrompt()" class="w-full btn-primary">Saya Mengerti</button>
             </div>
         </div>
     </div>
@@ -117,70 +133,105 @@
     <nav class="fixed bottom-0 left-0 right-0 h-20 glass-nav z-50 flex items-center justify-around px-4">
         <a href="{{ route('wali.app') }}" class="flex flex-col items-center gap-1.5 {{ request()->routeIs('wali.app') ? 'text-blue-600' : 'text-slate-400' }}">
             <div class="relative">
-                <i class="fas fa-home-alt text-xl"></i>
+                <i class="fas fa-house-chimney text-xl"></i>
                 @if(request()->routeIs('wali.app'))
-                    <div class="absolute -bottom-2 left-1/2 -translate-x-1/2 w-1 h-1 bg-blue-600 rounded-full"></div>
+                    <div class="absolute -bottom-2 left-1/2 -translate-x-1/2 w-1.5 h-1.5 bg-blue-600 rounded-full"></div>
                 @endif
             </div>
-            <span class="text-[10px] font-extrabold uppercase tracking-widest">Home</span>
+            <span class="text-[9px] font-black uppercase tracking-widest">Home</span>
         </a>
-        <a href="#" class="flex flex-col items-center gap-1.5 text-slate-400">
-            <i class="fas fa-file-invoice-dollar text-xl"></i>
-            <span class="text-[10px] font-extrabold uppercase tracking-widest">Tagihan</span>
+        <a href="{{ route('wali.bills') }}" class="flex flex-col items-center gap-1.5 {{ request()->routeIs('wali.bills') ? 'text-blue-600' : 'text-slate-400' }}">
+            <div class="relative">
+                <i class="fas fa-receipt text-xl"></i>
+                @if(request()->routeIs('wali.bills'))
+                    <div class="absolute -bottom-2 left-1/2 -translate-x-1/2 w-1.5 h-1.5 bg-blue-600 rounded-full"></div>
+                @endif
+            </div>
+            <span class="text-[9px] font-black uppercase tracking-widest">Tagihan</span>
         </a>
-        <a href="#" class="flex flex-col items-center gap-1.5 text-slate-400">
-            <i class="fas fa-user-circle text-xl"></i>
-            <span class="text-[10px] font-extrabold uppercase tracking-widest">Profile</span>
+        <a href="{{ route('wali.profile') }}" class="flex flex-col items-center gap-1.5 {{ request()->routeIs('wali.profile') ? 'text-blue-600' : 'text-slate-400' }}">
+            <div class="relative">
+                <i class="fas fa-user-gear text-xl"></i>
+                @if(request()->routeIs('wali.profile'))
+                    <div class="absolute -bottom-2 left-1/2 -translate-x-1/2 w-1.5 h-1.5 bg-blue-600 rounded-full"></div>
+                @endif
+            </div>
+            <span class="text-[9px] font-black uppercase tracking-widest">Profile</span>
         </a>
     </nav>
     @endif
 
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
-        // SW Registration
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('/sw-wali.js');
-            });
-        }
-
-        // Install Prompt Logic
+        // PWA Installation & Forced Display Logic
         let deferredPrompt;
         const promptContainer = document.getElementById('pwa-install-prompt');
         const installBtn = document.getElementById('btn-install-pwa');
+        const androidArea = document.getElementById('android-install-area');
+        const iosArea = document.getElementById('ios-install-area');
+
+        // Check if already in standalone mode
+        const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+
+        function showInstallPrompt() {
+            if (isStandalone) return; // Don't show if already installed
+            
+            const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+            
+            promptContainer.classList.remove('hidden');
+            setTimeout(() => {
+                promptContainer.classList.remove('translate-y-full');
+            }, 100);
+
+            if (isIOS) {
+                iosArea.classList.remove('hidden');
+            } else {
+                androidArea.classList.remove('hidden');
+            }
+        }
 
         window.addEventListener('beforeinstallprompt', (e) => {
             e.preventDefault();
             deferredPrompt = e;
-            
-            // Auto show after delay if not dismissed
-            if (!localStorage.getItem('pwa_prompt_dismissed')) {
-                setTimeout(() => {
-                    promptContainer.classList.remove('hidden');
-                    setTimeout(() => {
-                        promptContainer.classList.remove('translate-y-full');
-                    }, 50);
-                }, 5000);
-            }
+            showInstallPrompt();
         });
+
+        // Forced show on /wali/app if not standalone and not firing event
+        @if(request()->routeIs('wali.app'))
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                if (!isStandalone && !deferredPrompt) {
+                    showInstallPrompt();
+                }
+            }, 3000);
+        });
+        @endif
 
         installBtn.addEventListener('click', async () => {
             if (deferredPrompt) {
                 deferredPrompt.prompt();
                 const { outcome } = await deferredPrompt.userChoice;
-                if (outcome === 'accepted') {
-                    dismissInstallPrompt();
-                }
+                if (outcome === 'accepted') dismissInstallPrompt();
                 deferredPrompt = null;
             }
         });
 
         function dismissInstallPrompt() {
             promptContainer.classList.add('translate-y-full');
-            localStorage.setItem('pwa_prompt_dismissed', 'true');
-            setTimeout(() => {
-                promptContainer.classList.add('hidden');
-            }, 700);
+            setTimeout(() => promptContainer.classList.add('hidden'), 700);
+        }
+
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw-wali.js');
+            });
         }
     </script>
+
+    @if(session('success'))
+    <script>
+        Swal.fire({ icon: 'success', title: 'Berhasil', text: "{{ session('success') }}", confirmButtonColor: '#2563eb', customClass: { popup: 'rounded-3xl' } });
+    </script>
+    @endif
 </body>
 </html>

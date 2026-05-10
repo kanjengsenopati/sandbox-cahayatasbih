@@ -106,6 +106,13 @@ Route::prefix('wali')->group(function () {
     Route::middleware('wali')->group(function () {
         Route::get('app', [WaliDashboardController::class, 'app'])->name('wali.app');
         Route::get('switch-student/{id}', [WaliDashboardController::class, 'switchStudent'])->name('wali.switch-student');
+        Route::get('history', [WaliDashboardController::class, 'history'])->name('wali.history');
+        Route::get('bills', [WaliDashboardController::class, 'bills'])->name('wali.bills');
+        Route::get('limit', [WaliDashboardController::class, 'limit'])->name('wali.limit');
+        Route::post('limit', [WaliDashboardController::class, 'updateLimit'])->name('wali.update-limit');
+        Route::get('topup', [WaliDashboardController::class, 'topup'])->name('wali.topup');
+        Route::post('topup', [WaliDashboardController::class, 'storeTopup'])->name('wali.store-topup');
+        Route::get('profile', [WaliDashboardController::class, 'profile'])->name('wali.profile');
         Route::get('dashboard', [WaliDashboardController::class, 'index'])->name('wali.dashboard');
         Route::resource('ppdb', WaliPpdbController::class)->names('wali.ppdb');
         Route::get('ppdb-history/pay/{id}', [PpdbHistoryController::class, 'pay'])->name('wali.ppdb-history.pay');

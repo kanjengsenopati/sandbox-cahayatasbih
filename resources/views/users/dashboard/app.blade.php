@@ -69,29 +69,29 @@
 <!-- Quick Actions (Fintech Native Layout) -->
 <div class="px-6 -mt-12 relative z-20 mb-8">
     <div class="bg-white rounded-[32px] shadow-card p-6 flex justify-around items-center border border-slate-50">
-        <a href="#" class="flex flex-col items-center gap-2.5">
+        <a href="{{ route('wali.topup') }}" class="flex flex-col items-center gap-2.5">
             <div class="w-14 h-14 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center text-xl shadow-sm border border-emerald-100/50 active:scale-90 transition-transform">
                 <i class="fas fa-plus-circle"></i>
             </div>
             <span class="text-[10px] font-extrabold text-slate-800 uppercase tracking-tighter">Topup</span>
         </a>
-        <a href="#" class="flex flex-col items-center gap-2.5">
+        <a href="{{ route('wali.history') }}" class="flex flex-col items-center gap-2.5">
             <div class="w-14 h-14 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center text-xl shadow-sm border border-blue-100/50 active:scale-90 transition-transform">
                 <i class="fas fa-history"></i>
             </div>
             <span class="text-[10px] font-extrabold text-slate-800 uppercase tracking-tighter">Riwayat</span>
         </a>
-        <a href="#" class="flex flex-col items-center gap-2.5">
+        <a href="{{ route('wali.limit') }}" class="flex flex-col items-center gap-2.5">
             <div class="w-14 h-14 bg-purple-50 text-purple-600 rounded-2xl flex items-center justify-center text-xl shadow-sm border border-purple-100/50 active:scale-90 transition-transform">
                 <i class="fas fa-shield-halved"></i>
             </div>
             <span class="text-[10px] font-extrabold text-slate-800 uppercase tracking-tighter">Limit</span>
         </a>
-        <a href="#" class="flex flex-col items-center gap-2.5">
+        <a href="{{ route('wali.bills') }}" class="flex flex-col items-center gap-2.5">
             <div class="w-14 h-14 bg-orange-50 text-orange-600 rounded-2xl flex items-center justify-center text-xl shadow-sm border border-orange-100/50 active:scale-90 transition-transform">
-                <i class="fas fa-layer-group"></i>
+                <i class="fas fa-file-invoice-dollar"></i>
             </div>
-            <span class="text-[10px] font-extrabold text-slate-800 uppercase tracking-tighter">Lainnya</span>
+            <span class="text-[10px] font-extrabold text-slate-800 uppercase tracking-tighter">Tagihan</span>
         </a>
     </div>
 </div>
