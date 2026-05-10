@@ -19,12 +19,12 @@
         box-shadow: 0 4px 12px rgba(0,0,0,0.05);
     }
     .month-card.paid {
-        background-color: #e8fff3;
-        border-color: #50cd89;
+        background-color: #f0fdf4;
+        border-color: #10b981;
     }
     .month-card.unpaid {
-        background-color: #fff8dd;
-        border-color: #ffc700;
+        background-color: #fffbeb;
+        border-color: #f59e0b;
     }
     .form-check-custom .form-check-input {
         width: 1.5rem;
@@ -52,11 +52,11 @@
                     <!-- Left: Title & Year -->
                     <div class="col-md-6 d-flex flex-column text-start">
                          <div class="d-flex align-items-center mb-1">
-                             <span class="text-dark fs-5 fw-bolder me-2">{{ $bill->name }}</span>
-                             <span class="badge badge-light-warning fw-bold fs-8">Tagihan Lain</span>
+                             <span class="text-slate-900 fs-5 fw-bolder me-2">{{ $bill->name }}</span>
+                             <span class="badge badge-warning fw-bold fs-8 px-3 py-1 text-white">Tagihan Lain</span>
                          </div>
-                         <span class="text-muted fs-7 fw-semibold">
-                            <i class="fas fa-calendar-alt me-1 text-muted fs-8"></i>
+                         <span class="text-slate-500 fs-7 fw-bold">
+                            <i class="fas fa-calendar-alt me-1 text-slate-400 fs-8"></i>
                             Tahun Ajaran {{ $bill->academicYear->name ?? '-' }}
                          </span>
                     </div>
@@ -65,17 +65,17 @@
                     <div class="col-md-6 d-flex justify-content-md-end align-items-center mt-3 mt-md-0 gap-2 gap-md-4">
                          <!-- Paid Stat -->
                          <div class="d-flex flex-column align-items-start align-items-md-end">
-                             <span class="fs-8 text-muted fw-bold text-uppercase mb-1">Terbayar</span>
-                             <span class="badge badge-light-success fs-7 fw-bolder">Rp {{ number_format($paidAmount, 0, ',', '.') }}</span>
+                             <span class="fs-8 text-slate-500 fw-bold text-uppercase mb-1">Terbayar</span>
+                             <span class="badge badge-success fs-7 fw-bolder px-3 py-1 text-white">Rp {{ number_format($paidAmount, 0, ',', '.') }}</span>
                          </div>
-
+ 
                         <!-- Unpaid Stat -->
                          <div class="d-flex flex-column align-items-start align-items-md-end border-start border-gray-300 ps-3 ms-1">
-                             <span class="fs-8 text-muted fw-bold text-uppercase mb-1">Sisa Tagihan</span>
-                             <span class="badge badge-light-danger fs-7 fw-bolder">Rp {{ number_format($unpaidAmount, 0, ',', '.') }}</span>
+                             <span class="fs-8 text-slate-500 fw-bold text-uppercase mb-1">Sisa Tagihan</span>
+                             <span class="badge badge-danger fs-7 fw-bolder px-3 py-1 text-white">Rp {{ number_format($unpaidAmount, 0, ',', '.') }}</span>
                          </div>
                          
-                         <div class="d-none d-md-block ms-3 text-muted fs-8 fst-italic">
+                         <div class="d-none d-md-block ms-3 text-slate-400 fs-8 fw-bold">
                             Lihat Rincian
                          </div>
                     </div>
@@ -111,10 +111,10 @@
                         >
                             <!-- Header: Month & Year -->
                             <div class="d-flex justify-content-between align-items-center mb-2">
-                                <span class="fw-bold fs-7 text-gray-700">
+                                <span class="fw-bold fs-7 text-slate-800">
                                     {{ \Carbon\Carbon::create()->month($month)->translatedFormat('F') }}
                                 </span>
-                                <span class="badge badge-light fs-9 text-muted">
+                                <span class="badge badge-secondary fs-9 text-slate-600 fw-bold">
                                     {{ $billDetail->year ?? ($month >= 7 ? 
                                         ($bill->academicYear->start_year ?? '-') : 
                                         ($bill->academicYear->end_year ?? '-')) 
@@ -124,7 +124,7 @@
 
                             <!-- Body: Amount -->
                             <div class="text-center my-2">
-                                <span class="fw-bolder fs-6 {{ $textColor }}">
+                                <span class="fw-bolder fs-5 {{ $isPaid ? 'text-emerald-600' : ($amount > 0 ? 'text-amber-600' : 'text-slate-400') }}">
                                     @if($amount > 0)
                                         Rp {{ number_format($amount, 0, ',', '.') }}
                                     @else
@@ -132,14 +132,14 @@
                                     @endif
                                 </span>
                                 @if($isPaid && $detailPayment)
-                                    <div class="fs-9 text-muted mt-2 pt-2 border-top border-gray-300">
-                                        <div class="d-flex justify-content-center align-items-center mb-1">
+                                    <div class="fs-9 text-slate-500 mt-2 pt-2 border-top border-gray-200">
+                                        <div class="d-flex justify-content-center align-items-center mb-1 fw-bold">
                                             <i class="fas fa-calendar-alt me-1 fs-9"></i>
                                             {{ !empty($billDetail->paid_date) ? date('d/m/y', strtotime($billDetail->paid_date)) : '-' }}
                                         </div>
-                                        <div class="fw-bold text-dark">{{ $billDetail->payment_method ?? '-' }}</div>
+                                        <div class="fw-bolder text-slate-700">{{ $billDetail->payment_method ?? '-' }}</div>
                                         @if(strtoupper($billDetail->payment_method) == 'TUNAI' || strtoupper($billDetail->payment_method) == 'CASH')
-                                            <div class="text-primary fst-italic fs-9">
+                                            <div class="text-primary fw-bold fs-9">
                                                 <i class="fas fa-user-check me-1"></i>
                                                 {{ $detailPayment->admin->name ?? $detailPayment->user->name ?? 'Admin' }}
                                             </div>
@@ -151,8 +151,8 @@
                             <!-- Footer: Action/Status -->
                             <div class="mt-2 d-flex justify-content-center align-items-center">
                                 @if($isPaid)
-                                    <span class="badge badge-light-success fw-bold px-2 py-1">
-                                        <i class="fas fa-check-circle me-1"></i> Lunas
+                                    <span class="badge badge-success fw-bolder px-3 py-1 text-white">
+                                        <i class="fas fa-check-circle me-1 text-white"></i> Lunas
                                     </span>
                                 @elseif($showModal)
                                     <div class="form-check form-check-custom form-check-solid form-check-sm">
@@ -167,12 +167,12 @@
                                             data-bill-name="{{ $bill->name }}" 
                                             data-amount="{{ $amount }}"
                                             onclick="event.stopPropagation()">
-                                        <label class="form-check-label fw-bold text-gray-700 ms-2 fs-7 cursor-pointer" for="bill-other-{{ $bill->id }}-{{ $month }}" onclick="event.stopPropagation()">
+                                        <label class="form-check-label fw-bold text-slate-700 ms-2 fs-7 cursor-pointer" for="bill-other-{{ $bill->id }}-{{ $month }}" onclick="event.stopPropagation()">
                                             Bayar
                                         </label>
                                     </div>
                                 @else
-                                    <span class="badge badge-light text-muted fs-8">-</span>
+                                    <span class="badge badge-light text-slate-400 fs-8">-</span>
                                 @endif
                             </div>
                         </div>

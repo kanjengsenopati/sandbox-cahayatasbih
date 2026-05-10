@@ -1,11 +1,37 @@
 @extends('layouts.master', ['title' => 'Data Pembayaran'])
 @push('css')
 <style>
+    :root {
+        --pakrt-primary: #2563eb;
+        --pakrt-success: #10b981;
+        --pakrt-error: #dc2626;
+        --pakrt-slate-900: #0f172a;
+        --pakrt-slate-800: #1e293b;
+        --pakrt-slate-700: #334155;
+        --pakrt-slate-600: #475569;
+        --pakrt-slate-500: #64748b;
+        --pakrt-slate-400: #94a3b8;
+    }
+
+    .text-slate-900 { color: var(--pakrt-slate-900) !important; }
+    .text-slate-800 { color: var(--pakrt-slate-800) !important; }
+    .text-slate-700 { color: var(--pakrt-slate-700) !important; }
+    .text-slate-600 { color: var(--pakrt-slate-600) !important; }
+    .text-slate-500 { color: var(--pakrt-slate-500) !important; }
+    .text-slate-400 { color: var(--pakrt-slate-400) !important; }
+    .text-emerald-600 { color: var(--pakrt-success) !important; }
+    .text-amber-600 { color: #d97706 !important; }
+
+    .badge-success { background-color: var(--pakrt-success) !important; color: white !important; }
+    .badge-danger { background-color: var(--pakrt-error) !important; color: white !important; }
+    .badge-primary { background-color: var(--pakrt-primary) !important; color: white !important; }
+
     .card-information {
-        background-color: #f8f9fa;
-        padding: 20px;
-        border-radius: 10px;
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        background-color: #ffffff;
+        padding: 24px;
+        border-radius: 24px;
+        box-shadow: 0 8px 30px rgba(0,0,0,0.04);
+        border: 1px solid #f1f5f9;
     }
 
     .card-information .mb-3 {
@@ -33,10 +59,6 @@
         .card-information span {
             width: 50%;
         }
-    }
-
-    .d-flex.align-items-center>*:not(:last-child) {
-        margin-right: 10px;
     }
 
     .btn-custom-purple {
@@ -80,7 +102,7 @@
                     <!--end::Item-->
                     <!--begin::Item-->
                     <a class="breadcrumb-item" href="{{ route('bill.index') }}">
-                        <li class="text-muted">
+                        <li class="text-slate-500">
                             Data Pembayaran
                         </li>
                     </a>
@@ -203,9 +225,9 @@
                                     <div class="card-body pt-3">
                                         <div class="card-information">
                                             <div class="mb-3">
-                                                <span class="fw-bold text-muted">Tahun Ajaran</span>
+                                                <span class="fw-bold text-slate-500">Tahun Ajaran</span>
                                                 :&nbsp;
-                                                <span><b>
+                                                <span><b class="text-slate-800">
                                                     @if(request('academic_year_id'))
                                                         {{ $academicYears->where('id', request('academic_year_id'))->first()->name ?? 'Semua Tahun Ajaran' }}
                                                     @else
@@ -214,24 +236,24 @@
                                                 </b></span>
                                             </div>
                                             <div class="mb-3">
-                                                <span class="fw-bold text-muted">NIS</span>
+                                                <span class="fw-bold text-slate-500">NIS</span>
                                                 :&nbsp;
-                                                <span>{{ @$student->nis ?? '' }}</span>
+                                                <span class="text-slate-700 fw-semibold">{{ @$student->nis ?? '' }}</span>
                                             </div>
                                             <div class="mb-3">
-                                                <span class="fw-bold text-muted">Nama</span>
+                                                <span class="fw-bold text-slate-500">Nama</span>
                                                 :&nbsp;
-                                                <span>{{ @$student->name ?? '' }}</span>
+                                                <span class="text-slate-900 fw-bold">{{ @$student->name ?? '' }}</span>
                                             </div>
                                             <div class="mb-3">
-                                                <span class="fw-bold text-muted">Kelas</span>
+                                                <span class="fw-bold text-slate-500">Kelas</span>
                                                 :&nbsp;
-                                                <span>{{ @$student->classroom->name ?? '' }}</span>
+                                                <span class="text-slate-700 fw-semibold">{{ @$student->classroom->name ?? '' }}</span>
                                             </div>
                                             <div class="mb-3">
-                                                <span class="fw-bold text-muted">Status</span>
+                                                <span class="fw-bold text-slate-500">Status</span>
                                                 :&nbsp;
-                                                <span>{{ @$student->translatedStatus() ?? '' }}</span>
+                                                <span class="badge badge-light-success fw-bold">{{ @$student->translatedStatus() ?? '' }}</span>
                                             </div>
                                         </div>
                                         <div class="separator mb-6"></div>
@@ -240,7 +262,7 @@
                                     <div id="kt_accordion_1" class="accordion accordion-flush mx-5">
                                         <div class="accordion-item">
                                             <h2 class="accordion-header" id="kt_accordion_1_header_1">
-                                                <button class="accordion-button fs-4 fw-semibold" type="button"
+                                                <button class="accordion-button fs-4 fw-boldest text-slate-800" type="button"
                                                     data-bs-toggle="collapse" data-bs-target="#kt_accordion_1_body_1"
                                                     aria-expanded="true" aria-controls="kt_accordion_1_body_1">
                                                     Fitur Kilat
@@ -251,13 +273,13 @@
                                                 data-bs-parent="#kt_accordion_1">
                                                 <div class="accordion-body">
 
-                                                    <ul class="nav nav-tabs nav-line-tabs nav-line-tabs-2x mb-5 fs-6">
+                                                    <ul class="nav nav-tabs nav-line-tabs nav-line-tabs-2x mb-5 fs-6 fw-boldest">
                                                         <li class="nav-item">
-                                                            <a class="nav-link active" data-bs-toggle="tab"
+                                                            <a class="nav-link active text-slate-800" data-bs-toggle="tab"
                                                                 href="#kt_tab_pane_4">Bulanan</a>
                                                         </li>
                                                         <li class="nav-item">
-                                                            <a class="nav-link" data-bs-toggle="tab"
+                                                            <a class="nav-link text-slate-600" data-bs-toggle="tab"
                                                                 href="#kt_tab_pane_5">Lainnya</a>
                                                         </li>
                                                         <div
@@ -294,7 +316,7 @@
                                         <div class="separator mb-6"></div>
                                         <div class="accordion-item">
                                             <h2 class="accordion-header" id="kt_accordion_1_header_1">
-                                                <button class="accordion-button fs-4 fw-semibold" type="button"
+                                                <button class="accordion-button fs-4 fw-boldest text-slate-800" type="button"
                                                     data-bs-toggle="collapse"
                                                     data-bs-target="#accordion-tagihan-bulanan" aria-expanded="true"
                                                     aria-controls="accordion-tagihan-bulanan">
@@ -309,42 +331,31 @@
                                                         <table id="table-bill-monthly"
                                                             class="table align-middle table-row-dashed ">
                                                             <thead>
-                                                                <tr
-                                                                    class="text-start text-gray-400 fw-bolder fs-7 text-uppercase gs-0">
+                                                                <tr class="text-start text-slate-500 fw-boldest fs-7 text-uppercase gs-0">
                                                                     <th style="width: 5%">No</th>
                                                                     <th class="min-w-70px">Tahun Ajaran</th>
                                                                     <th class="min-w-125px">Item Pembayaran</th>
                                                                     <th class="min-w-125px">Total Tagihan</th>
                                                                     <th class="min-w-125px">Dibayar</th>
                                                                     <th class="min-w-125px">Sisa Tagihan</th>
-                                                                    <th class="text-center" style="width: 22%">
-                                                                        Status</th>
-                                                                    <th class="text-center min-w-100px"
-                                                                        style="width: 22%">Aksi
-                                                                    </th>
+                                                                    <th class="text-center" style="width: 22%">Status</th>
+                                                                    <th class="text-center min-w-100px" style="width: 22%">Aksi</th>
                                                                 </tr>
                                                             </thead>
-                                                            <tbody class="text-gray-600 fw-bold">
+                                                            <tbody class="text-slate-700 fw-bold">
                                                                 @foreach ($billMonth as $monthly)
                                                                 <tr>
                                                                     <td>{{ $loop->iteration }}</td>
                                                                     <td>{{ @$monthly->academicYear->name }}</td>
                                                                     <td>{{ @$monthly->name }}</td>
-                                                                    <td>Rp {{ number_format(@$monthly->total_bill, 0,
-                                                                        ',',
-                                                                        '.') }}</td>
-                                                                    <td>Rp {{ number_format(@$monthly->total_paid, 0,
-                                                                        ',', '.')
-                                                                        }}</td>
-                                                                    <td>Rp {{ number_format(@$monthly->total_unpaid, 0,
-                                                                        ',',
-                                                                        '.') }}</td>
-                                                                    <td><span
-                                                                            class="d-flex text-center bg-{{ @$monthly->total_unpaid == 0 ?
-                                                                                                 'success' : 'danger' }} text-white px-3 py-1 rounded-1">{{
-                                                                            @$monthly->total_unpaid == 0 ? 'Lunas' :
-                                                                            'Belum
-                                                                            Lunas' }}</span></td>
+                                                                    <td class="text-slate-900 fw-bolder">Rp {{ number_format(@$monthly->total_bill, 0, ',', '.') }}</td>
+                                                                    <td class="text-emerald-600 fw-bolder">Rp {{ number_format(@$monthly->total_paid, 0, ',', '.') }}</td>
+                                                                    <td class="text-danger fw-bolder">Rp {{ number_format(@$monthly->total_unpaid, 0, ',', '.') }}</td>
+                                                                    <td class="text-center">
+                                                                        <span class="badge badge-{{ @$monthly->total_unpaid == 0 ? 'success' : 'danger' }} fw-bold px-3 py-1">
+                                                                            {{ @$monthly->total_unpaid == 0 ? 'Lunas' : 'Belum Lunas' }}
+                                                                        </span>
+                                                                    </td>
                                                                     <td class="text-center">
                                                                         <a href="{{ route('bill.summary-bill', ['bill_type_id' => $monthly->id, 'student_id' => $student->id]) }}"
                                                                             class="btn btn-custom-purple btn-sm">
@@ -363,7 +374,7 @@
                                         <div class="separator mb-6"></div>
                                         <div class="accordion-item">
                                             <h2 class="accordion-header" id="kt_accordion_1_header_1">
-                                                <button class="accordion-button fs-4 fw-semibold" type="button"
+                                                <button class="accordion-button fs-4 fw-boldest text-slate-800" type="button"
                                                     data-bs-toggle="collapse" data-bs-target="#accordion-bill-other"
                                                     aria-expanded="true" aria-controls="accordion-bill-other">
                                                     Tagihan Lainnya
@@ -377,43 +388,31 @@
                                                         <table id="table-bill-monthly"
                                                             class="table align-middle table-row-dashed ">
                                                             <thead>
-                                                                <tr
-                                                                    class="text-start text-gray-400 fw-bolder fs-7 text-uppercase gs-0">
+                                                                <tr class="text-start text-slate-500 fw-boldest fs-7 text-uppercase gs-0">
                                                                     <th style="width: 5%">No</th>
                                                                     <th class="min-w-70px">Tahun Ajaran</th>
                                                                     <th class="min-w-125px">Item Pembayaran</th>
                                                                     <th class="min-w-125px">Total Tagihan</th>
                                                                     <th class="min-w-125px">Dibayar</th>
                                                                     <th class="min-w-125px">Sisa Tagihan</th>
-                                                                    <th class="text-center min-w-70px"
-                                                                        style="width: 22%">
-                                                                        Status</th>
-                                                                    <th class="text-center min-w-100px"
-                                                                        style="width: 22%">Aksi
-                                                                    </th>
+                                                                    <th class="text-center min-w-70px" style="width: 22%">Status</th>
+                                                                    <th class="text-center min-w-100px" style="width: 22%">Aksi</th>
                                                                 </tr>
                                                             </thead>
-                                                            <tbody class="text-gray-600 fw-bold">
+                                                            <tbody class="text-slate-700 fw-bold">
                                                                 @foreach ($billOthers as $other)
                                                                 <tr>
                                                                     <td>{{ $loop->iteration }}</td>
                                                                     <td>{{ @$other->academicYear->name }}</td>
                                                                     <td>{{ @$other->name }}</td>
-                                                                    <td>Rp {{ number_format(@$other->total_bill, 0, ',',
-                                                                        '.')
-                                                                        }}</td>
-                                                                    <td>Rp {{ number_format(@$other->total_paid, 0, ',',
-                                                                        '.') }}
+                                                                    <td class="text-slate-900 fw-bolder">Rp {{ number_format(@$other->total_bill, 0, ',', '.') }}</td>
+                                                                    <td class="text-emerald-600 fw-bolder">Rp {{ number_format(@$other->total_paid, 0, ',', '.') }}</td>
+                                                                    <td class="text-danger fw-bolder">Rp {{ number_format(@$other->total_unpaid, 0, ',', '.') }}</td>
+                                                                    <td class="text-center">
+                                                                        <span class="badge badge-{{ @$other->total_unpaid == 0 ? 'success' : 'danger' }} fw-bold px-3 py-1">
+                                                                            {{ @$other->total_unpaid == 0 ? 'Lunas' : 'Belum Lunas' }}
+                                                                        </span>
                                                                     </td>
-                                                                    <td>Rp {{ number_format(@$other->total_unpaid, 0,
-                                                                        ',', '.')
-                                                                        }}</td>
-                                                                    <td><span
-                                                                            class="d-flex text-center bg-{{ @$other->total_unpaid == 0 ?
-                                                                                                     'success' : 'danger' }} text-white px-3 py-1 rounded-1">{{
-                                                                            @$other->total_unpaid == 0 ? 'Lunas' :
-                                                                            'Belum Lunas'
-                                                                            }}</span></td>
                                                                     <td class="text-center">
                                                                         <a href="{{ route('bill.summary-bill', ['bill_type_id' => $other->id, 'student_id' => $student->id]) }}"
                                                                             class="btn btn-custom-purple btn-sm">
