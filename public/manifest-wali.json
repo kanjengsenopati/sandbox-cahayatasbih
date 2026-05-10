@@ -1,4 +1,5 @@
 {
+    "id": "cahaya-tasbih-wali-app",
     "name": "Wali Santri - Cahaya Tasbih",
     "short_name": "Wali Santri",
     "description": "Portal Orang Tua & Wali Santri Cahaya Tasbih",
@@ -10,12 +11,14 @@
         {
             "src": "https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.0.3/src/bold/mosque-bold.svg",
             "sizes": "192x192",
-            "type": "image/svg+xml"
+            "type": "image/svg+xml",
+            "purpose": "any maskable"
         },
         {
             "src": "https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.0.3/src/bold/mosque-bold.svg",
             "sizes": "512x512",
-            "type": "image/svg+xml"
+            "type": "image/svg+xml",
+            "purpose": "any maskable"
         }
     ]
 }
