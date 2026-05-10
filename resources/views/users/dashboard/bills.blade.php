@@ -51,21 +51,21 @@
         <div class="bill-card card-premium p-5 border-l-4 border-l-blue-600 shadow-sm" data-name="{{ strtolower($group['bill_type_name'] . ' ' . $group['academic_year']) }}">
             <div class="flex justify-between items-start mb-3">
                 <div class="flex-1 pr-3">
-                    <h3 class="text-[13px] font-black text-slate-900 uppercase leading-snug tracking-tight">{{ $group['bill_type_name'] }}</h3>
-                    <div class="text-[10px] font-bold text-slate-400 tracking-wide mt-0.5">{{ $group['academic_year'] }}</div>
-                    <div class="text-[20px] font-black text-slate-900 tracking-tight leading-none mt-2 tabular-nums">Rp{{ number_format($group['total'], 0, ',', '.') }}</div>
+                    <h3 class="text-[14px] font-black text-slate-900 uppercase leading-snug tracking-tight">{{ $group['bill_type_name'] }}</h3>
+                    <div class="text-[11px] font-black text-blue-600 tracking-wide mt-0.5">{{ $group['academic_year'] }}</div>
+                    <div class="text-[22px] font-black text-slate-900 tracking-tight leading-none mt-2 tabular-nums">Rp{{ number_format($group['total'], 0, ',', '.') }}</div>
                 </div>
                 <a href="{{ route('wali.bill-detail', $group['bill_type_id']) }}" class="bg-blue-600 text-white px-5 py-2.5 rounded-[14px] text-[10px] font-black uppercase tracking-widest active:scale-95 transition-transform shadow-md shadow-blue-200 mt-1">Bayar</a>
             </div>
             
             <div class="flex gap-3 mt-3">
-                <div class="flex-1 bg-emerald-50/60 rounded-[14px] py-2.5 px-3 border border-emerald-100/40">
-                    <div class="text-[8px] font-black text-emerald-600/60 uppercase tracking-wider mb-0.5">Sudah Dibayarkan</div>
-                    <div class="text-[12px] font-black text-emerald-600 tabular-nums">Rp{{ number_format($group['paid'], 0, ',', '.') }}</div>
+                <div class="flex-1 bg-emerald-100 rounded-[14px] py-3 px-3.5">
+                    <div class="text-[9px] font-black text-emerald-700 uppercase tracking-wider mb-0.5">Sudah Dibayarkan :</div>
+                    <div class="text-[13px] font-black text-emerald-700 tabular-nums">Rp{{ number_format($group['paid'], 0, ',', '.') }}</div>
                 </div>
-                <div class="flex-1 bg-orange-50/60 rounded-[14px] py-2.5 px-3 border border-orange-100/40">
-                    <div class="text-[8px] font-black text-orange-600/60 uppercase tracking-wider mb-0.5">Kekurangan</div>
-                    <div class="text-[12px] font-black text-orange-600 tabular-nums">Rp{{ number_format($group['unpaid'], 0, ',', '.') }}</div>
+                <div class="flex-1 bg-orange-100 rounded-[14px] py-3 px-3.5">
+                    <div class="text-[9px] font-black text-orange-700 uppercase tracking-wider mb-0.5">Kekurangan :</div>
+                    <div class="text-[13px] font-black text-orange-700 tabular-nums">Rp{{ number_format($group['unpaid'], 0, ',', '.') }}</div>
                 </div>
             </div>
         </div>
@@ -86,23 +86,23 @@
         <div class="bill-card card-premium p-5 border-l-4 border-l-emerald-500 shadow-sm" data-name="{{ strtolower($group['bill_type_name'] . ' ' . $group['academic_year']) }}">
             <div class="flex justify-between items-start mb-3">
                 <div class="flex-1 pr-3">
-                    <h3 class="text-[13px] font-black text-slate-900 uppercase leading-snug tracking-tight">{{ $group['bill_type_name'] }}</h3>
-                    <div class="text-[10px] font-bold text-slate-400 tracking-wide mt-0.5">{{ $group['academic_year'] }}</div>
-                    <div class="text-[20px] font-black text-slate-900 tracking-tight leading-none mt-2 tabular-nums">Rp{{ number_format($group['total'], 0, ',', '.') }}</div>
+                    <h3 class="text-[14px] font-black text-slate-900 uppercase leading-snug tracking-tight">{{ $group['bill_type_name'] }}</h3>
+                    <div class="text-[11px] font-black text-emerald-600 tracking-wide mt-0.5">{{ $group['academic_year'] }}</div>
+                    <div class="text-[22px] font-black text-slate-900 tracking-tight leading-none mt-2 tabular-nums">Rp{{ number_format($group['total'], 0, ',', '.') }}</div>
                 </div>
-                <span class="inline-flex items-center gap-1.5 bg-emerald-100 text-emerald-700 px-4 py-2 rounded-[14px] text-[10px] font-black uppercase tracking-widest mt-1">
+                <span class="inline-flex items-center gap-1.5 bg-emerald-500 text-white px-4 py-2.5 rounded-[14px] text-[10px] font-black uppercase tracking-widest mt-1 shadow-sm shadow-emerald-200">
                     <i class="fas fa-check-circle text-[8px]"></i> Lunas
                 </span>
             </div>
             
             <div class="flex gap-3 mt-3">
-                <div class="flex-1 bg-emerald-50/60 rounded-[14px] py-2.5 px-3 border border-emerald-100/40">
-                    <div class="text-[8px] font-black text-emerald-600/60 uppercase tracking-wider mb-0.5">Total Dibayar</div>
-                    <div class="text-[12px] font-black text-emerald-600 tabular-nums">Rp{{ number_format($group['paid'], 0, ',', '.') }}</div>
+                <div class="flex-1 bg-emerald-100 rounded-[14px] py-3 px-3.5">
+                    <div class="text-[9px] font-black text-emerald-700 uppercase tracking-wider mb-0.5">Total Dibayar :</div>
+                    <div class="text-[13px] font-black text-emerald-700 tabular-nums">Rp{{ number_format($group['paid'], 0, ',', '.') }}</div>
                 </div>
-                <div class="flex-1 bg-slate-50/60 rounded-[14px] py-2.5 px-3 border border-slate-100/40">
-                    <div class="text-[8px] font-black text-slate-400/60 uppercase tracking-wider mb-0.5">Kekurangan</div>
-                    <div class="text-[12px] font-black text-slate-400 tabular-nums">Rp0</div>
+                <div class="flex-1 bg-slate-100 rounded-[14px] py-3 px-3.5">
+                    <div class="text-[9px] font-black text-slate-500 uppercase tracking-wider mb-0.5">Kekurangan :</div>
+                    <div class="text-[13px] font-black text-slate-500 tabular-nums">Rp0</div>
                 </div>
             </div>
         </div>
