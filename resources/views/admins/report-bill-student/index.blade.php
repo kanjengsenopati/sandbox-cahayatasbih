@@ -174,6 +174,15 @@
 
                         {{-- TAB 2: Rekap Per-Santri --}}
                         <div class="tab-pane fade" id="rekap-santri" role="tabpanel" aria-labelledby="rekap-santri-tab">
+                            <div class="d-flex justify-content-end gap-3 mt-4">
+                                <button type="button" id="btn-export-xlsx" class="btn btn-primary btn-sm">
+                                    <i class="fas fa-file-excel me-2"></i>Export Rekap Santri
+                                </button>
+                                <button type="button" id="btn-share-report" class="btn btn-info btn-sm">
+                                    <i class="fas fa-share-alt me-2"></i>Share Report
+                                </button>
+                            </div>
+
                             {{-- Summary Cards Rekap --}}
                             <div class="d-flex flex-wrap gap-2 mt-4 mb-4" style="border: 1px solid #e0e0e0; padding: 16px; border-radius: 8px;">
                                 <div class="card bg-light-info flex-grow-1">
@@ -503,5 +512,60 @@ document.getElementById('btn-wa-blast').addEventListener('click', function () {
         }
     });
 });
+
+// Export XLSX
+document.getElementById('btn-export-xlsx').addEventListener('click', function() {
+    const params = new URLSearchParams(getFilterData()).toString();
+    window.location.href = "{{ route('report-bill-student.export') }}?" + params;
+});
+
+// Share Report
+document.getElementById('btn-share-report').addEventListener('click', function() {
+    Swal.fire({
+        title: 'Membagikan Laporan',
+        text: 'Apakah Anda ingin membuat link publik untuk filter saat ini?',
+        icon: 'info',
+        showCancelButton: true,
+        confirmButtonText: 'Ya, Buat Link',
+        cancelButtonText: 'Batal'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            Swal.fire({
+                title: 'Mohon Tunggu',
+                text: 'Sedang membuat link...',
+                allowOutsideClick: false,
+                didOpen: () => { Swal.showLoading(); }
+            });
+
+            axios.get("{{ route('report-bill-student.share') }}", {
+                params: getFilterData()
+            }).then(response => {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Link Berhasil Dibuat',
+                    html: `
+                        <div class="mt-3">
+                            <input type="text" class="form-control mb-3" id="share-url" value="${response.data.url}" readonly>
+                            <button class="btn btn-primary btn-sm" onclick="copyShareUrl()">
+                                <i class="fas fa-copy me-2"></i>Salin Link
+                            </button>
+                        </div>
+                    `,
+                });
+            }).catch(error => {
+                Swal.fire('Error', 'Gagal membuat link share', 'error');
+            });
+        }
+    });
+});
+
+function copyShareUrl() {
+    const copyText = document.getElementById("share-url");
+    copyText.select();
+    copyText.setSelectionRange(0, 99999);
+    navigator.clipboard.writeText(copyText.value);
+    
+    toastr.success('Link berhasil disalin!');
+}
 </script>
 @endpush

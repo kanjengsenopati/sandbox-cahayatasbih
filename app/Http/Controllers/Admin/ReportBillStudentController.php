@@ -20,6 +20,10 @@ use App\Jobs\SendToWhatsappNotificationJob;
 use App\Jobs\SendBillWhatsappNotificationJob;
 use App\Jobs\SendUnpaidBillNotificationJob;
 use Illuminate\Support\Facades\Log;
+use App\Exports\ReportBillStudentExport;
+use Maatwebsite\Excel\Facades\Excel;
+use Illuminate\Support\Facades\URL;
+use Illuminate\Support\Facades\Crypt;
 
 class ReportBillStudentController extends Controller
 {
@@ -36,7 +40,7 @@ class ReportBillStudentController extends Controller
     /**
      * Indonesian month names.
      */
-    private const MONTH_NAMES = [
+    public const MONTH_NAMES = [
         1 => 'Januari', 2 => 'Februari', 3 => 'Maret', 4 => 'April',
         5 => 'Mei', 6 => 'Juni', 7 => 'Juli', 8 => 'Agustus',
         9 => 'September', 10 => 'Oktober', 11 => 'November', 12 => 'Desember',
@@ -209,7 +213,7 @@ class ReportBillStudentController extends Controller
      * Build the optimized rekap query using JOIN + GROUP BY at DB level.
      * Groups all bill types across multiple academic years per student.
      */
-    private function buildRekapQuery()
+    public function buildRekapQuery()
     {
         $query = Student::query()
             ->select([
@@ -469,5 +473,38 @@ class ReportBillStudentController extends Controller
                 'message' => 'Gagal mengirim WA Blast: ' . $e->getMessage(),
             ], 500);
         }
+    }
+ 
+    // =========================================================================
+    // EXPORT & SHARE
+    // =========================================================================
+ 
+    public function exportXlsx()
+    {
+        $data = $this->buildRekapQuery()->get();
+        return Excel::download(new ReportBillStudentExport($data), 'rekap_pembayaran_santri_' . date('YmdHis') . '.xlsx');
+    }
+ 
+    public function share()
+    {
+        $filters = request()->only([
+            'school_id',
+            'classroom_id',
+            'academic_year_id',
+            'bill_type_id',
+            'status',
+            'start_date',
+            'end_date'
+        ]);
+ 
+        // Create a secure token containing filters
+        $token = Crypt::encrypt($filters);
+ 
+        $shareUrl = route('public.report-bill-student.index', ['token' => $token]);
+ 
+        return response()->json([
+            'success' => true,
+            'url'     => $shareUrl
+        ]);
     }
 }
