@@ -20,6 +20,9 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // Hide deprecation warnings from output (PHP 8.3+)
+        error_reporting(E_ALL & ~E_DEPRECATED);
+
         // Mengatur lokal ke bahasa Indonesia
         Carbon::setLocale('id');
         setlocale(LC_TIME, 'id_ID');
