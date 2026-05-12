@@ -223,7 +223,8 @@ function PembayaranPage() {
               </div>
             </div>
           </div>
-                {/* Upload bukti */}
+        )}
+        {/* Upload bukti */}
         <div className="px-5 pt-3">
           <ProofUploader tx={tx} onUpload={(f) => uploadMutation.mutate(f)} isUploading={uploadMutation.isPending} />
         </div>
@@ -263,8 +264,6 @@ function PembayaranPage() {
       </div>
     </div>
   );
-}
-;
 }
 
 function StickyAction({ children }: { children: React.ReactNode }) {

@@ -14,6 +14,11 @@ export default defineConfig({
     server: { entry: "server" },
   },
   vite: {
+    base: '/portalwalisantri/dist/client/',
+    build: {
+      manifest: true,
+      outDir: 'dist/client',
+    },
     plugins: [
       VitePWA({
         registerType: 'autoUpdate',
