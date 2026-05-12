@@ -6,7 +6,15 @@ const api = axios.create({
   headers: {
     'Accept': 'application/json',
     'Content-Type': 'application/json',
+    'X-Requested-With': 'XMLHttpRequest',
   },
+});
+
+// Add a request interceptor to handle CSRF tokens if needed
+api.interceptors.request.use((config) => {
+  // Laravel automatically sets XSRF-TOKEN cookie, axios handles it by default
+  // if xsrfCookieName and xsrfHeaderName are set.
+  return config;
 });
 
 export const postLogin = (data: any) => api.post('/login', data);
