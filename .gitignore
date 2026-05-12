@@ -27,3 +27,8 @@ frankenphp-worker.php
 Dockerfile
 docker-compose.yml
 
+
+/bootstrap/cache/*.php
+/storage/framework/sessions/*
+/storage/framework/views/*
+/storage/framework/cache/*
