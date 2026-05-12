@@ -1,58 +1,20 @@
-const CACHE_NAME = 'portal-wali-v2';
-const STATIC_ASSETS = [
-  '/wali/app',
-  '/manifest-wali.json',
-  '/icons/icon-192.png',
-  '/icons/icon-512.png'
-];
-
-self.addEventListener('install', event => {
-  event.waitUntil(
-    caches.open(CACHE_NAME).then(cache => cache.addAll(STATIC_ASSETS))
-  );
+// SW v3 - Self-destruct: clear all caches and unregister
+self.addEventListener('install', () => {
   self.skipWaiting();
 });
 
-self.addEventListener('activate', event => {
+self.addEventListener('activate', (event) => {
   event.waitUntil(
-    caches.keys().then(keys => Promise.all(
-      keys.filter(key => key !== CACHE_NAME).map(key => caches.delete(key))
-    ))
-  );
-  self.clients.claim();
-});
-
-self.addEventListener('fetch', event => {
-  const { request } = event;
-  const url = new URL(request.url);
-
-  // API calls: NetworkFirst
-  if (url.pathname.startsWith('/api/wali/')) {
-    event.respondWith(
-      fetch(request)
-        .then(response => {
-          const clonedResponse = response.clone();
-          caches.open(CACHE_NAME).then(cache => cache.put(request, clonedResponse));
-          return response;
-        })
-        .catch(() => caches.match(request))
-    );
-    return;
-  }
-
-  // Only process GET requests for caching
-  if (request.method !== 'GET') return;
-
-  // Static assets: CacheFirst
-  event.respondWith(
-    caches.match(request).then(response => {
-      return response || fetch(request).then(res => {
-          if (res.ok && url.origin === location.origin) {
-              const resClone = res.clone();
-              caches.open(CACHE_NAME).then(cache => cache.put(request, resClone));
-          }
-          return res;
-      });
+    caches.keys().then((cacheNames) => {
+      return Promise.all(
+        cacheNames.map((cacheName) => caches.delete(cacheName))
+      );
+    }).then(() => {
+      return self.registration.unregister();
+    }).then(() => {
+      return self.clients.matchAll();
+    }).then((clients) => {
+      clients.forEach((client) => client.navigate(client.url));
     })
   );
 });
