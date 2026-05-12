@@ -39,8 +39,9 @@ function Tagihan() {
   });
 
   const bills = useMemo(() => {
-    if (!billsData || !Array.isArray(billsData)) return [];
-    return billsData.map((b: any) => ({
+    if (!billsData) return [];
+    const allBills = [...(billsData.unpaid || []), ...(billsData.paid || [])];
+    return allBills.map((b: any) => ({
       id: b.id,
       name: b.name,
       category: b.category_name || "Lainnya",

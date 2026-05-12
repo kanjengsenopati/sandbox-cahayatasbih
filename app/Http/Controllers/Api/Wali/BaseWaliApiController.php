@@ -15,10 +15,11 @@ class BaseWaliApiController extends Controller
         
         $activeStudentId = session('active_student_id');
         
-        return Student::where('user_id', $user->id)
+        return Student::with(['classroom', 'school'])
+            ->where('user_id', $user->id)
             ->when($activeStudentId, function ($query) use ($activeStudentId) {
                 return $query->where('id', $activeStudentId);
             })
-            ->first() ?: Student::where('user_id', $user->id)->first();
+            ->first() ?: Student::with(['classroom', 'school'])->where('user_id', $user->id)->first();
     }
 }

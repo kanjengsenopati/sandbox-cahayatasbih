@@ -97,9 +97,7 @@ function LoginPage() {
               </span>
             </div>
             <h1 className="text-[26px] leading-[1.15] font-extrabold text-white tracking-tight">
-              Selamat Datang,
-              <br />
-              <span className="text-white/90">Wali Santri</span>
+              Selamat Datang, <span className="text-white/90">Wali Santri</span>
             </h1>
             <p className="text-[13px] text-white/75 leading-relaxed max-w-[20rem]">
               Pantau saldo, bayar tagihan, dan kelola keuangan ananda di pondok
@@ -181,22 +179,6 @@ function LoginPage() {
             </button>
           </form>
 
-          <div className="mt-5 flex items-center gap-3">
-            <div className="flex-1 h-px bg-border" />
-            <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
-              atau
-            </span>
-            <div className="flex-1 h-px bg-border" />
-          </div>
-
-          <button
-            type="button"
-            onClick={handleDemoLogin}
-            className="mt-4 w-full py-3.5 rounded-2xl border border-dashed border-primary/40 bg-primary/5 hover:bg-primary/10 transition active:scale-[0.98] flex items-center justify-center gap-2 text-primary font-semibold text-sm"
-          >
-            <Zap size={16} className="fill-primary" />
-            Quick Login — Demo Wali Siswa
-          </button>
         </div>
       </div>
     </div>

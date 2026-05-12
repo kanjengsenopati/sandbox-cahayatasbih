@@ -27,20 +27,50 @@ class DashboardController extends BaseWaliApiController
             
         $activeStudent = $this->resolveActiveStudent();
 
-        $tahfidzCount = 0;
-        $studyCount = 0;
-
+        $recentTransactions = collect();
         if ($activeStudent) {
             $tahfidzCount = Tahfidz::where('student_id', $activeStudent->id)->sum('number_of_pages');
             $studyCount = StudyGrade::where('student_id', $activeStudent->id)->distinct('study_id')->count();
+
+            $saldoHistories = \App\Models\SaldoHistory::where('student_id', $activeStudent->id)
+                ->where('status', 'SUCCESS')
+                ->latest()
+                ->take(5)
+                ->get()
+                ->map(function($item) {
+                    return [
+                        'type' => $item->type === 'IN' ? 'IN' : 'OUT',
+                        'amount' => $item->amount,
+                        'note' => $item->description ?? 'Topup Saldo',
+                        'created_at' => $item->created_at
+                    ];
+                });
+
+            $posTransactions = \App\Models\PointOfSaleTransaction::where('student_id', $activeStudent->id)
+                ->where('status', 'SUCCESS')
+                ->latest()
+                ->take(5)
+                ->get()
+                ->map(function($item) {
+                    return [
+                        'type' => 'OUT',
+                        'amount' => $item->pay_amount,
+                        'note' => 'Belanja Kantin',
+                        'created_at' => $item->paid_at ?? $item->created_at
+                    ];
+                });
+
+            $recentTransactions = $saldoHistories->concat($posTransactions)->sortByDesc('created_at')->take(5)->values();
         }
 
         return response()->json([
+            'user' => $user,
             'informations' => $informations,
             'students' => $students,
             'activeStudent' => $activeStudent,
             'tahfidzCount' => (int) $tahfidzCount,
             'studyCount' => (int) $studyCount,
+            'recentTransactions' => $recentTransactions,
         ]);
     }
 }
