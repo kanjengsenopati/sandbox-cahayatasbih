@@ -1,0 +1,1 @@
+if('serviceWorker' in navigator) {window.addEventListener('load', () => {navigator.serviceWorker.register('/portalwalisantri/dist/client/sw.js', { scope: '/portalwalisantri/dist/client/' })})}
