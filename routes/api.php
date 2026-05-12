@@ -133,3 +133,27 @@ Route::group(['prefix' => 'v1', 'middleware' => 'validate_api_key'], function ()
 Route::group(['middleware' => 'xendit'], function () {
     Route::post('callback-xendit', [TransactionController::class, 'callbackXendit']);
 });
+
+Route::prefix('wali')->group(function () {
+    Route::post('login', [App\Http\Controllers\Api\Wali\AuthController::class, 'login']);
+    Route::post('logout', [App\Http\Controllers\Api\Wali\AuthController::class, 'logout']);
+
+    Route::middleware(['auth:wali', 'api'])->group(function () {
+    Route::get('dashboard', [App\Http\Controllers\Api\Wali\DashboardController::class, 'index']);
+    Route::get('informations', [App\Http\Controllers\Api\Wali\InformationController::class, 'index']);
+    Route::get('students', [App\Http\Controllers\Api\Wali\StudentController::class, 'index']);
+    Route::get('active-student', [App\Http\Controllers\Api\Wali\StudentController::class, 'active']);
+    Route::get('saldo-histories', [App\Http\Controllers\Api\Wali\SaldoHistoryController::class, 'index']);
+    Route::get('saving-histories', [App\Http\Controllers\Api\Wali\SavingHistoryController::class, 'index']);
+    Route::get('bills', [App\Http\Controllers\Api\Wali\BillController::class, 'index']);
+    Route::get('pos-transactions', [App\Http\Controllers\Api\Wali\PosTransactionController::class, 'index']);
+    Route::post('topup', [App\Http\Controllers\Api\Wali\TopupController::class, 'store']);
+    Route::post('checkout', [App\Http\Controllers\Api\Wali\CheckoutController::class, 'store']);
+    Route::get('payment/{id}', [App\Http\Controllers\Api\Wali\PaymentController::class, 'show']);
+    Route::post('payment/{id}/upload-proof', [App\Http\Controllers\Api\Wali\PaymentProofController::class, 'store']);
+    Route::get('limit', [App\Http\Controllers\Api\Wali\LimitController::class, 'show']);
+    Route::put('limit', [App\Http\Controllers\Api\Wali\LimitController::class, 'update']);
+    Route::get('profile', [App\Http\Controllers\Api\Wali\ProfileController::class, 'show']);
+    Route::put('profile', [App\Http\Controllers\Api\Wali\ProfileController::class, 'update']);
+    Route::put('password', [App\Http\Controllers\Api\Wali\PasswordController::class, 'update']);
+});

@@ -105,7 +105,10 @@ Route::prefix('wali')->group(function () {
 
     Route::middleware('wali')->group(function () {
         Route::get('app', [WaliDashboardController::class, 'app'])->name('wali.app');
-        Route::get('switch-student/{id}', [WaliDashboardController::class, 'switchStudent'])->name('wali.switch-student');
+        Route::post('/switch-student/{id}', [WaliDashboardController::class, 'switchStudent'])->name('switch-student');
+
+    // SPA Fallback
+    Route::get('/app/{any?}', [WaliDashboardController::class, 'app'])->where('any', '.*')->name('app');
         Route::get('history', [WaliDashboardController::class, 'history'])->name('wali.history');
         Route::get('bills', [WaliDashboardController::class, 'bills'])->name('wali.bills');
         Route::get('bills/{id}', [WaliDashboardController::class, 'billDetail'])->name('wali.bill-detail');
@@ -117,7 +120,13 @@ Route::prefix('wali')->group(function () {
         Route::get('topup', [WaliDashboardController::class, 'topup'])->name('wali.topup');
         Route::post('topup', [WaliDashboardController::class, 'storeTopup'])->name('wali.store-topup');
         Route::get('profile', [WaliDashboardController::class, 'profile'])->name('wali.profile');
+        Route::post('profile', [WaliDashboardController::class, 'updateProfile'])->name('wali.update-profile');
+        Route::post('password', [WaliDashboardController::class, 'updatePassword'])->name('wali.update-password');
         Route::get('dashboard', [WaliDashboardController::class, 'index'])->name('wali.dashboard');
+        Route::get('news/{id}', [WaliDashboardController::class, 'newsDetail'])->name('wali.news-detail');
+        Route::get('tahfidz', [WaliDashboardController::class, 'tahfidz'])->name('wali.tahfidz');
+        Route::get('grades', [WaliDashboardController::class, 'grades'])->name('wali.grades');
+        Route::get('schedule', [WaliDashboardController::class, 'schedule'])->name('wali.schedule');
         Route::resource('ppdb', WaliPpdbController::class)->names('wali.ppdb');
         Route::get('ppdb-history/pay/{id}', [PpdbHistoryController::class, 'pay'])->name('wali.ppdb-history.pay');
         Route::resource('ppdb-history', PpdbHistoryController::class)->names('wali.ppdb-history');

@@ -1,23 +1,23 @@
 {
     "id": "cahaya-tasbih-wali-app",
-    "name": "Wali Santri - Cahaya Tasbih",
-    "short_name": "Wali Santri",
-    "description": "Portal Orang Tua & Wali Santri Cahaya Tasbih",
+    "name": "Portal Wali Santri - Cahaya Tasbih",
+    "short_name": "PortalWali",
+    "description": "Akses keuangan dan pendidikan santri di Cahaya Tasbih",
     "start_url": "/wali/app",
     "display": "standalone",
     "background_color": "#ffffff",
     "theme_color": "#2563eb",
     "icons": [
         {
-            "src": "https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.0.3/src/bold/mosque-bold.svg",
+            "src": "/icons/icon-192.png",
             "sizes": "192x192",
-            "type": "image/svg+xml",
+            "type": "image/png",
             "purpose": "any maskable"
         },
         {
-            "src": "https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.0.3/src/bold/mosque-bold.svg",
+            "src": "/icons/icon-512.png",
             "sizes": "512x512",
-            "type": "image/svg+xml",
+            "type": "image/png",
             "purpose": "any maskable"
         }
     ]

@@ -2,8 +2,26 @@
 
 @section('content')
 <div class="pb-24">
+    <!-- Progress Stepper -->
+    <div class="px-6 pt-12 flex items-center justify-between mb-8">
+        <div class="flex flex-col items-center gap-2">
+            <div class="w-10 h-10 bg-blue-600 text-white rounded-full flex items-center justify-center text-xs font-black shadow-lg shadow-blue-200">1</div>
+            <span class="text-[9px] font-black uppercase tracking-widest text-blue-600">Pilih</span>
+        </div>
+        <div class="flex-1 h-[2px] bg-slate-100 mx-4 mb-6"></div>
+        <div class="flex flex-col items-center gap-2">
+            <div class="w-10 h-10 bg-slate-100 text-slate-400 rounded-full flex items-center justify-center text-xs font-black">2</div>
+            <span class="text-[9px] font-black uppercase tracking-widest text-slate-400">Bayar</span>
+        </div>
+        <div class="flex-1 h-[2px] bg-slate-100 mx-4 mb-6"></div>
+        <div class="flex flex-col items-center gap-2">
+            <div class="w-10 h-10 bg-slate-100 text-slate-400 rounded-full flex items-center justify-center text-xs font-black">3</div>
+            <span class="text-[9px] font-black uppercase tracking-widest text-slate-400">Verifikasi</span>
+        </div>
+    </div>
+
     <!-- Header -->
-    <div class="px-5 pt-12 flex items-center gap-4 mb-6">
+    <div class="px-5 flex items-center gap-4 mb-6">
         <a href="{{ route('wali.bills') }}" class="w-10 h-10 bg-white rounded-xl shadow-sm border border-slate-100 flex items-center justify-center text-slate-600">
             <i class="fas fa-chevron-left"></i>
         </a>
@@ -170,5 +188,62 @@
     }
 
     billCheckboxes.forEach(cb => cb.addEventListener('change', updateSummary));
+
+    document.querySelector('form').addEventListener('submit', function(e) {
+        e.preventDefault();
+        const form = this;
+        let total = 0;
+        let count = 0;
+        let itemsHtml = '';
+
+        billCheckboxes.forEach(cb => {
+            if (cb.checked) {
+                const card = cb.closest('.card-premium');
+                const title = card.querySelector('.text-[13px].font-black').innerText;
+                const amount = getAmount(card);
+                total += amount;
+                count++;
+                itemsHtml += `
+                    <div class="flex justify-between items-center text-[12px] font-black text-slate-800 tracking-tight mb-2">
+                        <span class="capitalize">${title.toLowerCase()}</span>
+                        <span class="tracking-tighter">Rp${amount.toLocaleString('id-ID')}</span>
+                    </div>
+                `;
+            }
+        });
+
+        if (count === 0) return;
+
+        Swal.fire({
+            title: 'Konfirmasi Pembayaran',
+            html: `
+                <div class="text-left space-y-4 p-2">
+                    <div class="space-y-1 mb-4 max-h-40 overflow-y-auto no-scrollbar">
+                        ${itemsHtml}
+                    </div>
+                    <div class="flex justify-between items-center pt-4 border-t-2 border-slate-50">
+                        <span class="text-[11px] font-black text-slate-500 uppercase tracking-widest">Total Tagihan</span>
+                        <span class="text-xl font-black text-slate-900 tracking-tighter">Rp${total.toLocaleString('id-ID')}</span>
+                    </div>
+                    <p class="text-[10px] font-bold text-slate-400 leading-relaxed italic mt-4">*Langkah berikutnya akan menyertakan instruksi transfer dan kode unik pembayaran.</p>
+                </div>
+            `,
+            showCancelButton: true,
+            confirmButtonText: 'Lanjutkan',
+            cancelButtonText: 'Batal',
+            confirmButtonColor: '#2563eb',
+            cancelButtonColor: '#f1f5f9',
+            customClass: {
+                popup: 'rounded-[32px] p-8',
+                title: 'text-xl font-black text-slate-900',
+                confirmButton: 'rounded-2xl px-8 py-3.5 font-black text-[11px] uppercase tracking-widest shadow-lg shadow-blue-200',
+                cancelButton: 'rounded-2xl px-8 py-3.5 font-black text-[11px] uppercase tracking-widest text-slate-500'
+            }
+        }).then((result) => {
+            if (result.isConfirmed) {
+                form.submit();
+            }
+        });
+    });
 </script>
 @endsection

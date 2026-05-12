@@ -68,7 +68,7 @@
 
 <!-- Quick Actions (Fintech Native Layout) -->
 <div class="px-6 -mt-12 relative z-20 mb-8">
-    <div class="bg-white rounded-[32px] shadow-card p-6 flex justify-around items-center border border-slate-50">
+    <div class="bg-white rounded-[32px] shadow-card p-6 grid grid-cols-3 gap-y-6 justify-items-center border border-slate-50">
         <a href="{{ route('wali.topup') }}" class="flex flex-col items-center gap-2.5">
             <div class="w-14 h-14 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center text-xl shadow-sm border border-emerald-100/50 active:scale-90 transition-transform">
                 <i class="fas fa-plus-circle"></i>
@@ -81,17 +81,29 @@
             </div>
             <span class="text-[10px] font-extrabold text-slate-800 uppercase tracking-tighter">Riwayat</span>
         </a>
+        <a href="{{ route('wali.bills') }}" class="flex flex-col items-center gap-2.5">
+            <div class="w-14 h-14 bg-orange-50 text-orange-600 rounded-2xl flex items-center justify-center text-xl shadow-sm border border-orange-100/50 active:scale-90 transition-transform">
+                <i class="fas fa-file-invoice-dollar"></i>
+            </div>
+            <span class="text-[10px] font-extrabold text-slate-800 uppercase tracking-tighter">Tagihan</span>
+        </a>
+        <a href="{{ route('wali.schedule') }}" class="flex flex-col items-center gap-2.5">
+            <div class="w-14 h-14 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center text-xl shadow-sm border border-indigo-100/50 active:scale-90 transition-transform">
+                <i class="fas fa-calendar-alt"></i>
+            </div>
+            <span class="text-[10px] font-extrabold text-slate-800 uppercase tracking-tighter">Agenda</span>
+        </a>
         <a href="{{ route('wali.limit') }}" class="flex flex-col items-center gap-2.5">
             <div class="w-14 h-14 bg-purple-50 text-purple-600 rounded-2xl flex items-center justify-center text-xl shadow-sm border border-purple-100/50 active:scale-90 transition-transform">
                 <i class="fas fa-shield-halved"></i>
             </div>
             <span class="text-[10px] font-extrabold text-slate-800 uppercase tracking-tighter">Limit</span>
         </a>
-        <a href="{{ route('wali.bills') }}" class="flex flex-col items-center gap-2.5">
-            <div class="w-14 h-14 bg-orange-50 text-orange-600 rounded-2xl flex items-center justify-center text-xl shadow-sm border border-orange-100/50 active:scale-90 transition-transform">
-                <i class="fas fa-file-invoice-dollar"></i>
+        <a href="{{ route('wali.ppdb.index') }}" class="flex flex-col items-center gap-2.5">
+            <div class="w-14 h-14 bg-rose-50 text-rose-600 rounded-2xl flex items-center justify-center text-xl shadow-sm border border-rose-100/50 active:scale-90 transition-transform">
+                <i class="fas fa-user-plus"></i>
             </div>
-            <span class="text-[10px] font-extrabold text-slate-800 uppercase tracking-tighter">Tagihan</span>
+            <span class="text-[10px] font-extrabold text-slate-800 uppercase tracking-tighter">PPDB</span>
         </a>
     </div>
 </div>
@@ -105,20 +117,20 @@
             <i class="fas fa-chevron-right text-slate-300 text-xs"></i>
         </div>
         <div class="grid grid-cols-2 gap-4">
-            <div class="card-premium p-4">
+            <a href="{{ route('wali.grades') }}" class="card-premium p-4 active:scale-95 transition-transform block">
                 <div class="w-8 h-8 bg-blue-50 text-blue-600 rounded-lg flex items-center justify-center text-sm mb-3">
                     <i class="fas fa-book-open"></i>
                 </div>
                 <div class="text-[10px] font-black uppercase text-slate-400 mb-1">Mata Pelajaran</div>
-                <div class="text-h2">12 Aktif</div>
-            </div>
-            <div class="card-premium p-4">
+                <div class="text-h2">{{ $studyCount }} Aktif</div>
+            </a>
+            <a href="{{ route('wali.tahfidz') }}" class="card-premium p-4 active:scale-95 transition-transform block">
                 <div class="w-8 h-8 bg-emerald-50 text-emerald-600 rounded-lg flex items-center justify-center text-sm mb-3">
                     <i class="fas fa-star"></i>
                 </div>
-                <div class="text-[10px] font-black uppercase text-slate-400 mb-1">Progres Tahfidz</div>
-                <div class="text-h2">Juz 30</div>
-            </div>
+                <div class="text-[10px] font-black uppercase text-slate-400 mb-1">Halaman Tahfidz</div>
+                <div class="text-h2">{{ $tahfidzCount }} Hal</div>
+            </a>
         </div>
     </div>
 
@@ -130,9 +142,9 @@
         </div>
         <div class="space-y-4">
             @foreach($informations as $info)
-            <div class="card-premium flex gap-4 p-4 items-center active:bg-slate-50 transition-colors">
+            <a href="{{ route('wali.news-detail', $info->id) }}" class="card-premium flex gap-4 p-4 items-center active:bg-slate-50 transition-colors block">
                 <div class="w-16 h-16 bg-slate-100 rounded-2xl flex-shrink-0 overflow-hidden">
-                    <img src="{{ asset('storage/' . $info->image) }}" class="w-full h-full object-cover" onerror="this.src='https://via.placeholder.com/150?text=News'">
+                    <img src="{{ asset('storage/' . $info->image) }}" class="w-full h-full object-cover" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 150 150\'%3E%3Crect width=\'150\' height=\'150\' fill=\'%23f1f5f9\'/%3E%3Ctext x=\'50%25\' y=\'50%25\' dominant-baseline=\'middle\' text-anchor=\'middle\' font-family=\'sans-serif\' font-size=\'20\' font-weight=\'bold\' fill=\'%2394a3b8\'%3ENews%3C/text%3E%3C/svg%3E'">
                 </div>
                 <div class="overflow-hidden">
                     <div class="text-[9px] font-black text-blue-600 uppercase tracking-wider mb-1">{{ $info->informationCategory->name ?? 'Info' }}</div>
@@ -142,7 +154,7 @@
                         <span class="text-[10px] font-medium">{{ \Carbon\Carbon::parse($info->created_at)->translatedFormat('d M Y') }}</span>
                     </div>
                 </div>
-            </div>
+            </a>
             @endforeach
         </div>
     </div>
