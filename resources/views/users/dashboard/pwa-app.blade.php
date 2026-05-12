@@ -4,7 +4,23 @@
 <div id="root"></div>
 
 <!-- SPA Entry Point -->
-@if(app()->environment('local'))
+@php
+    $manifestPath = public_path('portalwalisantri/dist/.vite/manifest.json');
+    $manifestExists = file_exists($manifestPath);
+    $useProduction = $manifestExists && !app()->environment('local');
+    
+    // Force production if manifest exists but environment is still local (common on VPS)
+    if ($manifestExists) {
+        $useProduction = true;
+    }
+    
+    $manifest = [];
+    if ($manifestExists) {
+        $manifest = json_decode(file_get_contents($manifestPath), true);
+    }
+@endphp
+
+@if(!$useProduction && app()->environment('local'))
     <script type="module">
         import RefreshRuntime from 'http://localhost:5173/@react-refresh'
         RefreshRuntime.injectIntoGlobalHook(window)
@@ -15,20 +31,28 @@
     <script type="module" src="http://localhost:5173/@@vite/client"></script>
     <script type="module" src="http://localhost:5173/src/main.tsx"></script>
 @else
-    {{-- Build assets will be here after npm run build --}}
     @php
-        $manifestPath = public_path('portalwalisantri/dist/.vite/manifest.json');
-        $manifest = [];
-        if (file_exists($manifestPath)) {
-            $manifest = json_decode(file_get_contents($manifestPath), true);
-        }
+        $entryKey = 'node_modules/@tanstack/react-start/dist/plugin/default-entry/client.tsx';
+        $entry = $manifest[$entryKey] ?? null;
     @endphp
     
-    @if(isset($manifest['index.html']))
-        @foreach($manifest['index.html']['css'] ?? [] as $css)
+    @if($entry)
+        @foreach($entry['assets'] ?? [] as $asset)
+            @if(str_ends_with($asset, '.css'))
+                <link rel="stylesheet" href="/portalwalisantri/dist/{{ $asset }}">
+            @endif
+        @endforeach
+        
+        {{-- Also check for css directly in entry if assets doesn't cover it --}}
+        @foreach($entry['css'] ?? [] as $css)
             <link rel="stylesheet" href="/portalwalisantri/dist/{{ $css }}">
         @endforeach
-        <script type="module" src="/portalwalisantri/dist/{{ $manifest['index.html']['file'] }}"></script>
+
+        <script type="module" src="/portalwalisantri/dist/{{ $entry['file'] }}"></script>
+    @else
+        {{-- Fallback if manifest fails but files exist --}}
+        <link rel="stylesheet" href="/portalwalisantri/dist/assets/styles-DwM8hKnt.css">
+        <script type="module" src="/portalwalisantri/dist/assets/index-Bu1hofVw.js"></script>
     @endif
 @endif
 
