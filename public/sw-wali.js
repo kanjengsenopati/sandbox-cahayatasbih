@@ -1,4 +1,4 @@
-const CACHE_NAME = 'portal-wali-v1';
+const CACHE_NAME = 'portal-wali-v2';
 const STATIC_ASSETS = [
   '/wali/app',
   '/manifest-wali.json',
