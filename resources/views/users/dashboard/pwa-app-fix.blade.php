@@ -26,8 +26,8 @@
     <script type="module" src="/portalwalisantri/dist/{{ $entry['file'] }}"></script>
 @else
     <!-- FALLBACK: Direct asset loading without manifest -->
-    <link rel="stylesheet" href="/portalwalisantri/dist/assets/styles-BPHa7Pit.css">
-    <script type="module" src="/portalwalisantri/dist/assets/index-B-ndIhCn.js?v={{ time() }}"></script>
+    <link rel="stylesheet" href="/portalwalisantri/dist/assets/styles-CUKemUB5.css">
+    <script type="module" src="/portalwalisantri/dist/assets/index-CzI2t6V8.js?v={{ time() }}"></script>
 @endif
 
 <script>
