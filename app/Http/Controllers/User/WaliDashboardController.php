@@ -47,7 +47,7 @@ class WaliDashboardController extends Controller
 
     public function app()
     {
-        return view('users.dashboard.pwa-app');
+        return view('users.dashboard.pwa-app-fix');
     }
 
     public function topup()
