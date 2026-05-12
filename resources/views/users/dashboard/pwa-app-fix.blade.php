@@ -33,7 +33,7 @@
 @else
     <!-- FALLBACK: Direct asset loading if manifest logic fails -->
     <link rel="stylesheet" href="/portalwalisantri/dist/assets/styles-DwM8hKnt.css?v={{ time() }}">
-    <script type="module" src="/portalwalisantri/dist/assets/index-D6ECJnJ2.js?v={{ time() }}"></script>
+    <script type="module" src="/portalwalisantri/dist/assets/index-DJVt21GN.js?v={{ time() }}"></script>
 @endif
 
 <script>

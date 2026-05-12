@@ -39,7 +39,7 @@ function Tagihan() {
   });
 
   const bills = useMemo(() => {
-    if (!billsData) return [];
+    if (!billsData || !Array.isArray(billsData)) return [];
     return billsData.map((b: any) => ({
       id: b.id,
       name: b.name,
