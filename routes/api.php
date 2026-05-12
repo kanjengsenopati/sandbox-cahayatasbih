@@ -134,11 +134,11 @@ Route::group(['middleware' => 'xendit'], function () {
     Route::post('callback-xendit', [TransactionController::class, 'callbackXendit']);
 });
 
-Route::prefix('wali')->group(function () {
+Route::prefix('wali')->middleware(['web'])->group(function () {
     Route::post('login', [App\Http\Controllers\Api\Wali\AuthController::class, 'login']);
     Route::post('logout', [App\Http\Controllers\Api\Wali\AuthController::class, 'logout']);
 
-    Route::middleware(['auth:wali', 'api'])->group(function () {
+    Route::middleware(['auth:wali'])->group(function () {
     Route::get('dashboard', [App\Http\Controllers\Api\Wali\DashboardController::class, 'index']);
     Route::get('informations', [App\Http\Controllers\Api\Wali\InformationController::class, 'index']);
     Route::get('students', [App\Http\Controllers\Api\Wali\StudentController::class, 'index']);

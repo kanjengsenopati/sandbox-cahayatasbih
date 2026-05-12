@@ -24,8 +24,8 @@
     <script type="module" src="/portalwalisantri/dist/<?php echo e($entry['file']); ?>"></script>
 <?php else: ?>
     <!-- FALLBACK: Direct asset loading without manifest -->
-    <link rel="stylesheet" href="/portalwalisantri/dist/assets/styles-CUKemUB5.css">
-    <script type="module" src="/portalwalisantri/dist/assets/index-CzI2t6V8.js?v=<?php echo e(time()); ?>"></script>
+    <link rel="stylesheet" href="/portalwalisantri/dist/assets/styles-DwM8hKnt.css">
+    <script type="module" src="/portalwalisantri/dist/assets/index-BxYC_nB1.js?v=<?php echo e(time()); ?>"></script>
 <?php endif; ?>
 
 <script>
