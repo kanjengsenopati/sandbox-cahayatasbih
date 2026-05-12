@@ -94,10 +94,8 @@ use App\Http\Controllers\Admin\ReportStudentCounselingScoreController;
 // add route group prefix and middleware
 
 Route::prefix('wali')->group(function () {
-    Route::get('/', function () {
-        return view('users.auth.login');
-    });
-    Route::get('login', [WaliAuthController::class, 'index'])->name('wali.login');
+    Route::get('/', [WaliDashboardController::class, 'app'])->name('wali.index');
+    Route::get('login', [WaliDashboardController::class, 'app'])->name('wali.login');
     Route::post('login', [WaliAuthController::class, 'authenticate'])->name('wali.authenticate');
     Route::post('logout', [WaliAuthController::class, 'logout'])->name('wali.logout');
     Route::get('register', [WaliAuthController::class, 'register'])->name('wali.register');
