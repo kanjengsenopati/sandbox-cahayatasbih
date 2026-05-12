@@ -27,7 +27,7 @@
 @else
     <!-- FALLBACK: Direct asset loading without manifest -->
     <link rel="stylesheet" href="/portalwalisantri/dist/assets/styles-DwM8hKnt.css">
-    <script type="module" src="/portalwalisantri/dist/assets/index-DQt_-iSL.js?v={{ time() }}"></script>
+    <script type="module" src="/portalwalisantri/dist/assets/index-D6ECJnJ2.js?v={{ time() }}"></script>
 @endif
 
 <script>
