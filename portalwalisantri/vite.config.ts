@@ -16,7 +16,7 @@ export default defineConfig({
   vite: {
     base: '/portalwalisantri/dist/client/',
     build: {
-      manifest: true,
+      manifest: 'manifest.json',
       outDir: 'dist/client',
     },
     plugins: [

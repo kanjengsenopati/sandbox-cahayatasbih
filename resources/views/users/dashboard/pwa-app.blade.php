@@ -5,7 +5,7 @@
 
 <!-- SPA Entry Point -->
 @php
-    $manifestPath = public_path('portalwalisantri/dist/.vite/manifest.json');
+    $manifestPath = public_path('portalwalisantri/dist/manifest.json');
     $manifestExists = file_exists($manifestPath);
     $useProduction = $manifestExists && !app()->environment('local');
     

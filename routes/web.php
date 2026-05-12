@@ -107,20 +107,20 @@ Route::prefix('wali')->group(function () {
 
     // SPA Fallback
     Route::get('/app/{any?}', [WaliDashboardController::class, 'app'])->where('any', '.*')->name('app');
-        Route::get('history', [WaliDashboardController::class, 'history'])->name('wali.history');
-        Route::get('bills', [WaliDashboardController::class, 'bills'])->name('wali.bills');
-        Route::get('bills/{id}', [WaliDashboardController::class, 'billDetail'])->name('wali.bill-detail');
+        Route::get('history', [WaliDashboardController::class, 'app'])->name('wali.history');
+        Route::get('bills', [WaliDashboardController::class, 'app'])->name('wali.bills');
+        Route::get('bills/{id}', [WaliDashboardController::class, 'app'])->name('wali.bill-detail');
         Route::post('checkout', [WaliDashboardController::class, 'checkout'])->name('wali.checkout');
-        Route::get('payment/{id}', [WaliDashboardController::class, 'payment'])->name('wali.payment');
+        Route::get('payment/{id}', [WaliDashboardController::class, 'app'])->name('wali.payment');
         Route::post('payment/{id}/upload-proof', [WaliDashboardController::class, 'uploadProof'])->name('wali.upload-proof');
-        Route::get('limit', [WaliDashboardController::class, 'limit'])->name('wali.limit');
+        Route::get('limit', [WaliDashboardController::class, 'app'])->name('wali.limit');
         Route::post('limit', [WaliDashboardController::class, 'updateLimit'])->name('wali.update-limit');
-        Route::get('topup', [WaliDashboardController::class, 'topup'])->name('wali.topup');
+        Route::get('topup', [WaliDashboardController::class, 'app'])->name('wali.topup');
         Route::post('topup', [WaliDashboardController::class, 'storeTopup'])->name('wali.store-topup');
-        Route::get('profile', [WaliDashboardController::class, 'profile'])->name('wali.profile');
+        Route::get('profile', [WaliDashboardController::class, 'app'])->name('wali.profile');
         Route::post('profile', [WaliDashboardController::class, 'updateProfile'])->name('wali.update-profile');
         Route::post('password', [WaliDashboardController::class, 'updatePassword'])->name('wali.update-password');
-        Route::get('dashboard', [WaliDashboardController::class, 'index'])->name('wali.dashboard');
+        Route::get('dashboard', [WaliDashboardController::class, 'app'])->name('wali.dashboard');
         Route::get('news/{id}', [WaliDashboardController::class, 'newsDetail'])->name('wali.news-detail');
         Route::get('tahfidz', [WaliDashboardController::class, 'tahfidz'])->name('wali.tahfidz');
         Route::get('grades', [WaliDashboardController::class, 'grades'])->name('wali.grades');

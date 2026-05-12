@@ -16,45 +16,25 @@
     <!-- Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     
-    <!-- Tailwind CDN -->
+    @if(app()->environment('local'))
+    <!-- Tailwind CDN only for local quick prototyping if needed -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
             theme: {
                 extend: {
                     colors: {
-                        emerald: {
-                            50: '#ecfdf5',
-                            100: '#d1fae5',
-                            600: '#10B981',
-                        },
-                        slate: {
-                            50: '#F8FAFC',
-                            100: '#F1F5F9',
-                            400: '#94A3B8',
-                            500: '#64748B',
-                            600: '#475569',
-                            800: '#1E293B',
-                            900: '#0F172A',
-                        },
-                        blue: {
-                            50: '#eff6ff',
-                            600: '#2563EB',
-                            700: '#1d4ed8',
-                        }
+                        emerald: { 50: '#ecfdf5', 100: '#d1fae5', 600: '#10B981' },
+                        slate: { 50: '#F8FAFC', 100: '#F1F5F9', 400: '#94A3B8', 500: '#64748B', 600: '#475569', 800: '#1E293B', 900: '#0F172A' },
+                        blue: { 50: '#eff6ff', 600: '#2563EB', 700: '#1d4ed8' }
                     },
-                    borderRadius: {
-                        '3xl': '24px',
-                        '4xl': '32px',
-                    },
-                    boxShadow: {
-                        'premium': '0 8px 30px rgba(0,0,0,0.04)',
-                        'card': '0 10px 40px rgba(0,0,0,0.06)',
-                    }
+                    borderRadius: { '3xl': '24px', '4xl': '32px' },
+                    boxShadow: { 'premium': '0 8px 30px rgba(0,0,0,0.04)', 'card': '0 10px 40px rgba(0,0,0,0.06)' }
                 }
             }
         }
     </script>
+    @endif
 
     <style type="text/tailwindcss">
         @layer components {
