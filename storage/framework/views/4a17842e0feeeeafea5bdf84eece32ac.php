@@ -25,7 +25,7 @@
 <?php else: ?>
     <!-- FALLBACK: Direct asset loading without manifest -->
     <link rel="stylesheet" href="/portalwalisantri/dist/assets/styles-DwM8hKnt.css">
-    <script type="module" src="/portalwalisantri/dist/assets/index-CNceWQVF.js?v=<?php echo e(time()); ?>"></script>
+    <script type="module" src="/portalwalisantri/dist/assets/index-DgjklHfP.js?v=<?php echo e(time()); ?>"></script>
 <?php endif; ?>
 
 <script>
