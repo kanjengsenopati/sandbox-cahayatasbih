@@ -9,9 +9,13 @@ const router = getRouter();
 
 const rootElement = document.getElementById("root");
 if (rootElement) {
-  console.log("Wali Santri PWA: Root element found, rendering...");
-  const root = createRoot(rootElement);
-  root.render(<RouterProvider router={router} />);
+  try {
+    console.log("Wali Santri PWA: Root element found, rendering...");
+    const root = createRoot(rootElement);
+    root.render(<RouterProvider router={router} />);
+  } catch (err) {
+    console.error("Wali Santri PWA: Render Error:", err);
+  }
 } else {
   console.error("Wali Santri PWA: Root element NOT found!");
 }
