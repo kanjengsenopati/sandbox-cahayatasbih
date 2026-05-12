@@ -43,7 +43,7 @@ export function SantriSwitcherSheet({
   open: boolean;
   onClose: () => void;
 }) {
-  const { santri, active, setActiveId } = useSantri();
+  const { santri, active, switchStudent } = useSantri();
 
   // Lock background scroll while sheet is open
   useEffect(() => {
@@ -86,13 +86,13 @@ export function SantriSwitcherSheet({
         </div>
 
         <div className="px-3 mt-3 space-y-1.5 max-h-[55vh] overflow-y-auto">
-          {santri.map((s) => (
+          {(santri || []).map((s) => (
             <SantriRow
               key={s.id}
               santri={s}
-              active={s.id === active.id}
+              active={active ? s.id === active.id : false}
               onPick={() => {
-                setActiveId(s.id);
+                switchStudent(s.id);
                 onClose();
               }}
             />

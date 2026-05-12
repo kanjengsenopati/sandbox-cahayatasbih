@@ -179,34 +179,36 @@ function Dashboard() {
         </div>
 
         <div className="bg-card rounded-3xl border border-border divide-y divide-border overflow-hidden shadow-[var(--shadow-soft)]">
-          {dashboard?.recentTransactions?.map((t: any, i: number) => {
-            const isIn = t.type === "IN";
-            return (
-              <div key={i} className="flex items-center gap-3 p-4">
-                <div
-                  className={`w-11 h-11 rounded-2xl flex items-center justify-center ${
-                    isIn ? "bg-emerald-50 text-emerald-600" : "bg-blue-50 text-blue-600"
-                  }`}
-                >
-                  {isIn ? <ArrowDownLeft size={18} /> : <Utensils size={18} />}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-foreground truncate">{t.note || (isIn ? "Saldo Masuk" : "Belanja Kantin")}</p>
-                  <p className="text-[11px] text-muted-foreground">{new Date(t.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</p>
-                </div>
-                <div className="flex items-center gap-1">
-                  <span
-                    className={`text-sm font-bold ${
-                      isIn ? "text-emerald-600" : "text-foreground"
+          {(dashboard?.recentTransactions && Array.isArray(dashboard.recentTransactions)) ? (
+            dashboard.recentTransactions.map((t: any, i: number) => {
+              const isIn = t.type === "IN";
+              return (
+                <div key={i} className="flex items-center gap-3 p-4">
+                  <div
+                    className={`w-11 h-11 rounded-2xl flex items-center justify-center ${
+                      isIn ? "bg-emerald-50 text-emerald-600" : "bg-blue-50 text-blue-600"
                     }`}
                   >
-                    {isIn ? "+" : "-"}
-                    {fmt(t.amount)}
-                  </span>
+                    {isIn ? <ArrowDownLeft size={18} /> : <Utensils size={18} />}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-foreground truncate">{t.note || (isIn ? "Saldo Masuk" : "Belanja Kantin")}</p>
+                    <p className="text-[11px] text-muted-foreground">{t.created_at ? new Date(t.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : "-"}</p>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <span
+                      className={`text-sm font-bold ${
+                        isIn ? "text-emerald-600" : "text-foreground"
+                      }`}
+                    >
+                      {isIn ? "+" : "-"}
+                      {fmt(t.amount || 0)}
+                    </span>
+                  </div>
                 </div>
-              </div>
-            );
-          }) || (
+              );
+            })
+          ) : (
             <div className="p-8 text-center text-xs text-muted-foreground">Belum ada transaksi.</div>
           )}
         </div>

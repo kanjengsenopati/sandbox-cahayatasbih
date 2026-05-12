@@ -36,10 +36,14 @@ const SantriContext = createContext<Ctx | null>(null);
 
 const mapSantri = (s: any): Santri => ({
   ...s,
-  initials: s.name ? s.name.split(' ').map((n: string) => n[0]).join('').substring(0, 2).toUpperCase() : "S",
+  id: s.id?.toString() || "",
+  name: s.name || "Santri",
+  initials: s.name ? s.name.split(' ').filter(Boolean).map((n: string) => n[0]).join('').substring(0, 2).toUpperCase() : "S",
   className: s.classroom?.name || "-",
   jenjang: s.school?.name || "-",
   cardSuffix: s.barcode ? s.barcode.slice(-4) : "****",
+  color: "from-primary to-primary-glow",
+  totalDue: 0, // Fallback
 });
 
 export function SantriProvider({ children }: { children: ReactNode }) {
