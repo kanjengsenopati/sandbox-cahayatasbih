@@ -20,6 +20,13 @@
     }
 @endphp
 
+<!-- Debug Info:
+    Manifest Path: {{ $manifestPath }}
+    Manifest Exists: {{ $manifestExists ? 'Yes' : 'No' }}
+    Use Production: {{ $useProduction ? 'Yes' : 'No' }}
+    App Env: {{ app()->environment() }}
+-->
+
 @if(!$useProduction && app()->environment('local'))
     <script type="module">
         import RefreshRuntime from 'http://localhost:5173/@react-refresh'
