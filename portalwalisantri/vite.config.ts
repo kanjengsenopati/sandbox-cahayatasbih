@@ -18,6 +18,9 @@ export default defineConfig({
     build: {
       manifest: 'vite-manifest.json',
       outDir: 'dist/client',
+      rollupOptions: {
+        input: 'src/client-entry.tsx',
+      }
     },
     plugins: [
       VitePWA({
