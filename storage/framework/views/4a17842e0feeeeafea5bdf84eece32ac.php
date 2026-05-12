@@ -3,28 +3,34 @@
 
 <!-- PRODUCTION ASSETS - HARD CODED, NO ENV CHECKS -->
 <?php
-    $manifestPath = public_path('portalwalisantri/dist/vite-manifest.json');
-    $manifestExists = file_exists($manifestPath);
-    $manifest = $manifestExists ? json_decode(file_get_contents($manifestPath), true) : [];
-    $entryKey = 'node_modules/@tanstack/react-start/dist/plugin/default-entry/client.tsx';
-    $entry = $manifest[$entryKey] ?? null;
+    // Try multiple possible locations for manifest (VPS vs Local)
+    $possiblePaths = [
+        public_path('portalwalisantri/dist/vite-manifest.json'),
+        base_path('public/portalwalisantri/dist/vite-manifest.json'),
+    ];
+    
+    $manifestPath = null;
+    foreach ($possiblePaths as $path) {
+        if (file_exists($path)) {
+            $manifestPath = $path;
+            break;
+        }
+    }
+
+    $manifest = $manifestPath ? json_decode(file_get_contents($manifestPath), true) : [];
+    $entry = $manifest['index.html'] ?? null;
 ?>
 
-<!-- FORCE-DEBUG v4: <?php echo e(date('Y-m-d H:i:s')); ?> | manifest=<?php echo e($manifestExists ? 'YES' : 'NO'); ?> | path=<?php echo e($manifestPath); ?> | entry=<?php echo e($entry ? 'FOUND' : 'MISSING'); ?> -->
+<!-- DEPLOYMENT VERSION v5: <?php echo e(date('Y-m-d H:i:s')); ?> | manifest=<?php echo e($manifestPath ? 'YES' : 'NO'); ?> | entry=<?php echo e($entry ? 'FOUND' : 'MISSING'); ?> -->
 
 <?php if($entry): ?>
     <?php $__currentLoopData = $entry['css'] ?? []; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $css): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
-        <link rel="stylesheet" href="/portalwalisantri/dist/<?php echo e($css); ?>">
+        <link rel="stylesheet" href="/portalwalisantri/dist/<?php echo e($css); ?>?v=<?php echo e(time()); ?>">
     <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
-    <?php $__currentLoopData = $entry['assets'] ?? []; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $asset): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
-        <?php if(str_ends_with($asset, '.css')): ?>
-            <link rel="stylesheet" href="/portalwalisantri/dist/<?php echo e($asset); ?>">
-        <?php endif; ?>
-    <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
-    <script type="module" src="/portalwalisantri/dist/<?php echo e($entry['file']); ?>"></script>
+    <script type="module" src="/portalwalisantri/dist/<?php echo e($entry['file']); ?>?v=<?php echo e(time()); ?>"></script>
 <?php else: ?>
-    <!-- FALLBACK: Direct asset loading without manifest -->
-    <link rel="stylesheet" href="/portalwalisantri/dist/assets/styles-DwM8hKnt.css">
+    <!-- FALLBACK: Direct asset loading if manifest logic fails -->
+    <link rel="stylesheet" href="/portalwalisantri/dist/assets/styles-DwM8hKnt.css?v=<?php echo e(time()); ?>">
     <script type="module" src="/portalwalisantri/dist/assets/index-D6ECJnJ2.js?v=<?php echo e(time()); ?>"></script>
 <?php endif; ?>
 

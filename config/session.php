@@ -171,7 +171,7 @@ return [
     |
     */
 
-    'secure' => env('SESSION_SECURE_COOKIE'),
+    'secure' => env('APP_DEBUG') ? false : true,
 
     /*
     |--------------------------------------------------------------------------
