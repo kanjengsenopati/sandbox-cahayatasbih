@@ -5,28 +5,34 @@
 
 <!-- PRODUCTION ASSETS - HARD CODED, NO ENV CHECKS -->
 @php
-    $manifestPath = public_path('portalwalisantri/dist/vite-manifest.json');
-    $manifestExists = file_exists($manifestPath);
-    $manifest = $manifestExists ? json_decode(file_get_contents($manifestPath), true) : [];
-    $entryKey = 'node_modules/@tanstack/react-start/dist/plugin/default-entry/client.tsx';
-    $entry = $manifest[$entryKey] ?? null;
+    // Try multiple possible locations for manifest (VPS vs Local)
+    $possiblePaths = [
+        public_path('portalwalisantri/dist/vite-manifest.json'),
+        base_path('public/portalwalisantri/dist/vite-manifest.json'),
+    ];
+    
+    $manifestPath = null;
+    foreach ($possiblePaths as $path) {
+        if (file_exists($path)) {
+            $manifestPath = $path;
+            break;
+        }
+    }
+
+    $manifest = $manifestPath ? json_decode(file_get_contents($manifestPath), true) : [];
+    $entry = $manifest['index.html'] ?? null;
 @endphp
 
-<!-- FORCE-DEBUG v4: {{ date('Y-m-d H:i:s') }} | manifest={{ $manifestExists ? 'YES' : 'NO' }} | path={{ $manifestPath }} | entry={{ $entry ? 'FOUND' : 'MISSING' }} -->
+<!-- DEPLOYMENT VERSION v5: {{ date('Y-m-d H:i:s') }} | manifest={{ $manifestPath ? 'YES' : 'NO' }} | entry={{ $entry ? 'FOUND' : 'MISSING' }} -->
 
 @if($entry)
     @foreach($entry['css'] ?? [] as $css)
-        <link rel="stylesheet" href="/portalwalisantri/dist/{{ $css }}">
+        <link rel="stylesheet" href="/portalwalisantri/dist/{{ $css }}?v={{ time() }}">
     @endforeach
-    @foreach($entry['assets'] ?? [] as $asset)
-        @if(str_ends_with($asset, '.css'))
-            <link rel="stylesheet" href="/portalwalisantri/dist/{{ $asset }}">
-        @endif
-    @endforeach
-    <script type="module" src="/portalwalisantri/dist/{{ $entry['file'] }}"></script>
+    <script type="module" src="/portalwalisantri/dist/{{ $entry['file'] }}?v={{ time() }}"></script>
 @else
-    <!-- FALLBACK: Direct asset loading without manifest -->
-    <link rel="stylesheet" href="/portalwalisantri/dist/assets/styles-DwM8hKnt.css">
+    <!-- FALLBACK: Direct asset loading if manifest logic fails -->
+    <link rel="stylesheet" href="/portalwalisantri/dist/assets/styles-DwM8hKnt.css?v={{ time() }}">
     <script type="module" src="/portalwalisantri/dist/assets/index-D6ECJnJ2.js?v={{ time() }}"></script>
 @endif
 
