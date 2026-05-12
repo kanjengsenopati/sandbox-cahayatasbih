@@ -156,4 +156,5 @@ Route::prefix('wali')->group(function () {
     Route::get('profile', [App\Http\Controllers\Api\Wali\ProfileController::class, 'show']);
     Route::put('profile', [App\Http\Controllers\Api\Wali\ProfileController::class, 'update']);
     Route::put('password', [App\Http\Controllers\Api\Wali\PasswordController::class, 'update']);
+    });
 });
