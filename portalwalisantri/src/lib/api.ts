@@ -57,6 +57,6 @@ export const updateProfile = (formData: FormData) =>
     headers: { 'Content-Type': 'multipart/form-data' }
   });
 export const updatePassword = (data: any) => api.put('/password', data);
-export const fetchPaymentMethods = () => api.get('/payment-methods');
+export const fetchPaymentMethods = (params?: { type?: string; bill_ids?: string[] }) => api.get('/payment-methods', { params });
 
 export default api;

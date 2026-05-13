@@ -15,40 +15,45 @@ class CheckoutController extends BaseWaliApiController
     {
         $request->validate([
             'bill_ids' => 'required|array',
-            'bill_ids.*' => 'exists:bills,id'
+            'bill_ids.*' => 'exists:bills,id',
+            'payment_method_id' => 'required|exists:payment_methods,id'
         ]);
 
-        $bills = Bill::whereIn('id', $request->bill_ids)->get();
-        $totalAmount = $bills->sum('amount');
-        
-        $uniqueDigits = rand(100, 999);
-        $payAmount = $totalAmount + $uniqueDigits;
-        
         $student = $this->resolveActiveStudent();
         if (!$student) return response()->json(['message' => 'Student not found'], 404);
 
-        $paymentCode = 'INV-' . strtoupper(Str::random(8));
+        $paymentMethod = \App\Models\PaymentMethod::findOrFail($request->payment_method_id);
+        
+        // Prepare request for TransactionService
+        $request->merge(['student_id' => $student->id]);
+        
+        $transaction = \App\Services\TransactionService::createTransaction($request, $paymentMethod->type, Transaction::TYPE_BILL);
+        
+        if ($transaction instanceof \Illuminate\Http\JsonResponse) {
+            return $transaction;
+        }
 
-        $transaction = Transaction::create([
-            'student_id' => $student->id,
-            'payment_code' => $paymentCode,
-            'pay_amount' => $payAmount,
-            'unique_payment' => $uniqueDigits,
-            'status' => 'PENDING_PAYMENT',
-            'type' => 'BILL',
-            'expiry_time' => Carbon::now()->addDays(1),
-        ]);
+        // Transaction details are already created inside TransactionService::createTransaction for TYPE_BILL
+        // if bill_ids is present in the request. Let's verify.
+        // Yes, line 246 in TransactionService.php: $pay_amount = $request->bill_ids != null ? self::getTotalPayAmount($request->bill_ids) : $request->amount;
+        // And line 259: $transaction = Transaction::create(array_merge($transactionData, $request->validated()));
+        // Wait, TransactionService DOES NOT create TransactionDetails automatically in createTransaction.
+        // It's usually done in the controller or in payWithBalance/payWithCash.
+        
+        // Actually, looking at TransactionService::createTransaction again...
+        // It doesn't create TransactionDetail. I should do it here.
 
-        foreach ($bills as $bill) {
+        foreach ($request->bill_ids as $billId) {
             TransactionDetail::create([
                 'transaction_id' => $transaction->id,
-                'bill_id' => $bill->id,
+                'bill_id' => $billId,
             ]);
         }
 
         return response()->json([
             'message' => 'Checkout successful',
-            'transaction' => $transaction
+            'transaction' => $transaction,
+            'payment_url' => $paymentMethod->type == \App\Models\PaymentMethod::TYPE_XENDIT ? $transaction->payment_link : null
         ]);
     }
 }

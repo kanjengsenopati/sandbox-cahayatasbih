@@ -17,20 +17,31 @@ class PaymentMethodController extends BaseWaliApiController
         }
 
         $schoolId = $activeStudent->classroom->school_id ?? null;
+        $type = $request->get('type', 'SALDO');
+        $billIds = $request->get('bill_ids', []);
 
         // Fetch payment methods (Transfer, Xendit, etc)
         $methods = PaymentMethod::where('is_active', true)
             ->whereIn('type', [PaymentMethod::TYPE_TRANSFER, PaymentMethod::TYPE_XENDIT])
             ->get()
-            ->map(function($m) use ($schoolId) {
+            ->map(function($m) use ($schoolId, $type, $billIds) {
                 $banks = [];
                 if ($m->type === PaymentMethod::TYPE_TRANSFER) {
-                    // For topup, we look at TopupBank records for this school
-                    $banks = TopupBank::with('bank')
-                        ->where('school_id', $schoolId)
-                        ->where('type', TopupBank::TYPE_SALDO)
-                        ->get()
-                        ->pluck('bank');
+                    if ($type === 'BILL' && !empty($billIds)) {
+                        // For bills, get banks associated with the bill types
+                        $billTypeIds = \App\Models\Bill::whereIn('id', $billIds)->pluck('bill_type_id')->unique();
+                        $banks = \App\Models\BillTypeBank::with('bank')
+                            ->whereIn('bill_type_id', $billTypeIds)
+                            ->get()
+                            ->pluck('bank');
+                    } else {
+                        // For topup, we look at TopupBank records for this school
+                        $banks = TopupBank::with('bank')
+                            ->where('school_id', $schoolId)
+                            ->where('type', $type === 'SAVING' ? TopupBank::TYPE_SAVING : TopupBank::TYPE_SALDO)
+                            ->get()
+                            ->pluck('bank');
+                    }
                 }
 
                 return [
