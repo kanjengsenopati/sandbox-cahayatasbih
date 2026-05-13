@@ -256,7 +256,11 @@ class TransactionService
                         'admin_id' => Auth::id() ?? null,
                     ];
 
-                    $transaction = Transaction::create(array_merge($transactionData, $request->validated()));
+                    // Use validated() for FormRequest, fall back to all() for plain Request
+                    $validatedData = method_exists($request, 'validated') && $request instanceof \Illuminate\Foundation\Http\FormRequest
+                        ? $request->validated()
+                        : $request->only(['student_id', 'payment_method_id', 'amount', 'bill_ids', 'pay_amount']);
+                    $transaction = Transaction::create(array_merge($transactionData, $validatedData));
 
                     // Logika untuk jenis pembayaran
                     if ($paymentMethodType == PaymentMethod::TYPE_TRANSFER) {
