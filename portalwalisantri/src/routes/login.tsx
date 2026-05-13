@@ -2,7 +2,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { Phone, Lock, Eye, EyeOff, GraduationCap, ArrowRight, Zap, Loader2 } from "lucide-react";
 import { postLogin } from "@/lib/api";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 export const Route = createFileRoute("/login")({
   component: LoginPage,
@@ -20,6 +20,7 @@ function LoginPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
   const loginMutation = useMutation({
     mutationFn: async (data: any) => {
@@ -27,6 +28,11 @@ function LoginPage() {
       return res.data;
     },
     onSuccess: () => {
+      // Invalidate queries to ensure fresh data after login
+      queryClient.invalidateQueries({ queryKey: ["students"] });
+      queryClient.invalidateQueries({ queryKey: ["active-student"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+      
       navigate({ to: "/dashboard" });
     },
     onError: (err: any) => {

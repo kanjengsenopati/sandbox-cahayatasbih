@@ -17,6 +17,20 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
+// Add a response interceptor to handle authentication failures
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401) {
+      // If we're not already on the login page, redirect to it
+      if (window.location.pathname !== '/login') {
+        window.location.href = '/login';
+      }
+    }
+    return Promise.reject(error);
+  }
+);
+
 export const postLogin = (data: any) => api.post('/login', data);
 export const postLogout = () => api.post('/logout');
 export const fetchDashboard = () => api.get('/dashboard');

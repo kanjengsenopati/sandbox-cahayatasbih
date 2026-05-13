@@ -1,5 +1,6 @@
 import { createContext, useContext, ReactNode } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useLocation } from "@tanstack/react-router";
 import { fetchStudents, fetchActiveStudent } from "@/lib/api";
 import axios from "axios";
 
@@ -48,6 +49,8 @@ const mapSantri = (s: any): Santri => ({
 
 export function SantriProvider({ children }: { children: ReactNode }) {
   const queryClient = useQueryClient();
+  const location = useLocation();
+  const isLoginPage = location.pathname === "/login";
 
   const { data: students = [], isLoading: isLoadingStudents } = useQuery({
     queryKey: ["students"],
@@ -55,6 +58,8 @@ export function SantriProvider({ children }: { children: ReactNode }) {
       const res = await fetchStudents();
       return (res.data || []).map(mapSantri);
     },
+    enabled: !isLoginPage,
+    retry: false,
   });
 
   const { data: active = null, isLoading: isLoadingActive } = useQuery({
@@ -63,6 +68,8 @@ export function SantriProvider({ children }: { children: ReactNode }) {
       const res = await fetchActiveStudent();
       return res.data ? mapSantri(res.data) : null;
     },
+    enabled: !isLoginPage,
+    retry: false,
   });
 
   const switchStudent = async (id: string) => {
