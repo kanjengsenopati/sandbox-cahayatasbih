@@ -96,7 +96,7 @@ function LoginPage() {
                 SantriPay
               </span>
             </div>
-            <h1 className="text-[26px] leading-[1.15] font-extrabold text-white tracking-tight">
+            <h1 className="text-[22px] leading-[1.2] font-extrabold text-white tracking-tight">
               Selamat Datang, <span className="text-white/90">Wali Santri</span>
             </h1>
             <p className="text-[13px] text-white/75 leading-relaxed max-w-[20rem]">
