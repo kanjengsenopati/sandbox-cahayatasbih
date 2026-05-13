@@ -24,7 +24,7 @@ import {
   Loader2,
 } from "lucide-react";
 import { useSantri } from "@/contexts/SantriContext";
-import { postTopup, uploadPaymentProof } from "@/lib/api";
+import { postTopup, uploadPaymentProof, fetchPaymentMethods } from "@/lib/api";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 export const Route = createFileRoute("/topup")({
@@ -64,30 +64,80 @@ function TopupPage() {
   const [step, setStep] = useState<Step>("form");
   const [amount, setAmount] = useState<number>(100_000);
   const [custom, setCustom] = useState<string>("");
-  const [method, setMethod] = useState<string>("bca");
   const [proof, setProof] = useState<File | null>(null);
   const [proofUrl, setProofUrl] = useState<string>("");
   const [refId, setRefId] = useState<string>("");
   const [paymentId, setPaymentId] = useState<number | null>(null);
 
-  const selected = useMemo(() => METHODS.find((m) => m.id === method)!, [method]);
+  const { data: methodsRes, isLoading: isLoadingMethods } = useQuery({
+    queryKey: ["payment-methods"],
+    queryFn: async () => {
+      const res = await fetchPaymentMethods();
+      return res.data;
+    },
+  });
+
+  const methods = useMemo(() => {
+    if (!methodsRes) return [];
+    return methodsRes.flatMap((m: any) => {
+      if (m.type === "TRANSFER") {
+        return (m.banks || []).map((b: any) => ({
+          id: b.id,
+          payment_method_id: m.id,
+          label: b.name,
+          desc: "Transfer manual antar bank",
+          icon: Building2,
+          fee: 0,
+          account: b.account_number,
+          holder: b.account_name,
+        }));
+      }
+      if (m.type === "XENDIT") {
+        return [{
+          id: m.id,
+          payment_method_id: m.id,
+          label: m.name,
+          desc: "Pembayaran otomatis via Xendit",
+          icon: CreditCard,
+          fee: 0,
+          account: "-",
+          holder: "-",
+        }];
+      }
+      return [];
+    });
+  }, [methodsRes]);
+
+  const [method, setMethod] = useState<string>("");
+
+  useEffect(() => {
+    if (methods.length > 0 && !method) {
+      setMethod(methods[0].id);
+    }
+  }, [methods, method]);
+
+  const selected = useMemo(() => methods.find((m: any) => m.id === method), [method, methods]);
 
   const uniqueCode = useMemo(() => Math.floor(100 + Math.random() * 900), [amount, method]);
   const uniqueAmount = amount + uniqueCode;
-  const total = uniqueAmount + selected.fee;
+  const total = uniqueAmount + (selected?.fee || 0);
 
   const topupMutation = useMutation({
     mutationFn: async () => {
+      if (!selected) return;
       const res = await postTopup({
-        base_amount: amount,
-        method: method.toUpperCase(),
+        amount: amount,
+        payment_method_id: selected.payment_method_id,
+        student_id: active?.id,
+        // Optional fields for backward compatibility if needed
+        method: selected.label.toUpperCase(),
         note: `Topup via ${selected.label}`,
       });
       return res.data;
     },
     onSuccess: (data) => {
-      setPaymentId(data.payment.id);
-      setRefId(data.payment.payment_code);
+      setPaymentId(data.transaction.id);
+      setRefId(data.transaction.payment_code);
       setStep("confirm");
     },
   });
@@ -105,7 +155,7 @@ function TopupPage() {
     },
   });
 
-  if (isLoadingSantri) {
+  if (isLoadingSantri || isLoadingMethods) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <Loader2 className="animate-spin text-primary" size={40} />
@@ -251,7 +301,7 @@ function TopupPage() {
             Metode Pembayaran
           </p>
           <div className="bg-card rounded-2xl border border-border divide-y divide-border overflow-hidden shadow-[var(--shadow-soft)]">
-            {METHODS.map((m) => {
+            {methods.map((m: any) => {
               const Icon = m.icon;
               const active = method === m.id;
               return (
@@ -307,7 +357,7 @@ function TopupPage() {
                 <p className="text-lg font-bold text-foreground">{fmt(amount + selected.fee)}</p>
               </div>
               <p className="text-[11px] text-muted-foreground">
-                via <span className="font-semibold text-foreground">{selected.label}</span>
+                via <span className="font-semibold text-foreground">{selected?.label || "-"}</span>
               </p>
             </div>
             <button

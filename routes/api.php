@@ -154,6 +154,7 @@ Route::prefix('wali')->middleware(['web'])->group(function () {
     Route::post('payment/{id}/upload-proof', [App\Http\Controllers\Api\Wali\PaymentProofController::class, 'store']);
     Route::get('limit', [App\Http\Controllers\Api\Wali\LimitController::class, 'show']);
     Route::put('limit', [App\Http\Controllers\Api\Wali\LimitController::class, 'update']);
+    Route::get('payment-methods', [App\Http\Controllers\Api\Wali\PaymentMethodController::class, 'index']);
     Route::get('profile', [App\Http\Controllers\Api\Wali\ProfileController::class, 'show']);
     Route::put('profile', [App\Http\Controllers\Api\Wali\ProfileController::class, 'update']);
     Route::put('password', [App\Http\Controllers\Api\Wali\PasswordController::class, 'update']);

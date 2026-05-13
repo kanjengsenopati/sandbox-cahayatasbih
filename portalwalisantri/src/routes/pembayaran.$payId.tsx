@@ -40,23 +40,24 @@ function PembayaranPage() {
     if (!paymentRes) return null;
     const p = paymentRes.transaction;
     const proof = paymentRes.proof;
+    const bank = paymentRes.banks?.[0] || {};
     
     return {
       id: p.id,
       payment_code: p.payment_code,
-      billName: "Pembayaran Tagihan",
+      billName: p.type === "BILL" ? "Pembayaran Tagihan" : p.type === "SALDO" ? "Topup Saldo" : "Pembayaran Tabungan",
       amount: Number(p.pay_amount),
       baseAmount: Number(p.pay_amount) - Number(p.unique_payment || 0),
       uniqueCode: p.unique_payment,
       status: p.status === "PAID" ? "approved" : p.status === "REJECTED" ? "rejected" : "pending",
-      bankName: "BCA", 
-      bankAccount: "1840558992", 
-      bankHolder: "Yayasan PPTQ Cahaya Tasbih",
+      bankName: bank.name || "BCA", 
+      bankAccount: bank.account_number || "1840558992", 
+      bankHolder: bank.account_name || "Yayasan PPTQ Cahaya Tasbih",
       proofUrl: proof?.proof_path,
       items: p.transaction_details?.map((d: any) => ({
         id: d.id,
-        label: d.bill?.bill_type?.name || "Tagihan",
-        amount: d.bill?.amount || 0,
+        label: d.bill?.bill_type?.name || (p.type === "SALDO" ? "Topup Saldo" : "Pembayaran"),
+        amount: d.bill?.amount || d.saldo_history?.amount || d.saving_history?.amount || 0,
       })) || [],
     };
   }, [paymentRes]);
