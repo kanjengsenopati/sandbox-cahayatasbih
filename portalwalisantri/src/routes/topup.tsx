@@ -336,7 +336,7 @@ function TopupPage() {
                 <p className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wider">
                   Estimasi Bayar
                 </p>
-                <p className="text-lg font-bold text-foreground">{fmt(amount + selected.fee)}</p>
+                <p className="text-lg font-bold text-foreground">{fmt(amount + (selected?.fee || 0))}</p>
               </div>
               <p className="text-[11px] text-muted-foreground">
                 via <span className="font-semibold text-foreground">{selected?.label || "-"}</span>

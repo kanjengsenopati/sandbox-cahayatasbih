@@ -23,10 +23,9 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      // If we're not already on the login page, redirect to it
-      const currentPath = window.location.pathname;
-      if (!currentPath.includes('/login')) {
-        window.location.href = '/wali/login';
+      const hash = window.location.hash;
+      if (hash !== '#/login') {
+        window.location.href = '/wali/login#/login';
       }
     }
     return Promise.reject(error);
