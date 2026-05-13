@@ -34,24 +34,6 @@ export const Route = createFileRoute("/topup")({
 
 const NOMINALS = [50_000, 100_000, 200_000, 500_000, 1_000_000, 2_000_000];
 
-type Method = {
-  id: string;
-  label: string;
-  desc: string;
-  icon: typeof Building2;
-  fee: number;
-  account: string;
-  holder: string;
-};
-
-const METHODS: Method[] = [
-  { id: "bca", label: "Bank BCA", desc: "Transfer manual antar bank", icon: Building2, fee: 0, account: "1840558992", holder: "Yayasan PPTQ Cahaya Tasbih" },
-  { id: "mandiri", label: "Bank Mandiri", desc: "Transfer manual antar bank", icon: Building2, fee: 0, account: "1370009988421", holder: "Yayasan PPTQ Cahaya Tasbih" },
-  { id: "bsi", label: "Bank Syariah Indonesia", desc: "Transfer manual antar bank", icon: Building2, fee: 0, account: "7211884502", holder: "Yayasan PPTQ Cahaya Tasbih" },
-  { id: "bri", label: "Bank BRI", desc: "Transfer manual antar bank", icon: Building2, fee: 0, account: "002901024458503", holder: "Yayasan PPTQ Cahaya Tasbih" },
-  { id: "gopay", label: "GoPay", desc: "Transfer manual e-wallet", icon: Smartphone, fee: 0, account: "081288995521", holder: "Ust. Hasanuddin (Bendahara)" },
-];
-
 const fmt = (n: number) =>
   new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0 }).format(n);
 

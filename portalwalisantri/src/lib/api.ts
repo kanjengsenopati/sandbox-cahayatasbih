@@ -3,6 +3,7 @@ import axios from 'axios';
 const api = axios.create({
   baseURL: '/api/wali',
   withCredentials: true,
+  timeout: 30000, // 30 seconds
   headers: {
     'Accept': 'application/json',
     'Content-Type': 'application/json',
