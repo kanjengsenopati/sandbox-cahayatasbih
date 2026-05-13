@@ -12,6 +12,14 @@ class Authenticate extends Middleware
      */
     protected function redirectTo(Request $request): ?string
     {
-        return $request->expectsJson() ? null : route('login');
+        if ($request->expectsJson()) {
+            return null;
+        }
+
+        if ($request->is('wali/*') || $request->is('api/wali/*')) {
+            return route('wali.login');
+        }
+
+        return route('login');
     }
 }
