@@ -13,19 +13,30 @@ class CheckoutController extends BaseWaliApiController
 {
     public function store(Request $request)
     {
-        $request->validate([
-            'bill_ids' => 'required|array',
-            'bill_ids.*' => 'exists:bills,id',
-            'payment_method_id' => 'required|exists:payment_methods,id'
-        ]);
-
         $student = $this->resolveActiveStudent();
         if (!$student) return response()->json(['message' => 'Student not found'], 404);
 
+        // Merge student_id into request for validation and TransactionService
+        if (!$request->has('student_id')) {
+            $request->merge(['student_id' => $student->id]);
+        }
+
+        try {
+            $request->validate([
+                'bill_ids' => 'required|array',
+                'bill_ids.*' => 'exists:bills,id',
+                'payment_method_id' => 'required|exists:payment_methods,id',
+                'student_id' => 'required|exists:students,id'
+            ]);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            \Illuminate\Support\Facades\Log::error('Checkout Validation Failed', [
+                'errors' => $e->errors(),
+                'request' => $request->all()
+            ]);
+            throw $e;
+        }
+
         $paymentMethod = \App\Models\PaymentMethod::findOrFail($request->payment_method_id);
-        
-        // Prepare request for TransactionService
-        $request->merge(['student_id' => $student->id]);
         
         $transaction = \App\Services\TransactionService::createTransaction($request, $paymentMethod->type, Transaction::TYPE_BILL);
         

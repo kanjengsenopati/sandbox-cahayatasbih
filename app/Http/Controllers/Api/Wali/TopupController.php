@@ -11,6 +11,13 @@ class TopupController extends BaseWaliApiController
 {
     public function store(Request $request)
     {
+        $activeStudent = $this->resolveActiveStudent();
+        
+        // Merge student_id if not present but resolved from session
+        if (!$request->has('student_id') && $activeStudent) {
+            $request->merge(['student_id' => $activeStudent->id]);
+        }
+
         $request->validate([
             'amount' => 'required|numeric|min:10000',
             'payment_method_id' => 'required|exists:payment_methods,id',
