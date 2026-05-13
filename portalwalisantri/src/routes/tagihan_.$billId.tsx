@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate, useParams } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ArrowLeft, Check, CheckCircle2, Loader2 } from "lucide-react";
 import { useSantri } from "@/contexts/SantriContext";
 import { SantriSwitcherTrigger } from "@/components/SantriSwitcher";
