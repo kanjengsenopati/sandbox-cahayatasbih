@@ -59,7 +59,7 @@
     @else
         {{-- Fallback if manifest fails but files exist --}}
         <link rel="stylesheet" href="/portalwalisantri/dist/assets/styles-DwM8hKnt.css">
-        <script type="module" src="/portalwalisantri/dist/assets/index-Bu1hofVw.js"></script>
+        <script type="module" src="/portalwalisantri/dist/assets/index-ztjLOaY2.js"></script>
     @endif
 @endif
 
