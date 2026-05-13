@@ -26,7 +26,15 @@ class TransactionProof extends Model
 
     protected $appends = [
         'translated_status',
+        'proof_image_url'
     ];
+
+    public function getProofImageAttribute($value)
+    {
+        if (!$value) return null;
+        if (filter_var($value, FILTER_VALIDATE_URL)) return $value;
+        return asset('storage/' . $value);
+    }
 
     public function getTranslatedStatusAttribute()
     {
