@@ -374,6 +374,7 @@ function ConfirmScreen({
   refId,
   proof,
   proofUrl,
+  isUploading,
   onBack,
   onSelectFile,
   onSubmit,
@@ -386,6 +387,7 @@ function ConfirmScreen({
   refId: string;
   proof: File | null;
   proofUrl: string;
+  isUploading: boolean;
   onBack: () => void;
   onSelectFile: (f: File | null) => void;
   onSubmit: () => void;
