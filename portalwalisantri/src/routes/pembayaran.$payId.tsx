@@ -38,26 +38,26 @@ function PembayaranPage() {
 
   const tx = useMemo(() => {
     if (!paymentRes) return null;
-    const p = paymentRes.payment;
-    const details = paymentRes.details || [];
+    const p = paymentRes.transaction;
+    const proof = paymentRes.proof;
     
     return {
       id: p.id,
       payment_code: p.payment_code,
-      billName: p.description || "Pembayaran Tagihan",
-      amount: p.total_amount,
-      baseAmount: p.base_amount,
-      uniqueCode: p.unique_code,
+      billName: "Pembayaran Tagihan",
+      amount: Number(p.pay_amount),
+      baseAmount: Number(p.pay_amount) - Number(p.unique_payment || 0),
+      uniqueCode: p.unique_payment,
       status: p.status === "PAID" ? "approved" : p.status === "REJECTED" ? "rejected" : "pending",
-      bankName: p.method || "BCA",
-      bankAccount: "1840558992", // Mocked for now or from setting
+      bankName: "BCA", 
+      bankAccount: "1840558992", 
       bankHolder: "Yayasan PPTQ Cahaya Tasbih",
-      proofUrl: p.proof_path,
-      items: details.map((d: any) => ({
+      proofUrl: proof?.proof_path,
+      items: p.transaction_details?.map((d: any) => ({
         id: d.id,
-        label: d.name || `Cicilan ${d.month_name || ""} ${d.year || ""}`,
-        amount: d.amount,
-      })),
+        label: d.bill?.bill_type?.name || "Tagihan",
+        amount: d.bill?.amount || 0,
+      })) || [],
     };
   }, [paymentRes]);
 

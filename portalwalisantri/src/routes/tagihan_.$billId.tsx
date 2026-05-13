@@ -53,13 +53,12 @@ function BillDetail() {
   const checkoutMutation = useMutation({
     mutationFn: async (installmentIds: string[]) => {
       const res = await postCheckout({
-        installments: installmentIds,
-        method: "BCA", // default method
+        bill_ids: installmentIds,
       });
       return res.data;
     },
     onSuccess: (data) => {
-      navigate({ to: "/pembayaran/$payId", params: { payId: String(data.payment.id) } });
+      navigate({ to: "/pembayaran/$payId", params: { payId: String(data.transaction.id) } });
     },
   });
 
