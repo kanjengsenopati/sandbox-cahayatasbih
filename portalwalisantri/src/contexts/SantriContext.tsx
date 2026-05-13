@@ -52,7 +52,7 @@ export function SantriProvider({ children }: { children: ReactNode }) {
   const location = useLocation();
   const isLoginPage = location.pathname === "/login";
 
-  const { data: students = [], isLoading: isLoadingStudents } = useQuery({
+  const { data: students = [], isPending: isPendingStudents } = useQuery({
     queryKey: ["students"],
     queryFn: async () => {
       const res = await fetchStudents();
@@ -62,7 +62,7 @@ export function SantriProvider({ children }: { children: ReactNode }) {
     retry: false,
   });
 
-  const { data: active = null, isLoading: isLoadingActive } = useQuery({
+  const { data: active = null, isPending: isPendingActive } = useQuery({
     queryKey: ["active-student"],
     queryFn: async () => {
       const res = await fetchActiveStudent();
@@ -97,7 +97,7 @@ export function SantriProvider({ children }: { children: ReactNode }) {
       value={{ 
         santri: students, 
         active, 
-        isLoading: isLoadingStudents || isLoadingActive,
+        isLoading: isPendingStudents || isPendingActive,
         switchStudent 
       }}
     >
