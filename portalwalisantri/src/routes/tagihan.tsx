@@ -42,11 +42,11 @@ function Tagihan() {
     if (!billsData) return [];
     const allBills = [...(billsData.unpaid || []), ...(billsData.paid || [])];
     return allBills.map((b: any) => ({
-      id: b.id,
-      name: b.name,
-      category: b.category_name || "Lainnya",
-      total: b.total_amount,
-      paid: b.paid_amount,
+      id: b.bill_type_id,
+      name: b.bill_type_name,
+      category: b.academic_year || "Lainnya",
+      total: b.total,
+      paid: b.paid,
       due: b.due_date ? `Jatuh tempo: ${new Date(b.due_date).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}` : "",
     }));
   }, [billsData]);

@@ -36,16 +36,16 @@ function BillDetail() {
     const details = detailData.details || [];
     
     return {
-      id: b.id,
-      name: b.name,
-      shortName: b.name,
-      total: b.total_amount,
-      paid: b.paid_amount,
-      installments: details.map((d: any) => ({
-        id: d.id,
+      id: billId,
+      name: detailData.billType.name,
+      shortName: detailData.billType.name,
+      total: detailData.summary.total,
+      paid: detailData.summary.paid,
+      installments: detailData.bills.map((d: any) => ({
+        id: String(d.id),
         label: d.month_name ? `${d.month_name} ${d.year}` : d.name,
-        amount: d.amount,
-        paid: d.status === "PAID" || d.paid_amount >= d.amount,
+        amount: Number(d.amount),
+        paid: d.status === "PAID",
       })),
     };
   }, [detailData]);
