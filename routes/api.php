@@ -146,6 +146,7 @@ Route::prefix('wali')->middleware(['web'])->group(function () {
     Route::get('saldo-histories', [App\Http\Controllers\Api\Wali\SaldoHistoryController::class, 'index']);
     Route::get('saving-histories', [App\Http\Controllers\Api\Wali\SavingHistoryController::class, 'index']);
     Route::get('bills', [App\Http\Controllers\Api\Wali\BillController::class, 'index']);
+    Route::get('bills/{id}', [App\Http\Controllers\Api\Wali\BillController::class, 'show']);
     Route::get('pos-transactions', [App\Http\Controllers\Api\Wali\PosTransactionController::class, 'index']);
     Route::post('topup', [App\Http\Controllers\Api\Wali\TopupController::class, 'store']);
     Route::post('checkout', [App\Http\Controllers\Api\Wali\CheckoutController::class, 'store']);
