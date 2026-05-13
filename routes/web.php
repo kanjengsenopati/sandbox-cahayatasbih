@@ -98,6 +98,7 @@ Route::prefix('wali')->group(function () {
     Route::get('login', [WaliDashboardController::class, 'app'])->name('wali.login');
     Route::post('login', [WaliAuthController::class, 'authenticate'])->name('wali.authenticate');
     Route::post('logout', [WaliAuthController::class, 'logout'])->name('wali.logout');
+    Route::get('logout', [WaliAuthController::class, 'logout']);
     Route::get('register', [WaliAuthController::class, 'register'])->name('wali.register');
     Route::post('register', [WaliAuthController::class, 'store'])->name('wali.register.store');
 

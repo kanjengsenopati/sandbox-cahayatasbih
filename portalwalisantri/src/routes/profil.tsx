@@ -2,7 +2,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { ChevronRight, Shield, Bell, CreditCard, HelpCircle, LogOut, Settings, Loader2 } from "lucide-react";
 import { MobileShell } from "@/components/MobileShell";
 import { useQuery } from "@tanstack/react-query";
-import { fetchProfile } from "@/lib/api";
+import { fetchProfile, postLogout } from "@/lib/api";
 
 export const Route = createFileRoute("/profil")({
   component: Profil,
@@ -50,9 +50,14 @@ function Profil() {
   const students = profileData?.students || [];
   const initials = user?.name ? user.name.split(' ').map((n: string) => n[0]).join('').substring(0, 2).toUpperCase() : "W";
 
-  const handleLogout = () => {
-    // Redirect to Laravel logout route or handle via API
-    window.location.href = '/wali/logout';
+  const handleLogout = async () => {
+    try {
+      await postLogout();
+      window.location.href = '/wali/login';
+    } catch (error) {
+      console.error("Logout error:", error);
+      window.location.href = '/wali/login';
+    }
   };
 
   return (
