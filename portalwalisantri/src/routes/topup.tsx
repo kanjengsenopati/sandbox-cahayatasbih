@@ -126,9 +126,10 @@ function TopupPage() {
 
   const uploadMutation = useMutation({
     mutationFn: async () => {
-      if (!paymentId || !proof) return;
+      if (!paymentId || !proof || !selected) return;
       const fd = new FormData();
       fd.append("proof", proof);
+      fd.append("bank_id", selected.id); // Send the selected bank ID
       return uploadPaymentProof(paymentId, fd);
     },
     onSuccess: () => {

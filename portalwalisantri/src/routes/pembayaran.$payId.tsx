@@ -66,6 +66,12 @@ function PembayaranPage() {
     mutationFn: async (file: File) => {
       const fd = new FormData();
       fd.append("proof", file);
+      
+      const bank = paymentRes?.banks?.[0];
+      if (bank?.id) {
+        fd.append("bank_id", bank.id);
+      }
+      
       return uploadPaymentProof(payId, fd);
     },
     onSuccess: () => {

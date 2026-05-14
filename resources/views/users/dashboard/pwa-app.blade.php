@@ -27,7 +27,7 @@
 @else
     <!-- FALLBACK: Direct asset loading without manifest -->
     <link rel="stylesheet" href="/portalwalisantri/dist/assets/styles-DwM8hKnt.css">
-    <script type="module" src="/portalwalisantri/dist/assets/index-ztjLOaY2.js"></script>
+    <script type="module" src="/portalwalisantri/dist/assets/index-8BDIRfSM.js"></script>
 @endif
 
 <script>
