@@ -32,8 +32,8 @@
     <script type="module" src="/portalwalisantri/dist/{{ $entry['file'] }}?v={{ time() }}"></script>
 @else
     <!-- FALLBACK: Direct asset loading if manifest logic fails -->
-    <link rel="stylesheet" href="/portalwalisantri/dist/assets/styles-BZINPJ5x.css?v={{ time() }}">
-    <script type="module" src="/portalwalisantri/dist/assets/index-BXLsxxNN.js?v={{ time() }}"></script>
+    <link rel="stylesheet" href="/portalwalisantri/dist/assets/styles-C9hxQfev.css?v={{ time() }}">
+    <script type="module" src="/portalwalisantri/dist/assets/index-hCQQL6Qn.js?v={{ time() }}"></script>
 @endif
 
 <script>

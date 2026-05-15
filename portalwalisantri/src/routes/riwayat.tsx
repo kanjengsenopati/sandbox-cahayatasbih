@@ -472,7 +472,10 @@ function TxRow({ tx, open, onToggle }: { tx: Tx; open: boolean; onToggle: () => 
           )}
 
           {tx.note && (
-            <p className="mt-3 text-[11px] text-muted-foreground italic px-1">"{tx.note}"</p>
+            <div className="mt-3 p-3 rounded-xl bg-destructive/10 border border-destructive/20">
+              <p className="text-[10px] font-bold text-destructive uppercase tracking-wider mb-1">Catatan Admin:</p>
+              <p className="text-[12px] text-destructive/90 font-medium leading-relaxed italic">"{tx.note}"</p>
+            </div>
           )}
 
           <div className="mt-3 grid grid-cols-2 gap-2">

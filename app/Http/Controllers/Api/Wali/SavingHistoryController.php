@@ -30,15 +30,22 @@ class SavingHistoryController extends BaseWaliApiController
         // Lazy cleanup for ghost pending transactions
         $histories = $paginated->getCollection();
         foreach ($histories as $key => $history) {
-            if ($history->status === SavingHistory::STATUS_PENDING) {
-                $transactionDetail = $history->transaction_details()->with('transaction.activeProof')->first();
-                if ($transactionDetail && $transactionDetail->transaction) {
-                    $tx = $transactionDetail->transaction;
-                    if ($tx->status === \App\Models\Transaction::STATUS_CANCELLED) {
+            if ($history->status === SavingHistory::STATUS_PENDING || $history->status === SavingHistory::STATUS_FAILED) {
+                $transactionDetail = $history->transaction_details()->first();
+                if ($transactionDetail) {
+                    $tx = \App\Models\Transaction::withTrashed()->with('activeProof')->find($transactionDetail->transaction_id);
+                    
+                    if (!$tx || $tx->status === \App\Models\Transaction::STATUS_CANCELLED || $tx->trashed()) {
                         $history->delete();
                         $histories->forget($key);
-                    } elseif ($tx->activeProof && $tx->activeProof->status === \App\Models\TransactionProof::STATUS_REJECTED) {
-                        $history->update(['status' => SavingHistory::STATUS_FAILED]);
+                    } else {
+                        if ($history->status === SavingHistory::STATUS_PENDING && $tx->activeProof && $tx->activeProof->status === \App\Models\TransactionProof::STATUS_REJECTED) {
+                            $history->update(['status' => SavingHistory::STATUS_FAILED]);
+                            $history->status = SavingHistory::STATUS_FAILED;
+                        }
+                        if ($tx->activeProof && $tx->activeProof->note) {
+                            $history->note = $tx->activeProof->note;
+                        }
                     }
                 }
             }
