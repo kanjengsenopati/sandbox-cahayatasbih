@@ -17,30 +17,58 @@
     
     $manifestPath = null;
     $manifestUrlBase = '/portalwalisantri/dist/'; // Default fallback
+    $manifest = [];
+    $entry = null;
     
     foreach ($possiblePaths as $path) {
         if (file_exists($path)) {
             $manifestPath = $path;
             
-            // Determine the public URL path based on where we found the manifest
-            if (strpos($path, 'dist/client') !== false) {
+            $manifest = json_decode(file_get_contents($manifestPath), true) ?: [];
+            $entry = $manifest['index.html'] ?? null;
+            $fileRel = $entry['file'] ?? '';
+            
+            // Scenario 1: public/portalwalisantri points to portalwalisantri
+            if ($fileRel && file_exists(public_path("portalwalisantri/dist/client/$fileRel"))) {
                 $manifestUrlBase = '/portalwalisantri/dist/client/';
-            } elseif (strpos($path, '.vite') !== false) {
+            } 
+            // Scenario 2: public/portalwalisantri points to portalwalisantri/dist
+            elseif ($fileRel && file_exists(public_path("portalwalisantri/client/$fileRel"))) {
+                $manifestUrlBase = '/portalwalisantri/client/';
+            }
+            // Scenario 3: public/portalwalisantri points to portalwalisantri/dist/client
+            elseif ($fileRel && file_exists(public_path("portalwalisantri/$fileRel"))) {
+                $manifestUrlBase = '/portalwalisantri/';
+            }
+            // Fallbacks for older vite configs
+            elseif ($fileRel && file_exists(public_path("portalwalisantri/dist/$fileRel"))) {
                 $manifestUrlBase = '/portalwalisantri/dist/';
-            } else {
-                $manifestUrlBase = '/portalwalisantri/dist/';
+            }
+            elseif ($fileRel && file_exists(public_path("portalwalisantri/assets/" . basename($fileRel)))) {
+                $manifestUrlBase = '/portalwalisantri/';
+            }
+            else {
+                // If we really can't figure it out, just guess based on the manifest path
+                if (strpos($path, 'dist/client') !== false) {
+                    $manifestUrlBase = '/portalwalisantri/dist/client/';
+                } else {
+                    $manifestUrlBase = '/portalwalisantri/dist/';
+                }
             }
             break;
         }
     }
-
-    $manifest = $manifestPath ? json_decode(file_get_contents($manifestPath), true) : [];
-    $entry = $manifest['index.html'] ?? null;
 @endphp
 
-<!-- DEPLOYMENT VERSION v8: {{ date('Y-m-d H:i:s') }} | manifest={{ $manifestPath ? 'YES' : 'NO' }} | base={{ $manifestUrlBase }} | entry={{ $entry ? 'FOUND' : 'MISSING' }} -->
+<!-- DEPLOYMENT VERSION v10: {{ date('Y-m-d H:i:s') }} | manifest={{ $manifestPath ? 'YES' : 'NO' }} | base={{ $manifestUrlBase }} | entry={{ $entry ? 'FOUND' : 'MISSING' }} -->
 
 @if($entry)
+    @php
+        $cssFile = $entry['css'][0] ?? null;
+        $cssSysPath = $cssFile ? dirname($manifestPath) . '/' . $cssFile : null;
+        $cssExists = $cssSysPath && file_exists($cssSysPath);
+    @endphp
+    <!-- DIAGNOSTICS: sysPath={{ $cssSysPath }} | exists={{ $cssExists ? 'YES' : 'NO' }} -->
     @foreach($entry['css'] ?? [] as $css)
         <link rel="stylesheet" href="{{ $manifestUrlBase }}{{ $css }}?v={{ time() }}">
     @endforeach
