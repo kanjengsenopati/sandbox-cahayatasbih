@@ -373,7 +373,6 @@ Route::get('portalwalisantri/{any}', function ($any) {
     
     // Extract just the filename to look for it inside the actual build folders
     $filename = basename($any);
-    $isAsset = strpos($any, 'assets/') !== false;
     
     // Try multiple possible locations
     $paths = [
@@ -407,5 +406,38 @@ Route::get('portalwalisantri/{any}', function ($any) {
     }
     abort(404);
 })->where('any', '.*');
+
+// Ultimate bypass for Nginx static file rules (Nginx won't block this because it doesn't end in .js or .css in the path)
+Route::get('pwa-asset', function (\Illuminate\Http\Request $request) {
+    $file = $request->query('f');
+    if (!$file) abort(404);
+    
+    $filename = basename($file);
+    
+    $paths = [
+        base_path("portalwalisantri/dist/client/{$file}"),
+        base_path("portalwalisantri/dist/{$file}"),
+        base_path("portalwalisantri/dist/client/assets/{$filename}"),
+        base_path("portalwalisantri/dist/assets/{$filename}"),
+    ];
+    
+    foreach ($paths as $path) {
+        if (file_exists($path)) {
+            $mime = 'text/plain';
+            if (str_ends_with($path, '.css')) $mime = 'text/css';
+            elseif (str_ends_with($path, '.js')) $mime = 'application/javascript';
+            elseif (str_ends_with($path, '.json')) $mime = 'application/json';
+            elseif (str_ends_with($path, '.png')) $mime = 'image/png';
+            elseif (str_ends_with($path, '.svg')) $mime = 'image/svg+xml';
+            elseif (str_ends_with($path, '.ico')) $mime = 'image/x-icon';
+            
+            return response()->file($path, [
+                'Content-Type' => $mime,
+                'Cache-Control' => 'public, max-age=31536000'
+            ]);
+        }
+    }
+    abort(404);
+})->name('pwa-asset');
 
 Route::get('public/report-bill-student/{token}', [App\Http\Controllers\Public\PublicReportBillStudentController::class, 'index'])->name('public.report-bill-student.index');

@@ -19,6 +19,7 @@
     $manifestUrlBase = '/portalwalisantri/dist/'; // Default fallback
     $manifest = [];
     $entry = null;
+    $useBypass = false;
     
     foreach ($possiblePaths as $path) {
         if (file_exists($path)) {
@@ -48,19 +49,15 @@
                 $manifestUrlBase = '/portalwalisantri/';
             }
             else {
-                // If we really can't figure it out, just guess based on the manifest path
-                if (strpos($path, 'dist/client') !== false) {
-                    $manifestUrlBase = '/portalwalisantri/dist/client/';
-                } else {
-                    $manifestUrlBase = '/portalwalisantri/dist/';
-                }
+                // If it doesn't exist in public at all, we use the ULTIMATE BYPASS ROUTE
+                $useBypass = true;
             }
             break;
         }
     }
 @endphp
 
-<!-- DEPLOYMENT VERSION v10: {{ date('Y-m-d H:i:s') }} | manifest={{ $manifestPath ? 'YES' : 'NO' }} | base={{ $manifestUrlBase }} | entry={{ $entry ? 'FOUND' : 'MISSING' }} -->
+<!-- DEPLOYMENT VERSION v11: {{ date('Y-m-d H:i:s') }} | manifest={{ $manifestPath ? 'YES' : 'NO' }} | bypass={{ $useBypass ? 'YES' : 'NO' }} -->
 
 @if($entry)
     @php
@@ -69,10 +66,18 @@
         $cssExists = $cssSysPath && file_exists($cssSysPath);
     @endphp
     <!-- DIAGNOSTICS: sysPath={{ $cssSysPath }} | exists={{ $cssExists ? 'YES' : 'NO' }} -->
-    @foreach($entry['css'] ?? [] as $css)
-        <link rel="stylesheet" href="{{ $manifestUrlBase }}{{ $css }}?v={{ time() }}">
-    @endforeach
-    <script type="module" src="{{ $manifestUrlBase }}{{ $entry['file'] }}?v={{ time() }}"></script>
+    
+    @if($useBypass)
+        @foreach($entry['css'] ?? [] as $css)
+            <link rel="stylesheet" href="/pwa-asset?f={{ urlencode($css) }}&v={{ time() }}">
+        @endforeach
+        <script type="module" src="/pwa-asset?f={{ urlencode($entry['file']) }}&v={{ time() }}"></script>
+    @else
+        @foreach($entry['css'] ?? [] as $css)
+            <link rel="stylesheet" href="{{ $manifestUrlBase }}{{ $css }}?v={{ time() }}">
+        @endforeach
+        <script type="module" src="{{ $manifestUrlBase }}{{ $entry['file'] }}?v={{ time() }}"></script>
+    @endif
 @else
     <!-- FALLBACK: Direct asset loading if manifest logic fails (ensure this points to a built asset if needed) -->
     <script>console.error('PWA Manifest missing at ' + @json($possiblePaths));</script>
