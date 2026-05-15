@@ -8,6 +8,8 @@ use App\Models\TransactionDetail;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Cache;
 
 class CheckoutController extends BaseWaliApiController
 {
@@ -36,35 +38,55 @@ class CheckoutController extends BaseWaliApiController
             throw $e;
         }
 
-        $paymentMethod = \App\Models\PaymentMethod::findOrFail($request->payment_method_id);
-        
-        $transaction = \App\Services\TransactionService::createTransaction($request, $paymentMethod->type, Transaction::TYPE_BILL);
-        
-        if ($transaction instanceof \Illuminate\Http\JsonResponse) {
-            return $transaction;
+        $lockKey = "checkout_bill_student_" . $student->id;
+        $lock = Cache::lock($lockKey, 10);
+
+        if (!$lock->get()) {
+            return response()->json(['message' => 'Sistem sedang memproses transaksi Anda. Harap tunggu sebentar.'], 409);
         }
 
-        // Transaction details are already created inside TransactionService::createTransaction for TYPE_BILL
-        // if bill_ids is present in the request. Let's verify.
-        // Yes, line 246 in TransactionService.php: $pay_amount = $request->bill_ids != null ? self::getTotalPayAmount($request->bill_ids) : $request->amount;
-        // And line 259: $transaction = Transaction::create(array_merge($transactionData, $request->validated()));
-        // Wait, TransactionService DOES NOT create TransactionDetails automatically in createTransaction.
-        // It's usually done in the controller or in payWithBalance/payWithCash.
-        
-        // Actually, looking at TransactionService::createTransaction again...
-        // It doesn't create TransactionDetail. I should do it here.
+        try {
+            DB::beginTransaction();
+            $paymentMethod = \App\Models\PaymentMethod::findOrFail($request->payment_method_id);
+            
+            $transaction = \App\Services\TransactionService::createTransaction($request, $paymentMethod->type, Transaction::TYPE_BILL);
+            
+            if ($transaction instanceof \Illuminate\Http\JsonResponse) {
+                DB::rollBack();
+                return $transaction;
+            }
 
-        foreach ($request->bill_ids as $billId) {
-            TransactionDetail::create([
-                'transaction_id' => $transaction->id,
-                'bill_id' => $billId,
+            // Check if transaction detail was already created (e.g. if paid via saldo)
+            $existingDetailsCount = TransactionDetail::where('transaction_id', $transaction->id)->count();
+            
+            if ($existingDetailsCount == 0) {
+                foreach ($request->bill_ids as $billId) {
+                    TransactionDetail::create([
+                        'transaction_id' => $transaction->id,
+                        'bill_id' => $billId,
+                    ]);
+                }
+            }
+
+            DB::commit();
+
+            return response()->json([
+                'message' => 'Checkout successful',
+                'transaction' => $transaction,
+                'payment_url' => $paymentMethod->type == \App\Models\PaymentMethod::TYPE_XENDIT ? $transaction->payment_link : null
             ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            \Illuminate\Support\Facades\Log::error('Checkout Error: ' . $e->getMessage(), [
+                'student_id' => $student->id,
+                'exception' => $e
+            ]);
+            return response()->json([
+                'message' => 'Gagal memproses transaksi. Silakan coba lagi.',
+                'error' => $e->getMessage()
+            ], 500);
+        } finally {
+            $lock->release();
         }
-
-        return response()->json([
-            'message' => 'Checkout successful',
-            'transaction' => $transaction,
-            'payment_url' => $paymentMethod->type == \App\Models\PaymentMethod::TYPE_XENDIT ? $transaction->payment_link : null
-        ]);
     }
 }

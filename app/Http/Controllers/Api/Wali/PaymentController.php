@@ -23,13 +23,13 @@ class PaymentController extends BaseWaliApiController
         } elseif ($transaction->type == Transaction::TYPE_SALDO) {
             $banks = TopupBank::with('bank')
                 ->where('type', TopupBank::TYPE_SALDO)
-                ->where('school_id', $transaction->student->classroom->school_id ?? null)
+                ->where('school_id', $transaction->student?->classroom?->school_id ?? null)
                 ->get()
                 ->pluck('bank');
         } elseif ($transaction->type == Transaction::TYPE_SAVING) {
             $banks = TopupBank::with('bank')
                 ->where('type', TopupBank::TYPE_SAVING)
-                ->where('school_id', $transaction->student->classroom->school_id ?? null)
+                ->where('school_id', $transaction->student?->classroom?->school_id ?? null)
                 ->get()
                 ->pluck('bank');
         }

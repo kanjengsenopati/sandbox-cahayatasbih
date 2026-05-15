@@ -118,8 +118,10 @@ class BillController extends Controller
 
     private function formatProofColumn($transaction)
     {
-        return "<a href='{$transaction->activeProof->proof_image}' target='_blank'>
-                <img src='{$transaction->activeProof->proof_image}' class='img-fluid img-thumbnail' style='max-width: 100px;'>
+        $proofUrl = $transaction->activeProof?->proof_image_url ?? $transaction->activeProof?->proof_image;
+        if (!$proofUrl) return '-';
+        return "<a href='{$proofUrl}' target='_blank'>
+                <img src='{$proofUrl}' class='img-fluid img-thumbnail' style='max-width: 100px;'>
             </a>";
     }
 

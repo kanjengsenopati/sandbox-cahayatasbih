@@ -71,9 +71,11 @@ class SavingHistoryController extends Controller
 
             return DataTables::of($transactions)
                 ->addColumn('proof', function ($transaction) {
+                    $proofUrl = $transaction?->activeProof?->proof_image_url ?? $transaction?->activeProof?->proof_image;
+                    if (!$proofUrl) return '-';
                     // add image preview on click zoom the image
-                    return "<a href='" . $transaction?->activeProof?->proof_image . "' target='_blank'>
-                        <img src='" . $transaction?->activeProof?->proof_image . "' class='img-fluid img-thumbnail' style='max-width: 100px;'>
+                    return "<a href='" . $proofUrl . "' target='_blank'>
+                        <img src='" . $proofUrl . "' class='img-fluid img-thumbnail' style='max-width: 100px;'>
                     </a>";
                 })
                 ->editColumn('pay_amount', function ($transaction) {

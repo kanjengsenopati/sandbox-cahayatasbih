@@ -258,13 +258,27 @@ class WaliDashboardController extends Controller
         if ($request->hasFile('proof')) {
             $path = $request->file('proof')->store('proofs', 'public');
             
+            $bankId = $request->bank_id;
+            if (!$bankId) {
+                $bank = $transaction->banks->first();
+                $bankId = $bank ? $bank->id : (\App\Models\Bank::first()?->id);
+            }
+
             TransactionProof::updateOrCreate(
                 ['transaction_id' => $id],
                 [
-                    'proof_path' => $path,
-                    'status' => 'PENDING',
+                    'bank_id' => $bankId,
+                    'student_id' => $transaction->student_id,
+                    'proof_image' => $path,
+                    'status' => TransactionProof::STATUS_WAITING_CONFIRMATION,
+                    'is_active' => true,
                 ]
             );
+
+            // Update transaction status to trigger admin verification
+            $transaction->update([
+                'status' => Transaction::STATUS_PENDING_CONFIRMATION
+            ]);
 
             return redirect()->back()->with('success', 'Bukti pembayaran berhasil diunggah. Tunggu konfirmasi admin.');
         }

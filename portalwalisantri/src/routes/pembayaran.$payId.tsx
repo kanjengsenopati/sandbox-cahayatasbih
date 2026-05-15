@@ -53,7 +53,7 @@ function PembayaranPage() {
       bankName: bank.name || "BCA", 
       bankAccount: bank.account_number || "1840558992", 
       bankHolder: bank.account_name || "Yayasan PPTQ Cahaya Tasbih",
-      proofUrl: proof?.proof_path,
+      proofUrl: proof?.proof_image_url || proof?.proof_image,
       items: p.transaction_details?.map((d: any) => ({
         id: d.id,
         label: d.bill?.bill_type?.name || (p.type === "SALDO" ? "Topup Saldo" : "Pembayaran"),

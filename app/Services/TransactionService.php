@@ -281,9 +281,9 @@ class TransactionService
                             // Load hubungan yang diperlukan untuk TYPE_SALDO dan TYPE_SAVING
                             $transaction->load('student.classroom.school.topupBank.bank');
                             if ($transaction->type == Transaction::TYPE_SALDO) {
-                                $transaction['banks'] = $transaction?->student?->classroom->school?->saldoBank->pluck('bank');
+                                $transaction['banks'] = $transaction?->student?->classroom?->school?->saldoBank?->pluck('bank');
                             } elseif ($transaction->type == Transaction::TYPE_SAVING) {
-                                $transaction['banks'] = $transaction?->student?->classroom->school?->savingBank->pluck('bank');
+                                $transaction['banks'] = $transaction?->student?->classroom?->school?->savingBank?->pluck('bank');
                             }
                         }
 
