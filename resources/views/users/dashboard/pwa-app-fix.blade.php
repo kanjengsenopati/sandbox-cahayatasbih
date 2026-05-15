@@ -16,14 +16,19 @@
     ];
     
     $manifestPath = null;
-    $manifestPathRelative = 'portalwalisantri/dist/client/';
+    $manifestUrlBase = '/portalwalisantri/dist/'; // Default fallback
+    
     foreach ($possiblePaths as $path) {
         if (file_exists($path)) {
             $manifestPath = $path;
-            if (strpos($path, '.vite') !== false) {
-                $manifestPathRelative = 'portalwalisantri/dist/';
-            } elseif (strpos($path, 'dist/vite-manifest') !== false) {
-                $manifestPathRelative = 'portalwalisantri/dist/';
+            
+            // Determine the public URL path based on where we found the manifest
+            if (strpos($path, 'dist/client') !== false) {
+                $manifestUrlBase = '/portalwalisantri/dist/client/';
+            } elseif (strpos($path, '.vite') !== false) {
+                $manifestUrlBase = '/portalwalisantri/dist/';
+            } else {
+                $manifestUrlBase = '/portalwalisantri/dist/';
             }
             break;
         }
@@ -33,13 +38,13 @@
     $entry = $manifest['index.html'] ?? null;
 @endphp
 
-<!-- DEPLOYMENT VERSION v7: {{ date('Y-m-d H:i:s') }} | manifest={{ $manifestPath ? 'YES' : 'NO' }} | entry={{ $entry ? 'FOUND' : 'MISSING' }} -->
+<!-- DEPLOYMENT VERSION v8: {{ date('Y-m-d H:i:s') }} | manifest={{ $manifestPath ? 'YES' : 'NO' }} | base={{ $manifestUrlBase }} | entry={{ $entry ? 'FOUND' : 'MISSING' }} -->
 
 @if($entry)
     @foreach($entry['css'] ?? [] as $css)
-        <link rel="stylesheet" href="/{{ $manifestPathRelative }}{{ $css }}?v={{ time() }}">
+        <link rel="stylesheet" href="{{ $manifestUrlBase }}{{ $css }}?v={{ time() }}">
     @endforeach
-    <script type="module" src="/{{ $manifestPathRelative }}{{ $entry['file'] }}?v={{ time() }}"></script>
+    <script type="module" src="{{ $manifestUrlBase }}{{ $entry['file'] }}?v={{ time() }}"></script>
 @else
     <!-- FALLBACK: Direct asset loading if manifest logic fails (ensure this points to a built asset if needed) -->
     <script>console.error('PWA Manifest missing at ' + @json($possiblePaths));</script>
