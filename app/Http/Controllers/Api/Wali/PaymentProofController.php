@@ -49,6 +49,17 @@ class PaymentProofController extends BaseWaliApiController
                     'status' => Transaction::STATUS_PENDING_CONFIRMATION
                 ]);
 
+                // Sync related history back to PENDING
+                if ($transaction->type == Transaction::TYPE_SALDO) {
+                    $transaction->transactionDetails->each(function ($detail) {
+                        $detail->saldoHistory?->update(['status' => \App\Models\SaldoHistory::STATUS_PENDING]);
+                    });
+                } elseif ($transaction->type == Transaction::TYPE_SAVING) {
+                    $transaction->transactionDetails->each(function ($detail) {
+                        $detail->savingHistory?->update(['status' => \App\Models\SavingHistory::STATUS_PENDING]);
+                    });
+                }
+
                 return response()->json([
                     'message' => 'Payment proof uploaded successfully',
                     'proof' => $proof

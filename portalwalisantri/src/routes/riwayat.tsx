@@ -390,15 +390,15 @@ function TxRow({ tx, open, onToggle }: { tx: Tx; open: boolean; onToggle: () => 
             </span>
             {tx.status && (
               <span
-                className={`px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider text-white ${
-                  tx.status === "approved"
-                    ? "bg-success"
-                    : tx.status === "rejected"
-                    ? "bg-destructive"
-                    : "bg-[oklch(0.78_0.16_75)]"
+                className={`px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider ${
+                  tx.status === "SUCCESS" || tx.status === "approved" || tx.status === "PAID"
+                    ? "bg-emerald-500/15 text-emerald-700"
+                    : tx.status === "FAILED" || tx.status === "rejected" || tx.status === "REJECTED"
+                    ? "bg-destructive text-white"
+                    : "bg-[oklch(0.78_0.16_75)] text-white"
                 }`}
               >
-                {tx.status}
+                {tx.status === "SUCCESS" ? "Sukses" : tx.status === "FAILED" ? "Cek Ulang" : tx.status}
               </span>
             )}
             {fmtTime(tx.date)}

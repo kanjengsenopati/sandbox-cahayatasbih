@@ -590,6 +590,17 @@ class TransactionService
                         'status' => TransactionProof::STATUS_REJECTED,
                         'note' => $data['note'],
                     ]);
+
+                    // Sync related history to FAILED
+                    if ($transaction->type == Transaction::TYPE_SALDO) {
+                        $transaction->transactionDetails->each(function ($detail) {
+                            $detail->saldoHistory?->update(['status' => \App\Models\SaldoHistory::STATUS_FAILED]);
+                        });
+                    } elseif ($transaction->type == Transaction::TYPE_SAVING) {
+                        $transaction->transactionDetails->each(function ($detail) {
+                            $detail->savingHistory?->update(['status' => \App\Models\SavingHistory::STATUS_FAILED]);
+                        });
+                    }
                     // send notification to whatsapp
                     $messageWhatsapp = SendNotifWaService::sendMessageRejectedPayment($transaction);
                     $title = 'Bukti Pembayaran Ditolak';
