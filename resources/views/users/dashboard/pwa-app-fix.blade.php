@@ -7,8 +7,8 @@
 @php
     // Try multiple possible locations for manifest (VPS vs Local)
     $possiblePaths = [
-        public_path('portalwalisantri/dist/vite-manifest.json'),
-        base_path('public/portalwalisantri/dist/vite-manifest.json'),
+        public_path('portalwalisantri/dist/client/vite-manifest.json'),
+        base_path('public/portalwalisantri/dist/client/vite-manifest.json'),
     ];
     
     $manifestPath = null;
@@ -23,17 +23,16 @@
     $entry = $manifest['index.html'] ?? null;
 @endphp
 
-<!-- DEPLOYMENT VERSION v5: {{ date('Y-m-d H:i:s') }} | manifest={{ $manifestPath ? 'YES' : 'NO' }} | entry={{ $entry ? 'FOUND' : 'MISSING' }} -->
+<!-- DEPLOYMENT VERSION v6: {{ date('Y-m-d H:i:s') }} | manifest={{ $manifestPath ? 'YES' : 'NO' }} | entry={{ $entry ? 'FOUND' : 'MISSING' }} -->
 
 @if($entry)
     @foreach($entry['css'] ?? [] as $css)
-        <link rel="stylesheet" href="/portalwalisantri/dist/{{ $css }}?v={{ time() }}">
+        <link rel="stylesheet" href="/portalwalisantri/dist/client/{{ $css }}?v={{ time() }}">
     @endforeach
-    <script type="module" src="/portalwalisantri/dist/{{ $entry['file'] }}?v={{ time() }}"></script>
+    <script type="module" src="/portalwalisantri/dist/client/{{ $entry['file'] }}?v={{ time() }}"></script>
 @else
-    <!-- FALLBACK: Direct asset loading if manifest logic fails -->
-    <link rel="stylesheet" href="/portalwalisantri/dist/assets/styles-C9hxQfev.css?v={{ time() }}">
-    <script type="module" src="/portalwalisantri/dist/assets/index-hCQQL6Qn.js?v={{ time() }}"></script>
+    <!-- FALLBACK: Direct asset loading if manifest logic fails (ensure this points to a built asset if needed) -->
+    <script>console.error('PWA Manifest missing at ' + @json($possiblePaths));</script>
 @endif
 
 <script>
