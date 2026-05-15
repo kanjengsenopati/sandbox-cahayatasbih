@@ -34,7 +34,6 @@ class DashboardController extends BaseWaliApiController
             $studyCount = StudyGrade::where('student_id', $activeStudent->id)->distinct('study_id')->count();
 
             $saldoHistories = \App\Models\SaldoHistory::where('student_id', $activeStudent->id)
-                ->where('status', 'SUCCESS')
                 ->whereDate('created_at', now()->toDateString())
                 ->latest()
                 ->get()
@@ -43,6 +42,7 @@ class DashboardController extends BaseWaliApiController
                         'type' => $item->type === 'IN' ? 'IN' : 'OUT',
                         'amount' => $item->amount,
                         'note' => $item->description ?? ($item->type === 'IN' ? 'Topup Saldo' : 'Pengeluaran Saldo'),
+                        'status' => $item->status,
                         'created_at' => $item->created_at
                     ];
                 });

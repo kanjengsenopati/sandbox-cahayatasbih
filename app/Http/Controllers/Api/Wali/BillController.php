@@ -44,14 +44,21 @@ class BillController extends BaseWaliApiController
         
         $billType = BillType::with(['billItem', 'academicYear'])->findOrFail($id);
         
-        $bills = Bill::where('student_id', $student->id)
+        $bills = Bill::with('academicYear')
+            ->where('student_id', $student->id)
             ->where('bill_type_id', $id)
             ->orderBy('year', 'asc')
             ->orderBy('month', 'asc')
             ->get();
 
+        // Get academic year name from billType or from the first bill
+        $academicYearName = $billType->academicYear->name 
+            ?? $bills->first()?->academicYear?->name 
+            ?? null;
+
         return response()->json([
             'billType' => $billType,
+            'academic_year_name' => $academicYearName,
             'bills' => $bills,
             'summary' => [
                 'total' => $bills->sum('amount'),

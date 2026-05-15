@@ -40,7 +40,7 @@ function BillDetail() {
       id: billId,
       name: detailData.billType.name,
       shortName: detailData.billType.name,
-      academicYear: detailData.billType.academic_year?.name || '',
+      academicYear: detailData.academic_year_name || detailData.billType.academic_year?.name || '',
       total: detailData.summary.total,
       paid: detailData.summary.paid,
       installments: detailData.bills.map((d: any) => ({
