@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
-import { Phone, Lock, Eye, EyeOff, GraduationCap, ArrowRight, Zap, Loader2 } from "lucide-react";
+import { Eye, EyeOff, Loader2 } from "lucide-react";
 import { postLogin } from "@/lib/api";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
@@ -46,145 +46,112 @@ function LoginPage() {
     loginMutation.mutate({ phone, password });
   };
 
-  const handleDemoLogin = () => {
-    // For demo, we might use specific credentials or just skip
-    navigate({ to: "/dashboard" });
-  };
-
   return (
-    <div className="min-h-screen w-full flex justify-center bg-background">
-      <div className="relative w-full max-w-md min-h-screen flex flex-col">
-        {/* Hero header — expanded */}
-        <div
-          className="relative pt-7 pb-24 px-6 rounded-b-[2.5rem] overflow-hidden"
-          style={{ background: "var(--gradient-hero)" }}
-        >
-          <div className="absolute -top-24 -right-16 w-72 h-72 rounded-full bg-primary-glow/30 blur-3xl" />
-          <div className="absolute -bottom-16 -left-16 w-60 h-60 rounded-full bg-white/15 blur-3xl" />
-          <div className="absolute top-10 right-8 w-24 h-24 rounded-full border border-white/15" />
-          <div className="absolute top-20 right-20 w-12 h-12 rounded-full border border-white/10" />
-          <div
-            className="absolute inset-0 opacity-[0.07]"
-            style={{
-              backgroundImage:
-                "linear-gradient(rgba(255,255,255,0.6) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.6) 1px, transparent 1px)",
-              backgroundSize: "26px 26px",
-              maskImage: "radial-gradient(ellipse at top right, black 30%, transparent 70%)",
-            }}
-          />
+    <div className="min-h-screen w-full flex justify-center bg-[#9b1de8] relative overflow-hidden">
+      {/* Background Diamond Pattern matching Gambar 2 */}
+      <div 
+        className="absolute inset-0 opacity-[0.05]"
+        style={{
+          backgroundImage: `
+            linear-gradient(45deg, #000 25%, transparent 25%, transparent 75%, #000 75%, #000), 
+            linear-gradient(45deg, #000 25%, transparent 25%, transparent 75%, #000 75%, #000)
+          `,
+          backgroundSize: "60px 60px",
+          backgroundPosition: "0 0, 30px 30px"
+        }}
+      />
+      {/* Subtle Glows to enhance the vibe */}
+      <div className="absolute top-[-10%] right-[-10%] w-[50vh] h-[50vh] bg-[#b445ff]/40 blur-[80px] rounded-full mix-blend-screen" />
+      <div className="absolute bottom-1/2 left-[-20%] w-[60vh] h-[60vh] bg-[#610a9c]/50 blur-[100px] rounded-full mix-blend-multiply" />
 
-          <div className="relative flex items-center justify-between gap-3">
-            <div className="flex items-center gap-2.5 min-w-0">
-              <div className="w-11 h-11 rounded-xl bg-white/15 backdrop-blur-md flex items-center justify-center border border-white/25 shrink-0 shadow-lg">
-                <GraduationCap className="text-white" size={22} />
-              </div>
-              <div className="flex flex-col min-w-0 leading-tight">
-                <span className="text-[10px] font-semibold text-white/70 uppercase tracking-[0.18em]">
-                  PPTQ
-                </span>
-                <span className="text-[15px] font-extrabold text-white tracking-[0.04em] whitespace-nowrap">
-                  CAHAYA&nbsp;TASBIH
-                </span>
-              </div>
-            </div>
-            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/15 border border-white/20 backdrop-blur shrink-0">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-300 animate-pulse" />
-              <span className="text-[9px] font-semibold text-white tracking-wider uppercase">
-                Portal Wali
-              </span>
-            </div>
-          </div>
-
-          {/* Title block */}
-          <div className="relative mt-8 space-y-3">
-            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-white/10 border border-white/15 backdrop-blur">
-              <span className="text-[10px] font-bold text-white tracking-wider uppercase">
-                SantriPay
-              </span>
-            </div>
-            <h1 className="text-[22px] leading-[1.2] font-extrabold text-white tracking-tight">
-              Selamat Datang, <span className="text-white/90">Wali Santri</span>
-            </h1>
-            <p className="text-[13px] text-white/75 leading-relaxed max-w-[20rem]">
-              Pantau saldo, bayar tagihan, dan kelola keuangan ananda di pondok
-              dalam satu genggaman.
-            </p>
+      <div className="relative w-full max-w-md min-h-screen flex flex-col z-10">
+        
+        {/* Top Logo Area (Centered) */}
+        <div className="flex-none pt-[12vh] pb-[8vh] flex justify-center items-center">
+          <div className="w-32 h-32 rounded-full bg-white p-1 shadow-2xl relative flex justify-center items-center">
+            {/* Using the default logo from assets */}
+            <img src="/assets/media/logos/logo.png" alt="Logo Cahaya Tasbih" className="w-[95%] h-[95%] object-contain rounded-full" />
+            {/* Subtle ring around it as per design */}
+            <div className="absolute inset-0 rounded-full ring-2 ring-white/50 shadow-[0_0_20px_rgba(255,255,255,0.2)]" />
           </div>
         </div>
 
-        {/* Form card */}
-        <div className="px-6 -mt-8 relative z-10">
-          <form
-            onSubmit={handleLogin}
-            className="bg-card rounded-3xl p-6 shadow-[var(--shadow-card)] border border-border space-y-4"
-          >
+        {/* Bottom White Card (Full stretch to bottom) */}
+        <div className="flex-1 bg-white rounded-t-[2.5rem] px-8 pt-10 pb-8 flex flex-col shadow-[0_-10px_40px_rgba(0,0,0,0.1)]">
+          <div className="mb-8">
+            <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">Masuk</h1>
+            <p className="text-[14px] text-slate-500 mt-2 leading-relaxed">
+              Masuk ke aplikasi untuk memantau data santri / siswa
+            </p>
+          </div>
+
+          <form onSubmit={handleLogin} className="flex-1 flex flex-col">
             {error && (
-              <div className="p-3 rounded-xl bg-destructive/10 border border-destructive/20 text-destructive text-xs font-semibold text-center">
+              <div className="p-3 mb-4 rounded-xl bg-red-50 text-red-600 text-xs font-bold text-center border border-red-100">
                 {error}
               </div>
             )}
-            <div>
-              <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                No. Handphone
-              </label>
-              <div className="mt-2 flex items-center gap-3 bg-secondary rounded-2xl px-4 py-3.5 border border-transparent focus-within:border-primary transition">
-                <Phone size={18} className="text-primary" />
-                <input
-                  type="tel"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  placeholder="08xxxxxxxxxx"
-                  className="bg-transparent flex-1 outline-none text-foreground text-sm font-medium placeholder:text-muted-foreground"
-                />
+            
+            <div className="space-y-5">
+              <div>
+                <label className="text-xs font-bold text-slate-500 mb-2 block">
+                  Nomor Telepon
+                </label>
+                <div className="flex items-center gap-3 bg-slate-100/80 rounded-full px-5 py-4 focus-within:ring-2 focus-within:ring-[#9b1de8]/20 focus-within:bg-white transition-all border border-transparent focus-within:border-[#9b1de8]/30">
+                  <input
+                    type="tel"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    placeholder="08xxxxxx"
+                    className="bg-transparent flex-1 outline-none text-slate-800 text-[15px] font-semibold placeholder:text-slate-400 placeholder:font-medium"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="text-xs font-bold text-slate-500 mb-2 block">
+                  Kata Sandi
+                </label>
+                <div className="flex items-center gap-3 bg-slate-100/80 rounded-full px-5 py-4 focus-within:ring-2 focus-within:ring-[#9b1de8]/20 focus-within:bg-white transition-all border border-transparent focus-within:border-[#9b1de8]/30">
+                  <input
+                    type={show ? "text" : "password"}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="password"
+                    className="bg-transparent flex-1 outline-none text-slate-800 text-[15px] font-semibold placeholder:text-slate-400 placeholder:font-medium"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShow(!show)}
+                    className="text-slate-500 hover:text-slate-700 transition"
+                  >
+                    {show ? <EyeOff size={22} strokeWidth={2.5} /> : <Eye size={22} strokeWidth={2.5} />}
+                  </button>
+                </div>
               </div>
             </div>
 
-            <div>
-              <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                Password
-              </label>
-              <div className="mt-2 flex items-center gap-3 bg-secondary rounded-2xl px-4 py-3.5 border border-transparent focus-within:border-primary transition">
-                <Lock size={18} className="text-primary" />
-                <input
-                  type={show ? "text" : "password"}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••"
-                  className="bg-transparent flex-1 outline-none text-foreground text-sm font-medium placeholder:text-muted-foreground"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShow((s) => !s)}
-                  className="text-muted-foreground"
-                >
-                  {show ? <EyeOff size={18} /> : <Eye size={18} />}
-                </button>
-              </div>
-            </div>
-
-            <div className="flex justify-end">
-              <button type="button" className="text-xs font-semibold text-primary">
-                Lupa Password?
+            <div className="flex justify-end mt-4 mb-auto">
+              <button type="button" className="text-[13px] font-bold text-[#9b1de8]">
+                Lupa Kata Sandi
               </button>
             </div>
 
-            <button
-              type="submit"
-              disabled={loginMutation.isPending}
-              className="w-full py-4 rounded-2xl text-primary-foreground font-semibold text-sm shadow-[var(--shadow-glow)] flex items-center justify-center gap-2 transition active:scale-[0.98] disabled:opacity-70"
-              style={{ background: "var(--gradient-card)" }}
-            >
-              {loginMutation.isPending ? (
-                <Loader2 className="animate-spin" size={18} />
-              ) : (
-                <>
-                  Masuk Sekarang
-                  <ArrowRight size={18} />
-                </>
-              )}
-            </button>
+            {/* Submit Button pushes to bottom */}
+            <div className="mt-8 pt-4">
+              <button
+                type="submit"
+                disabled={loginMutation.isPending}
+                className="w-full py-4 rounded-full bg-[#9b1de8] text-white font-bold text-base shadow-[0_8px_25px_rgba(155,29,232,0.35)] transition active:scale-[0.98] disabled:opacity-70 flex items-center justify-center"
+              >
+                {loginMutation.isPending ? (
+                  <Loader2 className="animate-spin" size={20} />
+                ) : (
+                  "Masuk"
+                )}
+              </button>
+            </div>
           </form>
-
         </div>
       </div>
     </div>
