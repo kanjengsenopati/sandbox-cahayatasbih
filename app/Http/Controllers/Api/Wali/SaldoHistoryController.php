@@ -32,20 +32,30 @@ class SaldoHistoryController extends BaseWaliApiController
         foreach ($histories as $key => $history) {
             if ($history->status === SaldoHistory::STATUS_PENDING || $history->status === SaldoHistory::STATUS_FAILED) {
                 $transactionDetail = $history->transaction_details()->first();
-                if ($transactionDetail) {
-                    $tx = \App\Models\Transaction::withTrashed()->with('activeProof')->find($transactionDetail->transaction_id);
+                
+                // If orphaned (no link to transaction detail), it's a ghost record
+                if (!$transactionDetail) {
+                    $history->delete();
+                    $histories->forget($key);
+                    continue;
+                }
+
+                $tx = \App\Models\Transaction::withTrashed()->with('activeProof')->find($transactionDetail->transaction_id);
+                
+                // If transaction is missing, cancelled, or deleted by admin
+                if (!$tx || $tx->status === \App\Models\Transaction::STATUS_CANCELLED || $tx->trashed()) {
+                    $history->delete();
+                    $histories->forget($key);
+                } else {
+                    // Sync REJECTED status from proof
+                    if ($history->status === SaldoHistory::STATUS_PENDING && $tx->activeProof && $tx->activeProof->status === \App\Models\TransactionProof::STATUS_REJECTED) {
+                        $history->update(['status' => SaldoHistory::STATUS_FAILED]);
+                        $history->status = SaldoHistory::STATUS_FAILED;
+                    }
                     
-                    if (!$tx || $tx->status === \App\Models\Transaction::STATUS_CANCELLED || $tx->trashed()) {
-                        $history->delete();
-                        $histories->forget($key);
-                    } else {
-                        if ($history->status === SaldoHistory::STATUS_PENDING && $tx->activeProof && $tx->activeProof->status === \App\Models\TransactionProof::STATUS_REJECTED) {
-                            $history->update(['status' => SaldoHistory::STATUS_FAILED]);
-                            $history->status = SaldoHistory::STATUS_FAILED;
-                        }
-                        if ($tx->activeProof && $tx->activeProof->note) {
-                            $history->note = $tx->activeProof->note;
-                        }
+                    // Attach note if it exists
+                    if ($tx->activeProof && $tx->activeProof->note) {
+                        $history->note = $tx->activeProof->note;
                     }
                 }
             }

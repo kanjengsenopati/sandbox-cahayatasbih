@@ -588,7 +588,7 @@ class TransactionService
                     ]);
                     $transaction->activeProof->update([
                         'status' => TransactionProof::STATUS_REJECTED,
-                        'note' => $data['note'],
+                        'note' => $data['note'] ?: "Kode Unik Tidak Sama, pastikan nominal transfer sesuai dengan yang tertera (3 digit kode unik wajib sama)",
                     ]);
 
                     // Sync related history to FAILED
