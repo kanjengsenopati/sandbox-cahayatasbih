@@ -5,16 +5,26 @@
 
 <!-- PRODUCTION ASSETS - HARD CODED, NO ENV CHECKS -->
 @php
-    // Try multiple possible locations for manifest (VPS vs Local)
+    // Try multiple possible locations for manifest
+    // Checking base_path directly bypasses any symlink issues with PHP file_exists
     $possiblePaths = [
+        base_path('portalwalisantri/dist/client/vite-manifest.json'),
+        base_path('portalwalisantri/dist/.vite/manifest.json'),
+        base_path('portalwalisantri/dist/vite-manifest.json'),
         public_path('portalwalisantri/dist/client/vite-manifest.json'),
         base_path('public/portalwalisantri/dist/client/vite-manifest.json'),
     ];
     
     $manifestPath = null;
+    $manifestPathRelative = 'portalwalisantri/dist/client/';
     foreach ($possiblePaths as $path) {
         if (file_exists($path)) {
             $manifestPath = $path;
+            if (strpos($path, '.vite') !== false) {
+                $manifestPathRelative = 'portalwalisantri/dist/';
+            } elseif (strpos($path, 'dist/vite-manifest') !== false) {
+                $manifestPathRelative = 'portalwalisantri/dist/';
+            }
             break;
         }
     }
@@ -23,13 +33,13 @@
     $entry = $manifest['index.html'] ?? null;
 @endphp
 
-<!-- DEPLOYMENT VERSION v6: {{ date('Y-m-d H:i:s') }} | manifest={{ $manifestPath ? 'YES' : 'NO' }} | entry={{ $entry ? 'FOUND' : 'MISSING' }} -->
+<!-- DEPLOYMENT VERSION v7: {{ date('Y-m-d H:i:s') }} | manifest={{ $manifestPath ? 'YES' : 'NO' }} | entry={{ $entry ? 'FOUND' : 'MISSING' }} -->
 
 @if($entry)
     @foreach($entry['css'] ?? [] as $css)
-        <link rel="stylesheet" href="/portalwalisantri/dist/client/{{ $css }}?v={{ time() }}">
+        <link rel="stylesheet" href="/{{ $manifestPathRelative }}{{ $css }}?v={{ time() }}">
     @endforeach
-    <script type="module" src="/portalwalisantri/dist/client/{{ $entry['file'] }}?v={{ time() }}"></script>
+    <script type="module" src="/{{ $manifestPathRelative }}{{ $entry['file'] }}?v={{ time() }}"></script>
 @else
     <!-- FALLBACK: Direct asset loading if manifest logic fails (ensure this points to a built asset if needed) -->
     <script>console.error('PWA Manifest missing at ' + @json($possiblePaths));</script>
