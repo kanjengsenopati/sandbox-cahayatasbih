@@ -177,7 +177,7 @@ class ReportBillController extends Controller
                 'students.id',
                 'students.name',
                 'students.nis',
-                'students.classroom_id', // Dibutuhkan untuk relasi
+                'bills.classroom_id', // Dibutuhkan untuk relasi dan grouping (HISTORICAL)
                 'classrooms.name as classroom_name',
                 // AGGREGATE FUNCTION: Database yang menghitung total
                 DB::raw('SUM(bills.amount) as total_bill_amount'),
@@ -191,7 +191,7 @@ class ReportBillController extends Controller
             ])
             // JOIN Tables (Inner Join filter otomatis data yg kosong)
             ->join('bills', 'bills.student_id', '=', 'students.id')
-            ->join('classrooms', 'classrooms.id', '=', 'students.classroom_id')
+            ->join('classrooms', 'classrooms.id', '=', 'bills.classroom_id')
             ->where('bills.bill_type_id', $id);
 
         // 3. Apply Filters
@@ -200,7 +200,7 @@ class ReportBillController extends Controller
         }
 
         if (request()->classroom_id && request()->classroom_id != 'null') {
-            $query->where('students.classroom_id', request()->classroom_id);
+            $query->where('bills.classroom_id', request()->classroom_id);
         }
 
         // Filter Tanggal Teroptimasi
@@ -210,8 +210,8 @@ class ReportBillController extends Controller
         }
 
         // 4. GROUP BY (Wajib karena ada SUM)
-        // Grouping berdasarkan ID Siswa
-        $query->groupBy('students.id', 'students.name', 'students.nis', 'students.classroom_id', 'classrooms.name');
+        // Grouping berdasarkan ID Siswa dan Kelas Waktu Tagihan
+        $query->groupBy('students.id', 'students.name', 'students.nis', 'bills.classroom_id', 'classrooms.name');
 
         // 5. Filter Status Lunas/Belum (Menggunakan HAVING)
         // "HAVING" berjalan setelah "GROUP BY" selesai menghitung
@@ -278,7 +278,7 @@ class ReportBillController extends Controller
         // Ini jauh lebih ringan daripada 'whereHas' karena menghindari subquery
         $query = DB::table('bills')
             ->join('students', 'students.id', '=', 'bills.student_id')
-            ->join('classrooms', 'classrooms.id', '=', 'students.classroom_id')
+            ->join('classrooms', 'classrooms.id', '=', 'bills.classroom_id')
             ->where('bills.bill_type_id', $id);
 
         // 1. Filter Sekolah (Sekarang pakai alias 'classrooms')
@@ -286,9 +286,9 @@ class ReportBillController extends Controller
              $query->where('classrooms.school_id', request()->school_id);
         }
 
-        // 2. Filter Kelas (Sekarang pakai alias 'students')
+        // 2. Filter Kelas (Sekarang pakai historical bills.classroom_id)
         if (request()->classroom_id && request()->classroom_id != 'null') {
-             $query->where('students.classroom_id', request()->classroom_id);
+             $query->where('bills.classroom_id', request()->classroom_id);
         }
 
         // 3. Filter Tanggal (Logic Integer Index)
@@ -709,14 +709,14 @@ class ReportBillController extends Controller
 
         // 3. Query Students with Bills filtered by this range
         $query = Student::select('students.*', 'classrooms.name as classroom_name')
-            ->join('classrooms', 'classrooms.id', '=', 'students.classroom_id')
             ->join('bills', 'bills.student_id', '=', 'students.id')
+            ->join('classrooms', 'classrooms.id', '=', 'bills.classroom_id')
             ->where('bills.bill_type_id', $id)
             ->when(request()->school_id && request()->school_id !== 'null', function ($q) {
                 $q->where('classrooms.school_id', request()->school_id);
             })
             ->when(request()->classroom_id && request()->classroom_id !== 'null', function ($q) {
-                $q->where('students.classroom_id', request()->classroom_id);
+                $q->where('bills.classroom_id', request()->classroom_id);
             })
             ->when(request()->academic_year_id && request()->academic_year_id !== 'null', function ($q) {
                 // Optional: Filter students who strictly have bills linked to this academic_year_id

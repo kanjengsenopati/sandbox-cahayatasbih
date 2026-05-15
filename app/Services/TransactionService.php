@@ -69,6 +69,11 @@ class TransactionService
                     ]);
                 }
             }
+
+            // === UNIT TRANSFER HOOK ===
+            // Cek apakah ada bill yang terkait dengan konfigurasi pindah unit.
+            // Jika ya, otomatis pindahkan siswa ke sekolah & kelas tujuan.
+            self::handleUnitTransferIfApplicable($transaction);
         } elseif ($transaction->type == Transaction::TYPE_SALDO) {
             // check apakah transaction detail sudah ada
             if ($transaction->transactionDetails->count() > 0) {
@@ -541,6 +546,9 @@ class TransactionService
                     $transaction->transactionDetails->each(function ($detail) {
                         $detail->bill->update(['status' => Bill::STATUS_PAID]);
                     });
+
+                    // === UNIT TRANSFER HOOK ===
+                    self::handleUnitTransferIfApplicable($transaction);
                 }
                 // Proses transaksi berdasarkan tipe
                 if ($transaction->type == Transaction::TYPE_SALDO) {
@@ -631,6 +639,61 @@ class TransactionService
                 'status' => false,
                 'message' => "Gagal mengubah status transaksi"
             ];
+        }
+    }
+
+    /**
+     * Automasi Pindah Unit Pendidikan.
+     *
+     * Jika bill yang dibayar terkait dengan UnitTransferConfig yang aktif,
+     * maka siswa otomatis dipindahkan ke sekolah & kelas tujuan.
+     * NIS dan barcode TIDAK berubah (Single Profile).
+     */
+    public static function handleUnitTransferIfApplicable($transaction)
+    {
+        try {
+            $transaction->load('transactionDetails.bill');
+
+            foreach ($transaction->transactionDetails as $detail) {
+                $bill = $detail->bill;
+                if (!$bill) continue;
+
+                // Cari konfigurasi transfer yang aktif berdasarkan bill_type_id
+                $config = \App\Models\UnitTransferConfig::where('bill_type_id', $bill->bill_type_id)
+                    ->where('is_active', true)
+                    ->first();
+
+                if (!$config) continue;
+
+                $student = Student::find($transaction->student_id);
+                if (!$student) continue;
+
+                // Guard: Pastikan siswa masih di sekolah asal (idempotent)
+                if ($student->school_id != $config->from_school_id) {
+                    Log::info("[UnitTransfer] Skipped: Student #{$student->id} tidak di sekolah asal (expected: {$config->from_school_id}, actual: {$student->school_id})");
+                    continue;
+                }
+
+                // Eksekusi perpindahan
+                $oldSchoolId = $student->school_id;
+                $oldClassroomId = $student->classroom_id;
+
+                $student->update([
+                    'school_id' => $config->to_school_id,
+                    'classroom_id' => $config->to_classroom_id,
+                ]);
+
+                Log::info("[UnitTransfer] Student #{$student->id} ({$student->name}) dipindahkan: School {$oldSchoolId} -> {$config->to_school_id}, Classroom {$oldClassroomId} -> {$config->to_classroom_id}");
+
+                // Cukup proses 1 konfigurasi transfer per transaksi
+                break;
+            }
+        } catch (\Throwable $e) {
+            // Log tapi jangan gagalkan transaksi utama
+            Log::error("[UnitTransfer] Error: " . $e->getMessage(), [
+                'transaction_id' => $transaction->id ?? null,
+                'trace' => $e->getTraceAsString(),
+            ]);
         }
     }
 }

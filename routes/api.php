@@ -38,6 +38,9 @@ Route::group(['prefix' => 'v1', 'middleware' => 'validate_api_key'], function ()
         Route::get('information', [HomeController::class, 'information']);
         Route::get('list-student', [HomeController::class, 'listStudent']);
 
+        // unit transfer
+        Route::post('unit-transfer/continue', [\App\Http\Controllers\Api\V1\UnitTransferController::class, 'continueUnit']);
+
         // start api bill
         Route::group(['prefix' => 'bill'], function () {
             Route::get('/', [BillController::class, 'index']);
@@ -158,5 +161,8 @@ Route::prefix('wali')->middleware(['web'])->group(function () {
     Route::get('profile', [App\Http\Controllers\Api\Wali\ProfileController::class, 'show']);
     Route::put('profile', [App\Http\Controllers\Api\Wali\ProfileController::class, 'update']);
     Route::put('password', [App\Http\Controllers\Api\Wali\PasswordController::class, 'update']);
+
+    // Mutasi Pindah Unit
+    Route::post('unit-transfer/continue', [App\Http\Controllers\Api\Wali\UnitTransferController::class, 'continueUnit']);
     });
 });

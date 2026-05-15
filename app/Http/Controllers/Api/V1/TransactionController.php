@@ -164,6 +164,8 @@ class TransactionController extends Controller
                             'status' => Bill::STATUS_PAID
                         ]);
                     }
+                    // === UNIT TRANSFER HOOK ===
+                    \App\Services\TransactionService::handleUnitTransferIfApplicable($transaction);
                 }
                 if ($transaction->type == Transaction::TYPE_PPDB) {
                     $this->dispatchNotificationsUser($transaction);

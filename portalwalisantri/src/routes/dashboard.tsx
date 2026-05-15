@@ -171,6 +171,25 @@ function Dashboard() {
         </div>
       </section>
 
+      {/* Unit Transfer Promo */}
+      {dashboard?.unit_transfer && (
+        <section className="px-6 mt-6">
+          <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-3xl p-5 shadow-lg relative overflow-hidden flex items-center justify-between">
+            <div className="absolute -top-10 -right-10 w-32 h-32 bg-white/10 rounded-full blur-2xl"></div>
+            <div className="relative z-10 flex-1 pr-4">
+              <h3 className="text-white font-bold text-sm mb-1">Pendaftaran {dashboard.unit_transfer.to_school?.name}</h3>
+              <p className="text-white/80 text-xs">Lanjutkan pendidikan ananda ke jenjang berikutnya.</p>
+            </div>
+            <button 
+              onClick={() => navigate({ to: '/lanjut-unit' })}
+              className="relative z-10 bg-white text-blue-600 font-bold text-xs px-4 py-2 rounded-xl shadow-sm active:scale-95 transition whitespace-nowrap"
+            >
+              Daftar
+            </button>
+          </div>
+        </section>
+      )}
+
       {/* Recent transactions */}
       <section className="px-6 mt-7 mb-10">
         <div className="flex items-center justify-between mb-3">

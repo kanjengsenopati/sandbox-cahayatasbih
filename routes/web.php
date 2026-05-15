@@ -266,6 +266,15 @@ Route::group(['middleware' => ['auth']], function () {
     Route::get('report-bill/get-data', [ReportBillController::class, 'getData'])->name('report-bill.get-data');
     Route::get('report-bill/send-wa/{id}', [ReportBillController::class, 'sendWa'])->name('report-bill.send-wa');
     Route::get('report-bill/{id}/export', [ReportBillController::class, 'export'])->name('report-bill.export');
+        
+    // Mutasi Pindah Unit
+    Route::resource('unit-transfer-config', App\Http\Controllers\Admin\UnitTransferConfigController::class);
+
+    // API untuk mengambil kelas berdasarkan sekolah
+    Route::get('/api/classrooms/{school_id}', function ($school_id) {
+        $classrooms = \App\Models\Classroom::where('school_id', $school_id)->orderBy('name', 'asc')->get();
+        return response()->json($classrooms);
+    })->name('api.classrooms');
     Route::resource('report-bill', ReportBillController::class, ['only' => ['index', 'show']])->names('report-bill');
     Route::post('send-bill-whatsapp-notification', [ReportBillStudentController::class, 'sendBillWhatsappNotification'])
         ->name('send-bill-whatsapp-notification');

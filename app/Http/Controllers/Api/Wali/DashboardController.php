@@ -63,6 +63,15 @@ class DashboardController extends BaseWaliApiController
             $recentTransactions = $saldoHistories->concat($posTransactions)->sortByDesc('created_at')->take(5)->values();
         }
 
+        // Check for Unit Transfer Availability
+        $unitTransfer = null;
+        if ($activeStudent) {
+            $unitTransfer = \App\Models\UnitTransferConfig::with(['fromSchool', 'toSchool', 'toClassroom', 'billType.billItem'])
+                ->where('from_school_id', $activeStudent->school_id)
+                ->where('is_active', true)
+                ->first();
+        }
+
         return response()->json([
             'user' => $user,
             'informations' => $informations,
@@ -71,6 +80,7 @@ class DashboardController extends BaseWaliApiController
             'tahfidzCount' => (int) $tahfidzCount,
             'studyCount' => (int) $studyCount,
             'recentTransactions' => $recentTransactions,
+            'unit_transfer' => $unitTransfer,
         ]);
     }
 }

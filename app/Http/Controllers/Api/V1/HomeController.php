@@ -31,11 +31,18 @@ class HomeController extends Controller
             // Update the last login timestamp for the user
             $student->user->update(['last_login' => now()]);
 
+            // Check for Unit Transfer Availability
+            $unitTransfer = \App\Models\UnitTransferConfig::with(['toSchool', 'billType.billItem'])
+                ->where('from_school_id', $student->school_id)
+                ->where('is_active', true)
+                ->first();
+
             // Return a successful response with the retrieved data
             return $this->postSuccessResponse('Berhasil Mengambil Data', [
                 'student' => $student,
                 'informations' => $informations,
                 'saldo_histories' => $saldoHistories,
+                'unit_transfer' => $unitTransfer,
             ]);
         } catch (\Exception $e) {
             // Handle the exception and return an error response
