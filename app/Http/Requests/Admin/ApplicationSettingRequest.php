@@ -32,6 +32,7 @@ class ApplicationSettingRequest extends FormRequest
             'saldo_fee' => 'required|numeric',
             // 'target_month' => 'required|numeric',
             // 'target_year' => 'required|numeric',
+            'payment_auto_check' => 'nullable',
         ];
     }
 }

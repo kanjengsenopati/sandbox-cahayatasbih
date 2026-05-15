@@ -1,0 +1,29 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    /**
+     * Run the migrations.
+     */
+    public function up(): void
+    {
+        Schema::table('transaction_proofs', function (Blueprint $table) {
+            $table->string('ocr_status')->nullable()->after('status');
+            $table->decimal('ocr_amount', 15, 2)->nullable()->after('ocr_status');
+        });
+    }
+
+    /**
+     * Reverse the migrations.
+     */
+    public function down(): void
+    {
+        Schema::table('transaction_proofs', function (Blueprint $table) {
+            $table->dropColumn(['ocr_status', 'ocr_amount']);
+        });
+    }
+};

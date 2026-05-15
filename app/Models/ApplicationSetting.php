@@ -23,6 +23,7 @@ class ApplicationSetting extends Model
         'saldo_fee',
         'target_month',
         'target_year',
+        'payment_auto_check',
     ];
 
     protected $appends = [

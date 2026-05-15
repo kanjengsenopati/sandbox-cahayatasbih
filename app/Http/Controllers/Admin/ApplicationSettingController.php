@@ -42,6 +42,7 @@ class ApplicationSettingController extends Controller
             return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
         }
         $data = $request->validated();
+        $data['payment_auto_check'] = $request->has('payment_auto_check') ? true : false;
 
         if ($request->hasFile('student_card_image')) {
             $data['student_card_image'] = $this->storeStudentCardImage($request->file('student_card_image'));

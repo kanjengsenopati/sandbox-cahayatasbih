@@ -235,11 +235,26 @@
                                     </div>
                                 </div>
 
-                                <div class="fv-row mb-6">
-                                    <!--begin::Label-->
-                                    <div class="fv-row mb-6">
-                                        <x-form.image-upload label="Background Kartu Siswa" name="student_card_image"
-                                            :value="@$applicationSetting->student_card_image ?? null" />
+                                <div class="row mb-6">
+                                    <div class="col-6">
+                                        <div class="fv-row mb-6">
+                                            <x-form.image-upload label="Background Kartu Siswa" name="student_card_image"
+                                                :value="@$applicationSetting->student_card_image ?? null" />
+                                        </div>
+                                    </div>
+                                    <div class="col-6">
+                                        <label class="fs-6 fw-bold form-label" for="payment_auto_check">
+                                            <span class="required">Auto-Checking Bukti Transfer (AI)</span>
+                                            <i class="fas fa-exclamation-circle ms-1 fs-7" data-bs-toggle="tooltip"
+                                                title="Aktifkan fitur deteksi nominal otomatis dengan AI"></i>
+                                        </label>
+                                        <div class="form-check form-switch form-check-custom form-check-solid mt-2">
+                                            <input class="form-check-input" type="checkbox" value="1" name="payment_auto_check" id="payment_auto_check" {{ @$applicationSetting->payment_auto_check ? 'checked' : '' }} />
+                                            <label class="form-check-label fw-bold text-gray-400 ms-3" for="payment_auto_check">Aktifkan Auto-Checking</label>
+                                        </div>
+                                        <div class="text-muted fs-7 mt-2">
+                                            Jika aktif, sistem akan membaca gambar bukti transfer menggunakan Gemini AI dan otomatis melakukan validasi Lunas/Cek Ulang.
+                                        </div>
                                     </div>
                                 </div>
                                 <!--end::Input group-->

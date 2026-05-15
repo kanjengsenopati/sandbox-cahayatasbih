@@ -60,6 +60,9 @@ class PaymentProofController extends BaseWaliApiController
                     });
                 }
 
+                // Dispatch AI Checking Job
+                \App\Jobs\ProcessPaymentProofJob::dispatch($proof);
+
                 return response()->json([
                     'message' => 'Payment proof uploaded successfully',
                     'proof' => $proof
