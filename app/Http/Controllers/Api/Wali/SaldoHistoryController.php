@@ -25,6 +25,26 @@ class SaldoHistoryController extends BaseWaliApiController
             $query->whereBetween('created_at', [$request->start_date, $request->end_date]);
         }
         
-        return response()->json($query->paginate(10));
+        $paginated = $query->paginate(10);
+
+        // Lazy cleanup for ghost pending transactions
+        $histories = $paginated->getCollection();
+        foreach ($histories as $key => $history) {
+            if ($history->status === SaldoHistory::STATUS_PENDING) {
+                $transactionDetail = $history->transaction_details()->with('transaction.activeProof')->first();
+                if ($transactionDetail && $transactionDetail->transaction) {
+                    $tx = $transactionDetail->transaction;
+                    if ($tx->status === \App\Models\Transaction::STATUS_CANCELLED) {
+                        $history->delete();
+                        $histories->forget($key);
+                    } elseif ($tx->activeProof && $tx->activeProof->status === \App\Models\TransactionProof::STATUS_REJECTED) {
+                        $history->update(['status' => SaldoHistory::STATUS_FAILED]);
+                    }
+                }
+            }
+        }
+        $paginated->setCollection($histories->values());
+
+        return response()->json($paginated);
     }
 }
