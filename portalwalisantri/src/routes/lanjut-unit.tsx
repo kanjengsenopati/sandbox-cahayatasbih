@@ -4,7 +4,7 @@ import { MobileShell } from "@/components/MobileShell";
 import { useSantri } from "@/contexts/SantriContext";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { fetchDashboard, api } from "@/lib/api";
-import toast from "react-hot-toast";
+
 
 export const Route = createFileRoute("/lanjut-unit")({
   component: LanjutUnitPage,
@@ -36,7 +36,7 @@ function LanjutUnitPage() {
       return response.data;
     },
     onSuccess: (data) => {
-      toast.success(data.message || "Tagihan berhasil dibuat");
+      // Success handled by navigation
       if (data.data?.bill?.id) {
         navigate({ to: `/tagihan/${data.data.bill.id}` });
       } else {
@@ -44,7 +44,7 @@ function LanjutUnitPage() {
       }
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || "Gagal membuat tagihan");
+      alert(error.response?.data?.message || "Gagal membuat tagihan");
     },
   });
 
