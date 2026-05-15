@@ -3,7 +3,7 @@ import { ArrowLeft, CheckCircle2, GraduationCap, Loader2 } from "lucide-react";
 import { MobileShell } from "@/components/MobileShell";
 import { useSantri } from "@/contexts/SantriContext";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { fetchDashboard, api } from "@/lib/api";
+import api, { fetchDashboard } from "@/lib/api";
 
 
 export const Route = createFileRoute("/lanjut-unit")({
