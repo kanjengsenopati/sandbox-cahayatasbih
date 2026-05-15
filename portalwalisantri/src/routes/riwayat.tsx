@@ -144,8 +144,8 @@ function RiwayatPage() {
       ref: p.payment_code,
       items: p.point_of_sale_transaction_details?.map((d: any) => ({
         name: d.item?.name || "Item",
-        qty: d.qty,
-        price: d.price,
+        qty: Number(d.quantity) || 0,
+        price: Number(d.price) || 0,
       })),
     }));
 
