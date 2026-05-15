@@ -190,15 +190,37 @@ function Dashboard() {
         </section>
       )}
 
-      {/* Recent transactions */}
+      {/* Transaksi Hari Ini */}
       <section className="px-6 mt-7 mb-10">
-        <div className="flex items-center justify-between mb-3">
-          <h3 className="text-base font-bold text-foreground">Transaksi Terbaru</h3>
+        <div className="flex items-center justify-between mb-1">
+          <h3 className="text-base font-bold text-foreground">Transaksi Hari Ini</h3>
           <button onClick={() => navigate({ to: "/riwayat" })} className="text-xs font-semibold text-primary">Lihat Semua</button>
         </div>
+        <p className="text-[11px] text-muted-foreground mb-3">
+          {new Date().toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+        </p>
+
+        {/* Summary chips */}
+        {dashboard?.todaySummary && dashboard.todaySummary.count > 0 && (
+          <div className="flex gap-2 mb-3">
+            {dashboard.todaySummary.in > 0 && (
+              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 text-[10px] font-bold">
+                <ArrowDownLeft size={10} /> +{fmt(dashboard.todaySummary.in)}
+              </span>
+            )}
+            {dashboard.todaySummary.out > 0 && (
+              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-red-50 text-red-600 text-[10px] font-bold">
+                <ArrowUpRight size={10} /> -{fmt(dashboard.todaySummary.out)}
+              </span>
+            )}
+            <span className="inline-flex items-center px-2.5 py-1 rounded-full bg-secondary text-muted-foreground text-[10px] font-bold">
+              {dashboard.todaySummary.count} transaksi
+            </span>
+          </div>
+        )}
 
         <div className="bg-card rounded-3xl border border-border divide-y divide-border overflow-hidden shadow-[var(--shadow-soft)]">
-          {(dashboard?.recentTransactions && Array.isArray(dashboard.recentTransactions)) ? (
+          {(dashboard?.recentTransactions && Array.isArray(dashboard.recentTransactions) && dashboard.recentTransactions.length > 0) ? (
             dashboard.recentTransactions.map((t: any, i: number) => {
               const isIn = t.type === "IN";
               return (
@@ -212,23 +234,41 @@ function Dashboard() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-semibold text-foreground truncate">{t.note || (isIn ? "Saldo Masuk" : "Belanja Kantin")}</p>
-                    <p className="text-[11px] text-muted-foreground">{t.created_at ? new Date(t.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : "-"}</p>
+                    <p className="text-[11px] text-muted-foreground flex items-center gap-1.5">
+                      <span>{t.created_at ? new Date(t.created_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) : "-"}</span>
+                      {t.merchant && (
+                        <>
+                          <span className="text-border">·</span>
+                          <span className="truncate">{t.merchant}</span>
+                        </>
+                      )}
+                      {t.items_count > 0 && (
+                        <>
+                          <span className="text-border">·</span>
+                          <span>{t.items_count} item</span>
+                        </>
+                      )}
+                    </p>
                   </div>
-                  <div className="flex items-center gap-1">
-                    <span
-                      className={`text-sm font-bold ${
-                        isIn ? "text-emerald-600" : "text-foreground"
-                      }`}
-                    >
-                      {isIn ? "+" : "-"}
-                      {fmt(t.amount || 0)}
-                    </span>
-                  </div>
+                  <span
+                    className={`text-sm font-bold tabular-nums whitespace-nowrap ${
+                      isIn ? "text-emerald-600" : "text-foreground"
+                    }`}
+                  >
+                    {isIn ? "+" : "-"}
+                    {fmt(t.amount || 0)}
+                  </span>
                 </div>
               );
             })
           ) : (
-            <div className="p-8 text-center text-xs text-muted-foreground">Belum ada transaksi.</div>
+            <div className="py-10 text-center">
+              <div className="w-12 h-12 rounded-2xl bg-secondary flex items-center justify-center mx-auto mb-3">
+                <Wallet size={20} className="text-muted-foreground" />
+              </div>
+              <p className="text-xs font-semibold text-muted-foreground">Belum ada transaksi hari ini</p>
+              <p className="text-[10px] text-muted-foreground/70 mt-0.5">Transaksi belanja & topup akan muncul di sini</p>
+            </div>
           )}
         </div>
       </section>

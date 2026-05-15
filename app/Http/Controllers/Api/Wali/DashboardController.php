@@ -28,39 +28,59 @@ class DashboardController extends BaseWaliApiController
         $activeStudent = $this->resolveActiveStudent();
 
         $recentTransactions = collect();
+        $todaySummary = ['count' => 0, 'in' => 0, 'out' => 0];
         if ($activeStudent) {
             $tahfidzCount = Tahfidz::where('student_id', $activeStudent->id)->sum('number_of_pages');
             $studyCount = StudyGrade::where('student_id', $activeStudent->id)->distinct('study_id')->count();
 
             $saldoHistories = \App\Models\SaldoHistory::where('student_id', $activeStudent->id)
                 ->where('status', 'SUCCESS')
+                ->whereDate('created_at', now()->toDateString())
                 ->latest()
-                ->take(5)
                 ->get()
                 ->map(function($item) {
                     return [
                         'type' => $item->type === 'IN' ? 'IN' : 'OUT',
                         'amount' => $item->amount,
-                        'note' => $item->description ?? 'Topup Saldo',
+                        'note' => $item->description ?? ($item->type === 'IN' ? 'Topup Saldo' : 'Pengeluaran Saldo'),
                         'created_at' => $item->created_at
                     ];
                 });
 
-            $posTransactions = \App\Models\PointOfSaleTransaction::where('student_id', $activeStudent->id)
+            $posTransactions = \App\Models\PointOfSaleTransaction::with(['pointOfSaleTransactionDetails.item', 'admins'])
+                ->where('student_id', $activeStudent->id)
                 ->where('status', 'SUCCESS')
+                ->whereDate('created_at', now()->toDateString())
                 ->latest()
-                ->take(5)
                 ->get()
                 ->map(function($item) {
+                    // Build item names from details
+                    $itemNames = $item->pointOfSaleTransactionDetails
+                        ->map(fn($d) => $d->item->name ?? 'Item')
+                        ->take(2)
+                        ->join(', ');
+                    $totalItems = $item->pointOfSaleTransactionDetails->count();
+                    if ($totalItems > 2) {
+                        $itemNames .= ' +' . ($totalItems - 2) . ' lainnya';
+                    }
+
                     return [
                         'type' => 'OUT',
                         'amount' => $item->pay_amount,
-                        'note' => 'Belanja Kantin',
+                        'note' => $itemNames ?: 'Belanja Kantin',
+                        'merchant' => $item->admins->name ?? null,
+                        'items_count' => $totalItems,
                         'created_at' => $item->paid_at ?? $item->created_at
                     ];
                 });
 
-            $recentTransactions = $saldoHistories->concat($posTransactions)->sortByDesc('created_at')->take(5)->values();
+            $recentTransactions = $saldoHistories->concat($posTransactions)->sortByDesc('created_at')->values();
+            
+            $todaySummary = [
+                'count' => $recentTransactions->count(),
+                'in' => $saldoHistories->where('type', 'IN')->sum('amount'),
+                'out' => $saldoHistories->where('type', 'OUT')->sum('amount') + $posTransactions->sum('amount'),
+            ];
         }
 
         // Check for Unit Transfer Availability
@@ -88,6 +108,7 @@ class DashboardController extends BaseWaliApiController
             'tahfidzCount' => (int) $tahfidzCount,
             'studyCount' => (int) $studyCount,
             'recentTransactions' => $recentTransactions,
+            'todaySummary' => $todaySummary,
             'unit_transfer' => $unitTransfer,
         ]);
     }
