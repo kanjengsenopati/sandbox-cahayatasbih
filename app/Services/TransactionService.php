@@ -260,6 +260,32 @@ class TransactionService
                     $validatedData = method_exists($request, 'validated') && $request instanceof \Illuminate\Foundation\Http\FormRequest
                         ? $request->validated()
                         : $request->only(['student_id', 'payment_method_id', 'amount', 'bill_ids', 'pay_amount']);
+                    
+                    // Auto-cancel previous pending transactions of the same type
+                    $pendingTransactions = Transaction::where('student_id', $request->student_id)
+                        ->where('type', $type ?? Transaction::TYPE_BILL)
+                        ->whereIn('status', [Transaction::STATUS_PENDING, Transaction::STATUS_PENDING_PAYMENT])
+                        ->get();
+
+                    foreach ($pendingTransactions as $pendingTx) {
+                        $pendingTx->update(['status' => Transaction::STATUS_CANCELLED]);
+
+                        // Cancel related Saldo/Saving History
+                        if ($pendingTx->type === Transaction::TYPE_SALDO || $pendingTx->type === Transaction::TYPE_SAVING) {
+                            $details = \App\Models\TransactionDetail::where('transaction_id', $pendingTx->id)->get();
+                            foreach ($details as $detail) {
+                                if ($detail->saldo_history_id) {
+                                    \App\Models\SaldoHistory::where('id', $detail->saldo_history_id)
+                                        ->update(['status' => \App\Models\SaldoHistory::STATUS_FAILED]);
+                                }
+                                if ($detail->saving_history_id) {
+                                    \App\Models\SavingHistory::where('id', $detail->saving_history_id)
+                                        ->update(['status' => \App\Models\SavingHistory::STATUS_FAILED]);
+                                }
+                            }
+                        }
+                    }
+
                     $transaction = Transaction::create(array_merge($transactionData, $validatedData));
 
                     // Logika untuk jenis pembayaran

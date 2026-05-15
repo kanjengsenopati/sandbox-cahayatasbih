@@ -54,6 +54,7 @@ function PembayaranPage() {
       bankAccount: bank.account_number || "1840558992", 
       bankHolder: bank.account_name || "Yayasan PPTQ Cahaya Tasbih",
       proofUrl: proof?.proof_image_url || proof?.proof_image,
+      note: proof?.note,
       items: p.transaction_details?.map((d: any) => ({
         id: d.id,
         label: d.bill?.bill_type?.name || (p.type === "SALDO" ? "Topup Saldo" : "Pembayaran"),
@@ -249,12 +250,23 @@ function PembayaranPage() {
         )}
         {isRejected && (
           <StickyAction>
-            <button
-              onClick={() => navigate({ to: "/tagihan" })}
-              className="w-full py-3.5 rounded-2xl bg-secondary border border-border text-foreground font-bold text-sm"
-            >
-              Kembali ke Tagihan
-            </button>
+            <div className="w-full flex flex-col gap-2">
+              {tx.note && (
+                <div className="rounded-2xl bg-destructive/10 border border-destructive/20 p-3 flex items-start gap-2.5 text-destructive text-sm text-left">
+                  <XCircle size={16} className="mt-0.5 shrink-0" />
+                  <div>
+                    <span className="font-bold block mb-0.5">Catatan Admin:</span>
+                    <span>{tx.note}</span>
+                  </div>
+                </div>
+              )}
+              <button
+                onClick={() => navigate({ to: "/tagihan" })}
+                className="w-full py-3.5 rounded-2xl bg-secondary border border-border text-foreground font-bold text-sm"
+              >
+                Kembali ke Tagihan
+              </button>
+            </div>
           </StickyAction>
         )}
         {isPending && tx.proofUrl && (
