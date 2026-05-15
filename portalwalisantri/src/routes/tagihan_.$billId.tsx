@@ -40,11 +40,14 @@ function BillDetail() {
       id: billId,
       name: detailData.billType.name,
       shortName: detailData.billType.name,
+      academicYear: detailData.billType.academic_year?.name || '',
       total: detailData.summary.total,
       paid: detailData.summary.paid,
       installments: detailData.bills.map((d: any) => ({
         id: String(d.id),
-        label: d.month_name ? `${d.month_name} ${d.year}` : d.name,
+        label: d.translated_month ? `${d.translated_month} ${d.year}` : (d.name || ''),
+        month: d.translated_month || '',
+        year: d.year || '',
         amount: Number(d.amount),
         paid: d.status === "PAID",
       })),
@@ -224,9 +227,16 @@ function BillDetail() {
 
           {/* Installments */}
           <div className="mt-5">
-            <h3 className="text-base font-bold text-foreground">
-              Detail {bill.shortName}
-            </h3>
+            <div className="flex items-baseline gap-2">
+              <h3 className="text-base font-bold text-foreground">
+                Detail {bill.shortName}
+              </h3>
+              {bill.academicYear && (
+                <span className="px-2 py-0.5 rounded-lg bg-primary/10 text-primary text-[10px] font-bold">
+                  {bill.academicYear}
+                </span>
+              )}
+            </div>
 
             {unpaid.length > 0 && (
               <button
@@ -263,10 +273,10 @@ function BillDetail() {
                     </span>
 
                     <div className="flex-1 min-w-0">
-                      <p className="text-xs text-muted-foreground">{fmt(it.amount)}</p>
-                      <p className="text-sm font-bold text-primary leading-tight mt-0.5">
-                        {it.label}
-                      </p>
+                      {it.label && (
+                        <p className="text-[10px] font-semibold text-primary uppercase tracking-wide">{it.label}</p>
+                      )}
+                      <p className="text-sm font-bold text-foreground tabular-nums leading-tight mt-0.5">{fmt(it.amount)}</p>
                     </div>
 
                     {it.paid ? (
