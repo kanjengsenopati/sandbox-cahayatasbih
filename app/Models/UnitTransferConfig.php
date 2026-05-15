@@ -12,6 +12,7 @@ class UnitTransferConfig extends Model
 
     protected $fillable = [
         'from_school_id',
+        'eligible_class_level',
         'to_school_id',
         'to_classroom_id',
         'bill_type_id',

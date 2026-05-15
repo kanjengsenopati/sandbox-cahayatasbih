@@ -40,9 +40,11 @@
                             <thead>
                                 <tr class="text-start text-muted fw-bolder fs-7 text-uppercase gs-0">
                                     <th>Dari Unit</th>
+                                    <th>Tingkat Kelas</th>
                                     <th>Ke Unit Tujuan</th>
                                     <th>Masuk Kelas</th>
                                     <th>Tagihan Syarat</th>
+                                    <th>Biaya</th>
                                     <th>Status</th>
                                     <th class="text-end min-w-100px">Aksi</th>
                                 </tr>
@@ -66,9 +68,11 @@
             ajax: "{{ route('unit-transfer-config.index') }}",
             columns: [
                 {data: 'from_school.name', name: 'fromSchool.name', defaultContent: '-'},
+                {data: 'eligible_class_level', name: 'eligible_class_level', defaultContent: 'Semua'},
                 {data: 'to_school.name', name: 'toSchool.name', defaultContent: '-'},
                 {data: 'to_classroom.name', name: 'toClassroom.name', defaultContent: '-'},
                 {data: 'bill_type.name', name: 'billType.name', defaultContent: '-'},
+                {data: 'formatted_amount', name: 'amount', defaultContent: '-'},
                 {data: 'is_active', name: 'is_active'},
                 {data: 'action', name: 'action', orderable: false, searchable: false},
             ]

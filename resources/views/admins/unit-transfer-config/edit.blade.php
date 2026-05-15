@@ -47,6 +47,15 @@
                         </div>
 
                         <div class="row mb-6">
+                            <label class="col-lg-4 col-form-label fw-bold fs-6">Hanya Untuk Tingkat Kelas</label>
+                            <div class="col-lg-8">
+                                <input type="text" name="eligible_class_level" class="form-control form-control-solid" placeholder="Contoh: IX atau XII" value="{{ old('eligible_class_level', $unitTransferConfig->eligible_class_level) }}" />
+                                <div class="form-text">Kosongkan jika berlaku untuk semua kelas di unit asal. Isi contoh: <strong>IX</strong> untuk kelas 9, <strong>XII</strong> untuk kelas 12.</div>
+                                @error('eligible_class_level') <span class="text-danger">{{ $message }}</span> @enderror
+                            </div>
+                        </div>
+
+                        <div class="row mb-6">
                             <label class="col-lg-4 col-form-label required fw-bold fs-6">Ke Unit Sekolah Tujuan</label>
                             <div class="col-lg-8">
                                 <select name="to_school_id" id="to_school_id" class="form-select form-select-solid" data-control="select2" required>

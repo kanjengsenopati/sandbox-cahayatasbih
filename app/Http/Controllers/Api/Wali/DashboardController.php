@@ -64,11 +64,19 @@ class DashboardController extends BaseWaliApiController
         }
 
         // Check for Unit Transfer Availability
+        // Hanya tampilkan jika siswa berada di kelas yang sesuai (misal IX, XII)
         $unitTransfer = null;
-        if ($activeStudent) {
-            $unitTransfer = \App\Models\UnitTransferConfig::with(['fromSchool', 'toSchool', 'toClassroom', 'billType.billItem'])
+        if ($activeStudent && $activeStudent->classroom) {
+            $classroomName = $activeStudent->classroom->name ?? '';
+            
+            $unitTransfer = \App\Models\UnitTransferConfig::with(['fromSchool', 'toSchool', 'toClassroom', 'billType'])
                 ->where('from_school_id', $activeStudent->school_id)
                 ->where('is_active', true)
+                ->where(function ($query) use ($classroomName) {
+                    $query->whereNull('eligible_class_level')
+                          ->orWhere('eligible_class_level', '')
+                          ->orWhereRaw('? LIKE CONCAT(\'%\', eligible_class_level, \'%\')', [$classroomName]);
+                })
                 ->first();
         }
 

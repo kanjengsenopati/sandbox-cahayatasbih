@@ -31,7 +31,13 @@ class UnitTransferConfigController extends Controller
                         ? '<span class="badge badge-light-success">Aktif</span>' 
                         : '<span class="badge badge-light-danger">Tidak Aktif</span>';
                 })
-                ->rawColumns(['action', 'is_active'])
+                ->addColumn('formatted_amount', function ($data) {
+                    return 'Rp ' . number_format($data->amount, 0, ',', '.');
+                })
+                ->editColumn('eligible_class_level', function ($data) {
+                    return $data->eligible_class_level ?: '<span class="text-muted">Semua</span>';
+                })
+                ->rawColumns(['action', 'is_active', 'eligible_class_level'])
                 ->make(true);
         }
 
