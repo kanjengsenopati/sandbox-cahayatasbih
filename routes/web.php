@@ -364,4 +364,48 @@ Route::controller(App\Http\Controllers\User\PaymentCheckController::class)->grou
     Route::get('/status-pembayaran/get-classes', 'getClasses')->name('public.spp.get-classes');
 });
  
+// SPA Fallback for static PWA assets (bypasses missing public/ symlinks)
+Route::get('portalwalisantri/{any}', function ($any) {
+    // Only process typical static assets
+    if (!preg_match('/\.(css|js|json|png|ico|svg|woff2?)$/i', $any)) {
+        abort(404);
+    }
+    
+    // Extract just the filename to look for it inside the actual build folders
+    $filename = basename($any);
+    $isAsset = strpos($any, 'assets/') !== false;
+    
+    // Try multiple possible locations
+    $paths = [
+        base_path("portalwalisantri/dist/client/assets/{$filename}"),
+        base_path("portalwalisantri/dist/assets/{$filename}"),
+        base_path("portalwalisantri/dist/client/{$filename}"),
+        base_path("portalwalisantri/dist/{$filename}"),
+        base_path("portalwalisantri/{$any}") // direct path fallback
+    ];
+    
+    foreach ($paths as $path) {
+        if (file_exists($path)) {
+            $mime = 'text/plain';
+            if (str_ends_with($path, '.css')) $mime = 'text/css';
+            elseif (str_ends_with($path, '.js')) $mime = 'application/javascript';
+            elseif (str_ends_with($path, '.json')) $mime = 'application/json';
+            elseif (str_ends_with($path, '.png')) $mime = 'image/png';
+            elseif (str_ends_with($path, '.svg')) $mime = 'image/svg+xml';
+            elseif (str_ends_with($path, '.ico')) $mime = 'image/x-icon';
+            else {
+                $info = finfo_open(FILEINFO_MIME_TYPE);
+                $mime = finfo_file($info, $path);
+                finfo_close($info);
+            }
+            
+            return response()->file($path, [
+                'Content-Type' => $mime,
+                'Cache-Control' => 'public, max-age=31536000'
+            ]);
+        }
+    }
+    abort(404);
+})->where('any', '.*');
+
 Route::get('public/report-bill-student/{token}', [App\Http\Controllers\Public\PublicReportBillStudentController::class, 'index'])->name('public.report-bill-student.index');
