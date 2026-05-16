@@ -32,7 +32,7 @@ function LoginPage() {
       queryClient.invalidateQueries({ queryKey: ["students"] });
       queryClient.invalidateQueries({ queryKey: ["active-student"] });
       queryClient.invalidateQueries({ queryKey: ["dashboard"] });
-      
+
       navigate({ to: "/dashboard" });
     },
     onError: (err: any) => {
@@ -47,102 +47,108 @@ function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen w-full flex justify-center bg-[#9b1de8] relative overflow-hidden">
-      {/* Background Diamond Pattern matching Gambar 2 */}
-      <div 
-        className="absolute inset-0 opacity-[0.05]"
-        style={{
-          backgroundImage: `
-            linear-gradient(45deg, #000 25%, transparent 25%, transparent 75%, #000 75%, #000), 
-            linear-gradient(45deg, #000 25%, transparent 25%, transparent 75%, #000 75%, #000)
-          `,
-          backgroundSize: "60px 60px",
-          backgroundPosition: "0 0, 30px 30px"
-        }}
-      />
-      {/* Subtle Glows to enhance the vibe */}
-      <div className="absolute top-[-10%] right-[-10%] w-[50vh] h-[50vh] bg-[#b445ff]/40 blur-[80px] rounded-full mix-blend-screen" />
-      <div className="absolute bottom-1/2 left-[-20%] w-[60vh] h-[60vh] bg-[#610a9c]/50 blur-[100px] rounded-full mix-blend-multiply" />
+    <div className="min-h-screen w-full bg-slate-50 relative flex justify-center overflow-x-hidden">
+      {/* Hero Banner 60vh */}
+      <div className="absolute top-0 left-0 w-full h-[60vh] bg-[#9b1de8] overflow-hidden rounded-b-[32px] shadow-[0_10px_30px_rgba(155,29,232,0.15)]">
+        {/* Background Diamond Pattern */}
+        <div
+          className="absolute inset-0 opacity-[0.05]"
+          style={{
+            backgroundImage: `
+              linear-gradient(45deg, #000 25%, transparent 25%, transparent 75%, #000 75%, #000), 
+              linear-gradient(45deg, #000 25%, transparent 25%, transparent 75%, #000 75%, #000)
+            `,
+            backgroundSize: "60px 60px",
+            backgroundPosition: "0 0, 30px 30px"
+          }}
+        />
+        {/* Subtle Glows to enhance the vibe */}
+        <div className="absolute top-[-10%] right-[-10%] w-[50vh] h-[50vh] bg-[#b445ff]/40 blur-[80px] rounded-full mix-blend-screen" />
+        <div className="absolute bottom-[-10%] left-[-20%] w-[60vh] h-[60vh] bg-[#610a9c]/50 blur-[100px] rounded-full mix-blend-multiply" />
+      </div>
 
-      <div className="relative w-full max-w-md min-h-screen flex flex-col z-10">
-        
-        {/* Top Logo Area (Centered) */}
-        <div className="flex-none pt-[12vh] pb-[8vh] flex justify-center items-center">
-          <div className="w-32 h-32 rounded-full bg-white p-1 shadow-2xl relative flex justify-center items-center">
+      <div className="relative w-full max-w-md min-h-screen flex flex-col z-10 pb-10">
+
+        {/* Top Logo Area */}
+        <div className="flex flex-col items-center justify-center pt-[10vh] pb-6">
+          <div className="w-[110px] h-[110px] rounded-full bg-white p-1 shadow-2xl relative flex justify-center items-center">
             {/* Using the default logo from assets */}
             <img src="/assets/media/logos/logo.png" alt="Logo Cahaya Tasbih" className="w-[95%] h-[95%] object-contain rounded-full" />
             {/* Subtle ring around it as per design */}
             <div className="absolute inset-0 rounded-full ring-2 ring-white/50 shadow-[0_0_20px_rgba(255,255,255,0.2)]" />
           </div>
+          <h2 className="mt-5 text-[16px] font-bold text-white tracking-wide drop-shadow-md">
+            PPTQ CAHAYA TASBIH Mobile
+          </h2>
         </div>
 
-        {/* Bottom White Card (Full stretch to bottom) */}
-        <div className="flex-1 bg-white rounded-t-[2.5rem] px-8 pt-10 pb-8 flex flex-col shadow-[0_-10px_40px_rgba(0,0,0,0.1)]">
-          <div className="mb-8">
-            <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">Masuk</h1>
-            <p className="text-[14px] text-slate-500 mt-2 leading-relaxed">
+        {/* Floating White Card */}
+        <div className="bg-white rounded-[24px] mx-5 px-6 pt-8 pb-8 flex flex-col shadow-[0_8px_30px_rgb(0,0,0,0.08)]">
+          <div className="mb-7">
+            <h1 className="text-[22px] font-bold text-slate-900 tracking-tight">Masuk</h1>
+            <p className="text-[14px] font-medium text-slate-500 mt-1.5 leading-relaxed">
               Masuk ke aplikasi untuk memantau data santri / siswa
             </p>
           </div>
 
-          <form onSubmit={handleLogin} className="flex-1 flex flex-col">
+          <form onSubmit={handleLogin} className="flex flex-col">
             {error && (
-              <div className="p-3 mb-4 rounded-xl bg-red-50 text-red-600 text-xs font-bold text-center border border-red-100">
+              <div className="p-3 mb-5 rounded-xl bg-red-50 text-red-600 text-[12px] font-bold text-center border border-red-100">
                 {error}
               </div>
             )}
-            
-            <div className="space-y-5">
+
+            <div className="space-y-4">
               <div>
-                <label className="text-xs font-bold text-slate-500 mb-2 block">
+                <label className="text-[11px] font-bold text-slate-400 mb-2 uppercase tracking-widest block">
                   Nomor Telepon
                 </label>
-                <div className="flex items-center gap-3 bg-slate-100/80 rounded-full px-5 py-4 focus-within:ring-2 focus-within:ring-[#9b1de8]/20 focus-within:bg-white transition-all border border-transparent focus-within:border-[#9b1de8]/30">
+                <div className="flex items-center gap-3 bg-slate-50 rounded-2xl px-4 py-3.5 focus-within:ring-2 focus-within:ring-[#9b1de8]/20 focus-within:bg-white transition-all border border-slate-100 focus-within:border-[#9b1de8]/30">
                   <input
                     type="tel"
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
                     placeholder="08xxxxxx"
-                    className="bg-transparent flex-1 outline-none text-slate-800 text-[15px] font-semibold placeholder:text-slate-400 placeholder:font-medium"
+                    className="bg-transparent flex-1 outline-none text-slate-800 text-[14px] font-medium placeholder:text-slate-400"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="text-xs font-bold text-slate-500 mb-2 block">
+                <label className="text-[11px] font-bold text-slate-400 mb-2 uppercase tracking-widest block">
                   Kata Sandi
                 </label>
-                <div className="flex items-center gap-3 bg-slate-100/80 rounded-full px-5 py-4 focus-within:ring-2 focus-within:ring-[#9b1de8]/20 focus-within:bg-white transition-all border border-transparent focus-within:border-[#9b1de8]/30">
+                <div className="flex items-center gap-3 bg-slate-50 rounded-2xl px-4 py-3.5 focus-within:ring-2 focus-within:ring-[#9b1de8]/20 focus-within:bg-white transition-all border border-slate-100 focus-within:border-[#9b1de8]/30">
                   <input
                     type={show ? "text" : "password"}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="password"
-                    className="bg-transparent flex-1 outline-none text-slate-800 text-[15px] font-semibold placeholder:text-slate-400 placeholder:font-medium"
+                    className="bg-transparent flex-1 outline-none text-slate-800 text-[14px] font-medium placeholder:text-slate-400"
                   />
                   <button
                     type="button"
                     onClick={() => setShow(!show)}
-                    className="text-slate-500 hover:text-slate-700 transition"
+                    className="text-slate-400 hover:text-slate-600 transition"
                   >
-                    {show ? <EyeOff size={22} strokeWidth={2.5} /> : <Eye size={22} strokeWidth={2.5} />}
+                    {show ? <EyeOff size={18} strokeWidth={2.5} /> : <Eye size={18} strokeWidth={2.5} />}
                   </button>
                 </div>
               </div>
             </div>
 
-            <div className="flex justify-end mt-4 mb-auto">
-              <button type="button" className="text-[13px] font-bold text-[#9b1de8]">
-                Lupa Kata Sandi
+            <div className="flex justify-end mt-3">
+              <button type="button" className="text-[12px] font-bold text-[#9b1de8]">
+                Lupa Kata Sandi?
               </button>
             </div>
 
-            {/* Submit Button pushes to bottom */}
-            <div className="mt-8 pt-4">
+            {/* Submit Button */}
+            <div className="mt-8">
               <button
                 type="submit"
                 disabled={loginMutation.isPending}
-                className="w-full py-4 rounded-full bg-[#9b1de8] text-white font-bold text-base shadow-[0_8px_25px_rgba(155,29,232,0.35)] transition active:scale-[0.98] disabled:opacity-70 flex items-center justify-center"
+                className="w-full py-4 rounded-[20px] bg-[#9b1de8] text-white font-bold text-[15px] shadow-[0_8px_25px_rgba(155,29,232,0.35)] transition active:scale-[0.98] disabled:opacity-70 flex items-center justify-center"
               >
                 {loginMutation.isPending ? (
                   <Loader2 className="animate-spin" size={20} />
