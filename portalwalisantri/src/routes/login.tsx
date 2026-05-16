@@ -83,7 +83,7 @@ function LoginPage() {
         </div>
 
         {/* Floating White Card */}
-        <div className="bg-white rounded-[24px] mx-5 px-6 pt-8 pb-8 flex flex-col shadow-[0_8px_30px_rgb(0,0,0,0.08)] mt-auto">
+        <div className="bg-white rounded-[24px] mx-5 px-6 pt-8 pb-8 flex flex-col shadow-[0_8px_30px_rgb(0,0,0,0.08)] mt-[6vh] mb-auto">
           <div className="mb-7">
             <h1 className="text-[22px] font-bold text-slate-900 tracking-tight">Masuk</h1>
             <p className="text-[14px] font-medium text-slate-500 mt-1.5 leading-relaxed">
