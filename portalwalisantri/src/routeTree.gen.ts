@@ -15,10 +15,12 @@ import { Route as RiwayatRouteImport } from './routes/riwayat'
 import { Route as ProfilRouteImport } from './routes/profil'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as LimitRouteImport } from './routes/limit'
+import { Route as LanjutUnitRouteImport } from './routes/lanjut-unit'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as TagihanBillIdRouteImport } from './routes/tagihan_.$billId'
 import { Route as PembayaranPayIdRouteImport } from './routes/pembayaran.$payId'
+import { Route as BeritaNewsIdRouteImport } from './routes/berita.$newsId'
 import { Route as AdminApprovalRouteImport } from './routes/admin.approval'
 
 const TopupRoute = TopupRouteImport.update({
@@ -51,6 +53,11 @@ const LimitRoute = LimitRouteImport.update({
   path: '/limit',
   getParentRoute: () => rootRouteImport,
 } as any)
+const LanjutUnitRoute = LanjutUnitRouteImport.update({
+  id: '/lanjut-unit',
+  path: '/lanjut-unit',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const DashboardRoute = DashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
@@ -71,6 +78,11 @@ const PembayaranPayIdRoute = PembayaranPayIdRouteImport.update({
   path: '/pembayaran/$payId',
   getParentRoute: () => rootRouteImport,
 } as any)
+const BeritaNewsIdRoute = BeritaNewsIdRouteImport.update({
+  id: '/berita/$newsId',
+  path: '/berita/$newsId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AdminApprovalRoute = AdminApprovalRouteImport.update({
   id: '/admin/approval',
   path: '/admin/approval',
@@ -80,6 +92,7 @@ const AdminApprovalRoute = AdminApprovalRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/dashboard': typeof DashboardRoute
+  '/lanjut-unit': typeof LanjutUnitRoute
   '/limit': typeof LimitRoute
   '/login': typeof LoginRoute
   '/profil': typeof ProfilRoute
@@ -87,12 +100,14 @@ export interface FileRoutesByFullPath {
   '/tagihan': typeof TagihanRoute
   '/topup': typeof TopupRoute
   '/admin/approval': typeof AdminApprovalRoute
+  '/berita/$newsId': typeof BeritaNewsIdRoute
   '/pembayaran/$payId': typeof PembayaranPayIdRoute
   '/tagihan/$billId': typeof TagihanBillIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/dashboard': typeof DashboardRoute
+  '/lanjut-unit': typeof LanjutUnitRoute
   '/limit': typeof LimitRoute
   '/login': typeof LoginRoute
   '/profil': typeof ProfilRoute
@@ -100,6 +115,7 @@ export interface FileRoutesByTo {
   '/tagihan': typeof TagihanRoute
   '/topup': typeof TopupRoute
   '/admin/approval': typeof AdminApprovalRoute
+  '/berita/$newsId': typeof BeritaNewsIdRoute
   '/pembayaran/$payId': typeof PembayaranPayIdRoute
   '/tagihan/$billId': typeof TagihanBillIdRoute
 }
@@ -107,6 +123,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/dashboard': typeof DashboardRoute
+  '/lanjut-unit': typeof LanjutUnitRoute
   '/limit': typeof LimitRoute
   '/login': typeof LoginRoute
   '/profil': typeof ProfilRoute
@@ -114,6 +131,7 @@ export interface FileRoutesById {
   '/tagihan': typeof TagihanRoute
   '/topup': typeof TopupRoute
   '/admin/approval': typeof AdminApprovalRoute
+  '/berita/$newsId': typeof BeritaNewsIdRoute
   '/pembayaran/$payId': typeof PembayaranPayIdRoute
   '/tagihan_/$billId': typeof TagihanBillIdRoute
 }
@@ -122,6 +140,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/dashboard'
+    | '/lanjut-unit'
     | '/limit'
     | '/login'
     | '/profil'
@@ -129,12 +148,14 @@ export interface FileRouteTypes {
     | '/tagihan'
     | '/topup'
     | '/admin/approval'
+    | '/berita/$newsId'
     | '/pembayaran/$payId'
     | '/tagihan/$billId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/dashboard'
+    | '/lanjut-unit'
     | '/limit'
     | '/login'
     | '/profil'
@@ -142,12 +163,14 @@ export interface FileRouteTypes {
     | '/tagihan'
     | '/topup'
     | '/admin/approval'
+    | '/berita/$newsId'
     | '/pembayaran/$payId'
     | '/tagihan/$billId'
   id:
     | '__root__'
     | '/'
     | '/dashboard'
+    | '/lanjut-unit'
     | '/limit'
     | '/login'
     | '/profil'
@@ -155,6 +178,7 @@ export interface FileRouteTypes {
     | '/tagihan'
     | '/topup'
     | '/admin/approval'
+    | '/berita/$newsId'
     | '/pembayaran/$payId'
     | '/tagihan_/$billId'
   fileRoutesById: FileRoutesById
@@ -162,6 +186,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   DashboardRoute: typeof DashboardRoute
+  LanjutUnitRoute: typeof LanjutUnitRoute
   LimitRoute: typeof LimitRoute
   LoginRoute: typeof LoginRoute
   ProfilRoute: typeof ProfilRoute
@@ -169,6 +194,7 @@ export interface RootRouteChildren {
   TagihanRoute: typeof TagihanRoute
   TopupRoute: typeof TopupRoute
   AdminApprovalRoute: typeof AdminApprovalRoute
+  BeritaNewsIdRoute: typeof BeritaNewsIdRoute
   PembayaranPayIdRoute: typeof PembayaranPayIdRoute
   TagihanBillIdRoute: typeof TagihanBillIdRoute
 }
@@ -217,6 +243,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LimitRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/lanjut-unit': {
+      id: '/lanjut-unit'
+      path: '/lanjut-unit'
+      fullPath: '/lanjut-unit'
+      preLoaderRoute: typeof LanjutUnitRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/dashboard': {
       id: '/dashboard'
       path: '/dashboard'
@@ -245,6 +278,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PembayaranPayIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/berita/$newsId': {
+      id: '/berita/$newsId'
+      path: '/berita/$newsId'
+      fullPath: '/berita/$newsId'
+      preLoaderRoute: typeof BeritaNewsIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/admin/approval': {
       id: '/admin/approval'
       path: '/admin/approval'
@@ -258,6 +298,7 @@ declare module '@tanstack/react-router' {
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   DashboardRoute: DashboardRoute,
+  LanjutUnitRoute: LanjutUnitRoute,
   LimitRoute: LimitRoute,
   LoginRoute: LoginRoute,
   ProfilRoute: ProfilRoute,
@@ -265,6 +306,7 @@ const rootRouteChildren: RootRouteChildren = {
   TagihanRoute: TagihanRoute,
   TopupRoute: TopupRoute,
   AdminApprovalRoute: AdminApprovalRoute,
+  BeritaNewsIdRoute: BeritaNewsIdRoute,
   PembayaranPayIdRoute: PembayaranPayIdRoute,
   TagihanBillIdRoute: TagihanBillIdRoute,
 }

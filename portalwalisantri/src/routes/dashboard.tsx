@@ -12,14 +12,18 @@ import {
   BookOpen,
   Wallet,
   ChevronDown,
+  ChevronRight,
   Loader2,
+  Newspaper,
+  Calendar,
+  ImageOff,
 } from "lucide-react";
 import { useState } from "react";
 import { MobileShell } from "@/components/MobileShell";
 import { useSantri } from "@/contexts/SantriContext";
 import { SantriSwitcherTrigger } from "@/components/SantriSwitcher";
 import { useQuery } from "@tanstack/react-query";
-import { fetchDashboard } from "@/lib/api";
+import { fetchDashboard, fetchInformations } from "@/lib/api";
 
 export const Route = createFileRoute("/dashboard")({
   component: Dashboard,
@@ -47,6 +51,28 @@ function Dashboard() {
     },
     enabled: !!active,
   });
+
+  const [newsPage, setNewsPage] = useState(1);
+  const [allNews, setAllNews] = useState<any[]>([]);
+
+  const { data: newsData, isLoading: isLoadingNews, isFetching: isFetchingNews } = useQuery({
+    queryKey: ["informations", newsPage],
+    queryFn: async () => {
+      const res = await fetchInformations({ page: newsPage, per_page: 3 });
+      return res.data;
+    },
+    enabled: !!active,
+  });
+
+  // Accumulate news across pages
+  const currentNews = newsData?.data || [];
+  const displayedNews = newsPage === 1 ? currentNews : [...allNews, ...currentNews];
+  const hasMoreNews = newsData?.next_page_url != null;
+
+  const loadMoreNews = () => {
+    setAllNews(displayedNews);
+    setNewsPage((p) => p + 1);
+  };
 
   const fmt = (n: number) =>
     new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0 }).format(n);
@@ -281,6 +307,121 @@ function Dashboard() {
             </div>
           )}
         </div>
+      </section>
+
+      {/* Berita Sekolah */}
+      <section className="px-6 mt-2 mb-10">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-xl bg-primary/10 flex items-center justify-center">
+              <Newspaper size={16} className="text-primary" />
+            </div>
+            <h3 className="text-base font-bold text-foreground">Berita Sekolah</h3>
+          </div>
+        </div>
+
+        {isLoadingNews && newsPage === 1 ? (
+          <div className="py-8 text-center">
+            <Loader2 size={24} className="animate-spin text-primary mx-auto mb-2" />
+            <p className="text-xs text-muted-foreground">Memuat berita...</p>
+          </div>
+        ) : displayedNews.length > 0 ? (
+          <div className="space-y-3">
+            {displayedNews.map((info: any) => {
+              const imageUrl = info.image
+                ? info.image.startsWith("storage/")
+                  ? `/${info.image}`
+                  : `/storage/${info.image}`
+                : null;
+
+              return (
+                <button
+                  key={info.id}
+                  onClick={() => navigate({ to: "/berita/$newsId", params: { newsId: info.id } })}
+                  className="w-full bg-card rounded-3xl border border-border shadow-[var(--shadow-soft)] p-4 flex gap-4 items-start text-left active:scale-[0.98] transition-transform"
+                >
+                  {/* Thumbnail */}
+                  <div className="w-20 h-20 rounded-2xl bg-secondary flex-shrink-0 overflow-hidden">
+                    {imageUrl ? (
+                      <img
+                        src={imageUrl}
+                        alt={info.title}
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).style.display = "none";
+                          (e.target as HTMLImageElement).parentElement!.innerHTML =
+                            '<div class="w-full h-full flex items-center justify-center"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-muted-foreground/30"><line x1="2" x2="22" y1="2" y2="22"></line><path d="M10.41 10.41a2 2 0 1 1-2.83-2.83"></path><line x1="13.5" x2="6" y1="13.5" y2="21"></line><path d="M18 12l-1.5 1.5"></path><path d="M21 15l-3.09 3.09"></path><path d="M3.59 3.59A1.99 1.99 0 0 0 3 5v14a2 2 0 0 0 2 2h14c.55 0 1.052-.22 1.41-.59"></path><path d="M21 15V5a2 2 0 0 0-2-2H9"></path></svg></div>';
+                        }}
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center">
+                        <ImageOff size={20} className="text-muted-foreground/30" />
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Content */}
+                  <div className="flex-1 min-w-0 py-0.5">
+                    {/* Category */}
+                    {info.information_category && (
+                      <span className="inline-block px-2 py-0.5 rounded-md bg-primary/10 text-primary text-[9px] font-bold uppercase tracking-wider mb-1.5">
+                        {info.information_category.name}
+                      </span>
+                    )}
+
+                    {/* Title */}
+                    <p className="text-sm font-semibold text-foreground leading-snug line-clamp-2 mb-2">
+                      {info.title}
+                    </p>
+
+                    {/* Date */}
+                    <div className="flex items-center gap-1.5 text-muted-foreground">
+                      <Calendar size={10} />
+                      <span className="text-[10px] font-medium">
+                        {new Date(info.created_at).toLocaleDateString("id-ID", {
+                          day: "numeric",
+                          month: "short",
+                          year: "numeric",
+                        })}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Chevron */}
+                  <div className="flex-shrink-0 self-center">
+                    <ChevronRight size={16} className="text-muted-foreground/40" />
+                  </div>
+                </button>
+              );
+            })}
+
+            {/* Load More / Pagination */}
+            {hasMoreNews && (
+              <button
+                onClick={loadMoreNews}
+                disabled={isFetchingNews}
+                className="w-full py-3 rounded-2xl bg-secondary text-sm font-semibold text-foreground flex items-center justify-center gap-2 active:scale-[0.98] transition-transform disabled:opacity-50"
+              >
+                {isFetchingNews ? (
+                  <>
+                    <Loader2 size={14} className="animate-spin" />
+                    <span>Memuat...</span>
+                  </>
+                ) : (
+                  <span>Lihat Berita Lainnya</span>
+                )}
+              </button>
+            )}
+          </div>
+        ) : (
+          <div className="bg-card rounded-3xl border border-border p-8 text-center shadow-[var(--shadow-soft)]">
+            <div className="w-12 h-12 rounded-2xl bg-secondary flex items-center justify-center mx-auto mb-3">
+              <Newspaper size={20} className="text-muted-foreground" />
+            </div>
+            <p className="text-xs font-semibold text-muted-foreground">Belum ada berita</p>
+            <p className="text-[10px] text-muted-foreground/70 mt-0.5">Berita sekolah akan tampil di sini</p>
+          </div>
+        )}
       </section>
     </MobileShell>
   );

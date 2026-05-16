@@ -36,6 +36,7 @@ export const postLogin = (data: any) => api.post('/login', data);
 export const postLogout = () => api.post('/logout');
 export const fetchDashboard = () => api.get('/dashboard');
 export const fetchInformations = (params?: any) => api.get('/informations', { params });
+export const fetchInformationDetail = (id: string | number) => api.get(`/informations/${id}`);
 export const fetchStudents = () => api.get('/students');
 export const fetchActiveStudent = () => api.get('/active-student');
 export const fetchSaldoHistories = (params?: any) => api.get('/saldo-histories', { params });

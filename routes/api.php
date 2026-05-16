@@ -144,6 +144,7 @@ Route::prefix('wali')->middleware(['web'])->group(function () {
     Route::middleware(['auth:wali'])->group(function () {
     Route::get('dashboard', [App\Http\Controllers\Api\Wali\DashboardController::class, 'index']);
     Route::get('informations', [App\Http\Controllers\Api\Wali\InformationController::class, 'index']);
+    Route::get('informations/{id}', [App\Http\Controllers\Api\Wali\InformationController::class, 'show']);
     Route::get('students', [App\Http\Controllers\Api\Wali\StudentController::class, 'index']);
     Route::get('active-student', [App\Http\Controllers\Api\Wali\StudentController::class, 'active']);
     Route::get('saldo-histories', [App\Http\Controllers\Api\Wali\SaldoHistoryController::class, 'index']);
