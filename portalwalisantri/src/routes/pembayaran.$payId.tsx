@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { fetchPaymentDetail, uploadPaymentProof } from "@/lib/api";
+import { resolveImageUrl } from "@/lib/utils";
 
 export const Route = createFileRoute("/pembayaran/$payId")({
   component: PembayaranPage,
@@ -397,7 +398,7 @@ function ProofUploader({ tx, onUpload, isUploading }: { tx: any; onUpload: (f: F
       {hasProof ? (
         <div className="mt-3 rounded-xl overflow-hidden border border-border bg-secondary">
           <img
-            src={`/${tx.proofUrl}`}
+            src={resolveImageUrl(tx.proofUrl) || ''}
             alt="Bukti transfer"
             className="w-full max-h-72 object-contain bg-black/5"
           />

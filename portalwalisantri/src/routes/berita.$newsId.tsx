@@ -4,6 +4,7 @@ import { fetchInformationDetail } from "@/lib/api";
 import { ArrowLeft, Calendar, Tag, Loader2, ImageOff } from "lucide-react";
 import { MobileShell } from "@/components/MobileShell";
 import { useState } from "react";
+import { resolveImageUrl } from "@/lib/utils";
 
 export const Route = createFileRoute("/berita/$newsId")({
   component: BeritaDetail,
@@ -47,15 +48,7 @@ function BeritaDetail() {
     );
   }
 
-  let imageUrl = null;
-  if (data.image) {
-    if (data.image.startsWith('http://') || data.image.startsWith('https://')) {
-      imageUrl = data.image;
-    } else {
-      const path = data.image.startsWith('storage/') ? data.image : `storage/${data.image}`;
-      imageUrl = `/${path}`;
-    }
-  }
+  const imageUrl = resolveImageUrl(data.image);
 
   const formattedDate = new Date(data.created_at).toLocaleDateString("id-ID", {
     weekday: "long",

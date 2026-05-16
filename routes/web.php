@@ -440,4 +440,35 @@ Route::get('pwa-asset', function (\Illuminate\Http\Request $request) {
     abort(404);
 })->name('pwa-asset');
 
+Route::get('file-asset', function (\Illuminate\Http\Request $request) {
+    $p = $request->query('p');
+    if (!$p) abort(404);
+    
+    // remove leading storage/ if present
+    $p = preg_replace('/^storage\//', '', $p);
+    
+    $path = storage_path('app/public/' . $p);
+    if (!file_exists($path)) {
+        abort(404);
+    }
+    
+    $mime = 'application/octet-stream';
+    $pLower = strtolower($p);
+    if (str_ends_with($pLower, '.jpg') || str_ends_with($pLower, '.jpeg')) $mime = 'image/jpeg';
+    elseif (str_ends_with($pLower, '.png')) $mime = 'image/png';
+    elseif (str_ends_with($pLower, '.svg')) $mime = 'image/svg+xml';
+    elseif (str_ends_with($pLower, '.webp')) $mime = 'image/webp';
+    elseif (str_ends_with($pLower, '.gif')) $mime = 'image/gif';
+    else {
+        $info = finfo_open(FILEINFO_MIME_TYPE);
+        $mime = finfo_file($info, $path);
+        finfo_close($info);
+    }
+    
+    return response()->file($path, [
+        'Content-Type' => $mime,
+        'Cache-Control' => 'public, max-age=31536000'
+    ]);
+})->name('file-asset');
+
 Route::get('public/report-bill-student/{token}', [App\Http\Controllers\Public\PublicReportBillStudentController::class, 'index'])->name('public.report-bill-student.index');

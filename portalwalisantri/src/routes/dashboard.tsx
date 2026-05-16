@@ -24,6 +24,7 @@ import { useSantri } from "@/contexts/SantriContext";
 import { SantriSwitcherTrigger } from "@/components/SantriSwitcher";
 import { useQuery } from "@tanstack/react-query";
 import { fetchDashboard, fetchInformations } from "@/lib/api";
+import { resolveImageUrl } from "@/lib/utils";
 
 export const Route = createFileRoute("/dashboard")({
   component: Dashboard,
@@ -328,17 +329,7 @@ function Dashboard() {
         ) : displayedNews.length > 0 ? (
           <div className="space-y-4">
             {displayedNews.map((info: any) => {
-              // Ensure we get a proper absolute or relative URL
-              let imageUrl = null;
-              if (info.image) {
-                if (info.image.startsWith('http://') || info.image.startsWith('https://')) {
-                  imageUrl = info.image;
-                } else {
-                  // Jika hanya 'images/information/...', prepend 'storage/'
-                  const path = info.image.startsWith('storage/') ? info.image : `storage/${info.image}`;
-                  imageUrl = `/${path}`;
-                }
-              }
+              const imageUrl = resolveImageUrl(info.image);
 
               return (
                 <div
