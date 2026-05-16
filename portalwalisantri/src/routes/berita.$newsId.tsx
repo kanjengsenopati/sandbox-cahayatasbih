@@ -47,11 +47,15 @@ function BeritaDetail() {
     );
   }
 
-  const imageUrl = data.image
-    ? data.image.startsWith("storage/")
-      ? `/${data.image}`
-      : `/storage/${data.image}`
-    : null;
+  let imageUrl = null;
+  if (data.image) {
+    if (data.image.startsWith('http://') || data.image.startsWith('https://')) {
+      imageUrl = data.image;
+    } else {
+      const path = data.image.startsWith('storage/') ? data.image : `storage/${data.image}`;
+      imageUrl = `/${path}`;
+    }
+  }
 
   const formattedDate = new Date(data.created_at).toLocaleDateString("id-ID", {
     weekday: "long",

@@ -310,38 +310,44 @@ function Dashboard() {
       </section>
 
       {/* Berita Sekolah */}
-      <section className="px-6 mt-2 mb-10">
+      <section className="px-5 mt-2 mb-10">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-xl bg-primary/10 flex items-center justify-center">
-              <Newspaper size={16} className="text-primary" />
+            <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center">
+              <Newspaper size={16} className="text-blue-600" />
             </div>
-            <h3 className="text-base font-bold text-foreground">Berita Sekolah</h3>
+            <h2 className="text-[16px] font-semibold text-slate-800">Berita Sekolah</h2>
           </div>
         </div>
 
         {isLoadingNews && newsPage === 1 ? (
           <div className="py-8 text-center">
-            <Loader2 size={24} className="animate-spin text-primary mx-auto mb-2" />
-            <p className="text-xs text-muted-foreground">Memuat berita...</p>
+            <Loader2 size={24} className="animate-spin text-blue-600 mx-auto mb-2" />
+            <p className="text-xs text-slate-400">Memuat berita...</p>
           </div>
         ) : displayedNews.length > 0 ? (
-          <div className="space-y-3">
+          <div className="space-y-4">
             {displayedNews.map((info: any) => {
-              const imageUrl = info.image
-                ? info.image.startsWith("storage/")
-                  ? `/${info.image}`
-                  : `/storage/${info.image}`
-                : null;
+              // Ensure we get a proper absolute or relative URL
+              let imageUrl = null;
+              if (info.image) {
+                if (info.image.startsWith('http://') || info.image.startsWith('https://')) {
+                  imageUrl = info.image;
+                } else {
+                  // Jika hanya 'images/information/...', prepend 'storage/'
+                  const path = info.image.startsWith('storage/') ? info.image : `storage/${info.image}`;
+                  imageUrl = `/${path}`;
+                }
+              }
 
               return (
-                <button
+                <div
                   key={info.id}
                   onClick={() => navigate({ to: "/berita/$newsId", params: { newsId: info.id } })}
-                  className="w-full bg-card rounded-3xl border border-border shadow-[var(--shadow-soft)] p-4 flex gap-4 items-start text-left active:scale-[0.98] transition-transform"
+                  className="bg-white rounded-[24px] shadow-[0_8px_30px_rgb(0,0,0,0.04)] overflow-hidden active:scale-[0.98] transition-all cursor-pointer flex flex-col"
                 >
-                  {/* Thumbnail */}
-                  <div className="w-20 h-20 rounded-2xl bg-secondary flex-shrink-0 overflow-hidden">
+                  {/* Header Card / Image Section */}
+                  <div className="relative h-[160px] w-full bg-slate-50">
                     {imageUrl ? (
                       <img
                         src={imageUrl}
@@ -350,34 +356,29 @@ function Dashboard() {
                         onError={(e) => {
                           (e.target as HTMLImageElement).style.display = "none";
                           (e.target as HTMLImageElement).parentElement!.innerHTML =
-                            '<div class="w-full h-full flex items-center justify-center"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-muted-foreground/30"><line x1="2" x2="22" y1="2" y2="22"></line><path d="M10.41 10.41a2 2 0 1 1-2.83-2.83"></path><line x1="13.5" x2="6" y1="13.5" y2="21"></line><path d="M18 12l-1.5 1.5"></path><path d="M21 15l-3.09 3.09"></path><path d="M3.59 3.59A1.99 1.99 0 0 0 3 5v14a2 2 0 0 0 2 2h14c.55 0 1.052-.22 1.41-.59"></path><path d="M21 15V5a2 2 0 0 0-2-2H9"></path></svg></div>';
+                            '<div class="w-full h-full flex items-center justify-center"><svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-slate-300"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><circle cx="8.5" cy="8.5" r="1.5"></circle><polyline points="21 15 16 10 5 21"></polyline></svg></div>';
                         }}
                       />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center">
-                        <ImageOff size={20} className="text-muted-foreground/30" />
+                        <ImageOff size={32} className="text-slate-300" />
                       </div>
                     )}
+                    {/* Top Right Action Cluster */}
+                    <div className="absolute top-3 right-3 flex items-center gap-2">
+                      <div className="w-8 h-8 rounded-full bg-white/80 backdrop-blur-md flex items-center justify-center shadow-sm">
+                        <ChevronRight size={18} className="text-slate-400" />
+                      </div>
+                    </div>
                   </div>
 
-                  {/* Content */}
-                  <div className="flex-1 min-w-0 py-0.5">
-                    {/* Category */}
-                    {info.information_category && (
-                      <span className="inline-block px-2 py-0.5 rounded-md bg-primary/10 text-primary text-[9px] font-bold uppercase tracking-wider mb-1.5">
-                        {info.information_category.name}
+                  {/* Content Section */}
+                  <div className="p-4 flex flex-col">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="inline-block px-2.5 py-1 bg-blue-50 text-blue-600 text-[11px] font-bold uppercase tracking-widest rounded-lg">
+                        {info.information_category?.name || "INFORMASI"}
                       </span>
-                    )}
-
-                    {/* Title */}
-                    <p className="text-sm font-semibold text-foreground leading-snug line-clamp-2 mb-2">
-                      {info.title}
-                    </p>
-
-                    {/* Date */}
-                    <div className="flex items-center gap-1.5 text-muted-foreground">
-                      <Calendar size={10} />
-                      <span className="text-[10px] font-medium">
+                      <span className="text-[12px] italic text-slate-400">
                         {new Date(info.created_at).toLocaleDateString("id-ID", {
                           day: "numeric",
                           month: "short",
@@ -385,13 +386,12 @@ function Dashboard() {
                         })}
                       </span>
                     </div>
+                    
+                    <h3 className="text-[14px] font-medium text-slate-800 line-clamp-2 leading-snug">
+                      {info.title}
+                    </h3>
                   </div>
-
-                  {/* Chevron */}
-                  <div className="flex-shrink-0 self-center">
-                    <ChevronRight size={16} className="text-muted-foreground/40" />
-                  </div>
-                </button>
+                </div>
               );
             })}
 
@@ -400,11 +400,11 @@ function Dashboard() {
               <button
                 onClick={loadMoreNews}
                 disabled={isFetchingNews}
-                className="w-full py-3 rounded-2xl bg-secondary text-sm font-semibold text-foreground flex items-center justify-center gap-2 active:scale-[0.98] transition-transform disabled:opacity-50"
+                className="w-full py-3.5 bg-white border border-slate-100 text-[14px] font-medium text-slate-600 rounded-[24px] shadow-[0_8px_30px_rgb(0,0,0,0.04)] active:bg-slate-50 transition-colors flex items-center justify-center gap-2 disabled:opacity-70 mt-2"
               >
                 {isFetchingNews ? (
                   <>
-                    <Loader2 size={14} className="animate-spin" />
+                    <Loader2 size={16} className="animate-spin text-blue-600" />
                     <span>Memuat...</span>
                   </>
                 ) : (
@@ -414,12 +414,12 @@ function Dashboard() {
             )}
           </div>
         ) : (
-          <div className="bg-card rounded-3xl border border-border p-8 text-center shadow-[var(--shadow-soft)]">
-            <div className="w-12 h-12 rounded-2xl bg-secondary flex items-center justify-center mx-auto mb-3">
-              <Newspaper size={20} className="text-muted-foreground" />
+          <div className="bg-white rounded-[24px] border border-slate-100 p-8 text-center shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
+            <div className="w-12 h-12 rounded-2xl bg-slate-50 flex items-center justify-center mx-auto mb-3">
+              <Newspaper size={20} className="text-slate-400" />
             </div>
-            <p className="text-xs font-semibold text-muted-foreground">Belum ada berita</p>
-            <p className="text-[10px] text-muted-foreground/70 mt-0.5">Berita sekolah akan tampil di sini</p>
+            <p className="text-[14px] font-semibold text-slate-600">Belum ada berita</p>
+            <p className="text-[12px] text-slate-400 mt-0.5">Berita sekolah akan tampil di sini</p>
           </div>
         )}
       </section>
