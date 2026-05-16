@@ -103,24 +103,28 @@ function Dashboard() {
   return (
     <MobileShell>
       {/* Header */}
-      <header className="flex items-center justify-between px-6 pt-12 pb-4">
-        <div className="flex items-center gap-3">
-          <div className="w-11 h-11 rounded-2xl bg-[var(--gradient-card)] flex items-center justify-center text-primary-foreground font-bold shadow-[var(--shadow-soft)] overflow-hidden">
-            {dashboard?.user?.avatar ? (
-              <img src={`/${dashboard.user.avatar}`} alt="" className="w-full h-full object-cover" />
-            ) : (
-              dashboard?.user?.name?.substring(0, 2).toUpperCase() || "W"
-            )}
+      <header className="px-5 pt-10 pb-2">
+        <div className="bg-white rounded-[24px] p-4 flex items-center justify-between shadow-[0_8px_30px_rgb(0,0,0,0.06)] border border-slate-50">
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 rounded-[16px] bg-gradient-to-br from-[#9b1de8] to-[#610a9c] flex items-center justify-center text-white font-bold shadow-md overflow-hidden">
+              {dashboard?.user?.avatar ? (
+                <img src={`/${dashboard.user.avatar}`} alt="" className="w-full h-full object-cover" />
+              ) : (
+                dashboard?.user?.name?.substring(0, 2).toUpperCase() || "W"
+              )}
+            </div>
+            <div>
+              <p className="text-[11px] font-bold text-slate-400 tracking-wide uppercase">Assalamualaikum,</p>
+              <p className="text-[15px] font-extrabold text-slate-800 tracking-tight leading-tight mt-0.5">
+                {dashboard?.user?.name || "Wali Santri"}
+              </p>
+            </div>
           </div>
-          <div>
-            <p className="text-xs text-muted-foreground">Assalamualaikum,</p>
-            <p className="text-sm font-bold text-foreground">{dashboard?.user?.name || "Wali Santri"}</p>
-          </div>
+          <button className="relative w-11 h-11 rounded-[16px] bg-slate-50 flex items-center justify-center hover:bg-slate-100 transition">
+            <Bell size={20} className="text-slate-600" />
+            <span className="absolute top-2.5 right-2.5 w-2.5 h-2.5 rounded-full bg-red-500 border-2 border-slate-50" />
+          </button>
         </div>
-        <button className="relative w-11 h-11 rounded-2xl bg-secondary flex items-center justify-center">
-          <Bell size={20} className="text-foreground" />
-          <span className="absolute top-2.5 right-2.5 w-2 h-2 rounded-full bg-primary" />
-        </button>
       </header>
 
       {/* Hero balance card */}

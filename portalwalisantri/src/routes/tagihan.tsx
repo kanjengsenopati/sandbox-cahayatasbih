@@ -245,37 +245,43 @@ function BillCard({ bill }: { bill: any }) {
           )}
         </div>
 
-        {/* Progress */}
-        {!isPaid && (
-          <div className="mt-3 h-1.5 rounded-full bg-secondary overflow-hidden">
-            <div
-              className="h-full rounded-full bg-[var(--gradient-card)]"
-              style={{ width: `${pct}%` }}
-            />
-          </div>
-        )}
-
         {/* Pills */}
-        <div className="mt-3 grid grid-cols-2 gap-2">
+        <div className="mt-4 grid grid-cols-2 gap-2">
           <div>
-            <p className="text-[10px] text-muted-foreground mb-1">Sudah Dibayarkan :</p>
-            <div className="rounded-full bg-emerald-500 text-white text-xs font-bold px-3 py-2 text-center truncate">
+            <p className="text-[10px] text-slate-400 font-medium mb-1.5 uppercase tracking-wide">Sudah Dibayarkan</p>
+            <div className="rounded-xl bg-emerald-50 text-emerald-600 text-[13px] font-extrabold px-3 py-2 text-center truncate border border-emerald-100">
               {fmtIDR(bill.paid)}
             </div>
           </div>
           <div>
-            <p className="text-[10px] text-muted-foreground mb-1 text-right">
-              {isPaid ? "Status :" : "Kekurangan :"}
+            <p className="text-[10px] text-slate-400 font-medium mb-1.5 uppercase tracking-wide text-right">
+              {isPaid ? "Status" : "Kekurangan"}
             </p>
             <div
-              className={`rounded-full text-white text-xs font-bold px-3 py-2 text-center truncate ${
-                isPaid ? "bg-emerald-500" : "bg-slate-400"
+              className={`rounded-xl text-[13px] font-extrabold px-3 py-2 text-center truncate border ${
+                isPaid ? "bg-emerald-50 text-emerald-600 border-emerald-100" : "bg-red-50 text-red-600 border-red-100"
               }`}
             >
               {isPaid ? "Lunas" : fmtIDR(remaining)}
             </div>
           </div>
         </div>
+
+        {/* Progress */}
+        {!isPaid && (
+          <div className="mt-4">
+            <div className="flex justify-between items-center mb-1.5 px-1">
+              <span className="text-[10px] font-bold text-slate-400">Progress Pembayaran</span>
+              <span className="text-[10px] font-extrabold text-[#9b1de8]">{pct}%</span>
+            </div>
+            <div className="h-2 rounded-full bg-slate-100 overflow-hidden">
+              <div
+                className="h-full rounded-full bg-gradient-to-r from-[#9b1de8] to-[#610a9c]"
+                style={{ width: `${pct}%` }}
+              />
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
