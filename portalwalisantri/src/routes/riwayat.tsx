@@ -276,25 +276,7 @@ function RiwayatPage() {
               })}
             </div>
 
-            {/* Category chips */}
-            <div className="mt-3 flex gap-2 overflow-x-auto -mx-4 px-4 pb-1 scrollbar-none">
-              {CAT_FILTERS.map((c) => {
-                const active = cat === c.id;
-                return (
-                  <button
-                    key={c.id}
-                    onClick={() => setCat(c.id)}
-                    className={`shrink-0 px-3 py-1.5 rounded-full text-[11px] font-bold border transition ${
-                      active
-                        ? "bg-[var(--gradient-card)] text-primary-foreground border-transparent"
-                        : "bg-secondary text-foreground border-transparent"
-                    }`}
-                  >
-                    {c.label}
-                  </button>
-                );
-              })}
-            </div>
+
 
             {/* Date range */}
             <div className="mt-3 flex items-center gap-2">
