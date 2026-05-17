@@ -100,6 +100,8 @@ class DashboardController extends BaseWaliApiController
                 ->first();
         }
 
+        $menus = \App\Models\ApplicationMenu::where('status', true)->get();
+
         return response()->json([
             'user' => $user,
             'informations' => $informations,
@@ -110,6 +112,7 @@ class DashboardController extends BaseWaliApiController
             'recentTransactions' => $recentTransactions,
             'todaySummary' => $todaySummary,
             'unit_transfer' => $unitTransfer,
+            'menus' => $menus,
         ]);
     }
 }
