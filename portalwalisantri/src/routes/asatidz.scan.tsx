@@ -62,13 +62,50 @@ function AsatidzScanPage() {
     if (!file) return;
 
     const reader = new FileReader();
-    reader.onloadend = () => {
-      const base64String = reader.result as string;
-      if (type === "santri") {
-        setPhotoSantri(base64String);
-      } else {
-        setPhotoEscort(base64String);
-      }
+    reader.onload = (event) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        let width = img.width;
+        let height = img.height;
+
+        // Constraint: max 1200px to maintain quality without huge file sizes
+        const maxDim = 1200;
+        if (width > maxDim || height > maxDim) {
+          if (width > height) {
+            height = Math.round((height * maxDim) / width);
+            width = maxDim;
+          } else {
+            width = Math.round((width * maxDim) / height);
+            height = maxDim;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+
+        const ctx = canvas.getContext("2d");
+        if (ctx) {
+          ctx.drawImage(img, 0, 0, width, height);
+          // Auto compress to exactly 70% quality (0.7)
+          const compressedBase64 = canvas.toDataURL("image/jpeg", 0.7);
+          
+          if (type === "santri") {
+            setPhotoSantri(compressedBase64);
+          } else {
+            setPhotoEscort(compressedBase64);
+          }
+        } else {
+          // Fallback to original read if canvas context fails
+          const base64String = event.target?.result as string;
+          if (type === "santri") {
+            setPhotoSantri(base64String);
+          } else {
+            setPhotoEscort(base64String);
+          }
+        }
+      };
+      img.src = event.target?.result as string;
     };
     reader.readAsDataURL(file);
   };
