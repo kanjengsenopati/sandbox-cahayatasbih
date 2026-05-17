@@ -372,7 +372,7 @@ function PerizinanPage() {
               </div>
 
               {/* Individual / Collective Switcher */}
-              {allStudents.length > 1 && (
+              {allStudents.length >= 1 && (
                 <div className="flex bg-slate-50 border border-slate-100 rounded-2xl p-1 gap-1">
                   <button
                     type="button"
