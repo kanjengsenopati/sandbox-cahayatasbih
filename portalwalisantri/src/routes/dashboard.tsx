@@ -225,15 +225,20 @@ function Dashboard() {
               <div className="min-w-0" style={{ width: "70%" }}>
                 <p className="text-white/60 text-[10px] uppercase font-bold tracking-wider">Asatidz</p>
                 {((active as any).asrama_host || (active as any).asramaHost) ? (
-                  <a
-                    href={`https://wa.me/${((active as any).asrama_host || (active as any).asramaHost).phone}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center justify-start gap-1 mt-0.5 text-emerald-300 font-bold hover:text-emerald-200 transition-all text-[12px] max-w-full"
-                  >
-                    <span className="truncate max-w-[170px]">{((active as any).asrama_host || (active as any).asramaHost).name}</span>
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse shrink-0" />
-                  </a>
+                  <div className="flex flex-col">
+                    <a
+                      href={`https://wa.me/${((active as any).asrama_host || (active as any).asramaHost).phone}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center justify-start gap-1 mt-0.5 text-emerald-300 font-bold hover:text-emerald-200 transition-all text-[12px] max-w-full"
+                    >
+                      <span className="truncate max-w-[170px]">{((active as any).asrama_host || (active as any).asramaHost).name}</span>
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse shrink-0" />
+                    </a>
+                    <span className="text-[9px] text-white/50 italic mt-0.5 leading-none">
+                      Klik nama untuk chat WA langsung
+                    </span>
+                  </div>
                 ) : (
                   <p className="font-bold text-white/50 text-[12px] mt-0.5">-</p>
                 )}
