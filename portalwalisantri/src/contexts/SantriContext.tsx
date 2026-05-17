@@ -75,7 +75,7 @@ export function SantriProvider({ children }: { children: ReactNode }) {
   const switchStudent = async (id: string) => {
     try {
       // Use standard axios for the web route that handles session switching
-      await axios.post(`/wali/switch-student/${id}`, {}, {
+      await axios.post(`/ct-mobile/switch-student/${id}`, {}, {
         withCredentials: true,
         headers: {
           'X-Requested-With': 'XMLHttpRequest',

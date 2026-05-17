@@ -53,10 +53,10 @@ function Profil() {
   const handleLogout = async () => {
     try {
       await postLogout();
-      window.location.href = '/wali/login';
+      window.location.href = '/ct-mobile/login';
     } catch (error) {
       console.error("Logout error:", error);
-      window.location.href = '/wali/login';
+      window.location.href = '/ct-mobile/login';
     }
   };
 
