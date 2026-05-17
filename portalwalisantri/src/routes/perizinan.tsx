@@ -67,6 +67,108 @@ function PerizinanPage() {
     reader.readAsDataURL(file);
   };
 
+
+  // DateTime Picker Modal States
+  const [isPickerOpen, setIsPickerOpen] = useState(false);
+  const [pickerCallback, setPickerCallback] = useState<((val: string) => void) | null>(null);
+  
+  // DateTime Picker Internal Temp States
+  const [pickerDate, setPickerDate] = useState<Date>(new Date());
+  const [pickerHour, setPickerHour] = useState(12);
+  const [pickerMinute, setPickerMinute] = useState(0);
+  const [pickerAmPm, setPickerAmPm] = useState<"AM" | "PM">("PM");
+  const [pickerTab, setPickerTab] = useState<"date" | "time">("date");
+  const [pickerMonthView, setPickerMonthView] = useState<Date>(new Date());
+  const [pickerClockMode, setPickerClockMode] = useState<"hours" | "minutes">("hours");
+
+  const openDateTimePicker = (initialValue: string, callback: (val: string) => void) => {
+    const initDate = initialValue ? new Date(initialValue) : new Date();
+    setPickerDate(initDate);
+    let hr = initDate.getHours();
+    const ampm = hr >= 12 ? "PM" : "AM";
+    hr = hr % 12;
+    if (hr === 0) hr = 12;
+    setPickerHour(hr);
+    setPickerMinute(initDate.getMinutes());
+    setPickerAmPm(ampm);
+    setPickerMonthView(new Date(initDate.getFullYear(), initDate.getMonth(), 1));
+    setPickerTab("date");
+    setPickerClockMode("hours");
+    setPickerCallback(() => callback);
+    setIsPickerOpen(true);
+  };
+
+  const saveDateTimePicker = () => {
+    if (!pickerCallback) return;
+    
+    let hr24 = pickerHour % 12;
+    if (pickerAmPm === "PM") {
+      hr24 += 12;
+    }
+    
+    const finalDate = new Date(
+      pickerDate.getFullYear(),
+      pickerDate.getMonth(),
+      pickerDate.getDate(),
+      hr24,
+      pickerMinute
+    );
+    
+    const pad = (n: number) => n.toString().padStart(2, '0');
+    const formatted = `${finalDate.getFullYear()}-${pad(finalDate.getMonth() + 1)}-${pad(finalDate.getDate())}T${pad(hr24)}:${pad(pickerMinute)}`;
+    
+    pickerCallback(formatted);
+    setIsPickerOpen(false);
+  };
+
+  const formatDateTimeIndo = (val: string) => {
+    if (!val) return "Pilih Tanggal & Waktu...";
+    try {
+      const d = new Date(val);
+      if (isNaN(d.getTime())) return "Pilih Tanggal & Waktu...";
+      return d.toLocaleDateString("id-ID", {
+        day: "numeric",
+        month: "short",
+        year: "numeric",
+      }) + " - " + d.toLocaleTimeString("id-ID", {
+        hour: "2-digit",
+        minute: "2-digit",
+      }) + " WIB";
+    } catch {
+      return "Pilih Tanggal & Waktu...";
+    }
+  };
+
+  const getDaysInMonth = (monthDate: Date) => {
+    const year = monthDate.getFullYear();
+    const month = monthDate.getMonth();
+    const firstDay = new Date(year, month, 1).getDay();
+    const daysCount = new Date(year, month + 1, 0).getDate();
+    
+    const days: (Date | null)[] = [];
+    
+    for (let i = 0; i < firstDay; i++) {
+      days.push(null);
+    }
+    
+    for (let d = 1; d <= daysCount; d++) {
+      days.push(new Date(year, month, d));
+    }
+    
+    return days;
+  };
+
+  const getCircularStyle = (index: number, total: number, radiusPercent: number) => {
+    const angle = ((index * 360) / total - 90) * (Math.PI / 180);
+    const x = Math.cos(angle) * radiusPercent;
+    const y = Math.sin(angle) * radiusPercent;
+    return {
+      left: `calc(50% + ${x}%)`,
+      top: `calc(50% + ${y}%)`,
+      transform: 'translate(-50%, -50%)',
+    };
+  };
+
   // Collective Mode states
   const [requestMode, setRequestMode] = useState<"individual" | "collective">("individual");
   const [selectedStudentIds, setSelectedStudentIds] = useState<string[]>([]);
@@ -485,26 +587,32 @@ function PerizinanPage() {
                         <option value="pulang_sementara">Pulang Sementara (Liburan/Sakit)</option>
                         <option value="sakit">Sakit Parah (Perawatan/Rujukan)</option>
                       </select>
-                    </div>
-
-                    <div>
+                    </div>                     <div>
                       <label className="text-[11px] font-extrabold text-slate-400/90 mb-1.5 uppercase tracking-wide block">Rencana Tanggal Keluar</label>
-                      <input
-                        type="datetime-local"
-                        value={plannedExit}
-                        onChange={(e) => setPlannedExit(e.target.value)}
-                        className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-4 py-3.5 outline-none text-slate-800 text-[14px] font-semibold focus:ring-2 focus:ring-[#9b1de8]/20 focus:bg-white transition"
-                      />
+                      <button
+                        type="button"
+                        onClick={() => openDateTimePicker(plannedExit, (val) => setPlannedExit(val))}
+                        className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-4 py-3.5 outline-none text-slate-800 text-[14px] font-semibold flex items-center justify-between hover:bg-slate-100/50 transition text-left"
+                      >
+                        <span className={plannedExit ? "text-slate-800" : "text-slate-400"}>
+                          {formatDateTimeIndo(plannedExit)}
+                        </span>
+                        <Calendar className="text-[#9b1de8]" size={18} />
+                      </button>
                     </div>
 
                     <div>
                       <label className="text-[11px] font-extrabold text-slate-400/90 mb-1.5 uppercase tracking-wide block">Rencana Tanggal Kembali</label>
-                      <input
-                        type="datetime-local"
-                        value={plannedReturn}
-                        onChange={(e) => setPlannedReturn(e.target.value)}
-                        className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-4 py-3.5 outline-none text-slate-800 text-[14px] font-semibold focus:ring-2 focus:ring-[#9b1de8]/20 focus:bg-white transition"
-                      />
+                      <button
+                        type="button"
+                        onClick={() => openDateTimePicker(plannedReturn, (val) => setPlannedReturn(val))}
+                        className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-4 py-3.5 outline-none text-slate-800 text-[14px] font-semibold flex items-center justify-between hover:bg-slate-100/50 transition text-left"
+                      >
+                        <span className={plannedReturn ? "text-slate-800" : "text-slate-400"}>
+                          {formatDateTimeIndo(plannedReturn)}
+                        </span>
+                        <Calendar className="text-[#9b1de8]" size={18} />
+                      </button>
                     </div>
                   </div>
                 ) : (
@@ -589,22 +697,30 @@ function PerizinanPage() {
                             <div className="grid grid-cols-1 gap-2.5">
                               <div>
                                 <label className="text-[10px] font-extrabold text-slate-400 mb-1 uppercase tracking-wide block">Rencana Keluar</label>
-                                <input
-                                  type="datetime-local"
-                                  value={config.plannedExit}
-                                  onChange={(e) => updateStudentConfig(sId, { plannedExit: e.target.value })}
-                                  className="w-full bg-white border border-slate-150 rounded-xl px-3 py-2 outline-none text-slate-800 text-[13px] font-semibold focus:ring-1 focus:ring-[#9b1de8]/20 transition"
-                                />
+                                <button
+                                  type="button"
+                                  onClick={() => openDateTimePicker(config.plannedExit, (val) => updateStudentConfig(sId, { plannedExit: val }))}
+                                  className="w-full bg-white border border-slate-150 rounded-xl px-3 py-2 outline-none text-slate-800 text-[13px] font-semibold flex items-center justify-between hover:bg-slate-50 transition text-left"
+                                >
+                                  <span className={config.plannedExit ? "text-slate-800" : "text-slate-400"}>
+                                    {formatDateTimeIndo(config.plannedExit)}
+                                  </span>
+                                  <Calendar className="text-[#9b1de8]" size={15} />
+                                </button>
                               </div>
 
                               <div>
                                 <label className="text-[10px] font-extrabold text-slate-400 mb-1 uppercase tracking-wide block">Rencana Kembali</label>
-                                <input
-                                  type="datetime-local"
-                                  value={config.plannedReturn}
-                                  onChange={(e) => updateStudentConfig(sId, { plannedReturn: e.target.value })}
-                                  className="w-full bg-white border border-slate-150 rounded-xl px-3 py-2 outline-none text-slate-800 text-[13px] font-semibold focus:ring-1 focus:ring-[#9b1de8]/20 transition"
-                                />
+                                <button
+                                  type="button"
+                                  onClick={() => openDateTimePicker(config.plannedReturn, (val) => updateStudentConfig(sId, { plannedReturn: val }))}
+                                  className="w-full bg-white border border-slate-150 rounded-xl px-3 py-2 outline-none text-slate-800 text-[13px] font-semibold flex items-center justify-between hover:bg-slate-50 transition text-left"
+                                >
+                                  <span className={config.plannedReturn ? "text-slate-800" : "text-slate-400"}>
+                                    {formatDateTimeIndo(config.plannedReturn)}
+                                  </span>
+                                  <Calendar className="text-[#9b1de8]" size={15} />
+                                </button>
                               </div>
                             </div>
                           </div>
@@ -727,6 +843,288 @@ function PerizinanPage() {
                   </p>
                 </div>
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* Premium DateTime Picker Modal Drawer */}
+        {isPickerOpen && (
+          <div className="fixed inset-0 bg-black/60 z-50 flex items-end justify-center p-4 backdrop-blur-sm animate-fade-in">
+            <div className="bg-card w-full max-w-md rounded-t-[2.5rem] p-6 shadow-2xl space-y-5 animate-slide-up pb-10">
+              
+              {/* Header */}
+              <div className="flex justify-between items-center border-b border-slate-100 pb-3">
+                <div>
+                  <p className="text-[11px] text-slate-400 font-extrabold uppercase tracking-wide">Pengaturan Jadwal</p>
+                  <p className="text-sm font-bold text-slate-800">Setel Tanggal & Waktu</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsPickerOpen(false)}
+                  className="w-8 h-8 rounded-full bg-secondary border border-border flex items-center justify-center text-slate-500 font-bold hover:bg-slate-100 transition"
+                >
+                  ×
+                </button>
+              </div>
+
+              {/* Selection Displays & Tabs Switcher */}
+              <div className="grid grid-cols-2 bg-slate-50 border border-slate-100 rounded-2xl p-1 gap-1">
+                <button
+                  type="button"
+                  onClick={() => setPickerTab("date")}
+                  className={`py-3 px-2 rounded-xl flex flex-col items-center justify-center transition ${
+                    pickerTab === "date"
+                      ? "bg-white text-slate-800 shadow-sm border border-slate-100"
+                      : "text-slate-500 hover:text-slate-800"
+                  }`}
+                >
+                  <span className="text-[10px] font-extrabold uppercase tracking-wide text-slate-400">Tanggal</span>
+                  <span className="text-xs font-bold mt-0.5 truncate max-w-full">
+                    {pickerDate.toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" })}
+                  </span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPickerTab("time")}
+                  className={`py-3 px-2 rounded-xl flex flex-col items-center justify-center transition ${
+                    pickerTab === "time"
+                      ? "bg-white text-slate-800 shadow-sm border border-slate-100"
+                      : "text-slate-500 hover:text-slate-800"
+                  }`}
+                >
+                  <span className="text-[10px] font-extrabold uppercase tracking-wide text-slate-400">Waktu</span>
+                  <span className="text-xs font-bold mt-0.5">
+                    {pickerHour.toString().padStart(2, '0')}:{pickerMinute.toString().padStart(2, '0')} {pickerAmPm}
+                  </span>
+                </button>
+              </div>
+
+              {/* Content Panels */}
+              <div className="min-h-[280px]">
+                {pickerTab === "date" ? (
+                  /* --- CALENDAR PANEL --- */
+                  <div className="space-y-3 animate-in fade-in duration-200">
+                    <div className="flex justify-between items-center px-1">
+                      <button
+                        type="button"
+                        onClick={() => setPickerMonthView(new Date(pickerMonthView.getFullYear(), pickerMonthView.getMonth() - 1, 1))}
+                        className="p-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 font-bold active:scale-95 transition"
+                      >
+                        &larr;
+                      </button>
+                      <span className="text-xs font-extrabold uppercase tracking-wider text-slate-700">
+                        {pickerMonthView.toLocaleDateString("id-ID", { month: "long", year: "numeric" })}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setPickerMonthView(new Date(pickerMonthView.getFullYear(), pickerMonthView.getMonth() + 1, 1))}
+                        className="p-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-600 font-bold active:scale-95 transition"
+                      >
+                        &rarr;
+                      </button>
+                    </div>
+
+                    <div className="grid grid-cols-7 gap-1 text-center">
+                      {["Min", "Sen", "Sel", "Rab", "Kam", "Jum", "Sab"].map((dayName) => (
+                        <span key={dayName} className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider py-1">
+                          {dayName}
+                        </span>
+                      ))}
+                      
+                      {getDaysInMonth(pickerMonthView).map((day, idx) => {
+                        if (!day) return <div key={`empty-${idx}`} />;
+                        const isSelected = day.toDateString() === pickerDate.toDateString();
+                        const isToday = day.toDateString() === new Date().toDateString();
+                        return (
+                          <button
+                            key={day.toISOString()}
+                            type="button"
+                            onClick={() => setPickerDate(day)}
+                            className={`aspect-square w-full rounded-xl flex items-center justify-center text-xs transition active:scale-95 ${
+                              isSelected
+                                ? "bg-gradient-to-br from-[#9b1de8] to-[#610a9c] text-white shadow-md font-bold scale-105"
+                                : isToday
+                                  ? "border border-[#9b1de8] text-[#9b1de8] font-bold"
+                                  : "text-slate-700 hover:bg-slate-50 font-semibold"
+                            }`}
+                          >
+                            {day.getDate()}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ) : (
+                  /* --- ANALOG CLOCK PANEL --- */
+                  <div className="space-y-4 animate-in fade-in duration-200">
+                    
+                    {/* Dial Selector (Hour vs Minute) & AM/PM Selector */}
+                    <div className="flex justify-between items-center px-4">
+                      <div className="flex bg-slate-100/80 border border-slate-200 rounded-xl p-0.5 text-xs font-bold">
+                        <button
+                          type="button"
+                          onClick={() => setPickerClockMode("hours")}
+                          className={`px-3 py-1 rounded-lg transition ${
+                            pickerClockMode === "hours" ? "bg-white text-slate-800 shadow-sm" : "text-slate-500"
+                          }`}
+                        >
+                          Jam
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setPickerClockMode("minutes")}
+                          className={`px-3 py-1 rounded-lg transition ${
+                            pickerClockMode === "minutes" ? "bg-white text-slate-800 shadow-sm" : "text-slate-500"
+                          }`}
+                        >
+                          Menit
+                        </button>
+                      </div>
+
+                      <div className="flex bg-slate-100/80 border border-slate-200 rounded-xl p-0.5 text-xs font-bold">
+                        <button
+                          type="button"
+                          onClick={() => setPickerAmPm("AM")}
+                          className={`px-3 py-1 rounded-lg transition ${
+                            pickerAmPm === "AM" ? "bg-[#9b1de8] text-white shadow-sm animate-none" : "text-slate-500"
+                          }`}
+                        >
+                          AM
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setPickerAmPm("PM")}
+                          className={`px-3 py-1 rounded-lg transition ${
+                            pickerAmPm === "PM" ? "bg-[#9b1de8] text-white shadow-sm animate-none" : "text-slate-500"
+                          }`}
+                        >
+                          PM
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Circular Clock Face */}
+                    <div className="relative w-52 h-52 mx-auto rounded-full bg-slate-50 border border-slate-100 flex items-center justify-center shadow-[inset_0_4px_10px_rgba(0,0,0,0.03)]">
+                      
+                      {/* Hands */}
+                      {/* Hour hand */}
+                      <div
+                        className="absolute w-1 bg-slate-700 rounded-full"
+                        style={{
+                          height: "30%",
+                          bottom: "50%",
+                          left: "calc(50% - 2px)",
+                          transformOrigin: "bottom center",
+                          transform: `rotate(${(pickerHour % 12) * 30 + pickerMinute * 0.5}deg)`,
+                          transition: "transform 0.4s cubic-bezier(0.4, 0, 0.2, 1)",
+                        }}
+                      />
+                      {/* Minute hand */}
+                      <div
+                        className="absolute w-0.5 bg-[#9b1de8] rounded-full"
+                        style={{
+                          height: "42%",
+                          bottom: "50%",
+                          left: "calc(50% - 1px)",
+                          transformOrigin: "bottom center",
+                          transform: `rotate(${pickerMinute * 6}deg)`,
+                          transition: "transform 0.4s cubic-bezier(0.4, 0, 0.2, 1)",
+                        }}
+                      />
+                      {/* Center cap */}
+                      <div className="absolute w-3 h-3 rounded-full bg-[#9b1de8] border-2 border-white shadow-sm" />
+
+                      {/* Render Clock Numbers */}
+                      {pickerClockMode === "hours" ? (
+                        [12, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11].map((hr) => {
+                          const isSelected = pickerHour === hr;
+                          const style = getCircularStyle(hr, 12, 37);
+                          return (
+                            <button
+                              key={`hr-${hr}`}
+                              type="button"
+                              onClick={() => {
+                                setPickerHour(hr);
+                                setPickerClockMode("minutes");
+                              }}
+                              style={style}
+                              className={`absolute w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition-all ${
+                                isSelected
+                                  ? "bg-[#9b1de8] text-white shadow-md font-extrabold scale-110"
+                                  : "text-slate-500 hover:bg-[#9b1de8]/10 hover:text-[#9b1de8]"
+                              }`}
+                            >
+                              {hr}
+                            </button>
+                          );
+                        })
+                      ) : (
+                        [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55].map((min, idx) => {
+                          const isSelected = pickerMinute === min;
+                          const style = getCircularStyle(idx === 0 ? 12 : idx, 12, 37);
+                          return (
+                            <button
+                              key={`min-${min}`}
+                              type="button"
+                              onClick={() => setPickerMinute(min)}
+                              style={style}
+                              className={`absolute w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold transition-all ${
+                                isSelected
+                                  ? "bg-[#9b1de8] text-white shadow-md font-extrabold scale-110"
+                                  : "text-slate-500 hover:bg-[#9b1de8]/10 hover:text-[#9b1de8]"
+                              }`}
+                            >
+                              {min.toString().padStart(2, '0')}
+                            </button>
+                          );
+                        })
+                      )}
+                    </div>
+
+                    {/* Exact Minute Precision Tuner */}
+                    <div className="flex items-center justify-center gap-3 pt-3 border-t border-slate-100 mt-2">
+                      <button
+                        type="button"
+                        onClick={() => setPickerMinute((prev) => (prev > 0 ? prev - 1 : 59))}
+                        className="w-8 h-8 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-center font-bold text-slate-600 hover:bg-slate-100 active:scale-95 transition"
+                      >
+                        -
+                      </button>
+                      <div className="text-center min-w-[70px]">
+                        <span className="text-[9px] uppercase font-bold text-slate-400 block tracking-wider">Menit</span>
+                        <span className="text-sm font-extrabold text-slate-700 font-mono">{pickerMinute.toString().padStart(2, '0')}</span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setPickerMinute((prev) => (prev < 59 ? prev + 1 : 0))}
+                        className="w-8 h-8 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-center font-bold text-slate-600 hover:bg-slate-100 active:scale-95 transition"
+                      >
+                        +
+                      </button>
+                    </div>
+
+                  </div>
+                )}
+              </div>
+
+              {/* Footer Actions */}
+              <div className="flex gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setIsPickerOpen(false)}
+                  className="flex-1 py-3.5 rounded-2xl border border-slate-200 bg-white text-slate-600 text-xs font-bold hover:bg-slate-50 active:scale-[0.98] transition text-center shadow-sm"
+                >
+                  Batal
+                </button>
+                <button
+                  type="button"
+                  onClick={saveDateTimePicker}
+                  className="flex-1 py-3.5 rounded-2xl bg-gradient-to-r from-[#9b1de8] to-[#610a9c] text-white text-xs font-bold hover:opacity-95 active:scale-[0.98] transition text-center shadow-md shadow-[#9b1de8]/20"
+                >
+                  Simpan Jadwal
+                </button>
+              </div>
+
             </div>
           </div>
         )}
