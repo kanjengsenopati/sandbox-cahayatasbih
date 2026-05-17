@@ -57,7 +57,7 @@
     }
 @endphp
 
-<!-- DEPLOYMENT VERSION v11: {{ date('Y-m-d H:i:s') }} | manifest={{ $manifestPath ? 'YES' : 'NO' }} | bypass={{ $useBypass ? 'YES' : 'NO' }} -->
+<!-- DEPLOYMENT VERSION v12: {{ date('Y-m-d H:i:s') }} | manifest={{ $manifestPath ? 'YES' : 'NO' }} | bypass={{ $useBypass ? 'YES' : 'NO' }} -->
 
 @if($entry)
     @php
