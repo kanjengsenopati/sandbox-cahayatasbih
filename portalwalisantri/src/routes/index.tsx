@@ -43,7 +43,7 @@ function LoginPage() {
   return (
     <div className="min-h-screen w-full flex justify-center bg-[#9b1de8] relative overflow-hidden">
       {/* Background Diamond Pattern matching Gambar 2 */}
-      <div 
+      <div
         className="absolute inset-0 opacity-[0.05]"
         style={{
           backgroundImage: `
@@ -59,7 +59,7 @@ function LoginPage() {
       <div className="absolute bottom-1/2 left-[-20%] w-[60vh] h-[60vh] bg-[#610a9c]/50 blur-[100px] rounded-full mix-blend-multiply" />
 
       <div className="relative w-full max-w-md min-h-screen flex flex-col z-10">
-        
+
         {/* Top Logo Area (Centered) */}
         <div className="flex-none pt-[12vh] pb-[8vh] flex justify-center items-center">
           <div className="w-32 h-32 rounded-full bg-white p-1 shadow-2xl relative flex justify-center items-center">
@@ -85,7 +85,7 @@ function LoginPage() {
                 {error}
               </div>
             )}
-            
+
             <div className="space-y-5">
               <div>
                 <label className="text-xs font-bold text-slate-500 mb-2 block">
