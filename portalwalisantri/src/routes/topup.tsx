@@ -283,28 +283,30 @@ function TopupPage() {
                 <p className="text-xl font-bold tracking-tight">{fmt(active?.saldo || 0)}</p>
               </div>
             </div>
-            <div className="flex items-center gap-2 relative z-20">
+            <div className="flex flex-col gap-1.5 items-end relative z-20 shrink-0">
               <button
                 onClick={() => {
                   setDailyLimit(active?.daily_limit || 0);
                   setLimitEnabled((active?.daily_limit || 0) > 0);
                   setShowLimitModal(true);
                 }}
-                className="w-10 h-10 rounded-xl bg-white/15 hover:bg-white/25 border border-white/20 backdrop-blur-md flex items-center justify-center text-white active:scale-95 transition"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/15 hover:bg-white/25 border border-white/20 backdrop-blur-md text-[10px] font-extrabold text-white active:scale-95 transition"
                 title="Atur Limit"
               >
-                <Sliders size={18} />
+                <Sliders size={12} strokeWidth={2.5} />
+                <span>Limit Jajan</span>
               </button>
               <button
                 onClick={() => setShowBlockModal(true)}
-                className={`w-10 h-10 rounded-xl border backdrop-blur-md flex items-center justify-center active:scale-95 transition ${
+                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border backdrop-blur-md text-[10px] font-extrabold active:scale-95 transition ${
                   isBlocked
                     ? "bg-red-500/25 border-red-500/40 text-red-200"
                     : "bg-white/15 hover:bg-white/25 border-white/20 text-white"
                 }`}
                 title="Blokir Saldo"
               >
-                {isBlocked ? <ShieldAlert size={18} /> : <ShieldOff size={18} />}
+                {isBlocked ? <ShieldAlert size={12} strokeWidth={2.5} /> : <ShieldOff size={12} strokeWidth={2.5} />}
+                <span>{isBlocked ? "Buka Blokir" : "Blokir Kartu"}</span>
               </button>
             </div>
           </div>
