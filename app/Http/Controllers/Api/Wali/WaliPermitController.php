@@ -7,6 +7,7 @@ use App\Models\Student;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
 use Carbon\Carbon;
 
 class WaliPermitController extends Controller
@@ -42,6 +43,7 @@ class WaliPermitController extends Controller
             'reason' => 'required|string|min:5',
             'planned_exit_date' => 'required|date|after_or_equal:today',
             'planned_return_date' => 'required|date|after:planned_exit_date',
+            'attachment_photo' => 'nullable|string',
         ]);
 
         $userId = Auth::guard('wali')->id();
@@ -68,6 +70,12 @@ class WaliPermitController extends Controller
             ], 422);
         }
 
+        // Process base64 attachment photo if uploaded by Wali
+        $attachmentPath = null;
+        if ($request->filled('attachment_photo')) {
+            $attachmentPath = $this->saveBase64Image($request->input('attachment_photo'), 'attachment_' . $studentId);
+        }
+
         // Create permit
         $permit = StudentPermit::create([
             'student_id' => $studentId,
@@ -76,6 +84,7 @@ class WaliPermitController extends Controller
             'reason' => $request->input('reason'),
             'planned_exit_date' => Carbon::parse($request->input('planned_exit_date')),
             'planned_return_date' => Carbon::parse($request->input('planned_return_date')),
+            'attachment_photo' => $attachmentPath,
             'status' => 'pending',
         ]);
 
@@ -84,6 +93,39 @@ class WaliPermitController extends Controller
             'message' => 'Perizinan berhasil diajukan, menunggu persetujuan Ustadz.',
             'permit' => $permit
         ]);
+    }
+
+    /**
+     * Helper to save base64 photo stream.
+     */
+    private function saveBase64Image($base64String, $filename)
+    {
+        try {
+            if (preg_match('/^data:image\/(\w+);base64,/', $base64String, $type)) {
+                $base64String = substr($base64String, strpos($base64String, ',') + 1);
+                $type = strtolower($type[1]); // png, jpg, jpeg
+                
+                if (!in_array($type, ['jpg', 'jpeg', 'png', 'webp'])) {
+                    throw new \Exception('invalid image type');
+                }
+                
+                $data = base64_decode($base64String);
+                
+                if ($data === false) {
+                    throw new \Exception('base64_decode failed');
+                }
+            } else {
+                throw new \Exception('did not match data URI with image data');
+            }
+
+            $fileNameToSave = 'images/permits/' . $filename . '_' . time() . '.' . $type;
+            
+            Storage::disk('public')->put($fileNameToSave, $data);
+            
+            return 'storage/' . $fileNameToSave;
+        } catch (\Exception $e) {
+            return null;
+        }
     }
 
     /**

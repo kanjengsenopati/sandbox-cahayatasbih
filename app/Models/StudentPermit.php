@@ -20,6 +20,7 @@ class StudentPermit extends Model
         'reason',
         'planned_exit_date',
         'planned_return_date',
+        'attachment_photo',
         'actual_exit_date',
         'exit_photo_santri',
         'exit_photo_escort',

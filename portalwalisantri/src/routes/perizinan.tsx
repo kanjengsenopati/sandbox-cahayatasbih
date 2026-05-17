@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { ArrowLeft, Loader2, Calendar, ClipboardList, CheckCircle2, XCircle, Clock, ExternalLink, QrCode } from "lucide-react";
+import { ArrowLeft, Loader2, Calendar, ClipboardList, CheckCircle2, XCircle, Clock, ExternalLink, QrCode, Camera, Upload } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { fetchPermits, postPermitRequest } from "@/lib/api";
 import { useSantri } from "@/contexts/SantriContext";
@@ -24,6 +24,48 @@ function PerizinanPage() {
   const [plannedReturn, setPlannedReturn] = useState("");
   const [formError, setFormError] = useState("");
   const [formSuccess, setFormSuccess] = useState("");
+  const [attachmentPhoto, setAttachmentPhoto] = useState<string | null>(null);
+
+  const handleAttachmentChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        let width = img.width;
+        let height = img.height;
+
+        // Downscale to 1200px max
+        const maxDim = 1200;
+        if (width > maxDim || height > maxDim) {
+          if (width > height) {
+            height = Math.round((height * maxDim) / width);
+            width = maxDim;
+          } else {
+            width = Math.round((width * maxDim) / height);
+            height = maxDim;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+
+        const ctx = canvas.getContext("2d");
+        if (ctx) {
+          ctx.drawImage(img, 0, 0, width, height);
+          const compressed = canvas.toDataURL("image/jpeg", 0.7); // 70% quality
+          setAttachmentPhoto(compressed);
+        } else {
+          setAttachmentPhoto(event.target?.result as string);
+        }
+      };
+      img.src = event.target?.result as string;
+    };
+    reader.readAsDataURL(file);
+  };
 
   // Collective Mode states
   const [requestMode, setRequestMode] = useState<"individual" | "collective">("individual");
@@ -99,6 +141,7 @@ function PerizinanPage() {
       setReason("");
       setPlannedExit("");
       setPlannedReturn("");
+      setAttachmentPhoto(null);
       queryClient.invalidateQueries({ queryKey: ["permits"] });
       setTimeout(() => {
         setFormSuccess("");
@@ -132,6 +175,7 @@ function PerizinanPage() {
         reason,
         planned_exit_date: plannedExit,
         planned_return_date: plannedReturn,
+        attachment_photo: attachmentPhoto || undefined,
       });
     } else {
       // Collective Mode
@@ -168,6 +212,7 @@ function PerizinanPage() {
             reason,
             planned_exit_date: config.plannedExit,
             planned_return_date: config.plannedReturn,
+            attachment_photo: attachmentPhoto || undefined,
           });
           results.push(studentObj?.name || "Santri");
         } catch (err: any) {
@@ -187,6 +232,7 @@ function PerizinanPage() {
         setFormSuccess("Semua pengajuan kolektif berhasil diajukan!");
         queryClient.invalidateQueries({ queryKey: ["permits"] });
         setReason("");
+        setAttachmentPhoto(null);
         setTimeout(() => {
           setFormSuccess("");
           setTab("list");
@@ -342,6 +388,20 @@ function PerizinanPage() {
                       <div className="mt-3 bg-slate-50 rounded-2xl p-3 border border-slate-100">
                         <p className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Alasan Perizinan</p>
                         <p className="text-xs text-slate-600 mt-1">{permit.reason}</p>
+                      </div>
+                    )}
+
+                    {permit.attachment_photo && (
+                      <div className="mt-3 bg-slate-50 rounded-2xl p-3 border border-slate-100 flex flex-col gap-1 animate-in fade-in">
+                        <p className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Dokumen Pendukung</p>
+                        <a
+                          href={`/${permit.attachment_photo}`}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-xs text-[#9b1de8] font-bold flex items-center gap-1.5 hover:underline mt-1"
+                        >
+                          <ExternalLink size={12} /> Lihat Lampiran Dokumen
+                        </a>
                       </div>
                     )}
 
@@ -563,6 +623,60 @@ function PerizinanPage() {
                     placeholder="Tulis alasan izin keluar ananda secara jelas dan transparan..."
                     className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-4 py-3.5 outline-none text-slate-800 text-[14px] font-medium focus:ring-2 focus:ring-[#9b1de8]/20 focus:bg-white transition resize-none"
                   />
+                </div>
+
+                {/* Upload Dokumen Pendukung (Opsional) */}
+                <div className="space-y-2">
+                  <label className="text-[11px] font-extrabold text-slate-400/90 uppercase tracking-wide block">
+                    Dokumen Pendukung (Opsional)
+                  </label>
+                  
+                  {attachmentPhoto ? (
+                    <div className="relative rounded-2xl border border-slate-100 overflow-hidden bg-slate-50 flex items-center justify-center p-3 animate-in fade-in duration-300">
+                      <img
+                        src={attachmentPhoto}
+                        alt="Dokumen Pendukung"
+                        className="max-h-40 rounded-xl object-contain shadow-sm border border-slate-150"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setAttachmentPhoto(null)}
+                        className="absolute top-2 right-2 bg-red-600/90 text-white w-6 h-6 rounded-full flex items-center justify-center font-bold text-xs hover:bg-red-700 transition"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-2 gap-3">
+                      {/* Capture with Camera Button */}
+                      <label className="flex flex-col items-center justify-center p-4 border border-dashed border-slate-200 bg-slate-50 rounded-2xl hover:bg-slate-100/70 transition cursor-pointer text-center group active:scale-95">
+                        <Camera className="text-slate-400 group-hover:text-[#9b1de8] transition mb-1" size={20} />
+                        <span className="text-[10px] font-extrabold text-slate-500 uppercase tracking-wide">Ambil Foto</span>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          capture="environment"
+                          onChange={handleAttachmentChange}
+                          className="hidden"
+                        />
+                      </label>
+
+                      {/* Upload File Button */}
+                      <label className="flex flex-col items-center justify-center p-4 border border-dashed border-slate-200 bg-slate-50 rounded-2xl hover:bg-slate-100/70 transition cursor-pointer text-center group active:scale-95">
+                        <Upload className="text-slate-400 group-hover:text-[#9b1de8] transition mb-1" size={20} />
+                        <span className="text-[10px] font-extrabold text-slate-500 uppercase tracking-wide">Pilih File</span>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={handleAttachmentChange}
+                          className="hidden"
+                        />
+                      </label>
+                    </div>
+                  )}
+                  <p className="text-[10px] text-slate-400 italic">
+                    *Foto surat keterangan dokter, undangan keluarga, dll. (Auto-kompresi 70% kualitas JPEG)
+                  </p>
                 </div>
 
                 <button
