@@ -468,6 +468,18 @@
                             </a>
                         </div>
                         @endcan
+                        
+                        @can('Manage Perizinan')
+                        <div class="menu-item">
+                            <a class="menu-link {{ request()->routeIs('asrama.*') ? ' active' : '' }}"
+                                href="{{ route('asrama.index') }}">
+                                <span class="menu-bullet">
+                                    <span class="bullet bullet-dot"></span>
+                                </span>
+                                <span class="menu-title">Data Asrama</span>
+                            </a>
+                        </div>
+                        @endcan
 
                         @can('Manage Nilai Santri')
                         <div class="menu-item">

@@ -25,6 +25,7 @@ class Student extends Model
         'nisn',
         'nis',
         'user_id',
+        'asrama_id',
         'asrama_host_id',
         'asrama_name',
         'school_id',
@@ -54,6 +55,11 @@ class Student extends Model
     public function user()
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function asrama()
+    {
+        return $this->belongsTo(Asrama::class, 'asrama_id');
     }
 
     public function asramaHost()
@@ -148,6 +154,21 @@ class Student extends Model
         static::creating(function ($model) {
             if (empty($model->id)) {
                 $model->id = (string) Str::uuid();
+            }
+        });
+
+        // Automatically synchronize flat columns for PWA pages when asrama_id changes
+        static::saving(function ($student) {
+            if ($student->asrama_id) {
+                $asrama = Asrama::find($student->asrama_id);
+                if ($asrama) {
+                    $student->asrama_name = $asrama->name;
+                    $student->asrama_host_id = $asrama->host_admin_id;
+                }
+            } else {
+                // If asrama_id is unset, clear flat columns too
+                $student->asrama_name = null;
+                $student->asrama_host_id = null;
             }
         });
     }

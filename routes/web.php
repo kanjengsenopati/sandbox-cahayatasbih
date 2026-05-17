@@ -239,6 +239,9 @@ Route::group(['middleware' => ['auth']], function () {
     
     // student perizinan backoffice
     Route::resource('student-permit', \App\Http\Controllers\Admin\StudentPermitController::class);
+
+    // asrama backoffice
+    Route::resource('asrama', \App\Http\Controllers\Admin\AsramaController::class);
     // home
     Route::resource('contact', ContactController::class, ['only' => ['index', 'store']])->names('contact');
     Route::resource('application-setting', ApplicationSettingController::class, ['only' => ['index', 'store']])
