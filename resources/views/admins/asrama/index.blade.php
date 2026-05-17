@@ -94,8 +94,51 @@
 @endsection
 @push('js')
 <script>
+    function format(data) {
+        if (!data.students || data.students.length === 0) {
+            return '<div class="p-4 text-center text-muted">Tidak ada santri binaan di asrama ini.</div>';
+        }
+
+        var html = '<div class="p-5 bg-light rounded-3 shadow-xs border border-gray-200 my-2 ms-4">';
+        html += '<h5 class="fw-bolder mb-3 text-primary"><i class="fa fa-users me-2"></i>Daftar Santri Binaan (' + data.students.length + ' Santri)</h5>';
+        html += '<div class="table-responsive">';
+        html += '<table class="table table-row-dashed table-row-gray-300 align-middle gs-0 gy-4 mb-0 bg-white border rounded">';
+        html += '<thead>';
+        html += '<tr class="fw-bolder fs-7 text-gray-800 border-bottom border-gray-200 bg-light-primary gs-4">';
+        html += '<th class="ps-4" width="5%">No</th>';
+        html += '<th width="20%">NISN</th>';
+        html += '<th width="45%">Nama Santri</th>';
+        html += '<th width="20%">Kelas</th>';
+        html += '<th width="10%" class="text-center pe-4">Gender</th>';
+        html += '</tr>';
+        html += '</thead>';
+        html += '<tbody>';
+
+        $.each(data.students, function(index, student) {
+            var classroomName = student.classroom ? student.classroom.name : '<span class="text-muted italic">Tanpa Kelas</span>';
+            var genderBadge = student.gender === 'L' 
+                ? '<span class="badge badge-light-info fw-bold">Laki-laki</span>' 
+                : '<span class="badge badge-light-danger fw-bold">Perempuan</span>';
+            
+            html += '<tr class="gs-4">';
+            html += '<td class="ps-4 fw-bold">' + (index + 1) + '</td>';
+            html += '<td class="font-monospace text-gray-600">' + (student.nisn || '-') + '</td>';
+            html += '<td class="fw-bolder text-gray-800">' + student.name + '</td>';
+            html += '<td>' + classroomName + '</td>';
+            html += '<td class="text-center pe-4">' + genderBadge + '</td>';
+            html += '</tr>';
+        });
+
+        html += '</tbody>';
+        html += '</table>';
+        html += '</div>';
+        html += '</div>';
+
+        return html;
+    }
+
     $(document).ready(() => {
-        $('#table-asrama').DataTable({
+        var table = $('#table-asrama').DataTable({
             ordering: false,
             processing: true,
             serverSide: true,
@@ -150,6 +193,25 @@
                     responsivePriority: -1,
                 },
             ]
+        });
+
+        // Add event listener for opening and closing details
+        $('#table-asrama tbody').on('click', '.btn-toggle-students', function () {
+            var tr = $(this).closest('tr');
+            var row = table.row(tr);
+            var chevron = $(this).find('.btn-chevron');
+
+            if (row.child.isShown()) {
+                // This row is already open - close it
+                row.child.hide();
+                tr.removeClass('shown');
+                chevron.removeClass('fa-chevron-up').addClass('fa-chevron-down');
+            } else {
+                // Open this row
+                row.child(format(row.data())).show();
+                tr.addClass('shown');
+                chevron.removeClass('fa-chevron-down').addClass('fa-chevron-up');
+            }
         });
     });
 </script>

@@ -26,7 +26,9 @@ class AsramaController extends Controller
         }
 
         if (request()->ajax()) {
-            $data = Asrama::with('hostAdmin')->withCount('students')->latest();
+            $data = Asrama::with(['hostAdmin', 'students' => function ($q) {
+                $q->with('classroom')->orderBy('name', 'asc');
+            }])->withCount('students')->latest();
             return DataTables::of($data)
                 ->addColumn('host_name', function ($row) {
                     return $row->hostAdmin ? $row->hostAdmin->name : '-';
@@ -35,7 +37,12 @@ class AsramaController extends Controller
                     return $row->hostAdmin ? $row->hostAdmin->phone : '-';
                 })
                 ->addColumn('student_count', function ($row) {
-                    return $row->students_count . ' Santri';
+                    if ($row->students_count > 0) {
+                        return '<span class="badge badge-light-success cursor-pointer fw-bold px-3 py-2 btn-toggle-students" data-id="' . $row->id . '">' .
+                            $row->students_count . ' Santri <i class="fa fa-chevron-down ms-1 text-success btn-chevron"></i>' .
+                            '</span>';
+                    }
+                    return '<span class="badge badge-light-secondary fw-bold px-3 py-2">0 Santri</span>';
                 })
                 ->addColumn('btnAction', function ($row) {
                     $actionEdit = route('asrama.edit', $row->id);
@@ -45,7 +52,7 @@ class AsramaController extends Controller
                         view('components.action.delete', ['action' => $actionDelete, 'id' => $row->id, 'name' => 'Asrama']) .
                         "</div>";
                 })
-                ->rawColumns(['btnAction'])
+                ->rawColumns(['btnAction', 'student_count'])
                 ->make(true);
         }
 
