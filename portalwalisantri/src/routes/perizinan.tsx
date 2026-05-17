@@ -2,7 +2,8 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { ArrowLeft, Loader2, Calendar, ClipboardList, CheckCircle2, XCircle, Clock, ExternalLink, QrCode } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { fetchPermits, postPermitRequest, fetchActiveStudent } from "@/lib/api";
+import { fetchPermits, postPermitRequest } from "@/lib/api";
+import { useSantri } from "@/contexts/SantriContext";
 
 export const Route = createFileRoute("/perizinan")({
   component: PerizinanPage,
@@ -24,15 +25,7 @@ function PerizinanPage() {
   const [formError, setFormError] = useState("");
   const [formSuccess, setFormSuccess] = useState("");
 
-  const { data: activeStudentRes, isLoading: isLoadingStudent } = useQuery({
-    queryKey: ["active-student"],
-    queryFn: async () => {
-      const res = await fetchActiveStudent();
-      return res.data;
-    },
-  });
-
-  const activeStudent = activeStudentRes?.data;
+  const { active: activeStudent, isLoading: isLoadingStudent } = useSantri();
 
   const { data: permitsRes, isLoading: isLoadingPermits } = useQuery({
     queryKey: ["permits", activeStudent?.id],
@@ -116,17 +109,17 @@ function PerizinanPage() {
               <ArrowLeft size={18} />
             </button>
             <div>
-              <p className="text-[11px] text-white/70 font-semibold uppercase tracking-wider">Layanan Perizinan</p>
-              <p className="text-base font-bold text-white">Izin Keluar Santri</p>
+              <p className="text-[10px] text-white/70 font-extrabold uppercase tracking-wide">Layanan Perizinan</p>
+              <h1 className="text-sm font-bold text-white leading-tight">Izin Keluar Santri</h1>
             </div>
           </div>
 
-          <div className="relative mt-6 text-white">
-            <p className="text-xs text-white/70 uppercase tracking-widest font-semibold">Santri Aktif</p>
-            <p className="text-xl font-bold mt-1 tracking-tight">
+          <div className="relative mt-5 text-white">
+            <p className="text-[10px] text-white/80 uppercase tracking-wide font-extrabold">Santri Aktif</p>
+            <h2 className="text-xl font-extrabold mt-0.5 tracking-tight leading-tight">
               {isLoadingStudent ? "Memuat..." : activeStudent?.name ?? "Tanpa Nama"}
-            </p>
-            <p className="text-[11px] text-white/70 mt-1">
+            </h2>
+            <p className="text-[11px] text-white/75 mt-1 leading-snug">
               Gunakan fitur ini untuk mengajukan perizinan keluar pondok pesantren secara mandiri.
             </p>
           </div>
@@ -277,11 +270,11 @@ function PerizinanPage() {
                 )}
 
                 <div>
-                  <label className="text-[11px] font-bold text-slate-400 mb-2 uppercase tracking-widest block">Tipe Perizinan</label>
+                  <label className="text-[11px] font-extrabold text-slate-400/90 mb-1.5 uppercase tracking-wide block">Tipe Perizinan</label>
                   <select
                     value={permitType}
                     onChange={(e: any) => setPermitType(e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-4 py-3.5 outline-none text-slate-800 text-[14px] font-medium focus:ring-2 focus:ring-[#9b1de8]/20 focus:bg-white transition"
+                    className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-4 py-3.5 outline-none text-slate-800 text-[14px] font-semibold focus:ring-2 focus:ring-[#9b1de8]/20 focus:bg-white transition"
                   >
                     <option value="keluar_pondok">Keluar Sebentar (Beli Buku/Keperluan)</option>
                     <option value="pulang_sementara">Pulang Sementara (Liburan/Sakit)</option>
@@ -290,27 +283,27 @@ function PerizinanPage() {
                 </div>
 
                 <div>
-                  <label className="text-[11px] font-bold text-slate-400 mb-2 uppercase tracking-widest block">Rencana Tanggal Keluar</label>
+                  <label className="text-[11px] font-extrabold text-slate-400/90 mb-1.5 uppercase tracking-wide block">Rencana Tanggal Keluar</label>
                   <input
                     type="datetime-local"
                     value={plannedExit}
                     onChange={(e) => setPlannedExit(e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-4 py-3.5 outline-none text-slate-800 text-[14px] font-medium focus:ring-2 focus:ring-[#9b1de8]/20 focus:bg-white transition"
+                    className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-4 py-3.5 outline-none text-slate-800 text-[14px] font-semibold focus:ring-2 focus:ring-[#9b1de8]/20 focus:bg-white transition"
                   />
                 </div>
 
                 <div>
-                  <label className="text-[11px] font-bold text-slate-400 mb-2 uppercase tracking-widest block">Rencana Tanggal Kembali</label>
+                  <label className="text-[11px] font-extrabold text-slate-400/90 mb-1.5 uppercase tracking-wide block">Rencana Tanggal Kembali</label>
                   <input
                     type="datetime-local"
                     value={plannedReturn}
                     onChange={(e) => setPlannedReturn(e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-4 py-3.5 outline-none text-slate-800 text-[14px] font-medium focus:ring-2 focus:ring-[#9b1de8]/20 focus:bg-white transition"
+                    className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-4 py-3.5 outline-none text-slate-800 text-[14px] font-semibold focus:ring-2 focus:ring-[#9b1de8]/20 focus:bg-white transition"
                   />
                 </div>
 
                 <div>
-                  <label className="text-[11px] font-bold text-slate-400 mb-2 uppercase tracking-widest block">Alasan Keperluan</label>
+                  <label className="text-[11px] font-extrabold text-slate-400/90 mb-1.5 uppercase tracking-wide block">Alasan Keperluan</label>
                   <textarea
                     rows={3}
                     value={reason}

@@ -1,7 +1,8 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { PiggyBank, ArrowLeft, Loader2, ArrowUpRight, ArrowDownLeft, Calendar } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
-import { fetchActiveStudent, fetchSavingHistories } from "@/lib/api";
+import { fetchSavingHistories } from "@/lib/api";
+import { useSantri } from "@/contexts/SantriContext";
 import { useState } from "react";
 
 export const Route = createFileRoute("/tabungan")({
@@ -15,13 +16,7 @@ function Tabungan() {
   const navigate = useNavigate();
   const [filter, setFilter] = useState<FilterType>("all");
 
-  const { data: studentRes, isLoading: isLoadingStudent } = useQuery({
-    queryKey: ["active-student"],
-    queryFn: async () => {
-      const res = await fetchActiveStudent();
-      return res.data;
-    },
-  });
+  const { active: student, isLoading: isLoadingStudent } = useSantri();
 
   const { data: historyRes, isLoading: isLoadingHistory } = useQuery({
     queryKey: ["saving-histories", filter],
@@ -32,7 +27,6 @@ function Tabungan() {
     },
   });
 
-  const student = studentRes?.data;
   const savingAmount = student?.saving ?? 0;
   const histories = historyRes?.data ?? [];
 
