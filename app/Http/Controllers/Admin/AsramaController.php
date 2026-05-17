@@ -21,7 +21,7 @@ class AsramaController extends Controller
      */
     public function index()
     {
-        if (!Auth::user()->can('Manage Perizinan')) {
+        if (!Auth::user()->can('Manage Asrama')) {
             return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
         }
 
@@ -41,8 +41,8 @@ class AsramaController extends Controller
                     $actionEdit = route('asrama.edit', $row->id);
                     $actionDelete = route('asrama.destroy', $row->id);
                     return "<div class='d-flex justify-content-center'>" .
-                        view('components.action.edit', ['action' => $actionEdit, 'name' => 'Data Asrama']) . '&nbsp;' .
-                        view('components.action.delete', ['action' => $actionDelete, 'id' => $row->id, 'name' => 'Data Asrama']) .
+                        view('components.action.edit', ['action' => $actionEdit, 'name' => 'Asrama']) . '&nbsp;' .
+                        view('components.action.delete', ['action' => $actionDelete, 'id' => $row->id, 'name' => 'Asrama']) .
                         "</div>";
                 })
                 ->rawColumns(['btnAction'])
@@ -57,7 +57,7 @@ class AsramaController extends Controller
      */
     public function create()
     {
-        if (!Auth::user()->can('Manage Perizinan')) {
+        if (!Auth::user()->can('Create Asrama')) {
             return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
         }
 
@@ -76,7 +76,7 @@ class AsramaController extends Controller
      */
     public function store(Request $request)
     {
-        if (!Auth::user()->can('Manage Perizinan')) {
+        if (!Auth::user()->can('Create Asrama')) {
             return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
         }
 
@@ -143,7 +143,7 @@ class AsramaController extends Controller
      */
     public function edit(string $id)
     {
-        if (!Auth::user()->can('Manage Perizinan')) {
+        if (!Auth::user()->can('Edit Asrama')) {
             return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
         }
 
@@ -178,7 +178,7 @@ class AsramaController extends Controller
      */
     public function update(Request $request, string $id)
     {
-        if (!Auth::user()->can('Manage Perizinan')) {
+        if (!Auth::user()->can('Edit Asrama')) {
             return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
         }
 
@@ -261,7 +261,7 @@ class AsramaController extends Controller
      */
     public function destroy(string $id)
     {
-        if (!Auth::user()->can('Manage Perizinan')) {
+        if (!Auth::user()->can('Delete Asrama')) {
             return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
         }
 

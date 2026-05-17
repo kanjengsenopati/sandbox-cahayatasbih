@@ -469,7 +469,7 @@
                         </div>
                         @endcan
                         
-                        @can('Manage Perizinan')
+                        @can('Manage Asrama')
                         <div class="menu-item">
                             <a class="menu-link {{ request()->routeIs('asrama.*') ? ' active' : '' }}"
                                 href="{{ route('asrama.index') }}">

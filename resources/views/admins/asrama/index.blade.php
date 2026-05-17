@@ -59,7 +59,7 @@
                         <h2>Master Data Asrama Pondok</h2>
                     </div>
                     <div class="card-toolbar">
-                        <x-action.create name="Tambah Asrama" action="{{ route('asrama.create') }}" />
+                        <x-action.create name="Asrama" label="Tambah Asrama" action="{{ route('asrama.create') }}" />
                     </div>
                 </div>
                 <!--end::Card header-->
