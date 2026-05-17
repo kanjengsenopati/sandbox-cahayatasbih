@@ -25,7 +25,58 @@ function PerizinanPage() {
   const [formError, setFormError] = useState("");
   const [formSuccess, setFormSuccess] = useState("");
 
-  const { active: activeStudent, isLoading: isLoadingStudent } = useSantri();
+  // Collective Mode states
+  const [requestMode, setRequestMode] = useState<"individual" | "collective">("individual");
+  const [selectedStudentIds, setSelectedStudentIds] = useState<string[]>([]);
+  const [studentConfigs, setStudentConfigs] = useState<Record<string, {
+    permitType: "keluar_pondok" | "pulang_sementara" | "sakit";
+    plannedExit: string;
+    plannedReturn: string;
+  }>>({});
+  const [submittingCollective, setSubmittingCollective] = useState(false);
+
+  const { active: activeStudent, santri: allStudents = [], isLoading: isLoadingStudent } = useSantri();
+
+  useEffect(() => {
+    if (activeStudent && selectedStudentIds.length === 0) {
+      setSelectedStudentIds([activeStudent.id]);
+      setStudentConfigs({
+        [activeStudent.id]: {
+          permitType: "keluar_pondok",
+          plannedExit: "",
+          plannedReturn: ""
+        }
+      });
+    }
+  }, [activeStudent]);
+
+  const toggleStudentSelection = (sId: string) => {
+    if (selectedStudentIds.includes(sId)) {
+      setSelectedStudentIds(prev => prev.filter(id => id !== sId));
+    } else {
+      setSelectedStudentIds(prev => [...prev, sId]);
+      if (!studentConfigs[sId]) {
+        setStudentConfigs(prev => ({
+          ...prev,
+          [sId]: {
+            permitType: "keluar_pondok",
+            plannedExit: "",
+            plannedReturn: ""
+          }
+        }));
+      }
+    }
+  };
+
+  const updateStudentConfig = (sId: string, updates: Partial<typeof studentConfigs[string]>) => {
+    setStudentConfigs(prev => ({
+      ...prev,
+      [sId]: {
+        ...prev[sId],
+        ...updates
+      }
+    }));
+  };
 
   const { data: permitsRes, isLoading: isLoadingPermits } = useQuery({
     queryKey: ["permits", activeStudent?.id],
@@ -59,28 +110,89 @@ function PerizinanPage() {
     },
   });
 
-  const handleRequestSubmit = (e: React.FormEvent) => {
+  const handleRequestSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setFormError("");
     setFormSuccess("");
 
-    if (!activeStudent) {
-      setFormError("Data santri aktif tidak ditemukan.");
-      return;
-    }
+    if (requestMode === "individual") {
+      if (!activeStudent) {
+        setFormError("Data santri aktif tidak ditemukan.");
+        return;
+      }
 
-    if (!reason || !plannedExit || !plannedReturn) {
-      setFormError("Semua kolom wajib diisi.");
-      return;
-    }
+      if (!reason || !plannedExit || !plannedReturn) {
+        setFormError("Semua kolom wajib diisi.");
+        return;
+      }
 
-    permitMutation.mutate({
-      student_id: activeStudent.id,
-      permit_type: permitType,
-      reason,
-      planned_exit_date: plannedExit,
-      planned_return_date: plannedReturn,
-    });
+      permitMutation.mutate({
+        student_id: activeStudent.id,
+        permit_type: permitType,
+        reason,
+        planned_exit_date: plannedExit,
+        planned_return_date: plannedReturn,
+      });
+    } else {
+      // Collective Mode
+      if (selectedStudentIds.length === 0) {
+        setFormError("Harap pilih minimal satu santri.");
+        return;
+      }
+      if (!reason) {
+        setFormError("Alasan keperluan wajib diisi.");
+        return;
+      }
+
+      // Validation
+      for (const sId of selectedStudentIds) {
+        const config = studentConfigs[sId];
+        if (!config?.plannedExit || !config?.plannedReturn) {
+          const studentObj = allStudents.find((s) => s.id === sId);
+          setFormError(`Harap lengkapi tanggal keluar & kembali untuk ${studentObj?.name || 'santri'}.`);
+          return;
+        }
+      }
+
+      setSubmittingCollective(true);
+      const results: string[] = [];
+      const errors: string[] = [];
+
+      for (const sId of selectedStudentIds) {
+        const config = studentConfigs[sId];
+        const studentObj = allStudents.find((s) => s.id === sId);
+        try {
+          await postPermitRequest({
+            student_id: sId,
+            permit_type: config.permitType,
+            reason,
+            planned_exit_date: config.plannedExit,
+            planned_return_date: config.plannedReturn,
+          });
+          results.push(studentObj?.name || "Santri");
+        } catch (err: any) {
+          const errMsg = err.response?.data?.message || "Gagal memproses perizinan.";
+          errors.push(`${studentObj?.name || 'Santri'}: ${errMsg}`);
+        }
+      }
+
+      setSubmittingCollective(false);
+
+      if (errors.length > 0) {
+        if (results.length > 0) {
+          setFormSuccess(`Berhasil diajukan untuk: ${results.join(", ")}.`);
+        }
+        setFormError(`Beberapa pengajuan gagal:\n${errors.join("\n")}`);
+      } else {
+        setFormSuccess("Semua pengajuan kolektif berhasil diajukan!");
+        queryClient.invalidateQueries({ queryKey: ["permits"] });
+        setReason("");
+        setTimeout(() => {
+          setFormSuccess("");
+          setTab("list");
+        }, 2500);
+      }
+    }
   };
 
   return (
@@ -254,12 +366,42 @@ function PerizinanPage() {
             )
           ) : (
             // Request Form Tab
-            <div className="bg-card rounded-3xl border border-border p-6 shadow-[var(--shadow-soft)]">
-              <h3 className="text-base font-bold text-slate-800 mb-4">Formulir Pengajuan Izin</h3>
+            <div className="bg-card rounded-3xl border border-border p-6 shadow-[var(--shadow-soft)] space-y-5">
+              <div className="flex justify-between items-center border-b border-slate-100 pb-3">
+                <h3 className="text-base font-bold text-slate-800">Formulir Pengajuan Izin</h3>
+              </div>
 
-              <form onSubmit={handleRequestSubmit} className="space-y-4">
+              {/* Individual / Collective Switcher */}
+              {allStudents.length > 1 && (
+                <div className="flex bg-slate-50 border border-slate-100 rounded-2xl p-1 gap-1">
+                  <button
+                    type="button"
+                    onClick={() => setRequestMode("individual")}
+                    className={`flex-1 py-2 text-xs font-bold rounded-xl transition ${
+                      requestMode === "individual"
+                        ? "bg-white text-slate-800 shadow-sm border border-slate-100"
+                        : "text-slate-500 hover:text-slate-800"
+                    }`}
+                  >
+                    Perorangan
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setRequestMode("collective")}
+                    className={`flex-1 py-2 text-xs font-bold rounded-xl transition ${
+                      requestMode === "collective"
+                        ? "bg-white text-slate-800 shadow-sm border border-slate-100"
+                        : "text-slate-500 hover:text-slate-800"
+                    }`}
+                  >
+                    Kolektif ({allStudents.length} Santri)
+                  </button>
+                </div>
+              )}
+
+              <form onSubmit={handleRequestSubmit} className="space-y-5">
                 {formError && (
-                  <div className="p-3 rounded-xl bg-red-50 text-red-600 border border-red-100 text-xs font-bold text-center">
+                  <div className="p-3 rounded-xl bg-red-50 text-red-600 border border-red-100 text-xs font-bold text-center whitespace-pre-line">
                     {formError}
                   </div>
                 )}
@@ -269,38 +411,148 @@ function PerizinanPage() {
                   </div>
                 )}
 
-                <div>
-                  <label className="text-[11px] font-extrabold text-slate-400/90 mb-1.5 uppercase tracking-wide block">Tipe Perizinan</label>
-                  <select
-                    value={permitType}
-                    onChange={(e: any) => setPermitType(e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-4 py-3.5 outline-none text-slate-800 text-[14px] font-semibold focus:ring-2 focus:ring-[#9b1de8]/20 focus:bg-white transition"
-                  >
-                    <option value="keluar_pondok">Keluar Sebentar (Beli Buku/Keperluan)</option>
-                    <option value="pulang_sementara">Pulang Sementara (Liburan/Sakit)</option>
-                    <option value="sakit">Sakit Parah (Perawatan/Rujukan)</option>
-                  </select>
-                </div>
+                {requestMode === "individual" ? (
+                  /* --- Individual Form --- */
+                  <div className="space-y-4">
+                    <div>
+                      <label className="text-[11px] font-extrabold text-slate-400/90 mb-1.5 uppercase tracking-wide block">Tipe Perizinan</label>
+                      <select
+                        value={permitType}
+                        onChange={(e: any) => setPermitType(e.target.value)}
+                        className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-4 py-3.5 outline-none text-slate-800 text-[14px] font-semibold focus:ring-2 focus:ring-[#9b1de8]/20 focus:bg-white transition"
+                      >
+                        <option value="keluar_pondok">Keluar Sebentar (Beli Buku/Keperluan)</option>
+                        <option value="pulang_sementara">Pulang Sementara (Liburan/Sakit)</option>
+                        <option value="sakit">Sakit Parah (Perawatan/Rujukan)</option>
+                      </select>
+                    </div>
 
-                <div>
-                  <label className="text-[11px] font-extrabold text-slate-400/90 mb-1.5 uppercase tracking-wide block">Rencana Tanggal Keluar</label>
-                  <input
-                    type="datetime-local"
-                    value={plannedExit}
-                    onChange={(e) => setPlannedExit(e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-4 py-3.5 outline-none text-slate-800 text-[14px] font-semibold focus:ring-2 focus:ring-[#9b1de8]/20 focus:bg-white transition"
-                  />
-                </div>
+                    <div>
+                      <label className="text-[11px] font-extrabold text-slate-400/90 mb-1.5 uppercase tracking-wide block">Rencana Tanggal Keluar</label>
+                      <input
+                        type="datetime-local"
+                        value={plannedExit}
+                        onChange={(e) => setPlannedExit(e.target.value)}
+                        className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-4 py-3.5 outline-none text-slate-800 text-[14px] font-semibold focus:ring-2 focus:ring-[#9b1de8]/20 focus:bg-white transition"
+                      />
+                    </div>
 
-                <div>
-                  <label className="text-[11px] font-extrabold text-slate-400/90 mb-1.5 uppercase tracking-wide block">Rencana Tanggal Kembali</label>
-                  <input
-                    type="datetime-local"
-                    value={plannedReturn}
-                    onChange={(e) => setPlannedReturn(e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-4 py-3.5 outline-none text-slate-800 text-[14px] font-semibold focus:ring-2 focus:ring-[#9b1de8]/20 focus:bg-white transition"
-                  />
-                </div>
+                    <div>
+                      <label className="text-[11px] font-extrabold text-slate-400/90 mb-1.5 uppercase tracking-wide block">Rencana Tanggal Kembali</label>
+                      <input
+                        type="datetime-local"
+                        value={plannedReturn}
+                        onChange={(e) => setPlannedReturn(e.target.value)}
+                        className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-4 py-3.5 outline-none text-slate-800 text-[14px] font-semibold focus:ring-2 focus:ring-[#9b1de8]/20 focus:bg-white transition"
+                      />
+                    </div>
+                  </div>
+                ) : (
+                  /* --- Collective Form --- */
+                  <div className="space-y-5 animate-in fade-in duration-300">
+                    {/* Student Selection Checklist */}
+                    <div className="space-y-2">
+                      <span className="text-[11px] font-extrabold text-slate-400/90 mb-1 block uppercase tracking-wide">
+                        Pilih Santri yang Diajukan
+                      </span>
+                      <div className="grid grid-cols-1 gap-2">
+                        {allStudents.map((s) => {
+                          const isChecked = selectedStudentIds.includes(s.id);
+                          return (
+                            <button
+                              type="button"
+                              key={s.id}
+                              onClick={() => toggleStudentSelection(s.id)}
+                              className={`flex items-center justify-between p-3 rounded-2xl border transition text-left ${
+                                isChecked
+                                  ? "bg-[#9b1de8]/5 border-[#9b1de8]/30 shadow-sm"
+                                  : "bg-slate-50/50 border-slate-100 hover:bg-slate-50"
+                              }`}
+                            >
+                              <div className="flex items-center gap-3">
+                                <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-[#9b1de8] to-[#610a9c] text-white flex items-center justify-center font-bold text-xs">
+                                  {s.initials}
+                                </div>
+                                <div>
+                                  <p className="text-xs font-extrabold text-slate-800 leading-tight">{s.name}</p>
+                                  <p className="text-[10px] text-slate-400 font-medium">Kelas: {s.className}</p>
+                                </div>
+                              </div>
+                              <div className={`w-4 h-4 rounded-full border flex items-center justify-center transition-all ${
+                                isChecked 
+                                  ? "bg-[#9b1de8] border-[#9b1de8] text-white" 
+                                  : "border-slate-300 bg-white"
+                              }`}>
+                                {isChecked && (
+                                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={3} stroke="currentColor" className="w-2.5 h-2.5">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="m4.5 12.75 6 6 9-13.5" />
+                                  </svg>
+                                )}
+                              </div>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* Student Config Cards */}
+                    <div className="space-y-4">
+                      {selectedStudentIds.map((sId) => {
+                        const s = allStudents.find((student) => student.id === sId);
+                        if (!s) return null;
+                        const config = studentConfigs[sId] || { permitType: "keluar_pondok", plannedExit: "", plannedReturn: "" };
+                        
+                        return (
+                          <div key={sId} className="bg-slate-50 border border-slate-100 rounded-3xl p-4 space-y-3.5 relative overflow-hidden animate-in slide-in-from-top-4 duration-300">
+                            <div className="absolute left-0 top-0 bottom-0 w-1 bg-[#9b1de8]"></div>
+                            
+                            <div className="flex items-center gap-2 pb-2 border-b border-slate-100">
+                              <div className="w-6 h-6 rounded-lg bg-[#9b1de8]/15 text-[#9b1de8] flex items-center justify-center font-bold text-[10px]">
+                                {s.initials}
+                              </div>
+                              <span className="text-xs font-extrabold text-slate-800 leading-none">{s.name}</span>
+                            </div>
+
+                            <div>
+                              <label className="text-[10px] font-extrabold text-slate-400 mb-1 uppercase tracking-wide block">Tipe Perizinan</label>
+                              <select
+                                value={config.permitType}
+                                onChange={(e: any) => updateStudentConfig(sId, { permitType: e.target.value })}
+                                className="w-full bg-white border border-slate-150 rounded-xl px-3 py-2 outline-none text-slate-800 text-[13px] font-semibold focus:ring-1 focus:ring-[#9b1de8]/20 transition"
+                              >
+                                <option value="keluar_pondok">Keluar Sebentar (Beli Buku/Keperluan)</option>
+                                <option value="pulang_sementara">Pulang Sementara (Liburan/Sakit)</option>
+                                <option value="sakit">Sakit Parah (Perawatan/Rujukan)</option>
+                              </select>
+                            </div>
+
+                            <div className="grid grid-cols-1 gap-2.5">
+                              <div>
+                                <label className="text-[10px] font-extrabold text-slate-400 mb-1 uppercase tracking-wide block">Rencana Keluar</label>
+                                <input
+                                  type="datetime-local"
+                                  value={config.plannedExit}
+                                  onChange={(e) => updateStudentConfig(sId, { plannedExit: e.target.value })}
+                                  className="w-full bg-white border border-slate-150 rounded-xl px-3 py-2 outline-none text-slate-800 text-[13px] font-semibold focus:ring-1 focus:ring-[#9b1de8]/20 transition"
+                                />
+                              </div>
+
+                              <div>
+                                <label className="text-[10px] font-extrabold text-slate-400 mb-1 uppercase tracking-wide block">Rencana Kembali</label>
+                                <input
+                                  type="datetime-local"
+                                  value={config.plannedReturn}
+                                  onChange={(e) => updateStudentConfig(sId, { plannedReturn: e.target.value })}
+                                  className="w-full bg-white border border-slate-150 rounded-xl px-3 py-2 outline-none text-slate-800 text-[13px] font-semibold focus:ring-1 focus:ring-[#9b1de8]/20 transition"
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
 
                 <div>
                   <label className="text-[11px] font-extrabold text-slate-400/90 mb-1.5 uppercase tracking-wide block">Alasan Keperluan</label>
@@ -315,10 +567,10 @@ function PerizinanPage() {
 
                 <button
                   type="submit"
-                  disabled={permitMutation.isPending}
+                  disabled={permitMutation.isPending || submittingCollective}
                   className="w-full py-4 rounded-[20px] bg-gradient-to-r from-[#9b1de8] to-[#610a9c] text-white font-bold text-[14px] shadow-[0_8px_25px_rgba(155,29,232,0.3)] transition active:scale-[0.98] disabled:opacity-70 flex items-center justify-center"
                 >
-                  {permitMutation.isPending ? (
+                  {permitMutation.isPending || submittingCollective ? (
                     <Loader2 className="animate-spin" size={18} />
                   ) : (
                     "Ajukan Perizinan"
