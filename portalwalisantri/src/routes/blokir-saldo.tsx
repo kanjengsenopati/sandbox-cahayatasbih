@@ -1,14 +1,12 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { ShieldAlert, ShieldCheck, ArrowLeft, Loader2 } from "lucide-react";
-import { MobileShell } from "@/components/MobileShell";
-import { Text } from "@/components/Text";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { fetchBlockStatus, toggleBlock } from "@/lib/api";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/blokir-saldo")({
   component: BlokirSaldo,
-  head: () => ({ meta: [{ title: "Blokir Saldo — CAHAYA TASBIH" }] }),
+  head: () => ({ meta: [{ title: "Blokir Saldo — SantriPay" }] }),
 });
 
 function BlokirSaldo() {
@@ -39,71 +37,107 @@ function BlokirSaldo() {
   const studentName = statusData?.student_name ?? "Santri";
 
   return (
-    <MobileShell>
-      <header className="px-5 pt-10 pb-4 flex items-center gap-3">
-        <button 
-          onClick={() => navigate({ to: "/dashboard" })}
-          className="w-10 h-10 rounded-full bg-white flex items-center justify-center shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-50 active:scale-95 transition"
+    <div className="min-h-screen w-full flex justify-center bg-secondary">
+      <div className="relative w-full max-w-md min-h-screen bg-background pb-32">
+        {/* Hero */}
+        <div
+          className="relative px-6 pt-12 pb-24 rounded-b-[2rem] overflow-hidden"
+          style={{ background: "var(--gradient-hero)" }}
         >
-          <ArrowLeft size={20} className="text-slate-600" />
-        </button>
-        <Text.H1>Blokir Saldo</Text.H1>
-      </header>
-
-      <section className="px-5 mt-6 flex-1 flex flex-col items-center justify-center py-10 text-center">
-        {isLoading ? (
-          <div className="flex flex-col items-center justify-center">
-            <Loader2 className="w-10 h-10 animate-spin text-blue-600 mb-2" />
-            <Text.Body className="text-slate-400">Memuat status kartu...</Text.Body>
-          </div>
-        ) : (
-          <>
-            <div className={`w-28 h-28 rounded-[24px] flex items-center justify-center shadow-[0_12px_40px_rgba(0,0,0,0.08)] mb-8 transition-all duration-500 scale-105 ${
-              isBlocked 
-                ? "bg-red-50 text-red-600 shadow-red-100/50" 
-                : "bg-emerald-50 text-emerald-600 shadow-emerald-100/50"
-            }`}>
-              {isBlocked ? (
-                <ShieldAlert size={56} strokeWidth={1.5} className="animate-pulse" />
-              ) : (
-                <ShieldCheck size={56} strokeWidth={1.5} />
-              )}
-            </div>
-            
-            <div className="bg-white rounded-[24px] p-6 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-50/50 max-w-sm w-full mb-8">
-              <Text.Label className={`mb-2 block font-bold tracking-widest ${isBlocked ? "text-red-500" : "text-emerald-500"}`}>
-                {isBlocked ? "KARTU NONAKTIF" : "KARTU AKTIF"}
-              </Text.Label>
-              <Text.H2 className="mb-3 text-slate-800">Status Kartu {studentName}</Text.H2>
-              
-              <Text.Body className="text-slate-500 leading-relaxed mb-2">
-                {isBlocked 
-                  ? "Kartu fisik santri saat ini diblokir. Segala jenis transaksi belanja di POS Kantin akan otomatis ditolak demi keamanan."
-                  : "Kartu fisik santri saat ini aktif dan dapat digunakan untuk belanja di POS Kantin sesuai limit harian."
-                }
-              </Text.Body>
-            </div>
-
+          <div className="absolute -top-20 -right-10 w-56 h-56 rounded-full bg-primary-glow/30 blur-3xl" />
+          <div
+            className="absolute inset-0 opacity-[0.07]"
+            style={{
+              backgroundImage:
+                "linear-gradient(rgba(255,255,255,0.6) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.6) 1px, transparent 1px)",
+              backgroundSize: "26px 26px",
+              maskImage: "radial-gradient(ellipse at top right, black 30%, transparent 70%)",
+            }}
+          />
+          <div className="relative flex items-center gap-3">
             <button
-              onClick={() => toggleMutation.mutate()}
-              disabled={toggleMutation.isPending}
-              className={`w-full max-w-sm py-4 rounded-[24px] font-bold text-white shadow-[0_8px_30px_rgba(0,0,0,0.08)] transition-all duration-300 active:scale-98 flex items-center justify-center gap-2 ${
-                isBlocked 
-                  ? "bg-emerald-600 hover:bg-emerald-500 shadow-emerald-200" 
-                  : "bg-red-600 hover:bg-red-500 shadow-red-200"
-              }`}
+              onClick={() => navigate({ to: "/dashboard" })}
+              className="w-10 h-10 rounded-xl bg-white/15 backdrop-blur-md border border-white/20 flex items-center justify-center text-white"
             >
-              {toggleMutation.isPending ? (
-                <Loader2 className="w-5 h-5 animate-spin" />
-              ) : isBlocked ? (
-                "Aktifkan Kembali Kartu"
-              ) : (
-                "Blokir Sementara Kartu"
-              )}
+              <ArrowLeft size={18} />
             </button>
-          </>
-        )}
-      </section>
-    </MobileShell>
+            <div>
+              <p className="text-[11px] text-white/70 font-semibold uppercase tracking-wider">Keamanan Kartu</p>
+              <p className="text-base font-bold text-white">Blokir Sementara Kartu</p>
+            </div>
+          </div>
+
+          <div className="relative mt-6 text-white">
+            <p className="text-xs text-white/70 uppercase tracking-widest font-semibold">Nama Santri</p>
+            <p className="text-xl font-bold mt-1 tracking-tight">{studentName}</p>
+          </div>
+        </div>
+
+        {/* Content */}
+        <section className="px-6 -mt-10 relative z-10 flex flex-col items-center justify-center text-center">
+          {isLoading ? (
+            <div className="bg-card rounded-3xl border border-border p-8 flex flex-col items-center justify-center shadow-[var(--shadow-card)] w-full">
+              <Loader2 className="animate-spin text-primary mb-2" size={28} />
+              <p className="text-xs font-semibold text-muted-foreground">Memuat status kartu...</p>
+            </div>
+          ) : (
+            <div className="w-full space-y-5">
+              {/* Shield Status Icon */}
+              <div className="flex justify-center">
+                <div className={`w-28 h-28 rounded-3xl flex items-center justify-center shadow-[var(--shadow-soft)] transition-all duration-500 ${
+                  isBlocked 
+                    ? "bg-destructive/10 text-destructive border border-destructive/20" 
+                    : "bg-emerald-500/10 text-emerald-600 border border-emerald-500/20"
+                }`}>
+                  {isBlocked ? (
+                    <ShieldAlert size={56} strokeWidth={1.5} className="animate-pulse" />
+                  ) : (
+                    <ShieldCheck size={56} strokeWidth={1.5} />
+                  )}
+                </div>
+              </div>
+              
+              {/* Details card */}
+              <div className="bg-card rounded-3xl border border-border shadow-[var(--shadow-soft)] p-6">
+                <span className={`inline-block px-2.5 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider ${
+                  isBlocked ? "bg-destructive/10 text-destructive" : "bg-emerald-500/10 text-emerald-700"
+                }`}>
+                  {isBlocked ? "KARTU NONAKTIF" : "KARTU AKTIF"}
+                </span>
+                
+                <h3 className="mt-3 text-base font-bold text-foreground">Status Jajan Kartu Santri</h3>
+                
+                <p className="text-xs text-muted-foreground leading-relaxed mt-2">
+                  {isBlocked 
+                    ? "Kartu fisik santri saat ini diblokir secara manual oleh wali santri. Seluruh transaksi belanja di POS Kantin akan otomatis ditolak secara real-time demi keamanan."
+                    : "Kartu fisik santri saat ini aktif dan dapat digunakan untuk belanja di POS Kantin Pesantren sesuai limit jajan harian yang Anda atur."
+                  }
+                </p>
+              </div>
+
+              {/* Action Button */}
+              <button
+                onClick={() => toggleMutation.mutate()}
+                disabled={toggleMutation.isPending}
+                className="w-full py-4 rounded-3xl font-bold text-xs flex items-center justify-center gap-2 transition active:scale-[0.98] shadow-sm text-white"
+                style={{ 
+                  background: isBlocked 
+                    ? "linear-gradient(135deg, #10b981 0%, #059669 100%)" 
+                    : "linear-gradient(135deg, #ef4444 0%, #dc2626 100%)"
+                }}
+              >
+                {toggleMutation.isPending ? (
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                ) : isBlocked ? (
+                  "Aktifkan Kembali Kartu"
+                ) : (
+                  "Blokir Sementara Kartu"
+                )}
+              </button>
+            </div>
+          )}
+        </section>
+      </div>
+    </div>
   );
 }

@@ -6,6 +6,7 @@ use App\Http\Controllers\Admin\AuthController;
 use App\Http\Controllers\Admin\BankController;
 use App\Http\Controllers\Admin\BillController;
 use App\Http\Controllers\Admin\HelpController;
+use App\Http\Controllers\Admin\OfficerController;
 use App\Http\Controllers\Admin\ItemController;
 use App\Http\Controllers\Admin\PpdbController;
 use App\Http\Controllers\Admin\RoleController;
@@ -249,6 +250,8 @@ Route::group(['middleware' => ['auth']], function () {
     Route::resource('schedule', ScheduleController::class);
 
     Route::resource('help', HelpController::class);
+    Route::post('officer/status/{id}', [OfficerController::class, 'status'])->name('officer.status');
+    Route::resource('officer', OfficerController::class);
     Route::resource('app-information', AppInformationController::class, ['only' => ['index', 'store']])->names('app-information');
 
     // start study

@@ -70,10 +70,10 @@
 
                 @canany(['Manage Role', 'Manage Admin', 'Manage Informasi', 'Manage Metode Pembayaran','Manage Menu
                 Aplikasi', 'Manage Kontak Bantuan', 'Manage Bank', 'Manage Pengaturan Aplikasi', 'Item Bayar',
-                'Manage Jenis Bayar'])
+                'Manage Jenis Bayar', 'Manage Petugas'])
                 <div data-kt-menu-trigger="click" class="menu-item menu-accordion {{ request()->routeIs(['permission.*', 'role.*', 'information-category.*',
                     'information.*', 'payment-method.*', 'application-setting.*', 'application-menu.*', 'help.*',
-                    'app-information.*', 'bill-item.*', 'bill-type.*', 'admin.*']) ? 'show' : '' }}">
+                    'app-information.*', 'bill-item.*', 'bill-type.*', 'admin.*', 'officer.*']) ? 'show' : '' }}">
                     <span class="menu-link ">
                         <span class="menu-icon">
                             <i class="fa-solid fa-cog" style="color: #ffffff;"></i>
@@ -167,6 +167,17 @@
                                     <span class="bullet bullet-dot"></span>
                                 </span>
                                 <span class="menu-title">Kontak Bantuan</span>
+                            </a>
+                        </div>
+                        @endcan
+                        @can('Manage Petugas')
+                        <div class="menu-item ">
+                            <a class="menu-link {{ request()->routeIs('officer.*') ? ' active' : '' }}"
+                                href="{{ route('officer.index') }}">
+                                <span class="menu-bullet">
+                                    <span class="bullet bullet-dot"></span>
+                                </span>
+                                <span class="menu-title">Data Petugas</span>
                             </a>
                         </div>
                         @endcan

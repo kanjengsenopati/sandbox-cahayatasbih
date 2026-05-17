@@ -22,6 +22,7 @@ import {
   Heart,
   Trophy,
   GraduationCap,
+  Users,
 } from "lucide-react";
 import { useState } from "react";
 import { MobileShell } from "@/components/MobileShell";
@@ -51,6 +52,7 @@ const menuMapping: Record<string, { label: string; icon: any; accent: string; to
   "perilaku": { label: "Perilaku", icon: Heart, accent: "from-[#f43f5e] to-[#e11d48]", to: "/perilaku" as const },
   "prestasi": { label: "Prestasi", icon: Trophy, accent: "from-[#f59e0b] to-[#d97706]", to: "/prestasi" as const },
   "nilai": { label: "Nilai", icon: GraduationCap, accent: "from-[#8b5cf6] to-[#7c3aed]", to: "/nilai" as const },
+  "petugas": { label: "Hubungi Petugas", icon: Users, accent: "from-[#0284c7] to-[#0369a1]", to: "/petugas" as const },
 };
 
 function Dashboard() {

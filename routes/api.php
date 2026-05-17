@@ -180,6 +180,9 @@ Route::prefix('wali')->middleware(['web'])->group(function () {
     Route::get('study-grades', [App\Http\Controllers\Api\Wali\StudyGradeController::class, 'index']);
     Route::get('semesters', [App\Http\Controllers\Api\Wali\StudyGradeController::class, 'semesters']);
 
+    // Petugas (Staff Directory)
+    Route::get('officers', [App\Http\Controllers\Api\Wali\OfficerController::class, 'index']);
+
     // Mutasi Pindah Unit
     Route::post('unit-transfer/continue', [App\Http\Controllers\Api\Wali\UnitTransferController::class, 'continueUnit']);
     });

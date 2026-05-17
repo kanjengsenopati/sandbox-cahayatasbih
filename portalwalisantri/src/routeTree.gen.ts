@@ -16,6 +16,7 @@ import { Route as TabunganRouteImport } from './routes/tabungan'
 import { Route as RiwayatRouteImport } from './routes/riwayat'
 import { Route as ProfilRouteImport } from './routes/profil'
 import { Route as PrestasiRouteImport } from './routes/prestasi'
+import { Route as PetugasRouteImport } from './routes/petugas'
 import { Route as PerilakuRouteImport } from './routes/perilaku'
 import { Route as NilaiRouteImport } from './routes/nilai'
 import { Route as LoginRouteImport } from './routes/login'
@@ -62,6 +63,11 @@ const ProfilRoute = ProfilRouteImport.update({
 const PrestasiRoute = PrestasiRouteImport.update({
   id: '/prestasi',
   path: '/prestasi',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PetugasRoute = PetugasRouteImport.update({
+  id: '/petugas',
+  path: '/petugas',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PerilakuRoute = PerilakuRouteImport.update({
@@ -134,6 +140,7 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/nilai': typeof NilaiRoute
   '/perilaku': typeof PerilakuRoute
+  '/petugas': typeof PetugasRoute
   '/prestasi': typeof PrestasiRoute
   '/profil': typeof ProfilRoute
   '/riwayat': typeof RiwayatRoute
@@ -155,6 +162,7 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/nilai': typeof NilaiRoute
   '/perilaku': typeof PerilakuRoute
+  '/petugas': typeof PetugasRoute
   '/prestasi': typeof PrestasiRoute
   '/profil': typeof ProfilRoute
   '/riwayat': typeof RiwayatRoute
@@ -177,6 +185,7 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/nilai': typeof NilaiRoute
   '/perilaku': typeof PerilakuRoute
+  '/petugas': typeof PetugasRoute
   '/prestasi': typeof PrestasiRoute
   '/profil': typeof ProfilRoute
   '/riwayat': typeof RiwayatRoute
@@ -200,6 +209,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/nilai'
     | '/perilaku'
+    | '/petugas'
     | '/prestasi'
     | '/profil'
     | '/riwayat'
@@ -221,6 +231,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/nilai'
     | '/perilaku'
+    | '/petugas'
     | '/prestasi'
     | '/profil'
     | '/riwayat'
@@ -242,6 +253,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/nilai'
     | '/perilaku'
+    | '/petugas'
     | '/prestasi'
     | '/profil'
     | '/riwayat'
@@ -264,6 +276,7 @@ export interface RootRouteChildren {
   LoginRoute: typeof LoginRoute
   NilaiRoute: typeof NilaiRoute
   PerilakuRoute: typeof PerilakuRoute
+  PetugasRoute: typeof PetugasRoute
   PrestasiRoute: typeof PrestasiRoute
   ProfilRoute: typeof ProfilRoute
   RiwayatRoute: typeof RiwayatRoute
@@ -326,6 +339,13 @@ declare module '@tanstack/react-router' {
       path: '/prestasi'
       fullPath: '/prestasi'
       preLoaderRoute: typeof PrestasiRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/petugas': {
+      id: '/petugas'
+      path: '/petugas'
+      fullPath: '/petugas'
+      preLoaderRoute: typeof PetugasRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/perilaku': {
@@ -424,6 +444,7 @@ const rootRouteChildren: RootRouteChildren = {
   LoginRoute: LoginRoute,
   NilaiRoute: NilaiRoute,
   PerilakuRoute: PerilakuRoute,
+  PetugasRoute: PetugasRoute,
   PrestasiRoute: PrestasiRoute,
   ProfilRoute: ProfilRoute,
   RiwayatRoute: RiwayatRoute,

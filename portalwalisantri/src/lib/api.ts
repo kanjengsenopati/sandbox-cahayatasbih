@@ -69,5 +69,6 @@ export const fetchCounseling = () => api.get('/counseling');
 export const fetchAchievements = () => api.get('/achievements');
 export const fetchStudyGrades = (params?: { semester_id?: string | number }) => api.get('/study-grades', { params });
 export const fetchSemesters = () => api.get('/semesters');
+export const fetchOfficers = () => api.get('/officers');
 
 export default api;
