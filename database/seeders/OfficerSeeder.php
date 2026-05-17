@@ -18,12 +18,15 @@ class OfficerSeeder extends Seeder
         // 1. Clear Spatie Permission Cache
         app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
 
-        // 2. Seed Spatie Permissions for Petugas
+        // 2. Seed Spatie Permissions for Petugas & Perizinan
         $permissions = [
             'Manage Petugas',
             'Create Petugas',
             'Edit Petugas',
             'Delete Petugas',
+            'Manage Perizinan',
+            'Approve Perizinan',
+            'Scan Perizinan',
         ];
 
         foreach ($permissions as $perm) {
@@ -79,6 +82,14 @@ class OfficerSeeder extends Seeder
             ['flag' => 'petugas'],
             [
                 'name' => 'Petugas',
+                'status' => true,
+            ]
+        );
+
+        ApplicationMenu::updateOrCreate(
+            ['flag' => 'perizinan'],
+            [
+                'name' => 'Perizinan',
                 'status' => true,
             ]
         );

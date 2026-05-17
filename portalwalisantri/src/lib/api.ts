@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: '/api/wali',
+  baseURL: '/api/ct-mobile',
   withCredentials: true,
   timeout: 30000, // 30 seconds
   headers: {
@@ -25,7 +25,7 @@ api.interceptors.response.use(
     if (error.response?.status === 401) {
       const hash = window.location.hash;
       if (hash !== '#/login') {
-        window.location.href = '/wali/login#/login';
+        window.location.href = '/ct-mobile/login#/login';
       }
     }
     return Promise.reject(error);
@@ -70,5 +70,26 @@ export const fetchAchievements = () => api.get('/achievements');
 export const fetchStudyGrades = (params?: { semester_id?: string | number }) => api.get('/study-grades', { params });
 export const fetchSemesters = () => api.get('/semesters');
 export const fetchOfficers = () => api.get('/officers');
+
+// --- PERIZINAN API METHODS ---
+export const fetchPermits = () => api.get('/permits');
+export const postPermitRequest = (data: any) => api.post('/permits', data);
+export const fetchPermitDetail = (id: string | number) => api.get(`/permits/${id}`);
+
+// --- ASATIDZ API METHODS ---
+export const fetchPendingPermits = () => api.get('/asatidz/permits/pending');
+export const postPermitAction = (id: string | number, data: { action: 'approve' | 'reject', rejection_reason?: string }) => 
+  api.post(`/asatidz/permits/${id}/action`, data);
+export const fetchActivePermits = () => api.get('/asatidz/permits/active');
+export const fetchOverduePermits = () => api.get('/asatidz/permits/overdue');
+export const postScanBarcode = (data: { 
+  barcode_token: string, 
+  latitude?: string, 
+  longitude?: string, 
+  photo_santri: string, 
+  photo_escort: string, 
+  escort_name?: string, 
+  escort_relation?: string 
+}) => api.post('/asatidz/permits/scan', data);
 
 export default api;

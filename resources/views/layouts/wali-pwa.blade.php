@@ -3,17 +3,17 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-    <title>Wali Santri - Cahaya Tasbih</title>
+    <title>CT-Mobile - Cahaya Tasbih</title>
     
     <!-- PWA Manifest & Icons -->
-    <link rel="manifest" href="{{ url('manifest-wali.json') }}">
+    <link rel="manifest" href="{{ url('manifest-ct-mobile.json') }}">
     <link rel="icon" href="{{ url('favicon.ico?v=4') }}" type="image/x-icon">
     <link rel="apple-touch-icon" href="{{ url('icons/icon-192.png?v=4') }}">
-    <meta name="theme-color" content="#2563eb">
+    <meta name="theme-color" content="#6366f1">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="Wali Santri">
+    <meta name="apple-mobile-web-app-title" content="CT-Mobile">
     
     <!-- Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">

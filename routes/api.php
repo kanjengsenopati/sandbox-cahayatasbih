@@ -137,7 +137,7 @@ Route::group(['middleware' => 'xendit'], function () {
     Route::post('callback-xendit', [TransactionController::class, 'callbackXendit']);
 });
 
-Route::prefix('wali')->middleware(['web'])->group(function () {
+Route::prefix('ct-mobile')->middleware(['web'])->group(function () {
     Route::post('login', [App\Http\Controllers\Api\Wali\AuthController::class, 'login']);
     Route::post('logout', [App\Http\Controllers\Api\Wali\AuthController::class, 'logout']);
 
@@ -185,5 +185,19 @@ Route::prefix('wali')->middleware(['web'])->group(function () {
 
     // Mutasi Pindah Unit
     Route::post('unit-transfer/continue', [App\Http\Controllers\Api\Wali\UnitTransferController::class, 'continueUnit']);
+
+    // Perizinan Santri (Leave Permits) - Wali Santri Pemohon
+    Route::get('permits', [App\Http\Controllers\Api\Wali\WaliPermitController::class, 'index']);
+    Route::post('permits', [App\Http\Controllers\Api\Wali\WaliPermitController::class, 'store']);
+    Route::get('permits/{id}', [App\Http\Controllers\Api\Wali\WaliPermitController::class, 'show']);
+    });
+
+    // Perizinan Santri (Leave Permits) - Asatidz / Staff Asrama
+    Route::middleware(['auth:web'])->group(function () {
+        Route::get('asatidz/permits/pending', [App\Http\Controllers\Api\Wali\AsatidzPermitController::class, 'pendingList']);
+        Route::post('asatidz/permits/{id}/action', [App\Http\Controllers\Api\Wali\AsatidzPermitController::class, 'action']);
+        Route::get('asatidz/permits/active', [App\Http\Controllers\Api\Wali\AsatidzPermitController::class, 'activeList']);
+        Route::get('asatidz/permits/overdue', [App\Http\Controllers\Api\Wali\AsatidzPermitController::class, 'overdueList']);
+        Route::post('asatidz/permits/scan', [App\Http\Controllers\Api\Wali\AsatidzPermitController::class, 'scanBarcode']);
     });
 });

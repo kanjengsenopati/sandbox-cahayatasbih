@@ -53,6 +53,7 @@ const menuMapping: Record<string, { label: string; icon: any; accent: string; to
   "prestasi": { label: "Prestasi", icon: Trophy, accent: "from-[#f59e0b] to-[#d97706]", to: "/prestasi" as const },
   "nilai": { label: "Nilai", icon: GraduationCap, accent: "from-[#8b5cf6] to-[#7c3aed]", to: "/nilai" as const },
   "petugas": { label: "Hubungi Petugas", icon: Users, accent: "from-[#0284c7] to-[#0369a1]", to: "/petugas" as const },
+  "perizinan": { label: "Izin Keluar", icon: Calendar, accent: "from-[#ec4899] to-[#db2777]", to: "/perizinan" as const },
 };
 
 function Dashboard() {

@@ -8,8 +8,8 @@ export const Route = createFileRoute("/login")({
   component: LoginPage,
   head: () => ({
     meta: [
-      { title: "Masuk — SantriPay" },
-      { name: "description", content: "Aplikasi keuangan digital untuk wali santri dan siswa." },
+      { title: "Masuk — CT-Mobile" },
+      { name: "description", content: "Aplikasi mobile wali santri, asrama, dan perizinan Cahaya Tasbih." },
     ],
   }),
 });
@@ -27,16 +27,20 @@ function LoginPage() {
       const res = await postLogin(data);
       return res.data;
     },
-    onSuccess: () => {
+    onSuccess: (data: any) => {
       // Invalidate queries to ensure fresh data after login
       queryClient.invalidateQueries({ queryKey: ["students"] });
       queryClient.invalidateQueries({ queryKey: ["active-student"] });
       queryClient.invalidateQueries({ queryKey: ["dashboard"] });
 
-      navigate({ to: "/dashboard" });
+      if (data.role === "asatidz") {
+        navigate({ to: "/asatidz/dashboard" });
+      } else {
+        navigate({ to: "/dashboard" });
+      }
     },
     onError: (err: any) => {
-      setError(err.response?.data?.message || "Login gagal. Cek nomor HP dan password Anda.");
+      setError(err.response?.data?.message || "Login gagal. Cek nomor WhatsApp dan password Anda.");
     },
   });
 
@@ -101,7 +105,7 @@ function LoginPage() {
             <div className="space-y-4">
               <div>
                 <label className="text-[11px] font-bold text-slate-400 mb-2 uppercase tracking-widest block">
-                  Nomor Telepon
+                  Nomor WhatsApp
                 </label>
                 <div className="flex items-center gap-3 bg-slate-50 rounded-2xl px-4 py-3.5 focus-within:ring-2 focus-within:ring-[#9b1de8]/20 focus-within:bg-white transition-all border border-slate-100 focus-within:border-[#9b1de8]/30">
                   <input

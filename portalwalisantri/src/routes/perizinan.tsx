@@ -1,0 +1,377 @@
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
+import { ArrowLeft, Loader2, Calendar, ClipboardList, CheckCircle2, XCircle, Clock, ExternalLink, QrCode } from "lucide-react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { fetchPermits, postPermitRequest, fetchActiveStudent } from "@/lib/api";
+
+export const Route = createFileRoute("/perizinan")({
+  component: PerizinanPage,
+  head: () => ({ meta: [{ title: "Izin Keluar Santri — CT-Mobile" }] }),
+});
+
+function PerizinanPage() {
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const [tab, setTab] = useState<"list" | "request">("list");
+  const [activeBarcode, setActiveBarcode] = useState<string | null>(null);
+  const [activeBarcodeName, setActiveBarcodeName] = useState<string>("");
+
+  // Form State
+  const [permitType, setPermitType] = useState<"keluar_pondok" | "pulang_sementara" | "sakit">("keluar_pondok");
+  const [reason, setReason] = useState("");
+  const [plannedExit, setPlannedExit] = useState("");
+  const [plannedReturn, setPlannedReturn] = useState("");
+  const [formError, setFormError] = useState("");
+  const [formSuccess, setFormSuccess] = useState("");
+
+  const { data: activeStudentRes, isLoading: isLoadingStudent } = useQuery({
+    queryKey: ["active-student"],
+    queryFn: async () => {
+      const res = await fetchActiveStudent();
+      return res.data;
+    },
+  });
+
+  const activeStudent = activeStudentRes?.data;
+
+  const { data: permitsRes, isLoading: isLoadingPermits } = useQuery({
+    queryKey: ["permits", activeStudent?.id],
+    queryFn: async () => {
+      const res = await fetchPermits();
+      return res.data;
+    },
+    enabled: !!activeStudent,
+  });
+
+  const permits = permitsRes?.permits ?? [];
+
+  const permitMutation = useMutation({
+    mutationFn: async (data: any) => {
+      const res = await postPermitRequest(data);
+      return res.data;
+    },
+    onSuccess: (data: any) => {
+      setFormSuccess(data.message || "Perizinan berhasil diajukan!");
+      setReason("");
+      setPlannedExit("");
+      setPlannedReturn("");
+      queryClient.invalidateQueries({ queryKey: ["permits"] });
+      setTimeout(() => {
+        setFormSuccess("");
+        setTab("list");
+      }, 2000);
+    },
+    onError: (err: any) => {
+      setFormError(err.response?.data?.message || "Gagal mengajukan izin. Silakan periksa kembali formulir Anda.");
+    },
+  });
+
+  const handleRequestSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setFormError("");
+    setFormSuccess("");
+
+    if (!activeStudent) {
+      setFormError("Data santri aktif tidak ditemukan.");
+      return;
+    }
+
+    if (!reason || !plannedExit || !plannedReturn) {
+      setFormError("Semua kolom wajib diisi.");
+      return;
+    }
+
+    permitMutation.mutate({
+      student_id: activeStudent.id,
+      permit_type: permitType,
+      reason,
+      planned_exit_date: plannedExit,
+      planned_return_date: plannedReturn,
+    });
+  };
+
+  return (
+    <div className="min-h-screen w-full flex justify-center bg-secondary">
+      <div className="relative w-full max-w-md min-h-screen bg-background pb-32">
+        {/* Header */}
+        <div
+          className="relative px-6 pt-12 pb-24 rounded-b-[2rem] overflow-hidden"
+          style={{ background: "var(--gradient-hero)" }}
+        >
+          <div className="absolute -top-20 -right-10 w-56 h-56 rounded-full bg-primary-glow/30 blur-3xl" />
+          <div
+            className="absolute inset-0 opacity-[0.07]"
+            style={{
+              backgroundImage:
+                "linear-gradient(rgba(255,255,255,0.6) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.6) 1px, transparent 1px)",
+              backgroundSize: "26px 26px",
+              maskImage: "radial-gradient(ellipse at top right, black 30%, transparent 70%)",
+            }}
+          />
+          <div className="relative flex items-center gap-3">
+            <button
+              onClick={() => navigate({ to: "/dashboard" })}
+              className="w-10 h-10 rounded-xl bg-white/15 backdrop-blur-md border border-white/20 flex items-center justify-center text-white"
+            >
+              <ArrowLeft size={18} />
+            </button>
+            <div>
+              <p className="text-[11px] text-white/70 font-semibold uppercase tracking-wider">Layanan Perizinan</p>
+              <p className="text-base font-bold text-white">Izin Keluar Santri</p>
+            </div>
+          </div>
+
+          <div className="relative mt-6 text-white">
+            <p className="text-xs text-white/70 uppercase tracking-widest font-semibold">Santri Aktif</p>
+            <p className="text-xl font-bold mt-1 tracking-tight">
+              {isLoadingStudent ? "Memuat..." : activeStudent?.name ?? "Tanpa Nama"}
+            </p>
+            <p className="text-[11px] text-white/70 mt-1">
+              Gunakan fitur ini untuk mengajukan perizinan keluar pondok pesantren secara mandiri.
+            </p>
+          </div>
+        </div>
+
+        {/* Tab switcher */}
+        <div className="px-6 -mt-8 relative z-10">
+          <div className="flex bg-card rounded-[20px] p-1 border border-border shadow-[var(--shadow-soft)]">
+            <button
+              onClick={() => setTab("list")}
+              className={`flex-1 py-3 rounded-[16px] text-xs font-bold transition flex items-center justify-center gap-2 ${
+                tab === "list"
+                  ? "bg-gradient-to-br from-[#9b1de8] to-[#610a9c] text-white shadow-md"
+                  : "text-slate-500 hover:text-slate-800"
+              }`}
+            >
+              <ClipboardList size={16} /> Riwayat Izin
+            </button>
+            <button
+              onClick={() => setTab("request")}
+              className={`flex-1 py-3 rounded-[16px] text-xs font-bold transition flex items-center justify-center gap-2 ${
+                tab === "request"
+                  ? "bg-gradient-to-br from-[#9b1de8] to-[#610a9c] text-white shadow-md"
+                  : "text-slate-500 hover:text-slate-800"
+              }`}
+            >
+              <Calendar size={16} /> Pengajuan Baru
+            </button>
+          </div>
+        </div>
+
+        {/* Tab Content */}
+        <section className="px-6 mt-6 space-y-4">
+          {tab === "list" ? (
+            isLoadingPermits ? (
+              <div className="bg-card rounded-3xl border border-border p-8 flex flex-col items-center justify-center shadow-[var(--shadow-soft)]">
+                <Loader2 className="animate-spin text-[#9b1de8] mb-2" size={28} />
+                <p className="text-xs font-semibold text-muted-foreground">Memuat riwayat perizinan...</p>
+              </div>
+            ) : permits.length === 0 ? (
+              <div className="bg-card rounded-3xl border border-border p-8 text-center shadow-[var(--shadow-soft)]">
+                <Calendar className="mx-auto text-muted-foreground mb-3" size={32} />
+                <p className="text-sm font-bold text-foreground">Belum Ada Pengajuan</p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Semua perizinan keluar pondok ananda akan tampil di sini.
+                </p>
+              </div>
+            ) : (
+              permits.map((permit: any) => {
+                const badgeColor = 
+                  permit.status === "pending" ? "bg-amber-50 text-amber-700 border-amber-100" :
+                  permit.status === "approved" ? "bg-emerald-50 text-emerald-700 border-emerald-100" :
+                  permit.status === "rejected" ? "bg-rose-50 text-rose-700 border-rose-100" :
+                  permit.status === "out" ? "bg-blue-50 text-blue-700 border-blue-100" :
+                  "bg-slate-50 text-slate-500 border-slate-100";
+
+                const badgeText = 
+                  permit.status === "pending" ? "Menunggu Persetujuan" :
+                  permit.status === "approved" ? "Disetujui (Siap Scan)" :
+                  permit.status === "rejected" ? "Ditolak" :
+                  permit.status === "out" ? "Sedang di Luar" :
+                  "Telah Kembali";
+
+                return (
+                  <div
+                    key={permit.id}
+                    className="bg-card rounded-3xl border border-border p-5 shadow-[var(--shadow-soft)] hover:shadow-[var(--shadow-card)] transition duration-300"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <span className={`inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${badgeColor}`}>
+                          {badgeText}
+                        </span>
+                        <p className="text-sm font-bold text-slate-800 mt-2 capitalize">
+                          {permit.permit_type.replace("_", " ")}
+                        </p>
+                      </div>
+                      
+                      {permit.status === "approved" && (
+                        <button
+                          onClick={() => {
+                            setActiveBarcode(permit.barcode_token);
+                            setActiveBarcodeName(permit.student?.name);
+                          }}
+                          className="p-2 rounded-xl bg-[#9b1de8]/10 text-[#9b1de8] hover:bg-[#9b1de8]/20 transition flex items-center gap-1 text-[11px] font-bold"
+                        >
+                          <QrCode size={15} /> Barcode
+                        </button>
+                      )}
+                    </div>
+
+                    <div className="mt-4 grid grid-cols-2 gap-3 text-xs border-t border-slate-100 pt-3">
+                      <div>
+                        <p className="text-slate-400">Rencana Keluar</p>
+                        <p className="font-bold text-slate-700 mt-0.5">
+                          {new Date(permit.planned_exit_date).toLocaleString("id-ID", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-slate-400">Rencana Kembali</p>
+                        <p className="font-bold text-slate-700 mt-0.5">
+                          {new Date(permit.planned_return_date).toLocaleString("id-ID", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
+                        </p>
+                      </div>
+                    </div>
+
+                    {permit.reason && (
+                      <div className="mt-3 bg-slate-50 rounded-2xl p-3 border border-slate-100">
+                        <p className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Alasan Perizinan</p>
+                        <p className="text-xs text-slate-600 mt-1">{permit.reason}</p>
+                      </div>
+                    )}
+
+                    {permit.status === "rejected" && permit.rejection_reason && (
+                      <div className="mt-3 bg-rose-50 rounded-2xl p-3 border border-rose-100 text-rose-800">
+                        <p className="text-[10px] uppercase font-bold text-rose-500 tracking-wider">Alasan Penolakan</p>
+                        <p className="text-xs mt-1">{permit.rejection_reason}</p>
+                      </div>
+                    )}
+
+                    {permit.actual_exit_date && (
+                      <div className="mt-3 text-[11px] text-slate-400 flex flex-col gap-1 border-t border-slate-100 pt-3">
+                        <p>Keluar: {new Date(permit.actual_exit_date).toLocaleString("id-ID")}</p>
+                        {permit.actual_return_date && (
+                          <p>Kembali: {new Date(permit.actual_return_date).toLocaleString("id-ID")}</p>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })
+            )
+          ) : (
+            // Request Form Tab
+            <div className="bg-card rounded-3xl border border-border p-6 shadow-[var(--shadow-soft)]">
+              <h3 className="text-base font-bold text-slate-800 mb-4">Formulir Pengajuan Izin</h3>
+
+              <form onSubmit={handleRequestSubmit} className="space-y-4">
+                {formError && (
+                  <div className="p-3 rounded-xl bg-red-50 text-red-600 border border-red-100 text-xs font-bold text-center">
+                    {formError}
+                  </div>
+                )}
+                {formSuccess && (
+                  <div className="p-3 rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-100 text-xs font-bold text-center">
+                    {formSuccess}
+                  </div>
+                )}
+
+                <div>
+                  <label className="text-[11px] font-bold text-slate-400 mb-2 uppercase tracking-widest block">Tipe Perizinan</label>
+                  <select
+                    value={permitType}
+                    onChange={(e: any) => setPermitType(e.target.value)}
+                    className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-4 py-3.5 outline-none text-slate-800 text-[14px] font-medium focus:ring-2 focus:ring-[#9b1de8]/20 focus:bg-white transition"
+                  >
+                    <option value="keluar_pondok">Keluar Sebentar (Beli Buku/Keperluan)</option>
+                    <option value="pulang_sementara">Pulang Sementara (Liburan/Sakit)</option>
+                    <option value="sakit">Sakit Parah (Perawatan/Rujukan)</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="text-[11px] font-bold text-slate-400 mb-2 uppercase tracking-widest block">Rencana Tanggal Keluar</label>
+                  <input
+                    type="datetime-local"
+                    value={plannedExit}
+                    onChange={(e) => setPlannedExit(e.target.value)}
+                    className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-4 py-3.5 outline-none text-slate-800 text-[14px] font-medium focus:ring-2 focus:ring-[#9b1de8]/20 focus:bg-white transition"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-[11px] font-bold text-slate-400 mb-2 uppercase tracking-widest block">Rencana Tanggal Kembali</label>
+                  <input
+                    type="datetime-local"
+                    value={plannedReturn}
+                    onChange={(e) => setPlannedReturn(e.target.value)}
+                    className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-4 py-3.5 outline-none text-slate-800 text-[14px] font-medium focus:ring-2 focus:ring-[#9b1de8]/20 focus:bg-white transition"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-[11px] font-bold text-slate-400 mb-2 uppercase tracking-widest block">Alasan Keperluan</label>
+                  <textarea
+                    rows={3}
+                    value={reason}
+                    onChange={(e) => setReason(e.target.value)}
+                    placeholder="Tulis alasan izin keluar ananda secara jelas dan transparan..."
+                    className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-4 py-3.5 outline-none text-slate-800 text-[14px] font-medium focus:ring-2 focus:ring-[#9b1de8]/20 focus:bg-white transition resize-none"
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={permitMutation.isPending}
+                  className="w-full py-4 rounded-[20px] bg-gradient-to-r from-[#9b1de8] to-[#610a9c] text-white font-bold text-[14px] shadow-[0_8px_25px_rgba(155,29,232,0.3)] transition active:scale-[0.98] disabled:opacity-70 flex items-center justify-center"
+                >
+                  {permitMutation.isPending ? (
+                    <Loader2 className="animate-spin" size={18} />
+                  ) : (
+                    "Ajukan Perizinan"
+                  )}
+                </button>
+              </form>
+            </div>
+          )}
+        </section>
+
+        {/* QR Code Modal Drawer */}
+        {activeBarcode && (
+          <div className="fixed inset-0 bg-black/60 z-50 flex items-end justify-center p-4 backdrop-blur-sm animate-fade-in">
+            <div className="bg-card w-full max-w-md rounded-t-[2.5rem] p-6 shadow-2xl space-y-6 animate-slide-up pb-10">
+              <div className="flex justify-between items-center">
+                <div>
+                  <p className="text-[11px] text-slate-400 font-bold uppercase tracking-widest">Pindai di Gerbang</p>
+                  <p className="text-base font-bold text-slate-800">{activeBarcodeName}</p>
+                </div>
+                <button
+                  onClick={() => setActiveBarcode(null)}
+                  className="w-8 h-8 rounded-full bg-secondary border border-border flex items-center justify-center text-slate-500 font-bold hover:bg-slate-100 transition"
+                >
+                  ×
+                </button>
+              </div>
+
+              <div className="bg-slate-50 border border-dashed border-slate-200 rounded-[2rem] p-8 flex flex-col items-center justify-center">
+                {/* Dynamically generate QR code from unique permit token */}
+                <img
+                  src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${activeBarcode}`}
+                  alt="QR Code"
+                  className="w-48 h-48 bg-white p-2 rounded-2xl border border-slate-100 shadow-md"
+                />
+                
+                <div className="mt-4 text-center">
+                  <p className="text-xs font-mono font-bold text-[#9b1de8] tracking-widest">{activeBarcode}</p>
+                  <p className="text-[10px] text-slate-400 mt-1 font-semibold leading-relaxed">
+                    Tunjukkan QR code ini kepada Ustadz atau Satpam di pos gerbang luar pondok pesantren.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}

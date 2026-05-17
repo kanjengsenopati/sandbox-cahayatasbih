@@ -18,7 +18,7 @@ use App\Http\Controllers\Admin\ContactController;
 use App\Http\Controllers\Admin\Select2Controller;
 use App\Http\Controllers\Admin\StudentController;
 use App\Http\Controllers\Admin\TahfidzController;
-use App\Http\Controllers\User\WaliAuthController;
+use App\Http\Controllers\User\CtMobileAuthController;
 use App\Http\Controllers\User\WaliPpdbController;
 use App\Http\Controllers\Admin\BillItemController;
 use App\Http\Controllers\Admin\BillTypeController;
@@ -91,17 +91,21 @@ use App\Http\Controllers\Admin\ReportStudentCounselingScoreController;
 | be assigned to the "web" middleware group. Make something great!
 |
 */
-// start wali santri
+// start wali santri & asatidz (CT-Mobile)
 // add route group prefix and middleware
 
-Route::prefix('wali')->group(function () {
+Route::any('wali/{any?}', function ($any = null) {
+    return redirect('/ct-mobile/' . ($any ? $any : ''), 301);
+})->where('any', '.*');
+
+Route::prefix('ct-mobile')->group(function () {
     Route::get('/', [WaliDashboardController::class, 'app'])->name('wali.index');
     Route::get('login', [WaliDashboardController::class, 'app'])->name('wali.login');
-    Route::post('login', [WaliAuthController::class, 'authenticate'])->name('wali.authenticate');
-    Route::post('logout', [WaliAuthController::class, 'logout'])->name('wali.logout');
-    Route::get('logout', [WaliAuthController::class, 'logout']);
-    Route::get('register', [WaliAuthController::class, 'register'])->name('wali.register');
-    Route::post('register', [WaliAuthController::class, 'store'])->name('wali.register.store');
+    Route::post('login', [CtMobileAuthController::class, 'authenticate'])->name('wali.authenticate');
+    Route::post('logout', [CtMobileAuthController::class, 'logout'])->name('wali.logout');
+    Route::get('logout', [CtMobileAuthController::class, 'logout']);
+    Route::get('register', [CtMobileAuthController::class, 'register'])->name('wali.register');
+    Route::post('register', [CtMobileAuthController::class, 'store'])->name('wali.register.store');
 
     Route::middleware('wali')->group(function () {
         Route::get('app', [WaliDashboardController::class, 'app'])->name('wali.app');
