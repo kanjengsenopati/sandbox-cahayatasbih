@@ -13,8 +13,8 @@ return new class extends Migration
     {
         Schema::create('student_permits', function (Blueprint $table) {
             $table->uuid('id')->primary();
-            $table->foreignId('student_id')->constrained('students')->onDelete('cascade');
-            $table->foreignId('user_id')->constrained('users')->onDelete('cascade'); // Wali Santri pemohon
+            $table->uuid('student_id');
+            $table->uuid('user_id'); // Wali Santri pemohon
             $table->uuid('admin_id')->nullable(); // Ustadz/Ustadzah penanggung jawab asrama penyetuju izin
             
             $table->enum('permit_type', ['keluar_pondok', 'pulang_sementara', 'sakit']);
@@ -44,6 +44,8 @@ return new class extends Migration
             $table->timestamps();
             $table->softDeletes();
             
+            $table->foreign('student_id')->references('id')->on('students')->onDelete('cascade');
+            $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
             $table->foreign('admin_id')->references('id')->on('admins')->onDelete('set null');
         });
     }
