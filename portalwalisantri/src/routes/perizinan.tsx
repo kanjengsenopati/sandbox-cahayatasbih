@@ -971,38 +971,29 @@ function PerizinanPage() {
                     </div>
                   </div>
                 ) : (
-                  /* --- ANALOG CLOCK PANEL --- */
+                  /* --- PREMIUM DIGITAL TIME PICKER PANEL --- */
                   <div className="space-y-4 animate-in fade-in duration-200">
-                    
-                    {/* Dial Selector (Hour vs Minute) & AM/PM Selector */}
-                    <div className="flex justify-between items-center px-4">
-                      <div className="flex bg-slate-100/80 border border-slate-200/50 rounded-xl p-0.5 text-xs font-bold">
-                        <button
-                          type="button"
-                          onClick={() => setPickerClockMode("hours")}
-                          className={`px-3 py-1.5 rounded-lg transition ${
-                            pickerClockMode === "hours" ? "bg-white text-slate-800 shadow-sm" : "text-slate-500"
-                          }`}
-                        >
-                          Jam
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setPickerClockMode("minutes")}
-                          className={`px-3 py-1.5 rounded-lg transition ${
-                            pickerClockMode === "minutes" ? "bg-white text-slate-800 shadow-sm" : "text-slate-500"
-                          }`}
-                        >
-                          Menit
-                        </button>
+                    {/* Glowing Digital Time Banner */}
+                    <div className="bg-gradient-to-r from-[#9b1de8]/10 to-[#5a0c91]/10 border border-[#9b1de8]/20 rounded-2xl p-4 flex items-center justify-between shadow-sm">
+                      <div className="flex flex-col">
+                        <span className="text-[10px] uppercase font-bold text-[#9b1de8]/80 tracking-widest">Waktu Terpilih</span>
+                        <div className="flex items-baseline gap-1 mt-1">
+                          <span className="text-2xl font-black text-slate-800 tracking-tight font-mono">
+                            {pickerHour.toString().padStart(2, '0')}:{pickerMinute.toString().padStart(2, '0')}
+                          </span>
+                          <span className="text-sm font-extrabold text-[#9b1de8]">{pickerAmPm}</span>
+                        </div>
                       </div>
-
-                      <div className="flex bg-slate-100/80 border border-slate-200/50 rounded-xl p-0.5 text-xs font-bold">
+                      
+                      {/* AM / PM Segmented Capsule Selector */}
+                      <div className="flex bg-slate-100/80 border border-slate-200/50 rounded-xl p-0.5 text-[11px] font-extrabold">
                         <button
                           type="button"
                           onClick={() => setPickerAmPm("AM")}
-                          className={`px-3 py-1.5 rounded-lg transition ${
-                            pickerAmPm === "AM" ? "bg-[#9b1de8] text-white shadow-sm" : "text-slate-500"
+                          className={`px-3 py-1.5 rounded-lg transition active:scale-95 ${
+                            pickerAmPm === "AM" 
+                              ? "bg-gradient-to-r from-[#9b1de8] to-[#5a0c91] text-white shadow-sm" 
+                              : "text-slate-500 hover:text-slate-800"
                           }`}
                         >
                           AM
@@ -1010,8 +1001,10 @@ function PerizinanPage() {
                         <button
                           type="button"
                           onClick={() => setPickerAmPm("PM")}
-                          className={`px-3 py-1.5 rounded-lg transition ${
-                            pickerAmPm === "PM" ? "bg-[#9b1de8] text-white shadow-sm" : "text-slate-500"
+                          className={`px-3 py-1.5 rounded-lg transition active:scale-95 ${
+                            pickerAmPm === "PM" 
+                              ? "bg-gradient-to-r from-[#9b1de8] to-[#5a0c91] text-white shadow-sm" 
+                              : "text-slate-500 hover:text-slate-800"
                           }`}
                         >
                           PM
@@ -1019,106 +1012,107 @@ function PerizinanPage() {
                       </div>
                     </div>
 
-                    {/* Circular Clock Face */}
-                    <div className="relative w-56 h-56 mx-auto rounded-full bg-slate-100/50 border border-slate-200/60 flex items-center justify-center shadow-[inset_0_5px_15px_rgba(0,0,0,0.04),_0_2px_4px_rgba(0,0,0,0.01)]">
-                      
-                      {/* Hands */}
-                      {/* Hour hand */}
-                      <div
-                        className="absolute w-1.5 bg-slate-800 rounded-full"
-                        style={{
-                          height: "30%",
-                          bottom: "50%",
-                          left: "calc(50% - 3px)",
-                          transformOrigin: "bottom center",
-                          transform: `rotate(${(pickerHour % 12) * 30 + pickerMinute * 0.5}deg)`,
-                          transition: "transform 0.4s cubic-bezier(0.4, 0, 0.2, 1)",
-                        }}
-                      />
-                      {/* Minute hand */}
-                      <div
-                        className="absolute w-0.5 bg-[#9b1de8] rounded-full"
-                        style={{
-                          height: "42%",
-                          bottom: "50%",
-                          left: "calc(50% - 1px)",
-                          transformOrigin: "bottom center",
-                          transform: `rotate(${pickerMinute * 6}deg)`,
-                          transition: "transform 0.4s cubic-bezier(0.4, 0, 0.2, 1)",
-                        }}
-                      />
-                      {/* Center cap */}
-                      <div className="absolute w-4 h-4 rounded-full bg-[#9b1de8] border-3 border-white shadow-[0_2px_8px_rgba(155,29,232,0.3)] z-10" />
+                    {/* Interactive Tab Switcher (Jam vs Menit) */}
+                    <div className="flex bg-slate-100/60 border border-slate-200/40 rounded-xl p-1 gap-1">
+                      <button
+                        type="button"
+                        onClick={() => setPickerClockMode("hours")}
+                        className={`flex-1 py-2 text-xs font-bold rounded-lg transition ${
+                          pickerClockMode === "hours"
+                            ? "bg-white text-slate-800 shadow-sm border border-slate-200/20"
+                            : "text-slate-500 hover:text-slate-800"
+                        }`}
+                      >
+                        Pilih Jam ({pickerHour})
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setPickerClockMode("minutes")}
+                        className={`flex-1 py-2 text-xs font-bold rounded-lg transition ${
+                          pickerClockMode === "minutes"
+                            ? "bg-white text-slate-800 shadow-sm border border-slate-200/20"
+                            : "text-slate-500 hover:text-slate-800"
+                        }`}
+                      >
+                        Pilih Menit ({pickerMinute.toString().padStart(2, '0')})
+                      </button>
+                    </div>
 
-                      {/* Render Clock Numbers */}
+                    {/* Selector Grid */}
+                    <div className="min-h-[160px] flex items-center justify-center">
                       {pickerClockMode === "hours" ? (
-                        [12, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11].map((hr) => {
-                          const isSelected = pickerHour === hr;
-                          const style = getCircularStyle(hr, 12, 37);
-                          return (
-                            <button
-                              key={`hr-${hr}`}
-                              type="button"
-                              onClick={() => {
-                                setPickerHour(hr);
-                                setPickerClockMode("minutes");
-                              }}
-                              style={style}
-                              className={`absolute w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all ${
-                                isSelected
-                                  ? "bg-gradient-to-tr from-[#9b1de8] to-[#780ca1] text-white shadow-[0_4px_12px_rgba(155,29,232,0.35)] font-extrabold scale-110"
-                                  : "text-slate-500 hover:bg-[#9b1de8]/10 hover:text-[#9b1de8]"
-                              }`}
-                            >
-                              {hr}
-                            </button>
-                          );
-                        })
+                        /* Hours 4x3 Grid */
+                        <div className="grid grid-cols-4 gap-2 w-full max-w-sm">
+                          {[12, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11].map((hr) => {
+                            const isSelected = pickerHour === hr;
+                            return (
+                              <button
+                                type="button"
+                                key={`hr-${hr}`}
+                                onClick={() => {
+                                  setPickerHour(hr);
+                                  setPickerClockMode("minutes"); // Auto switch to minutes for speed
+                                }}
+                                className={`py-3 rounded-2xl text-xs font-extrabold transition duration-200 active:scale-95 border ${
+                                  isSelected
+                                    ? "bg-gradient-to-br from-[#9b1de8] to-[#5a0c91] text-white border-transparent shadow-[0_6px_15px_rgba(155,29,232,0.25)] scale-105"
+                                    : "bg-slate-50 text-slate-700 border-slate-100 hover:bg-slate-100/50"
+                                }`}
+                              >
+                                {hr}
+                              </button>
+                            );
+                          })}
+                        </div>
                       ) : (
-                        [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55].map((min, idx) => {
-                          const isSelected = pickerMinute === min;
-                          const style = getCircularStyle(idx === 0 ? 12 : idx, 12, 37);
-                          return (
-                            <button
-                              key={`min-${min}`}
-                              type="button"
-                              onClick={() => setPickerMinute(min)}
-                              style={style}
-                              className={`absolute w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-bold transition-all ${
-                                isSelected
-                                  ? "bg-gradient-to-tr from-[#9b1de8] to-[#780ca1] text-white shadow-[0_4px_12px_rgba(155,29,232,0.35)] font-extrabold scale-110"
-                                  : "text-slate-500 hover:bg-[#9b1de8]/10 hover:text-[#9b1de8]"
-                              }`}
-                            >
-                              {min.toString().padStart(2, '0')}
-                            </button>
-                          );
-                        })
+                        /* Minutes 4x3 Grid (increments of 5) */
+                        <div className="w-full max-w-sm space-y-3">
+                          <div className="grid grid-cols-4 gap-2">
+                            {[0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55].map((min) => {
+                              const isSelected = pickerMinute === min;
+                              return (
+                                <button
+                                  type="button"
+                                  key={`min-${min}`}
+                                  onClick={() => setPickerMinute(min)}
+                                  className={`py-2.5 rounded-2xl text-xs font-extrabold transition duration-200 active:scale-95 border ${
+                                    isSelected
+                                      ? "bg-gradient-to-br from-[#9b1de8] to-[#5a0c91] text-white border-transparent shadow-[0_6px_15px_rgba(155,29,232,0.25)] scale-105"
+                                      : "bg-slate-50 text-slate-700 border-slate-100 hover:bg-slate-100/50"
+                                  }`}
+                                >
+                                  {min.toString().padStart(2, '0')}
+                                </button>
+                              );
+                            })}
+                          </div>
+                          
+                          {/* Precise Minute Fine-Tuning controls (+ / -) */}
+                          <div className="flex items-center justify-between px-2 pt-2 border-t border-slate-100">
+                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Sesuaikan Presisi:</span>
+                            <div className="flex items-center gap-2">
+                              <button
+                                type="button"
+                                onClick={() => setPickerMinute((prev) => (prev > 0 ? prev - 1 : 59))}
+                                className="w-9 h-9 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-center font-bold text-slate-600 hover:bg-slate-100 active:scale-95 transition"
+                              >
+                                -
+                              </button>
+                              <div className="w-12 text-center bg-slate-100 border border-slate-200/50 rounded-xl py-1">
+                                <span className="text-xs font-black text-slate-700 font-mono">{pickerMinute.toString().padStart(2, '0')}</span>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => setPickerMinute((prev) => (prev < 59 ? prev + 1 : 0))}
+                                className="w-9 h-9 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-center font-bold text-slate-600 hover:bg-slate-100 active:scale-95 transition"
+                              >
+                                +
+                              </button>
+                            </div>
+                          </div>
+                        </div>
                       )}
                     </div>
-
-                    {/* Exact Minute Precision Tuner */}
-                    <div className="flex items-center justify-center gap-3 pt-3 border-t border-slate-100 mt-2">
-                      <button
-                        type="button"
-                        onClick={() => setPickerMinute((prev) => (prev > 0 ? prev - 1 : 59))}
-                        className="w-10 h-10 rounded-2xl bg-slate-50 border border-slate-200/75 flex items-center justify-center font-bold text-slate-600 hover:bg-slate-100 active:scale-95 transition"
-                      >
-                        -
-                      </button>
-                      <div className="text-center min-w-[80px] bg-slate-50 border border-slate-100 rounded-2xl py-1.5 px-3">
-                        <span className="text-[9px] uppercase font-extrabold text-slate-400 block tracking-wider">Menit</span>
-                        <span className="text-sm font-extrabold text-slate-800 font-mono">{pickerMinute.toString().padStart(2, '0')}</span>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => setPickerMinute((prev) => (prev < 59 ? prev + 1 : 0))}
-                        className="w-10 h-10 rounded-2xl bg-slate-50 border border-slate-200/75 flex items-center justify-center font-bold text-slate-600 hover:bg-slate-100 active:scale-95 transition"
-                      >
-                        +
-                      </button>
-                    </div>
-
                   </div>
                 )}
               </div>
