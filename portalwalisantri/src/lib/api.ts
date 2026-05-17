@@ -54,6 +54,7 @@ export const uploadPaymentProof = (id: string | number, formData: FormData) =>
 export const fetchLimit = () => api.get('/limit');
 export const updateLimit = (data: any) => api.put('/limit', data);
 export const fetchProfile = () => api.get('/profile');
+export const postSwitchRole = () => api.post('/switch-role');
 export const updateProfile = (formData: FormData) => 
   api.post('/profile', formData, {
     headers: { 'Content-Type': 'multipart/form-data' }
@@ -91,5 +92,8 @@ export const postScanBarcode = (data: {
   escort_name?: string, 
   escort_relation?: string 
 }) => api.post('/asatidz/permits/scan', data);
+export const fetchAsatidzStats = () => api.get('/asatidz/dashboard-stats');
+export const fetchMyStudents = () => api.get('/asatidz/my-students');
+export const fetchStudentHistory = (studentId: string | number) => api.get(`/asatidz/my-students/${studentId}/history`);
 
 export default api;

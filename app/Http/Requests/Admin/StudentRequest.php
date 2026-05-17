@@ -24,6 +24,8 @@ class StudentRequest extends FormRequest
         return [
             'nis' => 'required|string|max:255', // Add 'nis' field to the validation rules
             'user_id' => 'required|exists:users,id',
+            'asrama_host_id' => 'nullable|uuid|exists:admins,id',
+            'asrama_name' => 'nullable|string|max:255',
             'name' => 'required|string|max:255',
             'born_place' => 'required|string|max:255',
             'birth_date' => 'required|date',

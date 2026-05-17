@@ -161,6 +161,7 @@ Route::prefix('ct-mobile')->middleware(['web'])->group(function () {
     Route::get('payment-methods', [App\Http\Controllers\Api\Wali\PaymentMethodController::class, 'index']);
     Route::get('profile', [App\Http\Controllers\Api\Wali\ProfileController::class, 'show']);
     Route::put('profile', [App\Http\Controllers\Api\Wali\ProfileController::class, 'update']);
+    Route::post('switch-role', [App\Http\Controllers\Api\Wali\ProfileController::class, 'switchRole']);
     Route::put('password', [App\Http\Controllers\Api\Wali\PasswordController::class, 'update']);
 
     // Blokir Saldo
@@ -199,5 +200,8 @@ Route::prefix('ct-mobile')->middleware(['web'])->group(function () {
         Route::get('asatidz/permits/active', [App\Http\Controllers\Api\Wali\AsatidzPermitController::class, 'activeList']);
         Route::get('asatidz/permits/overdue', [App\Http\Controllers\Api\Wali\AsatidzPermitController::class, 'overdueList']);
         Route::post('asatidz/permits/scan', [App\Http\Controllers\Api\Wali\AsatidzPermitController::class, 'scanBarcode']);
+        Route::get('asatidz/dashboard-stats', [App\Http\Controllers\Api\Wali\AsatidzPermitController::class, 'dashboardStats']);
+        Route::get('asatidz/my-students', [App\Http\Controllers\Api\Wali\AsatidzPermitController::class, 'myStudents']);
+        Route::get('asatidz/my-students/{studentId}/history', [App\Http\Controllers\Api\Wali\AsatidzPermitController::class, 'studentHistory']);
     });
 });

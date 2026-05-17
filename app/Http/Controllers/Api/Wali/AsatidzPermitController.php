@@ -17,9 +17,13 @@ class AsatidzPermitController extends Controller
      */
     public function pendingList()
     {
+        $adminId = Auth::guard('web')->id();
         $permits = StudentPermit::where('status', 'pending')
+            ->whereHas('student', function ($query) use ($adminId) {
+                $query->where('asrama_host_id', $adminId);
+            })
             ->with(['student' => function ($query) {
-                $query->select('id', 'name', 'nis', 'avatar');
+                $query->select('id', 'name', 'nis', 'avatar', 'asrama_name');
             }, 'user' => function ($query) {
                 $query->select('id', 'name', 'phone');
             }])
@@ -86,9 +90,13 @@ class AsatidzPermitController extends Controller
      */
     public function activeList()
     {
+        $adminId = Auth::guard('web')->id();
         $permits = StudentPermit::whereIn('status', ['approved', 'out'])
+            ->whereHas('student', function ($query) use ($adminId) {
+                $query->where('asrama_host_id', $adminId);
+            })
             ->with(['student' => function ($query) {
-                $query->select('id', 'name', 'nis', 'avatar');
+                $query->select('id', 'name', 'nis', 'avatar', 'asrama_name');
             }, 'user' => function ($query) {
                 $query->select('id', 'name', 'phone');
             }, 'admin' => function ($query) {
@@ -109,10 +117,14 @@ class AsatidzPermitController extends Controller
     public function overdueList()
     {
         $now = Carbon::now();
+        $adminId = Auth::guard('web')->id();
         $permits = StudentPermit::where('status', 'out')
             ->where('planned_return_date', '<', $now)
+            ->whereHas('student', function ($query) use ($adminId) {
+                $query->where('asrama_host_id', $adminId);
+            })
             ->with(['student' => function ($query) {
-                $query->select('id', 'name', 'nis', 'avatar');
+                $query->select('id', 'name', 'nis', 'avatar', 'asrama_name');
             }, 'user' => function ($query) {
                 $query->select('id', 'name', 'phone');
             }])
@@ -230,5 +242,119 @@ class AsatidzPermitController extends Controller
         } catch (\Exception $e) {
             return null;
         }
+    }
+
+    public function dashboardStats()
+    {
+        $admin = Auth::guard('web')->user();
+        $adminId = $admin->id;
+
+        // Count supervised students
+        $totalStudents = \App\Models\Student::where('asrama_host_id', $adminId)->count();
+
+        // Get asrama name from first student
+        $asramaName = \App\Models\Student::where('asrama_host_id', $adminId)
+            ->whereNotNull('asrama_name')
+            ->value('asrama_name') ?: 'Asrama Asatidz';
+
+        // Count permits
+        $pendingCount = StudentPermit::where('status', 'pending')
+            ->whereHas('student', function ($query) use ($adminId) {
+                $query->where('asrama_host_id', $adminId);
+            })->count();
+
+        $activeCount = StudentPermit::whereIn('status', ['approved', 'out'])
+            ->whereHas('student', function ($query) use ($adminId) {
+                $query->where('asrama_host_id', $adminId);
+            })->count();
+
+        $overdueCount = StudentPermit::where('status', 'out')
+            ->where('planned_return_date', '<', Carbon::now())
+            ->whereHas('student', function ($query) use ($adminId) {
+                $query->where('asrama_host_id', $adminId);
+            })->count();
+
+        return response()->json([
+            'success' => true,
+            'host_name' => $admin->name,
+            'asrama_name' => $asramaName,
+            'total_students' => $totalStudents,
+            'counts' => [
+                'pending' => $pendingCount,
+                'active' => $activeCount,
+                'overdue' => $overdueCount
+            ]
+        ]);
+    }
+
+    public function myStudents()
+    {
+        $adminId = Auth::guard('web')->id();
+        $students = \App\Models\Student::where('asrama_host_id', $adminId)
+            ->with(['classroom'])
+            ->orderBy('name', 'asc')
+            ->get();
+
+        $now = Carbon::now();
+
+        $result = $students->map(function ($student) use ($now) {
+            // Get latest permit to check status
+            $latestPermit = StudentPermit::where('student_id', $student->id)
+                ->orderBy('created_at', 'desc')
+                ->first();
+
+            $statusText = 'Di Pondok';
+            if ($latestPermit) {
+                if ($latestPermit->status === 'out') {
+                    if (Carbon::parse($latestPermit->planned_return_date)->isBefore($now)) {
+                        $statusText = 'Terlambat';
+                    } else {
+                        $statusText = 'Sedang Keluar';
+                    }
+                }
+            }
+
+            return [
+                'id' => $student->id,
+                'name' => $student->name,
+                'nis' => $student->nis,
+                'avatar' => $student->avatar,
+                'classroom_name' => $student->classroom->name ?? 'Tanpa Kelas',
+                'status' => $statusText,
+                'latest_permit' => $latestPermit
+            ];
+        });
+
+        return response()->json([
+            'success' => true,
+            'students' => $result
+        ]);
+    }
+
+    public function studentHistory($studentId)
+    {
+        $adminId = Auth::guard('web')->id();
+        
+        // Ensure student is supervised by this ustadz
+        $student = \App\Models\Student::where('id', $studentId)
+            ->where('asrama_host_id', $adminId)
+            ->firstOrFail();
+
+        $history = StudentPermit::where('student_id', $studentId)
+            ->with(['user' => function ($query) {
+                $query->select('id', 'name');
+            }])
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        return response()->json([
+            'success' => true,
+            'student' => [
+                'id' => $student->id,
+                'name' => $student->name,
+                'nis' => $student->nis
+            ],
+            'history' => $history
+        ]);
     }
 }

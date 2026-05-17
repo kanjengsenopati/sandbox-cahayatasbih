@@ -19,6 +19,7 @@ function LoginPage() {
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [showRoleSelector, setShowRoleSelector] = useState(false);
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
@@ -28,6 +29,11 @@ function LoginPage() {
       return res.data;
     },
     onSuccess: (data: any) => {
+      if (data.status === "requires_role_selection") {
+        setShowRoleSelector(true);
+        return;
+      }
+
       // Invalidate queries to ensure fresh data after login
       queryClient.invalidateQueries({ queryKey: ["students"] });
       queryClient.invalidateQueries({ queryKey: ["active-student"] });
@@ -48,6 +54,11 @@ function LoginPage() {
     e.preventDefault();
     setError("");
     loginMutation.mutate({ phone, password });
+  };
+
+  const selectRoleAndLogin = (selectedRole: string) => {
+    setShowRoleSelector(false);
+    loginMutation.mutate({ phone, password, role: selectedRole });
   };
 
   return (
@@ -164,6 +175,58 @@ function LoginPage() {
           </form>
         </div>
       </div>
+
+      {/* Glassmorphic Role Selector Dialog */}
+      {showRoleSelector && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-5 bg-slate-900/60 backdrop-blur-md transition-opacity duration-300">
+          <div className="bg-white rounded-[24px] w-full max-w-sm p-6 shadow-[0_8px_30px_rgb(0,0,0,0.08)] border border-slate-100 flex flex-col">
+            <h3 className="text-[18px] font-bold text-slate-900 text-center mb-1">
+              Pilih Peran Masuk
+            </h3>
+            <p className="text-[13px] font-medium text-slate-500 text-center mb-6 leading-relaxed">
+              Nomor WhatsApp Anda terdaftar sebagai Wali Santri dan juga Asatidz. Silakan pilih identitas untuk masuk:
+            </p>
+
+            <div className="space-y-3">
+              <button
+                type="button"
+                onClick={() => selectRoleAndLogin("wali")}
+                className="w-full p-4 rounded-[20px] bg-slate-50 hover:bg-slate-100 border border-slate-200 transition-all active:scale-[0.98] flex items-center gap-4 text-left group"
+              >
+                <div className="w-10 h-10 rounded-full bg-[#9b1de8]/10 flex items-center justify-center text-[#9b1de8] group-hover:bg-[#9b1de8] group-hover:text-white transition-all shrink-0">
+                  <span className="font-bold text-[14px]">WS</span>
+                </div>
+                <div>
+                  <div className="font-bold text-slate-800 text-[14px]">Wali Santri</div>
+                  <div className="text-slate-400 text-[11px] font-medium leading-tight mt-0.5">Akses Tabungan, Saldo, & Perizinan Anak</div>
+                </div>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => selectRoleAndLogin("asatidz")}
+                className="w-full p-4 rounded-[20px] bg-slate-50 hover:bg-slate-100 border border-slate-200 transition-all active:scale-[0.98] flex items-center gap-4 text-left group"
+              >
+                <div className="w-10 h-10 rounded-full bg-emerald-50 flex items-center justify-center text-emerald-600 group-hover:bg-emerald-600 group-hover:text-white transition-all shrink-0">
+                  <span className="font-bold text-[14px]">AZ</span>
+                </div>
+                <div>
+                  <div className="font-bold text-slate-800 text-[14px]">Asatidz / Ustadz</div>
+                  <div className="text-slate-400 text-[11px] font-medium leading-tight mt-0.5">Akses Approval Izin & Supervisi Santri</div>
+                </div>
+              </button>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setShowRoleSelector(false)}
+              className="mt-6 text-center text-[12px] font-bold text-slate-400 hover:text-slate-600 transition"
+            >
+              Batal
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

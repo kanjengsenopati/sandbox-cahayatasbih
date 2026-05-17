@@ -21,6 +21,7 @@ use Illuminate\Support\Facades\Auth;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Http\Requests\Admin\StudentRequest;
 use App\Models\Tahfidz;
+use App\Models\Admin;
 use SimpleSoftwareIO\QrCode\Facades\QrCode;
 
 class StudentController extends Controller
@@ -146,7 +147,8 @@ class StudentController extends Controller
             return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
         }
         $schools = School::hasSchool()->orderBy('name')->get();
-        return view('admins.student.create-edit', compact('schools'));
+        $hosts = Admin::orderBy('name')->get();
+        return view('admins.student.create-edit', compact('schools', 'hosts'));
     }
 
     /**
@@ -291,13 +293,14 @@ class StudentController extends Controller
             return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
         }
         $schools = School::hasSchool()->orderBy('name')->get();
+        $hosts = Admin::orderBy('name')->get();
         $saldo = [
             'IN' => SaldoHistory::where('student_id', $student->id)
                 ->where('type', SaldoHistory::TYPE_IN)->sum('amount'),
             'OUT' => SaldoHistory::where('student_id', $student->id)
                 ->where('type', SaldoHistory::TYPE_OUT)->sum('amount'),
         ];
-        return view('admins.student.create-edit', compact('student', 'schools', 'saldo'));
+        return view('admins.student.create-edit', compact('student', 'schools', 'saldo', 'hosts'));
     }
 
     /**

@@ -11,7 +11,7 @@ class StudentController extends BaseWaliApiController
     public function index()
     {
         $user = Auth::guard('wali')->user();
-        $students = Student::with(['classroom', 'school'])
+        $students = Student::with(['classroom', 'school', 'asramaHost'])
             ->where('user_id', $user->id)
             ->orderBy('name', 'asc')
             ->get();

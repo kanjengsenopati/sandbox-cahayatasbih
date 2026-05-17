@@ -146,6 +146,33 @@
                                                 Pindah </option>
                                         </select>
                                     </div>
+                                    <div class="fv-row mb-6">
+                                        <label class="fs-6 fw-bold form-label" for="asrama_host_id">
+                                            <span>Pembina / Host Asrama</span>
+                                            <i class="fas fa-exclamation-circle ms-1 fs-7" data-bs-toggle="tooltip"
+                                                title="Pilih Host Asrama/Pembimbing Santri"></i>
+                                        </label>
+                                        <select name="asrama_host_id" class="form-select form-select-solid" id="asrama_host_id"
+                                            data-control="select2" data-placeholder="Pilih Pembina Asrama"
+                                            data-allow-clear="true">
+                                            <option value="">Tidak ada pembina</option>
+                                            @foreach ($hosts as $host)
+                                            <option value="{{ $host->id }}" {{ @$student->asrama_host_id == $host->id ? 'selected' : '' }}>
+                                                {{ $host->name }}
+                                            </option>
+                                            @endforeach
+                                        </select>
+                                    </div>
+                                    <div class="fv-row mb-6">
+                                        <label class="fs-6 fw-bold form-label" for="asrama_name">
+                                            <span>Nama Asrama</span>
+                                            <i class="fas fa-exclamation-circle ms-1 fs-7" data-bs-toggle="tooltip"
+                                                title="Masukkan Nama Hunian Asrama / Kamar Santri"></i>
+                                        </label>
+                                        <input type="text" class="form-control form-control-solid" id="asrama_name"
+                                            name="asrama_name" placeholder="Masukkan Nama Asrama"
+                                            value="{{ @$student->asrama_name ?? old('asrama_name') }}" />
+                                    </div>
                                 </div>
                                 <div class="col-md-6">
                                     <!-- Second Column -->

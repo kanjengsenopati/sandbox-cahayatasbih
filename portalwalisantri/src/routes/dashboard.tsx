@@ -180,15 +180,22 @@ function Dashboard() {
           <div className="relative">
             <div className="flex items-center justify-between">
               <div className="min-w-0">
-                <p className="text-xs uppercase tracking-widest text-white/70 font-semibold">
-                  Saldo Santri
-                </p>
-                <p className="text-[11px] text-white/60 mt-0.5 truncate">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <p className="text-xs uppercase tracking-widest text-white/70 font-bold">
+                    Saldo Santri
+                  </p>
+                  {(active as any).nisn && (
+                    <span className="px-1.5 py-0.5 rounded-md bg-white/15 text-[9px] font-extrabold tracking-wide uppercase text-white/90 border border-white/10 shrink-0">
+                      {(active as any).nisn}
+                    </span>
+                  )}
+                </div>
+                <p className="text-[11px] text-white/60 mt-1 truncate">
                   {active.name} · {active.classroom?.name || "Tanpa Kelas"}
                 </p>
               </div>
               <SantriSwitcherTrigger>
-                <span className="px-2.5 py-1 rounded-full bg-white/15 border border-white/20 text-[10px] font-semibold backdrop-blur flex items-center gap-1 cursor-pointer">
+                <span className="px-2.5 py-1 rounded-full bg-white/15 border border-white/20 text-[10px] font-semibold backdrop-blur flex items-center gap-1 cursor-pointer shrink-0">
                   Ganti <ChevronDown size={12} />
                 </span>
               </SantriSwitcherTrigger>
@@ -203,20 +210,32 @@ function Dashboard() {
               </button>
             </div>
 
-            <div className="mt-5 flex items-center justify-between text-xs">
-              <div>
-                <p className="text-white/60">Limit Harian</p>
-                <p className="font-semibold">{fmt(active.daily_limit)}</p>
+            <div className="mt-5 flex items-center justify-between text-xs gap-2">
+              <div className="min-w-0 flex-1">
+                <p className="text-white/60 text-[10px] uppercase font-bold tracking-wider">Limit Harian</p>
+                <p className="font-bold text-[12px] truncate mt-0.5">{fmt(active.daily_limit)}</p>
               </div>
-              <div className="h-8 w-px bg-white/20" />
-              <div>
-                <p className="text-white/60">Tabungan</p>
-                <p className="font-semibold">{fmt(active.saving)}</p>
+              <div className="h-8 w-px bg-white/20 shrink-0" />
+              <div className="min-w-0 flex-1 px-1 text-center">
+                <p className="text-white/60 text-[10px] uppercase font-bold tracking-wider">Asrama</p>
+                <p className="font-bold text-[12px] truncate mt-0.5">{(active as any).asrama_name || "-"}</p>
               </div>
-              <div className="h-8 w-px bg-white/20" />
-              <div>
-                <p className="text-white/60">NISN</p>
-                <p className="font-semibold tracking-wider">{(active as any).nisn || "-"}</p>
+              <div className="h-8 w-px bg-white/20 shrink-0" />
+              <div className="min-w-0 flex-1 text-right">
+                <p className="text-white/60 text-[10px] uppercase font-bold tracking-wider">Pembina / Host</p>
+                {((active as any).asrama_host || (active as any).asramaHost) ? (
+                  <a
+                    href={`https://wa.me/${((active as any).asrama_host || (active as any).asramaHost).phone}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center justify-end gap-1 mt-0.5 text-emerald-300 font-bold hover:text-emerald-200 transition-all text-[12px] max-w-full"
+                  >
+                    <span className="truncate max-w-[80px]">{((active as any).asrama_host || (active as any).asramaHost).name}</span>
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse shrink-0" />
+                  </a>
+                ) : (
+                  <p className="font-bold text-white/50 text-[12px] mt-0.5">-</p>
+                )}
               </div>
             </div>
           </div>

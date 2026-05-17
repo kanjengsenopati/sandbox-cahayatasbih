@@ -1,8 +1,8 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { ArrowLeft, Loader2, Calendar, ClipboardList, CheckCircle2, XCircle, Clock, ShieldAlert, Scan, LogOut, Phone } from "lucide-react";
+import { ArrowLeft, Loader2, Calendar, ClipboardList, CheckCircle2, XCircle, Clock, ShieldAlert, Scan, LogOut, Phone, RefreshCw } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { fetchPendingPermits, fetchActivePermits, fetchOverduePermits, postPermitAction, postLogout } from "@/lib/api";
+import { fetchPendingPermits, fetchActivePermits, fetchOverduePermits, postPermitAction, postLogout, fetchAsatidzStats, fetchMyStudents, fetchStudentHistory } from "@/lib/api";
 
 export const Route = createFileRoute("/asatidz/dashboard")({
   component: AsatidzDashboardPage,
@@ -12,9 +12,19 @@ export const Route = createFileRoute("/asatidz/dashboard")({
 function AsatidzDashboardPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const [tab, setTab] = useState<"pending" | "active" | "overdue">("pending");
+  const [tab, setTab] = useState<"pending" | "active" | "overdue" | "my-students">("pending");
   const [rejectId, setRejectId] = useState<string | null>(null);
   const [rejectionReason, setRejectionReason] = useState("");
+  const [historyStudentId, setHistoryStudentId] = useState<string | null>(null);
+
+  const { data: statsRes } = useQuery({
+    queryKey: ["asatidz-stats"],
+    queryFn: async () => {
+      const res = await fetchAsatidzStats();
+      return res.data;
+    },
+    refetchInterval: 10000,
+  });
 
   const { data: pendingRes, isLoading: isLoadingPending } = useQuery({
     queryKey: ["pending-permits"],
@@ -42,6 +52,25 @@ function AsatidzDashboardPage() {
     refetchInterval: 15000, // Poll for overdue alarms
   });
 
+  const { data: myStudentsRes, isLoading: isLoadingMyStudents } = useQuery({
+    queryKey: ["my-students"],
+    queryFn: async () => {
+      const res = await fetchMyStudents();
+      return res.data;
+    },
+    enabled: tab === "my-students",
+  });
+
+  const { data: historyRes, isLoading: isLoadingHistory } = useQuery({
+    queryKey: ["student-history", historyStudentId],
+    queryFn: async () => {
+      if (!historyStudentId) return null;
+      const res = await fetchStudentHistory(historyStudentId);
+      return res.data;
+    },
+    enabled: !!historyStudentId,
+  });
+
   const actionMutation = useMutation({
     mutationFn: async ({ id, action, reason }: { id: string; action: "approve" | "reject"; reason?: string }) => {
       const res = await postPermitAction(id, { action, rejection_reason: reason });
@@ -53,6 +82,7 @@ function AsatidzDashboardPage() {
       queryClient.invalidateQueries({ queryKey: ["pending-permits"] });
       queryClient.invalidateQueries({ queryKey: ["active-permits"] });
       queryClient.invalidateQueries({ queryKey: ["overdue-permits"] });
+      queryClient.invalidateQueries({ queryKey: ["asatidz-stats"] });
     },
   });
 
@@ -78,6 +108,7 @@ function AsatidzDashboardPage() {
   const pendingList = pendingRes?.permits ?? [];
   const activeList = activeRes?.permits ?? [];
   const overdueList = overdueRes?.permits ?? [];
+  const myStudentsList = myStudentsRes?.students ?? [];
 
   return (
     <div className="min-h-screen w-full flex justify-center bg-secondary">
@@ -99,17 +130,24 @@ function AsatidzDashboardPage() {
           />
           <div className="relative flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center text-white">
-                🛡️
+              <div className="w-12 h-12 rounded-2xl bg-white/10 backdrop-blur border border-white/15 flex items-center justify-center text-white font-extrabold text-lg shrink-0">
+                {statsRes?.host_name ? statsRes.host_name.substring(0, 2).toUpperCase() : "AZ"}
               </div>
               <div>
-                <p className="text-[11px] text-white/70 font-semibold uppercase tracking-wider">Akses Ustadz / Asrama</p>
-                <p className="text-base font-bold text-white">Dashboard Perizinan</p>
+                <p className="text-[10px] text-indigo-200 font-extrabold uppercase tracking-widest leading-none">
+                  {statsRes?.asrama_name || "Asrama Binaan"}
+                </p>
+                <p className="text-base font-extrabold text-white leading-tight mt-1">
+                  {statsRes?.host_name || "Ustadz / Ustadzah"}
+                </p>
+                <p className="text-[10px] text-indigo-300 font-medium mt-1 leading-none">
+                  Supervisi: <span className="text-white font-bold">{statsRes?.total_students || 0} Santri Saya</span>
+                </p>
               </div>
             </div>
             <button
               onClick={handleLogout}
-              className="w-10 h-10 rounded-xl bg-white/15 border border-white/20 flex items-center justify-center text-white active:scale-95"
+              className="w-10 h-10 rounded-xl bg-white/15 border border-white/20 flex items-center justify-center text-white active:scale-95 shrink-0"
             >
               <LogOut size={16} />
             </button>
@@ -128,10 +166,10 @@ function AsatidzDashboardPage() {
 
         {/* Tab switchers */}
         <div className="px-6 -mt-8 relative z-10">
-          <div className="flex bg-card rounded-[20px] p-1 border border-border shadow-[var(--shadow-soft)]">
+          <div className="flex bg-card rounded-[20px] p-1 border border-border shadow-[var(--shadow-soft)] overflow-x-auto scrollbar-none gap-1">
             <button
               onClick={() => setTab("pending")}
-              className={`flex-1 py-3 rounded-[16px] text-xs font-bold transition flex flex-col items-center gap-0.5 ${
+              className={`flex-1 py-3 rounded-[16px] text-xs font-bold transition flex flex-col items-center gap-0.5 shrink-0 min-w-[70px] ${
                 tab === "pending"
                   ? "bg-indigo-600 text-white shadow-md"
                   : "text-slate-500 hover:text-slate-800"
@@ -142,7 +180,7 @@ function AsatidzDashboardPage() {
             </button>
             <button
               onClick={() => setTab("active")}
-              className={`flex-1 py-3 rounded-[16px] text-xs font-bold transition flex flex-col items-center gap-0.5 ${
+              className={`flex-1 py-3 rounded-[16px] text-xs font-bold transition flex flex-col items-center gap-0.5 shrink-0 min-w-[70px] ${
                 tab === "active"
                   ? "bg-indigo-600 text-white shadow-md"
                   : "text-slate-500 hover:text-slate-800"
@@ -153,7 +191,7 @@ function AsatidzDashboardPage() {
             </button>
             <button
               onClick={() => setTab("overdue")}
-              className={`flex-1 py-3 rounded-[16px] text-xs font-bold transition flex flex-col items-center gap-0.5 ${
+              className={`flex-1 py-3 rounded-[16px] text-xs font-bold transition flex flex-col items-center gap-0.5 shrink-0 min-w-[70px] ${
                 tab === "overdue"
                   ? "bg-indigo-600 text-white shadow-md"
                   : "text-slate-500 hover:text-slate-800"
@@ -164,6 +202,17 @@ function AsatidzDashboardPage() {
                 Terlambat
               </span>
               <span className="text-[9px] opacity-75">({overdueList.length})</span>
+            </button>
+            <button
+              onClick={() => setTab("my-students")}
+              className={`flex-1 py-3 rounded-[16px] text-xs font-bold transition flex flex-col items-center gap-0.5 shrink-0 min-w-[80px] ${
+                tab === "my-students"
+                  ? "bg-indigo-600 text-white shadow-md"
+                  : "text-slate-500 hover:text-slate-800"
+              }`}
+            >
+              <span>Santri Saya</span>
+              <span className="text-[9px] opacity-75">({statsRes?.total_students || 0})</span>
             </button>
           </div>
         </div>
@@ -346,6 +395,58 @@ function AsatidzDashboardPage() {
               ))
             )
           )}
+
+          {tab === "my-students" && (
+            isLoadingMyStudents ? (
+              <div className="bg-card rounded-3xl border border-border p-8 flex flex-col items-center justify-center shadow-[var(--shadow-soft)]">
+                <Loader2 className="animate-spin text-indigo-600 mb-2" size={28} />
+                <p className="text-xs font-semibold text-muted-foreground">Memuat data santri...</p>
+              </div>
+            ) : myStudentsList.length === 0 ? (
+              <div className="bg-card rounded-3xl border border-border p-8 text-center shadow-[var(--shadow-soft)]">
+                <p className="text-sm font-bold text-foreground">Tidak Ada Santri</p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Anda belum ditunjuk sebagai Host Asrama untuk santri manapun.
+                </p>
+              </div>
+            ) : (
+              myStudentsList.map((student: any) => {
+                let statusColor = "bg-slate-50 text-slate-700 border-slate-200";
+                if (student.status === "Sedang Keluar") {
+                  statusColor = "bg-blue-50 text-blue-700 border-blue-200";
+                } else if (student.status === "Terlambat") {
+                  statusColor = "bg-rose-50 text-rose-700 border-rose-200";
+                } else if (student.status === "Di Pondok") {
+                  statusColor = "bg-emerald-50 text-emerald-700 border-emerald-200";
+                }
+
+                return (
+                  <button
+                    key={student.id}
+                    onClick={() => setHistoryStudentId(student.id)}
+                    className="w-full text-left bg-card hover:bg-slate-50 rounded-[24px] border border-border p-4 shadow-[var(--shadow-soft)] flex items-center justify-between gap-3 active:scale-[0.99] transition-all"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center text-slate-500 font-bold overflow-hidden border border-slate-200 shrink-0">
+                        {student.avatar ? (
+                          <img src={`/${student.avatar}`} alt="" className="w-full h-full object-cover" />
+                        ) : (
+                          student.name.substring(0, 2).toUpperCase()
+                        )}
+                      </div>
+                      <div>
+                        <p className="text-sm font-bold text-slate-800 leading-tight">{student.name}</p>
+                        <p className="text-[11px] text-slate-400 font-semibold mt-1">NIS: {student.nis} · {student.classroom_name}</p>
+                      </div>
+                    </div>
+                    <span className={`px-2.5 py-0.5 rounded-full text-[9px] font-extrabold tracking-wide border uppercase shrink-0 ${statusColor}`}>
+                      {student.status}
+                    </span>
+                  </button>
+                );
+              })
+            )
+          )}
         </section>
 
         {/* Rejection Prompt Drawer */}
@@ -380,6 +481,82 @@ function AsatidzDashboardPage() {
                   {actionMutation.isPending ? "Sedang memproses..." : "Tolak Pengajuan"}
                 </button>
               </form>
+            </div>
+          </div>
+        )}
+
+        {/* Student History Drawer */}
+        {historyStudentId && (
+          <div className="fixed inset-0 bg-black/60 z-50 flex items-end justify-center p-4 backdrop-blur-sm">
+            <div className="bg-card w-full max-w-md rounded-t-[2.5rem] p-6 shadow-2xl space-y-4 animate-slide-up pb-10 flex flex-col max-h-[80vh]">
+              <div className="flex justify-between items-center shrink-0">
+                <div>
+                  <span className="text-[10px] font-bold text-indigo-600 uppercase tracking-widest">Riwayat Perizinan</span>
+                  <h3 className="text-base font-extrabold text-slate-800 mt-0.5">
+                    {historyRes?.student?.name || "Memuat..."}
+                  </h3>
+                </div>
+                <button
+                  onClick={() => setHistoryStudentId(null)}
+                  className="w-8 h-8 rounded-full bg-secondary border border-border flex items-center justify-center text-slate-500 font-extrabold hover:bg-slate-100 transition"
+                >
+                  ×
+                </button>
+              </div>
+
+              <div className="flex-1 overflow-y-auto space-y-3 pr-1 py-2 scrollbar-none">
+                {isLoadingHistory ? (
+                  <div className="py-12 flex flex-col items-center justify-center">
+                     <Loader2 className="animate-spin text-indigo-600 mb-2" size={24} />
+                     <p className="text-xs font-semibold text-muted-foreground">Memuat riwayat...</p>
+                  </div>
+                ) : !historyRes?.history || historyRes.history.length === 0 ? (
+                  <div className="py-12 text-center bg-slate-50 rounded-[20px] border border-dashed border-slate-200">
+                     <p className="text-xs font-bold text-slate-400">Belum ada riwayat perizinan santri ini.</p>
+                  </div>
+                ) : (
+                  historyRes.history.map((h: any) => {
+                     let statusText = "Pending";
+                     let badgeStyle = "bg-amber-50 text-amber-700 border-amber-100";
+                     if (h.status === "approved") {
+                       statusText = "Disetujui";
+                       badgeStyle = "bg-indigo-50 text-indigo-700 border-indigo-100";
+                     } else if (h.status === "rejected") {
+                       statusText = "Ditolak";
+                       badgeStyle = "bg-rose-50 text-rose-700 border-rose-100";
+                     } else if (h.status === "out") {
+                       statusText = "Sedang Keluar";
+                       badgeStyle = "bg-blue-50 text-blue-700 border-blue-100";
+                     } else if (h.status === "returned") {
+                       statusText = "Kembali";
+                       badgeStyle = "bg-emerald-50 text-emerald-700 border-emerald-100";
+                     }
+
+                     return (
+                       <div key={h.id} className="p-4 rounded-[20px] bg-slate-50 border border-slate-100 space-y-2 text-xs">
+                         <div className="flex justify-between items-center">
+                           <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                             {h.permit_type.replace("_", " ")}
+                           </span>
+                           <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold border ${badgeStyle}`}>
+                             {statusText}
+                           </span>
+                         </div>
+                         <p className="text-xs font-bold text-slate-700 leading-relaxed mt-1">
+                           Keperluan: <span className="font-semibold text-slate-600">{h.reason}</span>
+                         </p>
+                         <div className="text-[10px] text-slate-400 space-y-0.5 font-semibold mt-2 border-t border-slate-200/60 pt-2">
+                           <p>Keluar: {new Date(h.planned_exit_date).toLocaleString("id-ID")}</p>
+                           <p>Tenggat: {new Date(h.planned_return_date).toLocaleString("id-ID")}</p>
+                           {h.actual_return_date && (
+                             <p className="text-emerald-600 font-bold">Kembali: {new Date(h.actual_return_date).toLocaleString("id-ID")}</p>
+                           )}
+                         </div>
+                       </div>
+                     );
+                  })
+                )}
+              </div>
             </div>
           </div>
         )}

@@ -25,6 +25,8 @@ class Student extends Model
         'nisn',
         'nis',
         'user_id',
+        'asrama_host_id',
+        'asrama_name',
         'school_id',
         'classroom_id',
         'name',
@@ -52,6 +54,11 @@ class Student extends Model
     public function user()
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function asramaHost()
+    {
+        return $this->belongsTo(Admin::class, 'asrama_host_id');
     }
 
     public function classroom()

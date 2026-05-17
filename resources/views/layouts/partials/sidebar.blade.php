@@ -390,10 +390,10 @@
 
                 @canany(['Manage Saldo Santri', 'Manage Tabungan Santri','Manage Jadwal', 'Manage Tahfidz',
                 'Manage Pos Kasir', 'Manage Tagihan', 'Manage Perilaku Santri', 'Manage Nilai Pelajaran',
-                'Manage Prestasi Santri', 'Manage Nilai Santri', 'Manage Arus Kas'])
+                'Manage Prestasi Santri', 'Manage Nilai Santri', 'Manage Arus Kas', 'Manage Perizinan'])
                 <div data-kt-menu-trigger="click" class="menu-item menu-accordion {{ request()->routeIs(['bill.*', 'saldo-history.*', 'saving-history.*', 'order-item.*', 'study-grade.*',
                     'tahfidz.*', 'student-counseling-score.*', 'schedule.*','saldo-bank.*', 'saving-bank.*', 'student-achievement.*',
-                    'study-grade.*', 'cashflow.*']) ? 'show' : '' }}">
+                    'study-grade.*', 'cashflow.*', 'student-permit.*']) ? 'show' : '' }}">
                     <span class=" menu-link ">
                         <span class=" menu-icon">
                             <i class="fa-solid fa-edit" style="color: #ffffff;"></i>
@@ -454,6 +454,17 @@
                                     <span class="bullet bullet-dot"></span>
                                 </span>
                                 <span class="menu-title">Arus Kas</span>
+                            </a>
+                        </div>
+                        @endcan
+                        @can('Manage Perizinan')
+                        <div class="menu-item">
+                            <a class="menu-link {{ request()->routeIs('student-permit.*') ? ' active' : '' }}"
+                                href="{{ route('student-permit.index') }}">
+                                <span class="menu-bullet">
+                                    <span class="bullet bullet-dot"></span>
+                                </span>
+                                <span class="menu-title">Perizinan Santri</span>
                             </a>
                         </div>
                         @endcan

@@ -1,8 +1,8 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { ChevronRight, Shield, Bell, CreditCard, HelpCircle, LogOut, Settings, Loader2 } from "lucide-react";
+import { ChevronRight, Shield, Bell, CreditCard, HelpCircle, LogOut, Settings, Loader2, RefreshCw } from "lucide-react";
 import { MobileShell } from "@/components/MobileShell";
-import { useQuery } from "@tanstack/react-query";
-import { fetchProfile, postLogout } from "@/lib/api";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { fetchProfile, postLogout, postSwitchRole } from "@/lib/api";
 
 export const Route = createFileRoute("/profil")({
   component: Profil,
@@ -29,6 +29,7 @@ const groups = [
 
 function Profil() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
   const { data: profileData, isLoading } = useQuery({
     queryKey: ["profile"],
@@ -36,6 +37,24 @@ function Profil() {
       const res = await fetchProfile();
       return res.data;
     },
+  });
+
+  const switchMutation = useMutation({
+    mutationFn: async () => {
+      const res = await postSwitchRole();
+      return res.data;
+    },
+    onSuccess: (data: any) => {
+      queryClient.invalidateQueries();
+      if (data.role === "asatidz") {
+        window.location.href = '/ct-mobile/asatidz/dashboard';
+      } else {
+        window.location.href = '/ct-mobile/dashboard';
+      }
+    },
+    onError: (err: any) => {
+      alert(err.response?.data?.message || "Gagal beralih peran.");
+    }
   });
 
   if (isLoading) {
@@ -79,12 +98,48 @@ function Profil() {
           <div className="flex-1">
             <p className="font-bold text-lg">{user?.name}</p>
             <p className="text-xs text-white/70">{user?.phone}</p>
-            <p className="text-[11px] text-white/60 mt-1">
-              Wali dari {students.map((s: any) => s.name).join(', ')}
-            </p>
+            {profileData?.role === 'wali' && students.length > 0 && (
+              <p className="text-[11px] text-white/60 mt-1">
+                Wali dari {students.map((s: any) => s.name).join(', ')}
+              </p>
+            )}
+            {profileData?.role === 'asatidz' && (
+              <p className="text-[11px] text-white/60 mt-1">
+                Ustadz / Ustadzah Pembimbing
+              </p>
+            )}
           </div>
         </div>
       </section>
+
+      {profileData?.is_dual_role && (
+        <section className="px-6 mt-5">
+          <div className="rounded-[24px] p-4 bg-emerald-50 border border-emerald-100 flex items-center justify-between shadow-[0_8px_30px_rgb(0,0,0,0.02)]">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-emerald-600/10 flex items-center justify-center text-emerald-600 shrink-0">
+                <RefreshCw size={18} className={switchMutation.isPending ? "animate-spin" : ""} />
+              </div>
+              <div>
+                <p className="text-[13px] font-bold text-slate-800">Mode Dual-Identitas Aktif</p>
+                <p className="text-[11px] font-medium text-slate-500 mt-0.5">Beralih peran tanpa masuk ulang</p>
+              </div>
+            </div>
+            <button
+              onClick={() => switchMutation.mutate()}
+              disabled={switchMutation.isPending}
+              className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[12px] shadow-[0_4px_12px_rgba(16,185,129,0.2)] active:scale-[0.98] transition-all flex items-center gap-1.5 shrink-0"
+            >
+              {switchMutation.isPending ? (
+                <Loader2 className="animate-spin" size={12} />
+              ) : (
+                <>
+                  Pindah ke {profileData?.role === 'wali' ? 'Asatidz' : 'Wali'}
+                </>
+              )}
+            </button>
+          </div>
+        </section>
+      )}
 
       {groups.map((g) => (
         <section key={g.title} className="px-6 mt-6">
