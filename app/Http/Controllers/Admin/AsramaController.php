@@ -311,6 +311,7 @@ class AsramaController extends Controller
                 'email' => $email,
                 'phone' => $officer->phone,
                 'password' => bcrypt('12345678'),
+                'avatar' => 'assets/media/avatars/150-26.jpg',
                 'is_active' => 1,
             ]);
 
