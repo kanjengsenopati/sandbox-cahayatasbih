@@ -22,10 +22,17 @@ import {
   RefreshCw,
   FileImage,
   Loader2,
+  Sliders,
+  ShieldAlert,
+  ShieldOff,
+  Sparkles,
+  Lock,
+  Unlock,
 } from "lucide-react";
 import { useSantri } from "@/contexts/SantriContext";
-import { postTopup, uploadPaymentProof, fetchPaymentMethods } from "@/lib/api";
+import { postTopup, uploadPaymentProof, fetchPaymentMethods, fetchBlockStatus, toggleBlock, updateLimit as updateLimitApi } from "@/lib/api";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/topup")({
   component: TopupPage,
@@ -50,6 +57,60 @@ function TopupPage() {
   const [proofUrl, setProofUrl] = useState<string>("");
   const [refId, setRefId] = useState<string>("");
   const [paymentId, setPaymentId] = useState<number | null>(null);
+
+  // Premium Modal states
+  const [showLimitModal, setShowLimitModal] = useState(false);
+  const [showBlockModal, setShowBlockModal] = useState(false);
+  const [dailyLimit, setDailyLimit] = useState(0);
+  const [limitEnabled, setLimitEnabled] = useState(false);
+
+  // Synchronize dailyLimit with active student
+  useEffect(() => {
+    if (active) {
+      setDailyLimit(active.daily_limit || 0);
+      setLimitEnabled((active.daily_limit || 0) > 0);
+    }
+  }, [active]);
+
+  // Query block status
+  const { data: statusData } = useQuery({
+    queryKey: ["block-status"],
+    queryFn: async () => {
+      const res = await fetchBlockStatus();
+      return res.data;
+    },
+    enabled: !!active,
+  });
+
+  const isBlocked = statusData?.is_blocked ?? false;
+
+  // Block status toggle mutation
+  const toggleBlockMutation = useMutation({
+    mutationFn: toggleBlock,
+    onSuccess: (res) => {
+      queryClient.invalidateQueries({ queryKey: ["block-status"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+      queryClient.invalidateQueries({ queryKey: ["active-student"] });
+      toast.success(res.data.message || "Status kartu berhasil diubah");
+    },
+    onError: () => {
+      toast.error("Gagal mengubah status kartu. Silakan coba lagi.");
+    },
+  });
+
+  // Limit update mutation
+  const updateLimitMutation = useMutation({
+    mutationFn: (newLimit: number) => updateLimitApi({ daily_limit: newLimit }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["limit"] });
+      queryClient.invalidateQueries({ queryKey: ["active-student"] });
+      toast.success("Limit jajan harian berhasil diperbarui");
+      setShowLimitModal(false);
+    },
+    onError: () => {
+      toast.error("Gagal memperbarui limit harian.");
+    },
+  });
 
   const { data: methodsRes, isLoading: isLoadingMethods } = useQuery({
     queryKey: ["payment-methods"],
@@ -212,13 +273,39 @@ function TopupPage() {
             </div>
           </div>
 
-          <div className="relative mt-5 flex items-center gap-3 text-white/90">
-            <div className="w-11 h-11 rounded-xl bg-white/15 backdrop-blur flex items-center justify-center">
-              <Wallet size={20} />
+          <div className="relative mt-5 flex items-center justify-between text-white/90">
+            <div className="flex items-center gap-3">
+              <div className="w-11 h-11 rounded-xl bg-white/15 backdrop-blur flex items-center justify-center">
+                <Wallet size={20} />
+              </div>
+              <div>
+                <p className="text-[11px] text-white/70">Saldo Saat Ini</p>
+                <p className="text-xl font-bold tracking-tight">{fmt(active?.saldo || 0)}</p>
+              </div>
             </div>
-            <div>
-              <p className="text-[11px] text-white/70">Saldo Saat Ini</p>
-              <p className="text-xl font-bold tracking-tight">{fmt(active?.saldo || 0)}</p>
+            <div className="flex items-center gap-2 relative z-20">
+              <button
+                onClick={() => {
+                  setDailyLimit(active?.daily_limit || 0);
+                  setLimitEnabled((active?.daily_limit || 0) > 0);
+                  setShowLimitModal(true);
+                }}
+                className="w-10 h-10 rounded-xl bg-white/15 hover:bg-white/25 border border-white/20 backdrop-blur-md flex items-center justify-center text-white active:scale-95 transition"
+                title="Atur Limit"
+              >
+                <Sliders size={18} />
+              </button>
+              <button
+                onClick={() => setShowBlockModal(true)}
+                className={`w-10 h-10 rounded-xl border backdrop-blur-md flex items-center justify-center active:scale-95 transition ${
+                  isBlocked
+                    ? "bg-red-500/25 border-red-500/40 text-red-200"
+                    : "bg-white/15 hover:bg-white/25 border-white/20 text-white"
+                }`}
+                title="Blokir Saldo"
+              >
+                {isBlocked ? <ShieldAlert size={18} /> : <ShieldOff size={18} />}
+              </button>
             </div>
           </div>
         </div>
@@ -359,6 +446,213 @@ function TopupPage() {
             </button>
           </div>
         </div>
+        {/* Atur Limit Harian Premium Modal */}
+        {showLimitModal && (
+          <div className="fixed inset-0 bg-slate-950/60 backdrop-blur-md z-50 flex items-center justify-center p-5 transition-all duration-300">
+            <div className="bg-card w-full max-w-sm rounded-[24px] border border-border shadow-[0_15px_50px_rgba(0,0,0,0.15)] p-6 relative overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+              {/* Decorative gradients */}
+              <div className="absolute -top-16 -right-16 w-32 h-32 rounded-full bg-primary/10 blur-2xl" />
+              
+              {/* Header */}
+              <div className="flex items-center justify-between pb-3 border-b border-border">
+                <h3 className="text-base font-extrabold text-foreground flex items-center gap-2">
+                  <Sliders size={18} className="text-primary" />
+                  Atur Limit Harian
+                </h3>
+                <button 
+                  onClick={() => setShowLimitModal(false)}
+                  className="w-8 h-8 rounded-lg bg-secondary hover:bg-muted flex items-center justify-center text-muted-foreground transition"
+                >
+                  <X size={16} />
+                </button>
+              </div>
+
+              {/* Status Toggle */}
+              <div className="mt-5 bg-secondary/50 rounded-2xl p-4 border border-border flex items-center justify-between">
+                <div>
+                  <p className="text-xs font-bold text-foreground">Aktifkan Pembatasan</p>
+                  <p className="text-[10px] text-muted-foreground mt-0.5">Membatasi belanja harian santri</p>
+                </div>
+                <button
+                  onClick={() => {
+                    setLimitEnabled(!limitEnabled);
+                    if (limitEnabled) setDailyLimit(0);
+                  }}
+                  className={`relative w-11 h-6 rounded-full transition ${
+                    limitEnabled ? "bg-primary" : "bg-muted"
+                  }`}
+                >
+                  <div
+                    className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${
+                      limitEnabled ? "translate-x-5.5" : "translate-x-0.5"
+                    }`}
+                  />
+                </button>
+              </div>
+
+              {/* Slider Controls */}
+              {limitEnabled && (
+                <div className="mt-5 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">Pilih Nominal</span>
+                    <span className="text-sm font-extrabold text-primary">{fmt(dailyLimit)}</span>
+                  </div>
+                  
+                  <input
+                    type="range"
+                    min={10_000}
+                    max={500_000}
+                    step={10_000}
+                    value={dailyLimit || 50_000}
+                    onChange={(e) => {
+                      const val = parseInt(e.target.value, 10);
+                      setDailyLimit(val);
+                    }}
+                    className="w-full h-2 rounded-lg bg-secondary accent-primary appearance-none cursor-pointer"
+                  />
+                  
+                  <div className="flex justify-between text-[9px] text-muted-foreground">
+                    <span>Rp 10rb</span>
+                    <span>Rp 500rb</span>
+                  </div>
+
+                  {/* Presets */}
+                  <div className="grid grid-cols-4 gap-2">
+                    {[50_000, 100_000, 150_000, 250_000].map((p) => {
+                      const active = dailyLimit === p;
+                      return (
+                        <button
+                          key={p}
+                          onClick={() => setDailyLimit(p)}
+                          className={`py-2 rounded-xl text-[10px] font-extrabold border transition ${
+                            active
+                              ? "bg-[var(--gradient-card)] text-primary-foreground border-transparent shadow-sm"
+                              : "bg-secondary text-foreground border-transparent hover:border-primary/20"
+                          }`}
+                        >
+                          {p / 1000}rb
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Info Tips */}
+              <div className="mt-5 rounded-xl bg-primary/5 p-3 border border-primary/10 flex items-start gap-2.5">
+                <Sparkles size={14} className="text-primary shrink-0 mt-0.5" />
+                <p className="text-[10px] text-muted-foreground leading-normal">
+                  Pengaturan ini membatasi transaksi jajan santri di kantin digital agar pengeluaran lebih hemat.
+                </p>
+              </div>
+
+              {/* Actions */}
+              <div className="mt-6 flex gap-2">
+                <button
+                  onClick={() => setShowLimitModal(false)}
+                  className="flex-1 py-3 rounded-xl text-xs font-bold bg-secondary hover:bg-muted text-foreground transition"
+                >
+                  Batal
+                </button>
+                <button
+                  onClick={() => updateLimitMutation.mutate(limitEnabled ? dailyLimit : 0)}
+                  disabled={updateLimitMutation.isPending}
+                  className="flex-1 py-3 rounded-xl text-xs font-bold text-white shadow-md disabled:opacity-50 transition flex items-center justify-center gap-1"
+                  style={{ background: "var(--gradient-card)" }}
+                >
+                  {updateLimitMutation.isPending ? (
+                    <Loader2 size={14} className="animate-spin" />
+                  ) : (
+                    "Simpan Limit"
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Premium Blokir Saldo Premium Modal */}
+        {showBlockModal && (
+          <div className="fixed inset-0 bg-slate-950/60 backdrop-blur-md z-50 flex items-center justify-center p-5 transition-all duration-300">
+            <div className="bg-card w-full max-w-sm rounded-[24px] border border-border shadow-[0_15px_50px_rgba(0,0,0,0.15)] p-6 relative overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+              {/* Header */}
+              <div className="flex items-center justify-between pb-3 border-b border-border">
+                <h3 className="text-base font-extrabold text-foreground flex items-center gap-2">
+                  <ShieldAlert size={18} className="text-primary" />
+                  Keamanan Kartu
+                </h3>
+                <button 
+                  onClick={() => setShowBlockModal(false)}
+                  className="w-8 h-8 rounded-lg bg-secondary hover:bg-muted flex items-center justify-center text-muted-foreground transition"
+                >
+                  <X size={16} />
+                </button>
+              </div>
+
+              {/* Status Graphic */}
+              <div className="mt-6 flex flex-col items-center text-center space-y-4">
+                <div className={`w-20 h-20 rounded-[24px] flex items-center justify-center shadow-inner transition ${
+                  isBlocked 
+                    ? "bg-red-500/10 text-red-500 border border-red-500/20" 
+                    : "bg-emerald-500/10 text-emerald-600 border border-emerald-500/20"
+                }`}>
+                  {isBlocked ? (
+                    <Lock size={36} className="animate-pulse" />
+                  ) : (
+                    <Unlock size={36} />
+                  )}
+                </div>
+                
+                <div>
+                  <span className={`inline-block px-2.5 py-0.5 rounded-full text-[9px] font-extrabold uppercase tracking-wider ${
+                    isBlocked ? "bg-red-500/10 text-red-700" : "bg-emerald-500/10 text-emerald-700"
+                  }`}>
+                    {isBlocked ? "KARTU DIBLOKIR" : "KARTU AKTIF / AMAN"}
+                  </span>
+                  <h4 className="text-sm font-bold text-foreground mt-2">Status Jajan Kartu Santri</h4>
+                  <p className="text-[11px] text-muted-foreground mt-2 leading-relaxed px-2">
+                    {isBlocked 
+                      ? "Kartu fisik santri saat ini sedang diblokir sementara. Seluruh transaksi belanja POS di kantin digital pesantren akan otomatis ditolak demi keamanan."
+                      : "Kartu fisik santri saat ini aktif dan dapat digunakan dengan aman untuk berbelanja di seluruh fasilitas pesantren sesuai dengan limit Anda."
+                    }
+                  </p>
+                </div>
+              </div>
+
+              {/* Actions */}
+              <div className="mt-6 flex gap-2">
+                <button
+                  onClick={() => setShowBlockModal(false)}
+                  className="flex-1 py-3 rounded-xl text-xs font-bold bg-secondary hover:bg-muted text-foreground transition"
+                >
+                  Tutup
+                </button>
+                <button
+                  onClick={() => {
+                    toggleBlockMutation.mutate(undefined, {
+                      onSuccess: () => setShowBlockModal(false)
+                    });
+                  }}
+                  disabled={toggleBlockMutation.isPending}
+                  className="flex-1 py-3 rounded-xl text-xs font-bold text-white shadow-md disabled:opacity-50 transition flex items-center justify-center gap-1"
+                  style={{ 
+                    background: isBlocked 
+                      ? "linear-gradient(135deg, #10b981 0%, #059669 100%)" 
+                      : "linear-gradient(135deg, #ef4444 0%, #dc2626 100%)"
+                  }}
+                >
+                  {toggleBlockMutation.isPending ? (
+                    <Loader2 size={14} className="animate-spin" />
+                  ) : isBlocked ? (
+                    "Aktifkan Kartu"
+                  ) : (
+                    "Blokir Kartu"
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

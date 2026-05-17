@@ -125,7 +125,7 @@ function Dashboard() {
     const flagKey = (menu.flag || "").toLowerCase().trim();
     const nameKey = (menu.name || "").toLowerCase().trim();
     const mapped = menuMapping[flagKey] || menuMapping[nameKey];
-    if (mapped) {
+    if (mapped && mapped.label !== "Atur Limit" && mapped.label !== "Blokir Saldo") {
       if (!dynamicActions.some(a => a.label === mapped.label)) {
         dynamicActions.push(mapped);
       }
@@ -133,11 +133,10 @@ function Dashboard() {
   });
 
   const finalActions = dynamicActions.length > 0 ? [
-    ...dynamicActions,
+    ...dynamicActions.filter(a => a.label !== "Atur Limit" && a.label !== "Blokir Saldo"),
     { label: "Riwayat", icon: History, accent: "from-primary-glow to-primary", to: "/riwayat" as const }
   ] : [
     { label: "Topup Saldo", icon: Plus, accent: "from-primary to-primary-glow", to: "/topup" as const },
-    { label: "Atur Limit", icon: Sliders, accent: "from-[#6366f1] to-[#4f46e5]", to: "/limit" as const },
     { label: "Riwayat", icon: History, accent: "from-primary-glow to-primary", to: "/riwayat" as const },
   ];
 
@@ -190,8 +189,8 @@ function Dashboard() {
                     </span>
                   )}
                 </div>
-                <p className="text-[11px] text-white/60 mt-1 truncate">
-                  {active.name} · {active.classroom?.name || "Tanpa Kelas"}
+                <p className="text-[13px] font-bold text-white mt-1 truncate">
+                  {active.name} <span className="text-white/70 font-semibold">· {active.classroom?.name || "Tanpa Kelas"}</span>
                 </p>
               </div>
               <SantriSwitcherTrigger>
