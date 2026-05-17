@@ -68,7 +68,7 @@
                         <!--end::Divider-->
 
                         <!--begin::Host Section-->
-                        <h4 class="fw-bolder mb-6"><i class="fa fa-user-tie text-primary me-2"></i>Pengaturan Ustadz / Host Pembina</h4>
+                        <h4 class="fw-bolder mb-6"><i class="fa fa-user-tie text-primary me-2"></i>Pengaturan Asatidz Pengampu</h4>
                         
                         <!--begin::Host Type Radio Selection-->
                         <div class="fv-row mb-7">
@@ -93,8 +93,8 @@
 
                         <!--begin::Existing Host Select Group-->
                         <div class="fv-row mb-7" id="existing_host_group">
-                            <label class="required fw-bold fs-6 mb-2">Pilih Ustadz / Pembina</label>
-                            <select name="officer_id" class="form-select form-select-solid" data-control="select2" data-placeholder="Pilih Petugas Pembina...">
+                            <label class="required fw-bold fs-6 mb-2">Pilih Asatidz Pengampu</label>
+                            <select name="officer_id" class="form-select form-select-solid" data-control="select2" data-placeholder="Pilih Asatidz Pengampu...">
                                 <option value=""></option>
                                 @foreach($officers as $officer)
                                     <option value="{{ $officer->id }}" 

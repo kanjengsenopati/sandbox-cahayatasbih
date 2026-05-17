@@ -73,8 +73,8 @@
                                 <tr class="fw-bolder fs-6 text-gray-800 border-bottom border-gray-200">
                                     <th width="3%">No</th>
                                     <th>Nama Asrama</th>
-                                    <th>Ustadz / Host Pembina</th>
-                                    <th>No WhatsApp Host</th>
+                                    <th>Asatidz Pengampu</th>
+                                    <th>No WhatsApp Asatidz</th>
                                     <th>Jumlah Santri Binaan</th>
                                     <th class="text-center min-w-100px">Aksi</th>
                                 </tr>

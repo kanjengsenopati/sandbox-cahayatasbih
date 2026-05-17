@@ -121,10 +121,12 @@ class AsramaController extends Controller
                 'host_admin_id' => $hostAdminId,
             ]);
 
-            // Sync assigned students
+            // Sync assigned students — explicitly set flat fields for PWA consumption
             if ($request->has('student_ids')) {
                 Student::whereIn('id', $request->input('student_ids'))->update([
                     'asrama_id' => $asrama->id,
+                    'asrama_name' => $asrama->name,
+                    'asrama_host_id' => $asrama->host_admin_id,
                 ]);
             }
 
@@ -231,12 +233,18 @@ class AsramaController extends Controller
             
             Student::where('asrama_id', $asrama->id)
                 ->whereNotIn('id', $newStudentIds)
-                ->update(['asrama_id' => null]);
+                ->update([
+                    'asrama_id' => null,
+                    'asrama_name' => null,
+                    'asrama_host_id' => null,
+                ]);
 
             // 2. Set asrama_id for newly selected students
             if (!empty($newStudentIds)) {
                 Student::whereIn('id', $newStudentIds)->update([
                     'asrama_id' => $asrama->id,
+                    'asrama_name' => $asrama->name,
+                    'asrama_host_id' => $asrama->host_admin_id,
                 ]);
             }
 
@@ -270,9 +278,11 @@ class AsramaController extends Controller
 
             $asrama = Asrama::findOrFail($id);
 
-            // Dissociate child students
+            // Dissociate child students and clear flat PWA fields
             Student::where('asrama_id', $asrama->id)->update([
                 'asrama_id' => null,
+                'asrama_name' => null,
+                'asrama_host_id' => null,
             ]);
 
             $asrama->delete();

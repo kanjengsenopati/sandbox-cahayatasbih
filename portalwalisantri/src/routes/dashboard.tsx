@@ -222,7 +222,7 @@ function Dashboard() {
               </div>
               <div className="h-8 w-px bg-white/20 shrink-0" />
               <div className="min-w-0 flex-1 text-right">
-                <p className="text-white/60 text-[10px] uppercase font-bold tracking-wider">Pembina / Host</p>
+                <p className="text-white/60 text-[10px] uppercase font-bold tracking-wider">Asatidz</p>
                 {((active as any).asrama_host || (active as any).asramaHost) ? (
                   <a
                     href={`https://wa.me/${((active as any).asrama_host || (active as any).asramaHost).phone}`}
