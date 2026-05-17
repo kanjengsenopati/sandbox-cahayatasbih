@@ -25,6 +25,7 @@ function PerizinanPage() {
   const [formError, setFormError] = useState("");
   const [formSuccess, setFormSuccess] = useState("");
   const [attachmentPhoto, setAttachmentPhoto] = useState<string | null>(null);
+  const [viewingDocumentUrl, setViewingDocumentUrl] = useState<string | null>(null);
 
   const handleAttachmentChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -496,14 +497,13 @@ function PerizinanPage() {
                     {permit.attachment_photo && (
                       <div className="mt-3 bg-slate-50 rounded-2xl p-3 border border-slate-100 flex flex-col gap-1 animate-in fade-in">
                         <p className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Dokumen Pendukung</p>
-                        <a
-                          href={`/${permit.attachment_photo}`}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="text-xs text-[#9b1de8] font-bold flex items-center gap-1.5 hover:underline mt-1"
+                        <button
+                          type="button"
+                          onClick={() => setViewingDocumentUrl(`/${permit.attachment_photo}`)}
+                          className="text-xs text-[#9b1de8] font-bold flex items-center gap-1.5 hover:underline mt-1 text-left w-fit"
                         >
                           <ExternalLink size={12} /> Lihat Lampiran Dokumen
-                        </a>
+                        </button>
                       </div>
                     )}
 
@@ -1141,6 +1141,48 @@ function PerizinanPage() {
                 </button>
               </div>
 
+            </div>
+          </div>
+        )}
+
+        {/* Premium Document Preview Modal */}
+        {viewingDocumentUrl && (
+          <div className="fixed inset-0 bg-slate-900/70 z-50 flex items-center justify-center p-4 backdrop-blur-md animate-fade-in">
+            <div className="bg-white/95 w-full max-w-md rounded-[32px] p-6 border border-white/20 shadow-[0_20px_50px_rgba(155,29,232,0.15)] flex flex-col space-y-4 animate-slide-up relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-[#9b1de8]/10 to-[#5a0c91]/0 rounded-full blur-2xl"></div>
+              
+              {/* Header */}
+              <div className="flex justify-between items-center pb-2 border-b border-slate-100">
+                <div>
+                  <p className="text-[10px] text-slate-400 font-extrabold uppercase tracking-widest">Lampiran</p>
+                  <p className="text-sm font-bold text-slate-800">Dokumen Pendukung</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setViewingDocumentUrl(null)}
+                  className="w-8 h-8 rounded-full bg-secondary border border-border flex items-center justify-center text-slate-500 font-bold hover:bg-slate-100 active:scale-95 transition"
+                >
+                  ×
+                </button>
+              </div>
+
+              {/* Image Preview Container */}
+              <div className="relative rounded-2xl overflow-hidden bg-slate-50 border border-slate-100 flex items-center justify-center min-h-[300px] max-h-[450px]">
+                <img
+                  src={viewingDocumentUrl}
+                  alt="Dokumen Pendukung"
+                  className="w-full h-full object-contain max-h-[450px]"
+                />
+              </div>
+
+              {/* Action Button */}
+              <button
+                type="button"
+                onClick={() => setViewingDocumentUrl(null)}
+                className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-[#9b1de8] to-[#5a0c91] text-white text-xs font-extrabold hover:brightness-110 active:scale-[0.98] transition text-center shadow-[0_6px_20px_rgba(155,29,232,0.25)]"
+              >
+                Tutup Tampilan
+              </button>
             </div>
           </div>
         )}
