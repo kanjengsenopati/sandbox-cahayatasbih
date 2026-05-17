@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { XCircle, Download } from 'lucide-react'
+import { X, Download, ShieldCheck } from 'lucide-react'
 
 export const InstallPromptModal = () => {
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null)
@@ -29,32 +29,46 @@ export const InstallPromptModal = () => {
   if (!show) return null
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-end justify-center sm:items-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-300">
-      <div className="bg-white rounded-[32px] shadow-2xl p-6 w-full max-w-sm animate-in slide-in-from-bottom-8 duration-500">
-        <div className="flex justify-between items-start mb-4">
-          <div className="bg-blue-50 p-3 rounded-2xl">
-            <Download className="text-blue-600" size={24} />
+    <div className="fixed inset-0 z-[100] flex items-end justify-center sm:items-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
+      <div className="bg-white rounded-[32px] shadow-[0_15px_40px_rgba(155,29,232,0.12)] p-6 w-full max-w-sm border border-slate-100 animate-in slide-in-from-bottom-8 duration-500 relative overflow-hidden">
+        {/* Decorative corner glows */}
+        <div className="absolute -top-12 -right-12 w-28 h-28 bg-[#b445ff]/10 rounded-full blur-2xl"></div>
+        <div className="absolute -bottom-12 -left-12 w-28 h-28 bg-[#610a9c]/10 rounded-full blur-2xl"></div>
+
+        <div className="relative z-10 flex justify-between items-start mb-5">
+          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#9b1de8]/10 to-[#610a9c]/10 flex items-center justify-center border border-[#9b1de8]/15">
+            <Download className="text-[#9b1de8]" size={22} strokeWidth={2.5} />
           </div>
-          <button onClick={() => setShow(false)} className="text-slate-400 hover:text-slate-600 transition-colors">
-            <XCircle size={24} />
+          <button 
+            onClick={() => setShow(false)} 
+            className="w-8 h-8 rounded-full bg-slate-50 border border-slate-100 flex items-center justify-center text-slate-400 hover:text-slate-600 transition"
+          >
+            <X size={16} strokeWidth={2.5} />
           </button>
         </div>
         
-        <h2 className="text-xl font-bold text-slate-900 mb-2">Pasang Aplikasi</h2>
-        <p className="text-slate-600 text-sm mb-6 leading-relaxed">
-          Tambahkan Portal Wali ke layar utama ponsel Anda untuk akses yang lebih cepat, stabil, dan hemat kuota.
-        </p>
+        <div className="relative z-10 space-y-2">
+          <h2 className="text-xl font-extrabold text-slate-900 tracking-tight">Pasang Aplikasi CT-Mobile</h2>
+          <p className="text-slate-500 text-[13px] font-medium leading-relaxed">
+            Tambahkan aplikasi <span className="font-bold text-slate-800">CT-Mobile</span> ke layar utama gawai Anda untuk akses pemantauan perizinan dan keuangan ananda secara instan, stabil, dan hemat kuota.
+          </p>
+        </div>
+
+        <div className="relative z-10 mt-5 p-3 rounded-2xl bg-emerald-50/50 border border-emerald-100 flex items-center gap-2 text-emerald-800 text-[11px] font-bold">
+          <ShieldCheck size={16} className="text-emerald-600 shrink-0" />
+          <span>Verifikasi Keamanan Terjamin (PWA Resmi)</span>
+        </div>
         
-        <div className="flex flex-col gap-3">
+        <div className="relative z-10 mt-6 flex flex-col gap-2.5">
           <button 
             onClick={install}
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-4 rounded-2xl transition-all active:scale-95 shadow-lg shadow-blue-200"
+            className="w-full bg-gradient-to-r from-[#9b1de8] to-[#610a9c] text-white font-extrabold py-4 rounded-[20px] shadow-[0_8px_25px_rgba(155,29,232,0.3)] transition active:scale-[0.98] text-sm"
           >
             Pasang Sekarang
           </button>
           <button 
             onClick={() => setShow(false)}
-            className="w-full py-3 text-slate-400 text-sm font-medium hover:text-slate-600 transition-colors"
+            className="w-full py-2.5 text-slate-400 text-xs font-bold hover:text-slate-600 transition"
           >
             Nanti Saja
           </button>

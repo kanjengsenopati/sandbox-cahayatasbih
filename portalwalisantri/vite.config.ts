@@ -18,12 +18,12 @@ export default defineConfig({
     VitePWA({
       registerType: 'autoUpdate',
       manifest: {
-        name: 'Portal Wali Santri',
-        short_name: 'WaliSantri',
-        start_url: '/wali/app',
+        name: 'CT-Mobile',
+        short_name: 'CT-Mobile',
+        start_url: '/ct-mobile/app',
         display: 'standalone',
         background_color: '#ffffff',
-        theme_color: '#2563EB',
+        theme_color: '#9b1de8',
         icons: [
           { src: '/icons/icon-192.png?v=4', sizes: '192x192', type: 'image/png' },
           { src: '/icons/icon-512.png?v=4', sizes: '512x512', type: 'image/png' }
