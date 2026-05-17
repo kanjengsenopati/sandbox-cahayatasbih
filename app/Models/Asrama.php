@@ -36,10 +36,12 @@ class Asrama extends Model
     /**
      * Boot function to propagate changes on update.
      */
-    protected static function boot()
+    /**
+     * Boot function to propagate changes on update.
+     * Uses booted() instead of boot() to avoid overriding UuidTrait::boot()
+     */
+    protected static function booted()
     {
-        parent::boot();
-
         // When asrama details are updated, automatically sync child students to keep data consistent
         static::updated(function ($asrama) {
             $asrama->students()->update([
