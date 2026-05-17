@@ -201,36 +201,37 @@ function Dashboard() {
               </SantriSwitcherTrigger>
             </div>
 
-            <div className="mt-5 flex items-end gap-3">
-              <h2 className="text-3xl font-bold tracking-tight">
-                {hide ? "Rp ••••••" : fmt(active.saldo)}
-              </h2>
-              <button onClick={() => setHide((h) => !h)} className="mb-1.5 text-white/80">
-                {hide ? <EyeOff size={18} /> : <Eye size={18} />}
-              </button>
+            <div className="flex items-center justify-between mt-5">
+              <div className="flex items-end gap-3">
+                <h2 className="text-3xl font-bold tracking-tight">
+                  {hide ? "Rp ••••••" : fmt(active.saldo)}
+                </h2>
+                <button onClick={() => setHide((h) => !h)} className="mb-1.5 text-white/80">
+                  {hide ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
+              <div className="text-right bg-white/10 px-3 py-1.5 rounded-2xl border border-white/10 shrink-0">
+                <p className="text-white/60 text-[9px] uppercase font-bold tracking-wider">Limit Harian</p>
+                <p className="font-bold text-[11px] mt-0.5">{fmt(active.daily_limit)}</p>
+              </div>
             </div>
 
-            <div className="mt-5 flex items-center justify-between text-xs gap-2">
-              <div className="min-w-0 flex-1">
-                <p className="text-white/60 text-[10px] uppercase font-bold tracking-wider">Limit Harian</p>
-                <p className="font-bold text-[12px] truncate mt-0.5">{fmt(active.daily_limit)}</p>
-              </div>
-              <div className="h-8 w-px bg-white/20 shrink-0" />
-              <div className="min-w-0 flex-1 px-1 text-center">
+            <div className="mt-6 flex items-center justify-between text-xs gap-3">
+              <div className="min-w-0" style={{ width: "30%" }}>
                 <p className="text-white/60 text-[10px] uppercase font-bold tracking-wider">Asrama</p>
                 <p className="font-bold text-[12px] truncate mt-0.5">{(active as any).asrama_name || "-"}</p>
               </div>
               <div className="h-8 w-px bg-white/20 shrink-0" />
-              <div className="min-w-0 flex-1 text-right">
+              <div className="min-w-0" style={{ width: "70%" }}>
                 <p className="text-white/60 text-[10px] uppercase font-bold tracking-wider">Asatidz</p>
                 {((active as any).asrama_host || (active as any).asramaHost) ? (
                   <a
                     href={`https://wa.me/${((active as any).asrama_host || (active as any).asramaHost).phone}`}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center justify-end gap-1 mt-0.5 text-emerald-300 font-bold hover:text-emerald-200 transition-all text-[12px] max-w-full"
+                    className="inline-flex items-center justify-start gap-1 mt-0.5 text-emerald-300 font-bold hover:text-emerald-200 transition-all text-[12px] max-w-full"
                   >
-                    <span className="truncate max-w-[80px]">{((active as any).asrama_host || (active as any).asramaHost).name}</span>
+                    <span className="truncate max-w-[170px]">{((active as any).asrama_host || (active as any).asramaHost).name}</span>
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse shrink-0" />
                   </a>
                 ) : (
