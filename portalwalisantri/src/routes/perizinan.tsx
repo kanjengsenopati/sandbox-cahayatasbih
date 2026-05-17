@@ -849,11 +849,11 @@ function PerizinanPage() {
 
         {/* Premium DateTime Picker Modal Drawer */}
         {isPickerOpen && (
-          <div className="fixed inset-0 bg-black/60 z-50 flex items-end justify-center p-4 backdrop-blur-sm animate-fade-in">
-            <div className="bg-card w-full max-w-md rounded-t-[2.5rem] p-6 shadow-2xl space-y-5 animate-slide-up pb-10">
+          <div className="fixed inset-0 bg-slate-900/60 z-50 flex items-end justify-center p-4 backdrop-blur-md animate-fade-in">
+            <div className="bg-white/95 w-full max-w-md rounded-t-[2.5rem] p-6 border border-white/20 shadow-[0_20px_60px_rgba(155,29,232,0.18)] space-y-6 animate-slide-up pb-10">
               
               {/* Header */}
-              <div className="flex justify-between items-center border-b border-slate-100 pb-3">
+              <div className="flex justify-between items-center border-b border-slate-100/80 pb-3">
                 <div>
                   <p className="text-[11px] text-slate-400 font-extrabold uppercase tracking-wide">Pengaturan Jadwal</p>
                   <p className="text-sm font-bold text-slate-800">Setel Tanggal & Waktu</p>
@@ -861,41 +861,57 @@ function PerizinanPage() {
                 <button
                   type="button"
                   onClick={() => setIsPickerOpen(false)}
-                  className="w-8 h-8 rounded-full bg-secondary border border-border flex items-center justify-center text-slate-500 font-bold hover:bg-slate-100 transition"
+                  className="w-8 h-8 rounded-full bg-secondary border border-border flex items-center justify-center text-slate-500 font-bold hover:bg-slate-100 active:scale-95 transition"
                 >
                   ×
                 </button>
               </div>
 
-              {/* Selection Displays & Tabs Switcher */}
-              <div className="grid grid-cols-2 bg-slate-50 border border-slate-100 rounded-2xl p-1 gap-1">
+              {/* Premium Hero Display Board */}
+              <div className="relative overflow-hidden rounded-[24px] bg-gradient-to-br from-[#9b1de8] to-[#5a0c91] text-white p-5 shadow-[0_12px_30px_rgba(155,29,232,0.22)] flex flex-col justify-between min-h-[110px]">
+                <div className="absolute top-0 right-0 w-28 h-28 bg-white/5 rounded-full blur-3xl -mr-4 -mt-4"></div>
+                <div className="absolute bottom-0 left-0 w-36 h-36 bg-white/5 rounded-full blur-3xl -ml-10 -mb-10"></div>
+                
+                <div className="relative z-10">
+                  <span className="text-[9px] font-extrabold uppercase tracking-widest text-purple-200 block">Jadwal Terpilih</span>
+                  <span className="text-sm font-extrabold mt-1 block">
+                    {pickerDate.toLocaleDateString("id-ID", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}
+                  </span>
+                </div>
+                
+                <div className="relative z-10 mt-3 flex items-baseline gap-2">
+                  <span className="text-3xl font-extrabold font-mono tracking-tight text-white drop-shadow-[0_2px_8px_rgba(255,255,255,0.15)]">
+                    {pickerHour.toString().padStart(2, '0')}:{pickerMinute.toString().padStart(2, '0')}
+                  </span>
+                  <span className="text-xs font-bold px-2 py-0.5 rounded-lg bg-white/15 text-purple-100 font-sans tracking-wide">
+                    {pickerAmPm} WIB
+                  </span>
+                </div>
+              </div>
+
+              {/* Premium Prominent Tabs */}
+              <div className="grid grid-cols-2 bg-slate-100/80 border border-slate-200/50 rounded-2xl p-1 gap-1">
                 <button
                   type="button"
                   onClick={() => setPickerTab("date")}
-                  className={`py-3 px-2 rounded-xl flex flex-col items-center justify-center transition ${
+                  className={`py-3 px-2 rounded-xl flex items-center justify-center gap-2 font-extrabold text-xs transition duration-300 ${
                     pickerTab === "date"
-                      ? "bg-white text-slate-800 shadow-sm border border-slate-100"
+                      ? "bg-white text-[#9b1de8] shadow-sm border border-slate-200/60"
                       : "text-slate-500 hover:text-slate-800"
                   }`}
                 >
-                  <span className="text-[10px] font-extrabold uppercase tracking-wide text-slate-400">Tanggal</span>
-                  <span className="text-xs font-bold mt-0.5 truncate max-w-full">
-                    {pickerDate.toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" })}
-                  </span>
+                  <Calendar size={14} /> Set Tanggal
                 </button>
                 <button
                   type="button"
                   onClick={() => setPickerTab("time")}
-                  className={`py-3 px-2 rounded-xl flex flex-col items-center justify-center transition ${
+                  className={`py-3 px-2 rounded-xl flex items-center justify-center gap-2 font-extrabold text-xs transition duration-300 ${
                     pickerTab === "time"
-                      ? "bg-white text-slate-800 shadow-sm border border-slate-100"
+                      ? "bg-white text-[#9b1de8] shadow-sm border border-slate-200/60"
                       : "text-slate-500 hover:text-slate-800"
                   }`}
                 >
-                  <span className="text-[10px] font-extrabold uppercase tracking-wide text-slate-400">Waktu</span>
-                  <span className="text-xs font-bold mt-0.5">
-                    {pickerHour.toString().padStart(2, '0')}:{pickerMinute.toString().padStart(2, '0')} {pickerAmPm}
-                  </span>
+                  <Clock size={14} /> Set Waktu
                 </button>
               </div>
 
@@ -942,7 +958,7 @@ function PerizinanPage() {
                             onClick={() => setPickerDate(day)}
                             className={`aspect-square w-full rounded-xl flex items-center justify-center text-xs transition active:scale-95 ${
                               isSelected
-                                ? "bg-gradient-to-br from-[#9b1de8] to-[#610a9c] text-white shadow-md font-bold scale-105"
+                                ? "bg-gradient-to-br from-[#9b1de8] to-[#610a9c] text-white shadow-[0_4px_12px_rgba(155,29,232,0.3)] font-bold scale-105"
                                 : isToday
                                   ? "border border-[#9b1de8] text-[#9b1de8] font-bold"
                                   : "text-slate-700 hover:bg-slate-50 font-semibold"
@@ -960,11 +976,11 @@ function PerizinanPage() {
                     
                     {/* Dial Selector (Hour vs Minute) & AM/PM Selector */}
                     <div className="flex justify-between items-center px-4">
-                      <div className="flex bg-slate-100/80 border border-slate-200 rounded-xl p-0.5 text-xs font-bold">
+                      <div className="flex bg-slate-100/80 border border-slate-200/50 rounded-xl p-0.5 text-xs font-bold">
                         <button
                           type="button"
                           onClick={() => setPickerClockMode("hours")}
-                          className={`px-3 py-1 rounded-lg transition ${
+                          className={`px-3 py-1.5 rounded-lg transition ${
                             pickerClockMode === "hours" ? "bg-white text-slate-800 shadow-sm" : "text-slate-500"
                           }`}
                         >
@@ -973,7 +989,7 @@ function PerizinanPage() {
                         <button
                           type="button"
                           onClick={() => setPickerClockMode("minutes")}
-                          className={`px-3 py-1 rounded-lg transition ${
+                          className={`px-3 py-1.5 rounded-lg transition ${
                             pickerClockMode === "minutes" ? "bg-white text-slate-800 shadow-sm" : "text-slate-500"
                           }`}
                         >
@@ -981,12 +997,12 @@ function PerizinanPage() {
                         </button>
                       </div>
 
-                      <div className="flex bg-slate-100/80 border border-slate-200 rounded-xl p-0.5 text-xs font-bold">
+                      <div className="flex bg-slate-100/80 border border-slate-200/50 rounded-xl p-0.5 text-xs font-bold">
                         <button
                           type="button"
                           onClick={() => setPickerAmPm("AM")}
-                          className={`px-3 py-1 rounded-lg transition ${
-                            pickerAmPm === "AM" ? "bg-[#9b1de8] text-white shadow-sm animate-none" : "text-slate-500"
+                          className={`px-3 py-1.5 rounded-lg transition ${
+                            pickerAmPm === "AM" ? "bg-[#9b1de8] text-white shadow-sm" : "text-slate-500"
                           }`}
                         >
                           AM
@@ -994,8 +1010,8 @@ function PerizinanPage() {
                         <button
                           type="button"
                           onClick={() => setPickerAmPm("PM")}
-                          className={`px-3 py-1 rounded-lg transition ${
-                            pickerAmPm === "PM" ? "bg-[#9b1de8] text-white shadow-sm animate-none" : "text-slate-500"
+                          className={`px-3 py-1.5 rounded-lg transition ${
+                            pickerAmPm === "PM" ? "bg-[#9b1de8] text-white shadow-sm" : "text-slate-500"
                           }`}
                         >
                           PM
@@ -1004,16 +1020,16 @@ function PerizinanPage() {
                     </div>
 
                     {/* Circular Clock Face */}
-                    <div className="relative w-52 h-52 mx-auto rounded-full bg-slate-50 border border-slate-100 flex items-center justify-center shadow-[inset_0_4px_10px_rgba(0,0,0,0.03)]">
+                    <div className="relative w-56 h-56 mx-auto rounded-full bg-slate-100/50 border border-slate-200/60 flex items-center justify-center shadow-[inset_0_5px_15px_rgba(0,0,0,0.04),_0_2px_4px_rgba(0,0,0,0.01)]">
                       
                       {/* Hands */}
                       {/* Hour hand */}
                       <div
-                        className="absolute w-1 bg-slate-700 rounded-full"
+                        className="absolute w-1.5 bg-slate-800 rounded-full"
                         style={{
                           height: "30%",
                           bottom: "50%",
-                          left: "calc(50% - 2px)",
+                          left: "calc(50% - 3px)",
                           transformOrigin: "bottom center",
                           transform: `rotate(${(pickerHour % 12) * 30 + pickerMinute * 0.5}deg)`,
                           transition: "transform 0.4s cubic-bezier(0.4, 0, 0.2, 1)",
@@ -1032,7 +1048,7 @@ function PerizinanPage() {
                         }}
                       />
                       {/* Center cap */}
-                      <div className="absolute w-3 h-3 rounded-full bg-[#9b1de8] border-2 border-white shadow-sm" />
+                      <div className="absolute w-4 h-4 rounded-full bg-[#9b1de8] border-3 border-white shadow-[0_2px_8px_rgba(155,29,232,0.3)] z-10" />
 
                       {/* Render Clock Numbers */}
                       {pickerClockMode === "hours" ? (
@@ -1048,9 +1064,9 @@ function PerizinanPage() {
                                 setPickerClockMode("minutes");
                               }}
                               style={style}
-                              className={`absolute w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition-all ${
+                              className={`absolute w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all ${
                                 isSelected
-                                  ? "bg-[#9b1de8] text-white shadow-md font-extrabold scale-110"
+                                  ? "bg-gradient-to-tr from-[#9b1de8] to-[#780ca1] text-white shadow-[0_4px_12px_rgba(155,29,232,0.35)] font-extrabold scale-110"
                                   : "text-slate-500 hover:bg-[#9b1de8]/10 hover:text-[#9b1de8]"
                               }`}
                             >
@@ -1068,9 +1084,9 @@ function PerizinanPage() {
                               type="button"
                               onClick={() => setPickerMinute(min)}
                               style={style}
-                              className={`absolute w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-bold transition-all ${
+                              className={`absolute w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-bold transition-all ${
                                 isSelected
-                                  ? "bg-[#9b1de8] text-white shadow-md font-extrabold scale-110"
+                                  ? "bg-gradient-to-tr from-[#9b1de8] to-[#780ca1] text-white shadow-[0_4px_12px_rgba(155,29,232,0.35)] font-extrabold scale-110"
                                   : "text-slate-500 hover:bg-[#9b1de8]/10 hover:text-[#9b1de8]"
                               }`}
                             >
@@ -1086,18 +1102,18 @@ function PerizinanPage() {
                       <button
                         type="button"
                         onClick={() => setPickerMinute((prev) => (prev > 0 ? prev - 1 : 59))}
-                        className="w-8 h-8 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-center font-bold text-slate-600 hover:bg-slate-100 active:scale-95 transition"
+                        className="w-10 h-10 rounded-2xl bg-slate-50 border border-slate-200/75 flex items-center justify-center font-bold text-slate-600 hover:bg-slate-100 active:scale-95 transition"
                       >
                         -
                       </button>
-                      <div className="text-center min-w-[70px]">
-                        <span className="text-[9px] uppercase font-bold text-slate-400 block tracking-wider">Menit</span>
-                        <span className="text-sm font-extrabold text-slate-700 font-mono">{pickerMinute.toString().padStart(2, '0')}</span>
+                      <div className="text-center min-w-[80px] bg-slate-50 border border-slate-100 rounded-2xl py-1.5 px-3">
+                        <span className="text-[9px] uppercase font-extrabold text-slate-400 block tracking-wider">Menit</span>
+                        <span className="text-sm font-extrabold text-slate-800 font-mono">{pickerMinute.toString().padStart(2, '0')}</span>
                       </div>
                       <button
                         type="button"
                         onClick={() => setPickerMinute((prev) => (prev < 59 ? prev + 1 : 0))}
-                        className="w-8 h-8 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-center font-bold text-slate-600 hover:bg-slate-100 active:scale-95 transition"
+                        className="w-10 h-10 rounded-2xl bg-slate-50 border border-slate-200/75 flex items-center justify-center font-bold text-slate-600 hover:bg-slate-100 active:scale-95 transition"
                       >
                         +
                       </button>
@@ -1112,14 +1128,14 @@ function PerizinanPage() {
                 <button
                   type="button"
                   onClick={() => setIsPickerOpen(false)}
-                  className="flex-1 py-3.5 rounded-2xl border border-slate-200 bg-white text-slate-600 text-xs font-bold hover:bg-slate-50 active:scale-[0.98] transition text-center shadow-sm"
+                  className="flex-1 py-4 rounded-2xl border border-slate-200 bg-white text-slate-500 text-xs font-bold hover:bg-slate-50 active:scale-[0.98] transition text-center shadow-sm"
                 >
                   Batal
                 </button>
                 <button
                   type="button"
                   onClick={saveDateTimePicker}
-                  className="flex-1 py-3.5 rounded-2xl bg-gradient-to-r from-[#9b1de8] to-[#610a9c] text-white text-xs font-bold hover:opacity-95 active:scale-[0.98] transition text-center shadow-md shadow-[#9b1de8]/20"
+                  className="flex-1 py-4 rounded-2xl bg-gradient-to-r from-[#9b1de8] to-[#5a0c91] text-white text-xs font-extrabold hover:brightness-110 active:scale-[0.98] transition text-center shadow-[0_8px_25px_rgba(155,29,232,0.3)]"
                 >
                   Simpan Jadwal
                 </button>
