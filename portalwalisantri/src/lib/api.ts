@@ -61,4 +61,13 @@ export const updateProfile = (formData: FormData) =>
 export const updatePassword = (data: any) => api.put('/password', data);
 export const fetchPaymentMethods = (params?: { type?: string; bill_ids?: string[] }) => api.get('/payment-methods', { params });
 
+// New API helper functions for placeholder pages
+export const fetchBlockStatus = () => api.get('/block-status');
+export const toggleBlock = () => api.post('/block-toggle');
+export const fetchTahfidz = () => api.get('/tahfidz');
+export const fetchCounseling = () => api.get('/counseling');
+export const fetchAchievements = () => api.get('/achievements');
+export const fetchStudyGrades = (params?: { semester_id?: string | number }) => api.get('/study-grades', { params });
+export const fetchSemesters = () => api.get('/semesters');
+
 export default api;

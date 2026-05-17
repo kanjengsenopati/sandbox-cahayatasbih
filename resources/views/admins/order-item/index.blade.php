@@ -905,6 +905,18 @@
             }).then(function (response) {
                 var student = response.data.data;
                 if (student) {
+                    // Check if card is blocked by Wali
+                    if (student.is_blocked) {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'KARTU DIBLOKIR!',
+                            text: 'Maaf, Kartu fisik milik ' + student.name + ' telah diblokir oleh Wali Santri.',
+                            confirmButtonColor: '#d33'
+                        });
+                        e.target.value = '';
+                        return;
+                    }
+
                     // Replace name, saldo, and update total price
                     document.getElementById('student-name').value = student.name;
                     document.getElementById('saldo').value = 'Rp. ' + student.saldo.toLocaleString('id-ID');

@@ -163,6 +163,23 @@ Route::prefix('wali')->middleware(['web'])->group(function () {
     Route::put('profile', [App\Http\Controllers\Api\Wali\ProfileController::class, 'update']);
     Route::put('password', [App\Http\Controllers\Api\Wali\PasswordController::class, 'update']);
 
+    // Blokir Saldo
+    Route::get('block-status', [App\Http\Controllers\Api\Wali\BlockController::class, 'show']);
+    Route::post('block-toggle', [App\Http\Controllers\Api\Wali\BlockController::class, 'toggle']);
+
+    // Tahfidz
+    Route::get('tahfidz', [App\Http\Controllers\Api\Wali\TahfidzController::class, 'index']);
+
+    // Perilaku (Counseling)
+    Route::get('counseling', [App\Http\Controllers\Api\Wali\CounselingController::class, 'index']);
+
+    // Prestasi
+    Route::get('achievements', [App\Http\Controllers\Api\Wali\AchievementController::class, 'index']);
+
+    // Nilai (Study Grades)
+    Route::get('study-grades', [App\Http\Controllers\Api\Wali\StudyGradeController::class, 'index']);
+    Route::get('semesters', [App\Http\Controllers\Api\Wali\StudyGradeController::class, 'semesters']);
+
     // Mutasi Pindah Unit
     Route::post('unit-transfer/continue', [App\Http\Controllers\Api\Wali\UnitTransferController::class, 'continueUnit']);
     });
