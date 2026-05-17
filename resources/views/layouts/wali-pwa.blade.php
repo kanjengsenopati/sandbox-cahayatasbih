@@ -7,8 +7,8 @@
     
     <!-- PWA Manifest & Icons -->
     <link rel="manifest" href="{{ url('manifest-wali.json') }}">
-    <link rel="icon" href="{{ url('favicon.ico') }}" type="image/x-icon">
-    <link rel="apple-touch-icon" href="{{ url('icons/icon-192.png') }}">
+    <link rel="icon" href="{{ url('favicon.ico?v=3') }}" type="image/x-icon">
+    <link rel="apple-touch-icon" href="{{ url('icons/icon-192.png?v=3') }}">
     <meta name="theme-color" content="#2563eb">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
