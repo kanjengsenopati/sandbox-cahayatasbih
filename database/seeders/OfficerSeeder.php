@@ -5,6 +5,8 @@ namespace Database\Seeders;
 use Illuminate\Database\Seeder;
 use App\Models\Officer;
 use App\Models\ApplicationMenu;
+use Spatie\Permission\Models\Permission;
+use Spatie\Permission\Models\Role;
 
 class OfficerSeeder extends Seeder
 {
@@ -13,7 +15,31 @@ class OfficerSeeder extends Seeder
      */
     public function run(): void
     {
-        // 1. Seed default officers
+        // 1. Clear Spatie Permission Cache
+        app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
+
+        // 2. Seed Spatie Permissions for Petugas
+        $permissions = [
+            'Manage Petugas',
+            'Create Petugas',
+            'Edit Petugas',
+            'Delete Petugas',
+        ];
+
+        foreach ($permissions as $perm) {
+            Permission::firstOrCreate([
+                'name' => $perm,
+                'guard_name' => 'web',
+            ]);
+        }
+
+        // 3. Assign permissions to all existing Roles
+        $roles = Role::all();
+        foreach ($roles as $role) {
+            $role->givePermissionTo($permissions);
+        }
+
+        // 4. Seed default officers
         $officers = [
             [
                 'name' => 'Ustadz H. Ahmad Fauzi, M.Pd.',
@@ -48,7 +74,7 @@ class OfficerSeeder extends Seeder
             );
         }
 
-        // 2. Seed ApplicationMenu
+        // 5. Seed ApplicationMenu
         ApplicationMenu::updateOrCreate(
             ['flag' => 'petugas'],
             [
