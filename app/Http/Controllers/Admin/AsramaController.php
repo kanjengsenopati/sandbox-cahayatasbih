@@ -306,6 +306,10 @@ class AsramaController extends Controller
                 $email = $emailName . rand(100, 999) . '@cahayatasbih.com';
             }
 
+            // Search for "PETUGAS PIKET" role first to assign it both in admins table flat column and Spatie pivot table
+            $role = Role::where('name', 'like', '%PETUGAS%')->first() ?? Role::first();
+            $roleId = $role ? $role->id : null;
+
             $admin = Admin::create([
                 'name' => $officer->name,
                 'email' => $email,
@@ -313,10 +317,9 @@ class AsramaController extends Controller
                 'password' => bcrypt('12345678'),
                 'avatar' => 'assets/media/avatars/150-26.jpg',
                 'is_active' => 1,
+                'role_id' => $roleId,
             ]);
 
-            // Assign "PETUGAS PIKET" role to grant leave permit management permissions
-            $role = Role::where('name', 'like', '%PETUGAS%')->first() ?? Role::first();
             if ($role) {
                 $admin->assignRole($role);
             }
