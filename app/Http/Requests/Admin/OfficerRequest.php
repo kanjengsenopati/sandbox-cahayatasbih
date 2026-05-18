@@ -20,12 +20,13 @@ class OfficerRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'name' => 'required|string|max:255',
+            'user_id' => 'required|exists:users,id',
             'position' => 'required|string|max:255',
             'duty' => 'required|string',
             'phone' => 'required|string|max:20',
             'photo' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
             'is_active' => 'nullable|boolean',
+            'access_scope' => 'required|in:pwa,backoffice,both',
         ];
     }
 }

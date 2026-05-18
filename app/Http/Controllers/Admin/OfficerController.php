@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Models\Officer;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Yajra\DataTables\DataTables;
 use App\Http\Controllers\Controller;
@@ -20,7 +21,7 @@ class OfficerController extends Controller
             return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
         }
         if (request()->ajax()) {
-            $data = Officer::latest();
+            $data = Officer::with('user')->latest();
             return DataTables::of($data)
                 ->addColumn('photo', function ($data) {
                     if ($data->photo) {
@@ -56,7 +57,8 @@ class OfficerController extends Controller
         if (!Auth::user()->can('Create Petugas')) {
             return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
         }
-        return view('admins.officer.create-edit');
+        $users = User::select('id', 'name', 'phone')->get();
+        return view('admins.officer.create-edit', compact('users'));
     }
 
     /**
@@ -68,6 +70,15 @@ class OfficerController extends Controller
             return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
         }
         $data = $request->validated();
+
+        $user = User::findOrFail($data['user_id']);
+        $user->access_scope = $data['access_scope'];
+        if (!$user->phone && !empty($data['phone'])) {
+            $user->phone = $data['phone'];
+        }
+        $user->save();
+        $user->assignRole('Asatidz');
+
         if ($request->hasFile('photo')) {
             $data['photo'] = 'storage/' . $request->file('photo')->store('images/officers', 'public');
         }
@@ -93,7 +104,8 @@ class OfficerController extends Controller
         if (!Auth::user()->can('Edit Petugas')) {
             return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
         }
-        return view('admins.officer.create-edit', compact('officer'));
+        $users = User::select('id', 'name', 'phone')->get();
+        return view('admins.officer.create-edit', compact('officer', 'users'));
     }
 
     /**
@@ -105,6 +117,14 @@ class OfficerController extends Controller
             return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
         }
         $data = $request->validated();
+
+        $user = User::findOrFail($data['user_id']);
+        $user->access_scope = $data['access_scope'];
+        if (!$user->phone && !empty($data['phone'])) {
+            $user->phone = $data['phone'];
+        }
+        $user->save();
+
         if ($request->hasFile('photo')) {
             if ($officer->photo && file_exists(public_path($officer->photo))) {
                 @unlink(public_path($officer->photo));

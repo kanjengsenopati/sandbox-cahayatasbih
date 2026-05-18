@@ -8,13 +8,22 @@ return new class extends Migration {
     {
         // Hapus kolom user_id sisa kegagalan migrasi sebelumnya jika ada
         if (Schema::hasColumn('officers', 'user_id')) {
-            Schema::table('officers', function (Blueprint $table) {
-                // Drop foreign key if it was somehow created (defensive)
-                try {
+            // Cek langsung ke information_schema MySQL untuk memastikan foreign key benar-benar ada sebelum di-drop
+            $foreignKeys = \Illuminate\Support\Facades\DB::select("
+                SELECT CONSTRAINT_NAME 
+                FROM information_schema.KEY_COLUMN_USAGE 
+                WHERE TABLE_SCHEMA = DATABASE() 
+                  AND TABLE_NAME = 'officers' 
+                  AND CONSTRAINT_NAME = 'officers_user_id_foreign'
+            ");
+
+            if (!empty($foreignKeys)) {
+                Schema::table('officers', function (Blueprint $table) {
                     $table->dropForeign(['user_id']);
-                } catch (\Exception $e) {
-                    // Ignore if constraint doesn't exist
-                }
+                });
+            }
+
+            Schema::table('officers', function (Blueprint $table) {
                 $table->dropColumn('user_id');
             });
         }
@@ -28,14 +37,25 @@ return new class extends Migration {
     }
     public function down()
     {
-        Schema::table('officers', function (Blueprint $table) {
-            try {
+        $foreignKeys = \Illuminate\Support\Facades\DB::select("
+            SELECT CONSTRAINT_NAME 
+            FROM information_schema.KEY_COLUMN_USAGE 
+            WHERE TABLE_SCHEMA = DATABASE() 
+              AND TABLE_NAME = 'officers' 
+              AND CONSTRAINT_NAME = 'officers_user_id_foreign'
+        ");
+
+        if (!empty($foreignKeys)) {
+            Schema::table('officers', function (Blueprint $table) {
                 $table->dropForeign(['user_id']);
-            } catch (\Exception $e) {}
-            if (Schema::hasColumn('officers', 'user_id')) {
+            });
+        }
+
+        if (Schema::hasColumn('officers', 'user_id')) {
+            Schema::table('officers', function (Blueprint $table) {
                 $table->dropColumn('user_id');
-            }
-        });
+            });
+        }
     }
 };
 ?>

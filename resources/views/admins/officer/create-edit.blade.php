@@ -40,12 +40,29 @@
 
                                 <!-- Name Input -->
                                 <div class="fv-row mb-7">
-                                    <label class="fs-6 fw-bold form-label mt-3" for="name">
-                                        <span class="required">Nama Petugas / Pengurus</span>
+                                    <label class="fs-6 fw-bold form-label mt-3" for="user_id">
+                                        <span class="required">Nama Petugas / Pengurus (Pilih User)</span>
                                     </label>
-                                    <input type="text" class="form-control form-control-solid" name="name" id="name"
-                                        placeholder="Masukkan nama lengkap beserta gelar" value="{{ @$officer->name ?? old('name') }}"
-                                        required />
+                                    <select class="form-select form-select-solid" name="user_id" id="user_id" data-control="select2" data-placeholder="Pilih User" required>
+                                        <option value=""></option>
+                                        @foreach($users as $user)
+                                            <option value="{{ $user->id }}" {{ (@$officer->user_id ?? old('user_id')) == $user->id ? 'selected' : '' }}>
+                                                {{ $user->name }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                </div>
+
+                                <!-- Access Scope Input -->
+                                <div class="fv-row mb-7">
+                                    <label class="fs-6 fw-bold form-label mt-3" for="access_scope">
+                                        <span class="required">Lingkup Akses (Access Scope)</span>
+                                    </label>
+                                    <select class="form-select form-select-solid" name="access_scope" id="access_scope" required>
+                                        <option value="pwa" {{ (@$officer->user->access_scope ?? old('access_scope')) == 'pwa' ? 'selected' : '' }}>PWA Saja</option>
+                                        <option value="backoffice" {{ (@$officer->user->access_scope ?? old('access_scope')) == 'backoffice' ? 'selected' : '' }}>Backoffice Saja</option>
+                                        <option value="both" {{ (@$officer->user->access_scope ?? old('access_scope')) == 'both' ? 'selected' : '' }}>Keduanya (PWA & Backoffice)</option>
+                                    </select>
                                 </div>
 
                                 <!-- Position Input -->

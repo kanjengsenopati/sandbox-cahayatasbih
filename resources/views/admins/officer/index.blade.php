@@ -111,8 +111,8 @@
                     name: 'photo',
                 },
                 {
-                    data: 'name',
-                    name: 'name',
+                    data: 'user.name',
+                    name: 'user.name',
                     searchable: true
                 },
                 {
