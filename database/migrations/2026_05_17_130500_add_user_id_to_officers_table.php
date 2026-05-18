@@ -7,7 +7,8 @@ return new class extends Migration {
     public function up()
     {
         Schema::table('officers', function (Blueprint $table) {
-            $table->foreignId('user_id')->nullable()->constrained('users')->onDelete('cascade')->after('photo');
+            $table->uuid('user_id')->nullable()->after('photo');
+            $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
             // Make user_id unique to enforce one‑to‑one relation
             $table->unique('user_id');
         });
