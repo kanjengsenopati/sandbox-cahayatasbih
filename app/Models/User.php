@@ -25,6 +25,7 @@ class User extends Authenticatable
         'name',
         'email',
         'phone',
+        'access_scope',
         'avatar',
         'is_active',
         'gender',
@@ -37,6 +38,15 @@ class User extends Authenticatable
         'member_group',
         'rejection_note',
     ];
+
+    /**
+     * Relation to Officer (Petugas) if this user is a petugas.
+     */
+    public function officer()
+    {
+        return $this->hasOne(Officer::class);
+    }
+
 
     /**
      * The attributes that should be hidden for serialization.
