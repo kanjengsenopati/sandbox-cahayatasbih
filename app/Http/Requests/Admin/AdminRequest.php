@@ -32,6 +32,8 @@ class AdminRequest extends FormRequest
                 'avatar' => 'required|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
                 'phone' => 'nullable|string|max:20|unique:admins,phone',
                 'access_scope' => 'required|in:backoffice,pwa,both',
+                'role_ids' => 'required|array',
+                'role_ids.*' => 'exists:roles,id',
             ],
             'PUT' => [
                 'name' => 'required',
@@ -41,6 +43,8 @@ class AdminRequest extends FormRequest
                 'avatar' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
                 'phone' => 'nullable|string|max:20|unique:admins,phone,' . $adminId,
                 'access_scope' => 'required|in:backoffice,pwa,both',
+                'role_ids' => 'required|array',
+                'role_ids.*' => 'exists:roles,id',
             ],
             default => [],
         };

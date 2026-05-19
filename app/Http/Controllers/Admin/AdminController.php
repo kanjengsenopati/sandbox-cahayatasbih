@@ -94,15 +94,25 @@ class AdminController extends Controller
         try {
             DB::beginTransaction();
 
-            $data = $request->except('password');
+            $data = $request->except(['password', 'role_ids']);
             !empty($request->password) ? $data['password'] = bcrypt($request->password) : '';
 
             if (!empty($avatar = $request->avatar)) {
                 $data['avatar'] = 'storage/' . $avatar->store('images/avatars', ['disk' => 'public']);
             }
 
+            // Legacy support: set single role_id field to the first role ID in the array
+            if ($request->role_ids && count($request->role_ids) > 0) {
+                $data['role_id'] = $request->role_ids[0];
+            }
+
             $admin = Admin::create($data);
-            $admin->assignRole(Role::find($request->role_id)->name);
+
+            if ($request->role_ids) {
+                $roles = Role::whereIn('id', $request->role_ids)->pluck('name')->toArray();
+                $admin->assignRole($roles);
+            }
+
             if ($request->admin_schools && is_array($request->admin_schools)) {
                 foreach ($request->admin_schools as $school) {
                     AdminSchool::create([
@@ -142,7 +152,8 @@ class AdminController extends Controller
         $roles = Role::get();
         $schools = School::orderBy('name')->get();
         $adminSchools = $admin->adminSchool->pluck('school_id')->toArray();
-        return view('admins.admin.create-edit', compact('admin', 'roles', 'schools', 'adminSchools'));
+        $adminRoles = $admin->roles->pluck('id')->toArray();
+        return view('admins.admin.create-edit', compact('admin', 'roles', 'schools', 'adminSchools', 'adminRoles'));
     }
 
     /**
@@ -153,7 +164,7 @@ class AdminController extends Controller
         if (!Auth::user()->can('Edit Admin')) {
             return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
         }
-        $data = $request->except('password');
+        $data = $request->except(['password', 'role_ids']);
 
         // check email is unique
         $existAdmin = Admin::where('email', $request->email)->where('id', '!=', $admin->id)->first();
@@ -172,8 +183,18 @@ class AdminController extends Controller
             $data['avatar'] = 'storage/' . $avatar->store('images/avatars', ['disk' => 'public']);
         }
 
+        // Legacy support: set single role_id field to the first role ID in the array
+        if ($request->role_ids && count($request->role_ids) > 0) {
+            $data['role_id'] = $request->role_ids[0];
+        }
+
         $admin->update($data);
-        $admin->syncRoles(Role::find($request->role_id)->name);
+
+        if ($request->role_ids) {
+            $roles = Role::whereIn('id', $request->role_ids)->pluck('name')->toArray();
+            $admin->syncRoles($roles);
+        }
+
         if ($request->admin_schools) {
             $admin->adminSchool()->delete();
             foreach ($request->admin_schools as $school) {

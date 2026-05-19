@@ -189,25 +189,25 @@
                                          <div class="fv-row mb-6">
                                              <!--begin::Label-->
                                              <label class="fs-6 fw-bold form-label" for="role_id">
-                                                 <span class="required">Role</span>
-                                                 <i class="fas fa-exclamation-circle ms-1 fs-7" data-bs-toggle="tooltip"
-                                                     title="Role Akses yang dimiliki admin"></i>
-                                             </label>
-                                             <!--end::Label-->
-                                             <!--begin::Input-->
-                                             <select name="role_id" class="form-select form-select-solid" id="role_id"
-                                                 data-control="select2" data-placeholder="Select option" data-allow-clear="true"
-                                                 data-hide-search="true">
-                                                 <option value="">--Pilih Role--</option>
-                                                 @foreach ($roles as $role)
-                                                 <option value="{{ $role->id }}" {{ old('role_id')==$role->id || @$admin->role_id
-                                                      == $role->id ? 'selected' : '' }}>
-                                                      {{ $role->name }}
-                                                  </option>
+                                          <div class="fv-row mb-6">
+                                              <!--begin::Label-->
+                                              <label class="fs-6 fw-bold form-label" for="role_ids">
+                                                  <span class="required">Role</span>
+                                                  <i class="fas fa-exclamation-circle ms-1 fs-7" data-bs-toggle="tooltip"
+                                                      title="Role Akses yang dimiliki admin (bisa lebih dari satu)"></i>
+                                              </label>
+                                              <!--end::Label-->
+                                              <!--begin::Input-->
+                                              <select name="role_ids[]" class="form-select form-select-solid mb-3"
+                                                  id="role_ids" data-control="select2" data-placeholder="--Pilih Role--" data-allow-clear="true" multiple="multiple"
+                                                  required>
+                                                  @foreach ($roles as $role)
+                                                  <option value="{{ $role->id }}" @if (in_array($role->id, old('role_ids', @$adminRoles ?? []))) selected @endif>
+                                                      {{ $role->name }}</option>
                                                   @endforeach
-                                             </select>
-                                             <!--end::Input-->
-                                         </div>
+                                              </select>
+                                              <!--end::Input-->
+                                          </div>
 
                                          <div class="fv-row mb-6">
                                              <!--begin::Label-->
@@ -299,7 +299,7 @@
                     minlength: 8,
                     equalTo: "#password",
                 },
-                role_id: {
+                "role_ids[]": {
                     required: true,
                 },
                 phone: {
@@ -328,7 +328,7 @@
                     maxlength: "Konfirmasi Password maksimal 255 karakter",
                     equalTo: "Konfirmasi Password tidak sama dengan Password",
                 },
-                role_id: {
+                "role_ids[]": {
                     required: "Role harus diisi",
                 },
                 phone: {
