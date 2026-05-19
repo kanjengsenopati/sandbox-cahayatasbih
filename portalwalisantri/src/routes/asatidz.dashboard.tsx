@@ -547,7 +547,7 @@ function AsatidzDashboardPage() {
                     {isHistoryOpen && (
                       <div className="border-t border-slate-100 bg-slate-50/40 p-4 space-y-3">
                         <div className="flex items-center justify-between">
-                          <span className="text-[10px] font-bold text-indigo-600 uppercase tracking-widest">Riwayat Perizinan</span>
+                          <span className="text-[10px] font-bold text-indigo-600 tracking-normal">Riwayat Perizinan</span>
                           <span className="text-[10px] font-semibold text-slate-400">
                             {isLoadingHistory ? "Memuat..." : `${historyRes?.history?.length || 0} Pengajuan`}
                           </span>
@@ -625,7 +625,7 @@ function AsatidzDashboardPage() {
                                   {isRowExpanded && (
                                     <div className="bg-slate-50/50 p-4 border-t border-slate-100 space-y-3.5 text-xs animate-slide-down">
                                       <div className="space-y-1">
-                                        <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Keperluan / Alasan</p>
+                                        <p className="text-[9px] font-bold text-slate-400 tracking-normal">Keperluan / Alasan</p>
                                         <p className="text-xs font-semibold text-slate-600 leading-relaxed bg-white rounded-xl p-3 border border-slate-100">
                                           {h.reason}
                                         </p>
@@ -633,7 +633,7 @@ function AsatidzDashboardPage() {
 
                                       {h.status === "rejected" && h.rejection_reason && (
                                         <div className="space-y-1">
-                                          <p className="text-[9px] font-bold text-rose-400 uppercase tracking-widest">Alasan Penolakan</p>
+                                          <p className="text-[9px] font-bold text-rose-400 tracking-normal">Alasan Penolakan</p>
                                           <p className="text-xs font-semibold text-rose-700 leading-relaxed bg-rose-50/50 rounded-xl p-3 border border-rose-100/50">
                                             {h.rejection_reason}
                                           </p>
@@ -642,17 +642,17 @@ function AsatidzDashboardPage() {
 
                                       <div className="grid grid-cols-2 gap-3 pt-3 border-t border-slate-200/60">
                                         <div>
-                                          <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Rencana Keluar</p>
+                                          <p className="text-[9px] font-bold text-slate-400 tracking-normal mb-0.5">Rencana Keluar</p>
                                           <p className="font-semibold text-slate-600 text-[11px] leading-snug">{formatFullDate(h.planned_exit_date)}</p>
                                         </div>
                                         <div>
-                                          <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Rencana Kembali</p>
+                                          <p className="text-[9px] font-bold text-slate-400 tracking-normal mb-0.5">Rencana Kembali</p>
                                           <p className="font-semibold text-slate-600 text-[11px] leading-snug">{formatFullDate(h.planned_return_date)}</p>
                                         </div>
                                         {h.actual_return_date && (
                                           <div className="col-span-2 bg-emerald-50/50 border border-emerald-100/50 rounded-xl p-2.5 flex justify-between items-center">
                                             <div>
-                                              <p className="text-[8px] font-bold text-emerald-600 uppercase tracking-widest">Waktu Kembali Aktual</p>
+                                              <p className="text-[8px] font-bold text-emerald-600 tracking-normal">Waktu Kembali Aktual</p>
                                               <p className="font-bold text-emerald-700 text-[11px] mt-0.5">{formatFullDate(h.actual_return_date)}</p>
                                             </div>
                                             <span className="text-[9px] font-extrabold uppercase bg-emerald-600 text-white px-2 py-0.5 rounded-md">Tepat Waktu</span>
