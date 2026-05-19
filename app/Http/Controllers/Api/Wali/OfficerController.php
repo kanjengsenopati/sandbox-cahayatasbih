@@ -12,7 +12,7 @@ class OfficerController extends BaseWaliApiController
     public function index()
     {
         $student = $this->resolveActiveStudent();
-        $officers = Officer::where('is_active', true)->latest()->get();
+        $officers = Officer::with('user')->where('is_active', true)->latest()->get();
 
         return response()->json([
             'student_name' => $student ? $student->name : 'Santri',

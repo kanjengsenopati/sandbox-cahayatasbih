@@ -13,6 +13,8 @@ class Officer extends Model
 {
     use HasFactory, UuidTrait, SoftDeletes;
 
+    protected $appends = ['name'];
+
     protected $fillable = [
         // 'name' dihapus, nama diambil dari relasi User
         'position',

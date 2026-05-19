@@ -80,7 +80,8 @@ function PetugasPage() {
           ) : (
             officers.map((officer: any) => {
               // Extract initials if photo is absent
-              const initials = officer.name
+              const officerName = officer?.name || "Petugas Pesantren";
+              const initials = officerName
                 .split(" ")
                 .filter((n: string) => !n.includes(".") && n.length > 0)
                 .slice(0, 2)
