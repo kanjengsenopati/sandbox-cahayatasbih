@@ -1,6 +1,22 @@
 <?php
 
 namespace {
+    if (!defined('FILEINFO_NONE')) {
+        define('FILEINFO_NONE', 0);
+    }
+    if (!defined('FILEINFO_SYMLINK')) {
+        define('FILEINFO_SYMLINK', 2);
+    }
+    if (!defined('FILEINFO_MIME_TYPE')) {
+        define('FILEINFO_MIME_TYPE', 16);
+    }
+    if (!defined('FILEINFO_MIME_ENCODING')) {
+        define('FILEINFO_MIME_ENCODING', 1024);
+    }
+    if (!defined('FILEINFO_MIME')) {
+        define('FILEINFO_MIME', 1040);
+    }
+
     if (!class_exists('finfo')) {
         class finfo {
             public function __construct($options = null, $arg = null) {}
@@ -26,6 +42,33 @@ namespace {
             public function buffer($string, $options = null, $context = null) {
                 return 'application/octet-stream';
             }
+        }
+    }
+
+    if (!function_exists('finfo_open')) {
+        function finfo_open($options = null, $arg = null) {
+            return new finfo($options, $arg);
+        }
+    }
+    if (!function_exists('finfo_file')) {
+        function finfo_file($finfo, $filename, $options = null, $context = null) {
+            if ($finfo instanceof finfo) {
+                return $finfo->file($filename, $options, $context);
+            }
+            return 'application/octet-stream';
+        }
+    }
+    if (!function_exists('finfo_close')) {
+        function finfo_close($finfo) {
+            return true;
+        }
+    }
+    if (!function_exists('finfo_buffer')) {
+        function finfo_buffer($finfo, $string, $options = null, $context = null) {
+            if ($finfo instanceof finfo) {
+                return $finfo->buffer($string, $options, $context);
+            }
+            return 'application/octet-stream';
         }
     }
 }
