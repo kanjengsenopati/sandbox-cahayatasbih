@@ -33,5 +33,10 @@ class AppServiceProvider extends ServiceProvider
         Validator::resolver(function($translator, $data, $rules, $messages, $customAttributes) {
             return new \App\Validation\CustomValidator($translator, $data, $rules, $messages, $customAttributes);
         });
+
+        // Register Symfony Mime Fallback Guesser to prevent LogicException when php_fileinfo is not enabled
+        if (class_exists(\Symfony\Component\Mime\MimeTypes::class)) {
+            \Symfony\Component\Mime\MimeTypes::getDefault()->registerGuesser(new \App\Validation\FallbackMimeTypeGuesser());
+        }
     }
 }
