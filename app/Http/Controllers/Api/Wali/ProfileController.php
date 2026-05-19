@@ -12,7 +12,7 @@ class ProfileController extends BaseWaliApiController
     {
         if (Auth::guard('web')->check()) {
             $user = Auth::guard('web')->user();
-            $isDualRole = \App\Models\User::where('phone', $user->phone)->exists();
+            $isDualRole = \App\Models\User::whereIn('phone', $this->getPhoneVariations($user->phone))->exists();
             return response()->json([
                 'user' => $user,
                 'role' => 'asatidz',
@@ -23,7 +23,7 @@ class ProfileController extends BaseWaliApiController
 
         $user = Auth::guard('wali')->user();
         $students = Student::where('user_id', $user->id)->get();
-        $isDualRole = \App\Models\Admin::where('phone', $user->phone)->exists();
+        $isDualRole = \App\Models\Admin::whereIn('phone', $this->getPhoneVariations($user->phone))->exists();
         
         return response()->json([
             'user' => $user,
@@ -61,7 +61,7 @@ class ProfileController extends BaseWaliApiController
     {
         if (Auth::guard('wali')->check()) {
             $user = Auth::guard('wali')->user();
-            $admin = \App\Models\Admin::where('phone', $user->phone)->first();
+            $admin = \App\Models\Admin::whereIn('phone', $this->getPhoneVariations($user->phone))->first();
             if ($admin && $admin->is_active) {
                 // Check if Admin has PWA Perizinan access permission
                 if (!$admin->hasAnyPermission(['Manage Perizinan', 'Approve Perizinan', 'Scan Perizinan'])) {
@@ -77,7 +77,7 @@ class ProfileController extends BaseWaliApiController
             }
         } elseif (Auth::guard('web')->check()) {
             $admin = Auth::guard('web')->user();
-            $user = \App\Models\User::where('phone', $admin->phone)->first();
+            $user = \App\Models\User::whereIn('phone', $this->getPhoneVariations($admin->phone))->first();
             if ($user && $user->is_active) {
                 Auth::guard('web')->logout();
                 Auth::guard('wali')->login($user);
@@ -89,5 +89,23 @@ class ProfileController extends BaseWaliApiController
         }
 
         return response()->json(['message' => 'Switch role failed'], 400);
+    }
+
+    protected function getPhoneVariations($phone)
+    {
+        $digits = preg_replace('/\D/', '', $phone);
+        $variations = [$phone, $digits];
+
+        if (str_starts_with($digits, '62')) {
+            $local = '0' . substr($digits, 2);
+            $variations[] = $local;
+            $variations[] = '+' . $digits;
+        } elseif (str_starts_with($digits, '0')) {
+            $intl = '62' . substr($digits, 1);
+            $variations[] = $intl;
+            $variations[] = '+' . $intl;
+        }
+
+        return array_unique($variations);
     }
 }

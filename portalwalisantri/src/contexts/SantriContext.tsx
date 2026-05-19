@@ -51,6 +51,7 @@ export function SantriProvider({ children }: { children: ReactNode }) {
   const queryClient = useQueryClient();
   const location = useLocation();
   const isLoginPage = location.pathname === "/login";
+  const isAsatidzRoute = location.pathname.startsWith("/asatidz");
 
   const { data: students = [], isPending: isPendingStudents } = useQuery({
     queryKey: ["students"],
@@ -58,7 +59,7 @@ export function SantriProvider({ children }: { children: ReactNode }) {
       const res = await fetchStudents();
       return (res.data || []).map(mapSantri);
     },
-    enabled: !isLoginPage,
+    enabled: !isLoginPage && !isAsatidzRoute,
     retry: false,
   });
 
@@ -68,7 +69,7 @@ export function SantriProvider({ children }: { children: ReactNode }) {
       const res = await fetchActiveStudent();
       return res.data ? mapSantri(res.data) : null;
     },
-    enabled: !isLoginPage,
+    enabled: !isLoginPage && !isAsatidzRoute,
     retry: false,
   });
 
