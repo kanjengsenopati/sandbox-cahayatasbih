@@ -269,6 +269,7 @@ Route::group(['middleware' => ['auth']], function () {
     Route::resource('semester', SemesterController::class);
     Route::resource('study-grade', StudyGradeController::class);
     Route::post('application-menu/status/{id}', [ApplicationMenuController::class, 'status'])->name('application-menu.status');
+    Route::get('application-menu/get-class-levels', [ApplicationMenuController::class, 'getClassLevels'])->name('application-menu.get-class-levels');
     Route::resource('application-menu', ApplicationMenuController::class);
 
     // start report bill

@@ -66,8 +66,9 @@
                                 <tr class="text-start text-gray-400 fw-bolder fs-7 text-uppercase gs-0">
                                     <th style="width: 5%">No</th>
                                     <th>Nama Menu</th>
+                                    <th>Scope Visibilitas</th>
                                     <th>Status</th>
-                                    <th class="text-center min-w-100px" style="width: 22%">Aksi</th>
+                                    <th class="text-center min-w-100px" style="width: 18%">Aksi</th>
                                 </tr>
                             </thead>
                             <tbody class="text-gray-600 fw-bold"></tbody>
@@ -113,6 +114,12 @@
                      {
                         data: 'name',
                         name: 'name'
+                    },
+                    {
+                        data: 'scope',
+                        name: 'scope',
+                        orderable: false,
+                        searchable: false
                     },
                     {
                         data: 'status',

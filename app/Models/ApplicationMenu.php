@@ -12,4 +12,13 @@ class ApplicationMenu extends Model
     use HasFactory, UuidTrait, SoftDeletes;
 
     protected $fillable = ['name', 'flag', 'status'];
+
+    /**
+     * Relasi ke scope visibilitas menu (per unit pendidikan & jenjang kelas).
+     * Jika kosong = menu bersifat global (tampil untuk semua santri).
+     */
+    public function scopes()
+    {
+        return $this->hasMany(ApplicationMenuScope::class);
+    }
 }

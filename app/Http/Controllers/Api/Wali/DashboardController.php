@@ -100,7 +100,33 @@ class DashboardController extends BaseWaliApiController
                 ->first();
         }
 
-        $menus = \App\Models\ApplicationMenu::where('status', true)->get();
+        // Resolve student's school and class level for menu scoping
+        $studentSchoolId = $activeStudent?->school_id;
+        $studentClassLevel = null;
+        if ($activeStudent?->classroom) {
+            // Ekstrak jenjang dari nama kelas: "VII-A" → "VII", "IX-B" → "IX", "XII-IPA1" → "XII"
+            $classroomName = $activeStudent->classroom->name ?? '';
+            if (preg_match('/^(VII|VIII|IX|X{1,2}I{0,2}|I{1,3}V?|[0-9]+)/', strtoupper($classroomName), $matches)) {
+                $studentClassLevel = $matches[1];
+            }
+        }
+
+        $menus = \App\Models\ApplicationMenu::where('status', true)
+            ->where(function ($query) use ($studentSchoolId, $studentClassLevel) {
+                // Menu global (tanpa scope sama sekali)
+                $query->whereDoesntHave('scopes')
+                // ATAU menu yang scope-nya cocok dengan santri aktif (logika AND)
+                ->orWhereHas('scopes', function ($q) use ($studentSchoolId, $studentClassLevel) {
+                    $q->where('school_id', $studentSchoolId)
+                      ->where(function ($sq) use ($studentClassLevel) {
+                          // Scope tanpa class_level = semua jenjang di unit tsb
+                          $sq->whereNull('class_level')
+                          // ATAU scope dengan class_level yang cocok
+                             ->orWhere('class_level', $studentClassLevel);
+                      });
+                });
+            })
+            ->get();
 
         return response()->json([
             'user' => $user,
