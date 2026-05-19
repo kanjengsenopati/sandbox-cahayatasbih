@@ -90,7 +90,7 @@ function PetugasPage() {
                 .toUpperCase() || "ST";
 
               // WA link preparation (using international format)
-              const cleanWa = officer.phone.replace(/[^0-9]/g, "");
+              const cleanWa = (officer?.phone || "").replace(/[^0-9]/g, "");
 
               return (
                 <div 
@@ -101,7 +101,7 @@ function PetugasPage() {
                     {officer.photo ? (
                       <img 
                         src={`/${officer.photo}`} 
-                        alt={officer.name} 
+                        alt={officerName} 
                         className="w-12 h-12 rounded-2xl object-cover shrink-0 border border-border"
                       />
                     ) : (
