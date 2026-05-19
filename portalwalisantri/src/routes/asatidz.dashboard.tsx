@@ -17,6 +17,7 @@ function AsatidzDashboardPage() {
   const [rejectionReason, setRejectionReason] = useState("");
   const [historyStudentId, setHistoryStudentId] = useState<string | null>(null);
   const [expandedPermitId, setExpandedPermitId] = useState<string | null>(null);
+  const [expandedHistoryId, setExpandedHistoryId] = useState<string | null>(null);
   const [zoomPhotoUrl, setZoomPhotoUrl] = useState<string | null>(null);
 
   const formatFullDate = (dateStr: string) => {
@@ -503,29 +504,200 @@ function AsatidzDashboardPage() {
                   statusColor = "bg-emerald-50 text-emerald-700 border-emerald-200";
                 }
 
+                const isHistoryOpen = historyStudentId === student.id;
+
                 return (
-                  <button
+                  <div
                     key={student.id}
-                    onClick={() => setHistoryStudentId(student.id)}
-                    className="w-full text-left bg-card hover:bg-slate-50 rounded-[24px] border border-border p-4 shadow-[var(--shadow-soft)] flex items-center justify-between gap-3 active:scale-[0.99] transition-all"
+                    className="w-full bg-card rounded-[24px] border border-border shadow-[var(--shadow-soft)] overflow-hidden transition-all duration-300"
                   >
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center text-slate-500 font-bold overflow-hidden border border-slate-200 shrink-0">
-                        {student.avatar ? (
-                          <img src={`/${student.avatar}`} alt="" className="w-full h-full object-cover" />
+                    {/* Student Header Button */}
+                    <button
+                      onClick={() => {
+                        setHistoryStudentId(isHistoryOpen ? null : student.id);
+                        setExpandedHistoryId(null);
+                      }}
+                      className="w-full text-left p-4 flex items-center justify-between gap-3 active:bg-slate-50/50 transition-colors"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center text-slate-500 font-bold overflow-hidden border border-slate-200 shrink-0">
+                          {student.avatar ? (
+                            <img src={`/${student.avatar}`} alt="" className="w-full h-full object-cover" />
+                          ) : (
+                            student.name.substring(0, 2).toUpperCase()
+                          )}
+                        </div>
+                        <div>
+                          <p className="text-sm font-bold text-slate-800 leading-tight">{student.name}</p>
+                          <p className="text-[11px] text-slate-400 font-semibold mt-1">NIS: {student.nis} · {student.classroom_name}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <span className={`px-2.5 py-0.5 rounded-full text-[9px] font-extrabold tracking-wide border uppercase ${statusColor}`}>
+                          {student.status}
+                        </span>
+                        <ChevronDown 
+                          size={18} 
+                          className={`text-slate-400 transition-transform duration-200 ${isHistoryOpen ? 'rotate-180' : ''}`} 
+                        />
+                      </div>
+                    </button>
+
+                    {/* Expandable History Table Panel */}
+                    {isHistoryOpen && (
+                      <div className="border-t border-slate-100 bg-slate-50/40 p-4 space-y-3">
+                        <div className="flex items-center justify-between">
+                          <span className="text-[10px] font-bold text-indigo-600 uppercase tracking-widest">Riwayat Perizinan</span>
+                          <span className="text-[10px] font-semibold text-slate-400">
+                            {isLoadingHistory ? "Memuat..." : `${historyRes?.history?.length || 0} Pengajuan`}
+                          </span>
+                        </div>
+
+                        {isLoadingHistory ? (
+                          <div className="py-8 flex flex-col items-center justify-center">
+                            <Loader2 className="animate-spin text-indigo-600 mb-1.5" size={22} />
+                            <p className="text-[10px] font-medium text-slate-400">Memuat riwayat...</p>
+                          </div>
+                        ) : !historyRes?.history || historyRes.history.length === 0 ? (
+                          <div className="py-8 text-center bg-white rounded-2xl border border-dashed border-slate-200 p-4">
+                            <p className="text-[11px] font-bold text-slate-400">Belum ada riwayat perizinan santri ini.</p>
+                          </div>
                         ) : (
-                          student.name.substring(0, 2).toUpperCase()
+                          <div className="rounded-2xl border border-slate-200/60 bg-white overflow-hidden divide-y divide-slate-100 shadow-[var(--shadow-soft)]">
+                            {historyRes.history.map((h: any) => {
+                              const isRowExpanded = expandedHistoryId === h.id;
+                              let statusText = "Pending";
+                              let badgeStyle = "bg-amber-50 text-amber-700 border-amber-100 bg-opacity-80";
+                              if (h.status === "approved") {
+                                statusText = "Disetujui";
+                                badgeStyle = "bg-indigo-50 text-indigo-700 border-indigo-100 bg-opacity-80";
+                              } else if (h.status === "rejected") {
+                                statusText = "Ditolak";
+                                badgeStyle = "bg-rose-50 text-rose-700 border-rose-100 bg-opacity-80";
+                              } else if (h.status === "out") {
+                                statusText = "Keluar";
+                                badgeStyle = "bg-blue-50 text-blue-700 border-blue-100 bg-opacity-80";
+                              } else if (h.status === "returned") {
+                                statusText = "Kembali";
+                                badgeStyle = "bg-emerald-50 text-emerald-700 border-emerald-100 bg-opacity-80";
+                              }
+
+                              const photos = [];
+                              if (h.attachment_photo) photos.push({ url: h.attachment_photo, label: "Lampiran Wali" });
+                              if (h.exit_photo_santri) photos.push({ url: h.exit_photo_santri, label: "Foto Keluar (Santri)" });
+                              if (h.exit_photo_escort) photos.push({ url: h.exit_photo_escort, label: "Foto Keluar (Penjemput)" });
+                              if (h.return_photo_santri) photos.push({ url: h.return_photo_santri, label: "Foto Kembali (Santri)" });
+                              if (h.return_photo_escort) photos.push({ url: h.return_photo_escort, label: "Foto Kembali (Pengantar)" });
+
+                              const simpleDate = h.planned_exit_date 
+                                ? new Date(h.planned_exit_date).toLocaleDateString("id-ID", {
+                                    day: "numeric",
+                                    month: "short",
+                                    year: "numeric"
+                                  })
+                                : "-";
+
+                              return (
+                                <div key={h.id} className="transition-colors">
+                                  {/* Table Row Header (Clickable) */}
+                                  <button
+                                    onClick={() => setExpandedHistoryId(isRowExpanded ? null : h.id)}
+                                    className="w-full text-left py-3.5 px-4 flex items-center justify-between gap-3 hover:bg-slate-50 transition active:bg-slate-100/50"
+                                  >
+                                    <div className="min-w-0 flex-1">
+                                      <p className="text-xs font-bold text-slate-700 truncate uppercase tracking-wide">
+                                        {h.permit_type.replace(/_/g, " ")}
+                                      </p>
+                                      <p className="text-[10px] text-slate-400 font-semibold mt-0.5">{simpleDate}</p>
+                                    </div>
+                                    <div className="flex items-center gap-2 shrink-0">
+                                      <span className={`px-2 py-0.5 rounded-full text-[8px] font-extrabold tracking-wide border uppercase ${badgeStyle}`}>
+                                        {statusText}
+                                      </span>
+                                      <ChevronDown 
+                                        size={14} 
+                                        className={`text-slate-400 transition-transform duration-200 ${isRowExpanded ? 'rotate-180' : ''}`} 
+                                      />
+                                    </div>
+                                  </button>
+
+                                  {/* Expandable nested details panel */}
+                                  {isRowExpanded && (
+                                    <div className="bg-slate-50/50 p-4 border-t border-slate-100 space-y-3.5 text-xs animate-slide-down">
+                                      <div className="space-y-1">
+                                        <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Keperluan / Alasan</p>
+                                        <p className="text-xs font-semibold text-slate-600 leading-relaxed bg-white rounded-xl p-3 border border-slate-100">
+                                          {h.reason}
+                                        </p>
+                                      </div>
+
+                                      {h.status === "rejected" && h.rejection_reason && (
+                                        <div className="space-y-1">
+                                          <p className="text-[9px] font-bold text-rose-400 uppercase tracking-widest">Alasan Penolakan</p>
+                                          <p className="text-xs font-semibold text-rose-700 leading-relaxed bg-rose-50/50 rounded-xl p-3 border border-rose-100/50">
+                                            {h.rejection_reason}
+                                          </p>
+                                        </div>
+                                      )}
+
+                                      <div className="grid grid-cols-2 gap-3 pt-3 border-t border-slate-200/60">
+                                        <div>
+                                          <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Rencana Keluar</p>
+                                          <p className="font-semibold text-slate-600 text-[11px] leading-snug">{formatFullDate(h.planned_exit_date)}</p>
+                                        </div>
+                                        <div>
+                                          <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Rencana Kembali</p>
+                                          <p className="font-semibold text-slate-600 text-[11px] leading-snug">{formatFullDate(h.planned_return_date)}</p>
+                                        </div>
+                                        {h.actual_return_date && (
+                                          <div className="col-span-2 bg-emerald-50/50 border border-emerald-100/50 rounded-xl p-2.5 flex justify-between items-center">
+                                            <div>
+                                              <p className="text-[8px] font-bold text-emerald-600 uppercase tracking-widest">Waktu Kembali Aktual</p>
+                                              <p className="font-bold text-emerald-700 text-[11px] mt-0.5">{formatFullDate(h.actual_return_date)}</p>
+                                            </div>
+                                            <span className="text-[9px] font-extrabold uppercase bg-emerald-600 text-white px-2 py-0.5 rounded-md">Tepat Waktu</span>
+                                          </div>
+                                        )}
+                                      </div>
+
+                                      {photos.length > 0 && (
+                                        <div className="pt-3 border-t border-slate-200/60 space-y-2">
+                                          <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1">
+                                            <ImageIcon size={11} className="text-slate-400" /> Dokumentasi Foto ({photos.length})
+                                          </p>
+                                          <div className="grid grid-cols-3 gap-2">
+                                            {photos.map((ph, idx) => (
+                                              <div
+                                                key={idx}
+                                                onClick={(e) => {
+                                                  e.stopPropagation();
+                                                  setZoomPhotoUrl(`/${ph.url}`);
+                                                }}
+                                                className="group relative aspect-square rounded-2xl overflow-hidden border border-slate-200/60 bg-slate-50 flex flex-col justify-end cursor-pointer active:scale-95 transition-all shadow-sm"
+                                              >
+                                                <img
+                                                  src={`/${ph.url}`}
+                                                  alt={ph.label}
+                                                  className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform"
+                                                />
+                                                <div className="absolute inset-x-0 bottom-0 bg-black/60 py-1 px-1.5 text-[8px] font-extrabold text-white text-center truncate select-none leading-none">
+                                                  {ph.label}
+                                                </div>
+                                              </div>
+                                            ))}
+                                          </div>
+                                        </div>
+                                      )}
+                                    </div>
+                                  )}
+                                </div>
+                              );
+                            })}
+                          </div>
                         )}
                       </div>
-                      <div>
-                        <p className="text-sm font-bold text-slate-800 leading-tight">{student.name}</p>
-                        <p className="text-[11px] text-slate-400 font-semibold mt-1">NIS: {student.nis} · {student.classroom_name}</p>
-                      </div>
-                    </div>
-                    <span className={`px-2.5 py-0.5 rounded-full text-[9px] font-extrabold tracking-wide border uppercase shrink-0 ${statusColor}`}>
-                      {student.status}
-                    </span>
-                  </button>
+                    )}
+                  </div>
                 );
               })
             )
@@ -585,145 +757,7 @@ function AsatidzDashboardPage() {
           </div>
         )}
 
-        {/* Student History Drawer */}
-        {historyStudentId && (
-          <div className="fixed inset-0 bg-slate-900/60 z-50 flex items-end justify-center p-4 backdrop-blur-md transition-all duration-300">
-            <div className="bg-card w-full max-w-md rounded-t-[32px] p-6 shadow-[0_-10px_40px_rgba(0,0,0,0.05)] space-y-5 animate-slide-up pb-10 flex flex-col max-h-[85vh]">
-              {/* Decorative top drag bar replacement */}
-              <div className="w-12 h-1 bg-slate-200 rounded-full mx-auto shrink-0 mb-1" />
 
-              <div className="flex justify-between items-start shrink-0">
-                <div>
-                  <span className="text-[10px] font-bold text-indigo-600 uppercase tracking-widest">Riwayat Perizinan</span>
-                  <h3 className="text-[17px] font-extrabold text-slate-800 mt-0.5 leading-tight">
-                    {historyRes?.student?.name || "Memuat..."}
-                  </h3>
-                  <p className="text-[10px] text-slate-400 font-medium mt-0.5">NIS: {historyRes?.student?.nis || "-"}</p>
-                </div>
-                <button
-                  onClick={() => setHistoryStudentId(null)}
-                  className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 font-extrabold hover:bg-slate-200 transition active:scale-95 border border-slate-200"
-                >
-                  &times;
-                </button>
-              </div>
-
-              <div className="flex-1 overflow-y-auto space-y-4 pr-1 py-2 scrollbar-none">
-                {isLoadingHistory ? (
-                  <div className="py-16 flex flex-col items-center justify-center">
-                     <Loader2 className="animate-spin text-indigo-600 mb-2" size={28} />
-                     <p className="text-xs font-semibold text-muted-foreground">Memuat riwayat...</p>
-                  </div>
-                ) : !historyRes?.history || historyRes.history.length === 0 ? (
-                  <div className="py-16 text-center bg-slate-50 rounded-[24px] border border-dashed border-slate-200 p-6">
-                     <p className="text-sm font-bold text-slate-500">Belum Ada Riwayat</p>
-                     <p className="text-xs text-slate-400 mt-1">Santri ini belum memiliki riwayat pengajuan izin.</p>
-                  </div>
-                ) : (
-                  historyRes.history.map((h: any) => {
-                     let statusText = "Pending";
-                     let badgeStyle = "bg-amber-50 text-amber-700 border-amber-100 bg-opacity-80";
-                     if (h.status === "approved") {
-                       statusText = "Disetujui";
-                       badgeStyle = "bg-indigo-50 text-indigo-700 border-indigo-100 bg-opacity-80";
-                     } else if (h.status === "rejected") {
-                       statusText = "Ditolak";
-                       badgeStyle = "bg-rose-50 text-rose-700 border-rose-100 bg-opacity-80";
-                     } else if (h.status === "out") {
-                       statusText = "Sedang Keluar";
-                       badgeStyle = "bg-blue-50 text-blue-700 border-blue-100 bg-opacity-80";
-                     } else if (h.status === "returned") {
-                       statusText = "Kembali Aktif";
-                       badgeStyle = "bg-emerald-50 text-emerald-700 border-emerald-100 bg-opacity-80";
-                     }
-
-                     const photos = [];
-                     if (h.attachment_photo) photos.push({ url: h.attachment_photo, label: "Lampiran Wali" });
-                     if (h.exit_photo_santri) photos.push({ url: h.exit_photo_santri, label: "Foto Keluar (Santri)" });
-                     if (h.exit_photo_escort) photos.push({ url: h.exit_photo_escort, label: "Foto Keluar (Penjemput)" });
-                     if (h.return_photo_santri) photos.push({ url: h.return_photo_santri, label: "Foto Kembali (Santri)" });
-                     if (h.return_photo_escort) photos.push({ url: h.return_photo_escort, label: "Foto Kembali (Pengantar)" });
-
-                     return (
-                       <div key={h.id} className="p-4 rounded-[24px] bg-card border border-slate-100 shadow-[0_4px_20px_rgba(0,0,0,0.02)] space-y-3.5 relative overflow-hidden">
-                         <div className="flex justify-between items-center">
-                           <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                             {h.permit_type.replace(/_/g, " ")}
-                           </span>
-                           <span className={`px-2.5 py-0.5 rounded-full text-[9px] font-extrabold tracking-wide border uppercase ${badgeStyle}`}>
-                             {statusText}
-                           </span>
-                         </div>
-
-                         <div className="space-y-1">
-                           <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Keperluan / Alasan</p>
-                           <p className="text-xs font-semibold text-slate-700 leading-relaxed bg-slate-50 rounded-xl p-3 border border-slate-100">
-                             {h.reason}
-                           </p>
-                         </div>
-
-                         {h.status === "rejected" && h.rejection_reason && (
-                           <div className="space-y-1">
-                             <p className="text-[10px] font-bold text-rose-400 uppercase tracking-widest">Alasan Penolakan</p>
-                             <p className="text-xs font-semibold text-rose-700 leading-relaxed bg-rose-50/50 rounded-xl p-3 border border-rose-100/50">
-                               {h.rejection_reason}
-                             </p>
-                           </div>
-                         )}
-
-                         <div className="grid grid-cols-2 gap-3 pt-3 border-t border-slate-100 text-xs">
-                           <div>
-                             <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Rencana Keluar</p>
-                             <p className="font-semibold text-slate-600 text-[11px] leading-snug">{formatFullDate(h.planned_exit_date)}</p>
-                           </div>
-                           <div>
-                             <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Rencana Kembali</p>
-                             <p className="font-semibold text-slate-600 text-[11px] leading-snug">{formatFullDate(h.planned_return_date)}</p>
-                           </div>
-                           {h.actual_return_date && (
-                             <div className="col-span-2 bg-emerald-50/50 border border-emerald-100/50 rounded-xl p-2.5 flex justify-between items-center">
-                               <div>
-                                 <p className="text-[8px] font-bold text-emerald-600 uppercase tracking-widest">Waktu Kembali Aktual</p>
-                                 <p className="font-bold text-emerald-700 text-[11px] mt-0.5">{formatFullDate(h.actual_return_date)}</p>
-                               </div>
-                               <span className="text-[9px] font-extrabold uppercase bg-emerald-600 text-white px-2 py-0.5 rounded-md">Tepat Waktu</span>
-                             </div>
-                           )}
-                         </div>
-
-                         {photos.length > 0 && (
-                           <div className="pt-3 border-t border-slate-100 space-y-2">
-                             <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1">
-                               <ImageIcon size={11} className="text-slate-400" /> Dokumentasi Foto ({photos.length})
-                             </p>
-                             <div className="grid grid-cols-3 gap-2">
-                               {photos.map((ph, idx) => (
-                                 <div
-                                   key={idx}
-                                   onClick={() => setZoomPhotoUrl(`/${ph.url}`)}
-                                   className="group relative aspect-square rounded-2xl overflow-hidden border border-slate-200/60 bg-slate-50 flex flex-col justify-end cursor-pointer active:scale-95 transition-all shadow-sm"
-                                 >
-                                   <img
-                                     src={`/${ph.url}`}
-                                     alt={ph.label}
-                                     className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform"
-                                   />
-                                   <div className="absolute inset-x-0 bottom-0 bg-black/60 py-1 px-1.5 text-[8px] font-extrabold text-white text-center truncate select-none leading-none">
-                                     {ph.label}
-                                   </div>
-                                 </div>
-                               ))}
-                             </div>
-                           </div>
-                         )}
-                       </div>
-                     );
-                  })
-                )}
-              </div>
-            </div>
-          </div>
-        )}
 
         {/* Photo Zoom Viewer Modal */}
         {zoomPhotoUrl && (
