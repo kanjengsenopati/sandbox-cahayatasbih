@@ -16,7 +16,7 @@ class Authenticate extends Middleware
             return null;
         }
 
-        if ($request->is('wali/*') || $request->is('api/wali/*')) {
+        if ($request->is('wali/*') || $request->is('api/wali/*') || $request->is('api/ct-mobile/*') || $request->is('ct-mobile/*')) {
             return route('wali.login');
         }
 
