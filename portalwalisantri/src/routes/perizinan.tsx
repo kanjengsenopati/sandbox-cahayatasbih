@@ -661,7 +661,7 @@ function PerizinanPage() {
                             )}
 
                             {permit.status === "approved" && (
-                              <div className="pt-2">
+                              <div className="pt-2 space-y-2">
                                 <button
                                   type="button"
                                   onClick={(e) => {
@@ -672,6 +672,16 @@ function PerizinanPage() {
                                   className="w-full py-2.5 rounded-[16px] bg-gradient-to-br from-[#9b1de8] to-[#610a9c] text-white flex items-center justify-center gap-2 text-xs font-bold shadow-md active:scale-98 transition"
                                 >
                                   <QrCode size={15} /> Tampilkan Barcode Izin
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setReportingPermitId(permit.id);
+                                  }}
+                                  className="w-full py-2.5 rounded-[16px] bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-700 hover:to-emerald-600 text-white flex items-center justify-center gap-2 text-xs font-bold shadow-md active:scale-98 transition"
+                                >
+                                  <ArrowLeftCircle size={15} /> Lapor Kembali
                                 </button>
                               </div>
                             )}

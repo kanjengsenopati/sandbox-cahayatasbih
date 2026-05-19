@@ -182,10 +182,10 @@ class WaliPermitController extends Controller
             ], 404);
         }
 
-        if ($permit->status !== 'out') {
+        if (!in_array($permit->status, ['approved', 'out'])) {
             return response()->json([
                 'success' => false,
-                'message' => 'Pelaporan kembali hanya dapat dilakukan untuk perizinan berstatus KELUAR.'
+                'message' => 'Pelaporan kembali hanya dapat dilakukan untuk perizinan berstatus DISETUJUI atau KELUAR.'
             ], 422);
         }
 
