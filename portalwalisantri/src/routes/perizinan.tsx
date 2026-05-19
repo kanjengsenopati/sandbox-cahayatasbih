@@ -38,6 +38,7 @@ function PerizinanPage() {
   const [returnPhotoEscort, setReturnPhotoEscort] = useState<string | null>(null);
   const [isReportingSubmit, setIsReportingSubmit] = useState(false);
   const [reportError, setReportError] = useState("");
+  const [successDialog, setSuccessDialog] = useState<{ open: boolean; message: string }>({ open: false, message: "" });
 
   const handlePhotoUpload = (file: File, callback: (base64: string) => void) => {
     const reader = new FileReader();
@@ -1527,7 +1528,10 @@ function PerizinanPage() {
                       setReportingPermitId(null);
                       setReturnPhotoSantri(null);
                       setReturnPhotoEscort(null);
-                      alert("Laporan kepulangan berhasil dikirim! Silakan hubungi Ustadz untuk persetujuan.");
+                      setSuccessDialog({
+                        open: true,
+                        message: "Laporan kepulangan berhasil dikirim! Silakan hubungi Ustadz untuk persetujuan."
+                      });
                     } else {
                       setReportError(res.data?.message || "Gagal mengirim laporan kepulangan.");
                     }
@@ -1549,6 +1553,30 @@ function PerizinanPage() {
           </div>
         )}
       </div>
+
+      {/* Premium Success Modal */}
+      {successDialog.open && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-5 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-white rounded-[24px] shadow-[0_12px_40px_rgba(0,0,0,0.12)] max-w-sm w-full p-6 text-center animate-in zoom-in-95 duration-200 border border-slate-100">
+            <div className="mx-auto w-12 h-12 rounded-full bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-600 mb-4 animate-bounce">
+              <CheckCircle2 size={24} strokeWidth={2.5} />
+            </div>
+            <Text.H2 className="text-slate-800 font-extrabold text-base leading-tight">
+              Laporan Terkirim
+            </Text.H2>
+            <Text.Body className="text-slate-600 text-xs font-semibold mt-2.5 leading-relaxed">
+              {successDialog.message}
+            </Text.Body>
+            <button
+              type="button"
+              onClick={() => setSuccessDialog({ open: false, message: "" })}
+              className="w-full mt-5 py-3 rounded-2xl bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-700 hover:to-emerald-600 text-white font-bold text-xs shadow-md active:scale-95 transition"
+            >
+              Selesai
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
