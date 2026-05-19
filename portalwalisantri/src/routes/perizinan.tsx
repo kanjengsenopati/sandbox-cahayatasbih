@@ -450,7 +450,7 @@ function PerizinanPage() {
         </div>
 
         {/* Tab Content */}
-        <section className="px-5 mt-6 space-y-4">
+        <section className="px-5 mt-4 space-y-3">
           {tab === "list" ? (
             isLoadingPermits ? (
               <div className="bg-card rounded-[24px] border-none p-8 flex flex-col items-center justify-center shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
@@ -466,19 +466,19 @@ function PerizinanPage() {
                 </Text.Body>
               </div>
             ) : (
-              <div className="space-y-4">
+              <div className="space-y-3">
                 {/* Summary Cards Grid */}
-                <div className="grid grid-cols-3 gap-3">
-                  <div className="bg-card rounded-[24px] p-4 flex flex-col items-center justify-center shadow-[0_8px_30px_rgb(0,0,0,0.04)] border-none">
-                    <Text.Label className="text-slate-400 text-[10px]">Total Izin</Text.Label>
+                <div className="grid grid-cols-3 gap-2">
+                  <div className="bg-card rounded-[24px] p-3 flex flex-col items-center justify-center shadow-[0_8px_30px_rgb(0,0,0,0.04)] border-none">
+                    <Text.Label className="text-slate-400 text-[10px] normal-case tracking-normal font-semibold">Total Izin</Text.Label>
                     <Text.H1 className="text-slate-800 mt-1">{totalPermits}</Text.H1>
                   </div>
-                  <div className="bg-card rounded-[24px] p-4 flex flex-col items-center justify-center shadow-[0_8px_30px_rgb(0,0,0,0.04)] border-none">
-                    <Text.Label className="text-emerald-600 text-[10px]">Tepat Waktu</Text.Label>
+                  <div className="bg-card rounded-[24px] p-3 flex flex-col items-center justify-center shadow-[0_8px_30px_rgb(0,0,0,0.04)] border-none">
+                    <Text.Label className="text-emerald-600 text-[10px] normal-case tracking-normal font-semibold">Tepat Waktu</Text.Label>
                     <Text.Amount className="text-[22px] mt-1">{onTimeCount}</Text.Amount>
                   </div>
-                  <div className="bg-card rounded-[24px] p-4 flex flex-col items-center justify-center shadow-[0_8px_30px_rgb(0,0,0,0.04)] border-none">
-                    <Text.Label className="text-red-600 text-[10px]">Terlambat</Text.Label>
+                  <div className="bg-card rounded-[24px] p-3 flex flex-col items-center justify-center shadow-[0_8px_30px_rgb(0,0,0,0.04)] border-none">
+                    <Text.Label className="text-red-600 text-[10px] normal-case tracking-normal font-semibold">Terlambat</Text.Label>
                     <Text.Amount className="text-[22px] text-red-600 mt-1">{lateCount}</Text.Amount>
                   </div>
                 </div>
@@ -486,10 +486,10 @@ function PerizinanPage() {
                 {/* Simple Data Table / Expandable Panel */}
                 <div className="bg-card rounded-[24px] shadow-[0_8px_30px_rgb(0,0,0,0.04)] overflow-hidden divide-y divide-slate-100">
                   {/* Table Header */}
-                  <div className="grid grid-cols-12 gap-2 px-5 py-3 bg-slate-50/50">
-                    <div className="col-span-4"><Text.Label className="text-[10px] text-slate-400">Tipe</Text.Label></div>
-                    <div className="col-span-4"><Text.Label className="text-[10px] text-slate-400">Tanggal</Text.Label></div>
-                    <div className="col-span-4 text-right"><Text.Label className="text-[10px] text-slate-400">Status</Text.Label></div>
+                  <div className="grid grid-cols-12 gap-2 px-5 py-2.5 bg-slate-50/50">
+                    <div className="col-span-4"><Text.Label className="text-[10px] text-slate-400 normal-case tracking-normal font-semibold">Tipe</Text.Label></div>
+                    <div className="col-span-4"><Text.Label className="text-[10px] text-slate-400 normal-case tracking-normal font-semibold">Tanggal</Text.Label></div>
+                    <div className="col-span-4 text-right"><Text.Label className="text-[10px] text-slate-400 normal-case tracking-normal font-semibold">Status</Text.Label></div>
                   </div>
 
                   {/* Table Body */}
@@ -521,7 +521,7 @@ function PerizinanPage() {
                         <button
                           type="button"
                           onClick={() => setExpandedPermitId(isExpanded ? null : permit.id)}
-                          className="w-full grid grid-cols-12 gap-2 px-5 py-3.5 items-center hover:bg-slate-50/40 active:bg-slate-50 text-left transition"
+                          className="w-full grid grid-cols-12 gap-2 px-5 py-2.5 items-center hover:bg-slate-50/40 active:bg-slate-50 text-left transition"
                         >
                           {/* Column 1: Type */}
                           <div className="col-span-4 flex flex-col">
