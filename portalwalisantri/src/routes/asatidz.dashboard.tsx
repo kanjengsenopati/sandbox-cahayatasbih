@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { ArrowLeft, Loader2, Calendar, ClipboardList, CheckCircle2, XCircle, Clock, ShieldAlert, Scan, LogOut, Phone, RefreshCw, ChevronDown, ChevronUp } from "lucide-react";
+import { ArrowLeft, Loader2, Calendar, ClipboardList, CheckCircle2, XCircle, Clock, ShieldAlert, Scan, LogOut, Phone, RefreshCw, ChevronDown, ChevronUp, Image as ImageIcon } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { fetchPendingPermits, fetchActivePermits, fetchOverduePermits, postPermitAction, postLogout, fetchAsatidzStats, fetchMyStudents, fetchStudentHistory } from "@/lib/api";
 
@@ -17,6 +17,24 @@ function AsatidzDashboardPage() {
   const [rejectionReason, setRejectionReason] = useState("");
   const [historyStudentId, setHistoryStudentId] = useState<string | null>(null);
   const [expandedPermitId, setExpandedPermitId] = useState<string | null>(null);
+  const [zoomPhotoUrl, setZoomPhotoUrl] = useState<string | null>(null);
+
+  const formatFullDate = (dateStr: string) => {
+    if (!dateStr) return "-";
+    try {
+      const date = new Date(dateStr);
+      return date.toLocaleDateString("id-ID", {
+        weekday: "long",
+        day: "numeric",
+        month: "long",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit"
+      }) + " WIB";
+    } catch (e) {
+      return dateStr;
+    }
+  };
 
   const { data: statsRes } = useQuery({
     queryKey: ["asatidz-stats"],
@@ -569,77 +587,162 @@ function AsatidzDashboardPage() {
 
         {/* Student History Drawer */}
         {historyStudentId && (
-          <div className="fixed inset-0 bg-black/60 z-50 flex items-end justify-center p-4 backdrop-blur-sm">
-            <div className="bg-card w-full max-w-md rounded-t-[2.5rem] p-6 shadow-2xl space-y-4 animate-slide-up pb-10 flex flex-col max-h-[80vh]">
-              <div className="flex justify-between items-center shrink-0">
+          <div className="fixed inset-0 bg-slate-900/60 z-50 flex items-end justify-center p-4 backdrop-blur-md transition-all duration-300">
+            <div className="bg-card w-full max-w-md rounded-t-[32px] p-6 shadow-[0_-10px_40px_rgba(0,0,0,0.05)] space-y-5 animate-slide-up pb-10 flex flex-col max-h-[85vh]">
+              {/* Decorative top drag bar replacement */}
+              <div className="w-12 h-1 bg-slate-200 rounded-full mx-auto shrink-0 mb-1" />
+
+              <div className="flex justify-between items-start shrink-0">
                 <div>
                   <span className="text-[10px] font-bold text-indigo-600 uppercase tracking-widest">Riwayat Perizinan</span>
-                  <h3 className="text-base font-extrabold text-slate-800 mt-0.5">
+                  <h3 className="text-[17px] font-extrabold text-slate-800 mt-0.5 leading-tight">
                     {historyRes?.student?.name || "Memuat..."}
                   </h3>
+                  <p className="text-[10px] text-slate-400 font-medium mt-0.5">NIS: {historyRes?.student?.nis || "-"}</p>
                 </div>
                 <button
                   onClick={() => setHistoryStudentId(null)}
-                  className="w-8 h-8 rounded-full bg-secondary border border-border flex items-center justify-center text-slate-500 font-extrabold hover:bg-slate-100 transition"
+                  className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 font-extrabold hover:bg-slate-200 transition active:scale-95 border border-slate-200"
                 >
-                  ×
+                  &times;
                 </button>
               </div>
 
-              <div className="flex-1 overflow-y-auto space-y-3 pr-1 py-2 scrollbar-none">
+              <div className="flex-1 overflow-y-auto space-y-4 pr-1 py-2 scrollbar-none">
                 {isLoadingHistory ? (
-                  <div className="py-12 flex flex-col items-center justify-center">
-                     <Loader2 className="animate-spin text-indigo-600 mb-2" size={24} />
+                  <div className="py-16 flex flex-col items-center justify-center">
+                     <Loader2 className="animate-spin text-indigo-600 mb-2" size={28} />
                      <p className="text-xs font-semibold text-muted-foreground">Memuat riwayat...</p>
                   </div>
                 ) : !historyRes?.history || historyRes.history.length === 0 ? (
-                  <div className="py-12 text-center bg-slate-50 rounded-[20px] border border-dashed border-slate-200">
-                     <p className="text-xs font-bold text-slate-400">Belum ada riwayat perizinan santri ini.</p>
+                  <div className="py-16 text-center bg-slate-50 rounded-[24px] border border-dashed border-slate-200 p-6">
+                     <p className="text-sm font-bold text-slate-500">Belum Ada Riwayat</p>
+                     <p className="text-xs text-slate-400 mt-1">Santri ini belum memiliki riwayat pengajuan izin.</p>
                   </div>
                 ) : (
                   historyRes.history.map((h: any) => {
                      let statusText = "Pending";
-                     let badgeStyle = "bg-amber-50 text-amber-700 border-amber-100";
+                     let badgeStyle = "bg-amber-50 text-amber-700 border-amber-100 bg-opacity-80";
                      if (h.status === "approved") {
                        statusText = "Disetujui";
-                       badgeStyle = "bg-indigo-50 text-indigo-700 border-indigo-100";
+                       badgeStyle = "bg-indigo-50 text-indigo-700 border-indigo-100 bg-opacity-80";
                      } else if (h.status === "rejected") {
                        statusText = "Ditolak";
-                       badgeStyle = "bg-rose-50 text-rose-700 border-rose-100";
+                       badgeStyle = "bg-rose-50 text-rose-700 border-rose-100 bg-opacity-80";
                      } else if (h.status === "out") {
                        statusText = "Sedang Keluar";
-                       badgeStyle = "bg-blue-50 text-blue-700 border-blue-100";
+                       badgeStyle = "bg-blue-50 text-blue-700 border-blue-100 bg-opacity-80";
                      } else if (h.status === "returned") {
-                       statusText = "Kembali";
-                       badgeStyle = "bg-emerald-50 text-emerald-700 border-emerald-100";
+                       statusText = "Kembali Aktif";
+                       badgeStyle = "bg-emerald-50 text-emerald-700 border-emerald-100 bg-opacity-80";
                      }
 
+                     const photos = [];
+                     if (h.attachment_photo) photos.push({ url: h.attachment_photo, label: "Lampiran Wali" });
+                     if (h.exit_photo_santri) photos.push({ url: h.exit_photo_santri, label: "Foto Keluar (Santri)" });
+                     if (h.exit_photo_escort) photos.push({ url: h.exit_photo_escort, label: "Foto Keluar (Penjemput)" });
+                     if (h.return_photo_santri) photos.push({ url: h.return_photo_santri, label: "Foto Kembali (Santri)" });
+                     if (h.return_photo_escort) photos.push({ url: h.return_photo_escort, label: "Foto Kembali (Pengantar)" });
+
                      return (
-                       <div key={h.id} className="p-4 rounded-[20px] bg-slate-50 border border-slate-100 space-y-2 text-xs">
+                       <div key={h.id} className="p-4 rounded-[24px] bg-card border border-slate-100 shadow-[0_4px_20px_rgba(0,0,0,0.02)] space-y-3.5 relative overflow-hidden">
                          <div className="flex justify-between items-center">
-                           <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                             {h.permit_type.replace("_", " ")}
+                           <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                             {h.permit_type.replace(/_/g, " ")}
                            </span>
-                           <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold border ${badgeStyle}`}>
+                           <span className={`px-2.5 py-0.5 rounded-full text-[9px] font-extrabold tracking-wide border uppercase ${badgeStyle}`}>
                              {statusText}
                            </span>
                          </div>
-                         <p className="text-xs font-bold text-slate-700 leading-relaxed mt-1">
-                           Keperluan: <span className="font-semibold text-slate-600">{h.reason}</span>
-                         </p>
-                         <div className="text-[10px] text-slate-400 space-y-0.5 font-semibold mt-2 border-t border-slate-200/60 pt-2">
-                           <p>Keluar: {new Date(h.planned_exit_date).toLocaleString("id-ID")}</p>
-                           <p>Tenggat: {new Date(h.planned_return_date).toLocaleString("id-ID")}</p>
+
+                         <div className="space-y-1">
+                           <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Keperluan / Alasan</p>
+                           <p className="text-xs font-semibold text-slate-700 leading-relaxed bg-slate-50 rounded-xl p-3 border border-slate-100">
+                             {h.reason}
+                           </p>
+                         </div>
+
+                         {h.status === "rejected" && h.rejection_reason && (
+                           <div className="space-y-1">
+                             <p className="text-[10px] font-bold text-rose-400 uppercase tracking-widest">Alasan Penolakan</p>
+                             <p className="text-xs font-semibold text-rose-700 leading-relaxed bg-rose-50/50 rounded-xl p-3 border border-rose-100/50">
+                               {h.rejection_reason}
+                             </p>
+                           </div>
+                         )}
+
+                         <div className="grid grid-cols-2 gap-3 pt-3 border-t border-slate-100 text-xs">
+                           <div>
+                             <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Rencana Keluar</p>
+                             <p className="font-semibold text-slate-600 text-[11px] leading-snug">{formatFullDate(h.planned_exit_date)}</p>
+                           </div>
+                           <div>
+                             <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Rencana Kembali</p>
+                             <p className="font-semibold text-slate-600 text-[11px] leading-snug">{formatFullDate(h.planned_return_date)}</p>
+                           </div>
                            {h.actual_return_date && (
-                             <p className="text-emerald-600 font-bold">Kembali: {new Date(h.actual_return_date).toLocaleString("id-ID")}</p>
+                             <div className="col-span-2 bg-emerald-50/50 border border-emerald-100/50 rounded-xl p-2.5 flex justify-between items-center">
+                               <div>
+                                 <p className="text-[8px] font-bold text-emerald-600 uppercase tracking-widest">Waktu Kembali Aktual</p>
+                                 <p className="font-bold text-emerald-700 text-[11px] mt-0.5">{formatFullDate(h.actual_return_date)}</p>
+                               </div>
+                               <span className="text-[9px] font-extrabold uppercase bg-emerald-600 text-white px-2 py-0.5 rounded-md">Tepat Waktu</span>
+                             </div>
                            )}
                          </div>
+
+                         {photos.length > 0 && (
+                           <div className="pt-3 border-t border-slate-100 space-y-2">
+                             <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1">
+                               <ImageIcon size={11} className="text-slate-400" /> Dokumentasi Foto ({photos.length})
+                             </p>
+                             <div className="grid grid-cols-3 gap-2">
+                               {photos.map((ph, idx) => (
+                                 <div
+                                   key={idx}
+                                   onClick={() => setZoomPhotoUrl(`/${ph.url}`)}
+                                   className="group relative aspect-square rounded-2xl overflow-hidden border border-slate-200/60 bg-slate-50 flex flex-col justify-end cursor-pointer active:scale-95 transition-all shadow-sm"
+                                 >
+                                   <img
+                                     src={`/${ph.url}`}
+                                     alt={ph.label}
+                                     className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform"
+                                   />
+                                   <div className="absolute inset-x-0 bottom-0 bg-black/60 py-1 px-1.5 text-[8px] font-extrabold text-white text-center truncate select-none leading-none">
+                                     {ph.label}
+                                   </div>
+                                 </div>
+                               ))}
+                             </div>
+                           </div>
+                         )}
                        </div>
                      );
                   })
                 )}
               </div>
             </div>
+          </div>
+        )}
+
+        {/* Photo Zoom Viewer Modal */}
+        {zoomPhotoUrl && (
+          <div
+            onClick={() => setZoomPhotoUrl(null)}
+            className="fixed inset-0 z-[60] bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in"
+          >
+            <button
+              onClick={() => setZoomPhotoUrl(null)}
+              className="absolute top-5 right-5 w-10 h-10 rounded-full bg-white/10 text-white flex items-center justify-center backdrop-blur active:scale-95 border border-white/20"
+            >
+              &times;
+            </button>
+            <img
+              src={zoomPhotoUrl}
+              alt="Pratinjau Foto"
+              className="max-h-[85vh] max-w-full rounded-2xl shadow-2xl object-contain animate-in zoom-in-95 duration-200"
+              onClick={(e) => e.stopPropagation()}
+            />
           </div>
         )}
       </div>
