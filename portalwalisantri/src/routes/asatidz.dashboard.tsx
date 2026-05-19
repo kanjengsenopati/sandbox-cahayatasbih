@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { ArrowLeft, Loader2, Calendar, ClipboardList, CheckCircle2, XCircle, Clock, ShieldAlert, Scan, LogOut, Phone, RefreshCw, ChevronDown, ChevronUp, Image as ImageIcon } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { fetchPendingPermits, fetchActivePermits, fetchOverduePermits, postPermitAction, postLogout, fetchAsatidzStats, fetchMyStudents, fetchStudentHistory } from "@/lib/api";
+import { resolveImageUrl } from "@/lib/utils";
 
 export const Route = createFileRoute("/asatidz/dashboard")({
   component: AsatidzDashboardPage,
@@ -270,7 +271,7 @@ function AsatidzDashboardPage() {
                           <div className="flex items-center gap-3">
                             <div className="w-10 h-10 rounded-xl bg-slate-100 border border-slate-200 overflow-hidden flex items-center justify-center font-bold text-slate-500 shrink-0">
                               {permit.student?.avatar ? (
-                                <img src={`/${permit.student.avatar}`} alt="" className="w-full h-full object-cover" />
+                                <img src={resolveImageUrl(permit.student.avatar) || ""} alt="" className="w-full h-full object-cover" />
                               ) : (
                                 permit.student?.name?.substring(0, 2).toUpperCase() || "S"
                               )}
@@ -337,12 +338,21 @@ function AsatidzDashboardPage() {
                             <div className="bg-white border border-slate-100/80 rounded-2xl p-3 text-xs space-y-2.5 shadow-[0_2px_8px_rgba(0,0,0,0.01)]">
                               <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Foto Pendukung</p>
                               {permit.attachment_photo ? (
-                                <div className="relative rounded-xl overflow-hidden border border-slate-100 max-h-[220px] bg-slate-50 flex items-center justify-center group">
+                                <div 
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setZoomPhotoUrl(resolveImageUrl(permit.attachment_photo));
+                                  }}
+                                  className="relative rounded-xl overflow-hidden border border-slate-100 max-h-[220px] bg-slate-50 flex items-center justify-center group cursor-pointer active:scale-[0.99] transition-all shadow-sm"
+                                >
                                   <img 
-                                    src={`/${permit.attachment_photo}`} 
+                                    src={resolveImageUrl(permit.attachment_photo) || ""} 
                                     alt="Foto Pendukung" 
                                     className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
                                   />
+                                  <div className="absolute inset-0 bg-black/10 group-hover:bg-black/25 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <span className="text-white text-[10px] font-bold bg-black/60 px-2.5 py-1 rounded-full backdrop-blur-sm shadow-md">Klik untuk perbesar</span>
+                                  </div>
                                 </div>
                               ) : (
                                 <div className="py-4 text-center rounded-xl bg-slate-50 border border-dashed border-slate-200 text-slate-400 font-medium">
@@ -522,7 +532,7 @@ function AsatidzDashboardPage() {
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center text-slate-500 font-bold overflow-hidden border border-slate-200 shrink-0">
                           {student.avatar ? (
-                            <img src={`/${student.avatar}`} alt="" className="w-full h-full object-cover" />
+                            <img src={resolveImageUrl(student.avatar) || ""} alt="" className="w-full h-full object-cover" />
                           ) : (
                             student.name.substring(0, 2).toUpperCase()
                           )}
@@ -671,12 +681,12 @@ function AsatidzDashboardPage() {
                                                 key={idx}
                                                 onClick={(e) => {
                                                   e.stopPropagation();
-                                                  setZoomPhotoUrl(`/${ph.url}`);
+                                                  setZoomPhotoUrl(resolveImageUrl(ph.url));
                                                 }}
                                                 className="group relative aspect-square rounded-2xl overflow-hidden border border-slate-200/60 bg-slate-50 flex flex-col justify-end cursor-pointer active:scale-95 transition-all shadow-sm"
                                               >
                                                 <img
-                                                  src={`/${ph.url}`}
+                                                  src={resolveImageUrl(ph.url) || ""}
                                                   alt={ph.label}
                                                   className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform"
                                                 />

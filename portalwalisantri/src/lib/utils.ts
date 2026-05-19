@@ -12,6 +12,11 @@ export function cn(...inputs: ClassValue[]) {
 export function resolveImageUrl(url: string | null | undefined): string | null {
   if (!url) return null;
   
+  // If it's static public assets starting with assets/
+  if (url.startsWith('assets/') || url.startsWith('/assets/')) {
+    return url.startsWith('/') ? url : `/${url}`;
+  }
+  
   // If the URL contains /storage/, extract everything after it to use the file-asset fallback
   const storageMatch = url.match(/\/storage\/(.*)$/);
   if (storageMatch && storageMatch[1]) {
