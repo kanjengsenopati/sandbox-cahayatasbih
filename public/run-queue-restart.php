@@ -2,6 +2,8 @@
 // Temporary script to restart Laravel queue and clear config cache
 header('Content-Type: text/plain');
 
+use Illuminate\Support\Facades\Artisan;
+
 try {
     echo "Bootstrapping Laravel...\n";
     require __DIR__.'/../vendor/autoload.php';
@@ -13,8 +15,6 @@ try {
     $dbConfig = config('database.connections.mysql');
     echo "Active Database Host: " . ($dbConfig['host'] ?? 'N/A') . "\n";
     echo "Active Database Name: " . ($dbConfig['database'] ?? 'N/A') . "\n\n";
-
-    use Illuminate\Support\Facades\Artisan;
 
     echo "Running config:clear...\n";
     Artisan::call('config:clear');
