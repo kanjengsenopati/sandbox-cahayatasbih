@@ -2,7 +2,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { ArrowLeft, Loader2, Calendar, ClipboardList, CheckCircle2, XCircle, Clock, ShieldAlert, Scan, LogOut, Phone, RefreshCw, ChevronDown, ChevronUp, Image as ImageIcon } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { fetchPendingPermits, fetchActivePermits, fetchOverduePermits, postPermitAction, postLogout, fetchAsatidzStats, fetchMyStudents, fetchStudentHistory } from "@/lib/api";
+import { fetchPendingPermits, fetchActivePermits, fetchOverduePermits, postPermitAction, postLogout, fetchAsatidzStats, fetchMyStudents, fetchStudentHistory, fetchPendingReturnPermits, postPermitReturnAction } from "@/lib/api";
 import { resolveImageUrl } from "@/lib/utils";
 
 export const Route = createFileRoute("/asatidz/dashboard")({
@@ -13,13 +13,17 @@ export const Route = createFileRoute("/asatidz/dashboard")({
 function AsatidzDashboardPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const [tab, setTab] = useState<"pending" | "active" | "overdue" | "my-students">("pending");
+  const [tab, setTab] = useState<"pending" | "active" | "overdue" | "my-students" | "pending_return">("pending");
   const [rejectId, setRejectId] = useState<string | null>(null);
   const [rejectionReason, setRejectionReason] = useState("");
   const [historyStudentId, setHistoryStudentId] = useState<string | null>(null);
   const [expandedPermitId, setExpandedPermitId] = useState<string | null>(null);
   const [expandedHistoryId, setExpandedHistoryId] = useState<string | null>(null);
   const [zoomPhotoUrl, setZoomPhotoUrl] = useState<string | null>(null);
+  
+  // Return Flow States
+  const [rejectReturnId, setRejectReturnId] = useState<string | null>(null);
+  const [rejectionReturnReason, setRejectionReturnReason] = useState("");
 
   const formatFullDate = (dateStr: string) => {
     if (!dateStr) return "-";
@@ -92,6 +96,15 @@ function AsatidzDashboardPage() {
     enabled: !!historyStudentId,
   });
 
+  const { data: pendingReturnRes, isLoading: isLoadingPendingReturn } = useQuery({
+    queryKey: ["pending-return-permits"],
+    queryFn: async () => {
+      const res = await fetchPendingReturnPermits();
+      return res.data;
+    },
+    refetchInterval: 10000,
+  });
+
   const actionMutation = useMutation({
     mutationFn: async ({ id, action, reason }: { id: string; action: "approve" | "reject"; reason?: string }) => {
       const res = await postPermitAction(id, { action, rejection_reason: reason });
@@ -101,6 +114,21 @@ function AsatidzDashboardPage() {
       setRejectId(null);
       setRejectionReason("");
       queryClient.invalidateQueries({ queryKey: ["pending-permits"] });
+      queryClient.invalidateQueries({ queryKey: ["active-permits"] });
+      queryClient.invalidateQueries({ queryKey: ["overdue-permits"] });
+      queryClient.invalidateQueries({ queryKey: ["asatidz-stats"] });
+    },
+  });
+
+  const actionReturnMutation = useMutation({
+    mutationFn: async ({ id, action, reason }: { id: string; action: "approve" | "reject"; reason?: string }) => {
+      const res = await postPermitReturnAction(id, { action, rejection_reason: reason });
+      return res.data;
+    },
+    onSuccess: () => {
+      setRejectReturnId(null);
+      setRejectionReturnReason("");
+      queryClient.invalidateQueries({ queryKey: ["pending-return-permits"] });
       queryClient.invalidateQueries({ queryKey: ["active-permits"] });
       queryClient.invalidateQueries({ queryKey: ["overdue-permits"] });
       queryClient.invalidateQueries({ queryKey: ["asatidz-stats"] });
@@ -117,6 +145,16 @@ function AsatidzDashboardPage() {
     actionMutation.mutate({ id: rejectId, action: "reject", reason: rejectionReason });
   };
 
+  const handleApproveReturn = (id: string) => {
+    actionReturnMutation.mutate({ id, action: "approve" });
+  };
+
+  const handleRejectReturnSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!rejectReturnId || !rejectionReturnReason.trim()) return;
+    actionReturnMutation.mutate({ id: rejectReturnId, action: "reject", reason: rejectionReturnReason });
+  };
+
   const handleLogout = async () => {
     try {
       await postLogout();
@@ -130,6 +168,7 @@ function AsatidzDashboardPage() {
   const activeList = activeRes?.permits ?? [];
   const overdueList = overdueRes?.permits ?? [];
   const myStudentsList = myStudentsRes?.students ?? [];
+  const pendingReturnList = pendingReturnRes?.permits ?? [];
 
   return (
     <div className="min-h-screen w-full flex justify-center bg-secondary">
@@ -209,6 +248,17 @@ function AsatidzDashboardPage() {
             >
               <span>Aktif</span>
               <span className="text-[9px] opacity-75">({activeList.length})</span>
+            </button>
+            <button
+              onClick={() => setTab("pending_return")}
+              className={`flex-1 py-3 rounded-[16px] text-xs font-bold transition flex flex-col items-center gap-0.5 shrink-0 min-w-[70px] ${
+                tab === "pending_return"
+                  ? "bg-indigo-600 text-white shadow-md"
+                  : "text-slate-500 hover:text-slate-800"
+              }`}
+            >
+              <span>Kembali</span>
+              <span className="text-[9px] opacity-75">({pendingReturnList.length})</span>
             </button>
             <button
               onClick={() => setTab("overdue")}
@@ -374,6 +424,185 @@ function AsatidzDashboardPage() {
                                 className="flex-1 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-xs transition active:scale-[0.98] shadow-sm shadow-indigo-900/10"
                               >
                                 Setujui Izin
+                              </button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )
+          )}
+
+          {tab === "pending_return" && (
+            isLoadingPendingReturn ? (
+              <div className="bg-card rounded-3xl border border-border p-8 flex flex-col items-center justify-center shadow-[var(--shadow-soft)]">
+                <Loader2 className="animate-spin text-indigo-600 mb-2" size={28} />
+                <p className="text-xs font-semibold text-muted-foreground">Memuat data kepulangan...</p>
+              </div>
+            ) : pendingReturnList.length === 0 ? (
+              <div className="bg-card rounded-3xl border border-border p-8 text-center shadow-[var(--shadow-soft)]">
+                <CheckCircle2 className="mx-auto text-emerald-500 mb-3" size={32} />
+                <p className="text-sm font-bold text-foreground">Semua Selesai!</p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Tidak ada laporan kepulangan yang menunggu konfirmasi.
+                </p>
+              </div>
+            ) : (
+              <div className="bg-card rounded-[24px] border border-border overflow-hidden shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
+                <div className="divide-y divide-slate-100">
+                  {pendingReturnList.map((permit: any) => {
+                    const isExpanded = expandedPermitId === permit.id;
+                    return (
+                      <div key={permit.id} className="transition-all">
+                        {/* Accordion Header */}
+                        <div 
+                          onClick={() => setExpandedPermitId(isExpanded ? null : permit.id)}
+                          className={`flex items-center justify-between p-4 cursor-pointer hover:bg-slate-50/50 transition-colors ${
+                            isExpanded ? "bg-slate-50/50" : ""
+                          }`}
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-xl bg-slate-100 border border-slate-200 overflow-hidden flex items-center justify-center font-bold text-slate-500 shrink-0">
+                              {permit.student?.avatar ? (
+                                <img src={resolveImageUrl(permit.student.avatar) || ""} alt="" className="w-full h-full object-cover" />
+                              ) : (
+                                permit.student?.name?.substring(0, 2).toUpperCase() || "S"
+                              )}
+                            </div>
+                            <div>
+                              <p className="text-[13px] font-bold text-slate-800 leading-tight">
+                                {permit.student?.name}
+                              </p>
+                              <p className="text-[10px] font-semibold text-slate-400 mt-1">
+                                {permit.student?.classroom_name || "-"}
+                              </p>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-3 text-right">
+                            <div>
+                              <span className="inline-block px-2 py-0.5 rounded-full text-[9px] font-extrabold bg-purple-50 text-purple-700 border border-purple-100 uppercase tracking-wide">
+                                Lapor Kembali
+                              </span>
+                              <p className="text-[10px] text-slate-400 mt-1">
+                                {permit.actual_return_date ? new Date(permit.actual_return_date).toLocaleDateString("id-ID", { day: "numeric", month: "short" }) : "-"}
+                              </p>
+                            </div>
+                            <div className="text-slate-400">
+                              {isExpanded ? (
+                                <ChevronUp size={16} strokeWidth={2.5} />
+                              ) : (
+                                <ChevronDown size={16} strokeWidth={2.5} />
+                              )}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Accordion Details */}
+                        {isExpanded && (
+                          <div className="px-4 pb-5 pt-2 bg-slate-50/30 border-t border-slate-100/50 space-y-4">
+                            <div className="grid grid-cols-2 gap-3 text-xs bg-white rounded-2xl p-3 border border-slate-100/80 shadow-[0_2px_8px_rgba(0,0,0,0.01)]">
+                              <div>
+                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Tanggal Keluar</p>
+                                <p className="font-bold text-slate-700 mt-0.5">
+                                  {permit.actual_exit_date ? new Date(permit.actual_exit_date).toLocaleString("id-ID", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }) : "-"}
+                                </p>
+                              </div>
+                              <div>
+                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Dilaporkan Kembali</p>
+                                <p className="font-bold text-slate-700 mt-0.5">
+                                  {permit.actual_return_date ? new Date(permit.actual_return_date).toLocaleString("id-ID", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }) : "-"}
+                                </p>
+                              </div>
+                            </div>
+
+                            <div className="bg-white border border-slate-100/80 rounded-2xl p-3 text-xs space-y-2 shadow-[0_2px_8px_rgba(0,0,0,0.01)]">
+                              <div>
+                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Wali / Pelapor</p>
+                                <p className="font-bold text-slate-700 mt-0.5">{permit.user?.name} · {permit.user?.phone}</p>
+                              </div>
+                              {permit.return_latitude && (
+                                <div>
+                                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Lokasi GPS</p>
+                                  <a 
+                                    href={`https://www.google.com/maps/search/?api=1&query=${permit.return_latitude},${permit.return_longitude}`}
+                                    target="_blank" 
+                                    rel="noopener noreferrer"
+                                    className="text-xs text-blue-600 font-bold hover:underline mt-0.5 inline-block animate-pulse"
+                                  >
+                                    Lihat di Google Maps ({permit.return_latitude.substring(0,8)}, {permit.return_longitude.substring(0,8)})
+                                  </a>
+                                </div>
+                              )}
+                            </div>
+
+                            {/* Return Verification Photos */}
+                            <div className="grid grid-cols-2 gap-3">
+                              <div className="bg-white border border-slate-100/80 rounded-2xl p-3 text-xs space-y-2.5 shadow-[0_2px_8px_rgba(0,0,0,0.01)]">
+                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Foto Santri</p>
+                                {permit.return_photo_santri ? (
+                                  <div 
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setZoomPhotoUrl(resolveImageUrl(permit.return_photo_santri));
+                                    }}
+                                    className="relative rounded-xl overflow-hidden border border-slate-100 aspect-video bg-slate-50 flex items-center justify-center group cursor-pointer shadow-sm"
+                                  >
+                                    <img 
+                                      src={resolveImageUrl(permit.return_photo_santri) || ""} 
+                                      alt="Foto Santri" 
+                                      className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+                                    />
+                                    <div className="absolute inset-0 bg-black/10 group-hover:bg-black/25 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                      <span className="text-white text-[9px] font-bold bg-black/60 px-2 py-0.5 rounded-full">Zoom</span>
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <div className="py-3 text-center rounded-xl bg-slate-50 text-slate-400">Tidak ada foto</div>
+                                )}
+                              </div>
+
+                              <div className="bg-white border border-slate-100/80 rounded-2xl p-3 text-xs space-y-2.5 shadow-[0_2px_8px_rgba(0,0,0,0.01)]">
+                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Foto Pengantar</p>
+                                {permit.return_photo_escort ? (
+                                  <div 
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setZoomPhotoUrl(resolveImageUrl(permit.return_photo_escort));
+                                    }}
+                                    className="relative rounded-xl overflow-hidden border border-slate-100 aspect-video bg-slate-50 flex items-center justify-center group cursor-pointer shadow-sm"
+                                  >
+                                    <img 
+                                      src={resolveImageUrl(permit.return_photo_escort) || ""} 
+                                      alt="Foto Pengantar" 
+                                      className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+                                    />
+                                    <div className="absolute inset-0 bg-black/10 group-hover:bg-black/25 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                                      <span className="text-white text-[9px] font-bold bg-black/60 px-2 py-0.5 rounded-full">Zoom</span>
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <div className="py-3 text-center rounded-xl bg-slate-50 text-slate-400">Tidak ada foto</div>
+                                )}
+                              </div>
+                            </div>
+
+                            {/* Action Buttons */}
+                            <div className="flex gap-2.5">
+                              <button
+                                onClick={() => setRejectReturnId(permit.id)}
+                                className="flex-1 py-3 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-xl font-bold text-xs transition active:scale-[0.98] border border-rose-100"
+                              >
+                                Tolak Laporan
+                              </button>
+                              <button
+                                onClick={() => handleApproveReturn(permit.id)}
+                                className="flex-1 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-xs transition active:scale-[0.98] shadow-sm shadow-emerald-950/10"
+                              >
+                                Konfirmasi Kembali
                               </button>
                             </div>
                           </div>
@@ -760,6 +989,59 @@ function AsatidzDashboardPage() {
                     </>
                   ) : (
                     "Konfirmasi Penolakan"
+                  )}
+                </button>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {/* Return Rejection Prompt Drawer */}
+        {rejectReturnId && (
+          <div className="fixed inset-0 bg-slate-900/60 z-50 flex items-end justify-center p-4 backdrop-blur-md transition-all duration-300">
+            <div className="bg-card w-full max-w-md rounded-t-[32px] p-6 shadow-[0_-10px_40px_rgba(220,38,38,0.1)] space-y-5 animate-slide-up pb-10 relative overflow-hidden">
+              {/* Decorative top red glow */}
+              <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-rose-500 to-rose-600"></div>
+              
+              <div className="flex justify-between items-start pt-1">
+                <div className="flex gap-3 items-center">
+                  <div className="w-10 h-10 rounded-full bg-rose-100 text-rose-600 flex items-center justify-center shrink-0 shadow-inner shadow-rose-200">
+                    <XCircle size={22} strokeWidth={2.5} />
+                  </div>
+                  <div>
+                    <h3 className="text-[17px] font-extrabold text-slate-800 leading-tight">Tolak Laporan Kembali</h3>
+                    <p className="text-[11px] font-medium text-slate-500 mt-0.5">Wajib berikan alasan penolakan</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setRejectReturnId(null)}
+                  className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 text-lg hover:bg-slate-200 transition active:scale-95 border border-slate-200 font-medium pb-1"
+                >
+                  &times;
+                </button>
+              </div>
+
+              <form onSubmit={handleRejectReturnSubmit} className="space-y-5">
+                <textarea
+                  rows={4}
+                  required
+                  value={rejectionReturnReason}
+                  onChange={(e) => setRejectionReturnReason(e.target.value)}
+                  placeholder="Contoh: Foto santri tidak jelas atau posisi pengantar tidak sesuai..."
+                  className="w-full bg-slate-50 border border-slate-200 rounded-[20px] px-5 py-4 outline-none text-slate-700 text-[13px] font-medium focus:ring-4 focus:ring-rose-500/10 focus:border-rose-300 focus:bg-white transition resize-none placeholder:text-slate-400"
+                />
+
+                <button
+                  type="submit"
+                  disabled={actionReturnMutation.isPending}
+                  className="w-full py-4 rounded-[18px] bg-gradient-to-r from-rose-600 to-rose-500 hover:from-rose-700 hover:to-rose-600 text-white font-extrabold text-[13px] transition-all active:scale-[0.98] shadow-lg shadow-rose-600/25 flex items-center justify-center gap-2"
+                >
+                  {actionReturnMutation.isPending ? (
+                    <>
+                      <Loader2 className="animate-spin" size={18} /> Memproses...
+                    </>
+                  ) : (
+                    "Konfirmasi Penolakan Laporan"
                   )}
                 </button>
               </form>

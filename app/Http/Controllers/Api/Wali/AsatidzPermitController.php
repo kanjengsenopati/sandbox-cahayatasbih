@@ -274,6 +274,11 @@ class AsatidzPermitController extends Controller
                 $query->where('asrama_host_id', $adminId);
             })->count();
 
+        $pendingReturnCount = StudentPermit::where('status', 'pending_return')
+            ->whereHas('student', function ($query) use ($adminId) {
+                $query->where('asrama_host_id', $adminId);
+            })->count();
+
         return response()->json([
             'success' => true,
             'host_name' => $admin->name,
@@ -282,7 +287,8 @@ class AsatidzPermitController extends Controller
             'counts' => [
                 'pending' => $pendingCount,
                 'active' => $activeCount,
-                'overdue' => $overdueCount
+                'overdue' => $overdueCount,
+                'pending_return' => $pendingReturnCount,
             ]
         ]);
     }
@@ -356,5 +362,77 @@ class AsatidzPermitController extends Controller
             ],
             'history' => $history
         ]);
+    }
+
+    /**
+     * View permits waiting for return confirmation (pending_return).
+     */
+    public function pendingReturnList()
+    {
+        $adminId = Auth::guard('web')->id();
+        $permits = StudentPermit::where('status', 'pending_return')
+            ->whereHas('student', function ($query) use ($adminId) {
+                $query->where('asrama_host_id', $adminId);
+            })
+            ->with(['student' => function ($query) {
+                $query->select('id', 'name', 'nis', 'avatar', 'asrama_name');
+            }, 'user' => function ($query) {
+                $query->select('id', 'name', 'phone');
+            }])
+            ->latest()
+            ->get();
+
+        return response()->json([
+            'success' => true,
+            'permits' => $permits
+        ]);
+    }
+
+    /**
+     * Approve or reject a student's reported return.
+     */
+    public function actionReturn($id, Request $request)
+    {
+        $request->validate([
+            'action' => 'required|in:approve,reject',
+            'rejection_reason' => 'required_if:action,reject|nullable|string|max:255',
+        ]);
+
+        $permit = StudentPermit::findOrFail($id);
+
+        if ($permit->status !== 'pending_return') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Status perizinan ini tidak sedang menunggu persetujuan kembali.'
+            ], 422);
+        }
+
+        $adminId = Auth::guard('web')->id();
+        $action = $request->input('action');
+
+        if ($action === 'approve') {
+            $permit->update([
+                'status' => 'returned',
+                'admin_id' => $adminId,
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Persetujuan kepulangan santri berhasil dikonfirmasi.',
+                'permit' => $permit
+            ]);
+        } else {
+            $permit->update([
+                'status' => 'out',
+                'admin_id' => $adminId,
+                'rejection_reason' => $request->input('rejection_reason'),
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Laporan kepulangan ditolak. Status santri kembali menjadi KELUAR.',
+                'permit' => $permit
+            ]);
+        }
     }
 }

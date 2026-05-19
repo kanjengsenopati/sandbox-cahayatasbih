@@ -96,4 +96,11 @@ export const fetchAsatidzStats = () => api.get('/asatidz/dashboard-stats');
 export const fetchMyStudents = () => api.get('/asatidz/my-students');
 export const fetchStudentHistory = (studentId: string | number) => api.get(`/asatidz/my-students/${studentId}/history`);
 
+// Return flow API methods
+export const postReportReturn = (id: string | number, data: { return_photo_santri: string; return_photo_escort: string; latitude?: string; longitude?: string }) => 
+  api.post(`/permits/${id}/report-return`, data);
+export const fetchPendingReturnPermits = () => api.get('/asatidz/permits/pending-return');
+export const postPermitReturnAction = (id: string | number, data: { action: 'approve' | 'reject'; rejection_reason?: string }) => 
+  api.post(`/asatidz/permits/${id}/action-return`, data);
+
 export default api;

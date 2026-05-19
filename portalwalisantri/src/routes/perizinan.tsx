@@ -1,8 +1,8 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { ArrowLeft, Loader2, Calendar, ClipboardList, CheckCircle2, XCircle, Clock, ExternalLink, QrCode, Camera, Upload } from "lucide-react";
+import { ArrowLeft, Loader2, Calendar, ClipboardList, CheckCircle2, XCircle, Clock, ExternalLink, QrCode, Camera, Upload, ArrowLeftCircle } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { fetchPermits, postPermitRequest } from "@/lib/api";
+import { fetchPermits, postPermitRequest, postReportReturn } from "@/lib/api";
 import { useSantri } from "@/contexts/SantriContext";
 import { Text } from "@/components/Text";
 
@@ -31,6 +31,47 @@ function PerizinanPage() {
   const [formSuccess, setFormSuccess] = useState("");
   const [attachmentPhoto, setAttachmentPhoto] = useState<string | null>(null);
   const [viewingDocumentUrl, setViewingDocumentUrl] = useState<string | null>(null);
+
+  // Return Reporting States
+  const [reportingPermitId, setReportingPermitId] = useState<string | number | null>(null);
+  const [returnPhotoSantri, setReturnPhotoSantri] = useState<string | null>(null);
+  const [returnPhotoEscort, setReturnPhotoEscort] = useState<string | null>(null);
+  const [isReportingSubmit, setIsReportingSubmit] = useState(false);
+  const [reportError, setReportError] = useState("");
+
+  const handlePhotoUpload = (file: File, callback: (base64: string) => void) => {
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        let width = img.width;
+        let height = img.height;
+        const maxDim = 800; // Small size for return photos to save server storage
+        if (width > maxDim || height > maxDim) {
+          if (width > height) {
+            height = Math.round((height * maxDim) / width);
+            width = maxDim;
+          } else {
+            width = Math.round((width * maxDim) / height);
+            height = maxDim;
+          }
+        }
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext("2d");
+        if (ctx) {
+          ctx.drawImage(img, 0, 0, width, height);
+          const compressed = canvas.toDataURL("image/jpeg", 0.7);
+          callback(compressed);
+        } else {
+          callback(event.target?.result as string);
+        }
+      };
+      img.src = event.target?.result as string;
+    };
+    reader.readAsDataURL(file);
+  };
 
   const handleAttachmentChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -501,6 +542,7 @@ function PerizinanPage() {
                       permit.status === "approved" ? "bg-emerald-50 text-emerald-700 border-emerald-100" :
                       permit.status === "rejected" ? "bg-rose-50 text-rose-700 border-rose-100" :
                       permit.status === "out" ? "bg-blue-50 text-blue-700 border-blue-100" :
+                      permit.status === "pending_return" ? "bg-purple-50 text-purple-700 border-purple-100" :
                       "bg-slate-50 text-slate-500 border-slate-100";
 
                     const badgeText = 
@@ -508,6 +550,7 @@ function PerizinanPage() {
                       permit.status === "approved" ? "Disetujui" :
                       permit.status === "rejected" ? "Ditolak" :
                       permit.status === "out" ? "Keluar" :
+                      permit.status === "pending_return" ? "Proses Kembali" :
                       "Kembali";
 
                     const permitDate = new Date(permit.planned_exit_date).toLocaleDateString("id-ID", {
@@ -629,6 +672,21 @@ function PerizinanPage() {
                                   className="w-full py-2.5 rounded-[16px] bg-gradient-to-br from-[#9b1de8] to-[#610a9c] text-white flex items-center justify-center gap-2 text-xs font-bold shadow-md active:scale-98 transition"
                                 >
                                   <QrCode size={15} /> Tampilkan Barcode Izin
+                                </button>
+                              </div>
+                            )}
+
+                            {permit.status === "out" && (
+                              <div className="pt-2">
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setReportingPermitId(permit.id);
+                                  }}
+                                  className="w-full py-2.5 rounded-[16px] bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-700 hover:to-emerald-600 text-white flex items-center justify-center gap-2 text-xs font-bold shadow-md active:scale-98 transition"
+                                >
+                                  <ArrowLeftCircle size={15} /> Lapor Kembali
                                 </button>
                               </div>
                             )}
@@ -1317,6 +1375,165 @@ function PerizinanPage() {
                 className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-[#9b1de8] to-[#5a0c91] text-white text-xs font-extrabold hover:brightness-110 active:scale-[0.98] transition text-center shadow-[0_6px_20px_rgba(155,29,232,0.25)]"
               >
                 Tutup Tampilan
+              </button>
+            </div>
+          </div>
+        )}
+        {/* Premium Lapor Kembali Modal Drawer */}
+        {reportingPermitId && (
+          <div className="fixed inset-0 bg-slate-900/60 z-50 flex items-end justify-center p-4 backdrop-blur-md animate-fade-in">
+            <div className="bg-white w-full max-w-md rounded-t-[2.5rem] p-6 shadow-2xl space-y-5 animate-slide-up pb-10 max-h-[90vh] overflow-y-auto">
+              
+              {/* Header */}
+              <div className="flex justify-between items-center border-b border-slate-100 pb-3">
+                <div>
+                  <Text.Label className="text-[11px] text-slate-400 font-extrabold uppercase tracking-wide">Konfirmasi Kedatangan</Text.Label>
+                  <Text.H2 className="text-sm font-bold text-slate-800">Lapor Kembali ke Pondok</Text.H2>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setReportingPermitId(null);
+                    setReturnPhotoSantri(null);
+                    setReturnPhotoEscort(null);
+                    setReportError("");
+                  }}
+                  className="w-8 h-8 rounded-full bg-slate-50 border border-slate-100 flex items-center justify-center text-slate-500 font-bold hover:bg-slate-100 active:scale-95 transition"
+                >
+                  ×
+                </button>
+              </div>
+
+              {reportError && (
+                <div className="p-3 bg-red-50 border border-red-100 rounded-2xl text-xs text-red-600 font-medium">
+                  {reportError}
+                </div>
+              )}
+
+              {/* Photo Uploaders */}
+              <div className="space-y-4">
+                {/* 1. Foto Santri Kembali */}
+                <div>
+                  <Text.Label className="text-slate-500 mb-1.5 block">Foto Santri (Saat Tiba/Kembali)</Text.Label>
+                  {returnPhotoSantri ? (
+                    <div className="relative rounded-[20px] overflow-hidden border border-slate-150 shadow-sm aspect-video bg-slate-50">
+                      <img src={returnPhotoSantri} alt="Santri Kembali" className="w-full h-full object-cover" />
+                      <button
+                        type="button"
+                        onClick={() => setReturnPhotoSantri(null)}
+                        className="absolute top-2 right-2 p-1.5 rounded-full bg-red-600 text-white shadow-md active:scale-95 transition"
+                      >
+                        <XCircle size={16} />
+                      </button>
+                    </div>
+                  ) : (
+                    <label className="flex flex-col items-center justify-center border-2 border-dashed border-slate-200 rounded-[20px] p-6 hover:bg-slate-50 cursor-pointer transition select-none">
+                      <Camera className="text-slate-400 mb-2" size={24} />
+                      <span className="text-xs font-semibold text-slate-600">Ambil / Unggah Foto Santri</span>
+                      <span className="text-[10px] text-slate-400 mt-1">Gunakan kamera HP atau pilih file</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        capture="environment"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) handlePhotoUpload(file, setReturnPhotoSantri);
+                        }}
+                        className="hidden"
+                      />
+                    </label>
+                  )}
+                </div>
+
+                {/* 2. Foto Wali / Pengantar */}
+                <div>
+                  <Text.Label className="text-slate-500 mb-1.5 block">Foto Pengantar / Wali Santri</Text.Label>
+                  {returnPhotoEscort ? (
+                    <div className="relative rounded-[20px] overflow-hidden border border-slate-150 shadow-sm aspect-video bg-slate-50">
+                      <img src={returnPhotoEscort} alt="Pengantar" className="w-full h-full object-cover" />
+                      <button
+                        type="button"
+                        onClick={() => setReturnPhotoEscort(null)}
+                        className="absolute top-2 right-2 p-1.5 rounded-full bg-red-600 text-white shadow-md active:scale-95 transition"
+                      >
+                        <XCircle size={16} />
+                      </button>
+                    </div>
+                  ) : (
+                    <label className="flex flex-col items-center justify-center border-2 border-dashed border-slate-200 rounded-[20px] p-6 hover:bg-slate-50 cursor-pointer transition select-none">
+                      <Upload className="text-slate-400 mb-2" size={24} />
+                      <span className="text-xs font-semibold text-slate-600">Ambil / Unggah Foto Pengantar</span>
+                      <span className="text-[10px] text-slate-400 mt-1">Gunakan kamera HP atau pilih file</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        capture="user"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) handlePhotoUpload(file, setReturnPhotoEscort);
+                        }}
+                        className="hidden"
+                      />
+                    </label>
+                  )}
+                </div>
+              </div>
+
+              {/* Submit Button */}
+              <button
+                type="button"
+                disabled={isReportingSubmit || !returnPhotoSantri || !returnPhotoEscort}
+                onClick={async () => {
+                  if (!returnPhotoSantri || !returnPhotoEscort || !reportingPermitId) return;
+                  setIsReportingSubmit(true);
+                  setReportError("");
+
+                  // Get location coords first (with 3-second timeout fallback)
+                  let latitude = "";
+                  let longitude = "";
+                  try {
+                    const position: any = await new Promise((resolve, reject) => {
+                      navigator.geolocation.getCurrentPosition(resolve, reject, {
+                        enableHighAccuracy: true,
+                        timeout: 3000
+                      });
+                    });
+                    latitude = position.coords.latitude.toString();
+                    longitude = position.coords.longitude.toString();
+                  } catch (err) {
+                    console.warn("Could not get geolocation", err);
+                  }
+
+                  try {
+                    const res = await postReportReturn(reportingPermitId, {
+                      return_photo_santri: returnPhotoSantri,
+                      return_photo_escort: returnPhotoEscort,
+                      latitude,
+                      longitude
+                    });
+
+                    if (res.data?.success) {
+                      queryClient.invalidateQueries({ queryKey: ["permits"] });
+                      setReportingPermitId(null);
+                      setReturnPhotoSantri(null);
+                      setReturnPhotoEscort(null);
+                      alert("Laporan kepulangan berhasil dikirim! Silakan hubungi Ustadz untuk persetujuan.");
+                    } else {
+                      setReportError(res.data?.message || "Gagal mengirim laporan kepulangan.");
+                    }
+                  } catch (err: any) {
+                    setReportError(err.response?.data?.message || "Terjadi kesalahan sistem saat mengirim laporan.");
+                  } finally {
+                    setIsReportingSubmit(false);
+                  }
+                }}
+                className="w-full py-4 rounded-[20px] bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-700 hover:to-emerald-600 text-white font-bold text-[14px] shadow-lg transition active:scale-[0.98] disabled:opacity-50 disabled:active:scale-100 flex items-center justify-center gap-2"
+              >
+                {isReportingSubmit ? (
+                  <Loader2 className="animate-spin" size={18} />
+                ) : (
+                  "Kirim Laporan Kepulangan"
+                )}
               </button>
             </div>
           </div>

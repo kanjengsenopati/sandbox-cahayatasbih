@@ -191,6 +191,7 @@ Route::prefix('ct-mobile')->middleware(['web'])->group(function () {
     Route::get('permits', [App\Http\Controllers\Api\Wali\WaliPermitController::class, 'index']);
     Route::post('permits', [App\Http\Controllers\Api\Wali\WaliPermitController::class, 'store']);
     Route::get('permits/{id}', [App\Http\Controllers\Api\Wali\WaliPermitController::class, 'show']);
+    Route::post('permits/{id}/report-return', [App\Http\Controllers\Api\Wali\WaliPermitController::class, 'reportReturn']);
     });
 
     // Perizinan Santri (Leave Permits) - Asatidz / Staff Asrama
@@ -199,6 +200,8 @@ Route::prefix('ct-mobile')->middleware(['web'])->group(function () {
         Route::post('asatidz/permits/{id}/action', [App\Http\Controllers\Api\Wali\AsatidzPermitController::class, 'action']);
         Route::get('asatidz/permits/active', [App\Http\Controllers\Api\Wali\AsatidzPermitController::class, 'activeList']);
         Route::get('asatidz/permits/overdue', [App\Http\Controllers\Api\Wali\AsatidzPermitController::class, 'overdueList']);
+        Route::get('asatidz/permits/pending-return', [App\Http\Controllers\Api\Wali\AsatidzPermitController::class, 'pendingReturnList']);
+        Route::post('asatidz/permits/{id}/action-return', [App\Http\Controllers\Api\Wali\AsatidzPermitController::class, 'actionReturn']);
         Route::post('asatidz/permits/scan', [App\Http\Controllers\Api\Wali\AsatidzPermitController::class, 'scanBarcode']);
         Route::get('asatidz/dashboard-stats', [App\Http\Controllers\Api\Wali\AsatidzPermitController::class, 'dashboardStats']);
         Route::get('asatidz/my-students', [App\Http\Controllers\Api\Wali\AsatidzPermitController::class, 'myStudents']);

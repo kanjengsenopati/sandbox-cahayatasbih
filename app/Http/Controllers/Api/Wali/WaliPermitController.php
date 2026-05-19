@@ -156,4 +156,63 @@ class WaliPermitController extends Controller
             'permit' => $permit
         ]);
     }
+
+    /**
+     * Report return of a student by the parent (Wali Santri).
+     */
+    public function reportReturn(Request $request, $id)
+    {
+        $request->validate([
+            'return_photo_santri' => 'required|string', // Base64 image
+            'return_photo_escort' => 'required|string', // Base64 image
+            'latitude' => 'nullable|string',
+            'longitude' => 'nullable|string',
+        ]);
+
+        $userId = Auth::guard('wali')->id();
+
+        $permit = StudentPermit::where('id', $id)
+            ->where('user_id', $userId)
+            ->first();
+
+        if (!$permit) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Data perizinan tidak ditemukan.'
+            ], 404);
+        }
+
+        if ($permit->status !== 'out') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Pelaporan kembali hanya dapat dilakukan untuk perizinan berstatus KELUAR.'
+            ], 422);
+        }
+
+        // Save base64 photos
+        $photoSantriPath = $this->saveBase64Image($request->input('return_photo_santri'), 'return_santri_' . $permit->id);
+        $photoEscortPath = $this->saveBase64Image($request->input('return_photo_escort'), 'return_escort_' . $permit->id);
+
+        if (!$photoSantriPath || !$photoEscortPath) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal mengunggah foto pendukung kembali.'
+            ], 422);
+        }
+
+        $permit->update([
+            'status' => 'pending_return',
+            'actual_return_date' => Carbon::now(),
+            'return_photo_santri' => $photoSantriPath,
+            'return_photo_escort' => $photoEscortPath,
+            'return_latitude' => $request->input('latitude'),
+            'return_longitude' => $request->input('longitude'),
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Laporan kepulangan berhasil dikirim. Menunggu persetujuan Ustadz.',
+            'permit' => $permit
+        ]);
+    }
 }
