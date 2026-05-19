@@ -1,18 +1,18 @@
 {
   "F:/Antigravity/Projects/cahayatasbih/portalwalisantri/src/styles.css": {
-    "file": "assets/styles-BbPI7-PL.css",
+    "file": "assets/styles-tfcPipnk.css",
     "src": "F:/Antigravity/Projects/cahayatasbih/portalwalisantri/src/styles.css"
   },
   "index.html": {
-    "file": "assets/index-C6W5mhLn.js",
+    "file": "assets/index-DhBQ0IJh.js",
     "name": "index",
     "src": "index.html",
     "isEntry": true,
     "css": [
-      "assets/styles-BbPI7-PL.css"
+      "assets/styles-tfcPipnk.css"
     ],
     "assets": [
-      "assets/styles-BbPI7-PL.css"
+      "assets/styles-tfcPipnk.css"
     ]
   }
 }

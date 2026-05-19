@@ -4,6 +4,7 @@ import { ArrowLeft, Loader2, Calendar, ClipboardList, CheckCircle2, XCircle, Clo
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { fetchPermits, postPermitRequest } from "@/lib/api";
 import { useSantri } from "@/contexts/SantriContext";
+import { Text } from "@/components/Text";
 
 export const Route = createFileRoute("/perizinan")({
   component: PerizinanPage,
@@ -16,6 +17,10 @@ function PerizinanPage() {
   const [tab, setTab] = useState<"list" | "request">("list");
   const [activeBarcode, setActiveBarcode] = useState<string | null>(null);
   const [activeBarcodeName, setActiveBarcodeName] = useState<string>("");
+  
+  // Expandable and Pagination States
+  const [expandedPermitId, setExpandedPermitId] = useState<string | number | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
 
   // Form State
   const [permitType, setPermitType] = useState<"keluar_pondok" | "pulang_sementara" | "sakit">("keluar_pondok");
@@ -195,6 +200,11 @@ function PerizinanPage() {
     }
   }, [activeStudent]);
 
+  useEffect(() => {
+    setCurrentPage(1);
+    setExpandedPermitId(null);
+  }, [activeStudent, tab]);
+
   const toggleStudentSelection = (sId: string) => {
     if (selectedStudentIds.includes(sId)) {
       setSelectedStudentIds(prev => prev.filter(id => id !== sId));
@@ -233,6 +243,33 @@ function PerizinanPage() {
   });
 
   const permits = permitsRes?.permits ?? [];
+
+  // Calculate statistics
+  const totalPermits = permits.length;
+  
+  const onTimeCount = permits.filter((p: any) => {
+    if (!p.actual_return_date) return false;
+    const actual = new Date(p.actual_return_date).getTime();
+    const planned = new Date(p.planned_return_date).getTime();
+    return actual <= planned;
+  }).length;
+  
+  const lateCount = permits.filter((p: any) => {
+    if (!p.actual_return_date) {
+      if (p.status === "out") {
+        const planned = new Date(p.planned_return_date).getTime();
+        return Date.now() > planned;
+      }
+      return false;
+    }
+    const actual = new Date(p.actual_return_date).getTime();
+    const planned = new Date(p.planned_return_date).getTime();
+    return actual > planned;
+  }).length;
+
+  const itemsPerPage = 3;
+  const totalPages = Math.ceil(permits.length / itemsPerPage);
+  const paginatedPermits = permits.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
   const permitMutation = useMutation({
     mutationFn: async (data: any) => {
@@ -349,7 +386,7 @@ function PerizinanPage() {
       <div className="relative w-full max-w-md min-h-screen bg-background pb-32">
         {/* Header */}
         <div
-          className="relative px-6 pt-12 pb-24 rounded-b-[2rem] overflow-hidden"
+          className="relative px-5 pt-12 pb-24 rounded-b-[2rem] overflow-hidden"
           style={{ background: "var(--gradient-hero)" }}
         >
           <div className="absolute -top-20 -right-10 w-56 h-56 rounded-full bg-primary-glow/30 blur-3xl" />
@@ -387,7 +424,7 @@ function PerizinanPage() {
         </div>
 
         {/* Tab switcher */}
-        <div className="px-6 -mt-8 relative z-10">
+        <div className="px-5 -mt-8 relative z-10">
           <div className="flex bg-card rounded-[20px] p-1 border border-border shadow-[var(--shadow-soft)]">
             <button
               onClick={() => setTab("list")}
@@ -413,118 +450,222 @@ function PerizinanPage() {
         </div>
 
         {/* Tab Content */}
-        <section className="px-6 mt-6 space-y-4">
+        <section className="px-5 mt-6 space-y-4">
           {tab === "list" ? (
             isLoadingPermits ? (
-              <div className="bg-card rounded-3xl border border-border p-8 flex flex-col items-center justify-center shadow-[var(--shadow-soft)]">
-                <Loader2 className="animate-spin text-[#9b1de8] mb-2" size={28} />
-                <p className="text-xs font-semibold text-muted-foreground">Memuat riwayat perizinan...</p>
+              <div className="bg-card rounded-[24px] border-none p-8 flex flex-col items-center justify-center shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
+                <Loader2 className="animate-spin text-[#2563EB] mb-2" size={28} />
+                <Text.Caption className="font-semibold text-slate-500">Memuat riwayat perizinan...</Text.Caption>
               </div>
             ) : permits.length === 0 ? (
-              <div className="bg-card rounded-3xl border border-border p-8 text-center shadow-[var(--shadow-soft)]">
-                <Calendar className="mx-auto text-muted-foreground mb-3" size={32} />
-                <p className="text-sm font-bold text-foreground">Belum Ada Pengajuan</p>
-                <p className="text-xs text-muted-foreground mt-1">
+              <div className="bg-card rounded-[24px] border-none p-8 text-center shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
+                <Calendar className="mx-auto text-slate-400 mb-3" size={32} />
+                <Text.H2 className="text-slate-800">Belum Ada Pengajuan</Text.H2>
+                <Text.Body className="text-slate-500 mt-1">
                   Semua perizinan keluar pondok ananda akan tampil di sini.
-                </p>
+                </Text.Body>
               </div>
             ) : (
-              permits.map((permit: any) => {
-                const badgeColor = 
-                  permit.status === "pending" ? "bg-amber-50 text-amber-700 border-amber-100" :
-                  permit.status === "approved" ? "bg-emerald-50 text-emerald-700 border-emerald-100" :
-                  permit.status === "rejected" ? "bg-rose-50 text-rose-700 border-rose-100" :
-                  permit.status === "out" ? "bg-blue-50 text-blue-700 border-blue-100" :
-                  "bg-slate-50 text-slate-500 border-slate-100";
+              <div className="space-y-4">
+                {/* Summary Cards Grid */}
+                <div className="grid grid-cols-3 gap-3">
+                  <div className="bg-card rounded-[24px] p-4 flex flex-col items-center justify-center shadow-[0_8px_30px_rgb(0,0,0,0.04)] border-none">
+                    <Text.Label className="text-slate-400 text-[10px]">Total Izin</Text.Label>
+                    <Text.H1 className="text-slate-800 mt-1">{totalPermits}</Text.H1>
+                  </div>
+                  <div className="bg-card rounded-[24px] p-4 flex flex-col items-center justify-center shadow-[0_8px_30px_rgb(0,0,0,0.04)] border-none">
+                    <Text.Label className="text-emerald-600 text-[10px]">Tepat Waktu</Text.Label>
+                    <Text.Amount className="text-[22px] mt-1">{onTimeCount}</Text.Amount>
+                  </div>
+                  <div className="bg-card rounded-[24px] p-4 flex flex-col items-center justify-center shadow-[0_8px_30px_rgb(0,0,0,0.04)] border-none">
+                    <Text.Label className="text-red-600 text-[10px]">Terlambat</Text.Label>
+                    <Text.Amount className="text-[22px] text-red-600 mt-1">{lateCount}</Text.Amount>
+                  </div>
+                </div>
 
-                const badgeText = 
-                  permit.status === "pending" ? "Menunggu Persetujuan" :
-                  permit.status === "approved" ? "Disetujui (Siap Scan)" :
-                  permit.status === "rejected" ? "Ditolak" :
-                  permit.status === "out" ? "Sedang di Luar" :
-                  "Telah Kembali";
+                {/* Simple Data Table / Expandable Panel */}
+                <div className="bg-card rounded-[24px] shadow-[0_8px_30px_rgb(0,0,0,0.04)] overflow-hidden divide-y divide-slate-100">
+                  {/* Table Header */}
+                  <div className="grid grid-cols-12 gap-2 px-5 py-3 bg-slate-50/50">
+                    <div className="col-span-4"><Text.Label className="text-[10px] text-slate-400">Tipe</Text.Label></div>
+                    <div className="col-span-4"><Text.Label className="text-[10px] text-slate-400">Tanggal</Text.Label></div>
+                    <div className="col-span-4 text-right"><Text.Label className="text-[10px] text-slate-400">Status</Text.Label></div>
+                  </div>
 
-                return (
-                  <div
-                    key={permit.id}
-                    className="bg-card rounded-3xl border border-border p-5 shadow-[var(--shadow-soft)] hover:shadow-[var(--shadow-card)] transition duration-300"
-                  >
-                    <div className="flex items-start justify-between gap-3">
-                      <div>
-                        <span className={`inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${badgeColor}`}>
-                          {badgeText}
-                        </span>
-                        <p className="text-sm font-bold text-slate-800 mt-2 capitalize">
-                          {permit.permit_type.replace("_", " ")}
-                        </p>
-                      </div>
-                      
-                      {permit.status === "approved" && (
-                        <button
-                          onClick={() => {
-                            setActiveBarcode(permit.barcode_token);
-                            setActiveBarcodeName(permit.student?.name);
-                          }}
-                          className="p-2 rounded-xl bg-[#9b1de8]/10 text-[#9b1de8] hover:bg-[#9b1de8]/20 transition flex items-center gap-1 text-[11px] font-bold"
-                        >
-                          <QrCode size={15} /> Barcode
-                        </button>
-                      )}
-                    </div>
+                  {/* Table Body */}
+                  {paginatedPermits.map((permit: any) => {
+                    const isExpanded = expandedPermitId === permit.id;
+                    
+                    const badgeColor = 
+                      permit.status === "pending" ? "bg-amber-50 text-amber-700 border-amber-100" :
+                      permit.status === "approved" ? "bg-emerald-50 text-emerald-700 border-emerald-100" :
+                      permit.status === "rejected" ? "bg-rose-50 text-rose-700 border-rose-100" :
+                      permit.status === "out" ? "bg-blue-50 text-blue-700 border-blue-100" :
+                      "bg-slate-50 text-slate-500 border-slate-100";
 
-                    <div className="mt-4 grid grid-cols-2 gap-3 text-xs border-t border-slate-100 pt-3">
-                      <div>
-                        <p className="text-slate-400">Rencana Keluar</p>
-                        <p className="font-bold text-slate-700 mt-0.5">
-                          {new Date(permit.planned_exit_date).toLocaleString("id-ID", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-slate-400">Rencana Kembali</p>
-                        <p className="font-bold text-slate-700 mt-0.5">
-                          {new Date(permit.planned_return_date).toLocaleString("id-ID", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
-                        </p>
-                      </div>
-                    </div>
+                    const badgeText = 
+                      permit.status === "pending" ? "Pending" :
+                      permit.status === "approved" ? "Disetujui" :
+                      permit.status === "rejected" ? "Ditolak" :
+                      permit.status === "out" ? "Keluar" :
+                      "Kembali";
 
-                    {permit.reason && (
-                      <div className="mt-3 bg-slate-50 rounded-2xl p-3 border border-slate-100">
-                        <p className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Alasan Perizinan</p>
-                        <p className="text-xs text-slate-600 mt-1">{permit.reason}</p>
-                      </div>
-                    )}
+                    const permitDate = new Date(permit.planned_exit_date).toLocaleDateString("id-ID", {
+                      day: "numeric",
+                      month: "short"
+                    });
 
-                    {permit.attachment_photo && (
-                      <div className="mt-3 bg-slate-50 rounded-2xl p-3 border border-slate-100 flex flex-col gap-1 animate-in fade-in">
-                        <p className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Dokumen Pendukung</p>
+                    return (
+                      <div key={permit.id} className="transition duration-200">
+                        {/* Row Header - Clickable */}
                         <button
                           type="button"
-                          onClick={() => setViewingDocumentUrl(`/${permit.attachment_photo}`)}
-                          className="text-xs text-[#9b1de8] font-bold flex items-center gap-1.5 hover:underline mt-1 text-left w-fit"
+                          onClick={() => setExpandedPermitId(isExpanded ? null : permit.id)}
+                          className="w-full grid grid-cols-12 gap-2 px-5 py-3.5 items-center hover:bg-slate-50/40 active:bg-slate-50 text-left transition"
                         >
-                          <ExternalLink size={12} /> Lihat Lampiran Dokumen
+                          {/* Column 1: Type */}
+                          <div className="col-span-4 flex flex-col">
+                            <Text.Body className="font-semibold text-slate-800 capitalize leading-tight truncate">
+                              {permit.permit_type.replace("_", " ")}
+                            </Text.Body>
+                          </div>
+                          
+                          {/* Column 2: Date */}
+                          <div className="col-span-4">
+                            <Text.Caption className="text-slate-500 font-semibold">
+                              {permitDate}
+                            </Text.Caption>
+                          </div>
+
+                          {/* Column 3: Status & Chevron */}
+                          <div className="col-span-4 flex items-center justify-end gap-2">
+                            <span className={`inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${badgeColor}`}>
+                              {badgeText}
+                            </span>
+                            <span className="text-slate-400">
+                              {isExpanded ? (
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-3.5 h-3.5">
+                                  <path strokeLinecap="round" strokeLinejoin="round" d="m4.5 15.75 7.5-7.5 7.5 7.5" />
+                                </svg>
+                              ) : (
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-3.5 h-3.5">
+                                  <path strokeLinecap="round" strokeLinejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
+                                </svg>
+                              )}
+                            </span>
+                          </div>
                         </button>
-                      </div>
-                    )}
 
-                    {permit.status === "rejected" && permit.rejection_reason && (
-                      <div className="mt-3 bg-rose-50 rounded-2xl p-3 border border-rose-100 text-rose-800">
-                        <p className="text-[10px] uppercase font-bold text-rose-500 tracking-wider">Alasan Penolakan</p>
-                        <p className="text-xs mt-1">{permit.rejection_reason}</p>
-                      </div>
-                    )}
+                        {/* Row Expanded Details */}
+                        {isExpanded && (
+                          <div className="px-5 pb-5 pt-1 bg-slate-50/40 border-t border-slate-100/50 space-y-4 animate-in fade-in duration-200">
+                            <div className="grid grid-cols-2 gap-3 text-xs pt-3">
+                              <div>
+                                <Text.Label className="text-[10px] text-slate-400 block">Rencana Keluar</Text.Label>
+                                <Text.Body className="font-bold text-slate-700 mt-1">
+                                  {new Date(permit.planned_exit_date).toLocaleString("id-ID", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
+                                </Text.Body>
+                              </div>
+                              <div>
+                                <Text.Label className="text-[10px] text-slate-400 block">Rencana Kembali</Text.Label>
+                                <Text.Body className="font-bold text-slate-700 mt-1">
+                                  {new Date(permit.planned_return_date).toLocaleString("id-ID", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
+                                </Text.Body>
+                              </div>
+                            </div>
 
-                    {permit.actual_exit_date && (
-                      <div className="mt-3 text-[11px] text-slate-400 flex flex-col gap-1 border-t border-slate-100 pt-3">
-                        <p>Keluar: {new Date(permit.actual_exit_date).toLocaleString("id-ID")}</p>
-                        {permit.actual_return_date && (
-                          <p>Kembali: {new Date(permit.actual_return_date).toLocaleString("id-ID")}</p>
+                            {permit.reason && (
+                              <div className="bg-white rounded-[16px] p-3 shadow-[0_4px_20px_rgb(0,0,0,0.02)] border border-slate-100">
+                                <Text.Label className="text-[9px] uppercase font-bold text-slate-400 tracking-wider">Alasan Perizinan</Text.Label>
+                                <Text.Body className="text-slate-600 mt-1">{permit.reason}</Text.Body>
+                              </div>
+                            )}
+
+                            {permit.attachment_photo && (
+                              <div className="bg-white rounded-[16px] p-3 shadow-[0_4px_20px_rgb(0,0,0,0.02)] border border-slate-100 flex flex-col gap-1">
+                                <Text.Label className="text-[9px] uppercase font-bold text-slate-400 tracking-wider">Dokumen Pendukung</Text.Label>
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setViewingDocumentUrl(`/${permit.attachment_photo}`);
+                                  }}
+                                  className="text-xs text-[#2563EB] hover:text-blue-750 font-bold flex items-center gap-1.5 hover:underline mt-1 text-left w-fit"
+                                >
+                                  <ExternalLink size={12} /> Lihat Lampiran Dokumen
+                                </button>
+                              </div>
+                            )}
+
+                            {permit.status === "rejected" && permit.rejection_reason && (
+                              <div className="bg-rose-50/50 rounded-[16px] p-3 border border-rose-100 text-rose-800">
+                                <Text.Label className="text-[9px] uppercase font-bold text-rose-500 tracking-wider">Alasan Penolakan</Text.Label>
+                                <Text.Body className="mt-1 text-rose-750">{permit.rejection_reason}</Text.Body>
+                              </div>
+                            )}
+
+                            {permit.actual_exit_date && (
+                              <div className="text-[11px] text-slate-400 flex flex-col gap-1 border-t border-slate-100 pt-3">
+                                <Text.Caption>
+                                  Keluar: {new Date(permit.actual_exit_date).toLocaleString("id-ID")}
+                                </Text.Caption>
+                                {permit.actual_return_date && (
+                                  <Text.Caption>
+                                    Kembali: {new Date(permit.actual_return_date).toLocaleString("id-ID")}
+                                  </Text.Caption>
+                                )}
+                              </div>
+                            )}
+
+                            {permit.status === "approved" && (
+                              <div className="pt-2">
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setActiveBarcode(permit.barcode_token);
+                                    setActiveBarcodeName(permit.student?.name);
+                                  }}
+                                  className="w-full py-2.5 rounded-[16px] bg-gradient-to-br from-[#9b1de8] to-[#610a9c] text-white flex items-center justify-center gap-2 text-xs font-bold shadow-md active:scale-98 transition"
+                                >
+                                  <QrCode size={15} /> Tampilkan Barcode Izin
+                                </button>
+                              </div>
+                            )}
+                          </div>
                         )}
                       </div>
-                    )}
+                    );
+                  })}
+                </div>
+
+                {/* Pagination Controls */}
+                {totalPages > 1 && (
+                  <div className="flex items-center justify-between mt-4 px-2">
+                    <button
+                      type="button"
+                      disabled={currentPage === 1}
+                      onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                      className="px-4 py-2 text-xs font-bold text-slate-600 bg-card rounded-[24px] shadow-[0_8px_30px_rgb(0,0,0,0.04)] disabled:opacity-50 disabled:pointer-events-none hover:bg-slate-50 transition"
+                    >
+                      Sebelumnya
+                    </button>
+                    
+                    <Text.Caption className="text-slate-500 font-semibold">
+                      Halaman {currentPage} dari {totalPages}
+                    </Text.Caption>
+                    
+                    <button
+                      type="button"
+                      disabled={currentPage === totalPages}
+                      onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                      className="px-4 py-2 text-xs font-bold text-slate-600 bg-card rounded-[24px] shadow-[0_8px_30px_rgb(0,0,0,0.04)] disabled:opacity-50 disabled:pointer-events-none hover:bg-slate-50 transition"
+                    >
+                      Selanjutnya
+                    </button>
                   </div>
-                );
-              })
+                )}
+              </div>
             )
           ) : (
             // Request Form Tab
