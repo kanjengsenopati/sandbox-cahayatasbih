@@ -70,160 +70,170 @@
                                  route('admin.update', @$admin->id) }}" method="POST" enctype="multipart/form-data">
                                 @csrf
                                 <x-form.put-method />
-                                <div class="fv-row mb-6">
-                                    <!--begin::Label-->
-                                    <label class="fs-6 fw-bold form-label" for="email">
-                                        <span class="required">Email </span>
-                                        <i class="fas fa-exclamation-circle ms-1 fs-7" data-bs-toggle="tooltip"
-                                            title="Masukkan Email"></i>
-                                    </label>
-                                    <!--end::Label-->
-                                    <!--begin::Input-->
-                                    <input type="email" class="form-control form-control-solid" id="email"
-                                        placeholder="Contoh: admin@gmail.com" name="email"
-                                        value="{{ @$admin->email ?? old('email') }}" required />
-                                    <!--end::Input-->
-                                </div>
+                                 <div class="row">
+                                     <div class="col-md-6">
+                                         <div class="fv-row mb-6">
+                                             <!--begin::Label-->
+                                             <label class="fs-6 fw-bold form-label" for="email">
+                                                 <span class="required">Email </span>
+                                                 <i class="fas fa-exclamation-circle ms-1 fs-7" data-bs-toggle="tooltip"
+                                                     title="Masukkan Email"></i>
+                                             </label>
+                                             <!--end::Label-->
+                                             <!--begin::Input-->
+                                             <input type="email" class="form-control form-control-solid" id="email"
+                                                 placeholder="Contoh: admin@gmail.com" name="email"
+                                                 value="{{ @$admin->email ?? old('email') }}" required />
+                                             <!--end::Input-->
+                                         </div>
 
-                                <div class="fv-row mb-7">
-                                    <!--begin::Label-->
-                                    <label class="fs-6 fw-bold form-label mt-3">
-                                        <span class="required">Nama </span>
-                                        <i class="fas fa-exclamation-circle ms-1 fs-7" data-bs-toggle="tooltip"
-                                            title="masukkan nama"></i>
-                                    </label>
-                                    <!--end::Label-->
-                                    <!--begin::Input-->
-                                    <input type="text" class="form-control form-control-solid" name="name"
-                                        placeholder="Contoh: Admin" value="{{ @$admin->name ?? old('name') }}"
-                                        required />
-                                    <!--end::Input-->
-                                </div>
-                                <div class="fv-row mb-7">
-                                    <!--begin::Label-->
-                                    <label class="fs-6 fw-bold form-label" for="phone">
-                                        <span>No. WhatsApp (Untuk Login PWA Asatidz)</span>
-                                        <i class="fas fa-exclamation-circle ms-1 fs-7" data-bs-toggle="tooltip"
-                                            title="Masukkan Nomor WhatsApp tanpa tanda + atau spasi, contoh: 628123456789"></i>
-                                    </label>
-                                    <!--end::Label-->
-                                    <!--begin::Input-->
-                                    <input type="text" class="form-control form-control-solid" id="phone"
-                                        placeholder="Contoh: 628123456789" name="phone"
-                                        value="{{ @$admin->phone ?? old('phone') }}" />
-                                    <!--end::Input-->
-                                </div>
-                                <div class="fv-row mb-7">
-                                    <!--begin::Label-->
-                                    <label class="fs-6 fw-bold form-label" for="password">
-                                        <span class="required">Password</span>
-                                        <i class="fas fa-exclamation-circle ms-1 fs-7" data-bs-toggle="tooltip"
-                                            title="Masukkan Password"></i>
-                                    </label>
-                                    <!--end::Label-->
-                                    <!--begin::Input-->
-                                    <div class="position-relative">
-                                        <input type="password" class="form-control form-control-solid" id="password"
-                                            placeholder="{{ route('admin.create') ? 'Contoh: CahayaTasbih123' : 'Kosongkan jika tidak ingin mengubah password'  }}"
-                                            name="password" value="{{ old('password') }}" />
-                                        <span
-                                            class="btn btn-sm btn-icon position-absolute translate-middle top-50 end-0 me-n2"
-                                            data-kt-password-meter-control="visibility">
-                                            <i class="bi bi-eye-slash fs-2"></i>
-                                            <i class="bi bi-eye fs-2 d-none"></i>
-                                        </span>
-                                    </div>
-                                    <!--end::Input-->
-                                </div>
-                                <div class="fv-row mb-6">
-                                    <!--begin::Label-->
-                                    <label class="fs-6 fw-bold form-label" for="password_confirmation">
-                                        <span class="required">Konfirmasi Password</span>
-                                        <i class="fas fa-exclamation-circle ms-1 fs-7" data-bs-toggle="tooltip"
-                                            title="Masukkan Konfirmasi Password"></i>
-                                    </label>
-                                    <!--end::Label-->
-                                    <!--begin::Input-->
-                                    <div class="position-relative">
-                                        <input type="password" class="form-control form-control-solid"
-                                            id="password_confirmation" name="password_confirmation"
-                                            placeholder="Konfirmasi Password Harus Sama Dengan Password"
-                                            value="{{ old('password_confirmation') }}" />
-                                        <span
-                                            class="btn btn-sm btn-icon position-absolute translate-middle top-50 end-0 me-n2"
-                                            data-kt-password-meter-control="visibility">
-                                            <i class="bi bi-eye-slash fs-2"></i>
-                                            <i class="bi bi-eye fs-2 d-none"></i>
-                                        </span>
-                                    </div>
-                                </div>
-                                <div class="fv-row mb-6">
-                                    <!--begin::Label-->
-                                    <label class="fs-6 fw-bold form-label" for="role_id">
-                                        <span class="required">Role</span>
-                                        <i class="fas fa-exclamation-circle ms-1 fs-7" data-bs-toggle="tooltip"
-                                            title="Role Akses yang dimiliki admin"></i>
-                                    </label>
-                                    <!--end::Label-->
-                                    <!--begin::Input-->
-                                    <select name="role_id" class="form-select form-select-solid" id="role_id"
-                                        data-control="select2" data-placeholder="Select option" data-allow-clear="true"
-                                        data-hide-search="true">
-                                        <option value="">--Pilih Role--</option>
-                                        @foreach ($roles as $role)
-                                        <option value="{{ $role->id }}" {{ old('role_id')==$role->id || @$admin->role_id
-                                             == $role->id ? 'selected' : '' }}>
-                                             {{ $role->name }}
-                                         </option>
-                                         @endforeach
-                                    </select>
-                                    <!--end::Input-->
-                                </div>
-                                <div class="fv-row mb-6">
-                                    <!--begin::Label-->
-                                    <label class="fs-6 fw-bold form-label" for="access_scope">
-                                        <span class="required">Scope Akses</span>
-                                        <i class="fas fa-exclamation-circle ms-1 fs-7" data-bs-toggle="tooltip"
-                                            title="Tentukan ruang lingkup login akun ini"></i>
-                                    </label>
-                                    <!--end::Label-->
-                                    <!--begin::Input-->
-                                    <select name="access_scope" class="form-select form-select-solid" id="access_scope"
-                                        data-control="select2" data-placeholder="Select option" data-allow-clear="true"
-                                        data-hide-search="true" required>
-                                        <option value="backoffice" {{ (old('access_scope') ?? @$admin->access_scope ?? 'backoffice') == 'backoffice' ? 'selected' : '' }}>Backoffice (Panel Web Saja)</option>
-                                        <option value="pwa" {{ (old('access_scope') ?? @$admin->access_scope) == 'pwa' ? 'selected' : '' }}>PWA Mobile (Aplikasi HP Saja)</option>
-                                        <option value="both" {{ (old('access_scope') ?? @$admin->access_scope) == 'both' ? 'selected' : '' }}>Keduanya (Backoffice & PWA)</option>
-                                    </select>
-                                    <!--end::Input-->
-                                </div>
+                                         <div class="fv-row mb-7">
+                                             <!--begin::Label-->
+                                             <label class="fs-6 fw-bold form-label mt-3">
+                                                 <span class="required">Nama </span>
+                                                 <i class="fas fa-exclamation-circle ms-1 fs-7" data-bs-toggle="tooltip"
+                                                     title="masukkan nama"></i>
+                                             </label>
+                                             <!--end::Label-->
+                                             <!--begin::Input-->
+                                             <input type="text" class="form-control form-control-solid" name="name"
+                                                 placeholder="Contoh: Admin" value="{{ @$admin->name ?? old('name') }}"
+                                                 required />
+                                             <!--end::Input-->
+                                         </div>
 
-                                <div class="fv-row mb-6">
-                                    <!--begin::Label-->
-                                    <label class="fs-6 fw-bold form-label" for="school">
-                                        <span class="required">Divisi Admin (Jika Bukan Super Admin)</span>
-                                        <i class="fas fa-exclamation-circle ms-1 fs-7" data-bs-toggle="tooltip"
-                                            title="Masukkan Unit Pendidikan Admin"></i>
-                                    </label>
-                                    <!--end::Label-->
-                                    <!--begin::Input-->
+                                         <div class="fv-row mb-7">
+                                             <!--begin::Label-->
+                                             <label class="fs-6 fw-bold form-label" for="phone">
+                                                 <span>No. WhatsApp (Untuk Login PWA Asatidz)</span>
+                                                 <i class="fas fa-exclamation-circle ms-1 fs-7" data-bs-toggle="tooltip"
+                                                     title="Masukkan Nomor WhatsApp tanpa tanda + atau spasi, contoh: 628123456789"></i>
+                                             </label>
+                                             <!--end::Label-->
+                                             <!--begin::Input-->
+                                             <input type="text" class="form-control form-control-solid" id="phone"
+                                                 placeholder="Contoh: 628123456789" name="phone"
+                                                 value="{{ @$admin->phone ?? old('phone') }}" />
+                                             <!--end::Input-->
+                                         </div>
 
-                                    <select name="admin_schools[]" class="form-select form-select-solid mb-3"
-                                        id="select2" data-control="select2" data-allow-clear="true" multiple="multiple"
-                                        required>
-                                        @foreach ($schools as $school)
-                                        <option value="{{ $school->id }}" @if (in_array(@$school->id,
-                                            @$adminSchools)) selected @endif>
-                                            {{ $school->name }}</option>
-                                        @endforeach
-                                    </select>
-                                    <!--end::Input-->
-                                </div>
+                                         <div class="fv-row mb-6">
+                                             <!--begin::Label-->
+                                             <label class="fs-6 fw-bold form-label" for="school">
+                                                 <span class="required">Divisi Admin (Jika Bukan Super Admin)</span>
+                                                 <i class="fas fa-exclamation-circle ms-1 fs-7" data-bs-toggle="tooltip"
+                                                     title="Masukkan Unit Pendidikan Admin"></i>
+                                             </label>
+                                             <!--end::Label-->
+                                             <!--begin::Input-->
+                                             <select name="admin_schools[]" class="form-select form-select-solid mb-3"
+                                                 id="select2" data-control="select2" data-allow-clear="true" multiple="multiple"
+                                                 required>
+                                                 @foreach ($schools as $school)
+                                                 <option value="{{ $school->id }}" @if (in_array(@$school->id,
+                                                     @$adminSchools)) selected @endif>
+                                                     {{ $school->name }}</option>
+                                                 @endforeach
+                                             </select>
+                                             <!--end::Input-->
+                                         </div>
+                                     </div>
 
-                                <div class="fv-row mb-6">
-                                    <x-form.image-upload label="Avatar" maxSize="2MB" name="avatar"
-                                        :value="@$admin->avatar ?? null" nullable='1' />
-                                </div>
+                                     <div class="col-md-6">
+                                         <div class="fv-row mb-7">
+                                             <!--begin::Label-->
+                                             <label class="fs-6 fw-bold form-label" for="password">
+                                                 <span class="required">Password</span>
+                                                 <i class="fas fa-exclamation-circle ms-1 fs-7" data-bs-toggle="tooltip"
+                                                     title="Masukkan Password"></i>
+                                             </label>
+                                             <!--end::Label-->
+                                             <!--begin::Input-->
+                                             <div class="position-relative">
+                                                 <input type="password" class="form-control form-control-solid" id="password"
+                                                     placeholder="{{ route('admin.create') ? 'Contoh: CahayaTasbih123' : 'Kosongkan jika tidak ingin mengubah password'  }}"
+                                                     name="password" value="{{ old('password') }}" />
+                                                 <span
+                                                     class="btn btn-sm btn-icon position-absolute translate-middle top-50 end-0 me-n2"
+                                                     data-kt-password-meter-control="visibility">
+                                                     <i class="bi bi-eye-slash fs-2"></i>
+                                                     <i class="bi bi-eye fs-2 d-none"></i>
+                                                 </span>
+                                             </div>
+                                             <!--end::Input-->
+                                         </div>
+
+                                         <div class="fv-row mb-6">
+                                             <!--begin::Label-->
+                                             <label class="fs-6 fw-bold form-label" for="password_confirmation">
+                                                 <span class="required">Konfirmasi Password</span>
+                                                 <i class="fas fa-exclamation-circle ms-1 fs-7" data-bs-toggle="tooltip"
+                                                     title="Masukkan Konfirmasi Password"></i>
+                                             </label>
+                                             <!--end::Label-->
+                                             <!--begin::Input-->
+                                             <div class="position-relative">
+                                                 <input type="password" class="form-control form-control-solid"
+                                                     id="password_confirmation" name="password_confirmation"
+                                                     placeholder="Konfirmasi Password Harus Sama Dengan Password"
+                                                     value="{{ old('password_confirmation') }}" />
+                                                 <span
+                                                     class="btn btn-sm btn-icon position-absolute translate-middle top-50 end-0 me-n2"
+                                                     data-kt-password-meter-control="visibility">
+                                                     <i class="bi bi-eye-slash fs-2"></i>
+                                                     <i class="bi bi-eye fs-2 d-none"></i>
+                                                 </span>
+                                             </div>
+                                         </div>
+
+                                         <div class="fv-row mb-6">
+                                             <!--begin::Label-->
+                                             <label class="fs-6 fw-bold form-label" for="role_id">
+                                                 <span class="required">Role</span>
+                                                 <i class="fas fa-exclamation-circle ms-1 fs-7" data-bs-toggle="tooltip"
+                                                     title="Role Akses yang dimiliki admin"></i>
+                                             </label>
+                                             <!--end::Label-->
+                                             <!--begin::Input-->
+                                             <select name="role_id" class="form-select form-select-solid" id="role_id"
+                                                 data-control="select2" data-placeholder="Select option" data-allow-clear="true"
+                                                 data-hide-search="true">
+                                                 <option value="">--Pilih Role--</option>
+                                                 @foreach ($roles as $role)
+                                                 <option value="{{ $role->id }}" {{ old('role_id')==$role->id || @$admin->role_id
+                                                      == $role->id ? 'selected' : '' }}>
+                                                      {{ $role->name }}
+                                                  </option>
+                                                  @endforeach
+                                             </select>
+                                             <!--end::Input-->
+                                         </div>
+
+                                         <div class="fv-row mb-6">
+                                             <!--begin::Label-->
+                                             <label class="fs-6 fw-bold form-label" for="access_scope">
+                                                 <span class="required">Scope Akses</span>
+                                                 <i class="fas fa-exclamation-circle ms-1 fs-7" data-bs-toggle="tooltip"
+                                                     title="Tentukan ruang lingkup login akun ini"></i>
+                                             </label>
+                                             <!--end::Label-->
+                                             <!--begin::Input-->
+                                             <select name="access_scope" class="form-select form-select-solid" id="access_scope"
+                                                 data-control="select2" data-placeholder="Select option" data-allow-clear="true"
+                                                 data-hide-search="true" required>
+                                                 <option value="backoffice" {{ (old('access_scope') ?? @$admin->access_scope ?? 'backoffice') == 'backoffice' ? 'selected' : '' }}>Backoffice (Panel Web Saja)</option>
+                                                 <option value="pwa" {{ (old('access_scope') ?? @$admin->access_scope) == 'pwa' ? 'selected' : '' }}>PWA Mobile (Aplikasi HP Saja)</option>
+                                                 <option value="both" {{ (old('access_scope') ?? @$admin->access_scope) == 'both' ? 'selected' : '' }}>Keduanya (Backoffice & PWA)</option>
+                                             </select>
+                                             <!--end::Input-->
+                                         </div>
+                                     </div>
+                                 </div>
+
+                                 <div class="fv-row mb-6">
+                                     <x-form.image-upload label="Avatar" maxSize="2MB" name="avatar"
+                                         :value="@$admin->avatar ?? null" nullable='1' />
+                                 </div>
                                 <!--end::Input group-->
                                 <!--begin::Separator-->
                                 <div class="separator mb-6">
