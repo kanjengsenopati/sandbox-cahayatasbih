@@ -516,34 +516,51 @@ function AsatidzDashboardPage() {
 
         {/* Rejection Prompt Drawer */}
         {rejectId && (
-          <div className="fixed inset-0 bg-black/60 z-50 flex items-end justify-center p-4 backdrop-blur-sm">
-            <div className="bg-card w-full max-w-md rounded-t-[2.5rem] p-6 shadow-2xl space-y-4 animate-slide-up pb-10">
-              <div className="flex justify-between items-center">
-                <h3 className="text-base font-bold text-slate-800">Alasan Penolakan</h3>
+          <div className="fixed inset-0 bg-slate-900/60 z-50 flex items-end justify-center p-4 backdrop-blur-md transition-all duration-300">
+            <div className="bg-card w-full max-w-md rounded-t-[32px] p-6 shadow-[0_-10px_40px_rgba(220,38,38,0.1)] space-y-5 animate-slide-up pb-10 relative overflow-hidden">
+              {/* Decorative top red glow */}
+              <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-rose-500 to-rose-600"></div>
+              
+              <div className="flex justify-between items-start pt-1">
+                <div className="flex gap-3 items-center">
+                  <div className="w-10 h-10 rounded-full bg-rose-100 text-rose-600 flex items-center justify-center shrink-0 shadow-inner shadow-rose-200">
+                    <XCircle size={22} strokeWidth={2.5} />
+                  </div>
+                  <div>
+                    <h3 className="text-[17px] font-extrabold text-slate-800 leading-tight">Penolakan Izin</h3>
+                    <p className="text-[11px] font-medium text-slate-500 mt-0.5">Wajib berikan alasan yang jelas</p>
+                  </div>
+                </div>
                 <button
                   onClick={() => setRejectId(null)}
-                  className="w-8 h-8 rounded-full bg-secondary border border-border flex items-center justify-center text-slate-500 font-bold hover:bg-slate-100 transition"
+                  className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-500 text-lg hover:bg-slate-200 transition active:scale-95 border border-slate-200 font-medium pb-1"
                 >
-                  ×
+                  &times;
                 </button>
               </div>
 
-              <form onSubmit={handleRejectSubmit} className="space-y-4">
+              <form onSubmit={handleRejectSubmit} className="space-y-5">
                 <textarea
-                  rows={3}
+                  rows={4}
                   required
                   value={rejectionReason}
                   onChange={(e) => setRejectionReason(e.target.value)}
-                  placeholder="Tulis alasan penolakan agar wali santri dapat memahami keputusannya..."
-                  className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-4 py-3.5 outline-none text-slate-800 text-[13px] focus:ring-2 focus:ring-indigo-500/20 focus:bg-white transition resize-none"
+                  placeholder="Contoh: Santri bersangkutan masih dalam masa sanksi kedisiplinan..."
+                  className="w-full bg-slate-50 border border-slate-200 rounded-[20px] px-5 py-4 outline-none text-slate-700 text-[13px] font-medium focus:ring-4 focus:ring-rose-500/10 focus:border-rose-300 focus:bg-white transition resize-none placeholder:text-slate-400"
                 />
 
                 <button
                   type="submit"
                   disabled={actionMutation.isPending}
-                  className="w-full py-3.5 rounded-2xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs transition active:scale-[0.98]"
+                  className="w-full py-4 rounded-[18px] bg-gradient-to-r from-rose-600 to-rose-500 hover:from-rose-700 hover:to-rose-600 text-white font-extrabold text-[13px] transition-all active:scale-[0.98] shadow-lg shadow-rose-600/25 flex items-center justify-center gap-2"
                 >
-                  {actionMutation.isPending ? "Sedang memproses..." : "Tolak Pengajuan"}
+                  {actionMutation.isPending ? (
+                    <>
+                      <Loader2 className="animate-spin" size={18} /> Memproses...
+                    </>
+                  ) : (
+                    "Konfirmasi Penolakan"
+                  )}
                 </button>
               </form>
             </div>
