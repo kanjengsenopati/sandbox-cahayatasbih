@@ -101,6 +101,20 @@
                                 </div>
                                 <div class="fv-row mb-7">
                                     <!--begin::Label-->
+                                    <label class="fs-6 fw-bold form-label" for="phone">
+                                        <span>No. WhatsApp (Untuk Login PWA Asatidz)</span>
+                                        <i class="fas fa-exclamation-circle ms-1 fs-7" data-bs-toggle="tooltip"
+                                            title="Masukkan Nomor WhatsApp tanpa tanda + atau spasi, contoh: 628123456789"></i>
+                                    </label>
+                                    <!--end::Label-->
+                                    <!--begin::Input-->
+                                    <input type="text" class="form-control form-control-solid" id="phone"
+                                        placeholder="Contoh: 628123456789" name="phone"
+                                        value="{{ @$admin->phone ?? old('phone') }}" />
+                                    <!--end::Input-->
+                                </div>
+                                <div class="fv-row mb-7">
+                                    <!--begin::Label-->
                                     <label class="fs-6 fw-bold form-label" for="password">
                                         <span class="required">Password</span>
                                         <i class="fas fa-exclamation-circle ms-1 fs-7" data-bs-toggle="tooltip"
@@ -158,10 +172,28 @@
                                         <option value="">--Pilih Role--</option>
                                         @foreach ($roles as $role)
                                         <option value="{{ $role->id }}" {{ old('role_id')==$role->id || @$admin->role_id
-                                            == $role->id ? 'selected' : '' }}>
-                                            {{ $role->name }}
-                                        </option>
-                                        @endforeach
+                                             == $role->id ? 'selected' : '' }}>
+                                             {{ $role->name }}
+                                         </option>
+                                         @endforeach
+                                    </select>
+                                    <!--end::Input-->
+                                </div>
+                                <div class="fv-row mb-6">
+                                    <!--begin::Label-->
+                                    <label class="fs-6 fw-bold form-label" for="access_scope">
+                                        <span class="required">Scope Akses</span>
+                                        <i class="fas fa-exclamation-circle ms-1 fs-7" data-bs-toggle="tooltip"
+                                            title="Tentukan ruang lingkup login akun ini"></i>
+                                    </label>
+                                    <!--end::Label-->
+                                    <!--begin::Input-->
+                                    <select name="access_scope" class="form-select form-select-solid" id="access_scope"
+                                        data-control="select2" data-placeholder="Select option" data-allow-clear="true"
+                                        data-hide-search="true" required>
+                                        <option value="backoffice" {{ (old('access_scope') ?? @$admin->access_scope ?? 'backoffice') == 'backoffice' ? 'selected' : '' }}>Backoffice (Panel Web Saja)</option>
+                                        <option value="pwa" {{ (old('access_scope') ?? @$admin->access_scope) == 'pwa' ? 'selected' : '' }}>PWA Mobile (Aplikasi HP Saja)</option>
+                                        <option value="both" {{ (old('access_scope') ?? @$admin->access_scope) == 'both' ? 'selected' : '' }}>Keduanya (Backoffice & PWA)</option>
                                     </select>
                                     <!--end::Input-->
                                 </div>
@@ -260,6 +292,14 @@
                 role_id: {
                     required: true,
                 },
+                phone: {
+                    digits: true,
+                    minlength: 10,
+                    maxlength: 15,
+                },
+                access_scope: {
+                    required: true,
+                },
             },
             messages: {
                 name: {
@@ -280,6 +320,14 @@
                 },
                 role_id: {
                     required: "Role harus diisi",
+                },
+                phone: {
+                    digits: "Nomor WhatsApp harus berupa angka saja",
+                    minlength: "Nomor WhatsApp minimal 10 digit",
+                    maxlength: "Nomor WhatsApp maksimal 15 digit",
+                },
+                access_scope: {
+                    required: "Scope akses harus dipilih",
                 },
             },
             errorElement: "div",

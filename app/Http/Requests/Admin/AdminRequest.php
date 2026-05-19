@@ -21,6 +21,8 @@ class AdminRequest extends FormRequest
      */
     public function rules(): array
     {
+        $adminId = $this->admin ? ($this->admin instanceof \App\Models\Admin ? $this->admin->id : $this->admin) : $this->route('admin');
+
         return match ($this->method()) {
             'POST' => [
                 'name' => 'required',
@@ -28,6 +30,8 @@ class AdminRequest extends FormRequest
                 'password' => 'required|min:8|confirmed',
                 'school_id' => 'nullable|exists:schools,id',
                 'avatar' => 'required|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
+                'phone' => 'nullable|string|max:20|unique:admins,phone',
+                'access_scope' => 'required|in:backoffice,pwa,both',
             ],
             'PUT' => [
                 'name' => 'required',
@@ -35,6 +39,8 @@ class AdminRequest extends FormRequest
                 'password' => 'nullable|min:8|confirmed',
                 'school_id' => 'nullable|exists:schools,id',
                 'avatar' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
+                'phone' => 'nullable|string|max:20|unique:admins,phone,' . $adminId,
+                'access_scope' => 'required|in:backoffice,pwa,both',
             ],
             default => [],
         };

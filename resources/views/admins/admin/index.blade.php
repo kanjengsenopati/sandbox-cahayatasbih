@@ -65,6 +65,8 @@
                                     <th>Nama</th>
                                     <th>Email</th>
                                     <th>Role</th>
+                                    <th>No. HP</th>
+                                    <th>Scope Akses</th>
                                     <th>UPT</th>
                                     <th>Status</th>
                                     <th width="20%" class="text-center">Aksi</th>
@@ -138,6 +140,17 @@
                         data: 'role',
                         name: 'role',
                         responsivePriority: 2,
+                    },
+                    {
+                        data: 'phone',
+                        name: 'phone',
+                        render: function(data, type, row) {
+                            return data ? `<code>${data}</code>` : '<span class="text-muted">-</span>';
+                        }
+                    },
+                    {
+                        data: 'access_scope',
+                        name: 'access_scope',
                     },
                     {
                         data: 'school',

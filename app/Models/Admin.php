@@ -31,6 +31,7 @@ class Admin extends Authenticatable
         'role_id',
         'school_id',
         'last_login_at',
+        'access_scope',
     ];
 
     /**

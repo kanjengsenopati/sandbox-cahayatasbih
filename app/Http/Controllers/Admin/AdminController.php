@@ -44,6 +44,16 @@ class AdminController extends Controller
                     }
                     return $school;
                 })
+                ->addColumn('access_scope', function ($query) {
+                    $scope = $query->access_scope ?? 'both';
+                    if ($scope === 'backoffice') {
+                        return '<span class="badge badge-light-primary">Backoffice</span>';
+                    } elseif ($scope === 'pwa') {
+                        return '<span class="badge badge-light-success">PWA Mobile</span>';
+                    } else {
+                        return '<span class="badge badge-light-info">Keduanya</span>';
+                    }
+                })
                 ->addColumn('action', function ($data) {
                     $actionEdit = route('admin.edit', $data->id);
                     $actionDelete = route('admin.destroy', $data->id);
@@ -52,7 +62,7 @@ class AdminController extends Controller
                         view('components.action.delete', ['action' => $actionDelete, 'id' => $data->id, 'name' => 'Admin']) .
                         "</div>";
                 })
-                ->rawColumns(['action', 'role', 'school'])
+                ->rawColumns(['action', 'role', 'school', 'access_scope'])
                 ->make(true);
         }
         return view('admins.admin.index');

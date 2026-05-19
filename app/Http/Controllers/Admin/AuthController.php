@@ -17,8 +17,13 @@ class AuthController extends Controller
     public function authenticate(AuthRequest $request)
     {
         if (Auth::guard('web')->attempt($request->validated(), $request->remember)) {
-            if (Auth::guard('web')->user()->is_active) {
-                Auth::guard('web')->user()->update([
+            $user = Auth::guard('web')->user();
+            if ($user->is_active) {
+                if ($user->access_scope === 'pwa') {
+                    Auth::guard('web')->logout();
+                    return back()->with(['warning' => 'Maaf, akun Anda dikonfigurasi hanya untuk akses PWA !!'])->withInput($request->only('email'));
+                }
+                $user->update([
                     'last_login_at' => now(),
                 ]);
                 return  redirect()->intended('dashboard');

@@ -59,6 +59,12 @@ class AuthController extends Controller
             if (Auth::guard('web')->attempt(['phone' => $phone, 'password' => $password])) {
                 $admin = Auth::guard('web')->user();
                 if ($admin->is_active) {
+                    // Check if Admin is allowed to access PWA
+                    if ($admin->access_scope === 'backoffice') {
+                        Auth::guard('web')->logout();
+                        return response()->json(['message' => 'Maaf, akun Anda tidak memiliki hak akses PWA.'], 403);
+                    }
+
                     // Check if Admin has PWA Perizinan access permission
                     if (!$admin->hasAnyPermission(['Manage Perizinan', 'Approve Perizinan', 'Scan Perizinan'])) {
                         Auth::guard('web')->logout();
