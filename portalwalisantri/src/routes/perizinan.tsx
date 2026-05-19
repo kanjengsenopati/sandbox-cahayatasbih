@@ -470,15 +470,15 @@ function PerizinanPage() {
                 {/* Summary Cards Grid */}
                 <div className="grid grid-cols-3 gap-2">
                   <div className="bg-card rounded-[24px] p-3 flex flex-col items-center justify-center shadow-[0_8px_30px_rgb(0,0,0,0.04)] border-none">
-                    <Text.Label className="text-slate-400 text-[10px] normal-case tracking-normal font-semibold">Total Izin</Text.Label>
+                    <Text.Label className="text-slate-400 text-[10px] !normal-case !tracking-normal font-semibold">Total Izin</Text.Label>
                     <Text.H1 className="text-slate-800 mt-1">{totalPermits}</Text.H1>
                   </div>
                   <div className="bg-card rounded-[24px] p-3 flex flex-col items-center justify-center shadow-[0_8px_30px_rgb(0,0,0,0.04)] border-none">
-                    <Text.Label className="text-emerald-600 text-[10px] normal-case tracking-normal font-semibold">Tepat Waktu</Text.Label>
+                    <Text.Label className="text-emerald-600 text-[10px] !normal-case !tracking-normal font-semibold">Tepat Waktu</Text.Label>
                     <Text.Amount className="text-[22px] mt-1">{onTimeCount}</Text.Amount>
                   </div>
                   <div className="bg-card rounded-[24px] p-3 flex flex-col items-center justify-center shadow-[0_8px_30px_rgb(0,0,0,0.04)] border-none">
-                    <Text.Label className="text-red-600 text-[10px] normal-case tracking-normal font-semibold">Terlambat</Text.Label>
+                    <Text.Label className="text-red-600 text-[10px] !normal-case !tracking-normal font-semibold">Terlambat</Text.Label>
                     <Text.Amount className="text-[22px] text-red-600 mt-1">{lateCount}</Text.Amount>
                   </div>
                 </div>
@@ -487,9 +487,9 @@ function PerizinanPage() {
                 <div className="bg-card rounded-[24px] shadow-[0_8px_30px_rgb(0,0,0,0.04)] overflow-hidden divide-y divide-slate-100">
                   {/* Table Header */}
                   <div className="grid grid-cols-12 gap-2 px-5 py-2.5 bg-slate-50/50">
-                    <div className="col-span-4"><Text.Label className="text-[10px] text-slate-400 normal-case tracking-normal font-semibold">Tipe</Text.Label></div>
-                    <div className="col-span-4"><Text.Label className="text-[10px] text-slate-400 normal-case tracking-normal font-semibold">Tanggal</Text.Label></div>
-                    <div className="col-span-4 text-right"><Text.Label className="text-[10px] text-slate-400 normal-case tracking-normal font-semibold">Status</Text.Label></div>
+                    <div className="col-span-4"><Text.Label className="text-[10px] text-slate-400 !normal-case !tracking-normal font-semibold">Tipe</Text.Label></div>
+                    <div className="col-span-4"><Text.Label className="text-[10px] text-slate-400 !normal-case !tracking-normal font-semibold">Tanggal</Text.Label></div>
+                    <div className="col-span-4 text-right"><Text.Label className="text-[10px] text-slate-400 !normal-case !tracking-normal font-semibold">Status</Text.Label></div>
                   </div>
 
                   {/* Table Body */}
