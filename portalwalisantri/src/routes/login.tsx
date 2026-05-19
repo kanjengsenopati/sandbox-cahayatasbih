@@ -212,7 +212,7 @@ function LoginPage() {
                 </div>
                 <div>
                   <div className="font-bold text-slate-800 text-[14px]">Asatidz / Ustadz</div>
-                  <div className="text-slate-400 text-[11px] font-medium leading-tight mt-0.5">Akses Approval Izin & Supervisi Santri</div>
+                  <div className="text-slate-400 text-[11px] font-medium leading-tight mt-0.5">Akses Persetujuan Izin & Supervisi Santri</div>
                 </div>
               </button>
             </div>

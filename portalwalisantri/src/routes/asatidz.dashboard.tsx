@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { ArrowLeft, Loader2, Calendar, ClipboardList, CheckCircle2, XCircle, Clock, ShieldAlert, Scan, LogOut, Phone, RefreshCw } from "lucide-react";
+import { ArrowLeft, Loader2, Calendar, ClipboardList, CheckCircle2, XCircle, Clock, ShieldAlert, Scan, LogOut, Phone, RefreshCw, ChevronDown, ChevronUp } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { fetchPendingPermits, fetchActivePermits, fetchOverduePermits, postPermitAction, postLogout, fetchAsatidzStats, fetchMyStudents, fetchStudentHistory } from "@/lib/api";
 
@@ -16,6 +16,7 @@ function AsatidzDashboardPage() {
   const [rejectId, setRejectId] = useState<string | null>(null);
   const [rejectionReason, setRejectionReason] = useState("");
   const [historyStudentId, setHistoryStudentId] = useState<string | null>(null);
+  const [expandedPermitId, setExpandedPermitId] = useState<string | null>(null);
 
   const { data: statsRes } = useQuery({
     queryKey: ["asatidz-stats"],
@@ -234,61 +235,125 @@ function AsatidzDashboardPage() {
                 </p>
               </div>
             ) : (
-              pendingList.map((permit: any) => (
-                <div
-                  key={permit.id}
-                  className="bg-card rounded-3xl border border-border p-5 shadow-[var(--shadow-soft)] space-y-4"
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <p className="text-xs text-slate-400 font-bold uppercase tracking-wider">
-                        {permit.permit_type.replace("_", " ")}
-                      </p>
-                      <p className="text-sm font-bold text-slate-800 mt-1">{permit.student?.name}</p>
-                    </div>
-                    <span className="px-2 py-0.5 bg-amber-50 text-amber-700 border border-amber-100 rounded-full text-[9px] font-bold">
-                      Menunggu Approval
-                    </span>
-                  </div>
+              <div className="bg-card rounded-[24px] border border-border overflow-hidden shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
+                <div className="divide-y divide-slate-100">
+                  {pendingList.map((permit: any) => {
+                    const isExpanded = expandedPermitId === permit.id;
+                    return (
+                      <div key={permit.id} className="transition-all">
+                        {/* Table Row / Accordion Header */}
+                        <div 
+                          onClick={() => setExpandedPermitId(isExpanded ? null : permit.id)}
+                          className={`flex items-center justify-between p-4 cursor-pointer hover:bg-slate-50/50 transition-colors ${
+                            isExpanded ? "bg-slate-50/50" : ""
+                          }`}
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-xl bg-slate-100 border border-slate-200 overflow-hidden flex items-center justify-center font-bold text-slate-500 shrink-0">
+                              {permit.student?.avatar ? (
+                                <img src={`/${permit.student.avatar}`} alt="" className="w-full h-full object-cover" />
+                              ) : (
+                                permit.student?.name?.substring(0, 2).toUpperCase() || "S"
+                              )}
+                            </div>
+                            <div>
+                              <p className="text-[13px] font-bold text-slate-800 leading-tight">
+                                {permit.student?.name}
+                              </p>
+                              <p className="text-[10px] font-semibold text-slate-400 mt-1">
+                                {permit.student?.classroom_name || "-"}
+                              </p>
+                            </div>
+                          </div>
 
-                  <div className="grid grid-cols-2 gap-3 text-xs bg-slate-50 rounded-2xl p-3 border border-slate-100">
-                    <div>
-                      <p className="text-slate-400">Rencana Keluar</p>
-                      <p className="font-bold text-slate-700 mt-0.5">
-                        {new Date(permit.planned_exit_date).toLocaleString("id-ID", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-slate-400">Rencana Kembali</p>
-                      <p className="font-bold text-slate-700 mt-0.5">
-                        {new Date(permit.planned_return_date).toLocaleString("id-ID", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
-                      </p>
-                    </div>
-                  </div>
+                          <div className="flex items-center gap-3 text-right">
+                            <div>
+                              <span className="inline-block px-2 py-0.5 rounded-full text-[9px] font-extrabold bg-indigo-50 text-indigo-700 border border-indigo-100 uppercase tracking-wide">
+                                {permit.permit_type.replace("_", " ")}
+                              </span>
+                              <p className="text-[10px] text-slate-400 mt-1">
+                                {new Date(permit.planned_return_date).toLocaleString("id-ID", { day: "numeric", month: "short" })}
+                              </p>
+                            </div>
+                            <div className="text-slate-400">
+                              {isExpanded ? (
+                                <ChevronUp size={16} strokeWidth={2.5} />
+                              ) : (
+                                <ChevronDown size={16} strokeWidth={2.5} />
+                              )}
+                            </div>
+                          </div>
+                        </div>
 
-                  <div className="bg-slate-50 border border-slate-100 rounded-2xl p-3 text-xs space-y-1">
-                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Wali / Pengaju</p>
-                    <p className="font-bold text-slate-700">{permit.user?.name} · {permit.user?.phone}</p>
-                    <p className="text-slate-500 mt-1 leading-relaxed">{permit.reason}</p>
-                  </div>
+                        {/* Expandable Panel */}
+                        {isExpanded && (
+                          <div className="px-4 pb-5 pt-2 bg-slate-50/30 border-t border-slate-100/50 space-y-4">
+                            <div className="grid grid-cols-2 gap-3 text-xs bg-white rounded-2xl p-3 border border-slate-100/80 shadow-[0_2px_8px_rgba(0,0,0,0.01)]">
+                              <div>
+                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Rencana Keluar</p>
+                                <p className="font-bold text-slate-700 mt-0.5">
+                                  {new Date(permit.planned_exit_date).toLocaleString("id-ID", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
+                                </p>
+                              </div>
+                              <div>
+                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Rencana Kembali</p>
+                                <p className="font-bold text-slate-700 mt-0.5">
+                                  {new Date(permit.planned_return_date).toLocaleString("id-ID", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
+                                </p>
+                              </div>
+                            </div>
 
-                  {/* Actions buttons */}
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => setRejectId(permit.id)}
-                      className="flex-1 py-2.5 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-xl font-bold text-xs transition active:scale-[0.98]"
-                    >
-                      Tolak
-                    </button>
-                    <button
-                      onClick={() => handleApprove(permit.id)}
-                      className="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-xs transition active:scale-[0.98] shadow-sm shadow-indigo-900/10"
-                    >
-                      Setujui Izin
-                    </button>
-                  </div>
+                            <div className="bg-white border border-slate-100/80 rounded-2xl p-3 text-xs space-y-2 shadow-[0_2px_8px_rgba(0,0,0,0.01)]">
+                              <div>
+                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Wali / Pengaju</p>
+                                <p className="font-bold text-slate-700 mt-0.5">{permit.user?.name} · {permit.user?.phone}</p>
+                              </div>
+                              <div>
+                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Alasan Perizinan</p>
+                                <p className="text-slate-600 mt-0.5 leading-relaxed font-medium">{permit.reason || "-"}</p>
+                              </div>
+                            </div>
+
+                            {/* Foto Pendukung / Attachment */}
+                            <div className="bg-white border border-slate-100/80 rounded-2xl p-3 text-xs space-y-2.5 shadow-[0_2px_8px_rgba(0,0,0,0.01)]">
+                              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Foto Pendukung</p>
+                              {permit.attachment_photo ? (
+                                <div className="relative rounded-xl overflow-hidden border border-slate-100 max-h-[220px] bg-slate-50 flex items-center justify-center group">
+                                  <img 
+                                    src={`/${permit.attachment_photo}`} 
+                                    alt="Foto Pendukung" 
+                                    className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+                                  />
+                                </div>
+                              ) : (
+                                <div className="py-4 text-center rounded-xl bg-slate-50 border border-dashed border-slate-200 text-slate-400 font-medium">
+                                  Tidak ada lampiran foto
+                                </div>
+                              )}
+                            </div>
+
+                            {/* Action Buttons */}
+                            <div className="flex gap-2.5">
+                              <button
+                                onClick={() => setRejectId(permit.id)}
+                                className="flex-1 py-3 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-xl font-bold text-xs transition active:scale-[0.98] border border-rose-100"
+                              >
+                                Tolak
+                              </button>
+                              <button
+                                onClick={() => handleApprove(permit.id)}
+                                className="flex-1 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-xs transition active:scale-[0.98] shadow-sm shadow-indigo-900/10"
+                              >
+                                Setujui Izin
+                              </button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
-              ))
+              </div>
             )
           )}
 

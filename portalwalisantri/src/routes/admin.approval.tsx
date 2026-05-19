@@ -11,7 +11,7 @@ import { fmtIDR } from "@/data/bills";
 
 export const Route = createFileRoute("/admin/approval")({
   component: AdminApprovalPage,
-  head: () => ({ meta: [{ title: "Approval Pembayaran — Admin" }] }),
+  head: () => ({ meta: [{ title: "Persetujuan Pembayaran — Admin" }] }),
 });
 
 function AdminApprovalPage() {

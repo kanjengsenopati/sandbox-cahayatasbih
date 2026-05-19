@@ -852,7 +852,7 @@ function PendingScreen({
           <Row k="ID Transaksi" v={refId} />
           <Row k="Total Bayar" v={fmt(total)} bold />
           <Row k="Metode" v={method.label} />
-          <Row k="Status" v="Menunggu approval petugas" />
+          <Row k="Status" v="Menunggu persetujuan petugas" />
         </div>
 
         {/* Timeline */}
@@ -862,7 +862,7 @@ function PendingScreen({
           </p>
           <ol className="relative border-l-2 border-border ml-2 space-y-5">
             <Step done label="Bukti bayar dikirim" sub="Baru saja" />
-            <Step active label="Menunggu approval petugas" sub="Sedang diverifikasi" />
+            <Step active label="Menunggu persetujuan petugas" sub="Sedang diverifikasi" />
             <Step label="Saldo masuk ke akun santri" sub="Setelah disetujui" />
           </ol>
         </div>
