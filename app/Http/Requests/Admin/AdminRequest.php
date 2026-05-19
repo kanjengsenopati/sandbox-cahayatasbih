@@ -23,13 +23,31 @@ class AdminRequest extends FormRequest
     {
         $adminId = $this->admin ? ($this->admin instanceof \App\Models\Admin ? $this->admin->id : $this->admin) : $this->route('admin');
 
+        $avatarRules = ['max:2048'];
+        if (extension_loaded('fileinfo')) {
+            $avatarRules[] = 'image';
+            $avatarRules[] = 'mimes:jpeg,png,jpg,gif,svg';
+        } else {
+            $avatarRules[] = function ($attribute, $value, $fail) {
+                if ($value instanceof \Illuminate\Http\UploadedFile) {
+                    $ext = strtolower($value->getClientOriginalExtension());
+                    if (!in_array($ext, ['jpeg', 'png', 'jpg', 'gif', 'svg'])) {
+                        $fail('Kolom ' . $attribute . ' harus berupa file gambar (jpeg, png, jpg, gif, svg).');
+                    }
+                }
+            };
+        }
+
+        $postAvatarRules = array_merge(['required'], $avatarRules);
+        $putAvatarRules = array_merge(['nullable'], $avatarRules);
+
         return match ($this->method()) {
             'POST' => [
                 'name' => 'required',
                 'email' => 'required|unique:users,email',
                 'password' => 'required|min:8|confirmed',
                 'school_id' => 'nullable|exists:schools,id',
-                'avatar' => 'required|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
+                'avatar' => $postAvatarRules,
                 'phone' => 'nullable|string|max:20|unique:admins,phone',
                 'access_scope' => 'required|in:backoffice,pwa,both',
                 'role_ids' => 'required|array',
@@ -40,7 +58,7 @@ class AdminRequest extends FormRequest
                 'email' => 'required|email',
                 'password' => 'nullable|min:8|confirmed',
                 'school_id' => 'nullable|exists:schools,id',
-                'avatar' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
+                'avatar' => $putAvatarRules,
                 'phone' => 'nullable|string|max:20|unique:admins,phone,' . $adminId,
                 'access_scope' => 'required|in:backoffice,pwa,both',
                 'role_ids' => 'required|array',
