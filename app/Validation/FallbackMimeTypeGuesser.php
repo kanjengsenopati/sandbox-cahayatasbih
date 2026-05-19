@@ -9,7 +9,7 @@ class FallbackMimeTypeGuesser implements MimeTypeGuesserInterface
     /**
      * Returns true if this guesser is supported.
      */
-    public function isSupported(): bool
+    public function isGuesserSupported(): bool
     {
         return true;
     }
