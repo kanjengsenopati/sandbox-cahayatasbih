@@ -49,7 +49,20 @@ class NotificationService
         $message = CloudMessage::fromArray([
             'topic' => $topic,
             'notification' => $notification,
-            'data' => ['type' => $topic . '_' . env('APP_BROADCAST_TYPE')]
+            'data' => ['type' => $topic . '_' . env('APP_BROADCAST_TYPE')],
+            'android' => [
+                'notification' => [
+                    'sound' => 'default',
+                    'channel_id' => 'id.cahayatasbih.app',
+                ]
+            ],
+            'apns' => [
+                'payload' => [
+                    'aps' => [
+                        'sound' => 'default',
+                    ]
+                ]
+            ]
         ]);
         $messaging->send($message);
         return $message;
@@ -77,9 +90,39 @@ class NotificationService
             ];
 
             if ($user->fcm_token) {
-                $message = CloudMessage::withTarget('token', $user->fcm_token)
-                    ->withNotification($data)
-                    ->withData($data);
+                // Ensure all values in data payload are strings
+                $fcmData = [];
+                foreach ($data as $key => $val) {
+                    if (is_array($val) || is_object($val)) {
+                        $fcmData[$key] = json_encode($val);
+                    } else {
+                        $fcmData[$key] = (string) $val;
+                    }
+                }
+
+                $message = CloudMessage::fromArray([
+                    'token' => $user->fcm_token,
+                    'notification' => [
+                        'title' => $title,
+                        'body' => $body,
+                    ],
+                    'data' => $fcmData,
+                    'android' => [
+                        'notification' => [
+                            'sound' => 'default',
+                            'channel_id' => 'id.cahayatasbih.app',
+                            'click_action' => 'FLUTTER_NOTIFICATION_CLICK',
+                        ]
+                    ],
+                    'apns' => [
+                        'payload' => [
+                            'aps' => [
+                                'sound' => 'default',
+                                'badge' => 1,
+                            ]
+                        ]
+                    ]
+                ]);
 
                 $messaging->send($message);
             }
@@ -122,9 +165,39 @@ class NotificationService
             Notification::create($data);
 
             if ($user->fcm_token) {
-                $message = CloudMessage::withTarget('token', $user->fcm_token)
-                    ->withNotification($data)
-                    ->withData($data);
+                // Ensure all values in data payload are strings
+                $fcmData = [];
+                foreach ($data as $key => $val) {
+                    if (is_array($val) || is_object($val)) {
+                        $fcmData[$key] = json_encode($val);
+                    } else {
+                        $fcmData[$key] = (string) $val;
+                    }
+                }
+
+                $message = CloudMessage::fromArray([
+                    'token' => $user->fcm_token,
+                    'notification' => [
+                        'title' => $title,
+                        'body' => $body,
+                    ],
+                    'data' => $fcmData,
+                    'android' => [
+                        'notification' => [
+                            'sound' => 'default',
+                            'channel_id' => 'id.cahayatasbih.app',
+                            'click_action' => 'FLUTTER_NOTIFICATION_CLICK',
+                        ]
+                    ],
+                    'apns' => [
+                        'payload' => [
+                            'aps' => [
+                                'sound' => 'default',
+                                'badge' => 1,
+                            ]
+                        ]
+                    ]
+                ]);
 
                 return $messaging->send($message);
             } else {
@@ -161,9 +234,39 @@ class NotificationService
                 $data[] = $item;
 
                 if ($user->fcm_token) {
-                    $message = CloudMessage::withTarget('token', $user->fcm_token)
-                        ->withNotification($item)
-                        ->withData($item);
+                    // Ensure all values in data payload are strings
+                    $fcmData = [];
+                    foreach ($item as $key => $val) {
+                        if (is_array($val) || is_object($val)) {
+                            $fcmData[$key] = json_encode($val);
+                        } else {
+                            $fcmData[$key] = (string) $val;
+                        }
+                    }
+
+                    $message = CloudMessage::fromArray([
+                        'token' => $user->fcm_token,
+                        'notification' => [
+                            'title' => $title,
+                            'body' => $body,
+                        ],
+                        'data' => $fcmData,
+                        'android' => [
+                            'notification' => [
+                                'sound' => 'default',
+                                'channel_id' => 'id.cahayatasbih.app',
+                                'click_action' => 'FLUTTER_NOTIFICATION_CLICK',
+                            ]
+                        ],
+                        'apns' => [
+                            'payload' => [
+                                'aps' => [
+                                    'sound' => 'default',
+                                    'badge' => 1,
+                                ]
+                            ]
+                        ]
+                    ]);
 
                     $messaging->send($message);
                 }

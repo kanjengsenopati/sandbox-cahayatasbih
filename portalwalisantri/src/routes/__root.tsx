@@ -12,6 +12,7 @@ import appCss from "../styles.css?url";
 import { SantriProvider } from "@/contexts/SantriContext";
 import { InstallPromptModal } from "@/components/InstallPromptModal";
 import { IOSInstallBanner } from "@/components/IOSInstallBanner";
+import { Toaster } from "@/components/ui/sonner";
 
 function NotFoundComponent() {
   return (
@@ -118,6 +119,7 @@ function RootComponent() {
         <Outlet />
         <InstallPromptModal />
         <IOSInstallBanner />
+        <Toaster />
       </SantriProvider>
     </QueryClientProvider>
   );
