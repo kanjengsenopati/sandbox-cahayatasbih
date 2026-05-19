@@ -282,6 +282,7 @@ function PerizinanPage() {
       return res.data;
     },
     enabled: !!activeStudent,
+    refetchInterval: 5000, // Auto refresh permits status every 5 seconds
   });
 
   const permits = permitsRes?.permits ?? [];
