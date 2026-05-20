@@ -42,6 +42,61 @@ function AsatidzDashboardPage() {
     }
   };
 
+  const getProgressStats = (plannedExit: string, plannedReturn: string, actualExit?: string) => {
+    const exitTime = new Date(actualExit || plannedExit).getTime();
+    const returnTime = new Date(plannedReturn).getTime();
+    const now = Date.now();
+
+    const total = returnTime - exitTime;
+    if (total <= 0) return { percent: 100, remainingText: "Durasi tidak valid", isOverdue: false };
+
+    const elapsed = now - exitTime;
+    const percent = Math.min(100, Math.max(0, (elapsed / total) * 100));
+
+    const remaining = returnTime - now;
+    const isOverdue = remaining < 0;
+    const absRemaining = Math.abs(remaining);
+
+    const diffMinutes = Math.floor(absRemaining / (1000 * 60));
+    const diffHours = Math.floor(diffMinutes / 60);
+    const diffDays = Math.floor(diffHours / 24);
+
+    let remainingText = "";
+    if (isOverdue) {
+      if (diffDays > 0) {
+        remainingText = `Terlambat ${diffDays} hari ${diffHours % 24} jam`;
+      } else if (diffHours > 0) {
+        remainingText = `Terlambat ${diffHours} jam ${diffMinutes % 60} menit`;
+      } else {
+        remainingText = `Terlambat ${diffMinutes} menit`;
+      }
+    } else {
+      if (diffDays > 0) {
+        remainingText = `Sisa ${diffDays} hari ${diffHours % 24} jam`;
+      } else if (diffHours > 0) {
+        remainingText = `Sisa ${diffHours} jam ${diffMinutes % 60} menit`;
+      } else {
+        remainingText = `Sisa ${diffMinutes} menit`;
+      }
+    }
+
+    return { percent, remainingText, isOverdue };
+  };
+
+  const formatDateShort = (dateStr: string) => {
+    if (!dateStr) return "-";
+    try {
+      const d = new Date(dateStr);
+      return d.toLocaleDateString("id-ID", {
+        day: "numeric",
+        month: "short",
+        year: "numeric"
+      }) + " " + d.toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" });
+    } catch {
+      return "-";
+    }
+  };
+
   const { data: statsRes } = useQuery({
     queryKey: ["asatidz-stats"],
     queryFn: async () => {
@@ -632,6 +687,11 @@ function AsatidzDashboardPage() {
             ) : (
               activeList.map((permit: any) => {
                 const isOut = permit.status === "out";
+                const { percent, remainingText, isOverdue } = getProgressStats(
+                  permit.planned_exit_date,
+                  permit.planned_return_date,
+                  permit.actual_exit_date
+                );
                 return (
                   <div
                     key={permit.id}
@@ -662,6 +722,31 @@ function AsatidzDashboardPage() {
                       {permit.exit_escort_name && (
                         <p><span className="font-semibold text-slate-700">Penjemput:</span> {permit.exit_escort_name} ({permit.exit_escort_relation})</p>
                       )}
+                    </div>
+
+                    {/* Progress Bar & Sisa Waktu */}
+                    <div className="pt-3 border-t border-slate-100 space-y-2">
+                      <div className="flex justify-between items-center text-[11px] font-bold">
+                        <div className="flex items-center gap-1.5">
+                          <Clock size={12} className={isOverdue ? "text-red-500 animate-pulse" : "text-emerald-500"} />
+                          <span className={isOverdue ? "text-red-600 font-extrabold" : "text-emerald-600 font-extrabold"}>
+                            {remainingText}
+                          </span>
+                        </div>
+                        <span className="text-slate-500 font-extrabold">
+                          {Math.round(percent)}%
+                        </span>
+                      </div>
+                      <div className="w-full h-2.5 bg-slate-100/80 rounded-full p-0.5 border border-slate-200/30 overflow-hidden">
+                        <div
+                          className={`h-full rounded-full transition-all duration-500 shadow-sm ${
+                            isOverdue 
+                              ? "bg-gradient-to-r from-red-500 to-rose-600" 
+                              : "bg-gradient-to-r from-emerald-400 to-emerald-600"
+                          }`}
+                          style={{ width: `${percent}%` }}
+                        />
+                      </div>
                     </div>
                   </div>
                 );
@@ -828,13 +913,23 @@ function AsatidzDashboardPage() {
                               if (h.return_photo_santri) photos.push({ url: h.return_photo_santri, label: "Foto Kembali (Santri)" });
                               if (h.return_photo_escort) photos.push({ url: h.return_photo_escort, label: "Foto Kembali (Pengantar)" });
 
-                              const simpleDate = h.planned_exit_date 
-                                ? new Date(h.planned_exit_date).toLocaleDateString("id-ID", {
+                              const formatHeaderDate = (dateStr: string) => {
+                                if (!dateStr) return "-";
+                                try {
+                                  const d = new Date(dateStr);
+                                  const dateFormatted = d.toLocaleDateString("id-ID", {
                                     day: "numeric",
-                                    month: "short",
-                                    year: "numeric"
-                                  })
-                                : "-";
+                                    month: "short"
+                                  });
+                                  const timeFormatted = d.toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" });
+                                  return `${dateFormatted}, ${timeFormatted}`;
+                                } catch {
+                                  return "-";
+                                }
+                              };
+
+                              const exitText = formatHeaderDate(h.planned_exit_date);
+                              const returnText = formatHeaderDate(h.planned_return_date);
 
                               return (
                                 <div key={h.id} className="transition-colors">
@@ -847,7 +942,19 @@ function AsatidzDashboardPage() {
                                       <p className="text-xs font-bold text-slate-700 truncate uppercase tracking-wide">
                                         {h.permit_type.replace(/_/g, " ")}
                                       </p>
-                                      <p className="text-[10px] text-slate-400 font-semibold mt-0.5">{simpleDate}</p>
+                                      <div className="flex items-center gap-1.5 text-[10px] text-slate-500 font-semibold mt-1 flex-wrap">
+                                        <div className="flex items-center gap-1">
+                                          <span className="w-1.5 h-1.5 rounded-full bg-blue-500 shrink-0"></span>
+                                          <span className="text-slate-400 text-[9px] font-semibold">Keluar:</span>
+                                          <span className="text-slate-600 text-[9px] font-extrabold">{exitText}</span>
+                                        </div>
+                                        <span className="text-slate-300 text-[9px]">➔</span>
+                                        <div className="flex items-center gap-1">
+                                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0"></span>
+                                          <span className="text-slate-400 text-[9px] font-semibold">Kembali:</span>
+                                          <span className="text-slate-600 text-[9px] font-extrabold">{returnText}</span>
+                                        </div>
+                                      </div>
                                     </div>
                                     <div className="flex items-center gap-2 shrink-0">
                                       <span className={`px-2 py-0.5 rounded-full text-[8px] font-extrabold tracking-wide border uppercase ${badgeStyle}`}>
