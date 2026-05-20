@@ -15,6 +15,6 @@ class AuditController extends Controller
     {
         $service = new AuditService();
         $results = $service->runAll();
-        return view('admin.audit', compact('results'));
+        return view('admins.admin.audit', compact('results'));
     }
 }
