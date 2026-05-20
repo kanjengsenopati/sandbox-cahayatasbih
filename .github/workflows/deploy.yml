@@ -25,6 +25,7 @@ jobs:
           VPS_USER: ${{ secrets.VPS_USER }}
           VPS_HOST: ${{ secrets.VPS_HOST }}
           VPS_PORT: ${{ secrets.VPS_PORT || '22' }}
+          DB_MASTER_PASSWORD: ${{ secrets.DB_MASTER_PASSWORD }}
         run: |
           ssh -o StrictHostKeyChecking=no -p $VPS_PORT $VPS_USER@$VPS_HOST <<EOF
             set -e
@@ -58,12 +59,12 @@ jobs:
             echo "=== Adding Master DB Credentials ==="
             if ! grep -q "DB_MASTER_HOST" $DEPLOY_PATH/.env; then
               echo "" >> $DEPLOY_PATH/.env
-              echo "# Master Database Connection" >> $DEPLOY_PATH/.env
-              echo "DB_MASTER_HOST=127.0.0.1" >> $DEPLOY_PATH/.env
+              echo "# Master Database Connection (cahayatasbihdb)" >> $DEPLOY_PATH/.env
+              echo "DB_MASTER_HOST=103.193.179.146" >> $DEPLOY_PATH/.env
               echo "DB_MASTER_PORT=3306" >> $DEPLOY_PATH/.env
-              echo "DB_MASTER_DATABASE=cahayatasbih" >> $DEPLOY_PATH/.env
+              echo "DB_MASTER_DATABASE=cahayatasbihdb" >> $DEPLOY_PATH/.env
               echo "DB_MASTER_USERNAME=cahayatasbih" >> $DEPLOY_PATH/.env
-              echo "DB_MASTER_PASSWORD=your_master_db_password" >> $DEPLOY_PATH/.env
+              echo "DB_MASTER_PASSWORD=$DB_MASTER_PASSWORD" >> $DEPLOY_PATH/.env
               echo "Master DB credentials added to .env"
             else
               echo "Master DB credentials already present in .env, skipping"
