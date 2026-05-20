@@ -12,10 +12,9 @@ class Kernel extends ConsoleKernel
      */
     protected function schedule(Schedule $schedule): void
     {
-        // Run the command every minute
-                $schedule->command('app:audit')->dailyAt('01:00');
+        $schedule->command('app:audit')->dailyAt('01:00');
         $schedule->command('app:check-bill-class')->everyTenMinutes();
-        // $schedule->command('inspire')->hourly();
+        $schedule->command('db:sync-master')->dailyAt('01:00')->withoutOverlapping();
     }
 
     /**
