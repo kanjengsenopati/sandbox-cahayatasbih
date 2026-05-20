@@ -60,5 +60,8 @@ jobs:
             echo "=== Latest Laravel Logs ==="
             tail -n 50 storage/logs/laravel.log || echo "No laravel logs found"
 
+            echo "=== Nginx Error Logs ==="
+            tail -n 50 /www/wwwlogs/aplikasi.cahayatasbih.or.id.error.log || echo "No nginx logs found"
+
             echo "=== Deployment Finished ==="
           EOF
