@@ -55,5 +55,19 @@ jobs:
             chmod -R 775 $DEPLOY_PATH/bootstrap/cache || echo "Failed to chmod cache"
             chmod 660 $DEPLOY_PATH/.env || chmod 600 $DEPLOY_PATH/.env || echo "Failed to secure .env"
 
+            echo "=== Adding Master DB Credentials ==="
+            if ! grep -q "DB_MASTER_HOST" $DEPLOY_PATH/.env; then
+              echo "" >> $DEPLOY_PATH/.env
+              echo "# Master Database Connection" >> $DEPLOY_PATH/.env
+              echo "DB_MASTER_HOST=127.0.0.1" >> $DEPLOY_PATH/.env
+              echo "DB_MASTER_PORT=3306" >> $DEPLOY_PATH/.env
+              echo "DB_MASTER_DATABASE=cahayatasbih" >> $DEPLOY_PATH/.env
+              echo "DB_MASTER_USERNAME=cahayatasbih" >> $DEPLOY_PATH/.env
+              echo "DB_MASTER_PASSWORD=your_master_db_password" >> $DEPLOY_PATH/.env
+              echo "Master DB credentials added to .env"
+            else
+              echo "Master DB credentials already present in .env, skipping"
+            fi
+
             echo "=== Deployment Finished ==="
           EOF
