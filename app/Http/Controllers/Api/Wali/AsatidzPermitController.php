@@ -92,6 +92,7 @@ class AsatidzPermitController extends Controller
     {
         $adminId = Auth::guard('web')->id();
         $permits = StudentPermit::whereIn('status', ['approved', 'out'])
+            ->whereNull('actual_return_date')
             ->whereHas('student', function ($query) use ($adminId) {
                 $query->where('asrama_host_id', $adminId);
             })
@@ -264,6 +265,7 @@ class AsatidzPermitController extends Controller
             })->count();
 
         $activeCount = StudentPermit::whereIn('status', ['approved', 'out'])
+            ->whereNull('actual_return_date')
             ->whereHas('student', function ($query) use ($adminId) {
                 $query->where('asrama_host_id', $adminId);
             })->count();
