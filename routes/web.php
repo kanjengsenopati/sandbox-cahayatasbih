@@ -92,7 +92,7 @@ use App\Http\Controllers\Admin\ReportStudentCounselingScoreController;
 |
 */
 // Admin audit route (legacy UI)
-Route::prefix('admin')->middleware(['auth', 'admin'])->group(function () {
+Route::prefix('admin')->middleware(['auth'])->group(function () {
     Route::get('audit', [App\Http\Controllers\Admin\AuditController::class, 'index'])->name('admin.audit');
 });
 // start wali santri & asatidz (CT-Mobile)
