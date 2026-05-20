@@ -39,19 +39,23 @@ class AuditService
             $status = 0;
             try {
                 $code = \file_get_contents($path);
-                // Strip opening PHP tag if present
-                $code = \preg_replace('/^<\?php/', '', $code);
                 
-                // Strip bootstrapping boilerplates
-                $patterns = [
-                    '/require(_once)?\s+[\'"]([^\'"]*\/)?(vendor\/)?autoload\.php[\'"];/',
-                    '/require(_once)?\s+[\'"]([^\'"]*\/)?bootstrap\/app\.php[\'"];/',
-                    '/\$app\s*=.*;/',
-                    '/\$kernel\s*=.*;/',
-                    '/\$kernel->bootstrap\(\);/',
-                    '/\$response\s*=\s*\$kernel->handle\(.*\);/',
-                ];
-                $code = \preg_replace($patterns, '', $code);
+                // Strip bootstrapping boilerplates line-by-line
+                $lines = \explode("\n", $code);
+                $filteredLines = [];
+                foreach ($lines as $line) {
+                    // Skip the opening php tag and the Laravel bootstrapper lines
+                    if (\preg_match('/^<\?php/', \trim($line)) ||
+                        \str_contains($line, 'autoload.php') ||
+                        \str_contains($line, 'bootstrap/app.php') ||
+                        \str_contains($line, 'make(Illuminate\Contracts') ||
+                        \str_contains($line, '->bootstrap()') ||
+                        \str_contains($line, '->handle(')) {
+                        continue;
+                    }
+                    $filteredLines[] = $line;
+                }
+                $code = \implode("\n", $filteredLines);
                 
                 // Execute code in an isolated scope closure
                 (function() use ($code) {
