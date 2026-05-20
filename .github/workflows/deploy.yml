@@ -7,53 +7,27 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v3
 
-      - name: Setup SSH
+      - name: Set up SSH
+        uses: webfactory/ssh-agent@v0.5.4
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      - name: Sync files to VPS
         run: |
-          mkdir -p ~/.ssh
-          echo "${{ secrets.VPS_SSH_KEY }}" > ~/.ssh/id_ed25519
-          chmod 600 ~/.ssh/id_ed25519
-          ssh-keyscan -p ${{ secrets.VPS_PORT || '22' }} -H ${{ secrets.VPS_HOST }} >> ~/.ssh/known_hosts
+          rsync -az --exclude='.git*' --exclude='node_modules' --exclude='vendor' ./ user@your.vps.ip:/var/www/cahayatasbih
 
-      - name: Deploy to VPS
-        env:
-          DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
-          VPS_USER: ${{ secrets.VPS_USER }}
-          VPS_HOST: ${{ secrets.VPS_HOST }}
-          VPS_PORT: ${{ secrets.VPS_PORT || '22' }}
+      - name: Install Composer dependencies
         run: |
-          ssh -o StrictHostKeyChecking=no -p $VPS_PORT $VPS_USER@$VPS_HOST <<EOF
-            set -e
-            cd $DEPLOY_PATH
+          ssh user@your.vps.ip 'cd /var/www/cahayatasbih && composer install --no-interaction --prefer-dist --optimize-autoloader'
 
-            echo "=== Pulling latest changes ==="
-            git config --global --add safe.directory $DEPLOY_PATH
-            git fetch --all
-            git reset --hard origin/main
+      - name: Run migrations and clear cache
+        run: |
+          ssh user@your.vps.ip 'cd /var/www/cahayatasbih && php artisan migrate --force && php artisan config:cache && php artisan route:cache && php artisan view:cache'
 
-            echo "=== Refreshing Autoloader ==="
-            composer dump-autoload
-
-            echo "=== Clearing Cache ==="
-            php artisan config:clear
-            php artisan cache:clear
-            php artisan route:clear
-            php artisan view:clear
-
-            echo "=== Running Audit ==="
-            php artisan app:audit || echo "Audit failed"
-
-            echo "=== Fixing Permissions ==="
-            chown -R www:www $DEPLOY_PATH || echo "Failed to chown"
-            find $DEPLOY_PATH -type d -exec chmod 775 {} \; || echo "Failed to chmod dirs"
-            find $DEPLOY_PATH -type f -exec chmod 664 {} \; || echo "Failed to chmod files"
-            chmod -R 775 $DEPLOY_PATH/storage || echo "Failed to chmod storage"
-            chmod -R 775 $DEPLOY_PATH/bootstrap/cache || echo "Failed to chmod cache"
-            chmod 660 $DEPLOY_PATH/.env || chmod 600 $DEPLOY_PATH/.env || echo "Failed to secure .env"
-
-            echo "=== Deployment Finished ==="
-          EOF
+      - name: Restart queue workers (optional)
+        run: |
+          ssh user@your.vps.ip "sudo systemctl restart php-fpm && sudo systemctl restart nginx"
