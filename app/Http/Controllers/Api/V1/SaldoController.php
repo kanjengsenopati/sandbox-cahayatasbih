@@ -99,12 +99,7 @@ class SaldoController extends Controller
             $transaction = TransactionService::createTransaction($request, $paymentMethodType, Transaction::TYPE_SALDO);
             $this->createTransactionDetail($transaction, $saldoHistory);
 
-            if ($paymentMethodType == PaymentMethod::TYPE_XENDIT) {
-                TransactionService::createInvoice($transaction, $request);
-                $response = $this->postSuccessResponse("Berhasil melakukan transaksi pembayaran", $transaction->payment_link);
-            } else {
-                $response = $this->postSuccessResponse('Berhasil Topup Saldo', ['transaction' => $transaction]);
-            }
+            $response = $this->postSuccessResponse('Berhasil Topup Saldo', ['transaction' => $transaction]);
 
             DB::commit();
 

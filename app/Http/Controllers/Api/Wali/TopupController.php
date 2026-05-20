@@ -53,7 +53,6 @@ class TopupController extends BaseWaliApiController
         return response()->json([
             'message' => 'Top Up request created successfully',
             'transaction' => $transaction,
-            'payment_url' => $paymentMethod->type == PaymentMethod::TYPE_XENDIT ? $transaction->payment_link : null
         ]);
     }
 }

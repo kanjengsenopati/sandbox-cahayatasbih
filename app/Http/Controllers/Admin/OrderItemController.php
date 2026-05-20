@@ -456,6 +456,15 @@ class OrderItemController extends Controller
                 $cart->save();
             }
 
+            // Validasi stok sebelum pengurangan — cegah stok negatif
+            if ($item->stock < $request->quantity) {
+                DB::rollback();
+                return $this->failedResponse(
+                    "Stok tidak mencukupi. Tersedia: {$item->stock}, Diminta: {$request->quantity}",
+                    null
+                );
+            }
+
             // Update stock on item
             $item->stock -= $request->quantity;
             $item->save();
@@ -541,6 +550,17 @@ class OrderItemController extends Controller
             $item = Item::find($cart->item_id);
             $item->stock += $cart->quantity;
             $item->stock -= $request->quantity;
+
+            // Validasi stok sebelum update — cegah stok negatif
+            if ($item->stock < 0) {
+                DB::rollback();
+                $availableStock = $item->stock + $request->quantity; // revert for display
+                return $this->failedResponse(
+                    "Stok tidak mencukupi. Tersedia: {$availableStock}, Diminta: {$request->quantity}",
+                    null
+                );
+            }
+
             $item->save();
 
             // Update cart quantity and total

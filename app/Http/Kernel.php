@@ -71,7 +71,6 @@ class Kernel extends HttpKernel
         'permission' => \Spatie\Permission\Middlewares\PermissionMiddleware::class,
         'role_or_permission' => \Spatie\Permission\Middlewares\RoleOrPermissionMiddleware::class,
         'optimizeImages' => \Spatie\LaravelImageOptimizer\Middlewares\OptimizeImages::class,
-        'xendit' =>  \App\Http\Middleware\XenditMiddleware::class,
         'wali' => \App\Http\Middleware\WaliMiddleware::class,
     ];
 }

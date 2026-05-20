@@ -72,11 +72,7 @@ class TransactionController extends Controller
 
             DB::commit();
 
-            if ($paymentMethodType == PaymentMethod::TYPE_XENDIT) {
-                return $this->postSuccessResponse("Berhasil melakukan transaksi pembayaran", $transaction->payment_link);
-            } else {
-                return $this->postSuccessResponse('Berhasil Membayar Tagihan', ['transaction' => $transaction]);
-            }
+            return $this->postSuccessResponse('Berhasil Membayar Tagihan', ['transaction' => $transaction]);
         } catch (\Throwable $th) {
             DB::rollBack();
             Log::error($th);
@@ -103,84 +99,6 @@ class TransactionController extends Controller
         $title = 'Yeay!, Pembayaran Berhasil';
         $body = 'Pembayaran di Pondok Pesantren Cahaya Tasbih berhasil! Terima kasih telah membayar tagihan';
         dispatch(new SendToPushNotificationJob($title, $body, $transaction->user, $transaction));
-    }
-
-    public function callbackXendit(Request $request)
-    {
-        DB::beginTransaction();
-        try {
-            $transaction = Transaction::whereXenditId($request->id)->whereNotNull('xendit_id')->first();
-            if (!$transaction) {
-                return $this->failedResponse('not found', 400);
-            }
-            if (!$transaction->status == Transaction::STATUS_PAID) {
-                return $this->failedResponse('already PAID', 400);
-            }
-            if (!$transaction->status == Transaction::STATUS_CANCELLED) {
-                return $this->failedResponse('already CANCELLED', 400);
-            }
-            $status = match ($request->status) {
-                Transaction::STATUS_PAID => Transaction::STATUS_PAID,
-                Transaction::STATUS_EXPIRED => Transaction::STATUS_EXPIRED,
-                default => $transaction->status
-            };
-            $transaction->update([
-                'status' => $status,
-                'paid_at' => $status == Transaction::STATUS_PAID ? Carbon::now() : null
-            ]);
-            $transaction->refresh();
-
-            if ($status == Transaction::STATUS_PAID) {
-                if ($transaction->type == Transaction::TYPE_SALDO) {
-                    $student = Student::find($transaction->student_id);
-                    $student->update([
-                        'saldo' => $student->saldo + $transaction->pay_amount
-                    ]);
-                    // change status to saldo history
-                    $transaction->transactionDetails->first()->saldoHistory->update([
-                        'status' => SaldoHistory::STATUS_SUCCESS
-                    ]);
-                } elseif ($transaction->type == Transaction::TYPE_SAVING) {
-                    foreach ($transaction->transactionDetails as $detail) {
-                        $detail->savingHistory->update([
-                            'status' => SavingHistory::STATUS_SUCCESS
-                        ]);
-                    }
-
-                    $student = Student::find($transaction->student_id);
-                    $student->update([
-                        'saving' => $student->saving + $transaction->pay_amount
-                    ]);
-                } elseif ($transaction->type == Transaction::TYPE_PPDB) {
-                    foreach ($transaction->transactionDetails as $detail) {
-                        $detail->ppdbRegistration->update([
-                            'status' => PpdbRegistration::STATUS_PAID,
-                            'payment_status' => PpdbRegistration::STATUS_PAID
-                        ]);
-                    }
-                } else {
-                    foreach ($transaction->transactionDetails as $detail) {
-                        $detail->bill->update([
-                            'status' => Bill::STATUS_PAID
-                        ]);
-                    }
-                    // === UNIT TRANSFER HOOK ===
-                    \App\Services\TransactionService::handleUnitTransferIfApplicable($transaction);
-                }
-                if ($transaction->type == Transaction::TYPE_PPDB) {
-                    $this->dispatchNotificationsUser($transaction);
-                } else {
-                    $this->dispatchNotifications($transaction);
-                }
-            }
-
-            DB::commit();
-            return $this->postSuccessResponse('Callback berhasil diterima', ['transaction' => $transaction]);
-        } catch (\Throwable $th) {
-            DB::rollBack();
-            Log::error($th);
-            return $this->failedResponse($th->getMessage(), [], 500);
-        }
     }
 
     public function uploadProof(UploadProofRequest $request)

@@ -84,15 +84,13 @@ class WaliPpdbController extends Controller
                     ->with('error', 'Dokumen tidak lengkap');
             }
 
-            // create transaction
-            $paymentMethodType = PaymentMethod::where('type', PaymentMethod::TYPE_XENDIT)->firstOrFail();
+            // create transaction — menggunakan Transfer sebagai metode pembayaran
+            $paymentMethodType = PaymentMethod::where('type', PaymentMethod::TYPE_TRANSFER)->firstOrFail();
 
             // get register fee from ppdb
             $registerFee = $ppdb->register_fee ?? 0;
 
             $transaction = TransactionService::createPaymentPpdb($request, $paymentMethodType, $registerFee, $ppdbRegistration);
-
-            TransactionService::createInvoice($transaction);
 
             if ($transaction->status == Transaction::STATUS_PAID) {
                 TransactionService::dispatchNotifications($transaction);

@@ -133,10 +133,6 @@ Route::group(['prefix' => 'v1', 'middleware' => 'validate_api_key'], function ()
 
 
 
-Route::group(['middleware' => 'xendit'], function () {
-    Route::post('callback-xendit', [TransactionController::class, 'callbackXendit']);
-});
-
 Route::prefix('ct-mobile')->middleware(['web'])->group(function () {
     Route::post('login', [App\Http\Controllers\Api\Wali\AuthController::class, 'login']);
     Route::post('logout', [App\Http\Controllers\Api\Wali\AuthController::class, 'logout']);

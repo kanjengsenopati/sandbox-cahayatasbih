@@ -57,7 +57,7 @@ class WaliDashboardController extends Controller
         if (!$activeStudent) return redirect()->route('wali.app');
 
         $paymentMethods = PaymentMethod::where('is_active', true)
-            ->whereIn('type', [PaymentMethod::TYPE_XENDIT, PaymentMethod::TYPE_TRANSFER])
+            ->where('type', PaymentMethod::TYPE_TRANSFER)
             ->get();
 
         return view('users.dashboard.topup', compact('activeStudent', 'paymentMethods'));
@@ -81,9 +81,6 @@ class WaliDashboardController extends Controller
             return redirect()->back()->with('error', $transaction->getData()->message);
         }
 
-        if ($paymentMethod->type == PaymentMethod::TYPE_XENDIT) {
-            return redirect($transaction->payment_link);
-        }
 
         return redirect()->route('wali.history')->with('success', 'Permintaan Top Up berhasil dibuat. Silakan selesaikan pembayaran.');
     }

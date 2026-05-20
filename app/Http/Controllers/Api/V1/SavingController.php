@@ -68,12 +68,7 @@ class SavingController extends Controller
             $this->createTransactionDetail($transaction, $saldoHistory);
 
 
-            if ($paymentMethodType == PaymentMethod::TYPE_XENDIT) {
-                TransactionService::createInvoice($transaction);
-                $response = $this->postSuccessResponse("Berhasil melakukan transaksi pembayaran", $transaction->payment_link);
-            } else {
-                $response = $this->postSuccessResponse('Berhasil Topup Tagihan', ['transaction' => $transaction]);
-            }
+            $response = $this->postSuccessResponse('Berhasil Topup Tabungan', ['transaction' => $transaction]);
 
             DB::commit();
 

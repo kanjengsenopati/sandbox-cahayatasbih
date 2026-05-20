@@ -59,18 +59,13 @@ class TransactionController extends Controller
                 'bill_id' => $request->bill_id,
             ]);
 
-            if ($request->payment_method_id == PaymentMethod::AUTO_PAYMENT) {
-                // Create transaction detail for auto payment
-                TransactionService::createInvoice($transaction);
-            }
 
             // Change status to paid if cash payment in bill
             if ($transaction->status == Transaction::STATUS_PAID) {
                 TransactionService::changeStatusToPaid($request->bill_id);
             }
             DB::commit();
-            // if auto payment, open new tab to xendit
-            return $this->postSuccessResponse("Berhasil melakukan transaksi pembayaran", $transaction->payment_link);
+            return $this->postSuccessResponse("Berhasil melakukan transaksi pembayaran", $transaction);
         } catch (\Throwable $th) {
             DB::rollBack();
             Log::error($th);

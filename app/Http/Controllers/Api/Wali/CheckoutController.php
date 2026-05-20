@@ -73,7 +73,6 @@ class CheckoutController extends BaseWaliApiController
             return response()->json([
                 'message' => 'Checkout successful',
                 'transaction' => $transaction,
-                'payment_url' => $paymentMethod->type == \App\Models\PaymentMethod::TYPE_XENDIT ? $transaction->payment_link : null
             ]);
         } catch (\Exception $e) {
             DB::rollBack();
