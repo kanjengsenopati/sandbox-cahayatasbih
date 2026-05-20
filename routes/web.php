@@ -91,6 +91,10 @@ use App\Http\Controllers\Admin\ReportStudentCounselingScoreController;
 | be assigned to the "web" middleware group. Make something great!
 |
 */
+// Admin audit route (legacy UI)
+Route::prefix('admin')->middleware(['auth', 'admin'])->group(function () {
+    Route::get('audit', [App\Http\Controllers\Admin\AuditController::class, 'index'])->name('admin.audit');
+});
 // start wali santri & asatidz (CT-Mobile)
 // add route group prefix and middleware
 
