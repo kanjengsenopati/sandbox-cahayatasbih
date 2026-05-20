@@ -104,12 +104,32 @@ class SyncMasterDatabase extends Command
 
                 $inserted = 0;
                 $hasId = in_array('id', $commonColumns);
+                
+                // Track min and max dates of records being synced
+                $minTimestamp = null;
+                $maxTimestamp = null;
 
-                $processChunk = function ($rows) use ($table, $commonColumns, &$inserted) {
+                $processChunk = function ($rows) use ($table, $commonColumns, &$inserted, &$minTimestamp, &$maxTimestamp) {
                     $data = $rows->map(fn($row) => (array) $row)->toArray();
                     if (!empty($data)) {
                         $columnsToUpdate = array_filter($commonColumns, fn($col) => $col !== 'id');
                         
+                        // Identify date range
+                        foreach ($data as $row) {
+                            $dateStr = $row['created_at'] ?? $row['updated_at'] ?? null;
+                            if ($dateStr) {
+                                $ts = strtotime($dateStr);
+                                if ($ts) {
+                                    if (is_null($minTimestamp) || $ts < $minTimestamp) {
+                                        $minTimestamp = $ts;
+                                    }
+                                    if (is_null($maxTimestamp) || $ts > $maxTimestamp) {
+                                        $maxTimestamp = $ts;
+                                    }
+                                }
+                            }
+                        }
+
                         // Run upsert operation
                         DB::connection('mysql')
                             ->table($table)
@@ -128,6 +148,8 @@ class SyncMasterDatabase extends Command
                 $report[$table] = [
                     'status' => 'success',
                     'rows_synced' => $inserted,
+                    'min_date' => $minTimestamp ? date('Y-m-d H:i:s', $minTimestamp) : null,
+                    'max_date' => $maxTimestamp ? date('Y-m-d H:i:s', $maxTimestamp) : null,
                     'message' => "Successfully synced {$inserted} rows"
                 ];
             }

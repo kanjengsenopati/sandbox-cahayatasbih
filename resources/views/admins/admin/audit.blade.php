@@ -222,9 +222,17 @@
                                                             @endif
                                                         </td>
                                                         <td class="text-end pe-4">
-                                                            <span class="text-dark fw-bold fs-6">
-                                                                {{ isset($info['rows_synced']) ? number_format($info['rows_synced']) . ' baris' : '-' }}
-                                                            </span>
+                                                             <span class="text-dark fw-bold fs-6">
+                                                                 {{ isset($info['rows_synced']) ? number_format($info['rows_synced']) . ' baris' : '-' }}
+                                                             </span>
+                                                             @if (isset($info['min_date']) && $info['min_date'])
+                                                                 <div class="text-muted fs-8 mt-1">
+                                                                     <i class="far fa-calendar-alt me-1 fs-9 text-slate-400"></i>
+                                                                     {{ \Carbon\Carbon::parse($info['min_date'])->format('d M Y') }} 
+                                                                     s/d 
+                                                                     {{ \Carbon\Carbon::parse($info['max_date'])->format('d M Y') }}
+                                                                 </div>
+                                                             @endif
                                                         </td>
                                                     </tr>
                                                 @endforeach
