@@ -17,7 +17,7 @@ export const Text = {
     </span>
   ),
   Label: ({ children, className = "" }: { children: React.ReactNode; className?: string }) => (
-    <span className={`text-[11px] font-bold uppercase tracking-widest text-slate-400 leading-none ${className}`}>
+    <span className={`text-[11px] font-semibold tracking-tight text-slate-400 leading-none ${className}`}>
       {children}
     </span>
   ),

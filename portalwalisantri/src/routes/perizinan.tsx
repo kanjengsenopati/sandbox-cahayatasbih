@@ -529,16 +529,16 @@ function PerizinanPage() {
                 {/* Summary Cards Grid */}
                 <div className="grid grid-cols-3 gap-2">
                   <div className="bg-card rounded-[24px] p-3 flex flex-col items-center justify-center shadow-[0_8px_30px_rgb(0,0,0,0.04)] border-none">
-                    <Text.Label className="text-slate-400 text-[10px] !normal-case !tracking-normal font-semibold">Total Izin</Text.Label>
+                    <Text.Label>Total Izin</Text.Label>
                     <Text.H1 className="text-slate-800 mt-1">{totalPermits}</Text.H1>
                   </div>
-                  <div className="bg-card rounded-[24px] p-3 flex flex-col items-center justify-center shadow-[0_8px_30px_rgb(0,0,0,0.04)] border-none">
-                    <Text.Label className="text-emerald-600 text-[10px] !normal-case !tracking-normal font-semibold">Tepat Waktu</Text.Label>
-                    <Text.Amount className="text-[22px] mt-1">{onTimeCount}</Text.Amount>
+                  <div className="flex flex-col items-center p-3 bg-emerald-50/50 rounded-[16px] border border-emerald-100/50">
+                    <Text.Label className="text-emerald-600">Tepat Waktu</Text.Label>
+                    <Text.Amount className="mt-1 text-emerald-600">{onTimeCount}</Text.Amount>
                   </div>
-                  <div className="bg-card rounded-[24px] p-3 flex flex-col items-center justify-center shadow-[0_8px_30px_rgb(0,0,0,0.04)] border-none">
-                    <Text.Label className="text-red-600 text-[10px] !normal-case !tracking-normal font-semibold">Terlambat</Text.Label>
-                    <Text.Amount className="text-[22px] text-red-600 mt-1">{lateCount}</Text.Amount>
+                  <div className="flex flex-col items-center p-3 bg-red-50/50 rounded-[16px] border border-red-100/50">
+                    <Text.Label className="text-red-600">Terlambat</Text.Label>
+                    <Text.Amount className="text-red-600 mt-1">{lateCount}</Text.Amount>
                   </div>
                 </div>
 
@@ -677,13 +677,13 @@ function PerizinanPage() {
                           <div className="px-5 pb-5 pt-1 bg-slate-50/40 border-t border-slate-100/50 space-y-4 animate-in fade-in duration-200">
                             <div className="grid grid-cols-2 gap-3 text-xs pt-3">
                               <div>
-                                <Text.Label className="text-[11px] text-slate-400 block !normal-case !tracking-tight !font-normal">Rencana Keluar</Text.Label>
+                                <Text.Label className="block">Rencana Keluar</Text.Label>
                                 <Text.Body className="font-bold text-slate-700 mt-1">
                                   {new Date(permit.planned_exit_date).toLocaleString("id-ID", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
                                 </Text.Body>
                               </div>
                               <div>
-                                <Text.Label className="text-[11px] text-slate-400 block !normal-case !tracking-tight !font-normal">Rencana Kembali</Text.Label>
+                                <Text.Label className="block">Rencana Kembali</Text.Label>
                                 <Text.Body className="font-bold text-slate-700 mt-1">
                                   {new Date(permit.planned_return_date).toLocaleString("id-ID", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
                                 </Text.Body>
@@ -692,14 +692,14 @@ function PerizinanPage() {
 
                             {permit.reason && (
                               <div className="bg-white rounded-[16px] p-3 shadow-[0_4px_20px_rgb(0,0,0,0.02)] border border-slate-100">
-                                <Text.Label className="text-[11px] text-slate-400 block !normal-case !tracking-tight !font-normal">Alasan Perizinan</Text.Label>
+                                <Text.Label className="block">Alasan Perizinan</Text.Label>
                                 <Text.Body className="text-slate-600 mt-1">{permit.reason}</Text.Body>
                               </div>
                             )}
 
                             {permit.attachment_photo && (
                               <div className="bg-white rounded-[16px] p-3 shadow-[0_4px_20px_rgb(0,0,0,0.02)] border border-slate-100 flex flex-col gap-1">
-                                <Text.Label className="text-[11px] text-slate-400 block !normal-case !tracking-tight !font-normal">Dokumen Pendukung</Text.Label>
+                                <Text.Label className="block">Dokumen Pendukung</Text.Label>
                                 <button
                                   type="button"
                                   onClick={(e) => {
@@ -715,7 +715,7 @@ function PerizinanPage() {
 
                             {permit.status === "rejected" && permit.rejection_reason && (
                               <div className="bg-rose-50/50 rounded-[16px] p-3 border border-rose-100 text-rose-800">
-                                <Text.Label className="text-[11px] text-rose-500 block !normal-case !tracking-tight !font-normal">Alasan Penolakan</Text.Label>
+                                <Text.Label className="block text-rose-500">Alasan Penolakan</Text.Label>
                                 <Text.Body className="mt-1 text-rose-750">{permit.rejection_reason}</Text.Body>
                               </div>
                             )}
@@ -859,7 +859,7 @@ function PerizinanPage() {
                   /* --- Individual Form --- */
                   <div className="space-y-4">
                     <div>
-                      <label className="text-[11px] font-semibold text-slate-400/90 mb-1.5 !normal-case tracking-tight block">Tipe Perizinan</label>
+                      <Text.Label className="mb-1.5 block">Tipe Perizinan</Text.Label>
                       <select
                         value={permitType}
                         onChange={(e: any) => setPermitType(e.target.value)}
@@ -870,7 +870,7 @@ function PerizinanPage() {
                         <option value="sakit">Sakit Parah (Perawatan/Rujukan)</option>
                       </select>
                     </div>                     <div>
-                      <label className="text-[11px] font-semibold text-slate-400/90 mb-1.5 !normal-case tracking-tight block">Rencana Tanggal Keluar</label>
+                      <Text.Label className="mb-1.5 block">Rencana Tanggal Keluar</Text.Label>
                       <button
                         type="button"
                         onClick={() => openDateTimePicker(plannedExit, (val) => setPlannedExit(val))}
@@ -884,7 +884,7 @@ function PerizinanPage() {
                     </div>
 
                     <div>
-                      <label className="text-[11px] font-semibold text-slate-400/90 mb-1.5 !normal-case tracking-tight block">Rencana Tanggal Kembali</label>
+                      <Text.Label className="mb-1.5 block">Rencana Tanggal Kembali</Text.Label>
                       <button
                         type="button"
                         onClick={() => openDateTimePicker(plannedReturn, (val) => setPlannedReturn(val))}
@@ -964,7 +964,7 @@ function PerizinanPage() {
                             </div>
 
                             <div>
-                              <label className="text-[11px] font-semibold text-slate-400 mb-1.5 !normal-case tracking-tight block">Tipe Perizinan</label>
+                              <Text.Label className="mb-1.5 block">Tipe Perizinan</Text.Label>
                               <select
                                 value={config.permitType}
                                 onChange={(e: any) => updateStudentConfig(sId, { permitType: e.target.value })}
@@ -978,7 +978,7 @@ function PerizinanPage() {
 
                             <div className="grid grid-cols-1 gap-2.5">
                               <div>
-                                <label className="text-[11px] font-semibold text-slate-400 mb-1.5 !normal-case tracking-tight block">Rencana Keluar</label>
+                                <Text.Label className="mb-1.5 block">Rencana Keluar</Text.Label>
                                 <button
                                   type="button"
                                   onClick={() => openDateTimePicker(config.plannedExit, (val) => updateStudentConfig(sId, { plannedExit: val }))}
@@ -992,7 +992,7 @@ function PerizinanPage() {
                               </div>
 
                               <div>
-                                <label className="text-[11px] font-semibold text-slate-400 mb-1.5 !normal-case tracking-tight block">Rencana Kembali</label>
+                                <Text.Label className="mb-1.5 block">Rencana Kembali</Text.Label>
                                 <button
                                   type="button"
                                   onClick={() => openDateTimePicker(config.plannedReturn, (val) => updateStudentConfig(sId, { plannedReturn: val }))}
@@ -1013,7 +1013,7 @@ function PerizinanPage() {
                 )}
 
                 <div>
-                  <label className="text-[11px] font-semibold text-slate-400/90 mb-1.5 !normal-case tracking-tight block">Alasan Keperluan</label>
+                  <Text.Label className="mb-1.5 block">Alasan Keperluan</Text.Label>
                   <textarea
                     rows={3}
                     value={reason}
@@ -1025,9 +1025,9 @@ function PerizinanPage() {
 
                 {/* Upload Dokumen Pendukung (Opsional) */}
                 <div className="space-y-2">
-                  <label className="text-[11px] font-semibold text-slate-400/90 mb-1.5 !normal-case tracking-tight block">
+                  <Text.Label className="mb-1.5 block">
                     Dokumen Pendukung (Opsional)
-                  </label>
+                  </Text.Label>
                   
                   {attachmentPhoto ? (
                     <div className="relative rounded-2xl border border-slate-100 overflow-hidden bg-slate-50 flex items-center justify-center p-3 animate-in fade-in duration-300">
@@ -1470,7 +1470,7 @@ function PerizinanPage() {
               {/* Header */}
               <div className="flex justify-between items-center border-b border-slate-100 pb-3">
                 <div>
-                  <Text.Label className="text-[11px] text-slate-400 font-semibold !normal-case tracking-tight">Konfirmasi Kedatangan</Text.Label>
+                  <Text.Label>Konfirmasi Kedatangan</Text.Label>
                   <Text.H2 className="text-sm font-bold text-slate-800">Lapor Kembali ke Pondok</Text.H2>
                 </div>
                 <button
@@ -1497,7 +1497,7 @@ function PerizinanPage() {
               <div className="space-y-4">
                 {/* 1. Foto Santri Kembali */}
                 <div>
-                  <Text.Label className="text-slate-500 mb-1.5 block !normal-case !tracking-tight font-semibold">Foto Santri (Saat Tiba/Kembali)</Text.Label>
+                  <Text.Label className="mb-1.5 block">Foto Santri (Saat Tiba/Kembali)</Text.Label>
                   {returnPhotoSantri ? (
                     <div className="relative rounded-[20px] overflow-hidden border border-slate-150 shadow-sm aspect-video bg-slate-50">
                       <img src={returnPhotoSantri} alt="Santri Kembali" className="w-full h-full object-cover" />
@@ -1530,7 +1530,7 @@ function PerizinanPage() {
 
                 {/* 2. Foto Wali / Pengantar */}
                 <div>
-                  <Text.Label className="text-slate-500 mb-1.5 block !normal-case !tracking-tight font-semibold">Foto Pengantar / Wali Santri</Text.Label>
+                  <Text.Label className="mb-1.5 block">Foto Pengantar / Wali Santri</Text.Label>
                   {returnPhotoEscort ? (
                     <div className="relative rounded-[20px] overflow-hidden border border-slate-150 shadow-sm aspect-video bg-slate-50">
                       <img src={returnPhotoEscort} alt="Pengantar" className="w-full h-full object-cover" />
