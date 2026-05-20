@@ -47,5 +47,8 @@ jobs:
             echo "=== Running Audit ==="
             php artisan app:audit
 
+            echo "=== Latest Laravel Logs ==="
+            tail -n 50 storage/logs/laravel.log || echo "No laravel logs found"
+
             echo "=== Deployment Finished ==="
           EOF
