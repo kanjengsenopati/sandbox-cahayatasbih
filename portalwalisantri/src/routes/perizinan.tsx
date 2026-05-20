@@ -569,6 +569,25 @@ function PerizinanPage() {
                     const actualExitText = permit.actual_exit_date ? formatHeaderDate(permit.actual_exit_date) : null;
                     const actualReturnText = permit.actual_return_date ? formatHeaderDate(permit.actual_return_date) : null;
 
+                    const getReturnStatus = () => {
+                      if (permit.status === "returned" || permit.status === "pending_return") {
+                        const actualReturn = new Date(permit.actual_return_date);
+                        const plannedReturn = new Date(permit.planned_return_date);
+                        if (!isNaN(actualReturn.getTime()) && !isNaN(plannedReturn.getTime())) {
+                          return actualReturn <= plannedReturn ? "TEPAT WAKTU" : "TERLAMBAT";
+                        }
+                      }
+                      if (permit.status === "out") {
+                        const now = new Date();
+                        const plannedReturn = new Date(permit.planned_return_date);
+                        if (!isNaN(plannedReturn.getTime()) && now > plannedReturn) {
+                          return "TERLAMBAT";
+                        }
+                      }
+                      return null;
+                    };
+                    const returnStatus = getReturnStatus();
+
                     return (
                       <div key={permit.id} className="transition duration-200">
                         {/* Row Header - Clickable */}
@@ -607,6 +626,29 @@ function PerizinanPage() {
                                 ) : (
                                   <span className="text-blue-600 font-extrabold animate-pulse">Sedang Diluar</span>
                                 )}
+                              </div>
+                            )}
+
+                            {/* Return Status Badge */}
+                            {returnStatus && (
+                              <div className="pt-0.5 flex">
+                                <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[8px] font-extrabold uppercase border ${
+                                  returnStatus === "TEPAT WAKTU" 
+                                    ? "bg-emerald-50 text-emerald-600 border-emerald-100 bg-opacity-80" 
+                                    : "bg-red-50 text-red-600 border-red-100 bg-opacity-80"
+                                }`}>
+                                  {returnStatus === "TEPAT WAKTU" ? (
+                                    <>
+                                      <span className="w-1 h-1 rounded-full bg-emerald-500 animate-pulse" />
+                                      Tepat Waktu
+                                    </>
+                                  ) : (
+                                    <>
+                                      <span className="w-1 h-1 rounded-full bg-red-500 animate-pulse" />
+                                      Terlambat
+                                    </>
+                                  )}
+                                </span>
                               </div>
                             )}
                           </div>
