@@ -26,7 +26,7 @@ jobs:
           VPS_HOST: ${{ secrets.VPS_HOST }}
           VPS_PORT: ${{ secrets.VPS_PORT || '22' }}
         run: |
-          ssh -vvv -o StrictHostKeyChecking=no -p $VPS_PORT $VPS_USER@$VPS_HOST <<'EOF'
+          ssh -o StrictHostKeyChecking=no -p $VPS_PORT $VPS_USER@$VPS_HOST <<EOF
             set -e
             cd $DEPLOY_PATH
 
