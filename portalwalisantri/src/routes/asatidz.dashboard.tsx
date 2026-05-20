@@ -245,18 +245,18 @@ function AsatidzDashboardPage() {
           />
           <div className="relative flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-2xl bg-white/10 backdrop-blur border border-white/15 flex items-center justify-center text-white font-extrabold text-lg shrink-0">
-                {statsRes?.host_name ? statsRes.host_name.substring(0, 2).toUpperCase() : "AZ"}
+              <div className="w-12 h-12 rounded-2xl bg-white/10 backdrop-blur border border-white/15 flex items-center justify-center text-white font-semibold text-lg shrink-0">
+                {statsRes?.host_name ? statsRes.host_name.substring(0, 2) : "AZ"}
               </div>
               <div>
-                <p className="text-[10px] text-indigo-200 font-extrabold uppercase tracking-widest leading-none">
+                <p className="text-[10px] text-indigo-200 font-semibold !normal-case tracking-tight leading-none">
                   {statsRes?.asrama_name || "Asrama Binaan"}
                 </p>
-                <p className="text-base font-extrabold text-white leading-tight mt-1">
+                <p className="text-base font-semibold text-white leading-tight mt-1">
                   {statsRes?.host_name || "Ustadz / Ustadzah"}
                 </p>
                 <p className="text-[10px] text-indigo-300 font-medium mt-1 leading-none">
-                  Supervisi: <span className="text-white font-bold">{statsRes?.total_students || 0} Santri Saya</span>
+                  Supervisi: <span className="text-white font-semibold">{statsRes?.total_students || 0} Santri Saya</span>
                 </p>
               </div>
             </div>
@@ -272,7 +272,7 @@ function AsatidzDashboardPage() {
           <div className="mt-6 flex gap-3">
             <button
               onClick={() => navigate({ to: "/asatidz/scan" })}
-              className="flex-1 py-3.5 bg-emerald-500 hover:bg-emerald-600 active:scale-[0.98] transition rounded-2xl text-white font-bold text-xs flex items-center justify-center gap-2 shadow-lg shadow-emerald-950/20"
+              className="flex-1 py-3.5 bg-emerald-500 hover:bg-emerald-600 active:scale-[0.98] transition rounded-2xl text-white font-semibold text-xs flex items-center justify-center gap-2 shadow-lg shadow-emerald-950/20"
             >
               <Scan size={16} /> Pindai Barcode Gerbang
             </button>
@@ -284,7 +284,7 @@ function AsatidzDashboardPage() {
           <div className="flex bg-card rounded-[20px] p-1 border border-border shadow-[var(--shadow-soft)] overflow-x-auto scrollbar-none gap-1">
             <button
               onClick={() => setTab("pending")}
-              className={`flex-1 py-3 rounded-[16px] text-xs font-bold transition flex flex-col items-center gap-0.5 shrink-0 min-w-[70px] ${
+              className={`flex-1 py-3 rounded-[16px] text-xs font-semibold transition flex flex-col items-center gap-0.5 shrink-0 min-w-[70px] ${
                 tab === "pending"
                   ? "bg-indigo-600 text-white shadow-md"
                   : "text-slate-500 hover:text-slate-800"
@@ -295,7 +295,7 @@ function AsatidzDashboardPage() {
             </button>
             <button
               onClick={() => setTab("active")}
-              className={`flex-1 py-3 rounded-[16px] text-xs font-bold transition flex flex-col items-center gap-0.5 shrink-0 min-w-[70px] ${
+              className={`flex-1 py-3 rounded-[16px] text-xs font-semibold transition flex flex-col items-center gap-0.5 shrink-0 min-w-[70px] ${
                 tab === "active"
                   ? "bg-indigo-600 text-white shadow-md"
                   : "text-slate-500 hover:text-slate-800"
@@ -306,7 +306,7 @@ function AsatidzDashboardPage() {
             </button>
             <button
               onClick={() => setTab("pending_return")}
-              className={`flex-1 py-3 rounded-[16px] text-xs font-bold transition flex flex-col items-center gap-0.5 shrink-0 min-w-[70px] ${
+              className={`flex-1 py-3 rounded-[16px] text-xs font-semibold transition flex flex-col items-center gap-0.5 shrink-0 min-w-[70px] ${
                 tab === "pending_return"
                   ? "bg-indigo-600 text-white shadow-md"
                   : "text-slate-500 hover:text-slate-800"
@@ -317,7 +317,7 @@ function AsatidzDashboardPage() {
             </button>
             <button
               onClick={() => setTab("overdue")}
-              className={`flex-1 py-3 rounded-[16px] text-xs font-bold transition flex flex-col items-center gap-0.5 shrink-0 min-w-[70px] ${
+              className={`flex-1 py-3 rounded-[16px] text-xs font-semibold transition flex flex-col items-center gap-0.5 shrink-0 min-w-[70px] ${
                 tab === "overdue"
                   ? "bg-indigo-600 text-white shadow-md"
                   : "text-slate-500 hover:text-slate-800"
@@ -331,7 +331,7 @@ function AsatidzDashboardPage() {
             </button>
             <button
               onClick={() => setTab("my-students")}
-              className={`flex-1 py-3 rounded-[16px] text-xs font-bold transition flex flex-col items-center gap-0.5 shrink-0 min-w-[80px] ${
+              className={`flex-1 py-3 rounded-[16px] text-xs font-semibold transition flex flex-col items-center gap-0.5 shrink-0 min-w-[80px] ${
                 tab === "my-students"
                   ? "bg-indigo-600 text-white shadow-md"
                   : "text-slate-500 hover:text-slate-800"
@@ -354,7 +354,7 @@ function AsatidzDashboardPage() {
             ) : pendingList.length === 0 ? (
               <div className="bg-card rounded-3xl border border-border p-8 text-center shadow-[var(--shadow-soft)]">
                 <CheckCircle2 className="mx-auto text-emerald-500 mb-3" size={32} />
-                <p className="text-sm font-bold text-foreground">Semua Bersih!</p>
+                <p className="text-sm font-semibold text-foreground">Semua Bersih!</p>
                 <p className="text-xs text-muted-foreground mt-1">
                   Tidak ada pengajuan perizinan pending saat ini.
                 </p>
@@ -374,7 +374,7 @@ function AsatidzDashboardPage() {
                           }`}
                         >
                           <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-xl bg-slate-100 border border-slate-200 overflow-hidden flex items-center justify-center font-bold text-slate-500 shrink-0">
+                            <div className="w-10 h-10 rounded-xl bg-slate-100 border border-slate-200 overflow-hidden flex items-center justify-center font-semibold text-slate-500 shrink-0">
                               {permit.student?.avatar ? (
                                 <img src={resolveImageUrl(permit.student.avatar) || ""} alt="" className="w-full h-full object-cover" />
                               ) : (
@@ -382,7 +382,7 @@ function AsatidzDashboardPage() {
                               )}
                             </div>
                             <div>
-                              <p className="text-[13px] font-bold text-slate-800 leading-tight">
+                              <p className="text-[13px] font-semibold text-slate-800 leading-tight">
                                 {permit.student?.name}
                               </p>
                               <p className="text-[10px] font-semibold text-slate-400 mt-1">
@@ -393,7 +393,7 @@ function AsatidzDashboardPage() {
 
                           <div className="flex items-center gap-3 text-right">
                             <div>
-                              <span className="inline-block px-2 py-0.5 rounded-full text-[9px] font-extrabold bg-indigo-50 text-indigo-700 border border-indigo-100 uppercase tracking-wide">
+                              <span className="inline-block px-2 py-0.5 rounded-full text-[9px] font-semibold bg-indigo-50 text-indigo-700 border border-indigo-100 !normal-case tracking-tight">
                                 {permit.permit_type.replace("_", " ")}
                               </span>
                               <p className="text-[10px] text-slate-400 mt-1">
@@ -415,14 +415,14 @@ function AsatidzDashboardPage() {
                           <div className="px-4 pb-5 pt-2 bg-slate-50/30 border-t border-slate-100/50 space-y-4">
                             <div className="grid grid-cols-2 gap-3 text-xs bg-white rounded-2xl p-3 border border-slate-100/80 shadow-[0_2px_8px_rgba(0,0,0,0.01)]">
                               <div>
-                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Rencana Keluar</p>
-                                <p className="font-bold text-slate-700 mt-0.5">
+                                <p className="text-[11px] font-semibold text-slate-400 !normal-case tracking-tight">Rencana Keluar</p>
+                                <p className="font-semibold text-slate-700 mt-0.5">
                                   {new Date(permit.planned_exit_date).toLocaleString("id-ID", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
                                 </p>
                               </div>
                               <div>
-                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Rencana Kembali</p>
-                                <p className="font-bold text-slate-700 mt-0.5">
+                                <p className="text-[11px] font-semibold text-slate-400 !normal-case tracking-tight">Rencana Kembali</p>
+                                <p className="font-semibold text-slate-700 mt-0.5">
                                   {new Date(permit.planned_return_date).toLocaleString("id-ID", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
                                 </p>
                               </div>
@@ -430,18 +430,18 @@ function AsatidzDashboardPage() {
 
                             <div className="bg-white border border-slate-100/80 rounded-2xl p-3 text-xs space-y-2 shadow-[0_2px_8px_rgba(0,0,0,0.01)]">
                               <div>
-                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Wali / Pengaju</p>
-                                <p className="font-bold text-slate-700 mt-0.5">{permit.user?.name} · {permit.user?.phone}</p>
+                                <p className="text-[11px] font-semibold text-slate-400 !normal-case tracking-tight">Wali / Pengaju</p>
+                                <p className="font-semibold text-slate-700 mt-0.5">{permit.user?.name} · {permit.user?.phone}</p>
                               </div>
                               <div>
-                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Alasan Perizinan</p>
+                                <p className="text-[11px] font-semibold text-slate-400 !normal-case tracking-tight">Alasan Perizinan</p>
                                 <p className="text-slate-600 mt-0.5 leading-relaxed font-medium">{permit.reason || "-"}</p>
                               </div>
                             </div>
 
                             {/* Foto Pendukung / Attachment */}
                             <div className="bg-white border border-slate-100/80 rounded-2xl p-3 text-xs space-y-2.5 shadow-[0_2px_8px_rgba(0,0,0,0.01)]">
-                              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Foto Pendukung</p>
+                              <p className="text-[11px] font-semibold text-slate-400 !normal-case tracking-tight">Foto Pendukung</p>
                               {permit.attachment_photo ? (
                                 <div 
                                   onClick={(e) => {
@@ -456,7 +456,7 @@ function AsatidzDashboardPage() {
                                     className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
                                   />
                                   <div className="absolute inset-0 bg-black/10 group-hover:bg-black/25 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                                    <span className="text-white text-[10px] font-bold bg-black/60 px-2.5 py-1 rounded-full backdrop-blur-sm shadow-md">Klik untuk perbesar</span>
+                                    <span className="text-white text-[10px] font-semibold bg-black/60 px-2.5 py-1 rounded-full backdrop-blur-sm shadow-md">Klik untuk perbesar</span>
                                   </div>
                                 </div>
                               ) : (
@@ -470,13 +470,13 @@ function AsatidzDashboardPage() {
                             <div className="flex gap-2.5">
                               <button
                                 onClick={() => setRejectId(permit.id)}
-                                className="flex-1 py-3 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-xl font-bold text-xs transition active:scale-[0.98] border border-rose-100"
+                                className="flex-1 py-3 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-xl font-semibold text-xs transition active:scale-[0.98] border border-rose-100"
                               >
                                 Tolak
                               </button>
                               <button
                                 onClick={() => handleApprove(permit.id)}
-                                className="flex-1 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-xs transition active:scale-[0.98] shadow-sm shadow-indigo-900/10"
+                                className="flex-1 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-semibold text-xs transition active:scale-[0.98] shadow-sm shadow-indigo-900/10"
                               >
                                 Setujui Izin
                               </button>
@@ -500,7 +500,7 @@ function AsatidzDashboardPage() {
             ) : pendingReturnList.length === 0 ? (
               <div className="bg-card rounded-3xl border border-border p-8 text-center shadow-[var(--shadow-soft)]">
                 <CheckCircle2 className="mx-auto text-emerald-500 mb-3" size={32} />
-                <p className="text-sm font-bold text-foreground">Semua Selesai!</p>
+                <p className="text-sm font-semibold text-foreground">Semua Selesai!</p>
                 <p className="text-xs text-muted-foreground mt-1">
                   Tidak ada laporan kepulangan yang menunggu konfirmasi.
                 </p>
@@ -520,7 +520,7 @@ function AsatidzDashboardPage() {
                           }`}
                         >
                           <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-xl bg-slate-100 border border-slate-200 overflow-hidden flex items-center justify-center font-bold text-slate-500 shrink-0">
+                            <div className="w-10 h-10 rounded-xl bg-slate-100 border border-slate-200 overflow-hidden flex items-center justify-center font-semibold text-slate-500 shrink-0">
                               {permit.student?.avatar ? (
                                 <img src={resolveImageUrl(permit.student.avatar) || ""} alt="" className="w-full h-full object-cover" />
                               ) : (
@@ -528,7 +528,7 @@ function AsatidzDashboardPage() {
                               )}
                             </div>
                             <div>
-                              <p className="text-[13px] font-bold text-slate-800 leading-tight">
+                              <p className="text-[13px] font-semibold text-slate-800 leading-tight">
                                 {permit.student?.name}
                               </p>
                               <p className="text-[10px] font-semibold text-slate-400 mt-1">
@@ -540,10 +540,10 @@ function AsatidzDashboardPage() {
                           <div className="flex items-center gap-3 text-right">
                             <div className="flex flex-col items-end gap-1">
                               <div className="flex gap-1 flex-wrap justify-end">
-                                <span className="inline-block px-2 py-0.5 rounded-full text-[9px] font-extrabold bg-purple-50 text-purple-700 border-purple-100 uppercase tracking-wide">
+                                <span className="inline-block px-2 py-0.5 rounded-full text-[9px] font-semibold bg-purple-50 text-purple-700 border-purple-100 !normal-case tracking-tight">
                                   Lapor Kembali
                                 </span>
-                                <span className="inline-block px-2 py-0.5 rounded-full text-[9px] font-extrabold bg-indigo-50 text-indigo-700 border border-indigo-100 uppercase tracking-wide">
+                                <span className="inline-block px-2 py-0.5 rounded-full text-[9px] font-semibold bg-indigo-50 text-indigo-700 border border-indigo-100 !normal-case tracking-tight">
                                   {permit.permit_type ? permit.permit_type.replace(/_/g, " ") : "-"}
                                 </span>
                               </div>
@@ -566,14 +566,14 @@ function AsatidzDashboardPage() {
                           <div className="px-4 pb-5 pt-2 bg-slate-50/30 border-t border-slate-100/50 space-y-4">
                             <div className="grid grid-cols-2 gap-3 text-xs bg-white rounded-2xl p-3 border border-slate-100/80 shadow-[0_2px_8px_rgba(0,0,0,0.01)]">
                               <div>
-                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Tanggal Keluar</p>
-                                <p className="font-bold text-slate-700 mt-0.5">
+                                <p className="text-[11px] font-semibold text-slate-400 !normal-case tracking-tight">Tanggal Keluar</p>
+                                <p className="font-semibold text-slate-700 mt-0.5">
                                   {permit.actual_exit_date ? new Date(permit.actual_exit_date).toLocaleString("id-ID", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }) : "-"}
                                 </p>
                               </div>
                               <div>
-                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Dilaporkan Kembali</p>
-                                <p className="font-bold text-slate-700 mt-0.5">
+                                <p className="text-[11px] font-semibold text-slate-400 !normal-case tracking-tight">Dilaporkan Kembali</p>
+                                <p className="font-semibold text-slate-700 mt-0.5">
                                   {permit.actual_return_date ? new Date(permit.actual_return_date).toLocaleString("id-ID", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" }) : "-"}
                                 </p>
                               </div>
@@ -581,17 +581,17 @@ function AsatidzDashboardPage() {
 
                             <div className="bg-white border border-slate-100/80 rounded-2xl p-3 text-xs space-y-2 shadow-[0_2px_8px_rgba(0,0,0,0.01)]">
                               <div>
-                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Wali / Pelapor</p>
-                                <p className="font-bold text-slate-700 mt-0.5">{permit.user?.name} · {permit.user?.phone}</p>
+                                <p className="text-[11px] font-semibold text-slate-400 !normal-case tracking-tight">Wali / Pelapor</p>
+                                <p className="font-semibold text-slate-700 mt-0.5">{permit.user?.name} · {permit.user?.phone}</p>
                               </div>
                               {permit.return_latitude && (
                                 <div>
-                                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Lokasi GPS</p>
+                                  <p className="text-[11px] font-semibold text-slate-400 !normal-case tracking-tight">Lokasi GPS</p>
                                   <a 
                                     href={`https://www.google.com/maps/search/?api=1&query=${permit.return_latitude},${permit.return_longitude}`}
                                     target="_blank" 
                                     rel="noopener noreferrer"
-                                    className="text-xs text-blue-600 font-bold hover:underline mt-0.5 inline-block animate-pulse"
+                                    className="text-xs text-blue-600 font-semibold hover:underline mt-0.5 inline-block animate-pulse"
                                   >
                                     Lihat di Google Maps ({permit.return_latitude.substring(0,8)}, {permit.return_longitude.substring(0,8)})
                                   </a>
@@ -602,7 +602,7 @@ function AsatidzDashboardPage() {
                             {/* Return Verification Photos */}
                             <div className="grid grid-cols-2 gap-3">
                               <div className="bg-white border border-slate-100/80 rounded-2xl p-3 text-xs space-y-2.5 shadow-[0_2px_8px_rgba(0,0,0,0.01)]">
-                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Foto Santri</p>
+                                <p className="text-[11px] font-semibold text-slate-400 !normal-case tracking-tight">Foto Santri</p>
                                 {permit.return_photo_santri ? (
                                   <div 
                                     onClick={(e) => {
@@ -617,7 +617,7 @@ function AsatidzDashboardPage() {
                                       className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
                                     />
                                     <div className="absolute inset-0 bg-black/10 group-hover:bg-black/25 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                                      <span className="text-white text-[9px] font-bold bg-black/60 px-2 py-0.5 rounded-full">Zoom</span>
+                                      <span className="text-white text-[9px] font-semibold bg-black/60 px-2 py-0.5 rounded-full">Zoom</span>
                                     </div>
                                   </div>
                                 ) : (
@@ -626,7 +626,7 @@ function AsatidzDashboardPage() {
                               </div>
 
                               <div className="bg-white border border-slate-100/80 rounded-2xl p-3 text-xs space-y-2.5 shadow-[0_2px_8px_rgba(0,0,0,0.01)]">
-                                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Foto Pengantar</p>
+                                <p className="text-[11px] font-semibold text-slate-400 !normal-case tracking-tight">Foto Pengantar</p>
                                 {permit.return_photo_escort ? (
                                   <div 
                                     onClick={(e) => {
@@ -641,7 +641,7 @@ function AsatidzDashboardPage() {
                                       className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
                                     />
                                     <div className="absolute inset-0 bg-black/10 group-hover:bg-black/25 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                                      <span className="text-white text-[9px] font-bold bg-black/60 px-2 py-0.5 rounded-full">Zoom</span>
+                                      <span className="text-white text-[9px] font-semibold bg-black/60 px-2 py-0.5 rounded-full">Zoom</span>
                                     </div>
                                   </div>
                                 ) : (
@@ -654,13 +654,13 @@ function AsatidzDashboardPage() {
                             <div className="flex gap-2.5">
                               <button
                                 onClick={() => setRejectReturnId(permit.id)}
-                                className="flex-1 py-3 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-xl font-bold text-xs transition active:scale-[0.98] border border-rose-100"
+                                className="flex-1 py-3 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-xl font-semibold text-xs transition active:scale-[0.98] border border-rose-100"
                               >
                                 Tolak Laporan
                               </button>
                               <button
                                 onClick={() => handleApproveReturn(permit.id)}
-                                className="flex-1 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-xs transition active:scale-[0.98] shadow-sm shadow-emerald-950/10"
+                                className="flex-1 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-semibold text-xs transition active:scale-[0.98] shadow-sm shadow-emerald-950/10"
                               >
                                 Konfirmasi Kembali
                               </button>
@@ -684,7 +684,7 @@ function AsatidzDashboardPage() {
             ) : activeList.length === 0 ? (
               <div className="bg-card rounded-3xl border border-border p-8 text-center shadow-[var(--shadow-soft)]">
                 <Calendar className="mx-auto text-muted-foreground mb-3" size={32} />
-                <p className="text-sm font-bold text-foreground">Tidak Ada Santri Keluar</p>
+                <p className="text-sm font-semibold text-foreground">Tidak Ada Santri Keluar</p>
                 <p className="text-xs text-muted-foreground mt-1">
                   Saat ini tidak ada santri yang sedang keluar pondok.
                 </p>
@@ -705,16 +705,16 @@ function AsatidzDashboardPage() {
                     <div className="flex justify-between items-start">
                       <div>
                         <div className="flex flex-wrap gap-1.5 items-center">
-                          <span className={`inline-block px-2.5 py-0.5 rounded-full text-[9px] font-extrabold border uppercase tracking-wider ${
+                          <span className={`inline-block px-2.5 py-0.5 rounded-full text-[10px] font-semibold border !normal-case tracking-tight ${
                             isOut ? "bg-blue-50 text-blue-700 border-blue-100" : "bg-emerald-50 text-emerald-700 border-emerald-100"
                           }`}>
                             {isOut ? "Sedang Diluar" : "Disetujui Ustadz"}
                           </span>
-                          <span className="inline-block px-2.5 py-0.5 rounded-full text-[9px] font-extrabold bg-indigo-50 text-indigo-700 border border-indigo-100 uppercase tracking-wide">
+                          <span className="inline-block px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-indigo-50 text-indigo-700 border border-indigo-100 !normal-case tracking-tight">
                             {permit.permit_type ? permit.permit_type.replace(/_/g, " ") : "-"}
                           </span>
                         </div>
-                        <p className="text-sm font-bold text-slate-800 mt-2">{permit.student?.name}</p>
+                        <p className="text-sm font-semibold text-slate-800 mt-2">{permit.student?.name}</p>
                       </div>
                       
                       <a
@@ -736,14 +736,14 @@ function AsatidzDashboardPage() {
 
                     {/* Progress Bar & Sisa Waktu */}
                     <div className="pt-3 border-t border-slate-100 space-y-2">
-                      <div className="flex justify-between items-center text-[11px] font-bold">
+                      <div className="flex justify-between items-center text-[11px] font-semibold">
                         <div className="flex items-center gap-1.5">
                           <Clock size={12} className={isOverdue ? "text-red-500 animate-pulse" : "text-emerald-500"} />
-                          <span className={isOverdue ? "text-red-600 font-extrabold" : "text-emerald-600 font-extrabold"}>
+                          <span className={isOverdue ? "text-red-600 font-semibold" : "text-emerald-600 font-semibold"}>
                             {remainingText}
                           </span>
                         </div>
-                        <span className="text-slate-500 font-extrabold">
+                        <span className="text-slate-500 font-semibold">
                           {Math.round(percent)}%
                         </span>
                       </div>
@@ -773,7 +773,7 @@ function AsatidzDashboardPage() {
             ) : overdueList.length === 0 ? (
               <div className="bg-card rounded-3xl border border-border p-8 text-center shadow-[var(--shadow-soft)]">
                 <CheckCircle2 className="mx-auto text-emerald-500 mb-3" size={32} />
-                <p className="text-sm font-bold text-foreground">Semua Kembali Tepat Waktu</p>
+                <p className="text-sm font-semibold text-foreground">Semua Kembali Tepat Waktu</p>
                 <p className="text-xs text-muted-foreground mt-1">
                   Semua santri yang sedang keluar belum melewati rencana tanggal kepulangannya.
                 </p>
@@ -789,14 +789,14 @@ function AsatidzDashboardPage() {
                   <div className="flex justify-between items-start relative z-10">
                     <div>
                       <div className="flex flex-wrap gap-1.5 items-center">
-                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-red-100 text-red-700 text-[9px] font-bold border border-red-200">
+                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-red-100 text-red-700 text-[9px] font-semibold border border-red-200">
                           <ShieldAlert size={10} className="animate-pulse" /> Terlambat Kembali
                         </span>
-                        <span className="inline-block px-2.5 py-0.5 rounded-full text-[9px] font-extrabold bg-indigo-50 text-indigo-700 border border-indigo-100 uppercase tracking-wide">
+                        <span className="inline-block px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-indigo-50 text-indigo-700 border border-indigo-100 !normal-case tracking-tight">
                           {permit.permit_type ? permit.permit_type.replace(/_/g, " ") : "-"}
                         </span>
                       </div>
-                      <p className="text-sm font-bold text-red-950 mt-2">{permit.student?.name}</p>
+                      <p className="text-sm font-semibold text-red-950 mt-2">{permit.student?.name}</p>
                     </div>
                     
                     <a
@@ -809,7 +809,7 @@ function AsatidzDashboardPage() {
 
                   <div className="text-xs space-y-1.5 border-t border-red-100/50 pt-2.5 text-slate-600 relative z-10">
                     <p><span className="font-semibold text-red-900">Wali:</span> {permit.user?.name}</p>
-                    <p><span className="font-semibold text-red-900">Tenggat Kembali:</span> <span className="text-red-700 font-bold">{new Date(permit.planned_return_date).toLocaleString("id-ID")}</span></p>
+                    <p><span className="font-semibold text-red-900">Tenggat Kembali:</span> <span className="text-red-700 font-semibold">{new Date(permit.planned_return_date).toLocaleString("id-ID")}</span></p>
                     {permit.exit_escort_name && (
                       <p><span className="font-semibold text-red-900">Penjemput:</span> {permit.exit_escort_name} ({permit.exit_escort_relation})</p>
                     )}
@@ -827,7 +827,7 @@ function AsatidzDashboardPage() {
               </div>
             ) : myStudentsList.length === 0 ? (
               <div className="bg-card rounded-3xl border border-border p-8 text-center shadow-[var(--shadow-soft)]">
-                <p className="text-sm font-bold text-foreground">Tidak Ada Santri</p>
+                <p className="text-sm font-semibold text-foreground">Tidak Ada Santri</p>
                 <p className="text-xs text-muted-foreground mt-1">
                   Anda belum ditunjuk sebagai Host Asrama untuk santri manapun.
                 </p>
@@ -859,7 +859,7 @@ function AsatidzDashboardPage() {
                       className="w-full text-left p-4 flex items-center justify-between gap-3 active:bg-slate-50/50 transition-colors"
                     >
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center text-slate-500 font-bold overflow-hidden border border-slate-200 shrink-0">
+                        <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center text-slate-500 font-semibold overflow-hidden border border-slate-200 shrink-0">
                           {student.avatar ? (
                             <img src={resolveImageUrl(student.avatar) || ""} alt="" className="w-full h-full object-cover" />
                           ) : (
@@ -867,12 +867,12 @@ function AsatidzDashboardPage() {
                           )}
                         </div>
                         <div>
-                          <p className="text-sm font-bold text-slate-800 leading-tight">{student.name}</p>
+                          <p className="text-sm font-semibold text-slate-800 leading-tight">{student.name}</p>
                           <p className="text-[11px] text-slate-400 font-semibold mt-1">NIS: {student.nis} · {student.classroom_name}</p>
                         </div>
                       </div>
                       <div className="flex items-center gap-2 shrink-0">
-                        <span className={`px-2.5 py-0.5 rounded-full text-[9px] font-extrabold tracking-wide border uppercase ${statusColor}`}>
+                        <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-semibold tracking-tight border !normal-case ${statusColor}`}>
                           {student.status}
                         </span>
                         <ChevronDown 
@@ -975,13 +975,13 @@ function AsatidzDashboardPage() {
                                     className="w-full text-left py-3.5 px-4 flex items-center justify-between gap-3 hover:bg-slate-50 transition active:bg-slate-100/50"
                                   >
                                     <div className="min-w-0 flex-1 space-y-1">
-                                      <p className="text-xs font-bold text-slate-700 truncate uppercase tracking-wide">
+                                      <p className="text-xs font-semibold text-slate-700 truncate !normal-case tracking-tight">
                                         {h.permit_type.replace(/_/g, " ")}
                                       </p>
                                       
                                       {/* Rencana */}
                                       <div className="flex items-center gap-1.5 text-[9px] text-slate-400 font-semibold flex-wrap">
-                                        <span className="bg-slate-100 text-slate-500 px-1 py-0.5 rounded text-[8px] font-extrabold uppercase leading-none">Rencana</span>
+                                        <span className="bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded text-[8px] font-semibold !normal-case tracking-tight leading-none">Rencana</span>
                                         <span className="text-slate-600 font-extrabold">{exitText}</span>
                                         <span className="text-slate-300">➔</span>
                                         <span className="text-slate-600 font-extrabold">{returnText}</span>
@@ -990,7 +990,7 @@ function AsatidzDashboardPage() {
                                       {/* Realisasi */}
                                       {(h.status === "out" || h.status === "returned" || h.status === "pending_return" || !!h.actual_exit_date || !!h.actual_return_date) && (
                                         <div className="flex items-center gap-1.5 text-[9px] text-slate-400 font-semibold flex-wrap">
-                                          <span className={`px-1 py-0.5 rounded text-[8px] font-extrabold uppercase leading-none ${
+                                          <span className={`px-1.5 py-0.5 rounded text-[8px] font-semibold !normal-case tracking-tight leading-none ${
                                             h.status === "returned" ? "bg-emerald-50 text-emerald-600" : "bg-blue-50 text-blue-600"
                                           }`}>
                                             Realisasi
@@ -1010,7 +1010,7 @@ function AsatidzDashboardPage() {
                                       {/* Return Status Badge */}
                                       {returnStatus && (
                                         <div className="pt-0.5 flex">
-                                          <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[8px] font-extrabold uppercase border ${
+                                          <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[8px] font-semibold !normal-case tracking-tight border ${
                                             returnStatus === "TEPAT WAKTU" 
                                               ? "bg-emerald-50 text-emerald-600 border-emerald-100 bg-opacity-80" 
                                               : "bg-red-50 text-red-600 border-red-100 bg-opacity-80"
@@ -1031,7 +1031,7 @@ function AsatidzDashboardPage() {
                                       )}
                                     </div>
                                     <div className="flex items-center gap-2 shrink-0">
-                                      <span className={`px-2 py-0.5 rounded-full text-[8px] font-extrabold tracking-wide border uppercase ${badgeStyle}`}>
+                                      <span className={`px-2 py-0.5 rounded-full text-[8px] font-semibold tracking-tight border !normal-case ${badgeStyle}`}>
                                         {statusText}
                                       </span>
                                       <ChevronDown 
@@ -1075,14 +1075,14 @@ function AsatidzDashboardPage() {
                                               <p className="text-[8px] font-bold text-emerald-600 tracking-normal">Waktu Kembali Aktual</p>
                                               <p className="font-bold text-emerald-700 text-[11px] mt-0.5">{formatFullDate(h.actual_return_date)}</p>
                                             </div>
-                                            <span className="text-[9px] font-extrabold uppercase bg-emerald-600 text-white px-2 py-0.5 rounded-md">Tepat Waktu</span>
+                                            <span className="text-[10px] font-semibold !normal-case tracking-tight bg-emerald-600 text-white px-2 py-0.5 rounded-md">Tepat Waktu</span>
                                           </div>
                                         )}
                                       </div>
 
                                       {photos.length > 0 && (
                                         <div className="pt-3 border-t border-slate-200/60 space-y-2">
-                                          <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1">
+                                          <p className="text-[10px] font-semibold text-slate-400 !normal-case tracking-tight flex items-center gap-1">
                                             <ImageIcon size={11} className="text-slate-400" /> Dokumentasi Foto ({photos.length})
                                           </p>
                                           <div className="grid grid-cols-3 gap-2">
