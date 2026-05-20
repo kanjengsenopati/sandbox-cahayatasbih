@@ -35,6 +35,16 @@ jobs:
             git fetch --all
             git reset --hard origin/main
 
+            echo "=== VPS DIAGNOSTICS ==="
+            echo "Current User: $(whoami)"
+            echo "Current Path: $(pwd)"
+            echo "Files in current path:"
+            ls -la
+            echo "Files in public folder:"
+            ls -la public || echo "No public folder"
+            echo "Nginx Config:"
+            cat /www/server/panel/vhost/nginx/aplikasi.cahayatasbih.or.id.conf || echo "No config"
+
             echo "=== Refreshing Autoloader ==="
             composer dump-autoload
 
