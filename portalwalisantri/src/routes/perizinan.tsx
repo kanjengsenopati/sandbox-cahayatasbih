@@ -187,6 +187,22 @@ function PerizinanPage() {
     }
   };
 
+  const formatHeaderDate = (dateStr: string) => {
+    if (!dateStr) return "-";
+    try {
+      const d = new Date(dateStr);
+      if (isNaN(d.getTime())) return "-";
+      const dateFormatted = d.toLocaleDateString("id-ID", {
+        day: "numeric",
+        month: "short"
+      });
+      const timeFormatted = d.toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" });
+      return `${dateFormatted}, ${timeFormatted}`;
+    } catch {
+      return "-";
+    }
+  };
+
   const getDaysInMonth = (monthDate: Date) => {
     const year = monthDate.getFullYear();
     const month = monthDate.getMonth();
@@ -528,13 +544,6 @@ function PerizinanPage() {
 
                 {/* Simple Data Table / Expandable Panel */}
                 <div className="bg-card rounded-[24px] shadow-[0_8px_30px_rgb(0,0,0,0.04)] overflow-hidden divide-y divide-slate-100">
-                  {/* Table Header */}
-                  <div className="grid grid-cols-12 gap-2 px-5 py-2.5 bg-slate-50/50">
-                    <div className="col-span-4"><Text.Label className="text-[10px] text-slate-400 !normal-case !tracking-normal font-semibold">Tipe</Text.Label></div>
-                    <div className="col-span-4"><Text.Label className="text-[10px] text-slate-400 !normal-case !tracking-normal font-semibold">Tanggal</Text.Label></div>
-                    <div className="col-span-4 text-right"><Text.Label className="text-[10px] text-slate-400 !normal-case !tracking-normal font-semibold">Status</Text.Label></div>
-                  </div>
-
                   {/* Table Body */}
                   {paginatedPermits.map((permit: any) => {
                     const isExpanded = expandedPermitId === permit.id;
@@ -555,10 +564,10 @@ function PerizinanPage() {
                       permit.status === "pending_return" ? "Proses Kembali" :
                       "Kembali";
 
-                    const permitDate = new Date(permit.planned_exit_date).toLocaleDateString("id-ID", {
-                      day: "numeric",
-                      month: "short"
-                    });
+                    const exitText = formatHeaderDate(permit.planned_exit_date);
+                    const returnText = formatHeaderDate(permit.planned_return_date);
+                    const actualExitText = permit.actual_exit_date ? formatHeaderDate(permit.actual_exit_date) : null;
+                    const actualReturnText = permit.actual_return_date ? formatHeaderDate(permit.actual_return_date) : null;
 
                     return (
                       <div key={permit.id} className="transition duration-200">
@@ -566,24 +575,46 @@ function PerizinanPage() {
                         <button
                           type="button"
                           onClick={() => setExpandedPermitId(isExpanded ? null : permit.id)}
-                          className="w-full grid grid-cols-12 gap-2 px-5 py-2.5 items-center hover:bg-slate-50/40 active:bg-slate-50 text-left transition"
+                          className="w-full flex items-center justify-between gap-3 px-5 py-3 hover:bg-slate-50/40 active:bg-slate-50 text-left transition"
                         >
-                          {/* Column 1: Type */}
-                          <div className="col-span-4 flex flex-col">
+                          <div className="min-w-0 flex-1 space-y-1">
                             <Text.Body className="font-semibold text-slate-800 capitalize leading-tight truncate">
                               {permit.permit_type.replace("_", " ")}
                             </Text.Body>
-                          </div>
-                          
-                          {/* Column 2: Date */}
-                          <div className="col-span-4">
-                            <Text.Caption className="text-slate-500 font-semibold">
-                              {permitDate}
-                            </Text.Caption>
+                            
+                            {/* Rencana */}
+                            <div className="flex items-center gap-1.5 text-[9px] text-slate-400 font-semibold flex-wrap">
+                              <span className="bg-slate-100 text-slate-500 px-1 py-0.5 rounded text-[8px] font-extrabold uppercase leading-none">Rencana</span>
+                              <span className="text-slate-600 font-extrabold">{exitText}</span>
+                              <span className="text-slate-300">➔</span>
+                              <span className="text-slate-600 font-extrabold">{returnText}</span>
+                            </div>
+
+                            {/* Realisasi */}
+                            {(permit.status === "out" || permit.status === "returned" || actualExitText) && (
+                              <div className="flex items-center gap-1.5 text-[9px] text-slate-400 font-semibold flex-wrap">
+                                <span className={`px-1 py-0.5 rounded text-[8px] font-extrabold uppercase leading-none ${
+                                  permit.status === "returned" ? "bg-emerald-50 text-emerald-600" : "bg-blue-50 text-blue-600"
+                                }`}>
+                                  Realisasi
+                                </span>
+                                {actualExitText && (
+                                  <>
+                                    <span className="text-slate-600 font-extrabold">{actualExitText}</span>
+                                    <span className="text-slate-300">➔</span>
+                                    {actualReturnText ? (
+                                      <span className="text-slate-600 font-extrabold">{actualReturnText}</span>
+                                    ) : (
+                                      <span className="text-blue-600 font-extrabold animate-pulse">Sedang Diluar</span>
+                                    )}
+                                  </>
+                                )}
+                              </div>
+                            )}
                           </div>
 
-                          {/* Column 3: Status & Chevron */}
-                          <div className="col-span-4 flex items-center justify-end gap-2">
+                          {/* Status & Chevron */}
+                          <div className="flex items-center gap-2 shrink-0">
                             <span className={`inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${badgeColor}`}>
                               {badgeText}
                             </span>

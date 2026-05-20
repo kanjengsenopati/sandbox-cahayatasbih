@@ -538,11 +538,16 @@ function AsatidzDashboardPage() {
                           </div>
 
                           <div className="flex items-center gap-3 text-right">
-                            <div>
-                              <span className="inline-block px-2 py-0.5 rounded-full text-[9px] font-extrabold bg-purple-50 text-purple-700 border border-purple-100 uppercase tracking-wide">
-                                Lapor Kembali
-                              </span>
-                              <p className="text-[10px] text-slate-400 mt-1">
+                            <div className="flex flex-col items-end gap-1">
+                              <div className="flex gap-1 flex-wrap justify-end">
+                                <span className="inline-block px-2 py-0.5 rounded-full text-[9px] font-extrabold bg-purple-50 text-purple-700 border-purple-100 uppercase tracking-wide">
+                                  Lapor Kembali
+                                </span>
+                                <span className="inline-block px-2 py-0.5 rounded-full text-[9px] font-extrabold bg-indigo-50 text-indigo-700 border border-indigo-100 uppercase tracking-wide">
+                                  {permit.permit_type ? permit.permit_type.replace(/_/g, " ") : "-"}
+                                </span>
+                              </div>
+                              <p className="text-[10px] text-slate-400 leading-none mt-0.5">
                                 {permit.actual_return_date ? new Date(permit.actual_return_date).toLocaleDateString("id-ID", { day: "numeric", month: "short" }) : "-"}
                               </p>
                             </div>
@@ -699,11 +704,16 @@ function AsatidzDashboardPage() {
                   >
                     <div className="flex justify-between items-start">
                       <div>
-                        <span className={`inline-block px-2.5 py-0.5 rounded-full text-[9px] font-bold border ${
-                          isOut ? "bg-blue-50 text-blue-700 border-blue-100" : "bg-emerald-50 text-emerald-700 border-emerald-100"
-                        }`}>
-                          {isOut ? "Sedang Diluar" : "Disetujui Ustadz"}
-                        </span>
+                        <div className="flex flex-wrap gap-1.5 items-center">
+                          <span className={`inline-block px-2.5 py-0.5 rounded-full text-[9px] font-extrabold border uppercase tracking-wider ${
+                            isOut ? "bg-blue-50 text-blue-700 border-blue-100" : "bg-emerald-50 text-emerald-700 border-emerald-100"
+                          }`}>
+                            {isOut ? "Sedang Diluar" : "Disetujui Ustadz"}
+                          </span>
+                          <span className="inline-block px-2.5 py-0.5 rounded-full text-[9px] font-extrabold bg-indigo-50 text-indigo-700 border border-indigo-100 uppercase tracking-wide">
+                            {permit.permit_type ? permit.permit_type.replace(/_/g, " ") : "-"}
+                          </span>
+                        </div>
                         <p className="text-sm font-bold text-slate-800 mt-2">{permit.student?.name}</p>
                       </div>
                       
@@ -778,9 +788,14 @@ function AsatidzDashboardPage() {
                   
                   <div className="flex justify-between items-start relative z-10">
                     <div>
-                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-red-100 text-red-700 text-[9px] font-bold border border-red-200">
-                        <ShieldAlert size={10} className="animate-pulse" /> Terlambat Kembali
-                      </span>
+                      <div className="flex flex-wrap gap-1.5 items-center">
+                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-red-100 text-red-700 text-[9px] font-bold border border-red-200">
+                          <ShieldAlert size={10} className="animate-pulse" /> Terlambat Kembali
+                        </span>
+                        <span className="inline-block px-2.5 py-0.5 rounded-full text-[9px] font-extrabold bg-indigo-50 text-indigo-700 border border-indigo-100 uppercase tracking-wide">
+                          {permit.permit_type ? permit.permit_type.replace(/_/g, " ") : "-"}
+                        </span>
+                      </div>
                       <p className="text-sm font-bold text-red-950 mt-2">{permit.student?.name}</p>
                     </div>
                     
@@ -930,6 +945,8 @@ function AsatidzDashboardPage() {
 
                               const exitText = formatHeaderDate(h.planned_exit_date);
                               const returnText = formatHeaderDate(h.planned_return_date);
+                              const actualExitText = h.actual_exit_date ? formatHeaderDate(h.actual_exit_date) : null;
+                              const actualReturnText = h.actual_return_date ? formatHeaderDate(h.actual_return_date) : null;
 
                               return (
                                 <div key={h.id} className="transition-colors">
@@ -938,23 +955,40 @@ function AsatidzDashboardPage() {
                                     onClick={() => setExpandedHistoryId(isRowExpanded ? null : h.id)}
                                     className="w-full text-left py-3.5 px-4 flex items-center justify-between gap-3 hover:bg-slate-50 transition active:bg-slate-100/50"
                                   >
-                                    <div className="min-w-0 flex-1">
+                                    <div className="min-w-0 flex-1 space-y-1">
                                       <p className="text-xs font-bold text-slate-700 truncate uppercase tracking-wide">
                                         {h.permit_type.replace(/_/g, " ")}
                                       </p>
-                                      <div className="flex items-center gap-1.5 text-[10px] text-slate-500 font-semibold mt-1 flex-wrap">
-                                        <div className="flex items-center gap-1">
-                                          <span className="w-1.5 h-1.5 rounded-full bg-blue-500 shrink-0"></span>
-                                          <span className="text-slate-400 text-[9px] font-semibold">Keluar:</span>
-                                          <span className="text-slate-600 text-[9px] font-extrabold">{exitText}</span>
-                                        </div>
-                                        <span className="text-slate-300 text-[9px]">➔</span>
-                                        <div className="flex items-center gap-1">
-                                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0"></span>
-                                          <span className="text-slate-400 text-[9px] font-semibold">Kembali:</span>
-                                          <span className="text-slate-600 text-[9px] font-extrabold">{returnText}</span>
-                                        </div>
+                                      
+                                      {/* Rencana */}
+                                      <div className="flex items-center gap-1.5 text-[9px] text-slate-400 font-semibold flex-wrap">
+                                        <span className="bg-slate-100 text-slate-500 px-1 py-0.5 rounded text-[8px] font-extrabold uppercase leading-none">Rencana</span>
+                                        <span className="text-slate-600 font-extrabold">{exitText}</span>
+                                        <span className="text-slate-300">➔</span>
+                                        <span className="text-slate-600 font-extrabold">{returnText}</span>
                                       </div>
+
+                                      {/* Realisasi */}
+                                      {(h.status === "out" || h.status === "returned" || actualExitText) && (
+                                        <div className="flex items-center gap-1.5 text-[9px] text-slate-400 font-semibold flex-wrap">
+                                          <span className={`px-1 py-0.5 rounded text-[8px] font-extrabold uppercase leading-none ${
+                                            h.status === "returned" ? "bg-emerald-50 text-emerald-600" : "bg-blue-50 text-blue-600"
+                                          }`}>
+                                            Realisasi
+                                          </span>
+                                          {actualExitText && (
+                                            <>
+                                              <span className="text-slate-600 font-extrabold">{actualExitText}</span>
+                                              <span className="text-slate-300">➔</span>
+                                              {actualReturnText ? (
+                                                <span className="text-slate-600 font-extrabold">{actualReturnText}</span>
+                                              ) : (
+                                                <span className="text-blue-600 font-extrabold animate-pulse">Sedang Diluar</span>
+                                              )}
+                                            </>
+                                          )}
+                                        </div>
+                                      )}
                                     </div>
                                     <div className="flex items-center gap-2 shrink-0">
                                       <span className={`px-2 py-0.5 rounded-full text-[8px] font-extrabold tracking-wide border uppercase ${badgeStyle}`}>
