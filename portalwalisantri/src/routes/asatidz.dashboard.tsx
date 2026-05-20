@@ -969,23 +969,21 @@ function AsatidzDashboardPage() {
                                       </div>
 
                                       {/* Realisasi */}
-                                      {(h.status === "out" || h.status === "returned" || actualExitText) && (
+                                      {(h.status === "out" || h.status === "returned" || h.status === "pending_return" || !!h.actual_exit_date || !!h.actual_return_date) && (
                                         <div className="flex items-center gap-1.5 text-[9px] text-slate-400 font-semibold flex-wrap">
                                           <span className={`px-1 py-0.5 rounded text-[8px] font-extrabold uppercase leading-none ${
                                             h.status === "returned" ? "bg-emerald-50 text-emerald-600" : "bg-blue-50 text-blue-600"
                                           }`}>
                                             Realisasi
                                           </span>
-                                          {actualExitText && (
-                                            <>
-                                              <span className="text-slate-600 font-extrabold">{actualExitText}</span>
-                                              <span className="text-slate-300">➔</span>
-                                              {actualReturnText ? (
-                                                <span className="text-slate-600 font-extrabold">{actualReturnText}</span>
-                                              ) : (
-                                                <span className="text-blue-600 font-extrabold animate-pulse">Sedang Diluar</span>
-                                              )}
-                                            </>
+                                          <span className="text-slate-600 font-extrabold">{actualExitText || "-"}</span>
+                                          <span className="text-slate-300">➔</span>
+                                          {actualReturnText ? (
+                                            <span className="text-slate-600 font-extrabold">{actualReturnText}</span>
+                                          ) : h.status === "returned" ? (
+                                            <span className="text-slate-600 font-extrabold">-</span>
+                                          ) : (
+                                            <span className="text-blue-600 font-extrabold animate-pulse">Sedang Diluar</span>
                                           )}
                                         </div>
                                       )}

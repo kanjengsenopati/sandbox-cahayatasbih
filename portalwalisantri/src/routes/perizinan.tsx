@@ -591,23 +591,21 @@ function PerizinanPage() {
                             </div>
 
                             {/* Realisasi */}
-                            {(permit.status === "out" || permit.status === "returned" || actualExitText) && (
+                            {(permit.status === "out" || permit.status === "returned" || permit.status === "pending_return" || !!permit.actual_exit_date || !!permit.actual_return_date) && (
                               <div className="flex items-center gap-1.5 text-[9px] text-slate-400 font-semibold flex-wrap">
                                 <span className={`px-1 py-0.5 rounded text-[8px] font-extrabold uppercase leading-none ${
                                   permit.status === "returned" ? "bg-emerald-50 text-emerald-600" : "bg-blue-50 text-blue-600"
                                 }`}>
                                   Realisasi
                                 </span>
-                                {actualExitText && (
-                                  <>
-                                    <span className="text-slate-600 font-extrabold">{actualExitText}</span>
-                                    <span className="text-slate-300">➔</span>
-                                    {actualReturnText ? (
-                                      <span className="text-slate-600 font-extrabold">{actualReturnText}</span>
-                                    ) : (
-                                      <span className="text-blue-600 font-extrabold animate-pulse">Sedang Diluar</span>
-                                    )}
-                                  </>
+                                <span className="text-slate-600 font-extrabold">{actualExitText || "-"}</span>
+                                <span className="text-slate-300">➔</span>
+                                {actualReturnText ? (
+                                  <span className="text-slate-600 font-extrabold">{actualReturnText}</span>
+                                ) : permit.status === "returned" ? (
+                                  <span className="text-slate-600 font-extrabold">-</span>
+                                ) : (
+                                  <span className="text-blue-600 font-extrabold animate-pulse">Sedang Diluar</span>
                                 )}
                               </div>
                             )}
