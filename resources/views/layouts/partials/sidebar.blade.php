@@ -73,7 +73,7 @@
                 'Manage Jenis Bayar', 'Manage Petugas'])
                 <div data-kt-menu-trigger="click" class="menu-item menu-accordion {{ request()->routeIs(['permission.*', 'role.*', 'information-category.*',
                     'information.*', 'payment-method.*', 'application-setting.*', 'application-menu.*', 'help.*',
-                    'app-information.*', 'bill-item.*', 'bill-type.*', 'admin.*', 'officer.*']) ? 'show' : '' }}">
+                    'app-information.*', 'bill-item.*', 'bill-type.*', 'admin.*', 'officer.*', 'admin.audit']) ? 'show' : '' }}">
                     <span class="menu-link ">
                         <span class="menu-icon">
                             <i class="fa-solid fa-cog" style="color: #ffffff;"></i>
@@ -145,6 +145,15 @@
                                     <span class="bullet bullet-dot"></span>
                                 </span>
                                 <span class="menu-title">Pengaturan Aplikasi</span>
+                            </a>
+                        </div>
+                        <div class="menu-item ">
+                            <a class="menu-link {{ request()->routeIs('admin.audit') ? ' active' : '' }}"
+                                href="{{ route('admin.audit') }}">
+                                <span class="menu-bullet">
+                                    <span class="bullet bullet-dot"></span>
+                                </span>
+                                <span class="menu-title">Audit & Sinkronisasi</span>
                             </a>
                         </div>
                         @endcan
