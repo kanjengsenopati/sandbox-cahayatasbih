@@ -27,25 +27,45 @@ class AuditService
     public function runAll(): array
     {
         $results = [];
-        $php = (string) \trim(\shell_exec('which php'));
-        if (empty($php)) {
-            // fallback to php in PATH
-            $php = 'php';
-        }
         foreach ($this->scripts as $script) {
             $path = base_path($script);
             if (!\file_exists($path)) {
                 $results[$script] = ['status' => -1, 'output' => "Script not found: $script"]; 
                 continue;
             }
-            // Execute script and capture output & exit code
-            $command = "$php \"$path\" 2>&1";
-            $output = [];
+
+            // Capture output of eval in isolated scope
+            \ob_start();
             $status = 0;
-            \exec($command, $output, $status);
+            try {
+                $code = \file_get_contents($path);
+                // Strip opening PHP tag if present
+                $code = \preg_replace('/^<\?php/', '', $code);
+                
+                // Strip bootstrapping boilerplates
+                $patterns = [
+                    '/require(_once)?\s+[\'"]([^\'"]*\/)?(vendor\/)?autoload\.php[\'"];/',
+                    '/require(_once)?\s+[\'"]([^\'"]*\/)?bootstrap\/app\.php[\'"];/',
+                    '/\$app\s*=.*;/',
+                    '/\$kernel\s*=.*;/',
+                    '/\$kernel->bootstrap\(\);/',
+                    '/\$response\s*=\s*\$kernel->handle\(.*\);/',
+                ];
+                $code = \preg_replace($patterns, '', $code);
+                
+                // Execute code in an isolated scope closure
+                (function() use ($code) {
+                    eval($code);
+                })();
+            } catch (\Throwable $e) {
+                $status = 1;
+                echo "\nException during execution:\n" . $e->getMessage() . "\n" . $e->getTraceAsString();
+            }
+            $output = \ob_get_clean();
+
             $results[$script] = [
                 'status' => $status,
-                'output' => \implode("\n", $output),
+                'output' => $output,
             ];
         }
         return $results;
