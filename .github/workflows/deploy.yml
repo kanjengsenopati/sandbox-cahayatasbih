@@ -35,16 +35,6 @@ jobs:
             git fetch --all
             git reset --hard origin/main
 
-            echo "=== VPS DIAGNOSTICS ==="
-            echo "Current User: $(whoami)"
-            echo "Current Path: $(pwd)"
-            echo "Files in current path:"
-            ls -la
-            echo "Files in public folder:"
-            ls -la public || echo "No public folder"
-            echo "Nginx Config:"
-            cat /www/server/panel/vhost/nginx/aplikasi.cahayatasbih.or.id.conf || echo "No config"
-
             echo "=== Refreshing Autoloader ==="
             composer dump-autoload
 
@@ -55,13 +45,15 @@ jobs:
             php artisan view:clear
 
             echo "=== Running Audit ==="
-            php artisan app:audit
+            php artisan app:audit || echo "Audit failed"
 
-            echo "=== Latest Laravel Logs ==="
-            tail -n 50 storage/logs/laravel.log || echo "No laravel logs found"
-
-            echo "=== Nginx Error Logs ==="
-            tail -n 50 /www/wwwlogs/aplikasi.cahayatasbih.or.id.error.log || echo "No nginx logs found"
+            echo "=== Fixing Permissions ==="
+            chown -R www:www $DEPLOY_PATH || echo "Failed to chown"
+            find $DEPLOY_PATH -type d -exec chmod 775 {} \; || echo "Failed to chmod dirs"
+            find $DEPLOY_PATH -type f -exec chmod 664 {} \; || echo "Failed to chmod files"
+            chmod -R 775 $DEPLOY_PATH/storage || echo "Failed to chmod storage"
+            chmod -R 775 $DEPLOY_PATH/bootstrap/cache || echo "Failed to chmod cache"
+            chmod 660 $DEPLOY_PATH/.env || chmod 600 $DEPLOY_PATH/.env || echo "Failed to secure .env"
 
             echo "=== Deployment Finished ==="
           EOF
