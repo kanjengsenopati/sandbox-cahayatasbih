@@ -157,6 +157,7 @@
     background-color: var(--color-background);
     color: var(--color-foreground);
     font-family: 'Inter', system-ui, sans-serif;
+    font-size: 14px;
     -webkit-font-smoothing: antialiased;
   }
 }
