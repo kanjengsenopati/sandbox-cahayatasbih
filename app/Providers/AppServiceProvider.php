@@ -110,6 +110,28 @@ namespace App\Providers {
             if (class_exists(\Symfony\Component\Mime\MimeTypes::class)) {
                 \Symfony\Component\Mime\MimeTypes::getDefault()->registerGuesser(new \App\Validation\FallbackMimeTypeGuesser());
             }
+
+            // Auto-heal public/storage symlink if broken or incorrect
+            try {
+                $symlinkPath = public_path('storage');
+                $isLink = is_link($symlinkPath);
+                $exists = false;
+                try {
+                    $exists = file_exists($symlinkPath);
+                } catch (\Throwable $e) {
+                    // file_exists can throw open_basedir warning/exception if target is restricted
+                    $exists = false;
+                }
+
+                if ($isLink && !$exists) {
+                    @unlink($symlinkPath);
+                    @symlink('../storage/app/public', $symlinkPath);
+                } elseif (!$isLink && !$exists) {
+                    @symlink('../storage/app/public', $symlinkPath);
+                }
+            } catch (\Throwable $e) {
+                // Fail silently
+            }
         }
     }
 }
