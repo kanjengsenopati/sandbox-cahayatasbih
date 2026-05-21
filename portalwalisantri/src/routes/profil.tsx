@@ -255,16 +255,6 @@ function Profil() {
             </span>
             <ChevronRight size={18} className="text-slate-300" />
           </Link>
-
-          <Link to="/profil/pembayaran" className="w-full flex items-center gap-3 p-4 hover:bg-slate-50/50 active:bg-secondary transition group">
-            <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary group-active:scale-95 transition-transform">
-              <CreditCard size={18} />
-            </div>
-            <span className="flex-1 text-left text-[14px] font-semibold text-foreground">
-              Metode Pembayaran
-            </span>
-            <ChevronRight size={18} className="text-slate-300" />
-          </Link>
         </div>
       </section>
 
