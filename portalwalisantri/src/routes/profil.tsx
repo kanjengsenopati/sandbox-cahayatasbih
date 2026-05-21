@@ -1,31 +1,14 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { ChevronRight, Shield, Bell, CreditCard, HelpCircle, LogOut, Settings, Loader2, RefreshCw } from "lucide-react";
+import { LogOut, Loader2, RefreshCw, Mail, Phone, User as UserIcon, MapPin, CreditCard as IdCard, Clock, Activity, ShieldCheck } from "lucide-react";
 import { MobileShell } from "@/components/MobileShell";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { fetchProfile, postLogout, postSwitchRole } from "@/lib/api";
+import { Text } from "@/components/Text";
 
 export const Route = createFileRoute("/profil")({
   component: Profil,
   head: () => ({ meta: [{ title: "Profil — SantriPay" }] }),
 });
-
-const groups = [
-  {
-    title: "Akun",
-    items: [
-      { label: "Keamanan & PIN", icon: Shield },
-      { label: "Notifikasi", icon: Bell },
-      { label: "Metode Pembayaran", icon: CreditCard },
-    ],
-  },
-  {
-    title: "Lainnya",
-    items: [
-      { label: "Pengaturan", icon: Settings },
-      { label: "Bantuan", icon: HelpCircle },
-    ],
-  },
-];
 
 function Profil() {
   const navigate = useNavigate();
@@ -141,32 +124,114 @@ function Profil() {
         </section>
       )}
 
-      {groups.map((g) => (
-        <section key={g.title} className="px-6 mt-6">
-          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 px-1">
-            {g.title}
-          </p>
-          <div className="bg-card rounded-2xl border border-border divide-y divide-border overflow-hidden shadow-[var(--shadow-soft)]">
-            {g.items.map((it) => {
-              const Icon = it.icon;
-              return (
-                <button
-                  key={it.label}
-                  className="w-full flex items-center gap-3 p-4 active:bg-secondary transition"
-                >
-                  <div className="w-10 h-10 rounded-xl bg-secondary flex items-center justify-center text-primary">
-                    <Icon size={18} />
-                  </div>
-                  <span className="flex-1 text-left text-sm font-semibold text-foreground">
-                    {it.label}
-                  </span>
-                  <ChevronRight size={18} className="text-muted-foreground" />
-                </button>
-              );
-            })}
+      <section className="px-6 mt-6">
+        <Text.Label className="mb-2 block px-1">Informasi Pribadi</Text.Label>
+        <div className="bg-card rounded-[24px] border border-border divide-y divide-border overflow-hidden shadow-[var(--shadow-soft)]">
+          
+          <div className="flex items-center gap-4 p-4">
+            <div className="w-10 h-10 rounded-xl bg-secondary flex items-center justify-center text-primary shrink-0">
+              <Mail size={18} />
+            </div>
+            <div className="flex-1 overflow-hidden">
+              <p className="text-[11px] font-bold text-slate-400 mb-0.5">Email</p>
+              <Text.Body className="truncate font-semibold">{user?.email || "-"}</Text.Body>
+            </div>
           </div>
-        </section>
-      ))}
+
+          <div className="flex items-center gap-4 p-4">
+            <div className="w-10 h-10 rounded-xl bg-secondary flex items-center justify-center text-primary shrink-0">
+              <Phone size={18} />
+            </div>
+            <div className="flex-1 overflow-hidden">
+              <p className="text-[11px] font-bold text-slate-400 mb-0.5">Nomor HP / WhatsApp</p>
+              <Text.Body className="truncate font-semibold">{user?.phone || "-"}</Text.Body>
+            </div>
+          </div>
+
+          {profileData?.role === 'wali' && (
+            <div className="flex items-center gap-4 p-4">
+              <div className="w-10 h-10 rounded-xl bg-secondary flex items-center justify-center text-primary shrink-0">
+                <UserIcon size={18} />
+              </div>
+              <div className="flex-1 overflow-hidden">
+                <p className="text-[11px] font-bold text-slate-400 mb-0.5">Jenis Kelamin</p>
+                <Text.Body className="truncate font-semibold">
+                  {user?.gender === 'L' ? 'Laki-laki' : user?.gender === 'P' ? 'Perempuan' : '-'}
+                </Text.Body>
+              </div>
+            </div>
+          )}
+        </div>
+      </section>
+
+      <section className="px-6 mt-6">
+        <Text.Label className="mb-2 block px-1">Status Keanggotaan</Text.Label>
+        <div className="bg-card rounded-[24px] border border-border divide-y divide-border overflow-hidden shadow-[var(--shadow-soft)]">
+          
+          <div className="flex items-center gap-4 p-4">
+            <div className="w-10 h-10 rounded-xl bg-secondary flex items-center justify-center text-primary shrink-0">
+              <Activity size={18} />
+            </div>
+            <div className="flex-1 flex justify-between items-center overflow-hidden">
+              <div>
+                <p className="text-[11px] font-bold text-slate-400 mb-0.5">Status Akun</p>
+                <Text.Body className="truncate font-semibold text-slate-700">Akses Platform</Text.Body>
+              </div>
+              <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold ${user?.is_active ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-600'}`}>
+                {user?.is_active ? 'Aktif' : 'Non-Aktif'}
+              </span>
+            </div>
+          </div>
+
+          {profileData?.role === 'wali' && user?.kta && (
+            <div className="flex items-center gap-4 p-4">
+              <div className="w-10 h-10 rounded-xl bg-secondary flex items-center justify-center text-primary shrink-0">
+                <IdCard size={18} />
+              </div>
+              <div className="flex-1 overflow-hidden">
+                <p className="text-[11px] font-bold text-slate-400 mb-0.5">Nomor KTA</p>
+                <Text.Body className="truncate font-semibold">{user.kta}</Text.Body>
+              </div>
+            </div>
+          )}
+
+          {profileData?.role === 'wali' && user?.member_branch && (
+            <div className="flex items-center gap-4 p-4">
+              <div className="w-10 h-10 rounded-xl bg-secondary flex items-center justify-center text-primary shrink-0">
+                <MapPin size={18} />
+              </div>
+              <div className="flex-1 overflow-hidden">
+                <p className="text-[11px] font-bold text-slate-400 mb-0.5">Cabang / Ranting</p>
+                <Text.Body className="truncate font-semibold">{user.member_branch} {user?.member_group ? `— ${user.member_group}` : ''}</Text.Body>
+              </div>
+            </div>
+          )}
+
+          {profileData?.role === 'asatidz' && user?.access_scope && (
+            <div className="flex items-center gap-4 p-4">
+              <div className="w-10 h-10 rounded-xl bg-secondary flex items-center justify-center text-primary shrink-0">
+                <ShieldCheck size={18} />
+              </div>
+              <div className="flex-1 overflow-hidden">
+                <p className="text-[11px] font-bold text-slate-400 mb-0.5">Access Scope</p>
+                <Text.Body className="truncate font-semibold capitalize">{user.access_scope.replace(/_/g, ' ')}</Text.Body>
+              </div>
+            </div>
+          )}
+
+          <div className="flex items-center gap-4 p-4">
+            <div className="w-10 h-10 rounded-xl bg-secondary flex items-center justify-center text-primary shrink-0">
+              <Clock size={18} />
+            </div>
+            <div className="flex-1 overflow-hidden">
+              <p className="text-[11px] font-bold text-slate-400 mb-0.5">Terakhir Login</p>
+              <Text.Body className="truncate font-semibold text-slate-600">
+                {(user?.last_login || user?.last_login_at) ? new Date(user.last_login || user.last_login_at).toLocaleString("id-ID", { dateStyle: "long", timeStyle: "short" }) : '-'}
+              </Text.Body>
+            </div>
+          </div>
+        </div>
+      </section>
 
       <section className="px-6 mt-6">
         <button
