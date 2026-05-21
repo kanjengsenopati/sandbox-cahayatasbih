@@ -20,8 +20,20 @@ try {
     Artisan::call('config:clear');
     echo Artisan::output() . "\n";
 
+    echo "Running route:clear...\n";
+    Artisan::call('route:clear');
+    echo Artisan::output() . "\n";
+
+    echo "Running view:clear...\n";
+    Artisan::call('view:clear');
+    echo Artisan::output() . "\n";
+
     echo "Running cache:clear...\n";
     Artisan::call('cache:clear');
+    echo Artisan::output() . "\n";
+
+    echo "Running migrate --force...\n";
+    Artisan::call('migrate', ['--force' => true]);
     echo Artisan::output() . "\n";
 
     echo "Running queue:restart...\n";
