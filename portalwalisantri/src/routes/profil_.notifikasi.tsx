@@ -1,15 +1,49 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { ArrowLeft, BellRing, Bell, BellOff, CheckCircle2, XCircle, Info, Sparkles, Smartphone, ShieldCheck } from "lucide-react";
-import { useState, useEffect, useCallback } from "react";
+import { ArrowLeft, BellRing, BellOff, XCircle, Info, Sparkles, Smartphone, ShieldCheck } from "lucide-react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { toast } from "sonner";
+import { useSantri } from "@/contexts/SantriContext";
+import { useQuery } from "@tanstack/react-query";
+import { fetchBills } from "@/lib/api";
 
 export const Route = createFileRoute("/profil_/notifikasi")({
   component: NotifikasiPage,
   head: () => ({ meta: [{ title: "Notifikasi — SantriPay" }] }),
 });
 
+const fmtIDR = (n: number) =>
+  new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0 }).format(n);
+
 function NotifikasiPage() {
   const navigate = useNavigate();
+  const { active } = useSantri();
+
+  // Fetch real database bills/tagihan
+  const { data: billsData } = useQuery({
+    queryKey: ["bills", active?.id],
+    queryFn: async () => {
+      const res = await fetchBills();
+      return res.data;
+    },
+    enabled: !!active,
+  });
+
+  // Extract first unpaid bill or fallback to mock data
+  const firstUnpaidBill = useMemo(() => {
+    return billsData?.unpaid?.[0];
+  }, [billsData]);
+
+  const billName = useMemo(() => {
+    return firstUnpaidBill ? firstUnpaidBill.bill_type_name : "SPP & Uang Makan";
+  }, [firstUnpaidBill]);
+
+  const billAmount = useMemo(() => {
+    return firstUnpaidBill ? Number(firstUnpaidBill.total - firstUnpaidBill.paid) : 350000;
+  }, [firstUnpaidBill]);
+
+  const billPeriod = useMemo(() => {
+    return firstUnpaidBill ? (firstUnpaidBill.academic_year || "Mei 2026") : "Mei 2026";
+  }, [firstUnpaidBill]);
 
   // Push Notification state
   const [pushSupported, setPushSupported] = useState(false);
@@ -79,7 +113,7 @@ function NotifikasiPage() {
         toast.error("Gagal meminta izin notifikasi");
       }
     } else {
-      // Already granted — toggling off (local state only, can't revoke browser permission)
+      // Already granted — toggling off
       const nextState = !pushEnabled;
       setPushEnabled(nextState);
       if (!nextState) {
@@ -111,37 +145,85 @@ function NotifikasiPage() {
 
   // Test notification functions
   const sendTestPush = async () => {
-    if (pushEnabled && pushPermission === "granted") {
-      if ('serviceWorker' in navigator) {
+    if (!pushEnabled || pushPermission !== "granted") {
+      toast.error("Aktifkan Push Notification terlebih dahulu.");
+      return;
+    }
+
+    // 1. Try sending real native push notification via PWA Service Worker
+    if ('serviceWorker' in navigator) {
+      try {
+        const reg = await navigator.serviceWorker.ready;
+        if (reg) {
+          reg.showNotification("SantriPay — " + billName, {
+            body: `Tagihan periode ${billPeriod} sebesar ${fmtIDR(billAmount)} telah terbit.`,
+            icon: "/icons/icon-192.png",
+            badge: "/icons/icon-192.png",
+            vibrate: [100, 50, 100],
+            data: {
+              url: "/tagihan"
+            }
+          });
+        }
+      } catch (e) {
+        console.error("SW notification failed, falling back to window Notification", e);
         try {
-          const reg = await navigator.serviceWorker.ready;
-          if (reg) {
-            reg.showNotification("SantriPay — Tagihan Baru", {
-              body: "Tagihan SPP bulan ini telah terbit. Segera lakukan pembayaran.",
-              icon: "/icons/icon-192.png",
-              badge: "/icons/icon-192.png",
-              vibrate: [100, 50, 100],
-              data: {
-                url: "/tagihan"
-              }
-            });
-            toast.success("Test Push Notification terkirim via Service Worker!");
-            return;
-          }
-        } catch (e) {
-          console.error("SW notification failed, falling back to window Notification", e);
+          new Notification("SantriPay — " + billName, {
+            body: `Tagihan periode ${billPeriod} sebesar ${fmtIDR(billAmount)} telah terbit.`,
+            icon: "/icons/icon-192.png",
+          });
+        } catch (err) {
+          console.error("Window notification failed too", err);
         }
       }
-      
-      // Fallback
-      new Notification("SantriPay — Tagihan Baru", {
-        body: "Tagihan SPP bulan ini telah terbit. Segera lakukan pembayaran.",
-        icon: "/icons/icon-192.png",
-      });
-      toast.success("Test Push Notification terkirim!");
-    } else {
-      toast.error("Aktifkan Push Notification terlebih dahulu.");
+    } else if ("Notification" in window) {
+      try {
+        new Notification("SantriPay — " + billName, {
+          body: `Tagihan periode ${billPeriod} sebesar ${fmtIDR(billAmount)} telah terbit.`,
+          icon: "/icons/icon-192.png",
+        });
+      } catch (err) {
+        console.error("Window notification failed", err);
+      }
     }
+
+    // 2. Render a gorgeous premium OS Push Notification card as a toast alert so the user always sees it!
+    toast.custom((t) => (
+      <div className="w-full max-w-sm bg-slate-900/95 text-white backdrop-blur-md rounded-[24px] border border-slate-800 shadow-[0_10px_30px_rgba(0,0,0,0.15)] p-5 flex gap-4 items-start animate-in fade-in slide-in-from-top-4 duration-300">
+        <div className="w-12 h-12 rounded-2xl bg-primary/20 text-primary flex items-center justify-center shrink-0 border border-primary/30 shadow-inner">
+          <Smartphone size={22} className="animate-pulse text-blue-400" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="flex justify-between items-baseline">
+            <span className="text-[10px] font-extrabold uppercase tracking-widest text-blue-400">System Push Notification</span>
+            <span className="text-[10px] text-slate-400">Baru saja</span>
+          </div>
+          <p className="text-[14px] font-bold text-white mt-1">SantriPay — {billName}</p>
+          <p className="text-[12px] text-slate-300 mt-1.5 leading-relaxed">
+            Tagihan {billName} periode {billPeriod} sebesar <strong className="text-emerald-400 font-bold">{fmtIDR(billAmount)}</strong> telah terbit.
+          </p>
+          <div className="mt-4 flex gap-2">
+            <button
+              onClick={() => {
+                toast.dismiss(t);
+                navigate({ to: "/tagihan" });
+              }}
+              className="px-4 py-2 rounded-xl bg-primary text-white text-[11px] font-bold hover:opacity-90 active:scale-95 transition-all shadow-sm shadow-primary/20"
+            >
+              Buka Tagihan
+            </button>
+            <button
+              onClick={() => toast.dismiss(t)}
+              className="px-4 py-2 rounded-xl bg-slate-800 text-slate-400 text-[11px] font-bold hover:bg-slate-700 hover:text-white active:scale-95 transition-all"
+            >
+              Tutup
+            </button>
+          </div>
+        </div>
+      </div>
+    ), {
+      duration: 8000,
+    });
   };
 
   const sendTestToaster = () => {
@@ -160,9 +242,9 @@ function NotifikasiPage() {
             <span className="text-[10px] font-extrabold uppercase tracking-widest text-emerald-600">Tagihan Terbit</span>
             <span className="text-[10px] text-slate-400">Baru saja</span>
           </div>
-          <p className="text-[14px] font-bold text-slate-900 mt-1">SPP & Uang Makan Mei 2026</p>
+          <p className="text-[14px] font-bold text-slate-900 mt-1">{billName}</p>
           <p className="text-[12px] text-slate-500 mt-1.5 leading-relaxed">
-            Tagihan SPP bulan ini sebesar <strong className="text-emerald-600 font-bold">Rp 350.000</strong> telah terbit.
+            Tagihan {billName} periode {billPeriod} sebesar <strong className="text-emerald-600 font-bold">{fmtIDR(billAmount)}</strong> telah terbit.
           </p>
           <div className="mt-4 flex gap-2">
             <button
