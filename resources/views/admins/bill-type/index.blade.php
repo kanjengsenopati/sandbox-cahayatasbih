@@ -27,6 +27,7 @@
     <!--begin::Post-->
     <div class="post d-flex flex-column-fluid">
         <div id="kt_content_container" class="container-xxl">
+            @include('admins.partials.tabs-keuangan')
             <!--begin::Card-->
             <div class="card card-flush shadow-sm">
                 <!--begin::Card header-->

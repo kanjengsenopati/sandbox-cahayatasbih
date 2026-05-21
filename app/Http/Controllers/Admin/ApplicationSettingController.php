@@ -58,8 +58,9 @@ class ApplicationSettingController extends Controller
         $imagePath = $file->store('images/student-card', 'public');
 
         $previousImage = ApplicationSetting::value('student_card_image');
-        if ($previousImage && file_exists($previousImage)) {
-            unlink($previousImage);
+        if ($previousImage) {
+            $oldPath = str_replace('storage/', '', $previousImage);
+            \Illuminate\Support\Facades\Storage::disk('public')->delete($oldPath);
         }
 
         return 'storage/' . $imagePath;

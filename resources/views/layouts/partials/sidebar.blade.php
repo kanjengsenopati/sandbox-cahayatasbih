@@ -68,11 +68,9 @@
                 </div>
                 @endcan -->
 
-                @canany(['Manage Role', 'Manage Admin', 'Manage Informasi', 'Manage Metode Pembayaran','Manage Menu
-                Aplikasi', 'Manage Kontak Bantuan', 'Manage Bank', 'Manage Pengaturan Aplikasi', 'Item Bayar',
-                'Manage Jenis Bayar', 'Manage Petugas'])
+                @canany(['permission', 'Manage Role', 'Manage Admin', 'Manage Informasi', 'Manage Metode Pembayaran', 'Manage Menu Aplikasi', 'Manage Kontak Bantuan', 'Manage Bank', 'Manage Pengaturan Aplikasi', 'Item Bayar', 'Manage Item Bayar', 'Manage Jenis Bayar', 'Manage Petugas', 'app-information'])
                 <div data-kt-menu-trigger="click" class="menu-item menu-accordion {{ request()->routeIs(['permission.*', 'role.*', 'information-category.*',
-                    'information.*', 'payment-method.*', 'application-setting.*', 'application-menu.*', 'help.*',
+                    'information.*', 'payment-method.*', 'application-setting.*', 'student-card-setting.*', 'application-menu.*', 'help.*',
                     'app-information.*', 'bill-item.*', 'bill-type.*', 'admin.*', 'officer.*', 'admin.audit']) ? 'show' : '' }}">
                     <span class="menu-link ">
                         <span class="menu-icon">
@@ -82,39 +80,46 @@
                         <span class="menu-arrow"></span>
                     </span>
                     <div class="menu-sub menu-sub-accordion menu-active-bg">
-                        @can('permission')
+                        {{-- Group 1: Akses & Pengguna --}}
+                        @canany(['permission', 'Manage Role', 'Manage Admin'])
                         <div class="menu-item ">
-                            <a class="menu-link {{ request()->routeIs('permission.*') ? ' active' : '' }}"
-                                href="{{ route('permission.index') }}">
+                            <a class="menu-link {{ (request()->routeIs(['permission.*', 'role.*', 'admin.*']) && !request()->routeIs('admin.audit')) ? ' active' : '' }}"
+                                href="{{ auth()->user()->can('Manage Admin') ? route('admin.index') : (auth()->user()->can('Manage Role') ? route('role.index') : route('permission.index')) }}">
                                 <span class="menu-bullet">
                                     <span class="bullet bullet-dot"></span>
                                 </span>
-                                <span class="menu-title">Permission</span>
+                                <span class="menu-title">Akses & Pengguna</span>
                             </a>
                         </div>
-                        @endcan
-                        @can('Manage Role')
+                        @endcanany
+
+                        {{-- Group 2: Keuangan & Bank --}}
+                        @canany(['Manage Jenis Bayar', 'Manage Item Bayar', 'Item Bayar', 'Manage Bank'])
                         <div class="menu-item ">
-                            <a class="menu-link {{ request()->routeIs('role.*') ? ' active' : '' }}"
-                                href="{{ route('role.index') }}">
+                            <a class="menu-link {{ request()->routeIs(['bill-type.*', 'bill-item.*', 'bank.*']) ? ' active' : '' }}"
+                                href="{{ auth()->user()->can('Manage Jenis Bayar') ? route('bill-type.index') : (auth()->user()->can('Manage Item Bayar') ? route('bill-item.index') : (auth()->user()->can('Item Bayar') ? route('bill-item.index') : route('bank.index'))) }}">
                                 <span class="menu-bullet">
                                     <span class="bullet bullet-dot"></span>
                                 </span>
-                                <span class="menu-title">Role</span>
+                                <span class="menu-title">Keuangan & Bank</span>
                             </a>
                         </div>
-                        @endcan
-                        @can('Manage Admin')
+                        @endcanany
+
+                        {{-- Group 3: Pengaturan Aplikasi --}}
+                        @canany(['Manage Pengaturan Aplikasi', 'Manage Menu Aplikasi'])
                         <div class="menu-item ">
-                            <a class="menu-link {{ request()->routeIs('admin.*') ? ' active' : '' }}"
-                                href="{{ route('admin.index') }}">
+                            <a class="menu-link {{ request()->routeIs(['application-setting.*', 'student-card-setting.*', 'admin.audit', 'application-menu.*']) ? ' active' : '' }}"
+                                href="{{ auth()->user()->can('Manage Pengaturan Aplikasi') ? route('application-setting.index') : route('application-menu.index') }}">
                                 <span class="menu-bullet">
                                     <span class="bullet bullet-dot"></span>
                                 </span>
-                                <span class="menu-title">Pengguna</span>
+                                <span class="menu-title">Pengaturan Aplikasi</span>
                             </a>
                         </div>
-                        @endcan
+                        @endcanany
+
+                        {{-- Non-grouped: Informasi --}}
                         @can('Manage Informasi')
                         <div class="menu-item ">
                             <a class="menu-link {{ request()->routeIs('information.*', 'information-category.*') ? ' active' : '' }}"
@@ -126,6 +131,8 @@
                             </a>
                         </div>
                         @endcan
+
+                        {{-- Non-grouped: Metode Pembayaran --}}
                         @can('Manage Metode Pembayaran')
                         <div class="menu-item ">
                             <a class="menu-link {{ request()->routeIs('payment-method.*') ? ' active' : '' }}"
@@ -137,37 +144,8 @@
                             </a>
                         </div>
                         @endcan
-                        @can('Manage Pengaturan Aplikasi')
-                        <div class="menu-item ">
-                            <a class="menu-link {{ request()->routeIs('application-setting.*') ? ' active' : '' }}"
-                                href="{{ route('application-setting.index') }}">
-                                <span class="menu-bullet">
-                                    <span class="bullet bullet-dot"></span>
-                                </span>
-                                <span class="menu-title">Pengaturan Aplikasi</span>
-                            </a>
-                        </div>
-                        <div class="menu-item ">
-                            <a class="menu-link {{ request()->routeIs('admin.audit') ? ' active' : '' }}"
-                                href="{{ route('admin.audit') }}">
-                                <span class="menu-bullet">
-                                    <span class="bullet bullet-dot"></span>
-                                </span>
-                                <span class="menu-title">Audit & Sinkronisasi</span>
-                            </a>
-                        </div>
-                        @endcan
-                        @can('Manage Menu Aplikasi')
-                        <div class="menu-item ">
-                            <a class="menu-link {{ request()->routeIs('application-menu.*') ? ' active' : '' }}"
-                                href="{{ route('application-menu.index') }}">
-                                <span class="menu-bullet">
-                                    <span class="bullet bullet-dot"></span>
-                                </span>
-                                <span class="menu-title">Menu Aplikasi</span>
-                            </a>
-                        </div>
-                        @endcan
+
+                        {{-- Non-grouped: Kontak Bantuan --}}
                         @can('Manage Kontak Bantuan')
                         <div class="menu-item ">
                             <a class="menu-link {{ request()->routeIs('help.*') ? ' active' : '' }}"
@@ -179,6 +157,8 @@
                             </a>
                         </div>
                         @endcan
+
+                        {{-- Non-grouped: Data Petugas --}}
                         @can('Manage Petugas')
                         <div class="menu-item ">
                             <a class="menu-link {{ request()->routeIs('officer.*') ? ' active' : '' }}"
@@ -190,6 +170,8 @@
                             </a>
                         </div>
                         @endcan
+
+                        {{-- Non-grouped: Informasi Aplikasi --}}
                         @can('app-information')
                         <div class="menu-item ">
                             <a class="menu-link {{ request()->routeIs('app-information.*') ? ' active' : '' }}"
@@ -198,39 +180,6 @@
                                     <span class="bullet bullet-dot"></span>
                                 </span>
                                 <span class="menu-title">Informasi Aplikasi</span>
-                            </a>
-                        </div>
-                        @endcan
-                        @can('Manage Item Bayar')
-                        <div class="menu-item ">
-                            <a class="menu-link {{ request()->routeIs('bill-item.*') ? ' active' : '' }}"
-                                href="{{ route('bill-item.index') }}">
-                                <span class="menu-bullet">
-                                    <span class="bullet bullet-dot"></span>
-                                </span>
-                                <span class="menu-title">Item Bayar</span>
-                            </a>
-                        </div>
-                        @endcan
-                        @can('Manage Jenis Bayar')
-                        <div class="menu-item ">
-                            <a class="menu-link {{ request()->routeIs('bill-type.*') ? ' active' : '' }}"
-                                href="{{ route('bill-type.index') }}">
-                                <span class="menu-bullet">
-                                    <span class="bullet bullet-dot"></span>
-                                </span>
-                                <span class="menu-title">Jenis Bayar</span>
-                            </a>
-                        </div>
-                        @endcan
-                        @can('Manage Bank')
-                        <div class="menu-item ">
-                            <a class="menu-link {{ request()->routeIs('bank.*') ? ' active' : '' }}"
-                                href="{{ route('bank.index') }}">
-                                <span class="menu-bullet">
-                                    <span class="bullet bullet-dot"></span>
-                                </span>
-                                <span class="menu-title">Bank</span>
                             </a>
                         </div>
                         @endcan

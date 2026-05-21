@@ -52,6 +52,7 @@
     <div class="post d-flex flex-column-fluid" id="kt_post">
         <!--begin::Container-->
         <div id="kt_content_container" class="container-xxl">
+            @include('admins.partials.tabs-akses')
             <!--begin::Card-->
             <div class="card">
                 <!--begin::Card header-->

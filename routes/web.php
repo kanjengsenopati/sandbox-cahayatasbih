@@ -252,6 +252,16 @@ Route::group(['middleware' => ['auth']], function () {
     Route::resource('application-setting', ApplicationSettingController::class, ['only' => ['index', 'store']])
         ->names('application-setting');
 
+    // Desain & Cetak Kartu Santri
+    Route::get('student-card-setting', [\App\Http\Controllers\Admin\StudentCardSettingController::class, 'index'])
+        ->name('student-card-setting.index');
+    Route::post('student-card-setting', [\App\Http\Controllers\Admin\StudentCardSettingController::class, 'store'])
+        ->name('student-card-setting.store');
+    Route::post('student-card-setting/print', [\App\Http\Controllers\Admin\StudentCardSettingController::class, 'print'])
+        ->name('student-card-setting.print');
+    Route::get('student-card-setting/get-students', [\App\Http\Controllers\Admin\StudentCardSettingController::class, 'getStudents'])
+        ->name('student-card-setting.get-students');
+
     // start saldo history
     Route::resource('saldo-bank', SaldoBankController::class, ['only' => ['index', 'edit', 'update']])->names('saldo-bank');
     Route::resource('saving-bank', SavingBankController::class, ['only' => ['index', 'edit', 'update']])->names('saving-bank');

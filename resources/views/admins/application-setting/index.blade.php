@@ -46,6 +46,7 @@
     <div class="post d-flex flex-column-fluid" id="kt_post">
         <!--begin::Container-->
         <div id="kt_content_container" class="container-fluid">
+            @include('admins.partials.tabs-aplikasi')
             <!--begin::Contacts App- Add New Contact-->
             <div class="row g-7">
                 <!--begin::Content-->
