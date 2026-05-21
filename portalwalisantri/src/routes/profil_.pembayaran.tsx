@@ -1,5 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { ArrowLeft, CreditCard, Wallet, Plus, ChevronRight } from "lucide-react";
+import { ArrowLeft, CreditCard, Wallet, Plus, ChevronRight, Loader2 } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { fetchPaymentMethods } from "@/lib/api";
 
 export const Route = createFileRoute("/profil_/pembayaran")({
   component: PembayaranPage,
@@ -8,6 +10,15 @@ export const Route = createFileRoute("/profil_/pembayaran")({
 
 function PembayaranPage() {
   const navigate = useNavigate();
+  
+  const { data, isLoading } = useQuery({
+    queryKey: ["payment-methods"],
+    queryFn: async () => {
+      const res = await fetchPaymentMethods();
+      return res.data?.data || [];
+    }
+  });
+
   return (
     <div className="min-h-screen w-full flex justify-center bg-secondary">
       <div className="relative w-full max-w-md min-h-screen bg-background pb-24">
@@ -34,26 +45,29 @@ function PembayaranPage() {
         {/* Content */}
         <div className="px-6 -mt-12 relative z-10 space-y-4">
           <div className="bg-card rounded-3xl border border-border shadow-[var(--shadow-card)] p-4 divide-y divide-border">
-            <button className="w-full flex items-center gap-3 py-3 active:opacity-70 transition text-left">
-              <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
-                <CreditCard size={18} />
+            {isLoading ? (
+              <div className="flex flex-col items-center justify-center py-6">
+                <Loader2 className="w-8 h-8 animate-spin text-primary" />
+                <p className="text-sm font-semibold mt-2 text-foreground">Memuat metode pembayaran...</p>
               </div>
-              <div className="flex-1">
-                <p className="text-sm font-bold text-foreground">BSI Virtual Account</p>
-                <p className="text-[11px] text-muted-foreground mt-0.5">VA Utama Pondok</p>
+            ) : data && data.length > 0 ? (
+              data.map((pm: any, idx: number) => (
+                <button key={idx} className="w-full flex items-center gap-3 py-3 active:opacity-70 transition text-left">
+                  <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
+                    {pm.payment_type === 'ewallet' ? <Wallet size={18} /> : <CreditCard size={18} />}
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-sm font-bold text-foreground">{pm.name || pm.payment_type}</p>
+                    <p className="text-[11px] text-muted-foreground mt-0.5">{pm.provider || pm.payment_type_label}</p>
+                  </div>
+                  <ChevronRight size={18} className="text-muted-foreground" />
+                </button>
+              ))
+            ) : (
+              <div className="text-center py-6 text-muted-foreground text-sm font-medium">
+                Belum ada metode pembayaran.
               </div>
-              <ChevronRight size={18} className="text-muted-foreground" />
-            </button>
-            <button className="w-full flex items-center gap-3 py-3 active:opacity-70 transition text-left">
-              <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
-                <Wallet size={18} />
-              </div>
-              <div className="flex-1">
-                <p className="text-sm font-bold text-foreground">SantriPay Saldo</p>
-                <p className="text-[11px] text-muted-foreground mt-0.5">Saldo utama santri</p>
-              </div>
-              <ChevronRight size={18} className="text-muted-foreground" />
-            </button>
+            )}
           </div>
           
           <button className="w-full mt-4 flex items-center justify-center gap-2 p-4 rounded-2xl border-2 border-dashed border-primary/40 text-primary font-bold active:bg-primary/5 transition">
