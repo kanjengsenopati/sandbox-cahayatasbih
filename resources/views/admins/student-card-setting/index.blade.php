@@ -526,20 +526,34 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     // ── Tab 2: Classroom loader ──
-    document.getElementById('filterSchool').addEventListener('change', function() {
-        var schoolId = this.value;
+    function loadClassrooms(schoolId) {
         var classSelect = document.getElementById('filterClassroom');
         classSelect.innerHTML = '<option value="">Semua Kelas</option>';
         if (schoolId) {
-            fetch('/student/school/' + schoolId)
-                .then(function(r) { return r.json(); })
+            fetch('{{ url("student/school") }}/' + schoolId)
+                .then(function(r) {
+                    if (!r.ok) throw new Error('HTTP status ' + r.status);
+                    return r.json();
+                })
                 .then(function(data) {
                     data.forEach(function(c) {
                         classSelect.innerHTML += '<option value="' + c.id + '">' + c.name + '</option>';
                     });
+                })
+                .catch(function(err) {
+                    console.error('Gagal memuat data kelas:', err);
                 });
         }
+    }
+
+    document.getElementById('filterSchool').addEventListener('change', function() {
+        loadClassrooms(this.value);
     });
+
+    // Run on initial load if school is pre-selected
+    if (document.getElementById('filterSchool').value) {
+        loadClassrooms(document.getElementById('filterSchool').value);
+    }
 
     // ── Tab 2: Search students ──
     document.getElementById('btnFilter').addEventListener('click', function() {
