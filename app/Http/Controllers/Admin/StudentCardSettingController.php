@@ -147,7 +147,7 @@ class StudentCardSettingController extends Controller
      */
     public function getStudents(Request $request)
     {
-        $query = Student::with(['classroom', 'classroom.school']);
+        $query = Student::with(['classroom', 'classroom.school', 'cardPrints.admin']);
 
         if ($request->filled('school_id')) {
             $query->whereHas('classroom', function ($q) use ($request) {
@@ -162,6 +162,7 @@ class StudentCardSettingController extends Controller
         $students = $query->orderBy('name')->get();
 
         return response()->json($students->map(function ($s) {
+            $lastPrint = $s->cardPrints->first();
             return [
                 'id' => $s->id,
                 'name' => $s->name,
@@ -170,6 +171,9 @@ class StudentCardSettingController extends Controller
                 'classroom' => $s->classroom?->name ?? '-',
                 'school' => $s->classroom?->school?->name ?? '-',
                 'avatar' => $s->avatar ? asset($s->avatar) : null,
+                'print_count' => $s->cardPrints->count(),
+                'last_printed_at' => $lastPrint ? $lastPrint->printed_at->format('d M Y H:i') : null,
+                'last_printed_by' => $lastPrint?->admin?->name ?? null,
             ];
         }));
     }
@@ -198,6 +202,16 @@ class StudentCardSettingController extends Controller
         $layout = $setting->student_card_layout ?? ApplicationSetting::getDefaultStudentCardLayout();
         $background = $setting->student_card_image ? asset($setting->student_card_image) : '';
         $printLayout = $request->print_layout;
+
+        // Log the printing event for each student
+        foreach ($students as $student) {
+            \App\Models\StudentCardPrint::create([
+                'student_id' => $student->id,
+                'printed_by' => Auth::id(),
+                'print_layout' => $printLayout,
+                'printed_at' => now(),
+            ]);
+        }
 
         // Generate barcodes / QR codes for each student
         $studentsData = $students->map(function ($student) use ($layout) {

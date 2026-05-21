@@ -71,8 +71,8 @@
 
                             {{-- Left Column: LIVE PREVIEW --}}
                             <div class="col-lg-6">
-                                <div class="card card-flush shadow-sm">
-                                    <div class="card-header">
+                                <div class="card card-flush border-0 shadow-[0_8px_30px_rgba(0,0,0,0.04)]" style="border-radius: 24px; box-shadow: 0 8px 30px rgba(0,0,0,0.04); border: none;">
+                                    <div class="card-header border-0 pb-0">
                                         <h3 class="card-title fw-bolder">Live Preview</h3>
                                     </div>
                                     <div class="card-body d-flex justify-content-center align-items-center" style="background:#e8e8e8; min-height:300px;">
@@ -189,8 +189,8 @@
 
                             {{-- Right Column: CONFIGURATION PANEL --}}
                             <div class="col-lg-6">
-                                <div class="card card-flush shadow-sm">
-                                    <div class="card-header">
+                                <div class="card card-flush border-0 shadow-[0_8px_30px_rgba(0,0,0,0.04)]" style="border-radius: 24px; box-shadow: 0 8px 30px rgba(0,0,0,0.04); border: none;">
+                                    <div class="card-header border-0 pb-0">
                                         <h3 class="card-title fw-bolder">Konfigurasi Elemen</h3>
                                     </div>
                                     <div class="card-body pt-2" style="max-height:600px;overflow-y:auto;">
@@ -351,8 +351,8 @@
                         <div class="row g-5">
                             {{-- Filter --}}
                             <div class="col-lg-4">
-                                <div class="card card-flush shadow-sm">
-                                    <div class="card-header">
+                                <div class="card card-flush border-0 shadow-[0_8px_30px_rgba(0,0,0,0.04)]" style="border-radius: 24px; box-shadow: 0 8px 30px rgba(0,0,0,0.04); border: none;">
+                                    <div class="card-header border-0 pb-0">
                                         <h3 class="card-title fw-bolder">Filter Santri</h3>
                                     </div>
                                     <div class="card-body">
@@ -391,8 +391,8 @@
 
                             {{-- Student List --}}
                             <div class="col-lg-8">
-                                <div class="card card-flush shadow-sm">
-                                    <div class="card-header">
+                                <div class="card card-flush border-0 shadow-[0_8px_30px_rgba(0,0,0,0.04)]" style="border-radius: 24px; box-shadow: 0 8px 30px rgba(0,0,0,0.04); border: none;">
+                                    <div class="card-header border-0 pb-0">
                                         <h3 class="card-title fw-bolder">Daftar Santri</h3>
                                         <div class="card-toolbar">
                                             <label class="form-check form-check-sm form-check-custom">
@@ -411,10 +411,11 @@
                                                         <th>NIS</th>
                                                         <th>Kelas</th>
                                                         <th>Sekolah</th>
+                                                        <th>Riwayat Cetak</th>
                                                     </tr>
                                                 </thead>
                                                 <tbody id="studentTableBody">
-                                                    <tr><td colspan="5" class="text-center text-muted py-10">Klik "Cari Santri" untuk memuat data</td></tr>
+                                                    <tr><td colspan="6" class="text-center text-muted py-10">Klik "Cari Santri" untuk memuat data</td></tr>
                                                 </tbody>
                                             </table>
                                         </div>
@@ -530,7 +531,7 @@ document.addEventListener('DOMContentLoaded', function() {
         var classSelect = document.getElementById('filterClassroom');
         classSelect.innerHTML = '<option value="">Semua Kelas</option>';
         if (schoolId) {
-            fetch('/student/' + schoolId + '/classrooms')
+            fetch('/student/school/' + schoolId)
                 .then(function(r) { return r.json(); })
                 .then(function(data) {
                     data.forEach(function(c) {
@@ -549,30 +550,42 @@ document.addEventListener('DOMContentLoaded', function() {
         if (classroomId) params.append('classroom_id', classroomId);
 
         var tbody = document.getElementById('studentTableBody');
-        tbody.innerHTML = '<tr><td colspan="5" class="text-center py-10"><span class="spinner-border spinner-border-sm me-2"></span>Memuat data...</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="6" class="text-center py-10"><span class="spinner-border spinner-border-sm me-2"></span>Memuat data...</td></tr>';
 
         fetch('{{ route("student-card-setting.get-students") }}?' + params.toString())
             .then(function(r) { return r.json(); })
             .then(function(students) {
                 if (students.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted py-10">Tidak ada data santri ditemukan</td></tr>';
+                    tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-10">Tidak ada data santri ditemukan</td></tr>';
                     return;
                 }
                 var html = '';
                 students.forEach(function(s) {
+                    var printHistoryHtml = '';
+                    if (s.print_count > 0) {
+                        printHistoryHtml = '<span class="badge bg-light-success text-emerald-600 fw-bold px-3 py-1 rounded" style="background-color: rgba(16, 185, 129, 0.1); color: #10b981;">' + s.print_count + 'x Dicetak</span>';
+                        if (s.last_printed_at) {
+                            var byText = s.last_printed_by ? ' oleh ' + s.last_printed_by : '';
+                            printHistoryHtml += '<div class="text-slate-400 fst-italic mt-1" style="font-size: 11px;">Terakhir: ' + s.last_printed_at + byText + '</div>';
+                        }
+                    } else {
+                        printHistoryHtml = '<span class="badge bg-light text-muted px-3 py-1 rounded" style="background-color: rgba(243, 244, 246, 1); color: #9ca3af;">Belum Pernah</span>';
+                    }
+
                     html += '<tr>';
                     html += '<td class="ps-4"><input type="checkbox" class="form-check-input student-check" name="student_ids[]" value="' + s.id + '" /></td>';
-                    html += '<td class="fw-bold">' + s.name + '</td>';
+                    html += '<td class="fw-bold text-slate-800">' + s.name + '</td>';
                     html += '<td>' + (s.nis || '-') + '</td>';
                     html += '<td>' + s.classroom + '</td>';
                     html += '<td>' + s.school + '</td>';
+                    html += '<td>' + printHistoryHtml + '</td>';
                     html += '</tr>';
                 });
                 tbody.innerHTML = html;
                 updateSelectedCount();
             })
             .catch(function() {
-                tbody.innerHTML = '<tr><td colspan="5" class="text-center text-danger py-10">Gagal memuat data</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="6" class="text-center text-danger py-10">Gagal memuat data</td></tr>';
             });
     });
 

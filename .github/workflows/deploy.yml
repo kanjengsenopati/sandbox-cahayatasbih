@@ -38,6 +38,9 @@ jobs:
             echo "=== Refreshing Autoloader ==="
             composer dump-autoload
 
+            echo "=== Running Migrations ==="
+            php artisan migrate --force
+
             echo "=== Clearing Cache ==="
             php artisan config:clear
             php artisan cache:clear
