@@ -42,14 +42,15 @@ function BantuanPage() {
               <p className="text-base font-bold text-white">Pusat Bantuan</p>
             </div>
           </div>
+
+          {/* Section Title — inside hero for contrast */}
+          <div className="relative mt-5">
+            <p className="text-[11px] font-bold text-white/80 uppercase tracking-wider">Daftar Petugas Pesantren</p>
+          </div>
         </div>
 
         {/* Content */}
-        <div className="px-6 -mt-12 relative z-10 space-y-4">
-          {/* Section Title */}
-          <div className="px-1 mb-1">
-            <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Daftar Petugas Pesantren</p>
-          </div>
+        <div className="px-6 -mt-10 relative z-10 space-y-4">
 
           {isLoading ? (
             <div className="bg-card rounded-3xl border border-border p-8 flex flex-col items-center justify-center shadow-[var(--shadow-card)]">
@@ -96,17 +97,17 @@ function BantuanPage() {
                       </div>
                     )}
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-bold text-foreground leading-tight truncate">{officer.name}</p>
-                      <span className="inline-flex mt-1.5 px-2 py-0.5 rounded-md bg-primary/5 text-primary text-[10px] font-bold uppercase tracking-wider">
+                      <p className="text-[14px] font-bold text-foreground leading-tight">{officerName}</p>
+                      <span className="inline-flex mt-1.5 px-2 py-0.5 rounded-md bg-primary/5 text-primary text-[10px] font-bold tracking-wider">
                         {officer.position}
                       </span>
-                      {officer.duty && (
-                        <p className="text-xs text-muted-foreground mt-2 leading-relaxed">
-                          {officer.duty}
-                        </p>
-                      )}
                     </div>
                   </div>
+                  {officer.duty && (
+                    <p className="text-[12px] text-muted-foreground mt-3 leading-relaxed">
+                      {officer.duty}
+                    </p>
+                  )}
 
                   {/* Action Buttons */}
                   <div className="mt-4 flex gap-2">
