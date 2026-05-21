@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { LogOut, Loader2, RefreshCw, Mail, Phone, User as UserIcon, MapPin, CreditCard as IdCard, Clock, Activity, ShieldCheck, Shield, Bell, CreditCard, Settings, HelpCircle, ChevronRight } from "lucide-react";
 import { MobileShell } from "@/components/MobileShell";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -236,7 +236,7 @@ function Profil() {
       <section className="px-6 mt-6">
         <Text.Label className="mb-2 block px-1">Keamanan & Layanan</Text.Label>
         <div className="bg-card rounded-[24px] border border-border divide-y divide-border overflow-hidden shadow-[var(--shadow-soft)]">
-          <button className="w-full flex items-center gap-3 p-4 hover:bg-slate-50/50 active:bg-secondary transition group">
+          <Link to="/profil/keamanan" className="w-full flex items-center gap-3 p-4 hover:bg-slate-50/50 active:bg-secondary transition group">
             <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary group-active:scale-95 transition-transform">
               <Shield size={18} />
             </div>
@@ -244,9 +244,9 @@ function Profil() {
               Keamanan & PIN
             </span>
             <ChevronRight size={18} className="text-slate-300" />
-          </button>
+          </Link>
           
-          <button className="w-full flex items-center gap-3 p-4 hover:bg-slate-50/50 active:bg-secondary transition group">
+          <Link to="/profil/notifikasi" className="w-full flex items-center gap-3 p-4 hover:bg-slate-50/50 active:bg-secondary transition group">
             <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary group-active:scale-95 transition-transform">
               <Bell size={18} />
             </div>
@@ -254,9 +254,9 @@ function Profil() {
               Notifikasi
             </span>
             <ChevronRight size={18} className="text-slate-300" />
-          </button>
+          </Link>
 
-          <button className="w-full flex items-center gap-3 p-4 hover:bg-slate-50/50 active:bg-secondary transition group">
+          <Link to="/profil/pembayaran" className="w-full flex items-center gap-3 p-4 hover:bg-slate-50/50 active:bg-secondary transition group">
             <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary group-active:scale-95 transition-transform">
               <CreditCard size={18} />
             </div>
@@ -264,14 +264,14 @@ function Profil() {
               Metode Pembayaran
             </span>
             <ChevronRight size={18} className="text-slate-300" />
-          </button>
+          </Link>
         </div>
       </section>
 
       <section className="px-6 mt-6">
         <Text.Label className="mb-2 block px-1">Lainnya</Text.Label>
         <div className="bg-card rounded-[24px] border border-border divide-y divide-border overflow-hidden shadow-[var(--shadow-soft)]">
-          <button className="w-full flex items-center gap-3 p-4 hover:bg-slate-50/50 active:bg-secondary transition group">
+          <Link to="/profil/pengaturan" className="w-full flex items-center gap-3 p-4 hover:bg-slate-50/50 active:bg-secondary transition group">
             <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center text-slate-600 group-active:scale-95 transition-transform">
               <Settings size={18} />
             </div>
@@ -279,9 +279,9 @@ function Profil() {
               Pengaturan
             </span>
             <ChevronRight size={18} className="text-slate-300" />
-          </button>
+          </Link>
           
-          <button className="w-full flex items-center gap-3 p-4 hover:bg-slate-50/50 active:bg-secondary transition group">
+          <Link to="/profil/bantuan" className="w-full flex items-center gap-3 p-4 hover:bg-slate-50/50 active:bg-secondary transition group">
             <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center text-slate-600 group-active:scale-95 transition-transform">
               <HelpCircle size={18} />
             </div>
@@ -289,7 +289,7 @@ function Profil() {
               Bantuan
             </span>
             <ChevronRight size={18} className="text-slate-300" />
-          </button>
+          </Link>
         </div>
       </section>
 

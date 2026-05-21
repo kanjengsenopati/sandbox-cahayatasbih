@@ -27,6 +27,11 @@ import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as BlokirSaldoRouteImport } from './routes/blokir-saldo'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as TagihanBillIdRouteImport } from './routes/tagihan_.$billId'
+import { Route as ProfilPengaturanRouteImport } from './routes/profil_.pengaturan'
+import { Route as ProfilPembayaranRouteImport } from './routes/profil_.pembayaran'
+import { Route as ProfilNotifikasiRouteImport } from './routes/profil_.notifikasi'
+import { Route as ProfilKeamananRouteImport } from './routes/profil_.keamanan'
+import { Route as ProfilBantuanRouteImport } from './routes/profil_.bantuan'
 import { Route as PembayaranPayIdRouteImport } from './routes/pembayaran.$payId'
 import { Route as BeritaNewsIdRouteImport } from './routes/berita.$newsId'
 import { Route as AsatidzScanRouteImport } from './routes/asatidz.scan'
@@ -123,6 +128,31 @@ const TagihanBillIdRoute = TagihanBillIdRouteImport.update({
   path: '/tagihan/$billId',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ProfilPengaturanRoute = ProfilPengaturanRouteImport.update({
+  id: '/profil_/pengaturan',
+  path: '/profil/pengaturan',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ProfilPembayaranRoute = ProfilPembayaranRouteImport.update({
+  id: '/profil_/pembayaran',
+  path: '/profil/pembayaran',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ProfilNotifikasiRoute = ProfilNotifikasiRouteImport.update({
+  id: '/profil_/notifikasi',
+  path: '/profil/notifikasi',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ProfilKeamananRoute = ProfilKeamananRouteImport.update({
+  id: '/profil_/keamanan',
+  path: '/profil/keamanan',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ProfilBantuanRoute = ProfilBantuanRouteImport.update({
+  id: '/profil_/bantuan',
+  path: '/profil/bantuan',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const PembayaranPayIdRoute = PembayaranPayIdRouteImport.update({
   id: '/pembayaran/$payId',
   path: '/pembayaran/$payId',
@@ -172,6 +202,11 @@ export interface FileRoutesByFullPath {
   '/asatidz/scan': typeof AsatidzScanRoute
   '/berita/$newsId': typeof BeritaNewsIdRoute
   '/pembayaran/$payId': typeof PembayaranPayIdRoute
+  '/profil/bantuan': typeof ProfilBantuanRoute
+  '/profil/keamanan': typeof ProfilKeamananRoute
+  '/profil/notifikasi': typeof ProfilNotifikasiRoute
+  '/profil/pembayaran': typeof ProfilPembayaranRoute
+  '/profil/pengaturan': typeof ProfilPengaturanRoute
   '/tagihan/$billId': typeof TagihanBillIdRoute
 }
 export interface FileRoutesByTo {
@@ -197,6 +232,11 @@ export interface FileRoutesByTo {
   '/asatidz/scan': typeof AsatidzScanRoute
   '/berita/$newsId': typeof BeritaNewsIdRoute
   '/pembayaran/$payId': typeof PembayaranPayIdRoute
+  '/profil/bantuan': typeof ProfilBantuanRoute
+  '/profil/keamanan': typeof ProfilKeamananRoute
+  '/profil/notifikasi': typeof ProfilNotifikasiRoute
+  '/profil/pembayaran': typeof ProfilPembayaranRoute
+  '/profil/pengaturan': typeof ProfilPengaturanRoute
   '/tagihan/$billId': typeof TagihanBillIdRoute
 }
 export interface FileRoutesById {
@@ -223,6 +263,11 @@ export interface FileRoutesById {
   '/asatidz/scan': typeof AsatidzScanRoute
   '/berita/$newsId': typeof BeritaNewsIdRoute
   '/pembayaran/$payId': typeof PembayaranPayIdRoute
+  '/profil_/bantuan': typeof ProfilBantuanRoute
+  '/profil_/keamanan': typeof ProfilKeamananRoute
+  '/profil_/notifikasi': typeof ProfilNotifikasiRoute
+  '/profil_/pembayaran': typeof ProfilPembayaranRoute
+  '/profil_/pengaturan': typeof ProfilPengaturanRoute
   '/tagihan_/$billId': typeof TagihanBillIdRoute
 }
 export interface FileRouteTypes {
@@ -250,6 +295,11 @@ export interface FileRouteTypes {
     | '/asatidz/scan'
     | '/berita/$newsId'
     | '/pembayaran/$payId'
+    | '/profil/bantuan'
+    | '/profil/keamanan'
+    | '/profil/notifikasi'
+    | '/profil/pembayaran'
+    | '/profil/pengaturan'
     | '/tagihan/$billId'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -275,6 +325,11 @@ export interface FileRouteTypes {
     | '/asatidz/scan'
     | '/berita/$newsId'
     | '/pembayaran/$payId'
+    | '/profil/bantuan'
+    | '/profil/keamanan'
+    | '/profil/notifikasi'
+    | '/profil/pembayaran'
+    | '/profil/pengaturan'
     | '/tagihan/$billId'
   id:
     | '__root__'
@@ -300,6 +355,11 @@ export interface FileRouteTypes {
     | '/asatidz/scan'
     | '/berita/$newsId'
     | '/pembayaran/$payId'
+    | '/profil_/bantuan'
+    | '/profil_/keamanan'
+    | '/profil_/notifikasi'
+    | '/profil_/pembayaran'
+    | '/profil_/pengaturan'
     | '/tagihan_/$billId'
   fileRoutesById: FileRoutesById
 }
@@ -326,6 +386,11 @@ export interface RootRouteChildren {
   AsatidzScanRoute: typeof AsatidzScanRoute
   BeritaNewsIdRoute: typeof BeritaNewsIdRoute
   PembayaranPayIdRoute: typeof PembayaranPayIdRoute
+  ProfilBantuanRoute: typeof ProfilBantuanRoute
+  ProfilKeamananRoute: typeof ProfilKeamananRoute
+  ProfilNotifikasiRoute: typeof ProfilNotifikasiRoute
+  ProfilPembayaranRoute: typeof ProfilPembayaranRoute
+  ProfilPengaturanRoute: typeof ProfilPengaturanRoute
   TagihanBillIdRoute: typeof TagihanBillIdRoute
 }
 
@@ -457,6 +522,41 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof TagihanBillIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/profil_/pengaturan': {
+      id: '/profil_/pengaturan'
+      path: '/profil/pengaturan'
+      fullPath: '/profil/pengaturan'
+      preLoaderRoute: typeof ProfilPengaturanRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/profil_/pembayaran': {
+      id: '/profil_/pembayaran'
+      path: '/profil/pembayaran'
+      fullPath: '/profil/pembayaran'
+      preLoaderRoute: typeof ProfilPembayaranRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/profil_/notifikasi': {
+      id: '/profil_/notifikasi'
+      path: '/profil/notifikasi'
+      fullPath: '/profil/notifikasi'
+      preLoaderRoute: typeof ProfilNotifikasiRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/profil_/keamanan': {
+      id: '/profil_/keamanan'
+      path: '/profil/keamanan'
+      fullPath: '/profil/keamanan'
+      preLoaderRoute: typeof ProfilKeamananRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/profil_/bantuan': {
+      id: '/profil_/bantuan'
+      path: '/profil/bantuan'
+      fullPath: '/profil/bantuan'
+      preLoaderRoute: typeof ProfilBantuanRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/pembayaran/$payId': {
       id: '/pembayaran/$payId'
       path: '/pembayaran/$payId'
@@ -518,6 +618,11 @@ const rootRouteChildren: RootRouteChildren = {
   AsatidzScanRoute: AsatidzScanRoute,
   BeritaNewsIdRoute: BeritaNewsIdRoute,
   PembayaranPayIdRoute: PembayaranPayIdRoute,
+  ProfilBantuanRoute: ProfilBantuanRoute,
+  ProfilKeamananRoute: ProfilKeamananRoute,
+  ProfilNotifikasiRoute: ProfilNotifikasiRoute,
+  ProfilPembayaranRoute: ProfilPembayaranRoute,
+  ProfilPengaturanRoute: ProfilPengaturanRoute,
   TagihanBillIdRoute: TagihanBillIdRoute,
 }
 export const routeTree = rootRouteImport
