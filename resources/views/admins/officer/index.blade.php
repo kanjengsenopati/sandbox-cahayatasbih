@@ -113,7 +113,8 @@
                 {
                     data: 'user.name',
                     name: 'user.name',
-                    searchable: true
+                    searchable: true,
+                    defaultContent: '-'
                 },
                 {
                     data: 'position',

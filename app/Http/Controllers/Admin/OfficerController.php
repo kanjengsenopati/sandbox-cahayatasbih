@@ -126,8 +126,11 @@ class OfficerController extends Controller
         $user->save();
 
         if ($request->hasFile('photo')) {
-            if ($officer->photo && file_exists(public_path($officer->photo))) {
-                @unlink(public_path($officer->photo));
+            if ($officer->photo) {
+                $photoPath = str_replace('storage/', 'app/public/', $officer->photo);
+                if (file_exists(storage_path($photoPath))) {
+                    @unlink(storage_path($photoPath));
+                }
             }
             $data['photo'] = 'storage/' . $request->file('photo')->store('images/officers', 'public');
         }
@@ -145,8 +148,11 @@ class OfficerController extends Controller
         if (!Auth::user()->can('Delete Petugas')) {
             return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
         }
-        if ($officer->photo && file_exists(public_path($officer->photo))) {
-            @unlink(public_path($officer->photo));
+        if ($officer->photo) {
+            $photoPath = str_replace('storage/', 'app/public/', $officer->photo);
+            if (file_exists(storage_path($photoPath))) {
+                @unlink(storage_path($photoPath));
+            }
         }
         $officer->delete();
         return redirect()->route('officer.index')->with('success', 'Petugas berhasil dihapus');
