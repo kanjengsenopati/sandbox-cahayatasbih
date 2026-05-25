@@ -29,7 +29,7 @@ class StudentCardSettingController extends Controller
         $setting = ApplicationSetting::first();
         $layout = $setting->student_card_layout ?? ApplicationSetting::getDefaultStudentCardLayout();
         $background = $setting->student_card_image ?? '';
-        $schools = School::orderBy('name')->get();
+        $schools = School::hasSchool()->orderBy('name')->get();
 
         return view('admins.student-card-setting.index', compact('setting', 'layout', 'background', 'schools'));
     }

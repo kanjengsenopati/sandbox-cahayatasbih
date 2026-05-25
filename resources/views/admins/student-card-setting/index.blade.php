@@ -462,7 +462,7 @@
 <!--end::Content-->
 @endsection
 
-@push('scripts')
+@push('js')
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const SCALE = 4; // 1mm = 4px in preview
@@ -751,12 +751,22 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    // Listen untuk event tab shown dari Bootstrap
+    // Listen untuk event tab shown dari Bootstrap dengan fallback click & active check
     var cetakTabLink = document.querySelector('a[href="#tab_cetak"]');
     if (cetakTabLink) {
         cetakTabLink.addEventListener('shown.bs.tab', function() {
             initCetakTab();
         });
+
+        // Fallback: Jika tab diklik secara manual
+        cetakTabLink.addEventListener('click', function() {
+            setTimeout(initCetakTab, 150);
+        });
+
+        // Fallback: Jika tab sudah aktif saat load
+        if (cetakTabLink.classList.contains('active') || window.location.hash === '#tab_cetak') {
+            initCetakTab();
+        }
     }
 
     // ── Check all ──
