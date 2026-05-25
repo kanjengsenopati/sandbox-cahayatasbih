@@ -25,12 +25,12 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: '8.2'
-          extensions: mbstring, intl, bcmath, gd, mysql
+          extensions: mbstring, intl, bcmath, gd, mysql, zip, redis
           tools: composer
-      - name: Install dependencies
-        run: composer install --prefer-dist --no-progress --no-suggest --optimize-autoloader
       - name: Copy .env
         run: php -r "file_exists('.env') || copy('.env.example', '.env');"
+      - name: Install dependencies
+        run: composer install --prefer-dist --no-progress --no-suggest --optimize-autoloader
       - name: Generate key
         run: php artisan key:generate
       - name: Run migrations
