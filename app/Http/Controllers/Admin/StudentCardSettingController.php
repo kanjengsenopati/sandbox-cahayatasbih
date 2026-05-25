@@ -267,7 +267,8 @@ class StudentCardSettingController extends Controller
         }
 
         // Generate barcodes / QR codes for each student
-        $studentsData = $students->map(function ($student) use ($layout) {
+        $dns1d = new DNS1D();
+        $studentsData = $students->map(function ($student) use ($layout, $dns1d) {
             $codeHtml = '';
             if (($layout['code']['show'] ?? true) && $student->barcode) {
                 $codeType = $layout['code']['type'] ?? 'barcode';
@@ -275,7 +276,7 @@ class StudentCardSettingController extends Controller
                     $qr = QrCode::size(100)->generate($student->barcode);
                     $codeHtml = '<img src="data:image/svg+xml;base64,' . base64_encode($qr) . '" />';
                 } else {
-                    $codeHtml = DNS1D::getBarcodeHTML($student->barcode, 'C128', 1.2, 25);
+                    $codeHtml = $dns1d->getBarcodeHTML($student->barcode, 'C128', 1.2, 25);
                 }
             }
 
