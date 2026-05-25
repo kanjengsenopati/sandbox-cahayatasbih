@@ -377,10 +377,50 @@ class ReportBillStudentController extends Controller
                 } else {
                     $avatarUrl = asset('assets/media/avatars/default.png');
                 }
-
-                return '<div class="student-card" style="display:flex;align-items:center;gap:10px;">
-                    <img src="' . $avatarUrl . '" alt="Avatar" style="width:40px;height:40px;border-radius:50%;object-fit:cover;">
-                    <div><div><strong>' . e($row->name) . '</strong></div><div>' . e($row->classroom_name) . '</div></div>
+ 
+                $pct = $row->total_bill == 0 ? 0 : ($row->total_paid / $row->total_bill) * 100;
+                $color = $pct >= 100 ? 'success' : ($pct >= 50 ? 'warning' : 'danger');
+                $unpaidText = $row->total_unpaid > 0 ? 'Rp ' . number_format($row->total_unpaid, 0, ',', '.') : '-';
+                $dueText = $row->current_due_amount > 0 ? 'Rp ' . number_format($row->current_due_amount, 0, ',', '.') : '-';
+ 
+                return '<div class="student-card d-flex flex-column gap-2">
+                    <div class="d-flex align-items-center gap-3">
+                        <img src="' . $avatarUrl . '" alt="Avatar" style="width:40px;height:40px;border-radius:50%;object-fit:cover;">
+                        <div class="d-flex flex-column">
+                            <span class="text-gray-800 fw-bolder mb-1 fs-6">' . e($row->name) . '</span>
+                            <span class="text-muted fs-7">' . e($row->classroom_name) . '</span>
+                        </div>
+                    </div>
+                    <!-- Mobile only financial details - Styled with PakRT guidelines -->
+                    <div class="d-block d-md-none mt-2 p-4" style="background-color: #f8fafc; border-radius: 16px; border: none; font-size: 11px;">
+                        <div class="row g-3 text-start">
+                            <div class="col-6">
+                                <span class="d-block uppercase tracking-wider mb-1" style="font-size: 9px; font-weight: 700; color: #94a3b8; letter-spacing: 0.05em;">Total Tagihan</span>
+                                <span class="text-slate-800 fw-bold fs-7" style="color: #334155;">Rp ' . number_format($row->total_bill, 0, ',', '.') . '</span>
+                            </div>
+                            <div class="col-6">
+                                <span class="d-block uppercase tracking-wider mb-1" style="font-size: 9px; font-weight: 700; color: #94a3b8; letter-spacing: 0.05em;">Lunas</span>
+                                <span class="fw-bold fs-7" style="color: #10b981;">Rp ' . number_format($row->total_paid, 0, ',', '.') . '</span>
+                            </div>
+                            <div class="col-6">
+                                <span class="d-block uppercase tracking-wider mb-1" style="font-size: 9px; font-weight: 700; color: #94a3b8; letter-spacing: 0.05em;">Sisa Tagihan</span>
+                                <span class="fw-bold fs-7" style="color: #dc2626;">' . $unpaidText . '</span>
+                            </div>
+                            <div class="col-6">
+                                <span class="d-block uppercase tracking-wider mb-1" style="font-size: 9px; font-weight: 700; color: #94a3b8; letter-spacing: 0.05em;">Tunggakan</span>
+                                <span class="fw-bold fs-7" style="color: #dc2626;">' . $dueText . '</span>
+                            </div>
+                            <div class="col-12 mt-2">
+                                <div class="d-flex align-items-center justify-content-between mb-1">
+                                    <span class="uppercase tracking-wider text-slate-400" style="font-size: 9px; font-weight: 700; color: #94a3b8; letter-spacing: 0.05em;">Realisasi</span>
+                                    <span class="fw-bold" style="color: ' . ($color == 'success' ? '#10b981' : ($color == 'warning' ? '#f59e0b' : '#dc2626')) . ';">' . number_format($pct, 0) . '%</span>
+                                </div>
+                                <div class="progress h-6px w-100 bg-secondary" style="border-radius: 4px;">
+                                    <div class="progress-bar" style="border-radius: 4px; width:' . min($pct, 100) . '%; background-color: ' . ($color == 'success' ? '#10b981' : ($color == 'warning' ? '#f59e0b' : '#dc2626')) . ';"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>';
             })
             ->addColumn('bill_count_display', fn($row) => number_format($row->bill_count, 0, ',', '.') . ' tagihan')

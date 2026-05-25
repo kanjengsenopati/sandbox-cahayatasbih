@@ -110,12 +110,43 @@
                     
                     <style>
                         .nav-pills-custom .nav-link.active {
-                            background-color: #009ef7;
+                            background-color: #2563eb;
                             color: white !important;
                             box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
                         }
                         .nav-pills-custom .nav-link:not(.active):hover {
                             background-color: #e4e6ef;
+                        }
+                        /* Badge overrides for PakRT Premium colors */
+                        .badge.badge-light-success {
+                            background-color: rgba(16, 185, 129, 0.1) !important;
+                            color: #10b981 !important;
+                            font-weight: 700;
+                        }
+                        .badge.badge-light-danger {
+                            background-color: rgba(220, 38, 38, 0.1) !important;
+                            color: #dc2626 !important;
+                            font-weight: 700;
+                        }
+                        .badge.badge-light-primary {
+                            background-color: rgba(37, 99, 235, 0.1) !important;
+                            color: #2563eb !important;
+                            font-weight: 700;
+                        }
+                        .badge.badge-light-warning {
+                            background-color: rgba(245, 158, 11, 0.1) !important;
+                            color: #d97706 !important;
+                            font-weight: 700;
+                        }
+                        .badge.badge-light-info {
+                            background-color: rgba(6, 182, 212, 0.1) !important;
+                            color: #0891b2 !important;
+                            font-weight: 700;
+                        }
+                        @media (max-width: 767.98px) {
+                            .table-responsive {
+                                border: none !important;
+                            }
                         }
                     </style>
 
@@ -183,46 +214,53 @@
                                 </button>
                             </div>
 
-                            {{-- Summary Cards Rekap --}}
-                            <div class="d-flex flex-wrap gap-2 mt-4 mb-4" style="border: 1px solid #e0e0e0; padding: 16px; border-radius: 8px;">
-                                <div class="card bg-light-info flex-grow-1">
-                                    <div class="card-body d-flex align-items-center">
-                                        <div class="me-3"><i class="fas fa-users text-info fs-2"></i></div>
+                            {{-- Summary Cards Rekap - Styled with PakRT guidelines --}}
+                            <div class="d-flex flex-wrap gap-3 mt-4 mb-4" style="border: none; padding: 0;">
+                                <div class="card flex-grow-1 border-0" style="border-radius: 24px; box-shadow: 0 8px 30px rgba(0,0,0,0.04); background-color: rgba(37, 99, 235, 0.05); min-width: 200px;">
+                                    <div class="card-body d-flex align-items-center p-6">
+                                        <div class="me-4" style="background-color: rgba(37, 99, 235, 0.1); width: 44px; height: 44px; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                                            <i class="fas fa-users text-primary fs-4" style="color: #2563eb !important;"></i>
+                                        </div>
                                         <div>
-                                            <div class="fw-bolder fs-5 text-gray-800">Total Santri</div>
-                                            <div class="text-info fs-3 fw-bolder" id="rekap-total-students">0</div>
+                                            <div class="fw-bold uppercase tracking-widest text-slate-400 mb-1" style="font-size: 11px; color: #94a3b8;">Total Santri</div>
+                                            <div class="fs-3 fw-bolder" id="rekap-total-students" style="color: #0f172a;">0</div>
                                         </div>
                                     </div>
                                 </div>
-                                <div class="card bg-light-warning flex-grow-1">
-                                    <div class="card-body d-flex align-items-center">
-                                        <div class="me-3"><i class="fas fa-bullseye text-warning fs-2"></i></div>
+                                <div class="card flex-grow-1 border-0" style="border-radius: 24px; box-shadow: 0 8px 30px rgba(0,0,0,0.04); background-color: rgba(245, 158, 11, 0.05); min-width: 200px;">
+                                    <div class="card-body d-flex align-items-center p-6">
+                                        <div class="me-4" style="background-color: rgba(245, 158, 11, 0.1); width: 44px; height: 44px; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                                            <i class="fas fa-bullseye text-warning fs-4" style="color: #f59e0b !important;"></i>
+                                        </div>
                                         <div>
-                                            <div class="fw-bolder fs-5 text-gray-800">Total Tagihan</div>
-                                            <div class="text-warning fs-3 fw-bolder" id="rekap-total-amount">Rp. 0</div>
+                                            <div class="fw-bold uppercase tracking-widest text-slate-400 mb-1" style="font-size: 11px; color: #94a3b8;">Total Tagihan</div>
+                                            <div class="fs-3 fw-bolder text-warning" id="rekap-total-amount" style="color: #d97706 !important;">Rp. 0</div>
                                         </div>
                                     </div>
                                 </div>
-                                <div class="card bg-light-success flex-grow-1">
-                                    <div class="card-body d-flex align-items-center">
-                                        <div class="me-3"><i class="fas fa-check-circle text-success fs-2"></i></div>
+                                <div class="card flex-grow-1 border-0" style="border-radius: 24px; box-shadow: 0 8px 30px rgba(0,0,0,0.04); background-color: rgba(16, 185, 129, 0.05); min-width: 200px;">
+                                    <div class="card-body d-flex align-items-center p-6">
+                                        <div class="me-4" style="background-color: rgba(16, 185, 129, 0.1); width: 44px; height: 44px; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                                            <i class="fas fa-check-circle text-success fs-4" style="color: #10b981 !important;"></i>
+                                        </div>
                                         <div>
-                                            <div class="fw-bolder fs-5 text-gray-800">Total Lunas</div>
-                                            <div class="text-success fs-3 fw-bolder" id="rekap-total-paid">Rp. 0</div>
+                                            <div class="fw-bold uppercase tracking-widest text-slate-400 mb-1" style="font-size: 11px; color: #94a3b8;">Total Lunas</div>
+                                            <div class="fs-3 fw-bolder text-success" id="rekap-total-paid" style="color: #10b981 !important;">Rp. 0</div>
                                         </div>
                                     </div>
                                 </div>
-                                <div class="card bg-light-danger flex-grow-1">
-                                    <div class="card-body d-flex align-items-center">
-                                        <div class="me-3"><i class="fas fa-exclamation-circle text-danger fs-2"></i></div>
+                                <div class="card flex-grow-1 border-0" style="border-radius: 24px; box-shadow: 0 8px 30px rgba(0,0,0,0.04); background-color: rgba(220, 38, 38, 0.05); min-width: 200px;">
+                                    <div class="card-body d-flex align-items-center p-6">
+                                        <div class="me-4" style="background-color: rgba(220, 38, 38, 0.1); width: 44px; height: 44px; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                                            <i class="fas fa-exclamation-circle text-danger fs-4" style="color: #dc2626 !important;"></i>
+                                        </div>
                                         <div>
-                                            <div class="fw-bolder fs-5 text-gray-800">Belum Lunas</div>
-                                            <div class="text-danger fs-3 fw-bolder" id="rekap-total-unpaid">Rp. 0</div>
+                                            <div class="fw-bold uppercase tracking-widest text-slate-400 mb-1" style="font-size: 11px; color: #94a3b8;">Belum Lunas</div>
+                                            <div class="fs-3 fw-bolder text-danger" id="rekap-total-unpaid" style="color: #dc2626 !important;">Rp. 0</div>
                                         </div>
                                     </div>
                                 </div>
-                            </div>
-                            {{-- DataTable Rekap --}}
+                            </div>{{-- DataTable Rekap --}}
                             <div class="table-responsive">
                                 <table id="table-rekap" class="table table-striped border rounded gy-5 gs-7">
                                     <thead>
@@ -230,12 +268,12 @@
                                             <th style="width: 20px;">#</th>
                                             <th>No.</th>
                                             <th>Santri</th>
-                                            <th>Jml Tagihan</th>
-                                            <th>Total Tagihan</th>
-                                            <th>Total Lunas</th>
-                                            <th>Belum Lunas</th>
-                                            <th>Tunggakan</th>
-                                            <th>Realisasi</th>
+                                            <th class="d-none d-md-table-cell">Jml Tagihan</th>
+                                            <th class="d-none d-md-table-cell">Total Tagihan</th>
+                                            <th class="d-none d-md-table-cell">Total Lunas</th>
+                                            <th class="d-none d-md-table-cell">Belum Lunas</th>
+                                            <th class="d-none d-md-table-cell">Tunggakan</th>
+                                            <th class="d-none d-md-table-cell">Realisasi</th>
                                         </tr>
                                     </thead>
                                     <tbody></tbody>
@@ -384,12 +422,12 @@ function initializeRekapTable() {
             },
             { data: null, sortable: false, searchable: false, render: function(data, type, row, meta) { return meta.row + meta.settings._iDisplayStart + 1; } },
             { data: 'student', name: 'student' },
-            { data: 'bill_count_display', name: 'bill_count', orderable: true, searchable: false },
-            { data: 'total_bill_display', name: 'total_bill', orderable: true, searchable: false },
-            { data: 'total_paid_display', name: 'total_paid', orderable: true, searchable: false },
-            { data: 'total_unpaid_display', name: 'total_unpaid', orderable: true, searchable: false },
-            { data: 'current_due_display', name: 'current_due_amount', orderable: true, searchable: false },
-            { data: 'percentage', name: 'percentage', orderable: false, searchable: false }
+            { data: 'bill_count_display', name: 'bill_count', orderable: true, searchable: false, className: 'd-none d-md-table-cell' },
+            { data: 'total_bill_display', name: 'total_bill', orderable: true, searchable: false, className: 'd-none d-md-table-cell' },
+            { data: 'total_paid_display', name: 'total_paid', orderable: true, searchable: false, className: 'd-none d-md-table-cell' },
+            { data: 'total_unpaid_display', name: 'total_unpaid', orderable: true, searchable: false, className: 'd-none d-md-table-cell' },
+            { data: 'current_due_display', name: 'current_due_amount', orderable: true, searchable: false, className: 'd-none d-md-table-cell' },
+            { data: 'percentage', name: 'percentage', orderable: false, searchable: false, className: 'd-none d-md-table-cell' }
         ]
     });
 
@@ -418,11 +456,17 @@ function initializeRekapTable() {
                 dataType: 'json',
                 data: params,
                 success: function(data) {
-                    var html = '<div class="p-4 bg-light rounded" style="margin-left: 50px;">' +
-                        '<h6 class="mb-3 text-muted">Rincian Tagihan</h6>' +
-                        '<table class="table table-sm table-bordered table-striped" style="width: auto; min-width: 60%;">' +
-                            '<thead class="bg-secondary">' +
-                                '<tr>' +
+                    var html = '<div class="nested-wrapper p-4" style="background-color: #f8fafc; border-radius: 20px; margin: 10px 0 10px 10px;">' +
+                        '<div class="d-flex align-items-center justify-content-between mb-4">' +
+                            '<span class="text-slate-800 fw-bolder fs-6" style="color: #1e293b; font-weight: 700;">Rincian Tagihan</span>' +
+                            '<span class="badge fs-8 px-3 py-1 fw-bold" style="background-color: rgba(37, 99, 235, 0.1); color: #2563eb; border-radius: 20px;">' + data.length + ' Item</span>' +
+                        '</div>';
+
+                    // Desktop Table Layout
+                    html += '<div class="table-responsive d-none d-md-block">' +
+                        '<table class="table table-sm table-row-dashed fs-7 gy-3 align-middle" style="width: auto; min-width: 60%;">' +
+                            '<thead>' +
+                                '<tr class="text-start text-gray-500 fw-boldest fs-8 text-uppercase">' +
                                     '<th class="px-3">Tagihan</th>' +
                                     '<th class="px-3">Tahun Ajaran</th>' +
                                     '<th class="px-3">Periode</th>' +
@@ -432,11 +476,16 @@ function initializeRekapTable() {
                                 '</tr>' +
                             '</thead>' +
                             '<tbody>';
-                    
+
+                    // Mobile Card List Layout
+                    var mobileHtml = '<div class="d-flex flex-column gap-3 d-md-none">';
+
                     if(data.length === 0) {
-                        html += '<tr><td colspan="6" class="text-center text-muted">Tidak ada rincian data.</td></tr>';
+                        html += '<tr><td colspan="6" class="text-center text-muted py-4">Tidak ada rincian data.</td></tr>';
+                        mobileHtml += '<div class="text-center text-muted py-4">Tidak ada rincian data.</div>';
                     } else {
                         data.forEach(function(item) {
+                            // Row for desktop table
                             html += '<tr>' +
                                 '<td class="px-3 align-middle">' + item.bill_type + '</td>' +
                                 '<td class="px-3 align-middle">' + item.academic_year + '</td>' +
@@ -445,10 +494,40 @@ function initializeRekapTable() {
                                 '<td class="px-3 text-center align-middle">' + item.status + '</td>' +
                                 '<td class="px-3 text-center align-middle">' + (item.action ? item.action : '-') + '</td>' +
                             '</tr>';
+
+                            // Card for mobile list
+                            var actionHtml = item.action ? '<div class="flex items-center gap-2">' + item.action + '</div>' : '';
+                            
+                            mobileHtml += '<div class="card p-4 border-0" style="border-radius: 16px; box-shadow: 0 4px 15px rgba(0,0,0,0.02); background: white;">' +
+                                '<div class="d-flex justify-content-between align-items-start gap-2 mb-2">' +
+                                    '<div class="d-flex flex-column">' +
+                                        '<span class="text-slate-800 fw-bold fs-7" style="line-height: 1.3; color: #1e293b;">' + item.bill_type + '</span>' +
+                                        '<span class="text-slate-400 fs-9 mt-1" style="color: #94a3b8;"><i class="far fa-calendar-alt me-1"></i>T.A ' + item.academic_year + '</span>' +
+                                    '</div>' +
+                                    '<div class="d-flex flex-column align-items-end gap-2">' +
+                                        '<div>' + item.status + '</div>' +
+                                        '<div>' + actionHtml + '</div>' +
+                                    '</div>' +
+                                '</div>' +
+                                '<div class="border-top border-slate-100 my-2" style="border-top: 1px solid #f1f5f9;"></div>' +
+                                '<div class="d-flex justify-content-between align-items-center mt-2">' +
+                                    '<div class="d-flex flex-column">' +
+                                        '<span class="text-slate-400 uppercase tracking-wider fs-9 fw-bold" style="color: #94a3b8; font-size: 8px;">Periode</span>' +
+                                        '<span class="text-slate-600 fs-8 fw-medium" style="color: #475569;">' + item.period + '</span>' +
+                                    '</div>' +
+                                    '<div class="text-end d-flex flex-column">' +
+                                        '<span class="text-slate-400 uppercase tracking-wider fs-9 fw-bold" style="color: #94a3b8; font-size: 8px;">Nominal</span>' +
+                                        '<span class="fs-7 fw-boldest text-slate-800" style="color: #0f172a; font-weight: 800;">' + item.amount + '</span>' +
+                                    '</div>' +
+                                '</div>' +
+                            '</div>';
                         });
                     }
 
                     html += '</tbody></table></div>';
+                    mobileHtml += '</div>';
+                    
+                    html += mobileHtml + '</div>';
                     row.child(html).show();
                     tr.addClass('shown');
                     icon.removeClass('fa-spinner fa-spin').addClass('fa-chevron-down');
