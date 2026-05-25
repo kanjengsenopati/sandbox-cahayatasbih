@@ -90,13 +90,36 @@
                         @csrf
                         <div class="row g-5">
 
-                            {{-- Left Column: LIVE PREVIEW --}}
+                            {{-- Left Column: TEMPLATE BACKGROUND UPLOAD --}}
                             <div class="col-lg-4">
                                 <div class="card card-flush border-0 shadow-[0_8px_30px_rgba(0,0,0,0.04)]" style="border-radius: 24px; box-shadow: 0 8px 30px rgba(0,0,0,0.04); border: none; position: sticky; top: 100px; z-index: 10;">
                                     <div class="card-header border-0 pb-0">
-                                        <h3 class="card-title fw-bolder">Live Preview</h3>
+                                        <text-h2 class="text-h2 card-title fw-bolder mb-0">Background Template</text-h2>
                                     </div>
-                                    <div class="card-body d-flex justify-content-center align-items-center" style="background:#e8e8e8; min-height:300px;">
+                                    <div class="card-body">
+                                        <div class="p-4 bg-light-primary rounded" style="border-radius: 12px;">
+                                            <label class="form-label fw-bold">Gambar Latar Belakang Kartu</label>
+                                            @if($background)
+                                                <div class="mb-3 text-center">
+                                                    <img src="{{ asset($background) }}" class="rounded shadow-sm" style="max-width:100%; height:auto; max-height:150px; object-fit:contain;" />
+                                                </div>
+                                            @endif
+                                            <input type="file" name="student_card_image" class="form-control form-control-sm" accept="image/*" id="bgUpload" />
+                                            <small class="text-muted d-block mt-2">Format: JPG, PNG, WebP. Maks 2MB. Rasio ideal: 85.6 × 54mm</small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {{-- Right Column: LIVE PREVIEW & CONFIGURATION PANEL --}}
+                            <div class="col-lg-8">
+                                
+                                {{-- Live Preview Card --}}
+                                <div class="card card-flush border-0 shadow-[0_8px_30px_rgba(0,0,0,0.04)] mb-5" style="border-radius: 24px; box-shadow: 0 8px 30px rgba(0,0,0,0.04); border: none;">
+                                    <div class="card-header border-0 pb-0">
+                                        <text-h2 class="text-h2 card-title fw-bolder mb-0">Live Preview</text-h2>
+                                    </div>
+                                    <div class="card-body d-flex justify-content-center align-items-center" style="background:#e8e8e8; min-height:300px; border-radius: 0 0 24px 24px;">
                                         <div id="cardPreviewWrapper" style="width:342px; height:216px; position:relative; overflow:hidden; border-radius:10px; box-shadow:0 8px 30px rgba(0,0,0,0.15);">
                                             {{-- Background --}}
                                             <div id="prevBg" style="position:absolute;inset:0;background-size:cover;background-position:center;
@@ -206,27 +229,13 @@
                                         <small class="text-muted">Preview diskalakan 4x dari ukuran asli (85.6mm × 53.98mm)</small>
                                     </div>
                                 </div>
-                            </div>
 
-                            {{-- Right Column: CONFIGURATION PANEL --}}
-                            <div class="col-lg-8">
+                                {{-- Configuration Card --}}
                                 <div class="card card-flush border-0 shadow-[0_8px_30px_rgba(0,0,0,0.04)]" style="border-radius: 24px; box-shadow: 0 8px 30px rgba(0,0,0,0.04); border: none;">
                                     <div class="card-header border-0 pb-0">
-                                        <h3 class="card-title fw-bolder">Konfigurasi Elemen</h3>
+                                        <text-h2 class="text-h2 card-title fw-bolder mb-0">Konfigurasi Elemen</text-h2>
                                     </div>
                                     <div class="card-body pt-2">
-
-                                        {{-- Background Image Upload --}}
-                                        <div class="mb-5 p-4 bg-light-primary rounded">
-                                            <label class="form-label fw-bold">Gambar Latar Belakang Kartu</label>
-                                            @if($background)
-                                                <div class="mb-3">
-                                                    <img src="{{ asset($background) }}" class="rounded" style="max-width:200px;height:auto;" />
-                                                </div>
-                                            @endif
-                                            <input type="file" name="student_card_image" class="form-control form-control-sm" accept="image/*" id="bgUpload" />
-                                            <small class="text-muted">Format: JPG, PNG, WebP. Maks 2MB. Rasio ideal: 85.6 × 54mm</small>
-                                        </div>
 
                                         @php
                                             $elements = [
