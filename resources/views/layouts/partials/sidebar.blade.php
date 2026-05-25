@@ -109,7 +109,7 @@
                         {{-- Group 3: Pengaturan Aplikasi --}}
                         @canany(['Manage Pengaturan Aplikasi', 'Manage Menu Aplikasi'])
                         <div class="menu-item ">
-                            <a class="menu-link {{ request()->routeIs(['application-setting.*', 'student-card-setting.*', 'admin.audit', 'application-menu.*']) ? ' active' : '' }}"
+                            <a class="menu-link {{ request()->routeIs(['application-setting.*', 'admin.audit', 'application-menu.*']) ? ' active' : '' }}"
                                 href="{{ auth()->user()->can('Manage Pengaturan Aplikasi') ? route('application-setting.index') : route('application-menu.index') }}">
                                 <span class="menu-bullet">
                                     <span class="bullet bullet-dot"></span>
@@ -118,6 +118,19 @@
                             </a>
                         </div>
                         @endcanany
+
+                        {{-- Submenu: Kartu --}}
+                        @can('Manage Pengaturan Aplikasi')
+                        <div class="menu-item ">
+                            <a class="menu-link {{ request()->routeIs('student-card-setting.*') ? ' active' : '' }}"
+                                href="{{ route('student-card-setting.index') }}">
+                                <span class="menu-bullet">
+                                    <span class="bullet bullet-dot"></span>
+                                </span>
+                                <span class="menu-title">Kartu</span>
+                            </a>
+                        </div>
+                        @endcan
 
                         {{-- Non-grouped: Informasi --}}
                         @can('Manage Informasi')

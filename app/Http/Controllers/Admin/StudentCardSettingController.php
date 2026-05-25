@@ -167,23 +167,36 @@ class StudentCardSettingController extends Controller
             });
         }
 
-        $students = $query->orderBy('name')->get();
+        $limit = (int) $request->input('limit', 10);
+        if (!in_array($limit, [10, 20, 40])) {
+            $limit = 10;
+        }
 
-        return response()->json($students->map(function ($s) {
-            $lastPrint = $s->cardPrints->first();
-            return [
-                'id' => $s->id,
-                'name' => $s->name,
-                'nis' => $s->nis,
-                'barcode' => $s->barcode,
-                'classroom' => $s->classroom?->name ?? '-',
-                'school' => $s->classroom?->school?->name ?? '-',
-                'avatar' => $s->avatar ? asset($s->avatar) : null,
-                'print_count' => $s->cardPrints->count(),
-                'last_printed_at' => $lastPrint ? $lastPrint->printed_at->format('d M Y H:i') : null,
-                'last_printed_by' => $lastPrint?->admin?->name ?? null,
-            ];
-        }));
+        $students = $query->orderBy('name')->paginate($limit);
+
+        return response()->json([
+            'current_page' => $students->currentPage(),
+            'last_page' => $students->lastPage(),
+            'per_page' => $students->perPage(),
+            'total' => $students->total(),
+            'from' => $students->firstItem(),
+            'to' => $students->lastItem(),
+            'data' => $students->getCollection()->map(function ($s) {
+                $lastPrint = $s->cardPrints->first();
+                return [
+                    'id' => $s->id,
+                    'name' => $s->name,
+                    'nis' => $s->nis,
+                    'barcode' => $s->barcode,
+                    'classroom' => $s->classroom?->name ?? '-',
+                    'school' => $s->classroom?->school?->name ?? '-',
+                    'avatar' => $s->avatar ? asset($s->avatar) : null,
+                    'print_count' => $s->cardPrints->count(),
+                    'last_printed_at' => $lastPrint ? $lastPrint->printed_at->format('d M Y H:i') : null,
+                    'last_printed_by' => $lastPrint?->admin?->name ?? null,
+                ];
+            })
+        ]);
     }
 
     /**
@@ -198,7 +211,7 @@ class StudentCardSettingController extends Controller
         $request->validate([
             'student_ids' => 'required|array|min:1',
             'student_ids.*' => 'exists:students,id',
-            'print_layout' => 'required|in:pvc,a4_2x4,a4_2x5',
+            'print_layout' => 'required|in:pvc,a4_1x1,a4_2x2,a4_2x3,a4_2x4,a4_2x5',
         ]);
 
         $students = Student::with(['classroom', 'classroom.school'])
@@ -248,7 +261,23 @@ class StudentCardSettingController extends Controller
             ])->setPaper([0, 0, 242.65, 153.07], 'landscape'); // 85.6mm x 53.98mm in points
         } else {
             $cols = 2;
-            $rows = $printLayout === 'a4_2x5' ? 5 : 4;
+            if ($printLayout === 'a4_1x1') {
+                $cols = 1;
+                $rows = 1;
+            } elseif ($printLayout === 'a4_2x2') {
+                $cols = 2;
+                $rows = 2;
+            } elseif ($printLayout === 'a4_2x3') {
+                $cols = 2;
+                $rows = 3;
+            } elseif ($printLayout === 'a4_2x5') {
+                $cols = 2;
+                $rows = 5;
+            } else { // a4_2x4
+                $cols = 2;
+                $rows = 4;
+            }
+
             $pdf = PDF::loadView('admins.student-card-setting.pdf-a4', [
                 'studentsData' => $studentsData,
                 'layout' => $layout,

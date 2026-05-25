@@ -27,7 +27,14 @@
     <!--begin::Post-->
     <div class="post d-flex flex-column-fluid" id="kt_post">
         <div id="kt_content_container" class="container-xxl">
-            @include('admins.partials.tabs-aplikasi')
+            <style>
+                text-h1, .text-h1 { display: block; font-size: 22px; font-weight: 700; color: #0f172a; } /* Slate-900 */
+                text-h2, .text-h2 { display: block; font-size: 16px; font-weight: 600; color: #1e293b; } /* Slate-800 */
+                text-amount, .text-amount { display: inline-block; font-size: 18px; font-weight: 700; color: #059669; } /* Emerald-600 */
+                text-label, .text-label { display: block; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: #94a3b8; } /* Slate-400 */
+                text-body, .text-body { display: block; font-size: 14px; font-weight: 500; color: #475569; } /* Slate-600 */
+                text-caption, .text-caption { display: block; font-size: 12px; font-style: italic; color: #94a3b8; } /* Slate-400 */
+            </style>
 
             @if (session('success'))
                 <div class="alert alert-success alert-dismissible fade show" role="alert">
@@ -353,7 +360,7 @@
                             <div class="col-lg-4">
                                 <div class="card card-flush border-0 shadow-[0_8px_30px_rgba(0,0,0,0.04)]" style="border-radius: 24px; box-shadow: 0 8px 30px rgba(0,0,0,0.04); border: none;">
                                     <div class="card-header border-0 pb-0">
-                                        <h3 class="card-title fw-bolder">Filter Santri</h3>
+                                        <text-h2 class="text-h2 card-title fw-bolder mb-0">Filter Santri</text-h2>
                                     </div>
                                     <div class="card-body">
                                         <div class="mb-4">
@@ -372,14 +379,17 @@
                                             </select>
                                         </div>
                                         <button type="button" class="btn btn-sm btn-light-primary w-100" id="btnFilter">
-                                            <i class="fa-solid fa-search me-2"></i>Cari Santri
+                                            <i class="fa-solid fa-sync me-2"></i>Segarkan Data
                                         </button>
                                     </div>
                                     <div class="card-footer">
                                         <label class="form-label fw-bold">Format Cetak</label>
                                         <select class="form-select" name="print_layout">
                                             <option value="pvc">PVC Card (1 kartu/halaman)</option>
-                                            <option value="a4_2x4">A4 Grid 2×4 (8 kartu/halaman)</option>
+                                            <option value="a4_1x1">A4 Grid 1×1 (1 kartu/halaman)</option>
+                                            <option value="a4_2x2">A4 Grid 2×2 (4 kartu/halaman)</option>
+                                            <option value="a4_2x3">A4 Grid 2×3 (6 kartu/halaman)</option>
+                                            <option value="a4_2x4" selected>A4 Grid 2×4 (8 kartu/halaman)</option>
                                             <option value="a4_2x5">A4 Grid 2×5 (10 kartu/halaman)</option>
                                         </select>
                                         <button type="submit" class="btn btn-primary w-100 mt-4" id="btnPrint">
@@ -393,8 +403,16 @@
                             <div class="col-lg-8">
                                 <div class="card card-flush border-0 shadow-[0_8px_30px_rgba(0,0,0,0.04)]" style="border-radius: 24px; box-shadow: 0 8px 30px rgba(0,0,0,0.04); border: none;">
                                     <div class="card-header border-0 pb-0 flex-wrap gap-2">
-                                        <h3 class="card-title fw-bolder">Daftar Santri</h3>
+                                        <text-h2 class="text-h2 card-title fw-bolder mb-0">Daftar Santri</text-h2>
                                         <div class="card-toolbar gap-3">
+                                            <div class="d-flex align-items-center gap-2">
+                                                <span class="text-muted fs-7 fw-bold">Baris:</span>
+                                                <select id="rowLimit" class="form-select form-select-sm form-select-solid w-75px" style="background-color: #f5f8fa; border: none; border-radius: 8px;">
+                                                    <option value="10" selected>10</option>
+                                                    <option value="20">20</option>
+                                                    <option value="40">40</option>
+                                                </select>
+                                            </div>
                                             <div class="position-relative my-1">
                                                 <i class="fa-solid fa-magnifying-glass position-absolute top-50 translate-middle-y ms-4 text-slate-400"></i>
                                                 <input type="text" id="searchStudent" class="form-control form-control-sm form-control-solid ps-10 w-150px w-md-200px" placeholder="Cari santri..." style="background-color: #f5f8fa; border: none; border-radius: 8px;" />
@@ -419,10 +437,14 @@
                                                     </tr>
                                                 </thead>
                                                 <tbody id="studentTableBody">
-                                                    <tr><td colspan="6" class="text-center text-muted py-10">Klik "Cari Santri" untuk memuat data</td></tr>
+                                                    <tr><td colspan="6" class="text-center text-muted py-10">Memuat data...</td></tr>
                                                 </tbody>
                                             </table>
                                         </div>
+                                    </div>
+                                    <div class="card-footer d-flex align-items-center justify-content-between py-4" id="paginationWrapper" style="border-top: 1px solid #eff2f5;">
+                                        <text-caption id="paginationInfo" class="text-caption"></text-caption>
+                                        <div id="paginationControls" class="d-flex gap-1"></div>
                                     </div>
                                 </div>
                             </div>
@@ -551,16 +573,22 @@ document.addEventListener('DOMContentLoaded', function() {
         return Promise.resolve();
     }
 
-    // ── Tab 2: Search students (Database Driven & Reactive) ──
-    function fetchStudents() {
+    // ── Tab 2: Search students (Database Driven, Reactive & Paged) ──
+    let currentPage = 1;
+
+    function fetchStudents(page = 1) {
+        currentPage = page;
         var params = new URLSearchParams();
         var schoolId = document.getElementById('filterSchool').value;
         var classroomId = document.getElementById('filterClassroom').value;
         var query = document.getElementById('searchStudent').value;
+        var limit = document.getElementById('rowLimit').value;
 
         if (schoolId) params.append('school_id', schoolId);
         if (classroomId) params.append('classroom_id', classroomId);
         if (query) params.append('q', query);
+        params.append('limit', limit);
+        params.append('page', page);
 
         var tbody = document.getElementById('studentTableBody');
         tbody.innerHTML = '<tr><td colspan="6" class="text-center py-10"><span class="spinner-border spinner-border-sm me-2"></span>Memuat data...</td></tr>';
@@ -570,9 +598,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (!r.ok) throw new Error('HTTP status ' + r.status);
                 return r.json();
             })
-            .then(function(students) {
+            .then(function(response) {
+                var students = response.data || [];
                 if (students.length === 0) {
                     tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-10">Tidak ada data santri ditemukan</td></tr>';
+                    renderPagination(response);
                     return;
                 }
                 var html = '';
@@ -599,6 +629,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 });
                 tbody.innerHTML = html;
                 updateSelectedCount();
+                renderPagination(response);
             })
             .catch(function(err) {
                 console.error('Gagal memuat data santri:', err);
@@ -606,38 +637,107 @@ document.addEventListener('DOMContentLoaded', function() {
             });
     }
 
+    function renderPagination(pagination) {
+        var info = document.getElementById('paginationInfo');
+        var controls = document.getElementById('paginationControls');
+
+        if (!pagination.total || pagination.total === 0) {
+            info.innerHTML = 'Menampilkan 0 sampai 0 dari 0 santri';
+            controls.innerHTML = '';
+            return;
+        }
+
+        // Information text
+        info.innerHTML = 'Menampilkan ' + pagination.from + ' sampai ' + pagination.to + ' dari ' + pagination.total + ' santri';
+
+        var html = '';
+        // Previous page button
+        if (pagination.current_page > 1) {
+            html += '<button type="button" class="btn btn-sm btn-light-primary px-3 py-1 rounded" data-page="' + (pagination.current_page - 1) + '"><i class="fa-solid fa-angle-left"></i></button>';
+        } else {
+            html += '<button type="button" class="btn btn-sm btn-light px-3 py-1 rounded text-muted" disabled><i class="fa-solid fa-angle-left"></i></button>';
+        }
+
+        // Pages numbers
+        var startPage = Math.max(1, pagination.current_page - 2);
+        var endPage = Math.min(pagination.last_page, pagination.current_page + 2);
+
+        if (startPage > 1) {
+            html += '<button type="button" class="btn btn-sm btn-light-primary px-3 py-1 rounded" data-page="1">1</button>';
+            if (startPage > 2) {
+                html += '<span class="text-muted align-self-center px-1">...</span>';
+            }
+        }
+
+        for (var p = startPage; p <= endPage; p++) {
+            if (p === pagination.current_page) {
+                html += '<button type="button" class="btn btn-sm btn-primary px-3 py-1 rounded fw-bold" style="background-color: #2563eb;">' + p + '</button>';
+            } else {
+                html += '<button type="button" class="btn btn-sm btn-light-primary px-3 py-1 rounded" data-page="' + p + '">' + p + '</button>';
+            }
+        }
+
+        if (endPage < pagination.last_page) {
+            if (endPage < pagination.last_page - 1) {
+                html += '<span class="text-muted align-self-center px-1">...</span>';
+            }
+            html += '<button type="button" class="btn btn-sm btn-light-primary px-3 py-1 rounded" data-page="' + pagination.last_page + '">' + pagination.last_page + '</button>';
+        }
+
+        // Next page button
+        if (pagination.current_page < pagination.last_page) {
+            html += '<button type="button" class="btn btn-sm btn-light-primary px-3 py-1 rounded" data-page="' + (pagination.current_page + 1) + '"><i class="fa-solid fa-angle-right"></i></button>';
+        } else {
+            html += '<button type="button" class="btn btn-sm btn-light px-3 py-1 rounded text-muted" disabled><i class="fa-solid fa-angle-right"></i></button>';
+        }
+
+        controls.innerHTML = html;
+
+        // Wire pagination click events
+        controls.querySelectorAll('[data-page]').forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                var p = parseInt(this.getAttribute('data-page'));
+                fetchStudents(p);
+            });
+        });
+    }
+
     // Debounce for typing search
     var searchTimeout = null;
     document.getElementById('searchStudent').addEventListener('input', function() {
         clearTimeout(searchTimeout);
         searchTimeout = setTimeout(function() {
-            fetchStudents();
+            fetchStudents(1);
         }, 300);
     });
 
-    // Reactive dropdown filters
+    // Reactive dropdown filters (Auto load on changes)
     document.getElementById('filterSchool').addEventListener('change', function() {
         loadClassrooms(this.value).then(function() {
-            fetchStudents();
+            fetchStudents(1);
         });
     });
 
     document.getElementById('filterClassroom').addEventListener('change', function() {
-        fetchStudents();
+        fetchStudents(1);
+    });
+
+    document.getElementById('rowLimit').addEventListener('change', function() {
+        fetchStudents(1);
     });
 
     document.getElementById('btnFilter').addEventListener('click', function() {
-        fetchStudents();
+        fetchStudents(1);
     });
 
     // Initial load: Fetch classrooms (if school is pre-selected) and auto-fetch all students immediately
     var initialSchoolId = document.getElementById('filterSchool').value;
     if (initialSchoolId) {
         loadClassrooms(initialSchoolId).then(function() {
-            fetchStudents();
+            fetchStudents(1);
         });
     } else {
-        fetchStudents();
+        fetchStudents(1);
     }
 
     // ── Check all ──

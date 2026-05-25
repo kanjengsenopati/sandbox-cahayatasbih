@@ -22,7 +22,7 @@
         .grid-td {
             padding: 2.5mm;
             vertical-align: top;
-            width: 50%;
+            width: {{ 100 / $cols }}%;
         }
         .card-container {
             width: 85.6mm;

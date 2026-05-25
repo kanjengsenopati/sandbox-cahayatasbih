@@ -6,11 +6,6 @@
         </a>
     </li>
     <li class="nav-item">
-        <a class="nav-link {{ request()->routeIs('student-card-setting.*') ? 'active fw-bolder' : '' }}" href="{{ route('student-card-setting.index') }}">
-            <i class="fa-solid fa-id-card me-2"></i>Desain & Cetak Kartu
-        </a>
-    </li>
-    <li class="nav-item">
         <a class="nav-link {{ request()->routeIs('admin.audit') ? 'active fw-bolder' : '' }}" href="{{ route('admin.audit') }}">
             <i class="fa-solid fa-rotate me-2"></i>Audit & Sinkronisasi
         </a>
