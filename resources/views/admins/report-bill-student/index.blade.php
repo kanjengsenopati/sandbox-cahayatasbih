@@ -147,6 +147,16 @@
                             .table-responsive {
                                 border: none !important;
                             }
+                            /* Ensure table child row td has proper padding and doesn't cause overflow */
+                            #table-rekap tbody tr.child td {
+                                padding: 8px 12px !important;
+                                background-color: #f8fafc !important;
+                            }
+                            .nested-wrapper {
+                                width: 100% !important;
+                                margin: 0 !important;
+                                padding: 4px 0 !important;
+                            }
                         }
                     </style>
 
@@ -456,10 +466,10 @@ function initializeRekapTable() {
                 dataType: 'json',
                 data: params,
                 success: function(data) {
-                    var html = '<div class="nested-wrapper p-4" style="background-color: #f8fafc; border-radius: 20px; margin: 10px 0 10px 10px;">' +
-                        '<div class="d-flex align-items-center justify-content-between mb-4">' +
-                            '<span class="text-slate-800 fw-bolder fs-6" style="color: #1e293b; font-weight: 700;">Rincian Tagihan</span>' +
-                            '<span class="badge fs-8 px-3 py-1 fw-bold" style="background-color: rgba(37, 99, 235, 0.1); color: #2563eb; border-radius: 20px;">' + data.length + ' Item</span>' +
+                    var html = '<div class="nested-wrapper" style="width: 100%; box-sizing: border-box;">' +
+                        '<div class="d-flex align-items-center justify-content-between mb-3 px-2">' +
+                            '<span class="text-slate-800 fw-bold fs-7" style="color: #1e293b; font-size: 13px;">Rincian Tagihan</span>' +
+                            '<span class="badge fs-9 px-2 py-1 fw-bold" style="background-color: rgba(37, 99, 235, 0.1); color: #2563eb; border-radius: 20px;">' + data.length + ' Item</span>' +
                         '</div>';
 
                     // Desktop Table Layout
@@ -473,12 +483,12 @@ function initializeRekapTable() {
                                     '<th class="px-3">Nominal</th>' +
                                     '<th class="px-3 text-center">Status</th>' +
                                     '<th class="px-3 text-center">Aksi</th>' +
-                                '</tr>' +
+                                </tr>' +
                             '</thead>' +
                             '<tbody>';
 
-                    // Mobile Card List Layout
-                    var mobileHtml = '<div class="d-flex flex-column gap-3 d-md-none">';
+                    // Mobile Card List Layout (Clean, high density, proper visibility, action button included)
+                    var mobileHtml = '<div class="d-flex flex-column gap-2 d-md-none" style="width: 100%; box-sizing: border-box;">';
 
                     if(data.length === 0) {
                         html += '<tr><td colspan="6" class="text-center text-muted py-4">Tidak ada rincian data.</td></tr>';
@@ -495,18 +505,18 @@ function initializeRekapTable() {
                                 '<td class="px-3 text-center align-middle">' + (item.action ? item.action : '-') + '</td>' +
                             '</tr>';
 
-                            // Card for mobile list
+                            // Card for mobile list (optimised layout)
                             var actionHtml = item.action ? '<div class="flex items-center gap-2">' + item.action + '</div>' : '';
                             
-                            mobileHtml += '<div class="card p-4 border-0" style="border-radius: 16px; box-shadow: 0 4px 15px rgba(0,0,0,0.02); background: white;">' +
+                            mobileHtml += '<div class="card p-3 border-0" style="border-radius: 14px; box-shadow: 0 4px 15px rgba(0,0,0,0.02); background: white; width: 100%; box-sizing: border-box;">' +
                                 '<div class="d-flex justify-content-between align-items-start gap-2 mb-2">' +
-                                    '<div class="d-flex flex-column">' +
-                                        '<span class="text-slate-800 fw-bold fs-7" style="line-height: 1.3; color: #1e293b;">' + item.bill_type + '</span>' +
-                                        '<span class="text-slate-400 fs-9 mt-1" style="color: #94a3b8;"><i class="far fa-calendar-alt me-1"></i>T.A ' + item.academic_year + '</span>' +
+                                    '<div class="d-flex flex-column" style="max-width: 60%;">' +
+                                        '<span class="text-slate-800 fw-bold fs-7" style="line-height: 1.3; color: #1e293b; font-size: 13px;">' + item.bill_type + '</span>' +
+                                        '<span class="text-slate-400 fs-9 mt-1" style="color: #94a3b8; font-size: 10px;"><i class="far fa-calendar-alt me-1"></i>T.A ' + item.academic_year + '</span>' +
                                     '</div>' +
-                                    '<div class="d-flex flex-column align-items-end gap-2">' +
+                                    '<div class="d-flex flex-column align-items-end gap-1.5" style="max-width: 40%;">' +
                                         '<div>' + item.status + '</div>' +
-                                        '<div>' + actionHtml + '</div>' +
+                                        (actionHtml ? '<div style="margin-top: 2px;">' + actionHtml + '</div>' : '') +
                                     '</div>' +
                                 '</div>' +
                                 '<div class="border-top border-slate-100 my-2" style="border-top: 1px solid #f1f5f9;"></div>' +
@@ -517,7 +527,7 @@ function initializeRekapTable() {
                                     '</div>' +
                                     '<div class="text-end d-flex flex-column">' +
                                         '<span class="text-slate-400 uppercase tracking-wider fs-9 fw-bold" style="color: #94a3b8; font-size: 8px;">Nominal</span>' +
-                                        '<span class="fs-7 fw-boldest text-slate-800" style="color: #0f172a; font-weight: 800;">' + item.amount + '</span>' +
+                                        '<span class="fs-7 fw-boldest text-slate-800" style="color: #0f172a; font-weight: 800; font-size: 13px; white-space: nowrap;">' + item.amount + '</span>' +
                                     '</div>' +
                                 '</div>' +
                             '</div>';

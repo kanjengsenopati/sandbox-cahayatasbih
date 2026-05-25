@@ -34,6 +34,18 @@
             box-shadow: 0 8px 30px rgba(0, 0, 0, 0.04);
             border-radius: 24px;
         }
+
+        /* Ensure table child row td has proper padding and doesn't cause overflow */
+        #report_table tbody tr.child td {
+            padding: 8px 12px !important;
+            background-color: #f8fafc !important;
+        }
+        
+        .nested-wrapper {
+            width: 100% !important;
+            margin: 0 !important;
+            padding: 4px 0 !important;
+        }
  
         .table.dataTable thead th {
             color: #b5b5c3 !important;
@@ -299,10 +311,10 @@
  
         var format = function (d, breakdown) {
             // Main mobile & desktop wrapper
-            var html = '<div class="nested-wrapper p-4" style="background-color: #f8fafc; border-radius: 20px; margin: 10px 0 10px 10px;">' +
-                '<div class="d-flex align-items-center justify-content-between mb-4">' +
-                    '<span class="text-slate-800 fw-bolder fs-6" style="color: #1e293b;">Rincian Item Tagihan</span>' +
-                    '<span class="badge fs-8 px-3 py-1 fw-bold" style="background-color: rgba(37, 99, 235, 0.1); color: #2563eb; border-radius: 20px;">' + (breakdown ? breakdown.length : 0) + ' Item</span>' +
+            var html = '<div class="nested-wrapper" style="width: 100%; box-sizing: border-box;">' +
+                '<div class="d-flex align-items-center justify-content-between mb-3 px-2">' +
+                    '<span class="text-slate-800 fw-bold fs-7" style="color: #1e293b; font-size: 13px;">Rincian Item Tagihan</span>' +
+                    '<span class="badge fs-9 px-2 py-1 fw-bold" style="background-color: rgba(37, 99, 235, 0.1); color: #2563eb; border-radius: 20px;">' + (breakdown ? breakdown.length : 0) + ' Item</span>' +
                 '</div>';
 
             // Desktop Table Layout
@@ -318,8 +330,8 @@
                 '</tr></thead>' +
                 '<tbody>';
 
-            // Mobile Card List Layout
-            var mobileHtml = '<div class="d-flex flex-column gap-3 d-md-none">';
+            // Mobile Card List Layout (Clean, high density, and proper visibility)
+            var mobileHtml = '<div class="d-flex flex-column gap-2 d-md-none" style="width: 100%; box-sizing: border-box;">';
 
             if (breakdown && breakdown.length > 0) {
                 breakdown.forEach(function(bill, index) {
@@ -328,8 +340,8 @@
                         : '<span class="badge fs-8 px-3 py-1 fw-bold" style="background-color: rgba(220, 38, 38, 0.1); color: #dc2626; border-radius: 20px;">Belum Lunas</span>';
                     
                     var statusBadgeMobile = bill.status === "PAID" 
-                        ? '<span class="badge fs-9 px-2 py-1 fw-bold" style="background-color: rgba(16, 185, 129, 0.1); color: #10b981; border-radius: 20px;">Lunas</span>' 
-                        : '<span class="badge fs-9 px-2 py-1 fw-bold" style="background-color: rgba(220, 38, 38, 0.1); color: #dc2626; border-radius: 20px;">Belum Lunas</span>';
+                        ? '<span class="badge fs-9 px-2 py-0.5 fw-bold" style="background-color: rgba(16, 185, 129, 0.1); color: #10b981; border-radius: 20px; font-size: 10px;">Lunas</span>' 
+                        : '<span class="badge fs-9 px-2 py-0.5 fw-bold" style="background-color: rgba(220, 38, 38, 0.1); color: #dc2626; border-radius: 20px; font-size: 10px;">Belum Lunas</span>';
 
                     // Group months by year for display
                     var monthYearStr = "";
@@ -355,24 +367,19 @@
                         '<td class="text-center">' + statusBadge + '</td>' +
                         '</tr>';
 
-                    // Add card for mobile view
-                    mobileHtml += '<div class="card p-4 border-0" style="border-radius: 16px; box-shadow: 0 4px 15px rgba(0,0,0,0.02); background: white;">' +
-                        '<div class="d-flex justify-content-between align-items-start gap-2 mb-2">' +
-                            '<div class="d-flex flex-column">' +
-                                '<span class="text-slate-800 fw-bold fs-7" style="line-height: 1.3; color: #1e293b;">' + bill.bill_type_name + '</span>' +
-                                '<span class="text-slate-400 fs-9 mt-1" style="color: #94a3b8;"><i class="far fa-calendar-alt me-1"></i>T.A ' + bill.academic_year + '</span>' +
-                            '</div>' +
+                    // Add card for mobile view (zero waste space, no dividers, high-density layout)
+                    mobileHtml += '<div class="card p-3 border-0" style="border-radius: 14px; box-shadow: 0 4px 15px rgba(0,0,0,0.02); background: white; width: 100%; box-sizing: border-box;">' +
+                        '<div class="d-flex justify-content-between align-items-center gap-2 mb-2">' +
+                            '<span class="text-slate-800 fw-bold fs-7" style="line-height: 1.3; color: #1e293b; font-size: 13px;">' + bill.bill_type_name + '</span>' +
                             '<div>' + statusBadgeMobile + '</div>' +
                         '</div>' +
-                        '<div class="border-top border-slate-100 my-2" style="border-top: 1px solid #f1f5f9;"></div>' +
-                        '<div class="d-flex justify-content-between align-items-center mt-2">' +
-                            '<div class="d-flex flex-column">' +
-                                '<span class="text-slate-400 uppercase tracking-wider fs-9 fw-bold" style="color: #94a3b8; font-size: 8px;">Periode</span>' +
-                                '<span class="text-slate-600 fs-8 fw-medium" style="max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #475569;">' + monthYearStr + '</span>' +
+                        '<div class="d-flex justify-content-between align-items-end mt-1">' +
+                            '<div class="d-flex flex-column gap-0.5" style="max-width: 60%;">' +
+                                '<span class="text-slate-400 fs-9" style="color: #94a3b8; font-size: 10px;"><i class="far fa-calendar-alt me-1"></i>T.A ' + bill.academic_year + '</span>' +
+                                '<span class="text-slate-500 fs-8 fw-medium" style="color: #64748b; font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="' + monthYearStr + '">' + monthYearStr + '</span>' +
                             '</div>' +
-                            '<div class="text-end d-flex flex-column">' +
-                                '<span class="text-slate-400 uppercase tracking-wider fs-9 fw-bold" style="color: #94a3b8; font-size: 8px;">Nominal</span>' +
-                                '<span class="fs-7 fw-boldest text-slate-800" style="color: #0f172a;">Rp ' + new Intl.NumberFormat('id-ID').format(bill.amount) + '</span>' +
+                            '<div class="text-end" style="max-width: 40%;">' +
+                                '<span class="fs-7 fw-boldest text-slate-800" style="color: #0f172a; font-weight: 800; font-size: 13px; white-space: nowrap;">Rp ' + new Intl.NumberFormat('id-ID').format(bill.amount) + '</span>' +
                             '</div>' +
                         '</div>' +
                     '</div>';
