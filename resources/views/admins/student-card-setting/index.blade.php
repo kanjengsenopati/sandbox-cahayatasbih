@@ -567,7 +567,10 @@ document.addEventListener('DOMContentLoaded', function() {
         tbody.innerHTML = '<tr><td colspan="6" class="text-center py-10"><span class="spinner-border spinner-border-sm me-2"></span>Memuat data...</td></tr>';
 
         fetch('{{ route("student-card-setting.get-students") }}?' + params.toString())
-            .then(function(r) { return r.json(); })
+            .then(function(r) {
+                if (!r.ok) throw new Error('HTTP status ' + r.status);
+                return r.json();
+            })
             .then(function(students) {
                 if (students.length === 0) {
                     tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-10">Tidak ada data santri ditemukan</td></tr>';
@@ -598,8 +601,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 tbody.innerHTML = html;
                 updateSelectedCount();
             })
-            .catch(function() {
-                tbody.innerHTML = '<tr><td colspan="6" class="text-center text-danger py-10">Gagal memuat data</td></tr>';
+            .catch(function(err) {
+                console.error('Gagal memuat data santri:', err);
+                tbody.innerHTML = '<tr><td colspan="6" class="text-center text-danger py-10">Gagal memuat data. Periksa koneksi atau coba refresh halaman.</td></tr>';
             });
     });
 
