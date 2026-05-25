@@ -203,8 +203,8 @@
             <table class="table align-middle table-row-dashed fs-6 gy-5" id="report_table">
                 <thead>
                     <tr class="text-start text-gray-800 fw-boldest fs-7 text-uppercase gs-0">
-                        <th class="w-10px pe-2"></th>
-                        <th class="min-w-50px">NO</th>
+                        <th class="w-10px pe-0"></th>
+                        <th class="w-30px pe-0">NO</th>
                         <th class="min-w-200px">SANTRI</th>
                         <th class="text-end min-w-100px d-none d-md-table-cell">TOTAL</th>
                         <th class="text-end min-w-100px text-success d-none d-md-table-cell">LUNAS</th>
@@ -232,10 +232,10 @@
                         $color = $pct >= 100 ? 'success' : ($pct >= 50 ? 'warning' : 'danger');
                     @endphp
                     <tr data-student-id="{{ $row->id }}">
-                        <td class="details-control">
+                        <td class="details-control pe-0">
                             <i class="fas fa-chevron-right text-primary"></i>
                         </td>
-                        <td>{{ $index + 1 }}</td>
+                        <td class="pe-0">{{ $index + 1 }}</td>
                         <td>
                             <div class="d-flex flex-column gap-2">
                                 <div class="d-flex align-items-center">

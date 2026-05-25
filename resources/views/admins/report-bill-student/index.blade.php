@@ -275,8 +275,8 @@
                                 <table id="table-rekap" class="table table-striped border rounded gy-5 gs-7">
                                     <thead>
                                         <tr class="fw-bolder fs-6 text-gray-800 px-7">
-                                            <th style="width: 20px;">#</th>
-                                            <th>No.</th>
+                                            <th class="w-10px pe-0">#</th>
+                                            <th class="w-30px pe-0">No.</th>
                                             <th>Santri</th>
                                             <th class="d-none d-md-table-cell">Jml Tagihan</th>
                                             <th class="d-none d-md-table-cell">Total Tagihan</th>
@@ -424,13 +424,13 @@ function initializeRekapTable() {
         },
         columns: [
             {
-                className: 'details-control text-center cursor-pointer',
+                className: 'details-control text-center cursor-pointer pe-0',
                 orderable: false,
                 searchable: false,
                 data: null,
                 defaultContent: '<i class="fas fa-chevron-right fs-5 text-primary"></i>'
             },
-            { data: null, sortable: false, searchable: false, render: function(data, type, row, meta) { return meta.row + meta.settings._iDisplayStart + 1; } },
+            { data: null, sortable: false, searchable: false, className: 'pe-0', render: function(data, type, row, meta) { return meta.row + meta.settings._iDisplayStart + 1; } },
             { data: 'student', name: 'student' },
             { data: 'bill_count_display', name: 'bill_count', orderable: true, searchable: false, className: 'd-none d-md-table-cell' },
             { data: 'total_bill_display', name: 'total_bill', orderable: true, searchable: false, className: 'd-none d-md-table-cell' },
