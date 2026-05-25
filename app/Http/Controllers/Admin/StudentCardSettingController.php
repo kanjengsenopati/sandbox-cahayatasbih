@@ -74,6 +74,7 @@ class StudentCardSettingController extends Controller
                 'left' => (float) $request->input('layout.title.left', 45),
                 'text_align' => $request->input('layout.title.text_align', 'right'),
                 'font_weight' => $request->input('layout.title.font_weight', 'bold'),
+                'font_family' => $request->input('layout.title.font_family', 'Raleway'),
             ],
             'subtitle' => [
                 'show' => $request->boolean('layout.subtitle.show'),
@@ -84,6 +85,7 @@ class StudentCardSettingController extends Controller
                 'left' => (float) $request->input('layout.subtitle.left', 45),
                 'text_align' => $request->input('layout.subtitle.text_align', 'right'),
                 'font_weight' => $request->input('layout.subtitle.font_weight', 'bold'),
+                'font_family' => $request->input('layout.subtitle.font_family', 'Raleway'),
             ],
             'photo' => [
                 'show' => $request->boolean('layout.photo.show'),
@@ -100,6 +102,7 @@ class StudentCardSettingController extends Controller
                 'top' => (float) $request->input('layout.name.top', 20),
                 'left' => (float) $request->input('layout.name.left', 25),
                 'font_weight' => $request->input('layout.name.font_weight', 'bold'),
+                'font_family' => $request->input('layout.name.font_family', 'Raleway'),
             ],
             'nis' => [
                 'show' => $request->boolean('layout.nis.show'),
@@ -117,6 +120,7 @@ class StudentCardSettingController extends Controller
                 'top' => (float) $request->input('layout.classroom.top', 35),
                 'left' => (float) $request->input('layout.classroom.left', 25),
                 'font_weight' => $request->input('layout.classroom.font_weight', 'bold'),
+                'font_family' => $request->input('layout.classroom.font_family', 'Raleway'),
             ],
             'school' => [
                 'show' => $request->boolean('layout.school.show'),
@@ -125,6 +129,7 @@ class StudentCardSettingController extends Controller
                 'top' => (float) $request->input('layout.school.top', 40),
                 'left' => (float) $request->input('layout.school.left', 25),
                 'font_weight' => $request->input('layout.school.font_weight', 'bold'),
+                'font_family' => $request->input('layout.school.font_family', 'Raleway'),
             ],
             'code' => [
                 'show' => $request->boolean('layout.code.show'),

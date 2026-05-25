@@ -51,6 +51,7 @@ class ApplicationSetting extends Model
                 'left' => 45,
                 'text_align' => 'right',
                 'font_weight' => 'bold',
+                'font_family' => 'Raleway',
             ],
             'subtitle' => [
                 'show' => true,
@@ -61,6 +62,7 @@ class ApplicationSetting extends Model
                 'left' => 45,
                 'text_align' => 'right',
                 'font_weight' => 'bold',
+                'font_family' => 'Raleway',
             ],
             'photo' => [
                 'show' => false,
@@ -77,6 +79,7 @@ class ApplicationSetting extends Model
                 'top' => 20,
                 'left' => 25,
                 'font_weight' => 'bold',
+                'font_family' => 'Raleway',
             ],
             'nis' => [
                 'show' => true,
@@ -94,6 +97,7 @@ class ApplicationSetting extends Model
                 'top' => 35,
                 'left' => 25,
                 'font_weight' => 'bold',
+                'font_family' => 'Raleway',
             ],
             'school' => [
                 'show' => true,
@@ -102,6 +106,7 @@ class ApplicationSetting extends Model
                 'top' => 40,
                 'left' => 25,
                 'font_weight' => 'bold',
+                'font_family' => 'Raleway',
             ],
             'code' => [
                 'show' => true,

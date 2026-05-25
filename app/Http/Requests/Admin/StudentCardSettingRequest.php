@@ -32,6 +32,7 @@ class StudentCardSettingRequest extends FormRequest
             'layout.title.left' => 'nullable|numeric|min:0|max:86',
             'layout.title.text_align' => 'nullable|in:left,center,right',
             'layout.title.font_weight' => 'nullable|in:normal,bold',
+            'layout.title.font_family' => 'nullable|string|max:50',
 
             // Subtitle
             'layout.subtitle.show' => 'nullable',
@@ -42,6 +43,7 @@ class StudentCardSettingRequest extends FormRequest
             'layout.subtitle.left' => 'nullable|numeric|min:0|max:86',
             'layout.subtitle.text_align' => 'nullable|in:left,center,right',
             'layout.subtitle.font_weight' => 'nullable|in:normal,bold',
+            'layout.subtitle.font_family' => 'nullable|string|max:50',
 
             // Photo
             'layout.photo.show' => 'nullable',
@@ -58,6 +60,7 @@ class StudentCardSettingRequest extends FormRequest
             'layout.name.top' => 'nullable|numeric|min:0|max:54',
             'layout.name.left' => 'nullable|numeric|min:0|max:86',
             'layout.name.font_weight' => 'nullable|in:normal,bold',
+            'layout.name.font_family' => 'nullable|string|max:50',
 
             // NIS
             'layout.nis.show' => 'nullable',
@@ -75,6 +78,7 @@ class StudentCardSettingRequest extends FormRequest
             'layout.classroom.top' => 'nullable|numeric|min:0|max:54',
             'layout.classroom.left' => 'nullable|numeric|min:0|max:86',
             'layout.classroom.font_weight' => 'nullable|in:normal,bold',
+            'layout.classroom.font_family' => 'nullable|string|max:50',
 
             // School
             'layout.school.show' => 'nullable',
@@ -83,6 +87,7 @@ class StudentCardSettingRequest extends FormRequest
             'layout.school.top' => 'nullable|numeric|min:0|max:54',
             'layout.school.left' => 'nullable|numeric|min:0|max:86',
             'layout.school.font_weight' => 'nullable|in:normal,bold',
+            'layout.school.font_family' => 'nullable|string|max:50',
 
             // Code (Barcode/QR)
             'layout.code.show' => 'nullable',

@@ -3,6 +3,23 @@
 <head>
     <meta charset="utf-8">
     <title>Cetak Kartu Santri PVC</title>
+    @php
+        $usedFonts = [];
+        foreach (['title', 'subtitle', 'name', 'nis', 'classroom', 'school'] as $k) {
+            if (($layout[$k]['show'] ?? true) && isset($layout[$k]['font_family']) && !in_array($layout[$k]['font_family'], ['Kredit', 'Raleway'])) {
+                $usedFonts[] = $layout[$k]['font_family'];
+            }
+        }
+        $usedFonts = array_unique($usedFonts);
+    @endphp
+    <link href="https://fonts.googleapis.com/css2?family=Raleway:wght@400;700&display=swap" rel="stylesheet">
+    @foreach($usedFonts as $font)
+        @php
+            $fontNameUrl = str_replace(' ', '+', $font);
+            $weightParam = in_array($font, ['Pacifico', 'Caveat']) ? '' : ':wght@400;700';
+        @endphp
+        <link href="https://fonts.googleapis.com/css2?family={{ $fontNameUrl }}{{ $weightParam }}&display=swap" rel="stylesheet">
+    @endforeach
     <style>
         @page {
             margin: 0;
@@ -96,6 +113,7 @@
                     font-size: {{ $layout['title']['font_size'] ?? 12 }}pt;
                     font-weight: {{ $layout['title']['font_weight'] ?? 'bold' }};
                     text-align: {{ $layout['title']['text_align'] ?? 'right' }};
+                    font-family: '{{ $layout['title']['font_family'] ?? 'Raleway' }}', sans-serif;
                     white-space: nowrap;
                     overflow: hidden;
                 ">
@@ -113,6 +131,7 @@
                     font-size: {{ $layout['subtitle']['font_size'] ?? 10 }}pt;
                     font-weight: {{ $layout['subtitle']['font_weight'] ?? 'bold' }};
                     text-align: {{ $layout['subtitle']['text_align'] ?? 'right' }};
+                    font-family: '{{ $layout['subtitle']['font_family'] ?? 'Raleway' }}', sans-serif;
                     white-space: nowrap;
                     overflow: hidden;
                 ">
@@ -144,6 +163,7 @@
                     color: {{ $layout['name']['color'] ?? '#FFFFFF' }};
                     font-size: {{ $layout['name']['font_size'] ?? 12 }}pt;
                     font-weight: {{ $layout['name']['font_weight'] ?? 'bold' }};
+                    font-family: '{{ $layout['name']['font_family'] ?? 'Raleway' }}', sans-serif;
                     white-space: nowrap;
                 ">
                     {{ $student->name }}
@@ -159,6 +179,9 @@
                     font-size: {{ $layout['nis']['font_size'] ?? 14 }}pt;
                     font-weight: {{ $layout['nis']['font_weight'] ?? 'bold' }};
                     white-space: nowrap;
+                    @if(($layout['nis']['font_family'] ?? 'Kredit') !== 'Kredit')
+                        font-family: '{{ $layout['nis']['font_family'] }}', sans-serif;
+                    @endif
                 ">
                     {{ $student->nis ?? '-' }}
                 </div>
@@ -172,6 +195,7 @@
                     color: {{ $layout['classroom']['color'] ?? '#FFFFFF' }};
                     font-size: {{ $layout['classroom']['font_size'] ?? 9 }}pt;
                     font-weight: {{ $layout['classroom']['font_weight'] ?? 'bold' }};
+                    font-family: '{{ $layout['classroom']['font_family'] ?? 'Raleway' }}', sans-serif;
                     white-space: nowrap;
                 ">
                     Kelas: {{ $student->classroom?->name ?? '-' }}
@@ -186,6 +210,7 @@
                     color: {{ $layout['school']['color'] ?? '#FFFFFF' }};
                     font-size: {{ $layout['school']['font_size'] ?? 9 }}pt;
                     font-weight: {{ $layout['school']['font_weight'] ?? 'bold' }};
+                    font-family: '{{ $layout['school']['font_family'] ?? 'Raleway' }}', sans-serif;
                     white-space: nowrap;
                 ">
                     {{ $student->classroom?->school?->name ?? '-' }}

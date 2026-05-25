@@ -1,4 +1,7 @@
 @extends('layouts.master', ['title' => 'Desain & Cetak Kartu Santri'])
+@push('css')
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;700&family=Inter:wght@400;700&family=Lato:wght@400;700&family=Merriweather:wght@400;700&family=Montserrat:wght@400;700&family=Nunito:wght@400;700&family=Open+Sans:wght@400;700&family=Oswald:wght@400;700&family=Outfit:wght@400;700&family=Pacifico&family=Poppins:wght@400;700&family=Raleway:wght@400;700&family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+@endpush
 @section('content')
 <!--begin::Content-->
 <div class="content d-flex flex-column flex-column-fluid" id="kt_content">
@@ -131,7 +134,6 @@
                                                 style="position:absolute;top:{{ ($layout['logo']['top'] ?? 5) * 4 }}px;left:{{ ($layout['logo']['left'] ?? 5) * 4 }}px;width:{{ ($layout['logo']['width'] ?? 25) * 4 }}px;height:{{ ($layout['logo']['height'] ?? 8) * 4 }}px;object-fit:contain;
                                                 {{ ($layout['logo']['show'] ?? true) ? '' : 'display:none;' }}"
                                             />
-
                                             {{-- Title --}}
                                             <div id="prevTitle" class="draggable-element" data-element="title" style="position:absolute;
                                                 top:{{ ($layout['title']['top'] ?? 5) * 4 }}px;
@@ -141,9 +143,10 @@
                                                 font-size:{{ ($layout['title']['font_size'] ?? 12) * 1.2 }}px;
                                                 font-weight:{{ $layout['title']['font_weight'] ?? 'bold' }};
                                                 text-align:{{ $layout['title']['text_align'] ?? 'right' }};
+                                                font-family: '{{ $layout['title']['font_family'] ?? 'Raleway' }}', sans-serif;
                                                 {{ ($layout['title']['show'] ?? true) ? '' : 'display:none;' }}
                                             ">{{ $layout['title']['text'] ?? 'Kartu Santri' }}</div>
-
+ 
                                             {{-- Subtitle --}}
                                             <div id="prevSubtitle" class="draggable-element" data-element="subtitle" style="position:absolute;
                                                 top:{{ ($layout['subtitle']['top'] ?? 10) * 4 }}px;
@@ -153,9 +156,10 @@
                                                 font-size:{{ ($layout['subtitle']['font_size'] ?? 10) * 1.2 }}px;
                                                 font-weight:{{ $layout['subtitle']['font_weight'] ?? 'bold' }};
                                                 text-align:{{ $layout['subtitle']['text_align'] ?? 'right' }};
+                                                font-family: '{{ $layout['subtitle']['font_family'] ?? 'Raleway' }}', sans-serif;
                                                 {{ ($layout['subtitle']['show'] ?? true) ? '' : 'display:none;' }}
                                             ">{{ $layout['subtitle']['text'] ?? 'PPTQ Cahaya Tasbih' }}</div>
-
+ 
                                             {{-- Photo placeholder --}}
                                             <div id="prevPhoto" class="draggable-element" data-element="photo" style="position:absolute;
                                                 top:{{ ($layout['photo']['top'] ?? 18) * 4 }}px;
@@ -167,7 +171,7 @@
                                                 display:flex;align-items:center;justify-content:center;
                                                 {{ ($layout['photo']['show'] ?? false) ? '' : 'display:none;' }}
                                             "><i class="fa fa-user" style="font-size:24px;color:#ccc;"></i></div>
-
+ 
                                             {{-- Name --}}
                                             <div id="prevName" class="draggable-element" data-element="name" style="position:absolute;
                                                 top:{{ ($layout['name']['top'] ?? 20) * 4 }}px;
@@ -175,9 +179,10 @@
                                                 color:{{ $layout['name']['color'] ?? '#FFFFFF' }};
                                                 font-size:{{ ($layout['name']['font_size'] ?? 12) * 1.2 }}px;
                                                 font-weight:{{ $layout['name']['font_weight'] ?? 'bold' }};
+                                                font-family: '{{ $layout['name']['font_family'] ?? 'Raleway' }}', sans-serif;
                                                 {{ ($layout['name']['show'] ?? true) ? '' : 'display:none;' }}
                                             ">Ahmad Santri</div>
-
+ 
                                             {{-- NIS --}}
                                             <div id="prevNis" class="draggable-element" data-element="nis" style="position:absolute;
                                                 top:{{ ($layout['nis']['top'] ?? 27) * 4 }}px;
@@ -186,9 +191,10 @@
                                                 font-size:{{ ($layout['nis']['font_size'] ?? 14) * 1.2 }}px;
                                                 font-weight:{{ $layout['nis']['font_weight'] ?? 'bold' }};
                                                 letter-spacing:2px;
+                                                font-family: '{{ $layout['nis']['font_family'] ?? 'Kredit' }}', 'Courier New', Courier, monospace;
                                                 {{ ($layout['nis']['show'] ?? true) ? '' : 'display:none;' }}
                                             ">2024001</div>
-
+ 
                                             {{-- Classroom --}}
                                             <div id="prevClassroom" class="draggable-element" data-element="classroom" style="position:absolute;
                                                 top:{{ ($layout['classroom']['top'] ?? 35) * 4 }}px;
@@ -196,9 +202,10 @@
                                                 color:{{ $layout['classroom']['color'] ?? '#FFFFFF' }};
                                                 font-size:{{ ($layout['classroom']['font_size'] ?? 9) * 1.2 }}px;
                                                 font-weight:{{ $layout['classroom']['font_weight'] ?? 'bold' }};
+                                                font-family: '{{ $layout['classroom']['font_family'] ?? 'Raleway' }}', sans-serif;
                                                 {{ ($layout['classroom']['show'] ?? true) ? '' : 'display:none;' }}
                                             ">Kelas 7A</div>
-
+ 
                                             {{-- School --}}
                                             <div id="prevSchool" class="draggable-element" data-element="school" style="position:absolute;
                                                 top:{{ ($layout['school']['top'] ?? 40) * 4 }}px;
@@ -206,6 +213,7 @@
                                                 color:{{ $layout['school']['color'] ?? '#FFFFFF' }};
                                                 font-size:{{ ($layout['school']['font_size'] ?? 9) * 1.2 }}px;
                                                 font-weight:{{ $layout['school']['font_weight'] ?? 'bold' }};
+                                                font-family: '{{ $layout['school']['font_family'] ?? 'Raleway' }}', sans-serif;
                                                 {{ ($layout['school']['show'] ?? true) ? '' : 'display:none;' }}
                                             ">SMP Cahaya Tasbih</div>
 
@@ -240,13 +248,13 @@
                                         @php
                                             $elements = [
                                                 'logo' => ['label' => 'Logo Lembaga', 'icon' => 'fa-image', 'fields' => ['show','width','height']],
-                                                'title' => ['label' => 'Judul Kartu', 'icon' => 'fa-heading', 'fields' => ['show','text','color','font_size','text_align','font_weight']],
-                                                'subtitle' => ['label' => 'Subtitle / Nama Lembaga', 'icon' => 'fa-font', 'fields' => ['show','text','color','font_size','text_align','font_weight']],
+                                                'title' => ['label' => 'Judul Kartu', 'icon' => 'fa-heading', 'fields' => ['show','text','color','font_size','text_align','font_weight','font_family']],
+                                                'subtitle' => ['label' => 'Subtitle / Nama Lembaga', 'icon' => 'fa-font', 'fields' => ['show','text','color','font_size','text_align','font_weight','font_family']],
                                                 'photo' => ['label' => 'Foto Santri', 'icon' => 'fa-user-circle', 'fields' => ['show','width','height','border_radius']],
-                                                'name' => ['label' => 'Nama Santri', 'icon' => 'fa-id-card', 'fields' => ['show','color','font_size','font_weight']],
-                                                'nis' => ['label' => 'NIS', 'icon' => 'fa-hashtag', 'fields' => ['show','color','font_size','font_weight']],
-                                                'classroom' => ['label' => 'Kelas', 'icon' => 'fa-school', 'fields' => ['show','color','font_size','font_weight']],
-                                                'school' => ['label' => 'Sekolah / UPT', 'icon' => 'fa-building', 'fields' => ['show','color','font_size','font_weight']],
+                                                'name' => ['label' => 'Nama Santri', 'icon' => 'fa-id-card', 'fields' => ['show','color','font_size','font_weight','font_family']],
+                                                'nis' => ['label' => 'NIS', 'icon' => 'fa-hashtag', 'fields' => ['show','color','font_size','font_weight','font_family']],
+                                                'classroom' => ['label' => 'Kelas', 'icon' => 'fa-school', 'fields' => ['show','color','font_size','font_weight','font_family']],
+                                                'school' => ['label' => 'Sekolah / UPT', 'icon' => 'fa-building', 'fields' => ['show','color','font_size','font_weight','font_family']],
                                                 'code' => ['label' => 'Barcode / QR Code', 'icon' => 'fa-barcode', 'fields' => ['show','type','width','height']],
                                             ];
                                         @endphp
@@ -335,6 +343,30 @@
                                                                             <label class="form-label form-label-sm">Border Radius (mm)</label>
                                                                             <input type="number" step="0.5" min="0" class="form-control form-control-sm live-input" name="layout[{{ $key }}][border_radius]"
                                                                                 value="{{ $layout[$key]['border_radius'] ?? 2 }}" data-element="{{ $key }}" data-prop="border_radius" />
+                                                                        </div>
+                                                                        @endif
+                                                                        @if(in_array('font_family', $el['fields']))
+                                                                        <div class="col-6">
+                                                                            <label class="form-label form-label-sm">Font Family</label>
+                                                                            <select class="form-select form-select-sm live-input" name="layout[{{ $key }}][font_family]" data-element="{{ $key }}" data-prop="font_family">
+                                                                                <option value="Raleway" {{ ($layout[$key]['font_family'] ?? 'Raleway') === 'Raleway' ? 'selected' : '' }}>Raleway (Default)</option>
+                                                                                <option value="Inter" {{ ($layout[$key]['font_family'] ?? 'Raleway') === 'Inter' ? 'selected' : '' }}>Inter</option>
+                                                                                <option value="Roboto" {{ ($layout[$key]['font_family'] ?? 'Raleway') === 'Roboto' ? 'selected' : '' }}>Roboto</option>
+                                                                                <option value="Poppins" {{ ($layout[$key]['font_family'] ?? 'Raleway') === 'Poppins' ? 'selected' : '' }}>Poppins</option>
+                                                                                <option value="Montserrat" {{ ($layout[$key]['font_family'] ?? 'Raleway') === 'Montserrat' ? 'selected' : '' }}>Montserrat</option>
+                                                                                <option value="Open Sans" {{ ($layout[$key]['font_family'] ?? 'Raleway') === 'Open Sans' ? 'selected' : '' }}>Open Sans</option>
+                                                                                <option value="Lato" {{ ($layout[$key]['font_family'] ?? 'Raleway') === 'Lato' ? 'selected' : '' }}>Lato</option>
+                                                                                <option value="Oswald" {{ ($layout[$key]['font_family'] ?? 'Raleway') === 'Oswald' ? 'selected' : '' }}>Oswald</option>
+                                                                                <option value="Outfit" {{ ($layout[$key]['font_family'] ?? 'Raleway') === 'Outfit' ? 'selected' : '' }}>Outfit</option>
+                                                                                <option value="Playfair Display" {{ ($layout[$key]['font_family'] ?? 'Raleway') === 'Playfair Display' ? 'selected' : '' }}>Playfair Display</option>
+                                                                                <option value="Merriweather" {{ ($layout[$key]['font_family'] ?? 'Raleway') === 'Merriweather' ? 'selected' : '' }}>Merriweather</option>
+                                                                                <option value="Nunito" {{ ($layout[$key]['font_family'] ?? 'Raleway') === 'Nunito' ? 'selected' : '' }}>Nunito</option>
+                                                                                <option value="Pacifico" {{ ($layout[$key]['font_family'] ?? 'Raleway') === 'Pacifico' ? 'selected' : '' }}>Pacifico</option>
+                                                                                <option value="Caveat" {{ ($layout[$key]['font_family'] ?? 'Raleway') === 'Caveat' ? 'selected' : '' }}>Caveat</option>
+                                                                                @if($key === 'nis')
+                                                                                    <option value="Kredit" {{ ($layout[$key]['font_family'] ?? 'Kredit') === 'Kredit' ? 'selected' : '' }}>Kredit (Monospace)</option>
+                                                                                @endif
+                                                                            </select>
                                                                         </div>
                                                                         @endif
                                                                     </div>
@@ -605,7 +637,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 let newTopPx = startTopPx + dy;
 
                 // Restrict element to stay within preview wrapper boundaries
-                const maxLeft = wrapperRect.width - rect.width;
+                let maxLeft = wrapperRect.width - rect.width;
+                if (elementKey === 'title' || elementKey === 'subtitle') {
+                    maxLeft = wrapperRect.width - 20;
+                }
                 const maxTop = wrapperRect.height - rect.height;
 
                 newLeftPx = Math.max(0, Math.min(newLeftPx, maxLeft));
@@ -655,7 +690,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // ── Live preview update ──
     document.querySelectorAll('.live-input').forEach(function(input) {
-        input.addEventListener('input', function() {
+        const handler = function() {
             const el = this.dataset.element;
             const prop = this.dataset.prop;
             const val = this.value;
@@ -687,6 +722,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 case 'font_weight':
                     target.style.fontWeight = val;
                     break;
+                case 'font_family':
+                    if (val === 'Kredit') {
+                        target.style.fontFamily = "'Kredit', 'Courier New', Courier, monospace";
+                    } else {
+                        target.style.fontFamily = `'${val}', sans-serif`;
+                    }
+                    break;
                 case 'text_align':
                     target.style.textAlign = val;
                     break;
@@ -701,7 +743,9 @@ document.addEventListener('DOMContentLoaded', function() {
                     if (label) label.textContent = val === 'qrcode' ? '▣ QR' : '||||| BARCODE |||||';
                     break;
             }
-        });
+        };
+        input.addEventListener('input', handler);
+        input.addEventListener('change', handler);
     });
 
     // ── Show/Hide toggles ──
