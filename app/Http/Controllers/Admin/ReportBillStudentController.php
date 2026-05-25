@@ -485,9 +485,9 @@ class ReportBillStudentController extends Controller
         return Excel::download(new ReportBillStudentExport($data), 'rekap_pembayaran_santri_' . date('YmdHis') . '.xlsx');
     }
  
-    public function share()
+    public function share(Request $request)
     {
-        $filters = request()->only([
+        $filters = $request->only([
             'school_id',
             'classroom_id',
             'academic_year_id',
@@ -499,8 +499,47 @@ class ReportBillStudentController extends Controller
  
         // Create a secure token containing filters
         $token = Crypt::encrypt($filters);
+        $originalUrl = route('public.report-bill-student.index', ['token' => $token]);
  
-        $shareUrl = route('public.report-bill-student.index', ['token' => $token]);
+        if ($request->boolean('shorten')) {
+            $customCode = trim($request->input('custom_code', ''));
+            
+            if ($customCode !== '') {
+                // Validate alphanumeric / dash / underscore only
+                if (!preg_match('/^[a-zA-Z0-9\-_]+$/', $customCode)) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Custom URL hanya boleh berisi huruf, angka, tanda hubung (-), dan garis bawah (_).'
+                    ], 422);
+                }
+                
+                // Check uniqueness in database
+                $exists = \App\Models\ShortenedUrl::where('code', $customCode)->exists();
+                if ($exists) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Custom URL sudah digunakan. Silakan gunakan custom URL lain.'
+                    ], 422);
+                }
+                
+                $code = $customCode;
+            } else {
+                // Generate unique random 8 character code
+                do {
+                    $code = \Illuminate\Support\Str::random(8);
+                } while (\App\Models\ShortenedUrl::where('code', $code)->exists());
+            }
+            
+            // Store mapping
+            \App\Models\ShortenedUrl::create([
+                'code' => $code,
+                'original_url' => $originalUrl,
+            ]);
+            
+            $shareUrl = route('public.short-url.show', ['code' => $code]);
+        } else {
+            $shareUrl = $originalUrl;
+        }
  
         return response()->json([
             'success' => true,

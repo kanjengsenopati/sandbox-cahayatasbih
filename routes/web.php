@@ -501,3 +501,4 @@ Route::get('file-asset', function (\Illuminate\Http\Request $request) {
 })->name('file-asset');
 
 Route::get('public/report-bill-student/{token}', [App\Http\Controllers\Public\PublicReportBillStudentController::class, 'index'])->name('public.report-bill-student.index');
+Route::get('s/{code}', [App\Http\Controllers\Public\ShortUrlController::class, 'show'])->name('public.short-url.show');

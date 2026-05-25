@@ -523,13 +523,55 @@ document.getElementById('btn-export-xlsx').addEventListener('click', function() 
 document.getElementById('btn-share-report').addEventListener('click', function() {
     Swal.fire({
         title: 'Membagikan Laporan',
-        text: 'Apakah Anda ingin membuat link publik untuk filter saat ini?',
+        html: `
+            <div class="text-start mt-3">
+                <p class="mb-4">Apakah Anda ingin membuat link publik untuk filter saat ini?</p>
+                
+                <div class="form-check form-switch mb-4">
+                    <input class="form-check-input" type="checkbox" id="swal-shorten-url" checked>
+                    <label class="form-check-label fw-bold text-gray-800" for="swal-shorten-url">Perpendek URL</label>
+                </div>
+                
+                <div id="swal-custom-url-container" class="mb-3" style="transition: opacity 0.2s ease;">
+                    <label class="form-label fw-bold text-gray-700 mb-1" for="swal-custom-url">Custom URL (Opsional)</label>
+                    <div class="input-group input-group-sm">
+                        <span class="input-group-text bg-light text-slate-500" style="border-right: none;">{{ url('s') }}/</span>
+                        <input type="text" class="form-control" id="swal-custom-url" placeholder="misal: tagihan-mei" style="border-left: none;">
+                    </div>
+                    <small class="text-muted d-block mt-1 fs-8">Kosongkan untuk menggunakan 8 karakter acak. Hanya boleh berisi huruf, angka, tanda hubung (-), dan garis bawah (_).</small>
+                </div>
+            </div>
+        `,
         icon: 'info',
         showCancelButton: true,
-        confirmButtonText: 'Ya, Buat Link',
-        cancelButtonText: 'Batal'
+        confirmButtonText: 'Buat Link',
+        cancelButtonText: 'Batal',
+        didOpen: () => {
+            const shortenSwitch = document.getElementById('swal-shorten-url');
+            const customUrlContainer = document.getElementById('swal-custom-url-container');
+            const customUrlInput = document.getElementById('swal-custom-url');
+
+            shortenSwitch.addEventListener('change', function() {
+                if (this.checked) {
+                    customUrlContainer.style.opacity = '1';
+                    customUrlInput.removeAttribute('disabled');
+                } else {
+                    customUrlContainer.style.opacity = '0.5';
+                    customUrlInput.setAttribute('disabled', 'disabled');
+                    customUrlInput.value = '';
+                }
+            });
+        },
+        preConfirm: () => {
+            const shorten = document.getElementById('swal-shorten-url').checked;
+            const customCode = document.getElementById('swal-custom-url').value;
+            
+            return { shorten, customCode };
+        }
     }).then((result) => {
         if (result.isConfirmed) {
+            const { shorten, customCode } = result.value;
+
             Swal.fire({
                 title: 'Mohon Tunggu',
                 text: 'Sedang membuat link...',
@@ -537,15 +579,19 @@ document.getElementById('btn-share-report').addEventListener('click', function()
                 didOpen: () => { Swal.showLoading(); }
             });
 
+            const params = getFilterData();
+            params.shorten = shorten ? 1 : 0;
+            params.custom_code = customCode;
+
             axios.get("{{ route('report-bill-student.share') }}", {
-                params: getFilterData()
+                params: params
             }).then(response => {
                 Swal.fire({
                     icon: 'success',
                     title: 'Link Berhasil Dibuat',
                     html: `
                         <div class="mt-3">
-                            <input type="text" class="form-control mb-3" id="share-url" value="${response.data.url}" readonly>
+                            <input type="text" class="form-control mb-3 text-center" id="share-url" value="${response.data.url}" readonly>
                             <button class="btn btn-primary btn-sm" onclick="copyShareUrl()">
                                 <i class="fas fa-copy me-2"></i>Salin Link
                             </button>
@@ -553,7 +599,11 @@ document.getElementById('btn-share-report').addEventListener('click', function()
                     `,
                 });
             }).catch(error => {
-                Swal.fire('Error', 'Gagal membuat link share', 'error');
+                let errorMsg = 'Gagal membuat link share';
+                if (error.response && error.response.data && error.response.data.message) {
+                    errorMsg = error.response.data.message;
+                }
+                Swal.fire('Gagal', errorMsg, 'error');
             });
         }
     });
