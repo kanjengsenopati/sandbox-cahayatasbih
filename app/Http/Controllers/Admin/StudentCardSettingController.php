@@ -147,56 +147,88 @@ class StudentCardSettingController extends Controller
      */
     public function getStudents(Request $request)
     {
-        $query = Student::with(['classroom', 'classroom.school', 'cardPrints.admin']);
+        try {
+            // Cek apakah tabel student_card_prints exist sebelum eager-load
+            $hasCardPrintsTable = \Illuminate\Support\Facades\Schema::hasTable('student_card_prints');
 
-        if ($request->filled('school_id')) {
-            $query->whereHas('classroom', function ($q) use ($request) {
-                $q->where('school_id', $request->school_id);
-            });
+            $eagerLoads = ['classroom', 'classroom.school'];
+            if ($hasCardPrintsTable) {
+                $eagerLoads[] = 'cardPrints.admin';
+            }
+
+            $query = Student::with($eagerLoads)->hasSchool();
+
+            if ($request->filled('school_id')) {
+                $query->whereHas('classroom', function ($q) use ($request) {
+                    $q->where('school_id', $request->school_id);
+                });
+            }
+
+            if ($request->filled('classroom_id')) {
+                $query->where('classroom_id', $request->classroom_id);
+            }
+
+            if ($request->filled('q')) {
+                $search = $request->q;
+                $query->where(function ($q) use ($search) {
+                    $q->where('name', 'like', '%' . $search . '%')
+                      ->orWhere('nis', 'like', '%' . $search . '%');
+                });
+            }
+
+            $limit = (int) $request->input('limit', 10);
+            if (!in_array($limit, [10, 20, 40])) {
+                $limit = 10;
+            }
+
+            $students = $query->orderBy('name')->paginate($limit);
+
+            return response()->json([
+                'current_page' => $students->currentPage(),
+                'last_page' => $students->lastPage(),
+                'per_page' => $students->perPage(),
+                'total' => $students->total(),
+                'from' => $students->firstItem(),
+                'to' => $students->lastItem(),
+                'data' => $students->getCollection()->map(function ($s) use ($hasCardPrintsTable) {
+                    $printCount = 0;
+                    $lastPrintedAt = null;
+                    $lastPrintedBy = null;
+
+                    if ($hasCardPrintsTable) {
+                        $lastPrint = $s->cardPrints->first();
+                        $printCount = $s->cardPrints->count();
+                        $lastPrintedAt = $lastPrint ? $lastPrint->printed_at->format('d M Y H:i') : null;
+                        $lastPrintedBy = $lastPrint?->admin?->name ?? null;
+                    }
+
+                    return [
+                        'id' => $s->id,
+                        'name' => $s->name,
+                        'nis' => $s->nis,
+                        'barcode' => $s->barcode,
+                        'classroom' => $s->classroom?->name ?? '-',
+                        'school' => $s->classroom?->school?->name ?? '-',
+                        'avatar' => $s->avatar ? asset($s->avatar) : null,
+                        'print_count' => $printCount,
+                        'last_printed_at' => $lastPrintedAt,
+                        'last_printed_by' => $lastPrintedBy,
+                    ];
+                })
+            ]);
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('getStudents error: ' . $e->getMessage());
+            return response()->json([
+                'current_page' => 1,
+                'last_page' => 1,
+                'per_page' => 10,
+                'total' => 0,
+                'from' => null,
+                'to' => null,
+                'data' => [],
+                'error' => 'Gagal memuat data santri: ' . $e->getMessage(),
+            ], 200);
         }
-
-        if ($request->filled('classroom_id')) {
-            $query->where('classroom_id', $request->classroom_id);
-        }
-
-        if ($request->filled('q')) {
-            $search = $request->q;
-            $query->where(function ($q) use ($search) {
-                $q->where('name', 'like', '%' . $search . '%')
-                  ->orWhere('nis', 'like', '%' . $search . '%');
-            });
-        }
-
-        $limit = (int) $request->input('limit', 10);
-        if (!in_array($limit, [10, 20, 40])) {
-            $limit = 10;
-        }
-
-        $students = $query->orderBy('name')->paginate($limit);
-
-        return response()->json([
-            'current_page' => $students->currentPage(),
-            'last_page' => $students->lastPage(),
-            'per_page' => $students->perPage(),
-            'total' => $students->total(),
-            'from' => $students->firstItem(),
-            'to' => $students->lastItem(),
-            'data' => $students->getCollection()->map(function ($s) {
-                $lastPrint = $s->cardPrints->first();
-                return [
-                    'id' => $s->id,
-                    'name' => $s->name,
-                    'nis' => $s->nis,
-                    'barcode' => $s->barcode,
-                    'classroom' => $s->classroom?->name ?? '-',
-                    'school' => $s->classroom?->school?->name ?? '-',
-                    'avatar' => $s->avatar ? asset($s->avatar) : null,
-                    'print_count' => $s->cardPrints->count(),
-                    'last_printed_at' => $lastPrint ? $lastPrint->printed_at->format('d M Y H:i') : null,
-                    'last_printed_by' => $lastPrint?->admin?->name ?? null,
-                ];
-            })
-        ]);
     }
 
     /**

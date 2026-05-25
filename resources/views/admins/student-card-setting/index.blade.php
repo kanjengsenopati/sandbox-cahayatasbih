@@ -437,7 +437,7 @@
                                                     </tr>
                                                 </thead>
                                                 <tbody id="studentTableBody">
-                                                    <tr><td colspan="6" class="text-center text-muted py-10">Memuat data...</td></tr>
+                                                    <tr><td colspan="6" class="text-center text-muted py-10"><i class="fa-solid fa-filter me-2"></i>Data santri akan dimuat otomatis saat tab ini dibuka</td></tr>
                                                 </tbody>
                                             </table>
                                         </div>
@@ -575,6 +575,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // ── Tab 2: Search students (Database Driven, Reactive & Paged) ──
     let currentPage = 1;
+    let cetakTabInitialized = false;
 
     function fetchStudents(page = 1) {
         currentPage = page;
@@ -599,6 +600,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 return r.json();
             })
             .then(function(response) {
+                // Cek apakah response mengandung error dari server
+                if (response.error) {
+                    console.warn('Server warning:', response.error);
+                }
+
                 var students = response.data || [];
                 if (students.length === 0) {
                     tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-10">Tidak ada data santri ditemukan</td></tr>';
@@ -633,7 +639,7 @@ document.addEventListener('DOMContentLoaded', function() {
             })
             .catch(function(err) {
                 console.error('Gagal memuat data santri:', err);
-                tbody.innerHTML = '<tr><td colspan="6" class="text-center text-danger py-10">Gagal memuat data. Periksa koneksi atau coba refresh halaman.</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="6" class="text-center text-danger py-10"><i class="fa-solid fa-triangle-exclamation me-2"></i>Gagal memuat data. Periksa koneksi atau coba refresh halaman.<br><small class="text-muted">' + err.message + '</small></td></tr>';
             });
     }
 
@@ -730,14 +736,27 @@ document.addEventListener('DOMContentLoaded', function() {
         fetchStudents(1);
     });
 
-    // Initial load: Fetch classrooms (if school is pre-selected) and auto-fetch all students immediately
-    var initialSchoolId = document.getElementById('filterSchool').value;
-    if (initialSchoolId) {
-        loadClassrooms(initialSchoolId).then(function() {
+    // Inisialisasi data hanya saat tab "Cetak Kartu" pertama kali dibuka
+    function initCetakTab() {
+        if (cetakTabInitialized) return;
+        cetakTabInitialized = true;
+
+        var initialSchoolId = document.getElementById('filterSchool').value;
+        if (initialSchoolId) {
+            loadClassrooms(initialSchoolId).then(function() {
+                fetchStudents(1);
+            });
+        } else {
             fetchStudents(1);
+        }
+    }
+
+    // Listen untuk event tab shown dari Bootstrap
+    var cetakTabLink = document.querySelector('a[href="#tab_cetak"]');
+    if (cetakTabLink) {
+        cetakTabLink.addEventListener('shown.bs.tab', function() {
+            initCetakTab();
         });
-    } else {
-        fetchStudents(1);
     }
 
     // ── Check all ──
