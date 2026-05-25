@@ -34,6 +34,20 @@
                 text-label, .text-label { display: block; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: #94a3b8; } /* Slate-400 */
                 text-body, .text-body { display: block; font-size: 14px; font-weight: 500; color: #475569; } /* Slate-600 */
                 text-caption, .text-caption { display: block; font-size: 12px; font-style: italic; color: #94a3b8; } /* Slate-400 */
+                .draggable-element {
+                    cursor: move !important;
+                    user-select: none;
+                    transition: outline 0.1s ease;
+                }
+                .draggable-element:hover {
+                    outline: 1.5px dashed #2563eb !important;
+                    outline-offset: 2px;
+                }
+                .draggable-element.dragging {
+                    outline: 2px dashed #10b981 !important;
+                    outline-offset: 2px;
+                    opacity: 0.7;
+                }
             </style>
 
             @if (session('success'))
@@ -77,8 +91,8 @@
                         <div class="row g-5">
 
                             {{-- Left Column: LIVE PREVIEW --}}
-                            <div class="col-lg-6">
-                                <div class="card card-flush border-0 shadow-[0_8px_30px_rgba(0,0,0,0.04)]" style="border-radius: 24px; box-shadow: 0 8px 30px rgba(0,0,0,0.04); border: none;">
+                            <div class="col-lg-4">
+                                <div class="card card-flush border-0 shadow-[0_8px_30px_rgba(0,0,0,0.04)]" style="border-radius: 24px; box-shadow: 0 8px 30px rgba(0,0,0,0.04); border: none; position: sticky; top: 100px; z-index: 10;">
                                     <div class="card-header border-0 pb-0">
                                         <h3 class="card-title fw-bolder">Live Preview</h3>
                                     </div>
@@ -90,13 +104,13 @@
                                             "></div>
 
                                             {{-- Logo --}}
-                                            <img id="prevLogo" src="{{ asset('assets/media/logos/logo-full.png') }}"
+                                            <img id="prevLogo" class="draggable-element" data-element="logo" src="{{ asset('assets/media/logos/logo-full.png') }}"
                                                 style="position:absolute;top:{{ ($layout['logo']['top'] ?? 5) * 4 }}px;left:{{ ($layout['logo']['left'] ?? 5) * 4 }}px;width:{{ ($layout['logo']['width'] ?? 25) * 4 }}px;height:{{ ($layout['logo']['height'] ?? 8) * 4 }}px;object-fit:contain;
                                                 {{ ($layout['logo']['show'] ?? true) ? '' : 'display:none;' }}"
                                             />
 
                                             {{-- Title --}}
-                                            <div id="prevTitle" style="position:absolute;
+                                            <div id="prevTitle" class="draggable-element" data-element="title" style="position:absolute;
                                                 top:{{ ($layout['title']['top'] ?? 5) * 4 }}px;
                                                 left:{{ ($layout['title']['left'] ?? 45) * 4 }}px;
                                                 width:{{ (86 - ($layout['title']['left'] ?? 45)) * 4 }}px;
@@ -108,7 +122,7 @@
                                             ">{{ $layout['title']['text'] ?? 'Kartu Santri' }}</div>
 
                                             {{-- Subtitle --}}
-                                            <div id="prevSubtitle" style="position:absolute;
+                                            <div id="prevSubtitle" class="draggable-element" data-element="subtitle" style="position:absolute;
                                                 top:{{ ($layout['subtitle']['top'] ?? 10) * 4 }}px;
                                                 left:{{ ($layout['subtitle']['left'] ?? 45) * 4 }}px;
                                                 width:{{ (86 - ($layout['subtitle']['left'] ?? 45)) * 4 }}px;
@@ -120,7 +134,7 @@
                                             ">{{ $layout['subtitle']['text'] ?? 'PPTQ Cahaya Tasbih' }}</div>
 
                                             {{-- Photo placeholder --}}
-                                            <div id="prevPhoto" style="position:absolute;
+                                            <div id="prevPhoto" class="draggable-element" data-element="photo" style="position:absolute;
                                                 top:{{ ($layout['photo']['top'] ?? 18) * 4 }}px;
                                                 left:{{ ($layout['photo']['left'] ?? 5) * 4 }}px;
                                                 width:{{ ($layout['photo']['width'] ?? 18) * 4 }}px;
@@ -132,7 +146,7 @@
                                             "><i class="fa fa-user" style="font-size:24px;color:#ccc;"></i></div>
 
                                             {{-- Name --}}
-                                            <div id="prevName" style="position:absolute;
+                                            <div id="prevName" class="draggable-element" data-element="name" style="position:absolute;
                                                 top:{{ ($layout['name']['top'] ?? 20) * 4 }}px;
                                                 left:{{ ($layout['name']['left'] ?? 25) * 4 }}px;
                                                 color:{{ $layout['name']['color'] ?? '#FFFFFF' }};
@@ -142,7 +156,7 @@
                                             ">Ahmad Santri</div>
 
                                             {{-- NIS --}}
-                                            <div id="prevNis" style="position:absolute;
+                                            <div id="prevNis" class="draggable-element" data-element="nis" style="position:absolute;
                                                 top:{{ ($layout['nis']['top'] ?? 27) * 4 }}px;
                                                 left:{{ ($layout['nis']['left'] ?? 25) * 4 }}px;
                                                 color:{{ $layout['nis']['color'] ?? '#FFFFFF' }};
@@ -153,7 +167,7 @@
                                             ">2024001</div>
 
                                             {{-- Classroom --}}
-                                            <div id="prevClassroom" style="position:absolute;
+                                            <div id="prevClassroom" class="draggable-element" data-element="classroom" style="position:absolute;
                                                 top:{{ ($layout['classroom']['top'] ?? 35) * 4 }}px;
                                                 left:{{ ($layout['classroom']['left'] ?? 25) * 4 }}px;
                                                 color:{{ $layout['classroom']['color'] ?? '#FFFFFF' }};
@@ -163,7 +177,7 @@
                                             ">Kelas 7A</div>
 
                                             {{-- School --}}
-                                            <div id="prevSchool" style="position:absolute;
+                                            <div id="prevSchool" class="draggable-element" data-element="school" style="position:absolute;
                                                 top:{{ ($layout['school']['top'] ?? 40) * 4 }}px;
                                                 left:{{ ($layout['school']['left'] ?? 25) * 4 }}px;
                                                 color:{{ $layout['school']['color'] ?? '#FFFFFF' }};
@@ -173,7 +187,7 @@
                                             ">SMP Cahaya Tasbih</div>
 
                                             {{-- Code (barcode placeholder) --}}
-                                            <div id="prevCode" style="position:absolute;
+                                            <div id="prevCode" class="draggable-element" data-element="code" style="position:absolute;
                                                 top:{{ ($layout['code']['top'] ?? 42) * 4 }}px;
                                                 left:{{ ($layout['code']['left'] ?? 55) * 4 }}px;
                                                 width:{{ ($layout['code']['width'] ?? 26) * 4 }}px;
@@ -195,12 +209,12 @@
                             </div>
 
                             {{-- Right Column: CONFIGURATION PANEL --}}
-                            <div class="col-lg-6">
+                            <div class="col-lg-8">
                                 <div class="card card-flush border-0 shadow-[0_8px_30px_rgba(0,0,0,0.04)]" style="border-radius: 24px; box-shadow: 0 8px 30px rgba(0,0,0,0.04); border: none;">
                                     <div class="card-header border-0 pb-0">
                                         <h3 class="card-title fw-bolder">Konfigurasi Elemen</h3>
                                     </div>
-                                    <div class="card-body pt-2" style="max-height:600px;overflow-y:auto;">
+                                    <div class="card-body pt-2">
 
                                         {{-- Background Image Upload --}}
                                         <div class="mb-5 p-4 bg-light-primary rounded">
@@ -214,130 +228,193 @@
                                             <small class="text-muted">Format: JPG, PNG, WebP. Maks 2MB. Rasio ideal: 85.6 × 54mm</small>
                                         </div>
 
-                                        {{-- Accordion Panels --}}
-                                        <div class="accordion accordion-icon-toggle" id="layoutAccordion">
+                                        @php
+                                            $elements = [
+                                                'logo' => ['label' => 'Logo Lembaga', 'icon' => 'fa-image', 'fields' => ['show','width','height']],
+                                                'title' => ['label' => 'Judul Kartu', 'icon' => 'fa-heading', 'fields' => ['show','text','color','font_size','text_align','font_weight']],
+                                                'subtitle' => ['label' => 'Subtitle / Nama Lembaga', 'icon' => 'fa-font', 'fields' => ['show','text','color','font_size','text_align','font_weight']],
+                                                'photo' => ['label' => 'Foto Santri', 'icon' => 'fa-user-circle', 'fields' => ['show','width','height','border_radius']],
+                                                'name' => ['label' => 'Nama Santri', 'icon' => 'fa-id-card', 'fields' => ['show','color','font_size','font_weight']],
+                                                'nis' => ['label' => 'NIS', 'icon' => 'fa-hashtag', 'fields' => ['show','color','font_size','font_weight']],
+                                                'classroom' => ['label' => 'Kelas', 'icon' => 'fa-school', 'fields' => ['show','color','font_size','font_weight']],
+                                                'school' => ['label' => 'Sekolah / UPT', 'icon' => 'fa-building', 'fields' => ['show','color','font_size','font_weight']],
+                                                'code' => ['label' => 'Barcode / QR Code', 'icon' => 'fa-barcode', 'fields' => ['show','type','width','height']],
+                                            ];
+                                        @endphp
 
-                                            @php
-                                                $elements = [
-                                                    'logo' => ['label' => 'Logo Lembaga', 'icon' => 'fa-image', 'fields' => ['show','top','left','width','height']],
-                                                    'title' => ['label' => 'Judul Kartu', 'icon' => 'fa-heading', 'fields' => ['show','text','color','font_size','top','left','text_align','font_weight']],
-                                                    'subtitle' => ['label' => 'Subtitle / Nama Lembaga', 'icon' => 'fa-font', 'fields' => ['show','text','color','font_size','top','left','text_align','font_weight']],
-                                                    'photo' => ['label' => 'Foto Santri', 'icon' => 'fa-user-circle', 'fields' => ['show','top','left','width','height','border_radius']],
-                                                    'name' => ['label' => 'Nama Santri', 'icon' => 'fa-id-card', 'fields' => ['show','color','font_size','top','left','font_weight']],
-                                                    'nis' => ['label' => 'NIS', 'icon' => 'fa-hashtag', 'fields' => ['show','color','font_size','top','left','font_weight']],
-                                                    'classroom' => ['label' => 'Kelas', 'icon' => 'fa-school', 'fields' => ['show','color','font_size','top','left','font_weight']],
-                                                    'school' => ['label' => 'Sekolah / UPT', 'icon' => 'fa-building', 'fields' => ['show','color','font_size','top','left','font_weight']],
-                                                    'code' => ['label' => 'Barcode / QR Code', 'icon' => 'fa-barcode', 'fields' => ['show','type','top','left','width','height']],
-                                                ];
-                                            @endphp
+                                        <div class="row">
+                                            {{-- Column 1: Logo, Judul, Subtitle, Foto --}}
+                                            <div class="col-md-6">
+                                                <div class="accordion accordion-icon-toggle" id="layoutAccordionCol1">
+                                                    @foreach(['logo', 'title', 'subtitle', 'photo'] as $key)
+                                                        @php $el = $elements[$key]; @endphp
+                                                        <div class="mb-3">
+                                                            <div class="accordion-header py-3 d-flex align-items-center cursor-pointer" data-bs-toggle="collapse" data-bs-target="#acc_{{ $key }}">
+                                                                <span class="accordion-icon"><i class="fa-solid fa-angle-right fs-5"></i></span>
+                                                                <h4 class="fw-bold mb-0 ms-3 fs-6">
+                                                                    <i class="fa-solid {{ $el['icon'] }} me-2 text-primary"></i>{{ $el['label'] }}
+                                                                </h4>
+                                                                <div class="form-check form-switch ms-auto me-3">
+                                                                    <input class="form-check-input elem-show-toggle" type="checkbox" name="layout[{{ $key }}][show]" value="1"
+                                                                        data-element="{{ $key }}"
+                                                                        {{ ($layout[$key]['show'] ?? ($key === 'photo' ? false : true)) ? 'checked' : '' }} />
+                                                                </div>
+                                                            </div>
+                                                            <div id="acc_{{ $key }}" class="collapse" data-bs-parent="#layoutAccordionCol1">
+                                                                <div class="p-4 bg-light rounded">
+                                                                    <div class="row g-3">
+                                                                        {{-- Hidden inputs for drag and drop positioning --}}
+                                                                        <input type="hidden" name="layout[{{ $key }}][top]" value="{{ $layout[$key]['top'] ?? 5 }}" data-element="{{ $key }}" data-prop="top" />
+                                                                        <input type="hidden" name="layout[{{ $key }}][left]" value="{{ $layout[$key]['left'] ?? 5 }}" data-element="{{ $key }}" data-prop="left" />
 
-                                            @foreach($elements as $key => $el)
-                                            <div class="mb-3">
-                                                <div class="accordion-header py-3 d-flex align-items-center cursor-pointer" data-bs-toggle="collapse" data-bs-target="#acc_{{ $key }}">
-                                                    <span class="accordion-icon"><i class="fa-solid fa-angle-right fs-5"></i></span>
-                                                    <h4 class="fw-bold mb-0 ms-3 fs-6">
-                                                        <i class="fa-solid {{ $el['icon'] }} me-2 text-primary"></i>{{ $el['label'] }}
-                                                    </h4>
-                                                    <div class="form-check form-switch ms-auto me-3">
-                                                        <input class="form-check-input elem-show-toggle" type="checkbox" name="layout[{{ $key }}][show]" value="1"
-                                                            data-element="{{ $key }}"
-                                                            {{ ($layout[$key]['show'] ?? ($key === 'photo' ? false : true)) ? 'checked' : '' }} />
-                                                    </div>
-                                                </div>
-                                                <div id="acc_{{ $key }}" class="collapse" data-bs-parent="#layoutAccordion">
-                                                    <div class="p-4 bg-light rounded">
-                                                        <div class="row g-3">
-                                                            @if(in_array('text', $el['fields']))
-                                                            <div class="col-12">
-                                                                <label class="form-label form-label-sm">Teks</label>
-                                                                <input type="text" class="form-control form-control-sm live-input" name="layout[{{ $key }}][text]"
-                                                                    value="{{ $layout[$key]['text'] ?? '' }}" data-element="{{ $key }}" data-prop="text" />
+                                                                        @if(in_array('text', $el['fields']))
+                                                                        <div class="col-12">
+                                                                            <label class="form-label form-label-sm">Teks</label>
+                                                                            <input type="text" class="form-control form-control-sm live-input" name="layout[{{ $key }}][text]"
+                                                                                value="{{ $layout[$key]['text'] ?? '' }}" data-element="{{ $key }}" data-prop="text" />
+                                                                        </div>
+                                                                        @endif
+                                                                        @if(in_array('width', $el['fields']))
+                                                                        <div class="col-6">
+                                                                            <label class="form-label form-label-sm">Width (mm)</label>
+                                                                            <input type="number" step="0.5" class="form-control form-control-sm live-input" name="layout[{{ $key }}][width]"
+                                                                                value="{{ $layout[$key]['width'] ?? 20 }}" data-element="{{ $key }}" data-prop="width" />
+                                                                        </div>
+                                                                        @endif
+                                                                        @if(in_array('height', $el['fields']))
+                                                                        <div class="col-6">
+                                                                            <label class="form-label form-label-sm">Height (mm)</label>
+                                                                            <input type="number" step="0.5" class="form-control form-control-sm live-input" name="layout[{{ $key }}][height]"
+                                                                                value="{{ $layout[$key]['height'] ?? 10 }}" data-element="{{ $key }}" data-prop="height" />
+                                                                        </div>
+                                                                        @endif
+                                                                        @if(in_array('color', $el['fields']))
+                                                                        <div class="col-6">
+                                                                            <label class="form-label form-label-sm">Warna</label>
+                                                                            <input type="color" class="form-control form-control-sm form-control-color live-input" name="layout[{{ $key }}][color]"
+                                                                                value="{{ $layout[$key]['color'] ?? '#FFFFFF' }}" data-element="{{ $key }}" data-prop="color" />
+                                                                        </div>
+                                                                        @endif
+                                                                        @if(in_array('font_size', $el['fields']))
+                                                                        <div class="col-6">
+                                                                            <label class="form-label form-label-sm">Font Size (pt)</label>
+                                                                            <input type="number" min="6" max="30" class="form-control form-control-sm live-input" name="layout[{{ $key }}][font_size]"
+                                                                                value="{{ $layout[$key]['font_size'] ?? 10 }}" data-element="{{ $key }}" data-prop="font_size" />
+                                                                        </div>
+                                                                        @endif
+                                                                        @if(in_array('font_weight', $el['fields']))
+                                                                        <div class="col-6">
+                                                                            <label class="form-label form-label-sm">Font Weight</label>
+                                                                            <select class="form-select form-select-sm live-input" name="layout[{{ $key }}][font_weight]" data-element="{{ $key }}" data-prop="font_weight">
+                                                                                <option value="normal" {{ ($layout[$key]['font_weight'] ?? 'bold') === 'normal' ? 'selected' : '' }}>Normal</option>
+                                                                                <option value="bold" {{ ($layout[$key]['font_weight'] ?? 'bold') === 'bold' ? 'selected' : '' }}>Bold</option>
+                                                                            </select>
+                                                                        </div>
+                                                                        @endif
+                                                                        @if(in_array('text_align', $el['fields']))
+                                                                        <div class="col-6">
+                                                                            <label class="form-label form-label-sm">Align</label>
+                                                                            <select class="form-select form-select-sm live-input" name="layout[{{ $key }}][text_align]" data-element="{{ $key }}" data-prop="text_align">
+                                                                                <option value="left" {{ ($layout[$key]['text_align'] ?? 'right') === 'left' ? 'selected' : '' }}>Left</option>
+                                                                                <option value="center" {{ ($layout[$key]['text_align'] ?? 'right') === 'center' ? 'selected' : '' }}>Center</option>
+                                                                                <option value="right" {{ ($layout[$key]['text_align'] ?? 'right') === 'right' ? 'selected' : '' }}>Right</option>
+                                                                            </select>
+                                                                        </div>
+                                                                        @endif
+                                                                        @if(in_array('border_radius', $el['fields']))
+                                                                        <div class="col-6">
+                                                                            <label class="form-label form-label-sm">Border Radius (mm)</label>
+                                                                            <input type="number" step="0.5" min="0" class="form-control form-control-sm live-input" name="layout[{{ $key }}][border_radius]"
+                                                                                value="{{ $layout[$key]['border_radius'] ?? 2 }}" data-element="{{ $key }}" data-prop="border_radius" />
+                                                                        </div>
+                                                                        @endif
+                                                                    </div>
+                                                                </div>
                                                             </div>
-                                                            @endif
-                                                            @if(in_array('top', $el['fields']))
-                                                            <div class="col-6">
-                                                                <label class="form-label form-label-sm">Top (mm)</label>
-                                                                <input type="number" step="0.5" class="form-control form-control-sm live-input" name="layout[{{ $key }}][top]"
-                                                                    value="{{ $layout[$key]['top'] ?? 0 }}" data-element="{{ $key }}" data-prop="top" />
-                                                            </div>
-                                                            @endif
-                                                            @if(in_array('left', $el['fields']))
-                                                            <div class="col-6">
-                                                                <label class="form-label form-label-sm">Left (mm)</label>
-                                                                <input type="number" step="0.5" class="form-control form-control-sm live-input" name="layout[{{ $key }}][left]"
-                                                                    value="{{ $layout[$key]['left'] ?? 0 }}" data-element="{{ $key }}" data-prop="left" />
-                                                            </div>
-                                                            @endif
-                                                            @if(in_array('width', $el['fields']))
-                                                            <div class="col-6">
-                                                                <label class="form-label form-label-sm">Width (mm)</label>
-                                                                <input type="number" step="0.5" class="form-control form-control-sm live-input" name="layout[{{ $key }}][width]"
-                                                                    value="{{ $layout[$key]['width'] ?? 20 }}" data-element="{{ $key }}" data-prop="width" />
-                                                            </div>
-                                                            @endif
-                                                            @if(in_array('height', $el['fields']))
-                                                            <div class="col-6">
-                                                                <label class="form-label form-label-sm">Height (mm)</label>
-                                                                <input type="number" step="0.5" class="form-control form-control-sm live-input" name="layout[{{ $key }}][height]"
-                                                                    value="{{ $layout[$key]['height'] ?? 10 }}" data-element="{{ $key }}" data-prop="height" />
-                                                            </div>
-                                                            @endif
-                                                            @if(in_array('color', $el['fields']))
-                                                            <div class="col-6">
-                                                                <label class="form-label form-label-sm">Warna</label>
-                                                                <input type="color" class="form-control form-control-sm form-control-color live-input" name="layout[{{ $key }}][color]"
-                                                                    value="{{ $layout[$key]['color'] ?? '#FFFFFF' }}" data-element="{{ $key }}" data-prop="color" />
-                                                            </div>
-                                                            @endif
-                                                            @if(in_array('font_size', $el['fields']))
-                                                            <div class="col-6">
-                                                                <label class="form-label form-label-sm">Font Size (pt)</label>
-                                                                <input type="number" min="6" max="30" class="form-control form-control-sm live-input" name="layout[{{ $key }}][font_size]"
-                                                                    value="{{ $layout[$key]['font_size'] ?? 10 }}" data-element="{{ $key }}" data-prop="font_size" />
-                                                            </div>
-                                                            @endif
-                                                            @if(in_array('font_weight', $el['fields']))
-                                                            <div class="col-6">
-                                                                <label class="form-label form-label-sm">Font Weight</label>
-                                                                <select class="form-select form-select-sm live-input" name="layout[{{ $key }}][font_weight]" data-element="{{ $key }}" data-prop="font_weight">
-                                                                    <option value="normal" {{ ($layout[$key]['font_weight'] ?? 'bold') === 'normal' ? 'selected' : '' }}>Normal</option>
-                                                                    <option value="bold" {{ ($layout[$key]['font_weight'] ?? 'bold') === 'bold' ? 'selected' : '' }}>Bold</option>
-                                                                </select>
-                                                            </div>
-                                                            @endif
-                                                            @if(in_array('text_align', $el['fields']))
-                                                            <div class="col-6">
-                                                                <label class="form-label form-label-sm">Align</label>
-                                                                <select class="form-select form-select-sm live-input" name="layout[{{ $key }}][text_align]" data-element="{{ $key }}" data-prop="text_align">
-                                                                    <option value="left" {{ ($layout[$key]['text_align'] ?? 'right') === 'left' ? 'selected' : '' }}>Left</option>
-                                                                    <option value="center" {{ ($layout[$key]['text_align'] ?? 'right') === 'center' ? 'selected' : '' }}>Center</option>
-                                                                    <option value="right" {{ ($layout[$key]['text_align'] ?? 'right') === 'right' ? 'selected' : '' }}>Right</option>
-                                                                </select>
-                                                            </div>
-                                                            @endif
-                                                            @if(in_array('type', $el['fields']))
-                                                            <div class="col-6">
-                                                                <label class="form-label form-label-sm">Tipe Kode</label>
-                                                                <select class="form-select form-select-sm live-input" name="layout[{{ $key }}][type]" data-element="{{ $key }}" data-prop="type">
-                                                                    <option value="barcode" {{ ($layout[$key]['type'] ?? 'barcode') === 'barcode' ? 'selected' : '' }}>Barcode</option>
-                                                                    <option value="qrcode" {{ ($layout[$key]['type'] ?? 'barcode') === 'qrcode' ? 'selected' : '' }}>QR Code</option>
-                                                                </select>
-                                                            </div>
-                                                            @endif
-                                                            @if(in_array('border_radius', $el['fields']))
-                                                            <div class="col-6">
-                                                                <label class="form-label form-label-sm">Border Radius (mm)</label>
-                                                                <input type="number" step="0.5" min="0" class="form-control form-control-sm live-input" name="layout[{{ $key }}][border_radius]"
-                                                                    value="{{ $layout[$key]['border_radius'] ?? 2 }}" data-element="{{ $key }}" data-prop="border_radius" />
-                                                            </div>
-                                                            @endif
                                                         </div>
-                                                    </div>
+                                                    @endforeach
                                                 </div>
                                             </div>
-                                            @endforeach
 
+                                            {{-- Column 2: Nama, NIS, Kelas, Sekolah, Barcode/QR --}}
+                                            <div class="col-md-6">
+                                                <div class="accordion accordion-icon-toggle" id="layoutAccordionCol2">
+                                                    @foreach(['name', 'nis', 'classroom', 'school', 'code'] as $key)
+                                                        @php $el = $elements[$key]; @endphp
+                                                        <div class="mb-3">
+                                                            <div class="accordion-header py-3 d-flex align-items-center cursor-pointer" data-bs-toggle="collapse" data-bs-target="#acc_{{ $key }}">
+                                                                <span class="accordion-icon"><i class="fa-solid fa-angle-right fs-5"></i></span>
+                                                                <h4 class="fw-bold mb-0 ms-3 fs-6">
+                                                                    <i class="fa-solid {{ $el['icon'] }} me-2 text-primary"></i>{{ $el['label'] }}
+                                                                </h4>
+                                                                <div class="form-check form-switch ms-auto me-3">
+                                                                    <input class="form-check-input elem-show-toggle" type="checkbox" name="layout[{{ $key }}][show]" value="1"
+                                                                        data-element="{{ $key }}"
+                                                                        {{ ($layout[$key]['show'] ?? ($key === 'photo' ? false : true)) ? 'checked' : '' }} />
+                                                                </div>
+                                                            </div>
+                                                            <div id="acc_{{ $key }}" class="collapse" data-bs-parent="#layoutAccordionCol2">
+                                                                <div class="p-4 bg-light rounded">
+                                                                    <div class="row g-3">
+                                                                        {{-- Hidden inputs for drag and drop positioning --}}
+                                                                        <input type="hidden" name="layout[{{ $key }}][top]" value="{{ $layout[$key]['top'] ?? 5 }}" data-element="{{ $key }}" data-prop="top" />
+                                                                        <input type="hidden" name="layout[{{ $key }}][left]" value="{{ $layout[$key]['left'] ?? 5 }}" data-element="{{ $key }}" data-prop="left" />
+
+                                                                        @if(in_array('color', $el['fields']))
+                                                                        <div class="col-6">
+                                                                            <label class="form-label form-label-sm">Warna</label>
+                                                                            <input type="color" class="form-control form-control-sm form-control-color live-input" name="layout[{{ $key }}][color]"
+                                                                                value="{{ $layout[$key]['color'] ?? '#FFFFFF' }}" data-element="{{ $key }}" data-prop="color" />
+                                                                        </div>
+                                                                        @endif
+                                                                        @if(in_array('font_size', $el['fields']))
+                                                                        <div class="col-6">
+                                                                            <label class="form-label form-label-sm">Font Size (pt)</label>
+                                                                            <input type="number" min="6" max="30" class="form-control form-control-sm live-input" name="layout[{{ $key }}][font_size]"
+                                                                                value="{{ $layout[$key]['font_size'] ?? 10 }}" data-element="{{ $key }}" data-prop="font_size" />
+                                                                        </div>
+                                                                        @endif
+                                                                        @if(in_array('font_weight', $el['fields']))
+                                                                        <div class="col-6">
+                                                                            <label class="form-label form-label-sm">Font Weight</label>
+                                                                            <select class="form-select form-select-sm live-input" name="layout[{{ $key }}][font_weight]" data-element="{{ $key }}" data-prop="font_weight">
+                                                                                <option value="normal" {{ ($layout[$key]['font_weight'] ?? 'bold') === 'normal' ? 'selected' : '' }}>Normal</option>
+                                                                                <option value="bold" {{ ($layout[$key]['font_weight'] ?? 'bold') === 'bold' ? 'selected' : '' }}>Bold</option>
+                                                                            </select>
+                                                                        </div>
+                                                                        @endif
+                                                                        @if(in_array('type', $el['fields']))
+                                                                        <div class="col-6">
+                                                                            <label class="form-label form-label-sm">Tipe Kode</label>
+                                                                            <select class="form-select form-select-sm live-input" name="layout[{{ $key }}][type]" data-element="{{ $key }}" data-prop="type">
+                                                                                <option value="barcode" {{ ($layout[$key]['type'] ?? 'barcode') === 'barcode' ? 'selected' : '' }}>Barcode</option>
+                                                                                <option value="qrcode" {{ ($layout[$key]['type'] ?? 'barcode') === 'qrcode' ? 'selected' : '' }}>QR Code</option>
+                                                                            </select>
+                                                                        </div>
+                                                                        @endif
+                                                                        @if(in_array('width', $el['fields']))
+                                                                        <div class="col-6">
+                                                                            <label class="form-label form-label-sm">Width (mm)</label>
+                                                                            <input type="number" step="0.5" class="form-control form-control-sm live-input" name="layout[{{ $key }}][width]"
+                                                                                value="{{ $layout[$key]['width'] ?? 20 }}" data-element="{{ $key }}" data-prop="width" />
+                                                                        </div>
+                                                                        @endif
+                                                                        @if(in_array('height', $el['fields']))
+                                                                        <div class="col-6">
+                                                                            <label class="form-label form-label-sm">Height (mm)</label>
+                                                                            <input type="number" step="0.5" class="form-control form-control-sm live-input" name="layout[{{ $key }}][height]"
+                                                                                value="{{ $layout[$key]['height'] ?? 10 }}" data-element="{{ $key }}" data-prop="height" />
+                                                                        </div>
+                                                                        @endif
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    @endforeach
+                                                </div>
+                                            </div>
                                         </div>
+
                                     </div>
                                     <div class="card-footer text-end">
                                         <button type="submit" class="btn btn-primary">
@@ -479,6 +556,93 @@ document.addEventListener('DOMContentLoaded', function() {
         school: document.getElementById('prevSchool'),
         code: document.getElementById('prevCode'),
     };
+
+    // ── Drag and Drop Live Preview Elements ──
+    const previewWrapper = document.getElementById('cardPreviewWrapper');
+    const draggableElements = document.querySelectorAll('.draggable-element');
+
+    draggableElements.forEach(function(el) {
+        el.addEventListener('mousedown', startDrag);
+        el.addEventListener('touchstart', startDrag, { passive: false });
+
+        function startDrag(e) {
+            // Prevent default behavior (like text selection or default dragging)
+            e.preventDefault();
+
+            const elementKey = el.dataset.element;
+            el.classList.add('dragging');
+
+            // Handle mouse vs touch client coordinates
+            const isTouch = e.type.startsWith('touch');
+            const clientX = isTouch ? e.touches[0].clientX : e.clientX;
+            const clientY = isTouch ? e.touches[0].clientY : e.clientY;
+
+            // Get current positions relative to wrapper
+            const rect = el.getBoundingClientRect();
+            const wrapperRect = previewWrapper.getBoundingClientRect();
+            let startLeftPx = rect.left - wrapperRect.left;
+            let startTopPx = rect.top - wrapperRect.top;
+
+            function doDrag(moveEvent) {
+                moveEvent.preventDefault();
+
+                const currentX = (moveEvent.touches && moveEvent.touches.length > 0) ? moveEvent.touches[0].clientX : moveEvent.clientX;
+                const currentY = (moveEvent.touches && moveEvent.touches.length > 0) ? moveEvent.touches[0].clientY : moveEvent.clientY;
+
+                const dx = currentX - clientX;
+                const dy = currentY - clientY;
+
+                let newLeftPx = startLeftPx + dx;
+                let newTopPx = startTopPx + dy;
+
+                // Restrict element to stay within preview wrapper boundaries
+                const maxLeft = wrapperRect.width - rect.width;
+                const maxTop = wrapperRect.height - rect.height;
+
+                newLeftPx = Math.max(0, Math.min(newLeftPx, maxLeft));
+                newTopPx = Math.max(0, Math.min(newTopPx, maxTop));
+
+                // Convert pixels to millimeters (rounded to 0.5mm step)
+                const newLeftMm = Math.round((newLeftPx / SCALE) * 2) / 2;
+                const newTopMm = Math.round((newTopPx / SCALE) * 2) / 2;
+
+                // Update DOM element style
+                el.style.left = (newLeftMm * SCALE) + 'px';
+                el.style.top = (newTopMm * SCALE) + 'px';
+
+                // Specific case for title & subtitle width auto-scaling
+                if (elementKey === 'title' || elementKey === 'subtitle') {
+                    el.style.width = ((86 - newLeftMm) * SCALE) + 'px';
+                }
+
+                // Update hidden inputs
+                const inputTop = document.querySelector(`input[name="layout[${elementKey}][top]"]`);
+                const inputLeft = document.querySelector(`input[name="layout[${elementKey}][left]"]`);
+                
+                if (inputTop) inputTop.value = newTopMm;
+                if (inputLeft) inputLeft.value = newLeftMm;
+            }
+
+            function stopDrag() {
+                el.classList.remove('dragging');
+                if (isTouch) {
+                    document.removeEventListener('touchmove', doDrag);
+                    document.removeEventListener('touchend', stopDrag);
+                } else {
+                    document.removeEventListener('mousemove', doDrag);
+                    document.removeEventListener('mouseup', stopDrag);
+                }
+            }
+
+            if (isTouch) {
+                document.addEventListener('touchmove', doDrag, { passive: false });
+                document.addEventListener('touchend', stopDrag);
+            } else {
+                document.addEventListener('mousemove', doDrag);
+                document.addEventListener('mouseup', stopDrag);
+            }
+        }
+    });
 
     // ── Live preview update ──
     document.querySelectorAll('.live-input').forEach(function(input) {
