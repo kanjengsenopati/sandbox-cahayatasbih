@@ -392,9 +392,13 @@
                             {{-- Student List --}}
                             <div class="col-lg-8">
                                 <div class="card card-flush border-0 shadow-[0_8px_30px_rgba(0,0,0,0.04)]" style="border-radius: 24px; box-shadow: 0 8px 30px rgba(0,0,0,0.04); border: none;">
-                                    <div class="card-header border-0 pb-0">
+                                    <div class="card-header border-0 pb-0 flex-wrap gap-2">
                                         <h3 class="card-title fw-bolder">Daftar Santri</h3>
-                                        <div class="card-toolbar">
+                                        <div class="card-toolbar gap-3">
+                                            <div class="position-relative my-1">
+                                                <i class="fa-solid fa-magnifying-glass position-absolute top-50 translate-middle-y ms-4 text-slate-400"></i>
+                                                <input type="text" id="searchStudent" class="form-control form-control-sm form-control-solid ps-10 w-150px w-md-200px" placeholder="Cari santri..." style="background-color: #f5f8fa; border: none; border-radius: 8px;" />
+                                            </div>
                                             <label class="form-check form-check-sm form-check-custom">
                                                 <input class="form-check-input" type="checkbox" id="checkAll" />
                                                 <span class="form-check-label fw-bold">Pilih Semua</span>
@@ -530,7 +534,7 @@ document.addEventListener('DOMContentLoaded', function() {
         var classSelect = document.getElementById('filterClassroom');
         classSelect.innerHTML = '<option value="">Semua Kelas</option>';
         if (schoolId) {
-            fetch('{{ url("student/school") }}/' + schoolId)
+            return fetch('{{ url("student/school") }}/' + schoolId)
                 .then(function(r) {
                     if (!r.ok) throw new Error('HTTP status ' + r.status);
                     return r.json();
@@ -544,24 +548,19 @@ document.addEventListener('DOMContentLoaded', function() {
                     console.error('Gagal memuat data kelas:', err);
                 });
         }
+        return Promise.resolve();
     }
 
-    document.getElementById('filterSchool').addEventListener('change', function() {
-        loadClassrooms(this.value);
-    });
-
-    // Run on initial load if school is pre-selected
-    if (document.getElementById('filterSchool').value) {
-        loadClassrooms(document.getElementById('filterSchool').value);
-    }
-
-    // ── Tab 2: Search students ──
-    document.getElementById('btnFilter').addEventListener('click', function() {
+    // ── Tab 2: Search students (Database Driven & Reactive) ──
+    function fetchStudents() {
         var params = new URLSearchParams();
         var schoolId = document.getElementById('filterSchool').value;
         var classroomId = document.getElementById('filterClassroom').value;
+        var query = document.getElementById('searchStudent').value;
+
         if (schoolId) params.append('school_id', schoolId);
         if (classroomId) params.append('classroom_id', classroomId);
+        if (query) params.append('q', query);
 
         var tbody = document.getElementById('studentTableBody');
         tbody.innerHTML = '<tr><td colspan="6" class="text-center py-10"><span class="spinner-border spinner-border-sm me-2"></span>Memuat data...</td></tr>';
@@ -605,7 +604,41 @@ document.addEventListener('DOMContentLoaded', function() {
                 console.error('Gagal memuat data santri:', err);
                 tbody.innerHTML = '<tr><td colspan="6" class="text-center text-danger py-10">Gagal memuat data. Periksa koneksi atau coba refresh halaman.</td></tr>';
             });
+    }
+
+    // Debounce for typing search
+    var searchTimeout = null;
+    document.getElementById('searchStudent').addEventListener('input', function() {
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(function() {
+            fetchStudents();
+        }, 300);
     });
+
+    // Reactive dropdown filters
+    document.getElementById('filterSchool').addEventListener('change', function() {
+        loadClassrooms(this.value).then(function() {
+            fetchStudents();
+        });
+    });
+
+    document.getElementById('filterClassroom').addEventListener('change', function() {
+        fetchStudents();
+    });
+
+    document.getElementById('btnFilter').addEventListener('click', function() {
+        fetchStudents();
+    });
+
+    // Initial load: Fetch classrooms (if school is pre-selected) and auto-fetch all students immediately
+    var initialSchoolId = document.getElementById('filterSchool').value;
+    if (initialSchoolId) {
+        loadClassrooms(initialSchoolId).then(function() {
+            fetchStudents();
+        });
+    } else {
+        fetchStudents();
+    }
 
     // ── Check all ──
     document.getElementById('checkAll').addEventListener('change', function() {

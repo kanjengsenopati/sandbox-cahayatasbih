@@ -159,6 +159,14 @@ class StudentCardSettingController extends Controller
             $query->where('classroom_id', $request->classroom_id);
         }
 
+        if ($request->filled('q')) {
+            $search = $request->q;
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', '%' . $search . '%')
+                  ->orWhere('nis', 'like', '%' . $search . '%');
+            });
+        }
+
         $students = $query->orderBy('name')->get();
 
         return response()->json($students->map(function ($s) {
