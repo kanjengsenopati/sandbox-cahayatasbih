@@ -51,6 +51,54 @@
                     outline-offset: 2px;
                     opacity: 0.7;
                 }
+                
+                /* Ruler and Grid Styles */
+                .preview-ruler {
+                    background-color: #f8fafc;
+                    position: absolute;
+                    pointer-events: none;
+                    z-index: 20;
+                }
+                .preview-ruler.horizontal {
+                    border-bottom: 1.5px solid #cbd5e1;
+                    background-image: 
+                        linear-gradient(to right, #cbd5e1 1px, transparent 1px),
+                        linear-gradient(to right, #94a3b8 1px, transparent 1px),
+                        linear-gradient(to right, #64748b 1px, transparent 1px);
+                    background-size: 4px 4px, 20px 8px, 40px 12px;
+                    background-repeat: repeat-x;
+                    background-position: bottom left;
+                }
+                .preview-ruler.vertical {
+                    border-right: 1.5px solid #cbd5e1;
+                    background-image: 
+                        linear-gradient(to bottom, #cbd5e1 1px, transparent 1px),
+                        linear-gradient(to bottom, #94a3b8 1px, transparent 1px),
+                        linear-gradient(to bottom, #64748b 1px, transparent 1px);
+                    background-size: 4px 4px, 8px 20px, 12px 40px;
+                    background-repeat: repeat-y;
+                    background-position: top right;
+                }
+                .ruler-label {
+                    font-family: monospace;
+                    font-size: 8px;
+                    color: #64748b;
+                    user-select: none;
+                }
+                
+                #cardPreviewWrapper.show-grid::before {
+                    content: "";
+                    position: absolute;
+                    inset: 0;
+                    z-index: 15;
+                    pointer-events: none;
+                    background-image: 
+                        linear-gradient(to right, rgba(0, 0, 0, 0.05) 1px, transparent 1px),
+                        linear-gradient(to bottom, rgba(0, 0, 0, 0.05) 1px, transparent 1px),
+                        linear-gradient(to right, rgba(0, 0, 0, 0.12) 1.5px, transparent 1.5px),
+                        linear-gradient(to bottom, rgba(0, 0, 0, 0.12) 1.5px, transparent 1.5px);
+                    background-size: 4px 4px, 4px 4px, 20px 20px, 20px 20px;
+                }
             </style>
 
             @if (session('success'))
@@ -119,115 +167,148 @@
                                 
                                 {{-- Live Preview Card --}}
                                 <div class="card card-flush border-0 shadow-[0_8px_30px_rgba(0,0,0,0.04)] mb-5" style="border-radius: 24px; box-shadow: 0 8px 30px rgba(0,0,0,0.04); border: none;">
-                                    <div class="card-header border-0 pb-0">
+                                    <div class="card-header border-0 pb-0 d-flex justify-content-between align-items-center flex-wrap gap-3">
                                         <text-h2 class="text-h2 card-title fw-bolder mb-0">Live Preview</text-h2>
+                                        <div class="card-toolbar d-flex align-items-center gap-2">
+                                            <!-- Ruler Toggle -->
+                                            <button type="button" id="btnToggleRuler" class="btn btn-sm btn-icon btn-light" title="Toggle Ruler" style="width: 32px; height: 32px; border-radius: 8px;">
+                                                <i class="fa-solid fa-ruler text-slate-500" style="font-size: 14px;"></i>
+                                            </button>
+                                            <!-- Grid Toggle -->
+                                            <button type="button" id="btnToggleGrid" class="btn btn-sm btn-icon btn-light" title="Toggle Grid" style="width: 32px; height: 32px; border-radius: 8px;">
+                                                <i class="fa-solid fa-border-all text-slate-500" style="font-size: 14px;"></i>
+                                            </button>
+                                            <span class="h-20px border-gray-300 border-start mx-1"></span>
+                                            <!-- Zoom Controls -->
+                                            <button type="button" id="btnZoomOut" class="btn btn-sm btn-icon btn-light" title="Zoom Out" style="width: 32px; height: 32px; border-radius: 8px;">
+                                                <i class="fa-solid fa-minus text-slate-500" style="font-size: 12px;"></i>
+                                            </button>
+                                            <span id="zoomPercent" class="fw-bold text-slate-700 fs-7 px-1" style="min-width: 45px; text-align: center;">100%</span>
+                                            <button type="button" id="btnZoomIn" class="btn btn-sm btn-icon btn-light" title="Zoom In" style="width: 32px; height: 32px; border-radius: 8px;">
+                                                <i class="fa-solid fa-plus text-slate-500" style="font-size: 12px;"></i>
+                                            </button>
+                                        </div>
                                     </div>
-                                    <div class="card-body d-flex justify-content-center align-items-center" style="background:#e8e8e8; min-height:300px; border-radius: 0 0 24px 24px;">
-                                        <div id="cardPreviewWrapper" style="width:342px; height:216px; position:relative; overflow:hidden; border-radius:10px; box-shadow:0 8px 30px rgba(0,0,0,0.15);">
-                                            {{-- Background --}}
-                                            <div id="prevBg" style="position:absolute;inset:0;background-size:cover;background-position:center;
-                                                @if($background) background-image:url('{{ asset($background) }}'); @else background:linear-gradient(135deg,#1a4731,#10b981); @endif
-                                            "></div>
+                                    <div class="card-body p-0 overflow-hidden d-flex justify-content-center align-items-center" style="background:#1e293b; min-height:400px; border-radius: 0 0 24px 24px; position: relative;">
+                                        <div id="previewViewport" style="width: 100%; height: 100%; min-height: 400px; max-height: 500px; overflow: auto; display: flex; position: relative;">
+                                            <div id="zoomWrapper" style="transform-origin: center center; transition: transform 0.1s ease; margin: auto; padding: 40px; display: flex; align-items: center; justify-content: center; min-width: max-content;">
+                                                <div id="previewContainer" style="position: relative; padding-top: 20px; padding-left: 20px; box-sizing: content-box; background: transparent;">
+                                                    
+                                                    {{-- Horizontal Ruler --}}
+                                                    <div id="rulerHorizontal" class="preview-ruler horizontal" style="top: 0; left: 20px; height: 20px; width: 342px;"></div>
+                                                    
+                                                    {{-- Vertical Ruler --}}
+                                                    <div id="rulerVertical" class="preview-ruler vertical" style="top: 20px; left: 0; width: 20px; height: 216px;"></div>
+                                                    
+                                                    {{-- Card Preview Wrapper --}}
+                                                    <div id="cardPreviewWrapper" style="width:342px; height:216px; position:relative; overflow:hidden; border-radius:10px; box-shadow:0 8px 30px rgba(0,0,0,0.3); background: #ffffff;">
+                                                        {{-- Background --}}
+                                                        <div id="prevBg" style="position:absolute;inset:0;background-size:cover;background-position:center;
+                                                            @if($background) background-image:url('{{ asset($background) }}'); @else background:linear-gradient(135deg,#1a4731,#10b981); @endif
+                                                        "></div>
 
-                                            {{-- Logo --}}
-                                            <img id="prevLogo" class="draggable-element" data-element="logo" src="{{ asset('assets/media/logos/logo-full.png') }}"
-                                                style="position:absolute;top:{{ ($layout['logo']['top'] ?? 5) * 4 }}px;left:{{ ($layout['logo']['left'] ?? 5) * 4 }}px;width:{{ ($layout['logo']['width'] ?? 25) * 4 }}px;height:{{ ($layout['logo']['height'] ?? 8) * 4 }}px;object-fit:contain;
-                                                {{ ($layout['logo']['show'] ?? true) ? '' : 'display:none;' }}"
-                                            />
-                                            {{-- Title --}}
-                                            <div id="prevTitle" class="draggable-element" data-element="title" style="position:absolute;
-                                                top:{{ ($layout['title']['top'] ?? 5) * 4 }}px;
-                                                left:{{ ($layout['title']['left'] ?? 45) * 4 }}px;
-                                                color:{{ $layout['title']['color'] ?? '#FFFF00' }};
-                                                font-size:{{ ($layout['title']['font_size'] ?? 12) * 1.2 }}px;
-                                                font-weight:{{ $layout['title']['font_weight'] ?? 'bold' }};
-                                                text-align:{{ $layout['title']['text_align'] ?? 'right' }};
-                                                font-family: '{{ $layout['title']['font_family'] ?? 'Raleway' }}', sans-serif;
-                                                {{ ($layout['title']['show'] ?? true) ? '' : 'display:none;' }}
-                                            ">{{ $layout['title']['text'] ?? 'Kartu Santri' }}</div>
+                                                        {{-- Logo --}}
+                                                        <img id="prevLogo" class="draggable-element" data-element="logo" src="{{ asset('assets/media/logos/logo-full.png') }}"
+                                                            style="position:absolute;top:{{ ($layout['logo']['top'] ?? 5) * 4 }}px;left:{{ ($layout['logo']['left'] ?? 5) * 4 }}px;width:{{ ($layout['logo']['width'] ?? 25) * 4 }}px;height:{{ ($layout['logo']['height'] ?? 8) * 4 }}px;object-fit:contain;
+                                                            {{ ($layout['logo']['show'] ?? true) ? '' : 'display:none;' }}"
+                                                        />
+                                                        {{-- Title --}}
+                                                        <div id="prevTitle" class="draggable-element" data-element="title" style="position:absolute;
+                                                            top:{{ ($layout['title']['top'] ?? 5) * 4 }}px;
+                                                            left:{{ ($layout['title']['left'] ?? 45) * 4 }}px;
+                                                            color:{{ $layout['title']['color'] ?? '#FFFF00' }};
+                                                            font-size:{{ ($layout['title']['font_size'] ?? 12) * 1.2 }}px;
+                                                            font-weight:{{ $layout['title']['font_weight'] ?? 'bold' }};
+                                                            text-align:{{ $layout['title']['text_align'] ?? 'right' }};
+                                                            font-family: '{{ $layout['title']['font_family'] ?? 'Raleway' }}', sans-serif;
+                                                            {{ ($layout['title']['show'] ?? true) ? '' : 'display:none;' }}
+                                                        ">{{ $layout['title']['text'] ?? 'Kartu Santri' }}</div>
  
-                                            {{-- Subtitle --}}
-                                            <div id="prevSubtitle" class="draggable-element" data-element="subtitle" style="position:absolute;
-                                                top:{{ ($layout['subtitle']['top'] ?? 10) * 4 }}px;
-                                                left:{{ ($layout['subtitle']['left'] ?? 45) * 4 }}px;
-                                                color:{{ $layout['subtitle']['color'] ?? '#FFFFFF' }};
-                                                font-size:{{ ($layout['subtitle']['font_size'] ?? 10) * 1.2 }}px;
-                                                font-weight:{{ $layout['subtitle']['font_weight'] ?? 'bold' }};
-                                                text-align:{{ $layout['subtitle']['text_align'] ?? 'right' }};
-                                                font-family: '{{ $layout['subtitle']['font_family'] ?? 'Raleway' }}', sans-serif;
-                                                {{ ($layout['subtitle']['show'] ?? true) ? '' : 'display:none;' }}
-                                            ">{{ $layout['subtitle']['text'] ?? 'PPTQ Cahaya Tasbih' }}</div>
+                                                        {{-- Subtitle --}}
+                                                        <div id="prevSubtitle" class="draggable-element" data-element="subtitle" style="position:absolute;
+                                                            top:{{ ($layout['subtitle']['top'] ?? 10) * 4 }}px;
+                                                            left:{{ ($layout['subtitle']['left'] ?? 45) * 4 }}px;
+                                                            color:{{ $layout['subtitle']['color'] ?? '#FFFFFF' }};
+                                                            font-size:{{ ($layout['subtitle']['font_size'] ?? 10) * 1.2 }}px;
+                                                            font-weight:{{ $layout['subtitle']['font_weight'] ?? 'bold' }};
+                                                            text-align:{{ $layout['subtitle']['text_align'] ?? 'right' }};
+                                                            font-family: '{{ $layout['subtitle']['font_family'] ?? 'Raleway' }}', sans-serif;
+                                                            {{ ($layout['subtitle']['show'] ?? true) ? '' : 'display:none;' }}
+                                                        ">{{ $layout['subtitle']['text'] ?? 'PPTQ Cahaya Tasbih' }}</div>
  
-                                            {{-- Photo placeholder --}}
-                                            <div id="prevPhoto" class="draggable-element" data-element="photo" style="position:absolute;
-                                                top:{{ ($layout['photo']['top'] ?? 18) * 4 }}px;
-                                                left:{{ ($layout['photo']['left'] ?? 5) * 4 }}px;
-                                                width:{{ ($layout['photo']['width'] ?? 18) * 4 }}px;
-                                                height:{{ ($layout['photo']['height'] ?? 24) * 4 }}px;
-                                                border-radius:{{ ($layout['photo']['border_radius'] ?? 2) * 4 }}px;
-                                                background:#fff;opacity:0.85;
-                                                display:flex;align-items:center;justify-content:center;
-                                                {{ ($layout['photo']['show'] ?? false) ? '' : 'display:none;' }}
-                                            "><i class="fa fa-user" style="font-size:24px;color:#ccc;"></i></div>
+                                                        {{-- Photo placeholder --}}
+                                                        <div id="prevPhoto" class="draggable-element" data-element="photo" style="position:absolute;
+                                                            top:{{ ($layout['photo']['top'] ?? 18) * 4 }}px;
+                                                            left:{{ ($layout['photo']['left'] ?? 5) * 4 }}px;
+                                                            width:{{ ($layout['photo']['width'] ?? 18) * 4 }}px;
+                                                            height:{{ ($layout['photo']['height'] ?? 24) * 4 }}px;
+                                                            border-radius:{{ ($layout['photo']['border_radius'] ?? 2) * 4 }}px;
+                                                            background:#fff;opacity:0.85;
+                                                            display:flex;align-items:center;justify-content:center;
+                                                            {{ ($layout['photo']['show'] ?? false) ? '' : 'display:none;' }}
+                                                        "><i class="fa fa-user" style="font-size:24px;color:#ccc;"></i></div>
  
-                                            {{-- Name --}}
-                                            <div id="prevName" class="draggable-element" data-element="name" style="position:absolute;
-                                                top:{{ ($layout['name']['top'] ?? 20) * 4 }}px;
-                                                left:{{ ($layout['name']['left'] ?? 25) * 4 }}px;
-                                                color:{{ $layout['name']['color'] ?? '#FFFFFF' }};
-                                                font-size:{{ ($layout['name']['font_size'] ?? 12) * 1.2 }}px;
-                                                font-weight:{{ $layout['name']['font_weight'] ?? 'bold' }};
-                                                font-family: '{{ $layout['name']['font_family'] ?? 'Raleway' }}', sans-serif;
-                                                {{ ($layout['name']['show'] ?? true) ? '' : 'display:none;' }}
-                                            ">Ahmad Santri</div>
+                                                        {{-- Name --}}
+                                                        <div id="prevName" class="draggable-element" data-element="name" style="position:absolute;
+                                                            top:{{ ($layout['name']['top'] ?? 20) * 4 }}px;
+                                                            left:{{ ($layout['name']['left'] ?? 25) * 4 }}px;
+                                                            color:{{ $layout['name']['color'] ?? '#FFFFFF' }};
+                                                            font-size:{{ ($layout['name']['font_size'] ?? 12) * 1.2 }}px;
+                                                            font-weight:{{ $layout['name']['font_weight'] ?? 'bold' }};
+                                                            font-family: '{{ $layout['name']['font_family'] ?? 'Raleway' }}', sans-serif;
+                                                            {{ ($layout['name']['show'] ?? true) ? '' : 'display:none;' }}
+                                                        ">Ahmad Santri</div>
  
-                                            {{-- NIS --}}
-                                            <div id="prevNis" class="draggable-element" data-element="nis" style="position:absolute;
-                                                top:{{ ($layout['nis']['top'] ?? 27) * 4 }}px;
-                                                left:{{ ($layout['nis']['left'] ?? 25) * 4 }}px;
-                                                color:{{ $layout['nis']['color'] ?? '#FFFFFF' }};
-                                                font-size:{{ ($layout['nis']['font_size'] ?? 14) * 1.2 }}px;
-                                                font-weight:{{ $layout['nis']['font_weight'] ?? 'bold' }};
-                                                letter-spacing:2px;
-                                                font-family: '{{ $layout['nis']['font_family'] ?? 'Kredit' }}', 'Courier New', Courier, monospace;
-                                                {{ ($layout['nis']['show'] ?? true) ? '' : 'display:none;' }}
-                                            ">2024001</div>
+                                                        {{-- NIS --}}
+                                                        <div id="prevNis" class="draggable-element" data-element="nis" style="position:absolute;
+                                                            top:{{ ($layout['nis']['top'] ?? 27) * 4 }}px;
+                                                            left:{{ ($layout['nis']['left'] ?? 25) * 4 }}px;
+                                                            color:{{ $layout['nis']['color'] ?? '#FFFFFF' }};
+                                                            font-size:{{ ($layout['nis']['font_size'] ?? 14) * 1.2 }}px;
+                                                            font-weight:{{ $layout['nis']['font_weight'] ?? 'bold' }};
+                                                            letter-spacing:2px;
+                                                            font-family: '{{ $layout['nis']['font_family'] ?? 'Kredit' }}', 'Courier New', Courier, monospace;
+                                                            {{ ($layout['nis']['show'] ?? true) ? '' : 'display:none;' }}
+                                                        ">2024001</div>
  
-                                            {{-- Classroom --}}
-                                            <div id="prevClassroom" class="draggable-element" data-element="classroom" style="position:absolute;
-                                                top:{{ ($layout['classroom']['top'] ?? 35) * 4 }}px;
-                                                left:{{ ($layout['classroom']['left'] ?? 25) * 4 }}px;
-                                                color:{{ $layout['classroom']['color'] ?? '#FFFFFF' }};
-                                                font-size:{{ ($layout['classroom']['font_size'] ?? 9) * 1.2 }}px;
-                                                font-weight:{{ $layout['classroom']['font_weight'] ?? 'bold' }};
-                                                font-family: '{{ $layout['classroom']['font_family'] ?? 'Raleway' }}', sans-serif;
-                                                {{ ($layout['classroom']['show'] ?? true) ? '' : 'display:none;' }}
-                                            ">Kelas 7A</div>
+                                                        {{-- Classroom --}}
+                                                        <div id="prevClassroom" class="draggable-element" data-element="classroom" style="position:absolute;
+                                                            top:{{ ($layout['classroom']['top'] ?? 35) * 4 }}px;
+                                                            left:{{ ($layout['classroom']['left'] ?? 25) * 4 }}px;
+                                                            color:{{ $layout['classroom']['color'] ?? '#FFFFFF' }};
+                                                            font-size:{{ ($layout['classroom']['font_size'] ?? 9) * 1.2 }}px;
+                                                            font-weight:{{ $layout['classroom']['font_weight'] ?? 'bold' }};
+                                                            font-family: '{{ $layout['classroom']['font_family'] ?? 'Raleway' }}', sans-serif;
+                                                            {{ ($layout['classroom']['show'] ?? true) ? '' : 'display:none;' }}
+                                                        ">Kelas 7A</div>
  
-                                            {{-- School --}}
-                                            <div id="prevSchool" class="draggable-element" data-element="school" style="position:absolute;
-                                                top:{{ ($layout['school']['top'] ?? 40) * 4 }}px;
-                                                left:{{ ($layout['school']['left'] ?? 25) * 4 }}px;
-                                                color:{{ $layout['school']['color'] ?? '#FFFFFF' }};
-                                                font-size:{{ ($layout['school']['font_size'] ?? 9) * 1.2 }}px;
-                                                font-weight:{{ $layout['school']['font_weight'] ?? 'bold' }};
-                                                font-family: '{{ $layout['school']['font_family'] ?? 'Raleway' }}', sans-serif;
-                                                {{ ($layout['school']['show'] ?? true) ? '' : 'display:none;' }}
-                                            ">SMP Cahaya Tasbih</div>
+                                                        {{-- School --}}
+                                                        <div id="prevSchool" class="draggable-element" data-element="school" style="position:absolute;
+                                                            top:{{ ($layout['school']['top'] ?? 40) * 4 }}px;
+                                                            left:{{ ($layout['school']['left'] ?? 25) * 4 }}px;
+                                                            color:{{ $layout['school']['color'] ?? '#FFFFFF' }};
+                                                            font-size:{{ ($layout['school']['font_size'] ?? 9) * 1.2 }}px;
+                                                            font-weight:{{ $layout['school']['font_weight'] ?? 'bold' }};
+                                                            font-family: '{{ $layout['school']['font_family'] ?? 'Raleway' }}', sans-serif;
+                                                            {{ ($layout['school']['show'] ?? true) ? '' : 'display:none;' }}
+                                                        ">SMP Cahaya Tasbih</div>
 
-                                            {{-- Code (barcode placeholder) --}}
-                                            <div id="prevCode" class="draggable-element" data-element="code" style="position:absolute;
-                                                top:{{ ($layout['code']['top'] ?? 42) * 4 }}px;
-                                                left:{{ ($layout['code']['left'] ?? 55) * 4 }}px;
-                                                width:{{ ($layout['code']['width'] ?? 26) * 4 }}px;
-                                                height:{{ ($layout['code']['height'] ?? 8) * 4 }}px;
-                                                background:#fff;border-radius:4px;padding:3px;
-                                                display:flex;align-items:center;justify-content:center;
-                                                {{ ($layout['code']['show'] ?? true) ? '' : 'display:none;' }}
-                                            ">
-                                                <span style="font-size:9px;font-family:monospace;color:#333;" id="prevCodeLabel">
-                                                    {{ ($layout['code']['type'] ?? 'barcode') === 'qrcode' ? '▣ QR' : '||||| BARCODE |||||' }}
-                                                </span>
+                                                        {{-- Code (barcode placeholder) --}}
+                                                        <div id="prevCode" class="draggable-element" data-element="code" style="position:absolute;
+                                                            top:{{ ($layout['code']['top'] ?? 42) * 4 }}px;
+                                                            left:{{ ($layout['code']['left'] ?? 55) * 4 }}px;
+                                                            width:{{ ($layout['code']['width'] ?? 26) * 4 }}px;
+                                                            height:{{ ($layout['code']['height'] ?? 8) * 4 }}px;
+                                                            background:#fff;border-radius:4px;padding:3px;
+                                                            display:flex;align-items:center;justify-content:center;
+                                                            {{ ($layout['code']['show'] ?? true) ? '' : 'display:none;' }}
+                                                        ">
+                                                            <span style="font-size:9px;font-family:monospace;color:#333;" id="prevCodeLabel">
+                                                                {{ ($layout['code']['type'] ?? 'barcode') === 'qrcode' ? '▣ QR' : '||||| BARCODE |||||' }}
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
@@ -596,6 +677,149 @@ document.addEventListener('DOMContentLoaded', function() {
         code: document.getElementById('prevCode'),
     };
 
+    // ── Zoom, Ruler, and Grid States & UI Controls ──
+    let ZOOM = 1.0;
+
+    function updateRulerVisibility(visible) {
+        const rulerH = document.getElementById('rulerHorizontal');
+        const rulerV = document.getElementById('rulerVertical');
+        const container = document.getElementById('previewContainer');
+        const btn = document.getElementById('btnToggleRuler');
+
+        if (visible) {
+            if (rulerH) rulerH.style.display = 'block';
+            if (rulerV) rulerV.style.display = 'block';
+            if (container) {
+                container.style.paddingTop = '20px';
+                container.style.paddingLeft = '20px';
+            }
+            if (btn) {
+                btn.classList.remove('btn-light');
+                btn.classList.add('btn-primary');
+            }
+        } else {
+            if (rulerH) rulerH.style.display = 'none';
+            if (rulerV) rulerV.style.display = 'none';
+            if (container) {
+                container.style.paddingTop = '0';
+                container.style.paddingLeft = '0';
+            }
+            if (btn) {
+                btn.classList.remove('btn-primary');
+                btn.classList.add('btn-light');
+            }
+        }
+    }
+
+    function updateGridVisibility(visible) {
+        const wrapper = document.getElementById('cardPreviewWrapper');
+        const btn = document.getElementById('btnToggleGrid');
+
+        if (visible) {
+            if (wrapper) wrapper.classList.add('show-grid');
+            if (btn) {
+                btn.classList.remove('btn-light');
+                btn.classList.add('btn-primary');
+            }
+        } else {
+            if (wrapper) wrapper.classList.remove('show-grid');
+            if (btn) {
+                btn.classList.remove('btn-primary');
+                btn.classList.add('btn-light');
+            }
+        }
+    }
+
+    function updateZoom(level) {
+        ZOOM = Math.max(0.5, Math.min(2.0, level));
+        
+        const zoomWrapper = document.getElementById('zoomWrapper');
+        const zoomPercent = document.getElementById('zoomPercent');
+        
+        if (zoomWrapper) {
+            zoomWrapper.style.transform = `scale(${ZOOM})`;
+        }
+        if (zoomPercent) {
+            zoomPercent.textContent = Math.round(ZOOM * 100) + '%';
+        }
+        
+        localStorage.setItem('card_preview_zoom', ZOOM);
+    }
+
+    function generateRulerLabels() {
+        const rulerH = document.getElementById('rulerHorizontal');
+        const rulerV = document.getElementById('rulerVertical');
+        if (!rulerH || !rulerV) return;
+
+        rulerH.innerHTML = '';
+        rulerV.innerHTML = '';
+
+        // Horizontal Ruler: 0 to 80 mm (step 10)
+        for (let mm = 0; mm <= 80; mm += 10) {
+            const label = document.createElement('span');
+            label.className = 'ruler-label';
+            label.style.position = 'absolute';
+            label.style.left = (mm * SCALE) + 'px';
+            label.style.top = '1px';
+            label.style.transform = 'translateX(-50%)';
+            label.textContent = mm;
+            rulerH.appendChild(label);
+        }
+
+        // Vertical Ruler: 0 to 50 mm (step 10)
+        for (let mm = 0; mm <= 50; mm += 10) {
+            const label = document.createElement('span');
+            label.className = 'ruler-label';
+            label.style.position = 'absolute';
+            label.style.top = (mm * SCALE) + 'px';
+            label.style.left = '2px';
+            label.style.transform = 'translateY(-50%)';
+            label.textContent = mm;
+            rulerV.appendChild(label);
+        }
+    }
+
+    // Setup event listeners for design tools
+    const btnToggleRuler = document.getElementById('btnToggleRuler');
+    let rulerVisible = localStorage.getItem('card_preview_ruler') !== 'false'; // default true
+    if (btnToggleRuler) {
+        btnToggleRuler.addEventListener('click', function() {
+            rulerVisible = !rulerVisible;
+            localStorage.setItem('card_preview_ruler', rulerVisible);
+            updateRulerVisibility(rulerVisible);
+        });
+    }
+
+    const btnToggleGrid = document.getElementById('btnToggleGrid');
+    let gridVisible = localStorage.getItem('card_preview_grid') === 'true'; // default false
+    if (btnToggleGrid) {
+        btnToggleGrid.addEventListener('click', function() {
+            gridVisible = !gridVisible;
+            localStorage.setItem('card_preview_grid', gridVisible);
+            updateGridVisibility(gridVisible);
+        });
+    }
+
+    const btnZoomIn = document.getElementById('btnZoomIn');
+    if (btnZoomIn) {
+        btnZoomIn.addEventListener('click', function() {
+            updateZoom(ZOOM + 0.25);
+        });
+    }
+
+    const btnZoomOut = document.getElementById('btnZoomOut');
+    if (btnZoomOut) {
+        btnZoomOut.addEventListener('click', function() {
+            updateZoom(ZOOM - 0.25);
+        });
+    }
+
+    // Initialize design tools
+    updateRulerVisibility(rulerVisible);
+    updateGridVisibility(gridVisible);
+    updateZoom(parseFloat(localStorage.getItem('card_preview_zoom')) || 1.0);
+    generateRulerLabels();
+
     // ── Drag and Drop Live Preview Elements ──
     const previewWrapper = document.getElementById('cardPreviewWrapper');
     const draggableElements = document.querySelectorAll('.draggable-element');
@@ -605,22 +829,18 @@ document.addEventListener('DOMContentLoaded', function() {
         el.addEventListener('touchstart', startDrag, { passive: false });
 
         function startDrag(e) {
-            // Prevent default behavior (like text selection or default dragging)
             e.preventDefault();
 
             const elementKey = el.dataset.element;
             el.classList.add('dragging');
 
-            // Handle mouse vs touch client coordinates
             const isTouch = e.type.startsWith('touch');
             const clientX = isTouch ? e.touches[0].clientX : e.clientX;
             const clientY = isTouch ? e.touches[0].clientY : e.clientY;
 
-            // Get current positions relative to wrapper
-            const rect = el.getBoundingClientRect();
-            const wrapperRect = previewWrapper.getBoundingClientRect();
-            let startLeftPx = rect.left - wrapperRect.left;
-            let startTopPx = rect.top - wrapperRect.top;
+            // Use offset properties which are unscaled CSS pixels relative to offsetParent (#cardPreviewWrapper)
+            let startLeftPx = el.offsetLeft;
+            let startTopPx = el.offsetTop;
 
             function doDrag(moveEvent) {
                 moveEvent.preventDefault();
@@ -628,15 +848,16 @@ document.addEventListener('DOMContentLoaded', function() {
                 const currentX = (moveEvent.touches && moveEvent.touches.length > 0) ? moveEvent.touches[0].clientX : moveEvent.clientX;
                 const currentY = (moveEvent.touches && moveEvent.touches.length > 0) ? moveEvent.touches[0].clientY : moveEvent.clientY;
 
-                const dx = currentX - clientX;
-                const dy = currentY - clientY;
+                // Scale mouse delta movement by ZOOM
+                const dx = (currentX - clientX) / ZOOM;
+                const dy = (currentY - clientY) / ZOOM;
 
                 let newLeftPx = startLeftPx + dx;
                 let newTopPx = startTopPx + dy;
 
-                // Restrict element to stay within preview wrapper boundaries
-                const maxLeft = wrapperRect.width - rect.width;
-                const maxTop = wrapperRect.height - rect.height;
+                // Restrict element to stay within preview wrapper boundaries (unscaled width: 342, height: 216)
+                const maxLeft = 342 - el.offsetWidth;
+                const maxTop = 216 - el.offsetHeight;
 
                 newLeftPx = Math.max(0, Math.min(newLeftPx, maxLeft));
                 newTopPx = Math.max(0, Math.min(newTopPx, maxTop));
