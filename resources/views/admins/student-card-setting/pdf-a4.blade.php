@@ -133,7 +133,6 @@
                                         <div class="element" style="
                                             top: {{ $layout['title']['top'] ?? 5 }}mm;
                                             left: {{ $layout['title']['left'] ?? 45 }}mm;
-                                            width: {{ 86 - ($layout['title']['left'] ?? 45) }}mm;
                                             color: {{ $layout['title']['color'] ?? '#FFFF00' }};
                                             font-size: {{ $layout['title']['font_size'] ?? 12 }}pt;
                                             font-weight: {{ $layout['title']['font_weight'] ?? 'bold' }};
@@ -151,7 +150,6 @@
                                         <div class="element" style="
                                             top: {{ $layout['subtitle']['top'] ?? 10 }}mm;
                                             left: {{ $layout['subtitle']['left'] ?? 45 }}mm;
-                                            width: {{ 86 - ($layout['subtitle']['left'] ?? 45) }}mm;
                                             color: {{ $layout['subtitle']['color'] ?? '#FFFFFF' }};
                                             font-size: {{ $layout['subtitle']['font_size'] ?? 10 }}pt;
                                             font-weight: {{ $layout['subtitle']['font_weight'] ?? 'bold' }};

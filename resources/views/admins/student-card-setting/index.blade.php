@@ -138,7 +138,6 @@
                                             <div id="prevTitle" class="draggable-element" data-element="title" style="position:absolute;
                                                 top:{{ ($layout['title']['top'] ?? 5) * 4 }}px;
                                                 left:{{ ($layout['title']['left'] ?? 45) * 4 }}px;
-                                                width:{{ (86 - ($layout['title']['left'] ?? 45)) * 4 }}px;
                                                 color:{{ $layout['title']['color'] ?? '#FFFF00' }};
                                                 font-size:{{ ($layout['title']['font_size'] ?? 12) * 1.2 }}px;
                                                 font-weight:{{ $layout['title']['font_weight'] ?? 'bold' }};
@@ -151,7 +150,6 @@
                                             <div id="prevSubtitle" class="draggable-element" data-element="subtitle" style="position:absolute;
                                                 top:{{ ($layout['subtitle']['top'] ?? 10) * 4 }}px;
                                                 left:{{ ($layout['subtitle']['left'] ?? 45) * 4 }}px;
-                                                width:{{ (86 - ($layout['subtitle']['left'] ?? 45)) * 4 }}px;
                                                 color:{{ $layout['subtitle']['color'] ?? '#FFFFFF' }};
                                                 font-size:{{ ($layout['subtitle']['font_size'] ?? 10) * 1.2 }}px;
                                                 font-weight:{{ $layout['subtitle']['font_weight'] ?? 'bold' }};
@@ -637,10 +635,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 let newTopPx = startTopPx + dy;
 
                 // Restrict element to stay within preview wrapper boundaries
-                let maxLeft = wrapperRect.width - rect.width;
-                if (elementKey === 'title' || elementKey === 'subtitle') {
-                    maxLeft = wrapperRect.width - 20;
-                }
+                const maxLeft = wrapperRect.width - rect.width;
                 const maxTop = wrapperRect.height - rect.height;
 
                 newLeftPx = Math.max(0, Math.min(newLeftPx, maxLeft));
@@ -653,11 +648,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 // Update DOM element style
                 el.style.left = (newLeftMm * SCALE) + 'px';
                 el.style.top = (newTopMm * SCALE) + 'px';
-
-                // Specific case for title & subtitle width auto-scaling
-                if (elementKey === 'title' || elementKey === 'subtitle') {
-                    el.style.width = ((86 - newLeftMm) * SCALE) + 'px';
-                }
 
                 // Update hidden inputs
                 const inputTop = document.querySelector(`input[name="layout[${elementKey}][top]"]`);
@@ -703,9 +693,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     break;
                 case 'left':
                     target.style.left = (parseFloat(val) * SCALE) + 'px';
-                    if (el === 'title' || el === 'subtitle') {
-                        target.style.width = ((86 - parseFloat(val)) * SCALE) + 'px';
-                    }
                     break;
                 case 'width':
                     target.style.width = (parseFloat(val) * SCALE) + 'px';
