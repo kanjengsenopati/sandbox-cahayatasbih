@@ -483,7 +483,7 @@ function initializeRekapTable() {
                                     '<th class="px-3">Nominal</th>' +
                                     '<th class="px-3 text-center">Status</th>' +
                                     '<th class="px-3 text-center">Aksi</th>' +
-                                </tr>' +
+                                '</tr>' +
                             '</thead>' +
                             '<tbody>';
 
