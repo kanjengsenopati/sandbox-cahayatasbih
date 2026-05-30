@@ -44,6 +44,9 @@ jobs:
             echo "=== Running Migrations ==="
             php artisan migrate --force
 
+            echo "=== Creating Storage Symlink ==="
+            php artisan storage:link || echo "Storage link may already exist"
+
             echo "=== Clearing Cache ==="
             php artisan config:clear
             php artisan cache:clear

@@ -42,5 +42,7 @@ jobs:
           DB_USERNAME: root
           DB_PASSWORD: root
         run: php artisan migrate -n
+      - name: Create storage symlink
+        run: php artisan storage:link
       - name: Run tests
         run: php artisan test
