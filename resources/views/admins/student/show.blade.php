@@ -99,8 +99,8 @@
                                     <div class="d-flex align-items-start gap-5 px-4 pt-5">
                                         <div class="d-flex flex-column align-items-center justify-content-center gap-3">
                                             <img class="img_profile"
-                                                src="{{ $student->avatar ? asset($student->avatar) : asset('/assets/media/avatars/default.png') }}"
-                                                alt="Avatar User">
+                                                src="{{ $student->avatar_url ?? asset('assets/media/avatars/default.png') }}"
+                                                onerror="this.src='{{ asset('assets/media/avatars/default.png') }}'" alt="Avatar User">
                                             <span class="badge badge-secondary">
                                                 Kelas {{ $student->classroom->name ?? 'Belum diatur' }}</span>
                                             @can ('Edit Santri')

@@ -15,7 +15,7 @@
         <div class="absolute top-0 right-0 w-24 h-24 bg-blue-50 rounded-full -mr-12 -mt-12"></div>
         <div class="relative z-10">
             <div class="relative inline-block mb-6">
-                <img src="{{ url($user->avatar ?: 'assets/media/avatars/default.png') }}" class="w-24 h-24 rounded-[32px] object-cover border-4 border-white shadow-xl" alt="">
+                <img src="{{ $user->avatar_url ?? asset('assets/media/avatars/default.png') }}" class="w-24 h-24 rounded-[32px] object-cover border-4 border-white shadow-xl" onerror="this.src='{{ asset('assets/media/avatars/default.png') }}'" alt="">
                 <button class="absolute -bottom-2 -right-2 w-8 h-8 bg-blue-600 rounded-xl text-white text-xs shadow-lg border-2 border-white flex items-center justify-center">
                     <i class="fas fa-camera"></i>
                 </button>

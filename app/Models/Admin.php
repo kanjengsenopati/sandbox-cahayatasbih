@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Traits\HasAvatarUrl;
 use App\Traits\LogActivityTrait;
 use App\Traits\UuidTrait;
 use Spatie\Permission\Traits\HasRoles;
@@ -14,7 +15,7 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 
 class Admin extends Authenticatable
 {
-    use HasFactory, HasRoles, UuidTrait, SoftDeletes;
+    use HasFactory, HasRoles, UuidTrait, SoftDeletes, HasAvatarUrl;
 
     /**
      * The attributes that are mass assignable.
@@ -43,6 +44,10 @@ class Admin extends Authenticatable
     protected $hidden = [
         'password',
         'remember_token',
+    ];
+
+    protected $appends = [
+        'avatar_url',
     ];
 
     /**

@@ -18,7 +18,7 @@
                 <button class="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center text-white backdrop-blur-md">
                     <i class="fas fa-bell"></i>
                 </button>
-                <img src="{{ url(auth('wali')->user()->avatar ?: 'assets/media/avatars/default.png') }}" class="w-10 h-10 rounded-xl object-cover border-2 border-white/20" alt="">
+                <img src="{{ auth('wali')->user()->avatar_url ?? asset('assets/media/avatars/default.png') }}" class="w-10 h-10 rounded-xl object-cover border-2 border-white/20" onerror="this.src='{{ asset('assets/media/avatars/default.png') }}'" alt="">
             </div>
         </div>
 
@@ -28,7 +28,7 @@
             <div class="flex justify-between items-start mb-6">
                 <div class="flex items-center gap-4">
                     <div class="relative">
-                        <img src="{{ url($activeStudent->avatar ?: 'assets/media/avatars/default.png') }}" class="w-14 h-14 rounded-2xl object-cover border-2 border-white" alt="">
+                        <img src="{{ $activeStudent->avatar_url ?? asset('assets/media/avatars/default.png') }}" class="w-14 h-14 rounded-2xl object-cover border-2 border-white" onerror="this.src='{{ asset('assets/media/avatars/default.png') }}'" alt="">
                         <div class="absolute -bottom-1 -right-1 w-5 h-5 bg-emerald-500 rounded-full border-2 border-white flex items-center justify-center text-[10px] text-white">
                             <i class="fas fa-check"></i>
                         </div>
@@ -169,7 +169,7 @@
         <div class="space-y-3 max-h-[60vh] overflow-y-auto no-scrollbar pb-6">
             @foreach($students as $student)
             <a href="{{ route('wali.switch-student', $student->id) }}" class="flex items-center gap-4 p-4 rounded-3xl border-2 {{ $activeStudent && $activeStudent->id == $student->id ? 'border-blue-600 bg-blue-50' : 'border-slate-50 bg-slate-50/50' }} active:scale-[0.98] transition-all">
-                <img src="{{ url($student->avatar ?: 'assets/media/avatars/default.png') }}" class="w-14 h-14 rounded-2xl object-cover" alt="">
+                <img src="{{ $student->avatar_url ?? asset('assets/media/avatars/default.png') }}" class="w-14 h-14 rounded-2xl object-cover" onerror="this.src='{{ asset('assets/media/avatars/default.png') }}'" alt="">
                 <div class="flex-1">
                     <div class="text-slate-900 font-bold leading-tight">{{ $student->name }}</div>
                     <div class="text-slate-500 text-xs font-medium">{{ $student->classroom->name ?? 'Tanpa Kelas' }}</div>

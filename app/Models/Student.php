@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Traits\HasAvatarUrl;
 use App\Traits\UuidTrait;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Auth;
@@ -16,7 +17,7 @@ class Student extends Model
     const STATUS_GRADUATED = "GRADUATED";
     const STATUS_TRANSFERRED = "TRANSFERRED";
     const STATUS_DROPPED_OUT = "DROPPED_OUT";
-    use HasFactory, SoftDeletes;
+    use HasFactory, SoftDeletes, HasAvatarUrl;
 
     protected $keyType = 'string';
     public $incrementing = false;

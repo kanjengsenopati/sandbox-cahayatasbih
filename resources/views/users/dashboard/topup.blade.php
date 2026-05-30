@@ -30,7 +30,7 @@
 
     <!-- Active Student Summary -->
     <div class="card-premium flex items-center gap-4 mb-8">
-        <img src="{{ url($activeStudent->avatar ?: 'assets/media/avatars/default.png') }}" class="w-12 h-12 rounded-xl object-cover border-2 border-slate-50" alt="">
+        <img src="{{ $activeStudent->avatar_url ?? asset('assets/media/avatars/default.png') }}" class="w-12 h-12 rounded-xl object-cover border-2 border-slate-50" onerror="this.src='{{ asset('assets/media/avatars/default.png') }}'" alt="">
         <div>
             <div class="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-0.5">Top Up Untuk</div>
             <div class="text-base font-bold text-slate-900">{{ $activeStudent->name }}</div>

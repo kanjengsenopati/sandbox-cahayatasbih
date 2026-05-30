@@ -225,8 +225,8 @@
                                     <div class="d-flex align-items-start gap-5 px-4 pt-5">
                                         <div class="d-flex flex-column align-items-center justify-content-center gap-3">
                                             {{-- <img class="img_profile"
-                                                src="{{ $user->avatar ? asset($user->avatar) : asset('/assets/media/avatars/default.png') }}"
-                                                alt="Avatar User">
+                                                src="{{ $user->avatar_url ?? asset('assets/media/avatars/default.png') }}"
+                                                onerror="this.src='{{ asset('assets/media/avatars/default.png') }}'" alt="Avatar User">
                                             <span class="badge badge-secondary"><img style="width: 16px"
                                                     src="{{ asset($user->level->badge) }}" alt="">
                                                 Level {{ $user->level->name }}</span> --}}
@@ -284,8 +284,8 @@
                                     <div class="d-flex align-items-start gap-5 px-4 pt-5">
                                         <div class="d-flex flex-column align-items-center justify-content-center gap-3">
                                             {{-- <img class="img_profile"
-                                                src="{{ $user->avatar ? asset($user->avatar) : asset('/assets/media/avatars/default.png') }}"
-                                                alt="Avatar User">
+                                                src="{{ $user->avatar_url ?? asset('assets/media/avatars/default.png') }}"
+                                                onerror="this.src='{{ asset('assets/media/avatars/default.png') }}'" alt="Avatar User">
                                             <span class="badge badge-secondary"><img style="width: 16px"
                                                     src="{{ asset($user->level->badge) }}" alt="">
                                                 Level {{ $user->level->name }}</span> --}}
@@ -368,8 +368,8 @@
                                     <div class="d-flex align-items-start gap-5 px-4 pt-5">
                                         <div class="d-flex flex-column align-items-center justify-content-center gap-3">
                                             {{-- <img class="img_profile"
-                                                src="{{ $user->avatar ? asset($user->avatar) : asset('/assets/media/avatars/default.png') }}"
-                                                alt="Avatar User">
+                                                src="{{ $user->avatar_url ?? asset('assets/media/avatars/default.png') }}"
+                                                onerror="this.src='{{ asset('assets/media/avatars/default.png') }}'" alt="Avatar User">
                                             <span class="badge badge-secondary"><img style="width: 16px"
                                                     src="{{ asset($user->level->badge) }}" alt="">
                                                 Level {{ $user->level->name }}</span> --}}
