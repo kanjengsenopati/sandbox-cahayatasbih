@@ -78,8 +78,8 @@ class StudentController extends Controller
                     $studentName = $data?->name ? $data->name : '-';
                     $className = $data->classroom?->name ? $data->classroom->name : '-';
 
-                    // Check if avatar exists, if not, use default avatar
-                    $avatarUrl = $data?->avatar ? $data->avatar : asset('assets/media/avatars/default.png');
+                    // Use avatar_url accessor for proper absolute URL
+                    $avatarUrl = $data->avatar_url ?? asset('assets/media/avatars/default.png');
 
                     // Return HTML structure for the card with avatar, name, and class
                     return '<div class="student-card" style="display: flex; align-items: center; gap: 10px;">
@@ -94,8 +94,8 @@ class StudentController extends Controller
                     $userName = $data->user ? $data->user?->name : '-';
                     $userPhone = $data->user ? $data->user?->phone : '-';
 
-                    // Check if avatar exists, if not, use default avatar
-                    $avatarUrl = $data->user?->avatar ? $data->user?->avatar : asset('assets/media/avatars/default.png');
+                    // Use avatar_url accessor for proper absolute URL
+                    $avatarUrl = $data->user?->avatar_url ?? asset('assets/media/avatars/default.png');
 
                     // Check if the phone number starts with '0'
                     $whatsappLink = null;

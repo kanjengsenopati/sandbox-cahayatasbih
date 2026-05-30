@@ -98,7 +98,7 @@ class CtMobileAuthController extends Controller
             'name' => $request->name,
             'phone' => $request->phone,
             'password' => Hash::make($request->password),
-            'avatar' => 'assets/media/avatars/default_avatar.jpg',
+            'avatar' => 'assets/media/avatars/default.png',
         ];
 
         try {

@@ -53,7 +53,7 @@ class WaliAuthController extends Controller
         $userData['password'] = Hash::make($userData['password']); // Use Hash facade for better readability
 
         // Set a default avatar
-        $userData['avatar'] = 'assets/media/avatars/default_avatar.jpg';
+        $userData['avatar'] = 'assets/media/avatars/default.png';
 
         try {
             // Use DB transaction to ensure data integrity
