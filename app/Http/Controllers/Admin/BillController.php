@@ -151,18 +151,18 @@ class BillController extends Controller
         $statusBadge = "<span class='badge badge-{$statusClass[$transaction->status]}'>{$statusText}</span>";
 
         if ($transaction->activeProof) {
-            if ($transaction->activeProof->ocr_status === 'processed') {
+            if ($transaction->activeProof?->ocr_status === 'processed') {
                 $statusBadge .= "<br><span class='badge badge-light-success mt-1' style='font-size: 0.7rem;'><i class='fas fa-robot text-success me-1'></i> AI Checked</span>";
-                if ($transaction->activeProof->ocr_amount) {
-                    $statusBadge .= "<br><small class='text-muted'>Nominal Terbaca: Rp " . number_format($transaction->activeProof->ocr_amount, 0, ',', '.') . "</small>";
+                if ($transaction->activeProof?->ocr_amount) {
+                    $statusBadge .= "<br><small class='text-muted'>Nominal Terbaca: Rp " . number_format($transaction->activeProof?->ocr_amount, 0, ',', '.') . "</small>";
                 }
-            } elseif ($transaction->activeProof->ocr_status === 'failed') {
+            } elseif ($transaction->activeProof?->ocr_status === 'failed') {
                 $statusBadge .= "<br><span class='badge badge-light-danger mt-1' style='font-size: 0.7rem;'><i class='fas fa-robot text-danger me-1'></i> AI Gagal Membaca</span>";
             }
         }
 
         if ($transaction->status === Transaction::STATUS_REJECTED && $transaction->activeProof) {
-            $statusBadge .= "<br><small class='text-danger d-block mt-1 fw-bold'>{$transaction->activeProof->note}</small>";
+            $statusBadge .= "<br><small class='text-danger d-block mt-1 fw-bold'>{$transaction->activeProof?->note}</small>";
         }
 
         return $statusBadge;
@@ -192,7 +192,7 @@ class BillController extends Controller
         }
 
         $action .= "</select>
-                <input type='hidden' name='note' id='note-{$transaction->id}' value='{$transaction->activeProof->note}'>
+                <input type='hidden' name='note' id='note-{$transaction->id}' value='{$transaction->activeProof?->note}'>
                 <button class='btn btn-primary btn-sm mt-2' onclick='saveStatus(\"{$transaction->id}\")'>Simpan</button>";
 
         return $action;
