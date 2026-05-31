@@ -733,20 +733,30 @@ class PaymentRateController extends Controller
         $school = School::findOrFail($request->school_id);
         $billTypeId = $request->bill_type_id;
 
-        $students = Student::whereHas('classroom', function($q) use ($school) {
-            $q->where('school_id', $school->id);
-        })
-        ->when($billTypeId, function($q) use ($billTypeId) {
-            $q->whereDoesntHave('bills', function($subQ) use ($billTypeId) {
-                $subQ->where('bill_type_id', $billTypeId);
-            });
-        })
-        ->where('status', 'ACTIVE')
-        ->orderBy('name')
-        ->select('id', 'name', 'nis')
-        ->get();
+        $students = Student::with('user:id,jamaah_status')
+            ->whereHas('classroom', function($q) use ($school) {
+                $q->where('school_id', $school->id);
+            })
+            ->when($billTypeId, function($q) use ($billTypeId) {
+                $q->whereDoesntHave('bills', function($subQ) use ($billTypeId) {
+                    $subQ->where('bill_type_id', $billTypeId);
+                });
+            })
+            ->where('status', 'ACTIVE')
+            ->orderBy('name')
+            ->select('id', 'name', 'nis', 'user_id')
+            ->get();
 
-        return response()->json($students);
+        $formatted = $students->map(function($student) {
+            return [
+                'id' => $student->id,
+                'name' => $student->name,
+                'nis' => $student->nis,
+                'jamaah_status' => $student->user?->jamaah_status ?? 'UNKNOWN'
+            ];
+        });
+
+        return response()->json($formatted);
     }
 
     /**

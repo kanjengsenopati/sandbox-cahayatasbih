@@ -36,6 +36,7 @@ class UserImportData implements ToCollection, WithHeadingRow
                     'password' => bcrypt($row['password']),
                     'phone' => $phone ?? null,
                     'gender' => null,
+                    'jamaah_status' => 'UNKNOWN',
                 ]);
             }
         }

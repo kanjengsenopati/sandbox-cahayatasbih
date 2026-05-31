@@ -59,6 +59,14 @@ class UserController extends Controller
                     ? '<span class="badge badge-success">Aktif</span>'
                     : '<span class="badge badge-danger">Tidak Aktif</span>';
             })
+            ->addColumn('jamaah_status', function ($data) {
+                if ($data->jamaah_status === 'JAMAAH') {
+                    return '<span class="badge badge-light-success fw-bolder px-2 py-1">Jamaah</span>';
+                } elseif ($data->jamaah_status === 'NON_JAMAAH') {
+                    return '<span class="badge badge-light-danger fw-bolder px-2 py-1">Non Jamaah</span>';
+                }
+                return '<span class="badge badge-light-warning fw-bolder px-2 py-1">Tidak Tahu</span>';
+            })
             ->editColumn('last_login', function ($data) {
                 return $data->last_login
                     ? Carbon::parse($data->last_login)->diffForHumans()
@@ -67,7 +75,7 @@ class UserController extends Controller
             ->addColumn('action', function ($data) {
                 return $this->generateActionButtons($data);
             })
-            ->rawColumns(['action', 'name', 'status'])
+            ->rawColumns(['action', 'name', 'status', 'jamaah_status'])
             ->make(true);
     }
 

@@ -116,6 +116,7 @@
                                     <th>Email</th>
                                     <th>Jenis Kelamin</th>
                                     <th>Status</th>
+                                    <th>Status Jamaah</th>
                                     <th>Akses</th>
                                     <th class="text-center min-w-100px">Aksi</th>
                                 </tr>
@@ -236,6 +237,10 @@
                 {
                     data: 'status',
                     name: 'status',
+                },
+                {
+                    data: 'jamaah_status',
+                    name: 'jamaah_status',
                 },
                 {
                     data: 'last_login',

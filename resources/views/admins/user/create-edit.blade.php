@@ -168,6 +168,24 @@
                                     <!--end::Input-->
                                 </div>
                                 <div class="fv-row mb-6">
+                                    <!--begin::Label-->
+                                    <label class="fs-6 fw-bold form-label" for="jamaah_status">
+                                        <span class="required">Status Jamaah</span>
+                                        <i class="fas fa-exclamation-circle ms-1 fs-7" data-bs-toggle="tooltip"
+                                            title="Status Keanggotaan Jamaah Wali Santri"></i>
+                                    </label>
+                                    <!--end::Label-->
+                                    <!--begin::Input-->
+                                    <select name="jamaah_status" class="form-select form-select-solid" id="jamaah_status"
+                                        data-control="select2" data-placeholder="Pilih Status Jamaah"
+                                        data-hide-search="true" required>
+                                        <option value="UNKNOWN" {{ (old('jamaah_status') ?? @$user->jamaah_status) == 'UNKNOWN' ? 'selected' : '' }}>Tidak Tahu (Default)</option>
+                                        <option value="JAMAAH" {{ (old('jamaah_status') ?? @$user->jamaah_status) == 'JAMAAH' ? 'selected' : '' }}>Jamaah</option>
+                                        <option value="NON_JAMAAH" {{ (old('jamaah_status') ?? @$user->jamaah_status) == 'NON_JAMAAH' ? 'selected' : '' }}>Non Jamaah</option>
+                                    </select>
+                                    <!--end::Input-->
+                                </div>
+                                <div class="fv-row mb-6">
                                     <x-form.image-upload label="Avatar" name="avatar" :value="@$user->avatar ?? null" />
                                 </div>
 
@@ -234,6 +252,9 @@
         required: true,
         maxlength: 255,
         },
+        jamaah_status: {
+        required: true,
+        },
         },
         messages: {
         name: {
@@ -259,6 +280,9 @@
         phone: {
         required: "No Handphone harus diisi",
         maxlength: "No Handphone maksimal 255 karakter",
+        },
+        jamaah_status: {
+        required: "Status Jamaah harus diisi",
         },
         },
         errorElement: "div",

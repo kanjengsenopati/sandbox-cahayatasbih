@@ -34,6 +34,7 @@ class User extends Authenticatable
         'password',
         'last_login',
         'status',
+        'jamaah_status',
         'kta',
         'member_branch',
         'member_group',

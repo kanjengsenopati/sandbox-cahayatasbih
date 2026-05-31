@@ -392,6 +392,17 @@
                                             Select All
                                         </button>
                                     </div>
+                                    <div class="d-flex flex-wrap gap-2 mb-3">
+                                        <button type="button" class="btn btn-sm btn-light-success py-1 px-2 fs-8" id="btn-select-all-jamaah">
+                                            Pilih Semua Jamaah
+                                        </button>
+                                        <button type="button" class="btn btn-sm btn-light-danger py-1 px-2 fs-8" id="btn-select-all-non-jamaah">
+                                            Pilih Semua Non Jamaah
+                                        </button>
+                                        <button type="button" class="btn btn-sm btn-light-warning py-1 px-2 fs-8" id="btn-select-all-tidak-tahu">
+                                            Pilih Semua Tidak Tahu
+                                        </button>
+                                    </div>
                                     <select name="students[]" class="form-select form-select-solid"
                                         id="student_id" data-control="select2" data-close-on-select="false"
                                         data-placeholder="Ketik untuk mencari siswa..." data-allow-clear="true"
@@ -469,8 +480,15 @@
                     .then(function(response) {
                          if (response.data.length > 0) {
                             $.each(response.data, function(key, value) {
-                                var text = value.name + ' - ' + (value.nis ?? '');
+                                var statusText = 'TIDAK TAHU';
+                                if (value.jamaah_status === 'JAMAAH') {
+                                    statusText = 'JAMAAH';
+                                } else if (value.jamaah_status === 'NON_JAMAAH') {
+                                    statusText = 'NON JAMAAH';
+                                }
+                                var text = value.name + ' - ' + (value.nis ?? '-') + ' [' + statusText + ']';
                                 var newOption = new Option(text, value.id, false, false);
+                                $(newOption).attr('data-jamaah-status', value.jamaah_status);
                                 studentSelect.append(newOption);
                             });
                             studentSelect.trigger('change');
@@ -585,6 +603,50 @@
                 });
                 return false;
             }
+        });
+
+        // 5. Handle Jamaah Status Filtering and Selecting in Students Multi-Select
+        function toggleStudentsByStatus(status) {
+            var select = $('#student_id');
+            var currentValues = select.val() || [];
+            
+            // Temukan semua opsi dengan status target
+            var targetOptionValues = [];
+            select.find('option[data-jamaah-status="' + status + '"]').each(function() {
+                targetOptionValues.push($(this).val());
+            });
+
+            if (targetOptionValues.length === 0) return;
+
+            // Cek apakah semua opsi status ini sudah dipilih
+            var allSelected = targetOptionValues.every(function(val) {
+                return currentValues.includes(val);
+            });
+
+            var newValues;
+            if (allSelected) {
+                // Deselect
+                newValues = currentValues.filter(function(val) {
+                    return !targetOptionValues.includes(val);
+                });
+            } else {
+                // Select All (gabung unik)
+                newValues = Array.from(new Set(currentValues.concat(targetOptionValues)));
+            }
+
+            select.val(newValues).trigger('change');
+        }
+
+        $('#btn-select-all-jamaah').click(function() {
+            toggleStudentsByStatus('JAMAAH');
+        });
+
+        $('#btn-select-all-non-jamaah').click(function() {
+            toggleStudentsByStatus('NON_JAMAAH');
+        });
+
+        $('#btn-select-all-tidak-tahu').click(function() {
+            toggleStudentsByStatus('UNKNOWN');
         });
     });
 </script>
