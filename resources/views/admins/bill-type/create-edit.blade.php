@@ -68,111 +68,116 @@
                                 @csrf
                                 <x-form.put-method />
                                 <!--begin::Input group-->
-                                <div class="fv-row mb-7">
-                                    <!--begin::Label-->
-                                    <label class="fs-6 fw-bold form-label mt-3" for="bill_item_id">
-                                        <span class="required">POS</span>
-                                        <i class="fas fa-exclamation-circle ms-1 fs-7" data-bs-toggle="tooltip"
-                                            title="Pilih Pos Bayar (Wajib)"></i>
-                                    </label>
-                                    <!--end::Label-->
-                                    <!--begin::Input-->
-                                    <x-form.bill-item :value="@$billType->bill_item_id"
-                                        class="form-control form-control-solid" />
-                                    <!--end::Input-->
-                                </div>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="fv-row mb-7">
+                                            <!--begin::Label-->
+                                            <label class="fs-6 fw-bold form-label mt-3" for="bill_item_id">
+                                                <span class="required">POS</span>
+                                                <i class="fas fa-exclamation-circle ms-1 fs-7" data-bs-toggle="tooltip"
+                                                    title="Pilih Pos Bayar (Wajib)"></i>
+                                            </label>
+                                            <!--end::Label-->
+                                            <!--begin::Input-->
+                                            <x-form.bill-item :value="@$billType->bill_item_id"
+                                                class="form-control form-control-solid" />
+                                            <!--end::Input-->
+                                        </div>
 
-                                <div class="fv-row mb-7">
-                                    <!--begin::Label-->
-                                    <label class="fs-6 fw-bold form-label mt-3" for="academic_year_id">
-                                        <span class="required">Tahun Ajaran</span>
-                                        <i class="fas fa-exclamation-circle ms-1 fs-7" data-bs-toggle="tooltip"
-                                            title="Pilih Pos Bayar (Wajib)"></i>
-                                    </label>
-                                    <!--end::Label-->
-                                    <!--begin::Input-->
-                                    <x-form.academic-year :value="@$billType->academic_year_id"
-                                        class="form-control form-control-solid" />
-                                    <!--end::Input-->
-                                </div>
+                                        <div class="fv-row mb-7">
+                                            <!--begin::Label-->
+                                            <label class="fs-6 fw-bold form-label mt-3" for="academic_year_id">
+                                                <span class="required">Tahun Ajaran</span>
+                                                <i class="fas fa-exclamation-circle ms-1 fs-7" data-bs-toggle="tooltip"
+                                                    title="Pilih Pos Bayar (Wajib)"></i>
+                                            </label>
+                                            <!--end::Label-->
+                                            <!--begin::Input-->
+                                            <x-form.academic-year :value="@$billType->academic_year_id"
+                                                class="form-control form-control-solid" />
+                                            <!--end::Input-->
+                                        </div>
 
+                                        <div class="fv-row mb-7">
+                                            <!--begin::Label-->
+                                            <label class="fs-6 fw-bold form-label mt-3" for="name_select">
+                                                <span class="required">Nama Pembayaran</span>
+                                                <i class="fas fa-exclamation-circle ms-1 fs-7" data-bs-toggle="tooltip"
+                                                    title="Pilih Nama Pembayaran (Wajib)"></i>
+                                            </label>
+                                            <!--end::Label-->
+                                            <!--begin::Input-->
+                                            <select name="name_select" id="name_select" class="form-select form-select-solid" required>
+                                                <option value="">Pilih Nama Pembayaran</option>
+                                                @foreach ($paymentNames as $pName)
+                                                    <option value="{{ $pName }}" {{ (old('name_select') ?? @$billType->name) == $pName ? 'selected' : '' }}>
+                                                        {{ $pName }}
+                                                    </option>
+                                                @endforeach
+                                                <option value="Lainnya" {{ old('name_select') == 'Lainnya' || (@$billType && !in_array($billType->name, $paymentNames)) ? 'selected' : '' }}>Lainnya</option>
+                                            </select>
+                                        </div>
 
-                                <div class="fv-row mb-7">
-                                    <!--begin::Label-->
-                                    <label class="fs-6 fw-bold form-label mt-3" for="name_select">
-                                        <span class="required">Nama Pembayaran</span>
-                                        <i class="fas fa-exclamation-circle ms-1 fs-7" data-bs-toggle="tooltip"
-                                            title="Pilih Nama Pembayaran (Wajib)"></i>
-                                    </label>
-                                    <!--end::Label-->
-                                    <!--begin::Input-->
-                                    <select name="name_select" id="name_select" class="form-select form-select-solid" required>
-                                        <option value="">Pilih Nama Pembayaran</option>
-                                        @foreach ($paymentNames as $pName)
-                                            <option value="{{ $pName }}" {{ (old('name_select') ?? @$billType->name) == $pName ? 'selected' : '' }}>
-                                                {{ $pName }}
-                                            </option>
-                                        @endforeach
-                                        <option value="Lainnya" {{ old('name_select') == 'Lainnya' || (@$billType && !in_array($billType->name, $paymentNames)) ? 'selected' : '' }}>Lainnya</option>
-                                    </select>
-                                </div>
-
-                                <div class="fv-row mb-7" id="name_custom_container" style="display: none;">
-                                    <!--begin::Label-->
-                                    <label class="fs-6 fw-bold form-label mt-3" for="name_custom">
-                                        <span class="required">Jenis Baru (Nama Pembayaran)</span>
-                                        <i class="fas fa-exclamation-circle ms-1 fs-7" data-bs-toggle="tooltip"
-                                            title="Masukkan jenis baru (Wajib)"></i>
-                                    </label>
-                                    <!--end::Label-->
-                                    <!--begin::Input-->
-                                    <input type="text" name="name_custom" id="name_custom" class="form-control form-control-solid"
-                                        placeholder="Masukkan Jenis baru"
-                                        value="{{ old('name_custom') ?? (@$billType && !in_array($billType->name, $paymentNames) ? $billType->name : '') }}" />
-                                </div>
-
-                                <div class="fv-row mb-7">
-                                    <!--begin::Label-->
-                                    <label class="fs-6 fw-bold form-label mt-3" for="name">
-                                        <span class="required">Tipe Pembayaran</span>
-                                        <i class="fas fa-exclamation-circle ms-1 fs-7" data-bs-toggle="tooltip"
-                                            title="Pilih Tipe Pembayaran (Wajib)"></i>
-                                    </label>
-                                    <!--end::Label-->
-                                    <!--begin::Input-->
-                                    <select name="type" id="type" class="form-select form-select-solid" required>
-                                        <option value="">Pilih Tipe Pembayaran</option>
-                                        <option value="MONTHLY" {{ old('type')=='MONTHLY' ? 'selected' : (@$billType->
-                                            type == 'MONTHLY' ? 'selected' : '') }}>Bulanan</option>
-                                        <option value="OTHER" {{ old('type')=='OTHER' ? 'selected' : (@$billType->
-                                            type == 'OTHER' ? 'selected' : '') }}>Bebas</option>
-                                    </select>
-                                </div>
-
-                                <div class="fv-row mb-7">
-                                    <!--begin::Label-->
-                                    <label class="fs-6 fw-bold form-label mt-3" for="billTypeBank">
-                                        <span class="required">Bank Pembayaran</span>
-                                        <i class="fas fa-exclamation-circle ms-1 fs-7" data-bs-toggle="tooltip"
-                                            title="Pilih Bank Pembayaran (Wajib)"></i>
-                                    </label>
-                                    <!--end::Label-->
-                                    <!--begin::Input-->
-                                    <select name="bank_ids[]" class="form-select form-select-solid mb-3" id="select2"
-                                        data-control="select2" data-allow-clear="true" multiple="multiple" required>
-                                        @foreach ($banks as $bank)
-                                        <option value="{{ $bank->id }}" @if (in_array(@$bank->id,
-                                            @$bankValue)) selected @endif>
-                                            {{ $bank->name ?? '' }} - {{ $bank->account_number ?? '' }} -
-                                            {{ $bank->account_name ?? '' }}</option>
-                                        @endforeach
-                                    </select>
-                                    <div class="d-flex gap-3">
-                                        <input type="checkbox" id="select-all">
-                                        <label style="font-size: 14px;" class="cursor-pointer" for="select-all">Select
-                                            All</label>
+                                        <div class="fv-row mb-7" id="name_custom_container" style="display: none;">
+                                            <!--begin::Label-->
+                                            <label class="fs-6 fw-bold form-label mt-3" for="name_custom">
+                                                <span class="required">Jenis Baru (Nama Pembayaran)</span>
+                                                <i class="fas fa-exclamation-circle ms-1 fs-7" data-bs-toggle="tooltip"
+                                                    title="Masukkan jenis baru (Wajib)"></i>
+                                            </label>
+                                            <!--end::Label-->
+                                            <!--begin::Input-->
+                                            <input type="text" name="name_custom" id="name_custom" class="form-control form-control-solid"
+                                                placeholder="Masukkan Jenis baru"
+                                                value="{{ old('name_custom') ?? (@$billType && !in_array($billType->name, $paymentNames) ? $billType->name : '') }}" />
+                                        </div>
                                     </div>
-                                    <!--end::Input-->
+
+                                    <div class="col-md-6">
+                                        <div class="fv-row mb-7">
+                                            <!--begin::Label-->
+                                            <label class="fs-6 fw-bold form-label mt-3" for="type">
+                                                <span class="required">Tipe Pembayaran</span>
+                                                <i class="fas fa-exclamation-circle ms-1 fs-7" data-bs-toggle="tooltip"
+                                                    title="Pilih Tipe Pembayaran (Wajib)"></i>
+                                            </label>
+                                            <!--end::Label-->
+                                            <!--begin::Input-->
+                                            <select name="type" id="type" class="form-select form-select-solid" required>
+                                                <option value="">Pilih Tipe Pembayaran</option>
+                                                <option value="MONTHLY" {{ old('type')=='MONTHLY' ? 'selected' : (@$billType->
+                                                    type == 'MONTHLY' ? 'selected' : '') }}>Bulanan</option>
+                                                <option value="OTHER" {{ old('type')=='OTHER' ? 'selected' : (@$billType->
+                                                    type == 'OTHER' ? 'selected' : '') }}>Bebas</option>
+                                            </select>
+                                        </div>
+
+                                        <div class="fv-row mb-7">
+                                            <!--begin::Label-->
+                                            <label class="fs-6 fw-bold form-label mt-3" for="billTypeBank">
+                                                <span class="required">Bank Pembayaran</span>
+                                                <i class="fas fa-exclamation-circle ms-1 fs-7" data-bs-toggle="tooltip"
+                                                    title="Pilih Bank Pembayaran (Wajib)"></i>
+                                            </label>
+                                            <!--end::Label-->
+                                            <!--begin::Input-->
+                                            <select name="bank_ids[]" class="form-select form-select-solid mb-3" id="select2"
+                                                data-control="select2" data-allow-clear="true" multiple="multiple" required>
+                                                @foreach ($banks as $bank)
+                                                <option value="{{ $bank->id }}" @if (in_array(@$bank->id,
+                                                    @$bankValue)) selected @endif>
+                                                    {{ $bank->name ?? '' }} - {{ $bank->account_number ?? '' }} -
+                                                    {{ $bank->account_name ?? '' }}</option>
+                                                @endforeach
+                                            </select>
+                                            <div class="d-flex gap-3">
+                                                <input type="checkbox" id="select-all">
+                                                <label style="font-size: 14px;" class="cursor-pointer" for="select-all">Select
+                                                    All</label>
+                                            </div>
+                                            <!--end::Input-->
+                                        </div>
+                                    </div>
                                 </div>
                                 <!--end::Input group-->
                                 <!--begin::Separator-->
