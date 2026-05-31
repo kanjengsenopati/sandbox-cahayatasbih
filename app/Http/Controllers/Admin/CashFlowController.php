@@ -66,8 +66,8 @@ class CashFlowController extends Controller
                 })
                 ->addColumn('proof', function ($data) {
                     if ($data->proof_of_payment) {
-                        return "<a href='" . asset($data->proof_of_payment) . "' data-lightbox='proof' data-title='Bukti Pembayaran'>
-                        <img src='" . asset($data->proof_of_payment) . "' alt='Proof of Payment' class='img-thumbnail' style='cursor: pointer; width: 100px; height: 100px; object-fit: cover;' />
+                        return "<a href='" . storage_asset($data->proof_of_payment) . "' data-lightbox='proof' data-title='Bukti Pembayaran'>
+                        <img src='" . storage_asset($data->proof_of_payment) . "' alt='Proof of Payment' class='img-thumbnail' style='cursor: pointer; width: 100px; height: 100px; object-fit: cover;' />
                     </a>";
                     }
                     return '-';

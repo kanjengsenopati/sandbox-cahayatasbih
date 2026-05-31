@@ -33,7 +33,7 @@ class TransactionProof extends Model
     {
         if (!$value) return null;
         if (filter_var($value, FILTER_VALIDATE_URL)) return $value;
-        return asset('storage/' . $value);
+        return storage_asset($value);
     }
 
     public function getProofImageUrlAttribute()
@@ -41,7 +41,7 @@ class TransactionProof extends Model
         $value = $this->attributes['proof_image'] ?? null;
         if (!$value) return null;
         if (filter_var($value, FILTER_VALIDATE_URL)) return $value;
-        return asset('storage/' . $value);
+        return storage_asset($value);
     }
 
     public function getTranslatedStatusAttribute()

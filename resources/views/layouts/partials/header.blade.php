@@ -48,6 +48,7 @@
                         <div class="cursor-pointer symbol symbol-30px symbol-md-40px" data-kt-menu-trigger="click"
                             data-kt-menu-attach="parent" data-kt-menu-placement="bottom-end">
                             <img src="{{ auth()->user()->avatar_url ?? asset('assets/media/avatars/150-26.jpg') }}"
+                                onerror="this.src='{{ asset('assets/media/avatars/150-26.jpg') }}'"
                                 alt="user" />
                         </div>
                         <!--begin::Menu-->
@@ -59,7 +60,8 @@
                                     <!--begin::Avatar-->
                                     <div class="symbol symbol-50px me-5">
                                         <img alt="Logo"
-                                            src="{{ auth()->user()->avatar_url ?? asset('assets/media/avatars/150-26.jpg') }}" />
+                                            src="{{ auth()->user()->avatar_url ?? asset('assets/media/avatars/150-26.jpg') }}"
+                                            onerror="this.src='{{ asset('assets/media/avatars/150-26.jpg') }}'" />
                                     </div>
                                     <!--end::Avatar-->
                                     <!--begin::Username-->

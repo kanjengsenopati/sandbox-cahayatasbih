@@ -142,26 +142,8 @@ class Student extends Model
         return $this->list_status[$this->status] ?? '-';
     }
 
-    /**
-     * Get the full URL for the student's avatar.
-     * Handles both relative paths (storage/...) and full URLs.
-     */
-    public function getAvatarUrlAttribute(): ?string
-    {
-        $value = $this->attributes['avatar'] ?? null;
-        if (!$value) return null;
-        if (filter_var($value, FILTER_VALIDATE_URL)) {
-            return $value;
-        }
 
-        $path = ltrim($value, '/');
-
-        if (str_starts_with($path, 'storage/') || str_starts_with($path, 'assets/')) {
-            return asset($path);
-        }
-
-        return asset('storage/' . $path);
-    }
+    // getAvatarUrlAttribute() is provided by HasAvatarUrl trait
 
     // on create generate barcode
     public static function boot()
