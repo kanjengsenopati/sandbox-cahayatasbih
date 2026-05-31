@@ -93,7 +93,7 @@ class StudentCardSettingController extends Controller
                 'left' => (float) $request->input('layout.photo.left', 5),
                 'width' => (float) $request->input('layout.photo.width', 18),
                 'height' => (float) $request->input('layout.photo.height', 24),
-                'border_radius' => (float) $request->input('layout.photo.border_radius', 2),
+                'border_radius' => (float) $request->input('layout.photo.border_radius', 0),
             ],
             'name' => [
                 'show' => $request->boolean('layout.name.show'),
@@ -289,7 +289,8 @@ class StudentCardSettingController extends Controller
                     $qr = QrCode::size(100)->generate($student->barcode);
                     $codeHtml = '<img src="data:image/svg+xml;base64,' . base64_encode($qr) . '" />';
                 } else {
-                    $codeHtml = $dns1d->getBarcodeHTML($student->barcode, 'C128', 1.2, 25);
+                    // Render barcode as a base64 PNG image so it can stretch to 100% width of the container dynamically
+                    $codeHtml = '<img src="data:image/png;base64,' . $dns1d->getBarcodePNG($student->barcode, 'C128', 2, 40) . '" style="width: 100%; height: 100%; display: block;" />';
                 }
             }
 

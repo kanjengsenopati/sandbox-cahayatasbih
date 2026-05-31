@@ -70,7 +70,7 @@ class ApplicationSetting extends Model
                 'left' => 5,
                 'width' => 18,
                 'height' => 24,
-                'border_radius' => 2,
+                'border_radius' => 0,
             ],
             'name' => [
                 'show' => true,

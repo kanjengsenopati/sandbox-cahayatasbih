@@ -242,7 +242,7 @@
                                                             left:{{ ($layout['photo']['left'] ?? 5) * 4 }}px;
                                                             width:{{ ($layout['photo']['width'] ?? 18) * 4 }}px;
                                                             height:{{ ($layout['photo']['height'] ?? 24) * 4 }}px;
-                                                            border-radius:{{ ($layout['photo']['border_radius'] ?? 2) * 4 }}px;
+                                                            border-radius:0px;
                                                             background:#fff;opacity:0.85;
                                                             display:flex;align-items:center;justify-content:center;
                                                             {{ ($layout['photo']['show'] ?? false) ? '' : 'display:none;' }}
@@ -329,7 +329,7 @@
                                                 'logo' => ['label' => 'Logo Lembaga', 'icon' => 'fa-image', 'fields' => ['show','width','height']],
                                                 'title' => ['label' => 'Judul Kartu', 'icon' => 'fa-heading', 'fields' => ['show','text','color','font_size','text_align','font_weight','font_family']],
                                                 'subtitle' => ['label' => 'Subtitle / Nama Lembaga', 'icon' => 'fa-font', 'fields' => ['show','text','color','font_size','text_align','font_weight','font_family']],
-                                                'photo' => ['label' => 'Foto Santri', 'icon' => 'fa-user-circle', 'fields' => ['show','width','height','border_radius']],
+                                                'photo' => ['label' => 'Foto Santri', 'icon' => 'fa-user-circle', 'fields' => ['show','width','height']],
                                                 'name' => ['label' => 'Nama Santri', 'icon' => 'fa-id-card', 'fields' => ['show','color','font_size','font_weight','font_family']],
                                                 'nis' => ['label' => 'NIS', 'icon' => 'fa-hashtag', 'fields' => ['show','color','font_size','font_weight','font_family']],
                                                 'classroom' => ['label' => 'Kelas', 'icon' => 'fa-school', 'fields' => ['show','color','font_size','font_weight','font_family']],

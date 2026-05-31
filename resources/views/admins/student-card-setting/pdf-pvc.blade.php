@@ -63,7 +63,7 @@
         }
         .code-box {
             background-color: #ffffff;
-            padding: 2px;
+            padding: 0;
             text-align: center;
         }
         .code-box img {
@@ -144,7 +144,7 @@
                     left: {{ $layout['photo']['left'] ?? 5 }}mm;
                     width: {{ $layout['photo']['width'] ?? 18 }}mm;
                     height: {{ $layout['photo']['height'] ?? 24 }}mm;
-                    border-radius: {{ $layout['photo']['border_radius'] ?? 2 }}mm;
+                    border-radius: 0mm;
                     @if($student->avatar && file_exists(public_path($student->avatar)))
                         background-image: url('{{ public_path($student->avatar) }}');
                     @elseif($student->avatar)
