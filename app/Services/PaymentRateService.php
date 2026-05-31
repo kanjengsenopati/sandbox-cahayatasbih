@@ -86,13 +86,13 @@ class PaymentRateService
         foreach ($classrooms as $classroom) {
             foreach ($classroom->students as $student) {
                 // Filter by gender if set
-                if ($paymentRate->gender && $student->gender !== $paymentRate->gender) {
+                if ($paymentRate->gender && !in_array($student->gender, explode(',', $paymentRate->gender))) {
                     continue;
                 }
                 // Filter by jamaah status if set
                 if ($paymentRate->jamaah_status) {
                     $student->loadMissing('user');
-                    if (($student->user?->jamaah_status ?? 'UNKNOWN') !== $paymentRate->jamaah_status) {
+                    if (!in_array($student->user?->jamaah_status ?? 'UNKNOWN', explode(',', $paymentRate->jamaah_status))) {
                         continue;
                     }
                 }
@@ -137,13 +137,13 @@ class PaymentRateService
         foreach ($classrooms as $classroom) {
             foreach ($classroom->students as $student) {
                 // Filter by gender if set
-                if ($paymentRate->gender && $student->gender !== $paymentRate->gender) {
+                if ($paymentRate->gender && !in_array($student->gender, explode(',', $paymentRate->gender))) {
                     continue;
                 }
                 // Filter by jamaah status if set
                 if ($paymentRate->jamaah_status) {
                     $student->loadMissing('user');
-                    if (($student->user?->jamaah_status ?? 'UNKNOWN') !== $paymentRate->jamaah_status) {
+                    if (!in_array($student->user?->jamaah_status ?? 'UNKNOWN', explode(',', $paymentRate->jamaah_status))) {
                         continue;
                     }
                 }

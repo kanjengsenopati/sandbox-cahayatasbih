@@ -328,32 +328,40 @@
                             </div>
 
                             <!-- Status Wali -->
+                            @if($billType->use_wali_filter)
                             <div class="mb-5">
                                 <label class="form-label fw-bold fs-6 text-gray-700">Status Wali</label>
-                                <select name="jamaah_status" class="form-select form-select-solid {{ isset($paymentRate) ? 'bg-light' : '' }}" id="jamaah_status"
-                                    data-control="select2" data-placeholder="Semua Status (Siswa Umum & Jamaah)" data-allow-clear="true" {{ isset($paymentRate) ? 'disabled' : '' }}>
-                                    <option value="">Semua Status (Siswa Umum & Jamaah)</option>
-                                    <option value="JAMAAH" {{ (isset($paymentRate) && $paymentRate->jamaah_status == 'JAMAAH') ? 'selected' : '' }}>Jamaah</option>
-                                    <option value="NON_JAMAAH" {{ (isset($paymentRate) && $paymentRate->jamaah_status == 'NON_JAMAAH') ? 'selected' : '' }}>Non Jamaah</option>
+                                <select name="jamaah_status[]" class="form-select form-select-solid {{ isset($paymentRate) ? 'bg-light' : '' }}" id="jamaah_status"
+                                    data-control="select2" data-placeholder="Semua Status (Siswa Umum & Jamaah)" data-allow-clear="true" multiple="multiple" {{ isset($paymentRate) ? 'disabled' : '' }}>
+                                    @php
+                                        $jamaahValues = isset($paymentRate) ? explode(',', $paymentRate->jamaah_status) : [];
+                                    @endphp
+                                    <option value="JAMAAH" {{ in_array('JAMAAH', $jamaahValues) ? 'selected' : '' }}>Jamaah</option>
+                                    <option value="NON_JAMAAH" {{ in_array('NON_JAMAAH', $jamaahValues) ? 'selected' : '' }}>Non Jamaah</option>
                                 </select>
                                 @if(isset($paymentRate))
                                     <input type="hidden" name="jamaah_status" value="{{ $paymentRate->jamaah_status }}">
                                 @endif
                             </div>
+                            @endif
 
                             <!-- Jenis Kelamin -->
+                            @if($billType->use_gender_filter)
                             <div class="mb-5">
                                 <label class="form-label fw-bold fs-6 text-gray-700">Jenis Kelamin</label>
-                                <select name="gender" class="form-select form-select-solid {{ isset($paymentRate) ? 'bg-light' : '' }}" id="gender"
-                                    data-control="select2" data-placeholder="Semua Gender (Putra & Putri)" data-allow-clear="true" {{ isset($paymentRate) ? 'disabled' : '' }}>
-                                    <option value="">Semua Gender (Putra & Putri)</option>
-                                    <option value="L" {{ (isset($paymentRate) && $paymentRate->gender == 'L') ? 'selected' : '' }}>Laki-laki (Santri Putra)</option>
-                                    <option value="P" {{ (isset($paymentRate) && $paymentRate->gender == 'P') ? 'selected' : '' }}>Perempuan (Santri Putri)</option>
+                                <select name="gender[]" class="form-select form-select-solid {{ isset($paymentRate) ? 'bg-light' : '' }}" id="gender"
+                                    data-control="select2" data-placeholder="Semua Gender (Putra & Putri)" data-allow-clear="true" multiple="multiple" {{ isset($paymentRate) ? 'disabled' : '' }}>
+                                    @php
+                                        $genderValues = isset($paymentRate) ? explode(',', $paymentRate->gender) : [];
+                                    @endphp
+                                    <option value="L" {{ in_array('L', $genderValues) ? 'selected' : '' }}>Laki-laki (Santri Putra)</option>
+                                    <option value="P" {{ in_array('P', $genderValues) ? 'selected' : '' }}>Perempuan (Santri Putri)</option>
                                 </select>
                                 @if(isset($paymentRate))
                                     <input type="hidden" name="gender" value="{{ $paymentRate->gender }}">
                                 @endif
                             </div>
+                            @endif
 
                             <!-- EDIT MODE: READ-ONLY TARGETS -->
                             @if(isset($paymentRate))
@@ -389,24 +397,28 @@
                                 <!-- CREATE MODE: INPUT TARGETS -->
                                 <!-- Kelas Wrapper -->
                                 <div class="mb-5" id="classroom_wrapper">
-                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <div class="d-flex justify-content-between align-items-center mb-3">
                                         <label class="form-label fw-bold fs-6 text-gray-700 mb-0">Kelas</label>
                                         <button type="button" class="btn btn-sm btn-light-primary py-1 px-2 fs-8" id="btn-select-all-classrooms">
                                             Select All
                                         </button>
                                     </div>
-                                    <select name="classrooms[]" class="form-select form-select-solid"
-                                        id="classroom_id" data-control="select2" data-close-on-select="false"
-                                        data-placeholder="Ketik untuk mencari kelas..." data-allow-clear="true"
-                                        multiple="multiple">
-                                        @if(isset($classrooms))
-                                        @foreach ($classrooms as $classroom)
-                                        <option value="{{ $classroom->id }}">
-                                            {{ $classroom->name }}
-                                        </option>
-                                        @endforeach
-                                        @endif
-                                    </select>
+                                    <div class="border rounded p-4 bg-light-body" style="max-height: 250px; overflow-y: auto;">
+                                        <div class="row row-cols-2 row-cols-sm-3 row-cols-md-4 g-2" id="classroom_grid_container">
+                                            @if(isset($classrooms))
+                                            @foreach ($classrooms as $classroom)
+                                            <div class="col">
+                                                <label class="btn btn-outline btn-outline-dashed btn-outline-default d-flex align-items-center justify-content-start p-3 w-100 h-100 cursor-pointer text-start" style="border-radius: 8px;">
+                                                    <div class="form-check form-check-custom form-check-solid form-check-sm me-3">
+                                                        <input class="form-check-input classroom-checkbox" type="checkbox" name="classrooms[]" value="{{ $classroom->id }}" />
+                                                    </div>
+                                                    <span class="fs-7 fw-bold text-gray-800">{{ $classroom->name }}</span>
+                                                </label>
+                                            </div>
+                                            @endforeach
+                                            @endif
+                                        </div>
+                                    </div>
                                     <div class="form-text mt-2">
                                         Pilih satu atau lebih kelas yang akan dikenakan tarif ini.
                                     </div>
@@ -515,10 +527,10 @@
         // 1. Handle School Change -> Fetch Classrooms AND Students
         $('#school_id').on('change', function() {
             var school_id = $(this).val();
-            var classroomSelect = $('#classroom_id');
+            var gridContainer = $('#classroom_grid_container');
 
             // Clear classrooms
-            classroomSelect.empty().trigger('change');
+            gridContainer.empty();
 
             if (school_id) {
                 // Fetch Classrooms
@@ -528,10 +540,19 @@
                     .then(function(response) {
                         if (response.data.length > 0) {
                             $.each(response.data, function(key, value) {
-                                var newOption = new Option(value.name, value.id, false, false);
-                                classroomSelect.append(newOption);
+                                var cardHtml = `
+                                    <div class="col">
+                                        <label class="btn btn-outline btn-outline-dashed btn-outline-default d-flex align-items-center justify-content-start p-3 w-100 h-100 cursor-pointer text-start" style="border-radius: 8px;">
+                                            <div class="form-check form-check-custom form-check-solid form-check-sm me-3">
+                                                <input class="form-check-input classroom-checkbox" type="checkbox" name="classrooms[]" value="${value.id}" />
+                                            </div>
+                                            <span class="fs-7 fw-bold text-gray-800">${value.name}</span>
+                                        </label>
+                                    </div>
+                                `;
+                                gridContainer.append(cardHtml);
                             });
-                            classroomSelect.trigger('change');
+                            updateSelectAllButtonText();
                         }
                     })
                     .catch(function(error) { console.error(error); });
@@ -552,13 +573,11 @@
                 $('#classroom_wrapper').removeClass('d-none');
                 $('#student_wrapper').addClass('d-none');
                 $('#type_helper').text('Tarif akan diterapkan untuk semua siswa dalam kelas yang dipilih.');
-                $('#classroom_id').prop('required', true);
                 $('#student_id').prop('required', false);
             } else {
                  $('#classroom_wrapper').addClass('d-none');
                  $('#student_wrapper').removeClass('d-none');
                  $('#type_helper').text('Tarif hanya akan diterapkan untuk siswa tertentu yang dipilih.');
-                 $('#classroom_id').prop('required', false);
                  $('#student_id').prop('required', true);
             }
         });
@@ -569,42 +588,40 @@
             $('input[name="type"][value="' + initialType + '"]').trigger('change');
         }
 
+        function updateSelectAllButtonText() {
+            var checkboxes = $('.classroom-checkbox');
+            var checkedCount = checkboxes.filter(':checked').length;
+            var totalCount = checkboxes.length;
+
+            if (totalCount > 0 && checkedCount === totalCount) {
+                $('#btn-select-all-classrooms').text('Deselect All');
+            } else {
+                $('#btn-select-all-classrooms').text('Select All');
+            }
+        }
+
         // 2. Handle 'Select All' Classrooms
         $('#btn-select-all-classrooms').click(function() {
-            var select = $('#classroom_id');
-            if (select.find('option').length === 0) {
+            var checkboxes = $('.classroom-checkbox');
+            if (checkboxes.length === 0) {
                 return;
             }
 
-            var allValues = [];
-            select.find('option').each(function() {
-                allValues.push($(this).val());
-            });
+            var checkedCount = checkboxes.filter(':checked').length;
+            var totalCount = checkboxes.length;
 
-            // Check if all are currently selected
-            var currentSelection = select.val() || [];
-            if (currentSelection.length === allValues.length) {
-                // Deselect all
-                select.val(null).trigger('change');
+            if (checkedCount === totalCount) {
+                checkboxes.prop('checked', false);
                 $(this).text('Select All');
             } else {
-                // Select all
-                select.val(allValues).trigger('change');
+                checkboxes.prop('checked', true);
                 $(this).text('Deselect All');
             }
         });
 
         // Toggle button text based on selection
-        $('#classroom_id').on('change', function() {
-            var select = $(this);
-            var totalOptions = select.find('option').length;
-            var selectedOptions = (select.val() || []).length;
-
-            if (totalOptions > 0 && totalOptions === selectedOptions) {
-                $('#btn-select-all-classrooms').text('Deselect All');
-            } else {
-                $('#btn-select-all-classrooms').text('Select All');
-            }
+        $(document).on('change', '.classroom-checkbox', function() {
+            updateSelectAllButtonText();
         });
 
         // 3. Handle Auto-Fill Months when Main Price changes
@@ -649,6 +666,25 @@
                     }
                 });
                 return false;
+            }
+
+            // Additional target checks for regular type
+            var type = $('input[name="type"]:checked').val();
+            if (type === 'REGULAR') {
+                var classChecked = $('.classroom-checkbox:checked').length > 0;
+                if (!classChecked) {
+                    e.preventDefault();
+                    Swal.fire({
+                        text: "Harap pilih minimal 1 kelas.",
+                        icon: "warning",
+                        buttonsStyling: false,
+                        confirmButtonText: "Ok, Mengerti",
+                        customClass: {
+                            confirmButton: "btn btn-primary"
+                        }
+                    });
+                    return false;
+                }
             }
         });
 

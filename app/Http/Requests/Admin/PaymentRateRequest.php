@@ -25,8 +25,10 @@ class PaymentRateRequest extends FormRequest
             'bill_type_id' => 'required|exists:bill_types,id',
             'price' => 'required|numeric',
             'type' => 'required|in:REGULAR,TRANSFER',
-            'gender' => 'nullable|in:L,P',
-            'jamaah_status' => 'nullable|in:JAMAAH,NON_JAMAAH',
+            'gender' => 'nullable|array',
+            'gender.*' => 'in:L,P',
+            'jamaah_status' => 'nullable|array',
+            'jamaah_status.*' => 'in:JAMAAH,NON_JAMAAH',
         ];
 
         // Validation for CREATE only

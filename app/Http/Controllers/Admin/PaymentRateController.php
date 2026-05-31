@@ -60,8 +60,8 @@ class PaymentRateController extends Controller
             $paymentRate = $billType->paymentRates()->create([
                 'amount' => $request->price,
                 'type' => $request->type,
-                'gender' => $request->gender,
-                'jamaah_status' => $request->jamaah_status,
+                'gender' => $request->gender ? implode(',', $request->gender) : null,
+                'jamaah_status' => $request->jamaah_status ? implode(',', $request->jamaah_status) : null,
             ]);
 
             // 3. Attach Classrooms
@@ -103,11 +103,11 @@ class PaymentRateController extends Controller
                 $students = Student::whereIn('classroom_id', $request->classrooms)
                     ->where('status', 'ACTIVE')
                     ->when($request->gender, function($q) use ($request) {
-                        $q->where('gender', $request->gender);
+                        $q->whereIn('gender', $request->gender);
                     })
                     ->when($request->jamaah_status, function($q) use ($request) {
                         $q->whereHas('user', function($userQ) use ($request) {
-                            $userQ->where('jamaah_status', $request->jamaah_status);
+                            $userQ->whereIn('jamaah_status', $request->jamaah_status);
                         });
                     })
                     ->get(['id', 'classroom_id', 'gender', 'user_id']);
@@ -115,11 +115,11 @@ class PaymentRateController extends Controller
                 $students = Student::whereIn('id', $request->students)
                     ->where('status', 'ACTIVE')
                     ->when($request->gender, function($q) use ($request) {
-                        $q->where('gender', $request->gender);
+                        $q->whereIn('gender', $request->gender);
                     })
                     ->when($request->jamaah_status, function($q) use ($request) {
                         $q->whereHas('user', function($userQ) use ($request) {
-                            $userQ->where('jamaah_status', $request->jamaah_status);
+                            $userQ->whereIn('jamaah_status', $request->jamaah_status);
                         });
                     })
                     ->get(['id', 'classroom_id', 'gender', 'user_id']);
@@ -400,6 +400,13 @@ class PaymentRateController extends Controller
             $billType = BillType::findOrFail($request->bill_type_id);
             $paymentRate = PaymentRate::with('paymentRateItems')->findOrFail($id);
 
+            // Update Parent Type, Gender, and Jamaah Status (Support arrays)
+            $paymentRate->update([
+                'type' => $request->type,
+                'gender' => $request->gender ? implode(',', $request->gender) : null,
+                'jamaah_status' => $request->jamaah_status ? implode(',', $request->jamaah_status) : null,
+            ]);
+
             // ------------------------------------------------------------------
             // A. HANDLE RELATIONSHIPS (ADD/REMOVE TARGETS)
             // ------------------------------------------------------------------
@@ -492,11 +499,11 @@ class PaymentRateController extends Controller
                 $students = Student::whereIn('classroom_id', $allClassroomIds)
                                    ->where('status', 'ACTIVE') 
                                    ->when($paymentRate->gender, function($q) use ($paymentRate) {
-                                       $q->where('gender', $paymentRate->gender);
+                                       $q->whereIn('gender', explode(',', $paymentRate->gender));
                                    })
                                    ->when($paymentRate->jamaah_status, function($q) use ($paymentRate) {
                                        $q->whereHas('user', function($userQ) use ($paymentRate) {
-                                           $userQ->where('jamaah_status', $paymentRate->jamaah_status);
+                                           $userQ->whereIn('jamaah_status', explode(',', $paymentRate->jamaah_status));
                                        });
                                    })
                                    ->get();
@@ -505,11 +512,11 @@ class PaymentRateController extends Controller
                 $students = Student::whereIn('id', $allStudentIds)
                                    ->where('status', 'ACTIVE')
                                    ->when($paymentRate->gender, function($q) use ($paymentRate) {
-                                       $q->where('gender', $paymentRate->gender);
+                                       $q->whereIn('gender', explode(',', $paymentRate->gender));
                                    })
                                    ->when($paymentRate->jamaah_status, function($q) use ($paymentRate) {
                                        $q->whereHas('user', function($userQ) use ($paymentRate) {
-                                           $userQ->where('jamaah_status', $paymentRate->jamaah_status);
+                                           $userQ->whereIn('jamaah_status', explode(',', $paymentRate->jamaah_status));
                                        });
                                    })
                                    ->get();
@@ -518,9 +525,6 @@ class PaymentRateController extends Controller
             // ------------------------------------------------------------------
             // C. UPDATE NOMINALS & SYNC BILLS (Create/Update Logic from before)
             // ------------------------------------------------------------------
-            
-            // Update Parent Type (Should be same, but explicitly safe)
-            $paymentRate->update(['type' => $request->type]);
 
             // Prepare for loop
             $totalAmount = 0;
@@ -764,11 +768,13 @@ class PaymentRateController extends Controller
                 });
             })
             ->when($gender, function($q) use ($gender) {
-                $q->where('gender', $gender);
+                $genderArray = is_array($gender) ? $gender : explode(',', $gender);
+                $q->whereIn('gender', $genderArray);
             })
             ->when($jamaahStatus, function($q) use ($jamaahStatus) {
-                $q->whereHas('user', function($userQ) use ($jamaahStatus) {
-                    $userQ->where('jamaah_status', $jamaahStatus);
+                $jamaahStatusArray = is_array($jamaahStatus) ? $jamaahStatus : explode(',', $jamaahStatus);
+                $q->whereHas('user', function($userQ) use ($jamaahStatusArray) {
+                    $userQ->whereIn('jamaah_status', $jamaahStatusArray);
                 });
             })
             ->where('status', 'ACTIVE')
@@ -992,11 +998,11 @@ class PaymentRateController extends Controller
             $students = Student::whereIn('classroom_id', $classroomIds)
                 ->where('status', 'ACTIVE')
                 ->when($paymentRate->gender, function($q) use ($paymentRate) {
-                    $q->where('gender', $paymentRate->gender);
+                    $q->whereIn('gender', explode(',', $paymentRate->gender));
                 })
                 ->when($paymentRate->jamaah_status, function($q) use ($paymentRate) {
                     $q->whereHas('user', function($userQ) use ($paymentRate) {
-                        $userQ->where('jamaah_status', $paymentRate->jamaah_status);
+                        $userQ->whereIn('jamaah_status', explode(',', $paymentRate->jamaah_status));
                     });
                 })
                 ->get();
@@ -1005,11 +1011,11 @@ class PaymentRateController extends Controller
             $students = Student::whereIn('id', $studentIds)
                 ->where('status', 'ACTIVE')
                 ->when($paymentRate->gender, function($q) use ($paymentRate) {
-                    $q->where('gender', $paymentRate->gender);
+                    $q->whereIn('gender', explode(',', $paymentRate->gender));
                 })
                 ->when($paymentRate->jamaah_status, function($q) use ($paymentRate) {
                     $q->whereHas('user', function($userQ) use ($paymentRate) {
-                        $userQ->where('jamaah_status', $paymentRate->jamaah_status);
+                        $userQ->whereIn('jamaah_status', explode(',', $paymentRate->jamaah_status));
                     });
                 })
                 ->get();

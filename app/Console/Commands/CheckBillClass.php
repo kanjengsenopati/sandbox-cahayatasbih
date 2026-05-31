@@ -76,11 +76,11 @@ class CheckBillClass extends Command
                 ->whereIn('classroom_id', $classrooms)
                 ->where('status', 'ACTIVE')
                 ->when($paymentRate->gender, function ($query) use ($paymentRate) {
-                    $query->where('gender', $paymentRate->gender);
+                    $query->whereIn('gender', explode(',', $paymentRate->gender));
                 })
                 ->when($paymentRate->jamaah_status, function ($query) use ($paymentRate) {
                     $query->whereHas('user', function ($userQuery) use ($paymentRate) {
-                        $userQuery->where('jamaah_status', $paymentRate->jamaah_status);
+                        $userQuery->whereIn('jamaah_status', explode(',', $paymentRate->jamaah_status));
                     });
                 })
                 ->get();

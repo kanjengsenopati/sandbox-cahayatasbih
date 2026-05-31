@@ -177,6 +177,26 @@
                                             </div>
                                             <!--end::Input-->
                                         </div>
+
+                                        <div class="fv-row mb-7">
+                                            <label class="fs-6 fw-bold form-label">Fitur Filter Tambahan (Tarif)</label>
+                                            <div class="d-flex flex-column gap-3 mt-2">
+                                                <div class="form-check form-check-custom form-check-solid">
+                                                    <input class="form-check-input" type="checkbox" name="use_wali_filter" id="use_wali_filter" value="1" 
+                                                        {{ (old('use_wali_filter') ?? @$billType->use_wali_filter) ? 'checked' : '' }} />
+                                                    <label class="form-check-label fw-bold text-gray-700 cursor-pointer" for="use_wali_filter">
+                                                        Aktifkan Filter Status Wali Siswa (Jamaah / Non Jamaah)
+                                                    </label>
+                                                </div>
+                                                <div class="form-check form-check-custom form-check-solid">
+                                                    <input class="form-check-input" type="checkbox" name="use_gender_filter" id="use_gender_filter" value="1" 
+                                                        {{ (old('use_gender_filter') ?? @$billType->use_gender_filter) ? 'checked' : '' }} />
+                                                    <label class="form-check-label fw-bold text-gray-700 cursor-pointer" for="use_gender_filter">
+                                                        Aktifkan Filter Jenis Kelamin (Santri Putra / Santri Putri)
+                                                    </label>
+                                                </div>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                                 <!--end::Input group-->

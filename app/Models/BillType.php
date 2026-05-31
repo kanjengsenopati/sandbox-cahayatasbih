@@ -18,6 +18,13 @@ class BillType extends Model
         'academic_year_id',
         'name',
         'type',
+        'use_wali_filter',
+        'use_gender_filter',
+    ];
+
+    protected $casts = [
+        'use_wali_filter' => 'boolean',
+        'use_gender_filter' => 'boolean',
     ];
 
     public function billItem()

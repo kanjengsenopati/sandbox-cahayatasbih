@@ -26,6 +26,8 @@ class BillTypeRequest extends FormRequest
             'type' => 'required|string|in:MONTHLY,OTHER',
             'bill_item_id' => 'required|exists:bill_items,id',
             'academic_year_id' => 'required|exists:academic_years,id',
+            'use_wali_filter' => 'nullable|boolean',
+            'use_gender_filter' => 'nullable|boolean',
         ];
     }
 
@@ -37,6 +39,8 @@ class BillTypeRequest extends FormRequest
         $name = $this->name_select === 'Lainnya' ? $this->name_custom : $this->name_select;
         $this->merge([
             'name' => \Illuminate\Support\Str::upper($name),
+            'use_wali_filter' => $this->boolean('use_wali_filter'),
+            'use_gender_filter' => $this->boolean('use_gender_filter'),
         ]);
     }
 }
