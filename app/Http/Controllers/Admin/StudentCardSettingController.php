@@ -258,7 +258,15 @@ class StudentCardSettingController extends Controller
 
         $setting = ApplicationSetting::first();
         $layout = $setting->student_card_layout ?? ApplicationSetting::getDefaultStudentCardLayout();
-        $background = $setting->student_card_image ? asset($setting->student_card_image) : '';
+        $cardImage = $setting->student_card_image;
+        $background = '';
+        if ($cardImage) {
+            if (file_exists(public_path($cardImage))) {
+                $background = public_path($cardImage);
+            } else {
+                $background = storage_asset($cardImage);
+            }
+        }
         $printLayout = $request->print_layout;
 
         // Log the printing event for each student

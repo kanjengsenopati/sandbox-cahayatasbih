@@ -28,7 +28,7 @@
         .card {
             width: 85.60mm;
             height: 53.98mm;
-            background-image: url('{{ asset($background) }}');
+            background-image: url('{{ storage_asset($background) }}');
             background-size: cover;
             background-position: center;
             position: relative;

@@ -88,7 +88,7 @@
     <div class="col-lg-12">
         <div class="img-upload custom-image-upload">
             <div id="imagepreview{{ $id ?? '' }}" class="img-preview imagepreview"
-                style="background-image: url('{{ asset(@$value) }}');">
+                style="background-image: url('{{ !empty($value) ? storage_asset($value) : '' }}');">
                 <label for="imageupload{{ $id ?? '' }}" class="img-label" id="image-label"><i
                         class="fa fa-upload"></i>UPLOAD</label>
                 <input accept="image/*" type='file' name="{{ $name ?? 'image' }}" class="img-upload"

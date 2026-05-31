@@ -147,6 +147,8 @@
                     border-radius: {{ $layout['photo']['border_radius'] ?? 2 }}mm;
                     @if($student->avatar && file_exists(public_path($student->avatar)))
                         background-image: url('{{ public_path($student->avatar) }}');
+                    @elseif($student->avatar)
+                        background-image: url('{{ storage_asset($student->avatar) }}');
                     @else
                         background-image: url('{{ public_path('assets/media/avatars/blank.png') }}');
                     @endif

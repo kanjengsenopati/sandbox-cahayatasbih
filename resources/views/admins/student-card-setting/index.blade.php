@@ -152,7 +152,7 @@
                                             <label class="form-label fw-bold">Gambar Latar Belakang Kartu</label>
                                             @if($background)
                                                 <div class="mb-3 text-center">
-                                                    <img src="{{ asset($background) }}" class="rounded shadow-sm" style="max-width:100%; height:auto; max-height:150px; object-fit:contain;" />
+                                                    <img src="{{ storage_asset($background) }}" class="rounded shadow-sm" style="max-width:100%; height:auto; max-height:150px; object-fit:contain;" />
                                                 </div>
                                             @endif
                                             <input type="file" name="student_card_image" class="form-control form-control-sm" accept="image/*" id="bgUpload" />
@@ -204,7 +204,7 @@
                                                     <div id="cardPreviewWrapper" style="width:342px; height:216px; position:relative; overflow:hidden; border-radius:10px; box-shadow:0 8px 30px rgba(0,0,0,0.3); background: #ffffff;">
                                                         {{-- Background --}}
                                                         <div id="prevBg" style="position:absolute;inset:0;background-size:cover;background-position:center;
-                                                            @if($background) background-image:url('{{ asset($background) }}'); @else background:linear-gradient(135deg,#1a4731,#10b981); @endif
+                                                            @if($background) background-image:url('{{ storage_asset($background) }}'); @else background:linear-gradient(135deg,#1a4731,#10b981); @endif
                                                         "></div>
 
                                                         {{-- Logo --}}
