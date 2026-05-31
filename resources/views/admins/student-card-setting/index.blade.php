@@ -626,11 +626,21 @@
                                                 <thead class="bg-light">
                                                     <tr class="fw-bolder text-muted">
                                                         <th class="w-25px ps-4"></th>
-                                                        <th>Nama</th>
-                                                        <th>NIS</th>
-                                                        <th>Kelas</th>
-                                                        <th>Sekolah</th>
-                                                        <th>Riwayat Cetak</th>
+                                                        <th class="sortable text-slate-800 cursor-pointer" data-column="name" style="cursor: pointer; user-select: none;">
+                                                            Nama <i class="fa-solid fa-sort fs-9 ms-1 text-slate-400" id="sort-icon-name"></i>
+                                                        </th>
+                                                        <th class="sortable text-slate-800 cursor-pointer" data-column="nis" style="cursor: pointer; user-select: none;">
+                                                            NIS <i class="fa-solid fa-sort fs-9 ms-1 text-slate-400" id="sort-icon-nis"></i>
+                                                        </th>
+                                                        <th class="sortable text-slate-800 cursor-pointer" data-column="classroom" style="cursor: pointer; user-select: none;">
+                                                            Kelas <i class="fa-solid fa-sort fs-9 ms-1 text-slate-400" id="sort-icon-classroom"></i>
+                                                        </th>
+                                                        <th class="sortable text-slate-800 cursor-pointer" data-column="school" style="cursor: pointer; user-select: none;">
+                                                            Sekolah <i class="fa-solid fa-sort fs-9 ms-1 text-slate-400" id="sort-icon-school"></i>
+                                                        </th>
+                                                        <th class="sortable text-slate-800 cursor-pointer" data-column="print_count" style="cursor: pointer; user-select: none;">
+                                                            Riwayat Cetak <i class="fa-solid fa-sort fs-9 ms-1 text-slate-400" id="sort-icon-print_count"></i>
+                                                        </th>
                                                     </tr>
                                                 </thead>
                                                 <tbody id="studentTableBody">
@@ -1001,6 +1011,8 @@ document.addEventListener('DOMContentLoaded', function() {
     // ── Tab 2: Search students (Database Driven, Reactive & Paged) ──
     let currentPage = 1;
     let cetakTabInitialized = false;
+    let sortColumn = 'name';
+    let sortDirection = 'asc';
 
     function fetchStudents(page = 1) {
         currentPage = page;
@@ -1015,6 +1027,8 @@ document.addEventListener('DOMContentLoaded', function() {
         if (query) params.append('q', query);
         params.append('limit', limit);
         params.append('page', page);
+        params.append('sort_by', sortColumn);
+        params.append('sort_dir', sortDirection);
 
         var tbody = document.getElementById('studentTableBody');
         tbody.innerHTML = '<tr><td colspan="6" class="text-center py-10"><span class="spinner-border spinner-border-sm me-2"></span>Memuat data...</td></tr>';
@@ -1161,10 +1175,40 @@ document.addEventListener('DOMContentLoaded', function() {
         fetchStudents(1);
     });
 
+    // ── Sort Event Listeners ──
+    document.querySelectorAll('th.sortable').forEach(function(th) {
+        th.addEventListener('click', function() {
+            var col = this.getAttribute('data-column');
+            if (sortColumn === col) {
+                sortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
+            } else {
+                sortColumn = col;
+                sortDirection = 'asc';
+            }
+            updateSortIcons();
+            fetchStudents(1);
+        });
+    });
+
+    function updateSortIcons() {
+        document.querySelectorAll('th.sortable i').forEach(function(icon) {
+            icon.className = 'fa-solid fa-sort fs-9 ms-1 text-slate-400';
+        });
+        var activeIcon = document.getElementById('sort-icon-' + sortColumn);
+        if (activeIcon) {
+            if (sortDirection === 'asc') {
+                activeIcon.className = 'fa-solid fa-sort-up fs-9 ms-1 text-primary';
+            } else {
+                activeIcon.className = 'fa-solid fa-sort-down fs-9 ms-1 text-primary';
+            }
+        }
+    }
+
     // Inisialisasi data hanya saat tab "Cetak Kartu" pertama kali dibuka
     function initCetakTab() {
         if (cetakTabInitialized) return;
         cetakTabInitialized = true;
+        updateSortIcons();
 
         var initialSchoolId = document.getElementById('filterSchool').value;
         if (initialSchoolId) {

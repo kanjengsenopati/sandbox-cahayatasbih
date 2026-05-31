@@ -161,32 +161,58 @@ class StudentCardSettingController extends Controller
                 $eagerLoads[] = 'cardPrints.admin';
             }
 
-            $query = Student::with($eagerLoads)->hasSchool();
-
+            $query = Student::with($eagerLoads)->hasSchool()->select('students.*');
+ 
             if ($request->filled('school_id')) {
                 $query->whereHas('classroom', function ($q) use ($request) {
                     $q->where('school_id', $request->school_id);
                 });
             }
-
+ 
             if ($request->filled('classroom_id')) {
-                $query->where('classroom_id', $request->classroom_id);
+                $query->where('students.classroom_id', $request->classroom_id);
             }
-
+ 
             if ($request->filled('q')) {
                 $search = $request->q;
                 $query->where(function ($q) use ($search) {
-                    $q->where('name', 'like', '%' . $search . '%')
-                      ->orWhere('nis', 'like', '%' . $search . '%');
+                    $q->where('students.name', 'like', '%' . $search . '%')
+                      ->orWhere('students.nis', 'like', '%' . $search . '%');
                 });
             }
-
+ 
             $limit = (int) $request->input('limit', 10);
             if (!in_array($limit, [10, 20, 40])) {
                 $limit = 10;
             }
 
-            $students = $query->orderBy('name')->paginate($limit);
+            // Sorting logic
+            $sortBy = $request->input('sort_by', 'name');
+            $sortDir = $request->input('sort_dir', 'asc');
+            $sortDirection = in_array(strtolower($sortDir), ['asc', 'desc']) ? strtolower($sortDir) : 'asc';
+
+            if ($sortBy === 'classroom') {
+                $query->leftJoin('classrooms', 'students.classroom_id', '=', 'classrooms.id')
+                      ->select('students.*')
+                      ->orderBy('classrooms.name', $sortDirection);
+            } elseif ($sortBy === 'school') {
+                $query->leftJoin('classrooms', 'students.classroom_id', '=', 'classrooms.id')
+                      ->leftJoin('schools', 'classrooms.school_id', '=', 'schools.id')
+                      ->select('students.*')
+                      ->orderBy('schools.name', $sortDirection);
+            } elseif ($sortBy === 'print_count') {
+                if ($hasCardPrintsTable) {
+                    $query->withCount('cardPrints')
+                          ->orderBy('card_prints_count', $sortDirection);
+                } else {
+                    $query->orderBy('students.name', $sortDirection);
+                }
+            } else {
+                $sortColumn = $sortBy === 'nis' ? 'nis' : 'name';
+                $query->orderBy('students.' . $sortColumn, $sortDirection);
+            }
+ 
+            $students = $query->paginate($limit);
 
             return response()->json([
                 'current_page' => $students->currentPage(),
