@@ -404,12 +404,12 @@
                                         </button>
                                     </div>
                                     <div class="border rounded p-4 bg-light-body" style="max-height: 250px; overflow-y: auto;">
-                                        <div class="row row-cols-2 row-cols-sm-3 row-cols-md-4 g-2" id="classroom_grid_container">
+                                        <div class="row row-cols-3 g-2" id="classroom_grid_container">
                                             @if(isset($classrooms))
                                             @foreach ($classrooms as $classroom)
                                             <div class="col">
-                                                <label class="btn btn-outline btn-outline-dashed btn-outline-default d-flex align-items-center justify-content-start p-3 w-100 h-100 cursor-pointer text-start" style="border-radius: 8px;">
-                                                    <div class="form-check form-check-custom form-check-solid form-check-sm me-3">
+                                                <label class="btn btn-outline btn-outline-dashed btn-outline-default d-flex align-items-center justify-content-start p-2 w-100 h-100 cursor-pointer text-start" style="border-radius: 8px;">
+                                                    <div class="form-check form-check-custom form-check-solid form-check-sm me-2">
                                                         <input class="form-check-input classroom-checkbox" type="checkbox" name="classrooms[]" value="{{ $classroom->id }}" />
                                                     </div>
                                                     <span class="fs-7 fw-bold text-gray-800">{{ $classroom->name }}</span>
@@ -542,8 +542,8 @@
                             $.each(response.data, function(key, value) {
                                 var cardHtml = `
                                     <div class="col">
-                                        <label class="btn btn-outline btn-outline-dashed btn-outline-default d-flex align-items-center justify-content-start p-3 w-100 h-100 cursor-pointer text-start" style="border-radius: 8px;">
-                                            <div class="form-check form-check-custom form-check-solid form-check-sm me-3">
+                                        <label class="btn btn-outline btn-outline-dashed btn-outline-default d-flex align-items-center justify-content-start p-2 w-100 h-100 cursor-pointer text-start" style="border-radius: 8px;">
+                                            <div class="form-check form-check-custom form-check-solid form-check-sm me-2">
                                                 <input class="form-check-input classroom-checkbox" type="checkbox" name="classrooms[]" value="${value.id}" />
                                             </div>
                                             <span class="fs-7 fw-bold text-gray-800">${value.name}</span>
