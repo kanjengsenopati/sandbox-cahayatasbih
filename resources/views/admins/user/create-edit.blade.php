@@ -290,6 +290,63 @@
         error.addClass("invalid-feedback");
         element.closest(".fv-row").append(error);
         },
+        submitHandler: function (form) {
+            var name = $('#name').val();
+            var phone = $('#phone').val();
+            var userId = $('input[name="id"]').val();
+            var submitButton = $(form).find('[data-kt-contacts-type="submit"]');
+
+            // Disable submit button and show loading state
+            submitButton.attr('disabled', true);
+            submitButton.find('.indicator-label').hide();
+            submitButton.find('.indicator-progress').show();
+
+            $.ajax({
+                url: '{{ route("user.check-duplicate") }}',
+                type: 'POST',
+                data: {
+                    _token: '{{ csrf_token() }}',
+                    name: name,
+                    phone: phone,
+                    id: userId
+                },
+                success: function(response) {
+                    if (response.duplicate) {
+                        // Reset submit button state to allow user reaction
+                        submitButton.removeAttr('disabled');
+                        submitButton.find('.indicator-label').show();
+                        submitButton.find('.indicator-progress').hide();
+
+                        Swal.fire({
+                            title: 'Data Duplikat Terdeteksi',
+                            text: response.message + '. Apakah Anda yakin tetap ingin menyimpan data ini?',
+                            icon: 'warning',
+                            showCancelButton: true,
+                            confirmButtonText: 'Ya, Tetap Simpan',
+                            cancelButtonText: 'Batal',
+                            customClass: {
+                                confirmButton: 'btn btn-primary',
+                                cancelButton: 'btn btn-active-light'
+                            }
+                        }).then((result) => {
+                            if (result.isConfirmed) {
+                                // Re-enable loading state and submit the form directly
+                                submitButton.attr('disabled', true);
+                                submitButton.find('.indicator-label').hide();
+                                submitButton.find('.indicator-progress').show();
+                                form.submit();
+                            }
+                        });
+                    } else {
+                        form.submit();
+                    }
+                },
+                error: function() {
+                    // Fallback: if AJAX fails, just submit the form
+                    form.submit();
+                }
+            });
+        }
         });
 
 

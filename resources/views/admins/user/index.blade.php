@@ -65,6 +65,56 @@
     <div class="post d-flex flex-column-fluid" id="kt_post">
         <!--begin::Container-->
         <div id="kt_content_container" class="container-xxl">
+            @if(session('import_skipped'))
+            <div class="alert alert-dismissible bg-light-warning d-flex flex-column flex-sm-row p-6 mb-5" style="border-radius: 24px;">
+                <!--begin::Icon-->
+                <span class="position-absolute top-0 end-0 m-3">
+                    <button type="button" class="btn btn-icon btn-sm btn-active-light-warning" data-bs-dismiss="alert">
+                        <i class="fas fa-times text-warning fs-4"></i>
+                    </button>
+                </span>
+                <span class="svg-icon svg-icon-2hx svg-icon-warning me-4 mb-5 mb-sm-0">
+                    <i class="fas fa-exclamation-triangle fs-1 text-warning"></i>
+                </span>
+                <!--end::Icon-->
+
+                <!--begin::Wrapper-->
+                <div class="d-flex flex-column pe-0 pe-sm-10 w-100">
+                    <!--begin::Title-->
+                    <h4 class="fw-bold text-warning mb-2">Beberapa Baris Dilewati (Data Duplikat)</h4>
+                    <!--end::Title-->
+                    <!--begin::Content-->
+                    <span class="text-gray-700 fs-6 mb-4">
+                        Proses impor mendeteksi beberapa data ganda (nomor WA/HP sudah terdaftar). Baris-baris berikut <strong>dilewati otomatis</strong> untuk mencegah kerusakan data:
+                    </span>
+                    <div class="table-responsive">
+                        <table class="table table-sm table-row-dashed table-row-gray-300 align-middle">
+                            <thead>
+                                <tr class="fw-bolder text-warning fs-7 text-uppercase gs-0">
+                                    <th>Baris Excel</th>
+                                    <th>Nama</th>
+                                    <th>No WA (Phone)</th>
+                                    <th>Keterangan</th>
+                                </tr>
+                            </thead>
+                            <tbody class="text-gray-600 fw-bold fs-7">
+                                @foreach(session('import_skipped') as $skipped)
+                                    <tr>
+                                        <td>Baris {{ $skipped['row'] }}</td>
+                                        <td>{{ $skipped['name'] }}</td>
+                                        <td><code>{{ $skipped['phone'] }}</code></td>
+                                        <td><span class="badge badge-light-danger">{{ $skipped['reason'] }}</span></td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                    <!--end::Content-->
+                </div>
+                <!--end::Wrapper-->
+            </div>
+            @endif
+
             <!--begin::Tabs-->
             <ul class="nav nav-tabs nav-line-tabs nav-line-tabs-2x mb-5 fs-6 fw-bold">
                 <li class="nav-item">

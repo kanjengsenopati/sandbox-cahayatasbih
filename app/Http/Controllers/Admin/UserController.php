@@ -239,16 +239,25 @@ class UserController extends Controller
                 'file' => 'required|mimes:xls,xlsx'
             ]);
 
-            return DB::transaction(function () use ($request) {
-                Excel::import(new UserImportData, $request->file('file'));
-                return redirect()->route('user.index')->with('success', 'Data berhasil diimport');
+            $import = new UserImportData;
+
+            DB::transaction(function () use ($request, $import) {
+                Excel::import($import, $request->file('file'));
             });
+
+            if (count($import->skipped) > 0) {
+                return redirect()->route('user.index')
+                    ->with('success', "Impor selesai: {$import->successCount} data berhasil ditambahkan.")
+                    ->with('import_skipped', $import->skipped);
+            }
+
+            return redirect()->route('user.index')->with('success', "Berhasil mengimpor {$import->successCount} data user.");
         } catch (\Exception $e) {
             // Log the exception
             Log::error('Import failed: ' . $e->getMessage());
 
             // Return with an error message or handle the exception as needed
-            return redirect()->back()->with('error', 'Data gagal diimport');
+            return redirect()->back()->with('error', 'Data gagal diimport. Detail: ' . $e->getMessage());
         }
     }
 
@@ -292,5 +301,50 @@ class UserController extends Controller
                 'message' => 'Terjadi kesalahan saat memproses pembaruan massal.'
             ], 500);
         }
+    }
+
+    /**
+     * Check if manual input name/phone matches duplicates.
+     */
+    public function checkDuplicate(Request $request)
+    {
+        $name = trim($request->name);
+        $phone = trim($request->phone);
+        $userId = $request->id;
+
+        // format phone number if needed
+        if (substr($phone, 0, 1) !== '0' && strlen($phone) > 1) {
+            $phone = '0' . $phone;
+        }
+        if (substr($phone, 0, 2) == '62') {
+            $phone = '0' . substr($phone, 2);
+        }
+
+        $query = User::query();
+        if ($userId) {
+            $query->where('id', '<>', $userId);
+        }
+
+        // We check for exact duplicate of phone or name + phone
+        $duplicate = $query->where(function ($q) use ($name, $phone) {
+            $q->where('phone', $phone)
+              ->orWhere(function ($subQ) use ($name, $phone) {
+                  $subQ->where('name', 'like', '%' . $name . '%')
+                       ->where('phone', $phone);
+              });
+        })->first();
+
+        if ($duplicate) {
+            return response()->json([
+                'duplicate' => true,
+                'message' => "Nama / No WA ini sudah terdaftar atas nama: {$duplicate->name} ({$duplicate->phone})",
+                'user' => [
+                    'name' => $duplicate->name,
+                    'phone' => $duplicate->phone,
+                ]
+            ]);
+        }
+
+        return response()->json(['duplicate' => false]);
     }
 }

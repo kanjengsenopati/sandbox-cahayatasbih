@@ -12,12 +12,18 @@ class UserImportData implements ToCollection, WithHeadingRow
 {
     use Importable;
 
+    public $successCount = 0;
+    public $skipped = [];
+
     /**
      * @param Collection $collection
      */
     public function collection(Collection $rows)
     {
-        foreach ($rows as $row) {
+        $seenPhonesInSheet = [];
+
+        foreach ($rows as $index => $row) {
+            $rowNum = $index + 2; // 1-based index plus header row
             if ($row['nama'] !== null) {
 
                 // format phone number jika depannya bukan 0 dan lebih dari 1 digit maka tambah 0 di depannya
@@ -28,6 +34,32 @@ class UserImportData implements ToCollection, WithHeadingRow
                 // jika depannya 62 maka hilangan 62 dan tambah 0 di depannya
                 if (substr($phone, 0, 2) == '62') {
                     $phone = '0' . substr($phone, 2);
+                }
+
+                if (!empty($phone) && $phone !== '-') {
+                    // Check if duplicate within the Excel sheet itself
+                    if (isset($seenPhonesInSheet[$phone])) {
+                        $this->skipped[] = [
+                            'row' => $rowNum,
+                            'name' => $row['nama'],
+                            'phone' => $phone,
+                            'reason' => 'Nomor ganda dalam file Excel (Duplikat dengan Baris ' . $seenPhonesInSheet[$phone] . ')'
+                        ];
+                        continue;
+                    }
+                    $seenPhonesInSheet[$phone] = $rowNum;
+
+                    // Check if duplicate in database
+                    $exists = User::where('phone', $phone)->exists();
+                    if ($exists) {
+                        $this->skipped[] = [
+                            'row' => $rowNum,
+                            'name' => $row['nama'],
+                            'phone' => $phone,
+                            'reason' => 'Nomor WA sudah terdaftar di database'
+                        ];
+                        continue;
+                    }
                 }
 
                 // Map Gender (Jenis Kelamin)
@@ -64,6 +96,8 @@ class UserImportData implements ToCollection, WithHeadingRow
                     'status' => $status,
                     'jamaah_status' => $jamaahStatus,
                 ]);
+
+                $this->successCount++;
             }
         }
     }
