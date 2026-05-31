@@ -30,13 +30,39 @@ class UserImportData implements ToCollection, WithHeadingRow
                     $phone = '0' . substr($phone, 2);
                 }
 
+                // Map Gender (Jenis Kelamin)
+                $genderInput = strtolower(trim($row['jenis_kelamin'] ?? ''));
+                $gender = null;
+                if ($genderInput === 'l' || $genderInput === 'laki-laki' || $genderInput === 'laki laki') {
+                    $gender = 'L';
+                } elseif ($genderInput === 'p' || $genderInput === 'perempuan') {
+                    $gender = 'P';
+                }
+
+                // Map Status (ACTIVE / INACTIVE)
+                $statusInput = strtolower(trim($row['status'] ?? ''));
+                $status = 'ACTIVE'; // default
+                if ($statusInput === 'tidak aktif' || $statusInput === 'inactive') {
+                    $status = 'INACTIVE';
+                }
+
+                // Map Jamaah Status (JAMAAH / NON_JAMAAH / UNKNOWN)
+                $jamaahStatusInput = strtolower(trim($row['status_jamaah'] ?? ''));
+                $jamaahStatus = 'UNKNOWN'; // default
+                if ($jamaahStatusInput === 'jamaah') {
+                    $jamaahStatus = 'JAMAAH';
+                } elseif ($jamaahStatusInput === 'non jamaah' || $jamaahStatusInput === 'non_jamaah') {
+                    $jamaahStatus = 'NON_JAMAAH';
+                }
+
                 User::create([
                     'name' => $row['nama'],
                     'email' => $row['email'] ?? null,
                     'password' => bcrypt($row['password']),
                     'phone' => $phone ?? null,
-                    'gender' => null,
-                    'jamaah_status' => 'UNKNOWN',
+                    'gender' => $gender,
+                    'status' => $status,
+                    'jamaah_status' => $jamaahStatus,
                 ]);
             }
         }
