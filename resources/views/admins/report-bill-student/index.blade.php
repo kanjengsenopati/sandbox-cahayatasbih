@@ -304,7 +304,7 @@ var saldoTable, rekapTable;
 var rekapInitialized = false;
 
 $(document).ready(function() {
-    // School -> Classroom cascade
+    // School -> Classroom cascade & refresh Bill Types
     $('#filter_school_id').on('change', function() {
         $.ajax({
             url: "{{ route('report-bill.get-classroom') }}",
@@ -317,10 +317,22 @@ $(document).ready(function() {
                 });
             }
         });
+
+        refreshBillTypes();
     });
 
-    // Filter change handlers
-    $('#filter_school_id, #filter_classroom_id, #filter_tipe_tagihan, #filter_status, #filter_academic_year_id').on('change', function() {
+    // Refresh Bill Types on Academic Year change
+    $('#filter_academic_year_id').on('change', function() {
+        refreshBillTypes();
+    });
+
+    // Filter change handlers (excluding school_id and academic_year_id to prevent double triggering reloadAllTables)
+    $('#filter_classroom_id, #filter_tipe_tagihan, #filter_status').on('change', function() {
+        reloadAllTables();
+    });
+
+    // We still reload tables directly when school or academic year changes (if they don't change tipe_tagihan)
+    $('#filter_school_id, #filter_academic_year_id').on('change', function() {
         reloadAllTables();
     });
 
@@ -365,6 +377,34 @@ $(document).ready(function() {
         }
     });
 });
+
+function refreshBillTypes() {
+    var schoolId = $('#filter_school_id').val();
+    var academicYearId = $('#filter_academic_year_id').val();
+
+    $.ajax({
+        url: "{{ route('report-bill-student.get-bill-types') }}",
+        type: "GET",
+        data: {
+            school_id: schoolId,
+            academic_year_id: academicYearId
+        },
+        success: function(response) {
+            var select = $('#filter_tipe_tagihan');
+            var selectedValues = select.val() || [];
+
+            select.empty();
+
+            $.each(response.data, function(key, value) {
+                var isSelected = selectedValues.indexOf(value.id) !== -1;
+                var option = new Option(value.name, value.id, isSelected, isSelected);
+                select.append(option);
+            });
+
+            select.trigger('change'); // trigger change event agar tabel reload otomatis
+        }
+    });
+}
 
 function getFilterData() {
     return {

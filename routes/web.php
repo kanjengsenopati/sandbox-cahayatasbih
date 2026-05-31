@@ -309,6 +309,7 @@ Route::group(['middleware' => ['auth']], function () {
         ->name('send-bill-whatsapp-notification');
     Route::get('report-bill-student/export', [ReportBillStudentController::class, 'exportXlsx'])->name('report-bill-student.export');
     Route::get('report-bill-student/share', [ReportBillStudentController::class, 'share'])->name('report-bill-student.share');
+    Route::get('report-bill-student/get-bill-types', [ReportBillStudentController::class, 'getBillTypes'])->name('report-bill-student.get-bill-types');
     Route::resource('report-bill-student', ReportBillStudentController::class, ['only' => ['index']])->names('report-bill-student');
     // end report bill
 

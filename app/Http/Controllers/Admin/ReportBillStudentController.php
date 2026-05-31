@@ -586,4 +586,44 @@ class ReportBillStudentController extends Controller
             'url'     => $shareUrl
         ]);
     }
+
+    /**
+     * Get filtered bill types for cascading filter.
+     */
+    public function getBillTypes(Request $request)
+    {
+        $schoolId = $request->school_id;
+        $academicYearId = $request->academic_year_id;
+
+        $query = BillType::select('id', 'name')
+            ->whereNotIn('id', self::EXCLUDED_BILL_TYPE_IDS);
+
+        if ($academicYearId) {
+            $query->where('academic_year_id', $academicYearId);
+        }
+
+        if ($schoolId) {
+            $query->where(function ($q) use ($schoolId) {
+                // 1. Relasi via Bills yang sudah dibuat
+                $q->whereHas('bills.classroom', function ($sub) use ($schoolId) {
+                    $sub->where('school_id', $schoolId);
+                })
+                // 2. Relasi via PaymentRates regular
+                ->orWhereHas('paymentRates.paymentRateClassrooms.classroom', function ($sub) use ($schoolId) {
+                    $sub->where('school_id', $schoolId);
+                })
+                // 3. Relasi via PaymentRates transfer/siswa
+                ->orWhereHas('paymentRates.paymentRateStudents.student.classroom', function ($sub) use ($schoolId) {
+                    $sub->where('school_id', $schoolId);
+                });
+            });
+        }
+
+        $billTypes = $query->orderBy('name', 'asc')->get();
+
+        return response()->json([
+            'success' => true,
+            'data' => $billTypes
+        ]);
+    }
 }
