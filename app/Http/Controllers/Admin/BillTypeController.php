@@ -254,7 +254,9 @@ class BillTypeController extends Controller
             'Zarkasi',
             'Kalender',
             'Biaya Aplikasi',
-            'Registrasi'
+            'Registrasi',
+            'Biaya Ujian / Akhir Tahun',
+            'Infaq Kenaikan Kelas'
         ];
         
         $existingNames = BillType::select('name')->distinct()->pluck('name')->toArray();
