@@ -19,6 +19,17 @@ class Information extends Model
         'is_active',
     ];
 
+    protected static function booted()
+    {
+        static::saved(function ($information) {
+            \Illuminate\Support\Facades\Cache::forget('wali_dashboard_informations');
+        });
+
+        static::deleted(function ($information) {
+            \Illuminate\Support\Facades\Cache::forget('wali_dashboard_informations');
+        });
+    }
+
     public function informationCategory()
     {
         return $this->belongsTo(InformationCategory::class);

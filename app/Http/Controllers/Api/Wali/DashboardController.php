@@ -15,11 +15,13 @@ class DashboardController extends BaseWaliApiController
     {
         $user = Auth::guard('wali')->user();
         
-        $informations = Information::with('informationCategory')
-            ->where('is_active', true)
-            ->latest()
-            ->take(5)
-            ->get();
+        $informations = \Illuminate\Support\Facades\Cache::remember('wali_dashboard_informations', 1800, function() {
+            return Information::with('informationCategory')
+                ->where('is_active', true)
+                ->latest()
+                ->take(5)
+                ->get();
+        });
             
         $students = Student::where('user_id', $user->id)
             ->orderBy('name', 'asc')
@@ -111,22 +113,29 @@ class DashboardController extends BaseWaliApiController
             }
         }
 
-        $menus = \App\Models\ApplicationMenu::where('status', true)
-            ->where(function ($query) use ($studentSchoolId, $studentClassLevel) {
-                // Menu global (tanpa scope sama sekali)
-                $query->whereDoesntHave('scopes')
-                // ATAU menu yang scope-nya cocok dengan santri aktif (logika AND)
-                ->orWhereHas('scopes', function ($q) use ($studentSchoolId, $studentClassLevel) {
-                    $q->where('school_id', $studentSchoolId)
-                      ->where(function ($sq) use ($studentClassLevel) {
-                          // Scope tanpa class_level = semua jenjang di unit tsb
-                          $sq->whereNull('class_level')
-                          // ATAU scope dengan class_level yang cocok
-                             ->orWhere('class_level', $studentClassLevel);
-                      });
-                });
-            })
-            ->get();
+        $version = \Illuminate\Support\Facades\Cache::rememberForever('wali_menus_version', function() {
+            return time();
+        });
+        $menuCacheKey = "wali_menus_school_{$studentSchoolId}_level_{$studentClassLevel}_v{$version}";
+        
+        $menus = \Illuminate\Support\Facades\Cache::remember($menuCacheKey, 3600, function() use ($studentSchoolId, $studentClassLevel) {
+            return \App\Models\ApplicationMenu::where('status', true)
+                ->where(function ($query) use ($studentSchoolId, $studentClassLevel) {
+                    // Menu global (tanpa scope sama sekali)
+                    $query->whereDoesntHave('scopes')
+                    // ATAU menu yang scope-nya cocok dengan santri aktif (logika AND)
+                    ->orWhereHas('scopes', function ($q) use ($studentSchoolId, $studentClassLevel) {
+                        $q->where('school_id', $studentSchoolId)
+                          ->where(function ($sq) use ($studentClassLevel) {
+                              // Scope tanpa class_level = semua jenjang di unit tsb
+                              $sq->whereNull('class_level')
+                              // ATAU scope dengan class_level yang cocok
+                                 ->orWhere('class_level', $studentClassLevel);
+                          });
+                    });
+                })
+                ->get();
+        });
 
         return response()->json([
             'user' => $user,
