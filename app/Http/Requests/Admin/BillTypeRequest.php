@@ -28,4 +28,15 @@ class BillTypeRequest extends FormRequest
             'academic_year_id' => 'required|exists:academic_years,id',
         ];
     }
+
+    /**
+     * Merge name_select or name_custom into the name field before validation
+     */
+    protected function prepareForValidation()
+    {
+        $name = $this->name_select === 'Lainnya' ? $this->name_custom : $this->name_select;
+        $this->merge([
+            'name' => $name,
+        ]);
+    }
 }

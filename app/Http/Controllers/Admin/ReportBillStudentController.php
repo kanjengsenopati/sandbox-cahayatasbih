@@ -57,7 +57,8 @@ class ReportBillStudentController extends Controller
         }
 
         $schools = School::orderBy('name')->get();
-        $billTypes = BillType::select('id', 'name')
+        $billTypes = BillType::select('id', 'name', 'academic_year_id')
+            ->with('academicYear:id,name')
             ->whereNotIn('id', self::EXCLUDED_BILL_TYPE_IDS)
             ->get();
         $academicYears = AcademicYear::orderBy('name', 'desc')->get();
@@ -595,7 +596,7 @@ class ReportBillStudentController extends Controller
         $schoolId = $request->school_id;
         $academicYearId = $request->academic_year_id;
 
-        $query = BillType::select('id', 'name')
+        $query = BillType::select('id', 'name', 'academic_year_id')
             ->whereNotIn('id', self::EXCLUDED_BILL_TYPE_IDS);
 
         if ($academicYearId) {
@@ -619,11 +620,19 @@ class ReportBillStudentController extends Controller
             });
         }
 
-        $billTypes = $query->orderBy('name', 'asc')->get();
+        $billTypes = $query->with('academicYear:id,name')->orderBy('name', 'asc')->get();
+
+        $formatted = $billTypes->map(function ($bt) {
+            $yearName = $bt->academicYear?->name;
+            return [
+                'id' => $bt->id,
+                'name' => $yearName ? "{$bt->name} ({$yearName})" : $bt->name
+            ];
+        });
 
         return response()->json([
             'success' => true,
-            'data' => $billTypes
+            'data' => $formatted
         ]);
     }
 }

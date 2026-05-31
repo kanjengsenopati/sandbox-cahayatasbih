@@ -89,7 +89,8 @@ class BillTypeController extends Controller
 
         $banks = Bank::orderBy('name')->where('is_active', true)->get();
         $bankValue = [];
-        return view('admins.bill-type.create-edit', compact('banks', 'bankValue'));
+        $paymentNames = $this->getPaymentNames();
+        return view('admins.bill-type.create-edit', compact('banks', 'bankValue', 'paymentNames'));
     }
 
     /**
@@ -182,7 +183,8 @@ class BillTypeController extends Controller
 
         $banks = Bank::orderBy('name')->where('is_active', true)->get();
         $bankValue = $billType->billTypeBank->pluck('bank_id')->toArray();
-        return view('admins.bill-type.create-edit', compact('billType', 'banks', 'bankValue'));
+        $paymentNames = $this->getPaymentNames();
+        return view('admins.bill-type.create-edit', compact('billType', 'banks', 'bankValue', 'paymentNames'));
     }
 
     /**
@@ -238,5 +240,27 @@ class BillTypeController extends Controller
         $billType->billTypeBank()->delete();
         $billType->delete();
         return redirect()->route('bill-type.index')->with('success', 'Data berhasil dihapus');
+    }
+
+    /**
+     * Compile dynamic payment names for the create/edit dropdown
+     */
+    private function getPaymentNames()
+    {
+        $defaultNames = [
+            'Syahriah',
+            'LKS Semester 1',
+            'LKS Semester 2',
+            'Zarkasi',
+            'Kalender',
+            'Biaya Aplikasi',
+            'Registrasi'
+        ];
+        
+        $existingNames = BillType::select('name')->distinct()->pluck('name')->toArray();
+        $paymentNames = array_values(array_unique(array_merge($defaultNames, $existingNames)));
+        sort($paymentNames);
+        
+        return $paymentNames;
     }
 }
