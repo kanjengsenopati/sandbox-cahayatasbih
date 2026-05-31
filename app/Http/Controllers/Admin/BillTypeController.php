@@ -248,15 +248,15 @@ class BillTypeController extends Controller
     private function getPaymentNames()
     {
         $defaultNames = [
-            'Syahriah',
-            'LKS Semester 1',
-            'LKS Semester 2',
-            'Zarkasi',
-            'Kalender',
-            'Biaya Aplikasi',
-            'Registrasi',
-            'Biaya Ujian / Akhir Tahun',
-            'Infaq Kenaikan Kelas'
+            'SYAHRIAH',
+            'LKS SEMESTER 1',
+            'LKS SEMESTER 2',
+            'ZARKASI',
+            'KALENDER',
+            'BIAYA APLIKASI',
+            'REGISTRASI',
+            'BIAYA UJIAN / AKHIR TAHUN',
+            'INFAQ KENAIKAN KELAS'
         ];
         
         $existingNames = BillType::select('name')->distinct()->pluck('name')->toArray();

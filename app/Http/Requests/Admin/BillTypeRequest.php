@@ -36,7 +36,7 @@ class BillTypeRequest extends FormRequest
     {
         $name = $this->name_select === 'Lainnya' ? $this->name_custom : $this->name_select;
         $this->merge([
-            'name' => $name,
+            'name' => \Illuminate\Support\Str::upper($name),
         ]);
     }
 }
