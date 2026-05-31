@@ -12,26 +12,35 @@ if (!function_exists('storage_asset')) {
     function storage_asset(string $path): string
     {
         $path = ltrim($path, '/');
-        $masterUrl = config('app.master_url');
+
+        // Jika sudah berupa URL absolut, langsung kembalikan
+        if (filter_var($path, FILTER_VALIDATE_URL)) {
+            return $path;
+        }
 
         // Path assets statis → selalu dari domain sendiri
         if (str_starts_with($path, 'assets/')) {
             return asset($path);
         }
 
-        // Tentukan base URL: master (jika clone) atau domain sendiri
-        if ($masterUrl) {
-            // Pastikan path dimulai dengan 'storage/' untuk URL publik
-            if (!str_starts_with($path, 'storage/')) {
-                $path = 'storage/' . $path;
-            }
-            return rtrim($masterUrl, '/') . '/' . $path;
+        // Pastikan path dimulai dengan 'storage/' untuk pengecekan lokal & url
+        $checkPath = $path;
+        if (!str_starts_with($checkPath, 'storage/')) {
+            $checkPath = 'storage/' . $checkPath;
         }
 
-        // Default: gunakan asset() biasa (mode master/standalone)
-        if (!str_starts_with($path, 'storage/')) {
-            $path = 'storage/' . $path;
+        // Jika file ada di folder lokal, selalu gunakan asset dari domain sendiri
+        if (file_exists(public_path($checkPath))) {
+            return asset($checkPath);
         }
-        return asset($path);
+
+        // Jika tidak ada di lokal dan ini mode clone/replica (master_url diset), arahkan ke master
+        $masterUrl = config('app.master_url');
+        if ($masterUrl) {
+            return rtrim($masterUrl, '/') . '/' . $checkPath;
+        }
+
+        // Default: gunakan asset lokal
+        return asset($checkPath);
     }
 }
