@@ -47,13 +47,21 @@ class SyncMasterDatabase extends Command
         $errorMessage = '';
 
         // Mark sync as running
-        Cache::put('last_db_sync_status', [
+        $cacheData = [
             'status' => 'running',
             'started_at' => $startTime->toDateTimeString(),
             'finished_at' => null,
             'report' => [],
             'error' => null
-        ], 1800); // 30 minutes expire
+        ];
+        Cache::put('last_db_sync_status', $cacheData, 1800); // 30 minutes expire
+
+        // Persist to database log
+        try {
+            $dbLog = \App\Models\DatabaseSyncLog::create($cacheData);
+        } catch (\Throwable $e) {
+            $this->warn('Could not create database log: ' . $e->getMessage());
+        }
 
         try {
             foreach ($tables as $table) {
@@ -170,6 +178,18 @@ class SyncMasterDatabase extends Command
         ];
 
         Cache::put('last_db_sync_status', $statusData);
+
+        // Update database log
+        try {
+            if (isset($dbLog)) {
+                $dbLog->update($statusData);
+            } else {
+                \App\Models\DatabaseSyncLog::create($statusData);
+            }
+        } catch (\Throwable $e) {
+            $this->error('Failed to update database log: ' . $e->getMessage());
+        }
+
         $this->info('Database sync completed.');
     }
 }

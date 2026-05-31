@@ -248,6 +248,70 @@
                                     </div>
                                 @endif
 
+                                <!-- Sync History List -->
+                                <div class="separator separator-dashed my-8"></div>
+                                <h5 class="fw-bolder text-dark mb-4">Riwayat Sinkronisasi (10 Terakhir)</h5>
+                                @if (isset($syncHistory) && $syncHistory->isNotEmpty())
+                                    <div class="table-responsive">
+                                        <table class="table table-row-dashed table-row-gray-300 align-middle gs-0 gy-4">
+                                            <thead>
+                                                <tr class="fw-bolder text-muted bg-light">
+                                                    <th class="ps-4 rounded-start">Waktu Mulai</th>
+                                                    <th>Waktu Selesai</th>
+                                                    <th>Durasi</th>
+                                                    <th class="text-center">Status</th>
+                                                    <th class="min-w-100px text-end pe-4 rounded-end">Total Baris Sync</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                @foreach ($syncHistory as $log)
+                                                    @php
+                                                        $totalRows = 0;
+                                                        if (is_array($log->report)) {
+                                                            foreach ($log->report as $tReport) {
+                                                                $totalRows += $tReport['rows_synced'] ?? 0;
+                                                            }
+                                                        }
+                                                    @endphp
+                                                    <tr>
+                                                        <td class="ps-4">
+                                                            <span class="text-dark fw-bold fs-6">{{ $log->started_at->format('d M Y H:i:s') }}</span>
+                                                        </td>
+                                                        <td>
+                                                            <span class="text-gray-800 fs-6">{{ $log->finished_at ? $log->finished_at->format('d M Y H:i:s') : '-' }}</span>
+                                                        </td>
+                                                        <td>
+                                                            <span class="text-gray-600 fs-7">{{ $log->duration ?? '-' }}</span>
+                                                        </td>
+                                                        <td class="text-center">
+                                                            @if ($log->status === 'success')
+                                                                <span class="badge badge-light-success fw-bolder fs-8">SUCCESS</span>
+                                                            @elseif ($log->status === 'running')
+                                                                <span class="badge badge-light-primary fw-bolder fs-8">RUNNING</span>
+                                                            @else
+                                                                <span class="badge badge-light-danger fw-bolder fs-8">FAILED</span>
+                                                            @endif
+                                                        </td>
+                                                        <td class="text-end pe-4">
+                                                            <span class="text-dark fw-bolder fs-6">{{ number_format($totalRows) }} baris</span>
+                                                            @if ($log->error)
+                                                                <div class="text-danger fs-8 mt-1" title="{{ $log->error }}">
+                                                                    <i class="fas fa-exclamation-circle text-danger me-1"></i>
+                                                                    {{ Str::limit($log->error, 30) }}
+                                                                </div>
+                                                            @endif
+                                                        </td>
+                                                    </tr>
+                                                @endforeach
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                @else
+                                    <div class="text-center py-5">
+                                        <p class="text-muted fs-7">Belum ada riwayat pencatatan sinkronisasi.</p>
+                                    </div>
+                                @endif
+
                             </div>
                         </div>
                     </div>

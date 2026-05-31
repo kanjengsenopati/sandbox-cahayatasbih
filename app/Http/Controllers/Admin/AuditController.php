@@ -18,9 +18,27 @@ class AuditController extends Controller
     {
         $service = new AuditService();
         $results = $service->runAll();
+        
+        // Backwards compatibility/latest status from cache or db
         $syncStatus = Cache::get('last_db_sync_status');
+        if (!$syncStatus) {
+            $latestLog = \App\Models\DatabaseSyncLog::latest('id')->first();
+            if ($latestLog) {
+                $syncStatus = [
+                    'status' => $latestLog->status,
+                    'started_at' => $latestLog->started_at->toDateTimeString(),
+                    'finished_at' => $latestLog->finished_at?->toDateTimeString(),
+                    'duration' => $latestLog->duration,
+                    'report' => $latestLog->report ?? [],
+                    'error' => $latestLog->error
+                ];
+            }
+        }
 
-        return view('admins.admin.audit', compact('results', 'syncStatus'));
+        // Fetch full sync history list
+        $syncHistory = \App\Models\DatabaseSyncLog::orderBy('id', 'desc')->take(10)->get();
+
+        return view('admins.admin.audit', compact('results', 'syncStatus', 'syncHistory'));
     }
 
     /**
