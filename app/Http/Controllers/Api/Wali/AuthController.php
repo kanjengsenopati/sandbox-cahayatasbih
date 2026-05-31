@@ -46,6 +46,7 @@ class AuthController extends Controller
                 if (Auth::guard('wali')->attempt(['phone' => $waliUser->phone, 'password' => $password])) {
                     $user = Auth::guard('wali')->user();
                     if ($user->is_active) {
+                        $user->update(['last_login' => now()]);
                         return response()->json([
                             'message' => 'Login successful',
                             'role' => 'wali',
@@ -78,6 +79,7 @@ class AuthController extends Controller
                             return response()->json(['message' => 'Maaf, Anda tidak memiliki hak akses PWA Perizinan.'], 403);
                         }
 
+                        $admin->update(['last_login_at' => now()]);
                         return response()->json([
                             'message' => 'Login successful',
                             'role' => 'asatidz',

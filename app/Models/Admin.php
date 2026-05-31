@@ -55,9 +55,9 @@ class Admin extends Authenticatable
      *
      * @var array<string, string>
      */
-
-
-
+    protected $casts = [
+        'last_login_at' => 'datetime',
+    ];
 
     public function GetRoleNameAttribute()
     {
