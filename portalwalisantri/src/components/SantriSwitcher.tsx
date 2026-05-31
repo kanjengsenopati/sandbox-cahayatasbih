@@ -1,6 +1,7 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { Check, ChevronDown, Plus, X } from "lucide-react";
 import { useSantri, type Santri } from "@/contexts/SantriContext";
+import { createPortal } from "react-dom";
 
 const fmt = (n: number) =>
   "Rp" + new Intl.NumberFormat("id-ID").format(n);
@@ -44,6 +45,11 @@ export function SantriSwitcherSheet({
   onClose: () => void;
 }) {
   const { santri, active, switchStudent } = useSantri();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Lock background scroll while sheet is open
   useEffect(() => {
@@ -55,10 +61,10 @@ export function SantriSwitcherSheet({
     };
   }, [open]);
 
-  if (!open) return null;
+  if (!open || !mounted) return null;
 
-  return (
-    <div className="fixed inset-0 z-[60] flex items-end justify-center">
+  return createPortal(
+    <div className="fixed inset-0 z-[100] flex items-end justify-center">
       {/* Backdrop */}
       <button
         onClick={onClose}
@@ -85,7 +91,7 @@ export function SantriSwitcherSheet({
           </button>
         </div>
 
-        <div className="px-3 mt-3 space-y-1.5 max-h-[55vh] overflow-y-auto">
+        <div className="px-3 mt-3 space-y-1.5 max-h-[55vh] overflow-y-auto pb-2">
           {(santri || []).map((s) => (
             <SantriRow
               key={s.id}
@@ -97,13 +103,10 @@ export function SantriSwitcherSheet({
               }}
             />
           ))}
-
-          <button className="w-full mt-1.5 flex items-center justify-center gap-1.5 py-2.5 rounded-xl border-2 border-dashed border-border text-primary text-[13px] font-bold active:scale-[0.99] transition">
-            <Plus size={14} /> Tambah Santri
-          </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 
