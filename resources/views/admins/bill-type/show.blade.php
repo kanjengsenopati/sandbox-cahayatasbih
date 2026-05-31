@@ -124,6 +124,16 @@
                                                     {{ $prClassroom->classroom->name }}
                                                 </span>
                                             @endforeach
+                                            @if($rate->gender)
+                                                <span class="badge badge-light-primary fw-bolder m-1">
+                                                    {{ $rate->gender == 'L' ? 'Putra' : 'Putri' }}
+                                                </span>
+                                            @endif
+                                            @if($rate->jamaah_status)
+                                                <span class="badge badge-light-info fw-bolder m-1">
+                                                    {{ $rate->jamaah_status == 'JAMAAH' ? 'Jamaah' : 'Non-Jamaah' }}
+                                                </span>
+                                            @endif
                                         </td>
                                         <td>
                                             <span class="badge badge-light-success fs-7 fw-bolder">Rp. {{ number_format($rate->amount, 0, ',', '.') }}</span>
@@ -185,6 +195,20 @@
                                                     <span class="text-muted fs-8">({{ $prStudent->student->nis ?? '-' }})</span>
                                                 </div>
                                             @endforeach
+                                            @if($rate->gender || $rate->jamaah_status)
+                                                <div class="mt-2">
+                                                    @if($rate->gender)
+                                                        <span class="badge badge-light-primary fw-bolder me-1">
+                                                            {{ $rate->gender == 'L' ? 'Putra' : 'Putri' }}
+                                                        </span>
+                                                    @endif
+                                                    @if($rate->jamaah_status)
+                                                        <span class="badge badge-light-info fw-bolder">
+                                                            {{ $rate->jamaah_status == 'JAMAAH' ? 'Jamaah' : 'Non-Jamaah' }}
+                                                        </span>
+                                                    @endif
+                                                </div>
+                                            @endif
                                         </td>
                                         <td>
                                             <span class="badge badge-light-success fs-7 fw-bolder">Rp. {{ number_format($rate->amount, 0, ',', '.') }}</span>

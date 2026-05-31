@@ -327,6 +327,34 @@
                                 @endif
                             </div>
 
+                            <!-- Status Wali -->
+                            <div class="mb-5">
+                                <label class="form-label fw-bold fs-6 text-gray-700">Status Wali</label>
+                                <select name="jamaah_status" class="form-select form-select-solid {{ isset($paymentRate) ? 'bg-light' : '' }}" id="jamaah_status"
+                                    data-control="select2" data-placeholder="Semua Status (Siswa Umum & Jamaah)" data-allow-clear="true" {{ isset($paymentRate) ? 'disabled' : '' }}>
+                                    <option value="">Semua Status (Siswa Umum & Jamaah)</option>
+                                    <option value="JAMAAH" {{ (isset($paymentRate) && $paymentRate->jamaah_status == 'JAMAAH') ? 'selected' : '' }}>Jamaah</option>
+                                    <option value="NON_JAMAAH" {{ (isset($paymentRate) && $paymentRate->jamaah_status == 'NON_JAMAAH') ? 'selected' : '' }}>Non Jamaah</option>
+                                </select>
+                                @if(isset($paymentRate))
+                                    <input type="hidden" name="jamaah_status" value="{{ $paymentRate->jamaah_status }}">
+                                @endif
+                            </div>
+
+                            <!-- Jenis Kelamin -->
+                            <div class="mb-5">
+                                <label class="form-label fw-bold fs-6 text-gray-700">Jenis Kelamin</label>
+                                <select name="gender" class="form-select form-select-solid {{ isset($paymentRate) ? 'bg-light' : '' }}" id="gender"
+                                    data-control="select2" data-placeholder="Semua Gender (Putra & Putri)" data-allow-clear="true" {{ isset($paymentRate) ? 'disabled' : '' }}>
+                                    <option value="">Semua Gender (Putra & Putri)</option>
+                                    <option value="L" {{ (isset($paymentRate) && $paymentRate->gender == 'L') ? 'selected' : '' }}>Laki-laki (Santri Putra)</option>
+                                    <option value="P" {{ (isset($paymentRate) && $paymentRate->gender == 'P') ? 'selected' : '' }}>Perempuan (Santri Putri)</option>
+                                </select>
+                                @if(isset($paymentRate))
+                                    <input type="hidden" name="gender" value="{{ $paymentRate->gender }}">
+                                @endif
+                            </div>
+
                             <!-- EDIT MODE: READ-ONLY TARGETS -->
                             @if(isset($paymentRate))
                                 <div class="mb-5 bg-light rounded p-4 border border-dashed border-gray-300">
@@ -442,16 +470,55 @@
 <script>
     $(document).ready(function() {
 
-        // 1. Handle School Change -> Fetch Classrooms
+        // Function to fetch students dynamically based on school, gender, and jamaah status
+        function fetchStudents() {
+            var school_id = $('#school_id').val();
+            var gender = $('#gender').val();
+            var jamaah_status = $('#jamaah_status').val();
+            var studentSelect = $('#student_id');
+            var billTypeId = $('input[name="bill_type_id"]').val();
+
+            // Clear current students
+            studentSelect.empty().trigger('change');
+
+            if (school_id) {
+                axios.get("{{ route('payment-rate.get-student') }}", {
+                        params: { 
+                            school_id: school_id,
+                            bill_type_id: billTypeId,
+                            gender: gender,
+                            jamaah_status: jamaah_status
+                        }
+                    })
+                    .then(function(response) {
+                         if (response.data.length > 0) {
+                            $.each(response.data, function(key, value) {
+                                var statusText = 'TIDAK TAHU';
+                                if (value.jamaah_status === 'JAMAAH') {
+                                    statusText = 'JAMAAH';
+                                } else if (value.jamaah_status === 'NON_JAMAAH') {
+                                    statusText = 'NON JAMAAH';
+                                }
+                                var genderText = value.gender === 'L' ? 'Putra' : 'Putri';
+                                var text = value.name + ' - ' + (value.nis ?? '-') + ' [' + genderText + '] [' + statusText + ']';
+                                var newOption = new Option(text, value.id, false, false);
+                                $(newOption).attr('data-jamaah-status', value.jamaah_status);
+                                studentSelect.append(newOption);
+                            });
+                            studentSelect.trigger('change');
+                        }
+                    })
+                    .catch(function(error) { console.error(error); });
+            }
+        }
+
         // 1. Handle School Change -> Fetch Classrooms AND Students
         $('#school_id').on('change', function() {
             var school_id = $(this).val();
             var classroomSelect = $('#classroom_id');
-            var studentSelect = $('#student_id');
 
-            // Clear current options
+            // Clear classrooms
             classroomSelect.empty().trigger('change');
-            studentSelect.empty().trigger('change');
 
             if (school_id) {
                 // Fetch Classrooms
@@ -468,34 +535,14 @@
                         }
                     })
                     .catch(function(error) { console.error(error); });
-                
-                // Fetch Students
-                var billTypeId = $('input[name="bill_type_id"]').val();
-                axios.get("{{ route('payment-rate.get-student') }}", {
-                        params: { 
-                            school_id: school_id,
-                            bill_type_id: billTypeId
-                        }
-                    })
-                    .then(function(response) {
-                         if (response.data.length > 0) {
-                            $.each(response.data, function(key, value) {
-                                var statusText = 'TIDAK TAHU';
-                                if (value.jamaah_status === 'JAMAAH') {
-                                    statusText = 'JAMAAH';
-                                } else if (value.jamaah_status === 'NON_JAMAAH') {
-                                    statusText = 'NON JAMAAH';
-                                }
-                                var text = value.name + ' - ' + (value.nis ?? '-') + ' [' + statusText + ']';
-                                var newOption = new Option(text, value.id, false, false);
-                                $(newOption).attr('data-jamaah-status', value.jamaah_status);
-                                studentSelect.append(newOption);
-                            });
-                            studentSelect.trigger('change');
-                        }
-                    })
-                    .catch(function(error) { console.error(error); });
             }
+
+            fetchStudents();
+        });
+
+        // Handle Filter Changes
+        $('#gender, #jamaah_status').on('change', function() {
+            fetchStudents();
         });
 
         // Toggle Classroom / Student based on Category Type

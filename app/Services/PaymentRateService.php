@@ -85,6 +85,18 @@ class PaymentRateService
     {
         foreach ($classrooms as $classroom) {
             foreach ($classroom->students as $student) {
+                // Filter by gender if set
+                if ($paymentRate->gender && $student->gender !== $paymentRate->gender) {
+                    continue;
+                }
+                // Filter by jamaah status if set
+                if ($paymentRate->jamaah_status) {
+                    $student->loadMissing('user');
+                    if (($student->user?->jamaah_status ?? 'UNKNOWN') !== $paymentRate->jamaah_status) {
+                        continue;
+                    }
+                }
+
                 // Access array elements using the correct array syntax
                 $billAmount = $data['bulan_' . $month];
                 $billYear = $data['tahun_' . $month];
@@ -124,6 +136,18 @@ class PaymentRateService
 
         foreach ($classrooms as $classroom) {
             foreach ($classroom->students as $student) {
+                // Filter by gender if set
+                if ($paymentRate->gender && $student->gender !== $paymentRate->gender) {
+                    continue;
+                }
+                // Filter by jamaah status if set
+                if ($paymentRate->jamaah_status) {
+                    $student->loadMissing('user');
+                    if (($student->user?->jamaah_status ?? 'UNKNOWN') !== $paymentRate->jamaah_status) {
+                        continue;
+                    }
+                }
+
                 // Loop through each payment rate item
                 foreach ($paymentRate->paymentRateItems as $item) {
                     $billMonth = $item->month;

@@ -45,7 +45,7 @@ class PaymentRateController extends Controller
     {
         // 1. ATOMIC LOCK: Mencegah tombol diklik 2x (Anti Double Submit) & Race Condition antar admin
         // Kunci berbasis bill_type_id untuk mencegah 2 admin men-generate tagihan yang sama
-        $lock = Cache::lock('store_payment_rate_bill_type_' . $request->bill_type_id, 10);
+        $lock = Cache::lock('store_payment_rate_bill_type_' . $request->bill_type_id, 60);
 
         if (!$lock->get()) {
             return redirect()->back()->with('error', 'Proses sedang berjalan, mohon tunggu sebentar...');
@@ -60,11 +60,11 @@ class PaymentRateController extends Controller
             $paymentRate = $billType->paymentRates()->create([
                 'amount' => $request->price,
                 'type' => $request->type,
+                'gender' => $request->gender,
+                'jamaah_status' => $request->jamaah_status,
             ]);
 
             // 3. Attach Classrooms
-            // Kita loop manual untuk create agar trigger event (jika ada) tetap jalan, 
-            // tapi karena ini ringan, tidak masalah di loop.
             if ($request->type == PaymentRate::TYPE_REGULAR) {
                 foreach ($request->classrooms as $classroomId) {
                     $paymentRate->paymentRateClassrooms()->create([
@@ -80,72 +80,75 @@ class PaymentRateController extends Controller
             }
 
             // 4. Create Payment Rate Items & Build Memory Map
-            // Kita simpan ID item yang baru dibuat ke array agar tidak perlu query ulang nanti.
             $months = ($billType->type == BillType::TYPE_MONTHLY) ? range(1, 12) : $request->months;
             $rateItemsMap = []; // Format: "bulan_tahun" => ID
 
             foreach ($months as $month) {
-                // Ensure amount is not null, default to 0
                 $amountInput = ($billType->type == BillType::TYPE_MONTHLY) ? $request->{"bulan_$month"} : $request->price;
                 $amount = $amountInput ? (int) str_replace('.', '', $amountInput) : 0;
-                
-                // Ensure year is set (fallback to academic year logic if needed, but request should have it)
                 $year = ($billType->type == BillType::TYPE_MONTHLY) ? $request->{"tahun_$month"} : $request->year;
 
-                // Optimization: Maybe don't create item if amount is 0? 
-                // But the user might want to see "0" in the edit form later.
-                // For now, just fix the crash.
                 $item = $paymentRate->paymentRateItems()->create([
                     'month'  => $month,
                     'year'   => $year,
                     'amount' => $amount,
                 ]);
 
-                // Key untuk map: "1_2026", "2_2026", dst.
                 $rateItemsMap["{$month}_{$year}"] = $item->id;
             }
 
-            // 5. DATA FETCHING (OPTIMASI BERAT)
-            // Init variables
-            $classrooms = collect([]);
-            
+            // 5. DATA FETCHING (OPTIMASI BERAT & ANTI-HANG)
+            $students = collect([]);
             if ($request->type == PaymentRate::TYPE_REGULAR) {
-                // Ambil semua santri dari kelas terpilih + Load Bill yang sudah ada
-                $classrooms = Classroom::with(['students' => function ($q) use ($billType) {
-                    $q->select('id', 'classroom_id') // Select kolom seperlunya
-                        ->with(['bills' => function ($b) use ($billType) {
-                            $b->where('bill_type_id', $billType->id)
-                                ->select('student_id', 'month', 'year'); // Load history tagihan tipe ini saja
-                        }]);
-                }])->whereIn('id', $request->classrooms)->get();
+                $students = Student::whereIn('classroom_id', $request->classrooms)
+                    ->where('status', 'ACTIVE')
+                    ->when($request->gender, function($q) use ($request) {
+                        $q->where('gender', $request->gender);
+                    })
+                    ->when($request->jamaah_status, function($q) use ($request) {
+                        $q->whereHas('user', function($userQ) use ($request) {
+                            $userQ->where('jamaah_status', $request->jamaah_status);
+                        });
+                    })
+                    ->get(['id', 'classroom_id', 'gender', 'user_id']);
+            } else {
+                $students = Student::whereIn('id', $request->students)
+                    ->where('status', 'ACTIVE')
+                    ->when($request->gender, function($q) use ($request) {
+                        $q->where('gender', $request->gender);
+                    })
+                    ->when($request->jamaah_status, function($q) use ($request) {
+                        $q->whereHas('user', function($userQ) use ($request) {
+                            $userQ->where('jamaah_status', $request->jamaah_status);
+                        });
+                    })
+                    ->get(['id', 'classroom_id', 'gender', 'user_id']);
+            }
+
+            // Build existing bills map
+            $studentIds = $students->pluck('id')->toArray();
+            $existingBillKeys = [];
+            if (!empty($studentIds)) {
+                $existingBillKeys = DB::table('bills')
+                    ->where('bill_type_id', $billType->id)
+                    ->whereIn('student_id', $studentIds)
+                    ->whereNull('deleted_at')
+                    ->select('student_id', 'month', 'year')
+                    ->get()
+                    ->map(fn($row) => "{$row->student_id}_{$row->month}_{$row->year}")
+                    ->flip()
+                    ->toArray();
             }
 
             $billsToInsert = [];
             $timestamp = now(); // Waktu create seragam
 
             // 6. LOGIC PEMBUATAN TAGIHAN (IN-MEMORY PROCESSING)
-            if ($paymentRate->type == PaymentRate::TYPE_REGULAR) {
-                // Logic Regular (Classroom Based)
-                foreach ($classrooms as $classroom) {
-                    foreach ($classroom->students as $student) {
-                         $this->generateBillsForStudent($student, $billsToInsert, $months, $billType, $request, $rateItemsMap, $timestamp);
-                    }
-                }
-            } else {
-                // Logic Transfer (Student Based)
-                // Fetch students directly (Moved out of loop for efficiency)
-                 $students = Student::with(['bills' => function ($b) use ($billType) {
-                     $b->where('bill_type_id', $billType->id)
-                         ->select('student_id', 'month', 'year'); 
-                 }])->whereIn('id', $request->students)->get();
-
-                foreach ($students as $student) {
-                     $this->generateBillsForStudent($student, $billsToInsert, $months, $billType, $request, $rateItemsMap, $timestamp);
-                }
+            foreach ($students as $student) {
+                 $this->generateBillsForStudent($student, $billsToInsert, $months, $billType, $request, $rateItemsMap, $timestamp, $existingBillKeys);
             }
 
             // 7. BULK INSERT (EKSEKUSI FINAL)
-            // Memasukkan ribuan data dalam potongan-potongan kecil (Chunk) agar aman.
             if (!empty($billsToInsert)) {
                 foreach (array_chunk($billsToInsert, 500) as $chunk) {
                     Bill::insert($chunk);
@@ -153,13 +156,13 @@ class PaymentRateController extends Controller
             }
 
             DB::commit();
-            $lock->release(); // Lepas kunci manual agar user bisa input lagi segera jika mau
+            $lock->release();
 
             return redirect()->route('bill-type.show', $billType->id)
                 ->with('success', 'Tarif pembayaran dan tagihan berhasil digenerate.');
         } catch (\Exception $e) {
             DB::rollBack();
-            $lock->release(); // Lepas kunci jika error
+            $lock->release();
             Log::error("Error Generate Tagihan: " . $e->getMessage());
 
             return redirect()->back()
@@ -488,11 +491,27 @@ class PaymentRateController extends Controller
                 $allClassroomIds = $paymentRate->paymentRateClassrooms()->pluck('classroom_id');
                 $students = Student::whereIn('classroom_id', $allClassroomIds)
                                    ->where('status', 'ACTIVE') 
+                                   ->when($paymentRate->gender, function($q) use ($paymentRate) {
+                                       $q->where('gender', $paymentRate->gender);
+                                   })
+                                   ->when($paymentRate->jamaah_status, function($q) use ($paymentRate) {
+                                       $q->whereHas('user', function($userQ) use ($paymentRate) {
+                                           $userQ->where('jamaah_status', $paymentRate->jamaah_status);
+                                       });
+                                   })
                                    ->get();
             } else {
                 $allStudentIds = $paymentRate->paymentRateStudents()->pluck('student_id');
                 $students = Student::whereIn('id', $allStudentIds)
                                    ->where('status', 'ACTIVE')
+                                   ->when($paymentRate->gender, function($q) use ($paymentRate) {
+                                       $q->where('gender', $paymentRate->gender);
+                                   })
+                                   ->when($paymentRate->jamaah_status, function($q) use ($paymentRate) {
+                                       $q->whereHas('user', function($userQ) use ($paymentRate) {
+                                           $userQ->where('jamaah_status', $paymentRate->jamaah_status);
+                                       });
+                                   })
                                    ->get();
             }
 
@@ -732,6 +751,8 @@ class PaymentRateController extends Controller
     {
         $school = School::findOrFail($request->school_id);
         $billTypeId = $request->bill_type_id;
+        $gender = $request->gender;
+        $jamaahStatus = $request->jamaah_status;
 
         $students = Student::with('user:id,jamaah_status')
             ->whereHas('classroom', function($q) use ($school) {
@@ -742,9 +763,17 @@ class PaymentRateController extends Controller
                     $subQ->where('bill_type_id', $billTypeId);
                 });
             })
+            ->when($gender, function($q) use ($gender) {
+                $q->where('gender', $gender);
+            })
+            ->when($jamaahStatus, function($q) use ($jamaahStatus) {
+                $q->whereHas('user', function($userQ) use ($jamaahStatus) {
+                    $userQ->where('jamaah_status', $jamaahStatus);
+                });
+            })
             ->where('status', 'ACTIVE')
             ->orderBy('name')
-            ->select('id', 'name', 'nis', 'user_id')
+            ->select('id', 'name', 'nis', 'user_id', 'gender')
             ->get();
 
         $formatted = $students->map(function($student) {
@@ -752,6 +781,7 @@ class PaymentRateController extends Controller
                 'id' => $student->id,
                 'name' => $student->name,
                 'nis' => $student->nis,
+                'gender' => $student->gender,
                 'jamaah_status' => $student->user?->jamaah_status ?? 'UNKNOWN'
             ];
         });
@@ -917,7 +947,7 @@ class PaymentRateController extends Controller
         }
     }
 
-    private function generateBillsForStudent($student, &$billsToInsert, $months, $billType, $request, $rateItemsMap, $timestamp)
+    private function generateBillsForStudent($student, &$billsToInsert, $months, $billType, $request, $rateItemsMap, $timestamp, $existingBillKeys)
     {
         foreach ($months as $month) {
             // Tentukan Tahun & Nominal
@@ -930,12 +960,9 @@ class PaymentRateController extends Controller
             // Ambil ID Item dari Map (Tanpa Query)
             $rateItemId = $rateItemsMap["{$month}_{$targetYear}"] ?? null;
 
-            // Cek Duplicate via Collection (RAM), bukan DB Query
-            // "Apakah student ini sudah punya bill di bulan X tahun Y?"
-            $exists = $student->bills
-                ->where('month', $month)
-                ->where('year', $targetYear)
-                ->first();
+            // Cek Duplicate via flipped array map (RAM), super cepat & hemat memori
+            $key = "{$student->id}_{$month}_{$targetYear}";
+            $exists = isset($existingBillKeys[$key]);
 
             if (!$exists) {
                 $billsToInsert[] = [
@@ -962,10 +989,30 @@ class PaymentRateController extends Controller
 
         if ($paymentRate->type == PaymentRate::TYPE_REGULAR) {
             $classroomIds = $paymentRate->paymentRateClassrooms->pluck('classroom_id');
-            $students = Student::whereIn('classroom_id', $classroomIds)->where('status', 'ACTIVE')->get();
+            $students = Student::whereIn('classroom_id', $classroomIds)
+                ->where('status', 'ACTIVE')
+                ->when($paymentRate->gender, function($q) use ($paymentRate) {
+                    $q->where('gender', $paymentRate->gender);
+                })
+                ->when($paymentRate->jamaah_status, function($q) use ($paymentRate) {
+                    $q->whereHas('user', function($userQ) use ($paymentRate) {
+                        $userQ->where('jamaah_status', $paymentRate->jamaah_status);
+                    });
+                })
+                ->get();
         } else {
             $studentIds = $paymentRate->paymentRateStudents->pluck('student_id');
-            $students = Student::whereIn('id', $studentIds)->where('status', 'ACTIVE')->get();
+            $students = Student::whereIn('id', $studentIds)
+                ->where('status', 'ACTIVE')
+                ->when($paymentRate->gender, function($q) use ($paymentRate) {
+                    $q->where('gender', $paymentRate->gender);
+                })
+                ->when($paymentRate->jamaah_status, function($q) use ($paymentRate) {
+                    $q->whereHas('user', function($userQ) use ($paymentRate) {
+                        $userQ->where('jamaah_status', $paymentRate->jamaah_status);
+                    });
+                })
+                ->get();
         }
 
         $billsToInsert = [];

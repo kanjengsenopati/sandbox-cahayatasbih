@@ -21,6 +21,8 @@ class PaymentRate extends Model
         'bill_type_id',
         'amount',
         'type',
+        'gender',
+        'jamaah_status',
     ];
 
     protected $casts = [
