@@ -45,10 +45,8 @@ class BillType extends Model
         return $this->hasMany(BillTypeBank::class);
     }
 
-    protected static function boot()
+    protected static function booted()
     {
-        parent::boot();
-
         static::deleting(function ($billType) {
             $billType->bills()->delete();
         });
