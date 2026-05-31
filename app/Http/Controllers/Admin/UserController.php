@@ -49,6 +49,8 @@ class UserController extends Controller
             return $query->whereNotNull('last_login');
         })->when(request()->query('status') === 'INACTIVE', function ($query) {
             return $query->whereNull('last_login');
+        })->when(request()->query('jamaah_status'), function ($query) {
+            return $query->where('jamaah_status', request()->query('jamaah_status'));
         })->latest();
         return DataTables::of($data)
             ->addColumn('name', function ($data) {
@@ -247,6 +249,48 @@ class UserController extends Controller
 
             // Return with an error message or handle the exception as needed
             return redirect()->back()->with('error', 'Data gagal diimport');
+        }
+    }
+
+    /**
+     * Update multiple Wali Santri status in bulk.
+     */
+    public function bulkUpdateStatus(Request $request)
+    {
+        if (!Auth::user()->can('Edit Wali Santri')) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Maaf, Anda tidak memiliki akses untuk mengubah data Wali Santri.'
+            ], 403);
+        }
+
+        $request->validate([
+            'ids' => 'required|array',
+            'ids.*' => 'required|exists:users,id',
+            'jamaah_status' => 'required|in:JAMAAH,NON_JAMAAH,UNKNOWN',
+        ]);
+
+        try {
+            DB::beginTransaction();
+
+            $updatedCount = User::whereIn('id', $request->ids)
+                ->update(['jamaah_status' => $request->jamaah_status]);
+
+            DB::commit();
+
+            return response()->json([
+                'status' => 'success',
+                'message' => "Berhasil memperbarui status keanggotaan untuk {$updatedCount} Wali Santri.",
+                'count' => $updatedCount
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Bulk status update failed: ' . $e->getMessage());
+
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Terjadi kesalahan saat memproses pembaruan massal.'
+            ], 500);
         }
     }
 }

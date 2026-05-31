@@ -176,6 +176,7 @@ Route::group(['middleware' => ['auth']], function () {
     Route::resource('role', RoleController::class);
     Route::resource('admin', AdminController::class);
     Route::post('user/import', [UserController::class, 'import'])->name('user.import');
+    Route::post('user/bulk-update-status', [UserController::class, 'bulkUpdateStatus'])->name('user.bulk-update-status');
     Route::resource('user', UserController::class);
     Route::resource('school', SchoolController::class);
     Route::resource('classroom', ClassroomController::class, ['except' => ['index', 'show']]);

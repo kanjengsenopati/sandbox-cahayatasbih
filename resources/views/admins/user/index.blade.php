@@ -1,4 +1,23 @@
 @extends('layouts.master', ['title' => 'Data User'])
+@push('css')
+<style>
+    .card.mb-5, .custom-card-migration {
+        border-radius: 24px !important;
+        box-shadow: 0 8px 30px rgba(0,0,0,0.04) !important;
+        border: none !important;
+    }
+    .nav-line-tabs .nav-item .nav-link {
+        color: #64748b !important;
+        font-weight: 600;
+        border-bottom: 2px solid transparent;
+        padding: 0.75rem 1.5rem;
+    }
+    .nav-line-tabs .nav-item .nav-link.active, .nav-line-tabs .nav-item .nav-link:hover {
+        color: #2563EB !important;
+        border-bottom-color: #2563EB !important;
+    }
+</style>
+@endpush
 @section('content')
 <div class="content d-flex flex-column flex-column-fluid" id="kt_content">
     <!--begin::Toolbar-->
@@ -46,91 +65,175 @@
     <div class="post d-flex flex-column-fluid" id="kt_post">
         <!--begin::Container-->
         <div id="kt_content_container" class="container-xxl">
-            <!--begin::Card-->
-            <div class="card mb-5">
-                <!--begin::Card header-->
-                <div
-                    class="card-header d-flex flex-column flex-sm-row align-items-end justify-content-between border-0 pt-6">
-                    <!-- Filter Section -->
-                    <div class="d-flex flex-wrap gap-4 align-items-end mb-4 mb-sm-0">
-                        <form action="#" id="form-filter" method="get">
-                            <input type="text" hidden id="type" name="type" required>
+            <!--begin::Tabs-->
+            <ul class="nav nav-tabs nav-line-tabs nav-line-tabs-2x mb-5 fs-6 fw-bold">
+                <li class="nav-item">
+                    <a class="nav-link active" data-bs-toggle="tab" href="#kt_tab_daftar_wali">Daftar Wali Santri</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" data-bs-toggle="tab" href="#kt_tab_migrasi_status">Migrasi Status Massal</a>
+                </li>
+            </ul>
+            <!--end::Tabs-->
+
+            <!--begin::Tab Content-->
+            <div class="tab-content" id="userTabContent">
+                <!--begin::Tab Pane 1-->
+                <div class="tab-pane fade show active" id="kt_tab_daftar_wali" role="tabpanel">
+                    <!--begin::Card-->
+                    <div class="card mb-5">
+                        <!--begin::Card header-->
+                        <div
+                            class="card-header d-flex flex-column flex-sm-row align-items-end justify-content-between border-0 pt-6">
+                            <!-- Filter Section -->
+                            <div class="d-flex flex-wrap gap-4 align-items-end mb-4 mb-sm-0">
+                                <form action="#" id="form-filter" method="get">
+                                    <input type="text" hidden id="type" name="type" required>
+                                    <div class="d-flex flex-wrap gap-4 align-items-end">
+                                        <div>
+                                            <label class="form-label">Status</label>
+                                            <select name="status" class="form-select form-select-sm" id="filter_status">
+                                                <option value="">Semua</option>
+                                                <option value="ACTIVE">Aktif</option> <!-- Opsi untuk Aktif -->
+                                                <option value="INACTIVE">Tidak Aktif</option> <!-- Opsi untuk Tidak Aktif -->
+                                            </select>
+                                        </div>
+                                    </div>
+                                </form>
+                            </div>
+
+                            <!-- Action Buttons -->
                             <div class="d-flex flex-wrap gap-4 align-items-end">
+                                <x-action.import target="#modalImport" name="Wali Santri" />
+                                <x-action.create name="Wali Santri" action="{{ route('user.create') }}" />
+                            </div>
+
+                            <!-- Stats Cards -->
+                            <div class="d-flex flex-wrap gap-4 mt-4 w-100">
+                                <!-- Card for "Wali Santri Aktif" -->
+                                <div class="card bg-light-success flex-grow-1">
+                                    <div class="card-body d-flex align-items-center">
+                                        <div class="me-3">
+                                            <i class="fas fa-user-check text-success fs-2"></i> <!-- Ikon untuk aktif -->
+                                        </div>
+                                        <div>
+                                            <div class="fw-bolder fs-5 text-gray-800">Wali Santri Aktif</div>
+                                            <div class="text-success fs-3 fw-bolder" id="active-parents">0</div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Card for "Wali Santri Tidak Aktif" -->
+                                <div class="card bg-light-danger flex-grow-1">
+                                    <div class="card-body d-flex align-items-center">
+                                        <div class="me-3">
+                                            <i class="fas fa-user-times text-danger fs-2"></i> <!-- Ikon untuk tidak aktif -->
+                                        </div>
+                                        <div>
+                                            <div class="fw-bolder fs-5 text-gray-800">Wali Santri Tidak Aktif</div>
+                                            <div class="text-danger fs-3 fw-bolder" id="inactive-parents">0</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <!--end::Card header-->
+                        <!--begin::Card body-->
+                        <div class="card-body pt-0">
+                            <!--begin::Table-->
+                            <div class="table-responsive">
+                                <table id="table-user" class="table table-striped border rounded gy-5 gs-7">
+                                    <thead>
+                                        <tr class="fw-bolder fs-6 text-gray-800 border-bottom border-gray-200">
+                                            <th width="3%">No</th>
+                                            <th>Nama</th>
+                                            <th>Email</th>
+                                            <th>Jenis Kelamin</th>
+                                            <th>Status</th>
+                                            <th>Status Jamaah</th>
+                                            <th>Akses</th>
+                                            <th class="text-center min-w-100px">Aksi</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody></tbody>
+                                </table>
+                            </div>
+                            <!--end::Table-->
+                        </div>
+                        <!--end::Card body-->
+                    </div>
+                    <!--end::Card-->
+                </div>
+                <!--end::Tab Pane 1-->
+
+                <!--begin::Tab Pane 2-->
+                <div class="tab-pane fade" id="kt_tab_migrasi_status" role="tabpanel">
+                    <!--begin::Card-->
+                    <div class="card mb-5 custom-card-migration">
+                        <!--begin::Card header-->
+                        <div class="card-header d-flex flex-column flex-sm-row align-items-center justify-content-between border-0 pt-6">
+                            <!-- Filter Section -->
+                            <div class="d-flex flex-wrap gap-4 align-items-center mb-4 mb-sm-0">
                                 <div>
-                                    <label class="form-label">Status</label>
-                                    <select name="status" class="form-select form-select-sm" id="filter_status">
+                                    <label class="form-label text-slate-600 fw-bold">Filter Status Asal</label>
+                                    <select name="migration_origin_status" class="form-select form-select-sm" id="filter_migration_origin_status">
+                                        <option value="UNKNOWN" selected>Tidak Tahu (Default)</option>
                                         <option value="">Semua</option>
-                                        <option value="ACTIVE">Aktif</option> <!-- Opsi untuk Aktif -->
-                                        <option value="INACTIVE">Tidak Aktif</option> <!-- Opsi untuk Tidak Aktif -->
+                                        <option value="JAMAAH">Jamaah</option>
+                                        <option value="NON_JAMAAH">Non Jamaah</option>
                                     </select>
                                 </div>
                             </div>
-                        </form>
-                    </div>
 
-                    <!-- Action Buttons -->
-                    <div class="d-flex flex-wrap gap-4 align-items-end">
-                        <x-action.import target="#modalImport" name="Wali Santri" />
-                        <x-action.create name="Wali Santri" action="{{ route('user.create') }}" />
-                    </div>
-
-                    <!-- Stats Cards -->
-                    <div class="d-flex flex-wrap gap-4 mt-4 w-100">
-                        <!-- Card for "Wali Santri Aktif" -->
-                        <div class="card bg-light-success flex-grow-1">
-                            <div class="card-body d-flex align-items-center">
-                                <div class="me-3">
-                                    <i class="fas fa-user-check text-success fs-2"></i> <!-- Ikon untuk aktif -->
-                                </div>
-                                <div>
-                                    <div class="fw-bolder fs-5 text-gray-800">Wali Santri Aktif</div>
-                                    <div class="text-success fs-3 fw-bolder" id="active-parents">0</div>
+                            <!-- Action Section -->
+                            <div class="d-flex flex-wrap gap-4 align-items-center">
+                                <div class="d-flex align-items-center gap-2">
+                                    <label class="form-label text-slate-600 fw-bold mb-0 me-2">Status Target:</label>
+                                    <select name="migration_target_status" class="form-select form-select-sm w-150px" id="migration_target_status">
+                                        <option value="JAMAAH" selected>Jamaah</option>
+                                        <option value="NON_JAMAAH">Non Jamaah</option>
+                                        <option value="UNKNOWN">Tidak Tahu</option>
+                                    </select>
+                                    <button type="button" class="btn btn-primary btn-sm" id="btn-apply-bulk-migration">
+                                        <i class="fas fa-check me-1"></i> Terapkan Semua
+                                    </button>
                                 </div>
                             </div>
                         </div>
-
-                        <!-- Card for "Wali Santri Tidak Aktif" -->
-                        <div class="card bg-light-danger flex-grow-1">
-                            <div class="card-body d-flex align-items-center">
-                                <div class="me-3">
-                                    <i class="fas fa-user-times text-danger fs-2"></i> <!-- Ikon untuk tidak aktif -->
-                                </div>
-                                <div>
-                                    <div class="fw-bolder fs-5 text-gray-800">Wali Santri Tidak Aktif</div>
-                                    <div class="text-danger fs-3 fw-bolder" id="inactive-parents">0</div>
-                                </div>
+                        <!--end::Card header-->
+                        
+                        <!--begin::Card body-->
+                        <div class="card-body pt-0">
+                            <!--begin::Table-->
+                            <div class="table-responsive">
+                                <table id="table-user-migration" class="table table-striped border rounded gy-5 gs-7 align-middle w-100">
+                                    <thead>
+                                        <tr class="fw-bolder fs-6 text-gray-800 border-bottom border-gray-200">
+                                            <th width="3%">
+                                                <div class="form-check form-check-sm form-check-custom form-check-solid">
+                                                    <input class="form-check-input" type="checkbox" id="check-all-migration">
+                                                </div>
+                                            </th>
+                                            <th width="5%">No</th>
+                                            <th>Nama</th>
+                                            <th>Email</th>
+                                            <th>Status</th>
+                                            <th>Status Jamaah</th>
+                                            <th>Akses</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody></tbody>
+                                </table>
                             </div>
+                            <!--end::Table-->
                         </div>
+                        <!--end::Card body-->
                     </div>
+                    <!--end::Card-->
                 </div>
-                <!--end::Card header-->
-                <!--begin::Card body-->
-                <div class="card-body pt-0">
-                    <!--begin::Table-->
-                    <div class="table-responsive">
-                        <table id="table-user" class="table table-striped border rounded gy-5 gs-7">
-                            <thead>
-                                <tr class="fw-bolder fs-6 text-gray-800 border-bottom border-gray-200">
-                                    <th width="3%">No</th>
-                                    <th>Nama</th>
-                                    <th>Email</th>
-                                    <th>Jenis Kelamin</th>
-                                    <th>Status</th>
-                                    <th>Status Jamaah</th>
-                                    <th>Akses</th>
-                                    <th class="text-center min-w-100px">Aksi</th>
-                                </tr>
-                            </thead>
-                            <tbody></tbody>
-                        </table>
-                    </div>
-                    <!--end::Table-->
-                </div>
-                <!--end::Card body-->
+                <!--end::Tab Pane 2-->
             </div>
-            <!--end::Card-->
-            <!--begin::Modals-->
-
+            <!--end::Tab Content-->
         </div>
         <!--end::Container-->
     </div>
@@ -263,17 +366,209 @@
             table.ajax.reload();
         });
 
-        $.ajax({
-            url: '{{ route('user.index') }}',
-            type: 'GET',
-            data: {
-                type: 'statistic'
+        // Initialize Migration Datatable
+        var migrationTable = $('#table-user-migration').DataTable({
+            ordering: true,
+            processing: true,
+            serverSide: false,
+            searchable: true,
+            ajax: {
+                url: '{{ route('user.index') }}',
+                data: function(d) {
+                    d.status = '';
+                    d.jamaah_status = $('#filter_migration_origin_status').val();
+                    d.type = 'table';
+                }
             },
-            success: function(response) {
-                $('#active-parents').text(response.active);
-                $('#inactive-parents').text(response.inactive);
+            language: {
+                "paginate": {
+                    "next": "<i class='fa fa-angle-right'>",
+                    "previous": "<i class='fa fa-angle-left'>"
+                },
+                "loadingRecords": "Loading...",
+                "processing": "Processing...",
+            },
+            columns: [
+                {
+                    data: 'id',
+                    sortable: false,
+                    searchable: false,
+                    width: '3%',
+                    render: function(data, type, row) {
+                        return `
+                            <div class="form-check form-check-sm form-check-custom form-check-solid">
+                                <input class="form-check-input migration-checkbox" type="checkbox" value="${data}">
+                            </div>
+                        `;
+                    }
+                },
+                {
+                    "data": null,
+                    "sortable": false,
+                    "searchable": false,
+                    width: '5%',
+                    render: function(data, type, row, meta) {
+                        return meta.row + meta.settings._iDisplayStart + 1;
+                    }
+                },
+                {
+                    data: 'name',
+                    name: 'name',
+                    responsivePriority: -1,
+                    render: function(data, type, row) {
+                        return data ? data : 'N/A';
+                    }
+                },
+                {
+                    data: 'email',
+                    name: 'email',
+                    render: function(data, type, row) {
+                        return data ? data : 'N/A';
+                    }
+                },
+                {
+                    data: 'status',
+                    name: 'status',
+                },
+                {
+                    data: 'jamaah_status',
+                    name: 'jamaah_status',
+                },
+                {
+                    data: 'last_login',
+                    name: 'last_login',
+                }
+            ]
+        });
+
+        $('#filter_migration_origin_status').on('change', function() {
+            migrationTable.ajax.reload();
+            $('#check-all-migration').prop('checked', false);
+        });
+
+        // Check All checkbox behavior
+        $('#check-all-migration').on('change', function() {
+            $('.migration-checkbox').prop('checked', this.checked);
+        });
+
+        // Individual checkbox change behavior
+        $(document).on('change', '.migration-checkbox', function() {
+            var allCheckboxes = $('.migration-checkbox');
+            var checkedCheckboxes = $('.migration-checkbox:checked');
+            if (allCheckboxes.length > 0 && checkedCheckboxes.length === allCheckboxes.length) {
+                $('#check-all-migration').prop('checked', true);
+            } else {
+                $('#check-all-migration').prop('checked', false);
             }
         });
-    })
+
+        // Apply Bulk Migration button click
+        $('#btn-apply-bulk-migration').on('click', function() {
+            var selectedIds = [];
+            $('.migration-checkbox:checked').each(function() {
+                selectedIds.push($(this).val());
+            });
+
+            if (selectedIds.length === 0) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Peringatan',
+                    text: 'Silakan pilih minimal satu Wali Santri terlebih dahulu.',
+                    customClass: {
+                        confirmButton: 'btn btn-primary'
+                    }
+                });
+                return;
+            }
+
+            var targetStatus = $('#migration_target_status').val();
+            var targetStatusLabel = $('#migration_target_status option:selected').text();
+
+            Swal.fire({
+                title: 'Apakah Anda yakin?',
+                text: `Mengubah status keanggotaan ${selectedIds.length} Wali Santri menjadi "${targetStatusLabel}"?`,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Ya, Terapkan!',
+                cancelButtonText: 'Batal',
+                customClass: {
+                    confirmButton: 'btn btn-primary',
+                    cancelButton: 'btn btn-active-light'
+                }
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    $.ajax({
+                        url: '{{ route('user.bulk-update-status') }}',
+                        type: 'POST',
+                        data: {
+                            _token: '{{ csrf_token() }}',
+                            ids: selectedIds,
+                            jamaah_status: targetStatus
+                        },
+                        success: function(response) {
+                            if (response.status === 'success') {
+                                Swal.fire({
+                                    icon: 'success',
+                                    title: 'Berhasil',
+                                    text: response.message,
+                                    customClass: {
+                                        confirmButton: 'btn btn-success'
+                                    }
+                                });
+                                // Reload tables
+                                table.ajax.reload();
+                                migrationTable.ajax.reload();
+                                // Reset select all checkbox
+                                $('#check-all-migration').prop('checked', false);
+                                // Refresh active/inactive counters
+                                refreshCounters();
+                            } else {
+                                Swal.fire({
+                                    icon: 'error',
+                                    title: 'Gagal',
+                                    text: response.message || 'Terjadi kesalahan saat memproses data.',
+                                    customClass: {
+                                        confirmButton: 'btn btn-danger'
+                                    }
+                                });
+                            }
+                        },
+                        error: function(xhr) {
+                            var errMsg = 'Terjadi kesalahan sistem.';
+                            if (xhr.responseJSON && xhr.responseJSON.message) {
+                                errMsg = xhr.responseJSON.message;
+                            }
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Gagal',
+                                text: errMsg,
+                                customClass: {
+                                    confirmButton: 'btn btn-danger'
+                                }
+                            });
+                        }
+                    });
+                }
+            });
+        });
+
+        // Function to refresh statistic counters
+        function refreshCounters() {
+            $.ajax({
+                url: '{{ route('user.index') }}',
+                type: 'GET',
+                data: {
+                    type: 'statistic'
+                },
+                success: function(response) {
+                    $('#active-parents').text(response.active);
+                    $('#inactive-parents').text(response.inactive);
+                }
+            });
+        }
+
+        // Initial fetch of counters
+        refreshCounters();
+    });
 </script>
 @endpush
