@@ -124,11 +124,17 @@ class CashFlowController extends Controller
         $startDate = request()->filled('start_date') ? Carbon::parse(request()->start_date) : null;
         $endDate = request()->filled('end_date') ? Carbon::parse(request()->end_date) : null;
         $academicYearId = request()->filled('academic_year_id') ? request()->academic_year_id : null;
+        $billTypeName = request()->filled('bill_type_name') ? request()->bill_type_name : null;
 
         // 1. Hitung Target & Realisasi dari SEMUA tagihan
         $billQuery = Bill::query();
         if ($academicYearId) {
             $billQuery->where('academic_year_id', $academicYearId);
+        }
+        if ($billTypeName) {
+            $billQuery->whereHas('billType', function ($q) use ($billTypeName) {
+                $q->where('name', $billTypeName);
+            });
         }
         
         if ($startDate) {
@@ -169,6 +175,17 @@ class CashFlowController extends Controller
 
         $remainingBalances = max($totalIncomes - $totalExpenses, 0);
 
+        // 2.5. Ambil semua nama jenis tagihan unik (untuk populate dropdown filter, tidak difilter bill_type_name)
+        $allBillTypeNamesQuery = DB::table('bill_types as bt')
+            ->join('bills as b', 'b.bill_type_id', '=', 'bt.id')
+            ->whereNull('b.deleted_at')
+            ->when($academicYearId, fn($q) => $q->where('b.academic_year_id', $academicYearId))
+            ->select('bt.name')
+            ->distinct()
+            ->orderBy('bt.name')
+            ->pluck('name')
+            ->toArray();
+
         // 3. Breakdown per Jenis/Nama Pembayaran (Efficient DB-level aggregation)
         $breakdownQuery = DB::table('bills as b')
             ->join('bill_types as bt', 'b.bill_type_id', '=', 'bt.id')
@@ -186,6 +203,9 @@ class CashFlowController extends Controller
 
         if ($academicYearId) {
             $breakdownQuery->where('b.academic_year_id', $academicYearId);
+        }
+        if ($billTypeName) {
+            $breakdownQuery->where('bt.name', $billTypeName);
         }
         if ($startDate) {
             $breakdownQuery->where(function ($query) use ($startDate) {
@@ -257,6 +277,9 @@ class CashFlowController extends Controller
 
         if ($academicYearId) {
             $breakdownDetailQuery->where('b.academic_year_id', $academicYearId);
+        }
+        if ($billTypeName) {
+            $breakdownDetailQuery->where('bt.name', $billTypeName);
         }
         if ($startDate) {
             $breakdownDetailQuery->where(function ($query) use ($startDate) {
@@ -416,6 +439,7 @@ class CashFlowController extends Controller
             'percentage_realisasi' => number_format($totalCashflows > 0 ? ($totalIncomes / $totalCashflows) * 100 : 0, 2, ',', '.') . '%',
             'breakdown_bills' => $breakdownBills,
             'breakdown_detail_bills' => $breakdownDetailBills,
+            'all_bill_type_names' => $allBillTypeNamesQuery,
             'breakdown_sources' => [
                 'tunai' => number_format($sourceBreakdown['Tunai'], 0, ',', '.'),
                 'saldo' => number_format($sourceBreakdown['Debit Saldo'], 0, ',', '.'),

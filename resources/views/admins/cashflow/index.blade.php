@@ -213,6 +213,14 @@
                                     </select>
                                 </div>
 
+                                <!-- Filter Jenis Tagihan -->
+                                <div>
+                                    <label class="form-label mb-1 fw-bold text-gray-700 fs-7">Jenis Tagihan</label>
+                                    <select id="bill_type_tab1" name="bill_type_name" class="form-select" style="border-radius: 12px; min-width: 180px; background-color: #fff; border: 1px solid #ccc; padding: 7px 14px; color: #475569; font-weight: 500;">
+                                        <option value="">Semua Jenis Tagihan</option>
+                                    </select>
+                                </div>
+
                                 <!-- Custom Date Range Picker -->
                                 <div id="wrapper_date_tab1" style="display: none;">
                                     <label class="form-label mb-1 fw-bold text-gray-700 fs-7">Pilih Rentang Tanggal</label>
@@ -304,8 +312,12 @@
                         <!-- Breakdown Pemasukan per Jenis Tagihan -->
                         <div class="col-12 col-md-8" style="width: 70%; flex: 0 0 70%; max-width: 70%;">
                             <div class="premium-card">
-                                <div class="card-header border-0 pt-6">
+                                <div class="card-header border-0 pt-6 d-flex align-items-center justify-content-between flex-wrap gap-2">
                                     <span class="typography-h2">Breakdown per Jenis Tagihan</span>
+                                    <div class="position-relative">
+                                        <i class="bi bi-search position-absolute top-50 translate-middle-y ms-4 text-slate-400" style="font-size: 14px;"></i>
+                                        <input type="text" id="search-jenis-tagihan" class="form-control form-control-solid ps-10 py-2 fs-7" placeholder="Cari jenis tagihan..." style="border-radius: 12px; width: 220px; font-weight: 500; border: 1px solid #cbd5e1; background-color: #f8fafc; color: #1e293b;" />
+                                    </div>
                                 </div>
                                 <div class="card-body pt-2" style="max-height: 280px; overflow-y: auto;">
                                     <div class="table-responsive">
@@ -1013,6 +1025,13 @@
 
     // Event listener for Filter Tahun Ajaran Tab 1 & Tab 2
     $('#academic_year_tab1').on('change', function() {
+        // Reset jenis tagihan filter when academic year changes
+        $('#bill_type_tab1').val('');
+        loadTab1Data();
+    });
+
+    // Event listener for Filter Jenis Tagihan Tab 1
+    $('#bill_type_tab1').on('change', function() {
         loadTab1Data();
     });
 
@@ -1108,9 +1127,11 @@
         var sd = $('#start_date_tab1').val();
         var ed = $('#end_date_tab1').val();
         var ay = $('#academic_year_tab1').val();
+        var bt = $('#bill_type_tab1').val();
         if (sd) params.start_date = sd;
         if (ed) params.end_date = ed;
         if (ay) params.academic_year_id = ay;
+        if (bt) params.bill_type_name = bt;
 
         axios.get("{{ route('cashflow.index') }}", {
             params: params
@@ -1145,6 +1166,18 @@
             // Breakdown Bills Tbody
             var billsTbody = $('#breakdown-bills-tbody');
             billsTbody.empty();
+
+            // Populate Jenis Tagihan filter dropdown (always repopulate with full list, preserve selection)
+            if (response.data.all_bill_type_names && response.data.all_bill_type_names.length > 0) {
+                var btSelect = $('#bill_type_tab1');
+                var prevVal = btSelect.val();
+                btSelect.find('option:not(:first)').remove();
+                response.data.all_bill_type_names.forEach(function(name) {
+                    btSelect.append('<option value="' + name + '">' + name + '</option>');
+                });
+                btSelect.val(prevVal);
+            }
+
             if (!response.data.breakdown_bills || response.data.breakdown_bills.length === 0) {
                 billsTbody.append('<tr><td colspan="3" class="text-center text-muted py-4">Tidak ada data breakdown pembayaran lunas</td></tr>');
             } else {
@@ -1172,6 +1205,9 @@
                     );
                 });
             }
+
+            // Filter tables according to search query if any
+            filterBreakdownTables();
 
             // Breakdown Sources
             $('#source-tunai-amount').text('Rp ' + response.data.breakdown_sources.tunai);
