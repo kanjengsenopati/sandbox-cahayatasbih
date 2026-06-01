@@ -114,7 +114,7 @@
                 <!-- Target Total Pemasukan -->
                 <div class="col-md-3">
                     <div class="premium-card p-6">
-                        <div class="d-flex align-items-center justify-content-between mb-4">
+                        <div class="d-flex align-items-center justify-content-between mb-2">
                             <x-text.label>Target Pemasukan</x-text.label>
                             <div class="bg-light-primary rounded-circle p-2 d-flex align-items-center justify-content-center" style="width: 36px; height: 36px;">
                                 <i class="bi bi-wallet2 text-primary fs-4"></i>
@@ -130,7 +130,7 @@
                 <!-- Realisasi Pemasukan -->
                 <div class="col-md-3">
                     <div class="premium-card p-6">
-                        <div class="d-flex align-items-center justify-content-between mb-4">
+                        <div class="d-flex align-items-center justify-content-between mb-2">
                             <x-text.label>Realisasi Pemasukan</x-text.label>
                             <div class="bg-light-success rounded-circle p-2 d-flex align-items-center justify-content-center" style="width: 36px; height: 36px;">
                                 <i class="bi bi-check-circle text-success fs-4"></i>
@@ -146,7 +146,7 @@
                 <!-- Dana Mutasi Bendahara -->
                 <div class="col-md-3">
                     <div class="premium-card p-6">
-                        <div class="d-flex align-items-center justify-content-between mb-4">
+                        <div class="d-flex align-items-center justify-content-between mb-2">
                             <x-text.label>Dana Mutasi Bendahara</x-text.label>
                             <div class="bg-light-warning rounded-circle p-2 d-flex align-items-center justify-content-center" style="width: 36px; height: 36px;">
                                 <i class="bi bi-arrow-down-up text-warning fs-4"></i>
@@ -162,7 +162,7 @@
                 <!-- Mutasi Ke Pengurus Yayasan -->
                 <div class="col-md-3">
                     <div class="premium-card p-6">
-                        <div class="d-flex align-items-center justify-content-between mb-4">
+                        <div class="d-flex align-items-center justify-content-between mb-2">
                             <x-text.label>Mutasi Ke Pengurus Yayasan</x-text.label>
                             <div class="bg-light-danger rounded-circle p-2 d-flex align-items-center justify-content-center" style="width: 36px; height: 36px;">
                                 <i class="bi bi-bank text-danger fs-4"></i>
@@ -189,9 +189,9 @@
                             <div class="table-responsive">
                                 <table class="table align-middle table-row-dashed table-sm">
                                     <thead>
-                                        <tr class="text-start text-gray-400 fw-bold fs-7 text-uppercase">
-                                            <th>Nama Pembayaran</th>
-                                            <th class="text-end">Total Pemasukan</th>
+                                        <tr class="text-start text-gray-800 fw-bolder fs-7 text-uppercase">
+                                            <th style="color: #1e293b;">Nama Pembayaran</th>
+                                            <th class="text-end text-nowrap" style="color: #1e293b;">Total Pemasukan</th>
                                         </tr>
                                     </thead>
                                     <tbody id="breakdown-bills-tbody" class="fw-bold text-gray-600">
