@@ -4,12 +4,12 @@ importScripts('https://www.gstatic.com/firebasejs/10.12.0/firebase-messaging-com
 
 // Konfigurasi Firebase Web App (Sesuaikan dengan data dari Firebase Console Anda)
 const firebaseConfig = {
-  apiKey: "YOUR_API_KEY_HERE",
-  authDomain: "pptq-cahaya-tasbih.firebaseapp.com",
-  projectId: "pptq-cahaya-tasbih",
-  storageBucket: "pptq-cahaya-tasbih.appspot.com",
-  messagingSenderId: "YOUR_SENDER_ID_HERE",
-  appId: "YOUR_APP_ID_HERE"
+  apiKey: "AIzaSyCoWfvFlSBGw-SRBsLeS5F_Pm31Ry8hNMU",
+  authDomain: "pwa-ct.firebaseapp.com",
+  projectId: "pwa-ct",
+  storageBucket: "pwa-ct.firebasestorage.app",
+  messagingSenderId: "790487476334",
+  appId: "1:790487476334:web:fd04e9e13d604b2c1fde7f"
 };
 
 firebase.initializeApp(firebaseConfig);
