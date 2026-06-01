@@ -254,15 +254,16 @@ Route::group(['middleware' => ['auth']], function () {
     Route::resource('application-setting', ApplicationSettingController::class, ['only' => ['index', 'store']])
         ->names('application-setting');
 
-    // Desain & Cetak Kartu Santri
-    Route::get('student-card-setting', [\App\Http\Controllers\Admin\StudentCardSettingController::class, 'index'])
-        ->name('student-card-setting.index');
-    Route::post('student-card-setting', [\App\Http\Controllers\Admin\StudentCardSettingController::class, 'store'])
-        ->name('student-card-setting.store');
-    Route::post('student-card-setting/print', [\App\Http\Controllers\Admin\StudentCardSettingController::class, 'print'])
-        ->name('student-card-setting.print');
-    Route::get('student-card-setting/get-students', [\App\Http\Controllers\Admin\StudentCardSettingController::class, 'getStudents'])
-        ->name('student-card-setting.get-students');
+    // Desain & Cetak Kartu (Templated)
+    Route::get('student-card-setting', [\App\Http\Controllers\Admin\StudentCardSettingController::class, 'index'])->name('student-card-setting.index');
+    Route::post('student-card-setting/templates', [\App\Http\Controllers\Admin\StudentCardSettingController::class, 'storeTemplate'])->name('student-card-setting.store-template');
+    Route::put('student-card-setting/templates/{id}', [\App\Http\Controllers\Admin\StudentCardSettingController::class, 'updateTemplate'])->name('student-card-setting.update-template');
+    Route::delete('student-card-setting/templates/{id}', [\App\Http\Controllers\Admin\StudentCardSettingController::class, 'destroyTemplate'])->name('student-card-setting.destroy-template');
+    Route::post('student-card-setting/templates/{id}/toggle-active', [\App\Http\Controllers\Admin\StudentCardSettingController::class, 'toggleActive'])->name('student-card-setting.toggle-active');
+    Route::get('student-card-setting/templates/{id}/design', [\App\Http\Controllers\Admin\StudentCardSettingController::class, 'design'])->name('student-card-setting.design');
+    Route::post('student-card-setting/templates/{id}/design', [\App\Http\Controllers\Admin\StudentCardSettingController::class, 'storeDesign'])->name('student-card-setting.store-design');
+    Route::post('student-card-setting/print', [\App\Http\Controllers\Admin\StudentCardSettingController::class, 'print'])->name('student-card-setting.print');
+    Route::get('student-card-setting/get-students', [\App\Http\Controllers\Admin\StudentCardSettingController::class, 'getStudents'])->name('student-card-setting.get-students');
 
     // start saldo history
     Route::resource('saldo-bank', SaldoBankController::class, ['only' => ['index', 'edit', 'update']])->names('saldo-bank');

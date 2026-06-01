@@ -1,0 +1,882 @@
+@extends('layouts.master', ['title' => 'Mendesain Template Kartu'])
+@push('css')
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400;700&family=Inter:wght@400;700&family=Lato:wght@400;700&family=Merriweather:wght@400;700&family=Montserrat:wght@400;700&family=Nunito:wght@400;700&family=Open+Sans:wght@400;700&family=Oswald:wght@400;700&family=Outfit:wght@400;700&family=Pacifico&family=Poppins:wght@400;700&family=Raleway:wght@400;700&family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+@endpush
+@section('content')
+<!--begin::Content-->
+<div class="content d-flex flex-column flex-column-fluid" id="kt_content">
+    <!--begin::Toolbar-->
+    <div class="toolbar" id="kt_toolbar">
+        <div id="kt_toolbar_container" class="container-fluid d-flex flex-stack">
+            <div data-kt-swapper="true" data-kt-swapper-mode="prepend"
+                data-kt-swapper-parent="{default: '#kt_content_container', 'lg': '#kt_toolbar_container'}"
+                class="page-title d-flex align-items-center flex-wrap me-3 mb-5 mb-lg-0">
+                <h1 class="d-flex text-dark fw-bolder fs-3 align-items-center my-1">Editor Desain Kartu</h1>
+                <span class="h-20px border-gray-300 border-start mx-4"></span>
+                <ul class="breadcrumb breadcrumb-separatorless fw-bold fs-7 my-1">
+                    <a class="breadcrumb-item" href="{{ route('student-card-setting.index') }}">
+                        <li class="breadcrumb-item text-muted">Pengaturan</li>
+                    </a>
+                    <li class="breadcrumb-item"><span class="bullet bg-gray-300 w-5px h-2px"></span></li>
+                    <a class="breadcrumb-item" href="{{ route('student-card-setting.index') }}">
+                        <li class="breadcrumb-item text-muted">Daftar Template</li>
+                    </a>
+                    <li class="breadcrumb-item"><span class="bullet bg-gray-300 w-5px h-2px"></span></li>
+                    <li class="breadcrumb-item text-dark">
+                        <span class="text-muted fw-bolder fs-7">Desain: {{ $template->name }}</span>
+                    </li>
+                </ul>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+                <a href="{{ route('student-card-setting.index') }}" class="btn btn-sm btn-light-primary rounded-xl">
+                    <i class="fa-solid fa-arrow-left me-2"></i>Kembali ke Daftar
+                </a>
+            </div>
+        </div>
+    </div>
+    <!--end::Toolbar-->
+
+    <!--begin::Post-->
+    <div class="post d-flex flex-column-fluid" id="kt_post">
+        <div id="kt_content_container" class="container-xxl">
+            <style>
+                text-h1, .text-h1 { display: block; font-size: 22px; font-weight: 700; color: #0f172a; } /* Slate-900 */
+                text-h2, .text-h2 { display: block; font-size: 16px; font-weight: 600; color: #1e293b; } /* Slate-800 */
+                text-amount, .text-amount { display: inline-block; font-size: 18px; font-weight: 700; color: #059669; } /* Emerald-600 */
+                text-label, .text-label { display: block; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: #94a3b8; } /* Slate-400 */
+                text-body, .text-body { display: block; font-size: 14px; font-weight: 500; color: #475569; } /* Slate-600 */
+                text-caption, .text-caption { display: block; font-size: 12px; font-style: italic; color: #94a3b8; } /* Slate-400 */
+                
+                .draggable-element {
+                    cursor: move !important;
+                    user-select: none;
+                    transition: outline 0.1s ease;
+                }
+                .draggable-element:hover {
+                    outline: 1.5px dashed #2563eb !important;
+                    outline-offset: 2px;
+                }
+                .draggable-element.dragging {
+                    outline: 2px dashed #10b981 !important;
+                    outline-offset: 2px;
+                    opacity: 0.7;
+                }
+                
+                /* Ruler and Grid Styles */
+                .preview-ruler {
+                    background-color: #f8fafc;
+                    position: absolute;
+                    pointer-events: none;
+                    z-index: 20;
+                }
+                .preview-ruler.horizontal {
+                    border-bottom: 1.5px solid #cbd5e1;
+                    background-image: 
+                         linear-gradient(to right, #cbd5e1 1px, transparent 1px),
+                         linear-gradient(to right, #94a3b8 1px, transparent 1px),
+                         linear-gradient(to right, #64748b 1px, transparent 1px);
+                    background-size: 4px 4px, 20px 8px, 40px 12px;
+                    background-repeat: repeat-x;
+                    background-position: bottom left;
+                }
+                .preview-ruler.vertical {
+                    border-right: 1.5px solid #cbd5e1;
+                    background-image: 
+                         linear-gradient(to bottom, #cbd5e1 1px, transparent 1px),
+                         linear-gradient(to bottom, #94a3b8 1px, transparent 1px),
+                         linear-gradient(to bottom, #64748b 1px, transparent 1px);
+                    background-size: 4px 4px, 8px 20px, 12px 40px;
+                    background-repeat: repeat-y;
+                    background-position: top right;
+                }
+                .ruler-label {
+                    font-family: monospace;
+                    font-size: 8px;
+                    color: #64748b;
+                    user-select: none;
+                }
+                
+                #cardPreviewWrapper.show-grid::before {
+                    content: "";
+                    position: absolute;
+                    inset: 0;
+                    z-index: 15;
+                    pointer-events: none;
+                    background-image: 
+                         linear-gradient(to right, rgba(0, 0, 0, 0.05) 1px, transparent 1px),
+                         linear-gradient(to bottom, rgba(0, 0, 0, 0.05) 1px, transparent 1px),
+                         linear-gradient(to right, rgba(0, 0, 0, 0.12) 1.5px, transparent 1.5px),
+                         linear-gradient(to bottom, rgba(0, 0, 0, 0.12) 1.5px, transparent 1.5px);
+                    background-size: 4px 4px, 4px 4px, 20px 20px, 20px 20px;
+                }
+            </style>
+
+            @if (session('success'))
+                <div class="alert alert-success alert-dismissible fade show rounded-[12px]" role="alert">
+                    {{ session('success') }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            @endif
+            @if ($errors->any())
+                <div class="alert alert-danger alert-dismissible fade show rounded-[12px]" role="alert">
+                    <ul class="mb-0">
+                        @foreach ($errors->all() as $error)
+                            <li>{{ $error }}</li>
+                        @endforeach
+                    </ul>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            @endif
+
+            <form action="{{ route('student-card-setting.store-design', $template->id) }}" method="POST" enctype="multipart/form-data">
+                @csrf
+                <div class="row g-5">
+
+                    {{-- Left Column: TEMPLATE BACKGROUND UPLOAD --}}
+                    <div class="col-lg-4">
+                        <div class="card card-flush border-0 shadow-[0_8px_30px_rgba(0,0,0,0.04)] mb-5" style="border-radius: 24px;">
+                            <div class="card-header border-0 pb-0">
+                                <text-h2 class="text-h2 card-title fw-bolder mb-0">Informasi Template</text-h2>
+                            </div>
+                            <div class="card-body">
+                                <div class="mb-3">
+                                    <span class="badge bg-light-primary text-primary px-3 py-1 rounded">
+                                        {{ $template->type === 'exam_card' ? 'Kartu Ujian' : 'Kartu Santri' }}
+                                    </span>
+                                </div>
+                                <div class="mb-1">
+                                    <label class="fw-bold text-slate-500 fs-7">Nama Template</label>
+                                    <div class="fw-bold text-slate-800 fs-5">{{ $template->name }}</div>
+                                </div>
+                                @if($template->academicYear)
+                                <div class="mt-3">
+                                    <label class="fw-bold text-slate-500 fs-7">Tahun Ajaran</label>
+                                    <div class="fw-medium text-slate-700 fs-6">{{ $template->academicYear->name }}</div>
+                                </div>
+                                @endif
+                            </div>
+                        </div>
+
+                        <div class="card card-flush border-0 shadow-[0_8px_30px_rgba(0,0,0,0.04)]" style="border-radius: 24px; position: sticky; top: 100px; z-index: 10;">
+                            <div class="card-header border-0 pb-0">
+                                <text-h2 class="text-h2 card-title fw-bolder mb-0">Background Template</text-h2>
+                            </div>
+                            <div class="card-body">
+                                <div class="p-4 bg-light-primary rounded" style="border-radius: 12px;">
+                                    <label class="form-label fw-bold">Gambar Latar Belakang Kartu</label>
+                                    @if($background)
+                                        <div class="mb-3 text-center">
+                                            <img src="{{ storage_asset($background) }}" class="rounded shadow-sm" style="max-width:100%; height:auto; max-height:150px; object-fit:contain;" />
+                                        </div>
+                                    @endif
+                                    <input type="file" name="student_card_image" class="form-control form-control-sm" accept="image/*" id="bgUpload" />
+                                    <small class="text-muted d-block mt-2">Format: JPG, PNG, WebP. Maks 2MB. Rasio ideal: 85.6 × 54mm</small>
+                                </div>
+                                
+                                <div class="mt-5 d-flex gap-2">
+                                    <button type="submit" class="btn btn-primary w-100 rounded-xl">
+                                        <i class="fa-solid fa-save me-2"></i>Simpan Desain
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {{-- Right Column: LIVE PREVIEW & CONFIGURATION PANEL --}}
+                    <div class="col-lg-8">
+                        
+                        {{-- Live Preview Card --}}
+                        <div class="card card-flush border-0 shadow-[0_8px_30px_rgba(0,0,0,0.04)] mb-5" style="border-radius: 24px;">
+                            <div class="card-header border-0 pb-0 d-flex justify-content-between align-items-center flex-wrap gap-3">
+                                <text-h2 class="text-h2 card-title fw-bolder mb-0">Live Preview</text-h2>
+                                <div class="card-toolbar d-flex align-items-center gap-2">
+                                    <button type="button" id="btnToggleRuler" class="btn btn-sm btn-icon btn-light" title="Toggle Ruler" style="width: 32px; height: 32px; border-radius: 8px;">
+                                        <i class="fa-solid fa-ruler text-slate-500" style="font-size: 14px;"></i>
+                                    </button>
+                                    <button type="button" id="btnToggleGrid" class="btn btn-sm btn-icon btn-light" title="Toggle Grid" style="width: 32px; height: 32px; border-radius: 8px;">
+                                        <i class="fa-solid fa-border-all text-slate-500" style="font-size: 14px;"></i>
+                                    </button>
+                                    <span class="h-20px border-gray-300 border-start mx-1"></span>
+                                    <button type="button" id="btnZoomOut" class="btn btn-sm btn-icon btn-light" title="Zoom Out" style="width: 32px; height: 32px; border-radius: 8px;">
+                                        <i class="fa-solid fa-minus text-slate-500" style="font-size: 12px;"></i>
+                                    </button>
+                                    <span id="zoomPercent" class="fw-bold text-slate-700 fs-7 px-1" style="min-width: 45px; text-align: center;">100%</span>
+                                    <button type="button" id="btnZoomIn" class="btn btn-sm btn-icon btn-light" title="Zoom In" style="width: 32px; height: 32px; border-radius: 8px;">
+                                        <i class="fa-solid fa-plus text-slate-500" style="font-size: 12px;"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="card-body p-0 overflow-hidden d-flex justify-content-center align-items-center" style="background:#1e293b; min-height:400px; border-radius: 0 0 24px 24px; position: relative;">
+                                <div id="previewViewport" style="width: 100%; height: 100%; min-height: 400px; max-height: 500px; overflow: auto; display: flex; position: relative;">
+                                    <div id="zoomWrapper" style="transform-origin: center center; transition: transform 0.1s ease; margin: auto; padding: 40px; display: flex; align-items: center; justify-content: center; min-width: max-content;">
+                                        <div id="previewContainer" style="position: relative; padding-top: 20px; padding-left: 20px; box-sizing: content-box; background: transparent;">
+                                            
+                                            <div id="rulerHorizontal" class="preview-ruler horizontal" style="top: 0; left: 20px; height: 20px; width: 342px;"></div>
+                                            
+                                            <div id="rulerVertical" class="preview-ruler vertical" style="top: 20px; left: 0; width: 20px; height: 216px;"></div>
+                                            
+                                            <div id="cardPreviewWrapper" style="width:342px; height:216px; position:relative; overflow:hidden; border-radius:10px; box-shadow:0 8px 30px rgba(0,0,0,0.3); background: #ffffff;">
+                                                {{-- Background --}}
+                                                <div id="prevBg" style="position:absolute;inset:0;background-size:cover;background-position:center;
+                                                    @if($background) background-image:url('{{ storage_asset($background) }}'); @else background:linear-gradient(135deg,#1a4731,#10b981); @endif
+                                                "></div>
+
+                                                {{-- Logo --}}
+                                                <img id="prevLogo" class="draggable-element" data-element="logo" src="{{ asset('assets/media/logos/logo-full.png') }}"
+                                                    style="position:absolute;top:{{ ($layout['logo']['top'] ?? 5) * 4 }}px;left:{{ ($layout['logo']['left'] ?? 5) * 4 }}px;width:{{ ($layout['logo']['width'] ?? 25) * 4 }}px;height:{{ ($layout['logo']['height'] ?? 8) * 4 }}px;object-fit:contain;
+                                                    {{ ($layout['logo']['show'] ?? true) ? '' : 'display:none;' }}"
+                                                />
+                                                {{-- Title --}}
+                                                <div id="prevTitle" class="draggable-element" data-element="title" style="position:absolute;
+                                                    top:{{ ($layout['title']['top'] ?? 5) * 4 }}px;
+                                                    left:{{ ($layout['title']['left'] ?? 45) * 4 }}px;
+                                                    color:{{ $layout['title']['color'] ?? '#FFFF00' }};
+                                                    font-size:{{ ($layout['title']['font_size'] ?? 12) * 1.2 }}px;
+                                                    font-weight:{{ $layout['title']['font_weight'] ?? 'bold' }};
+                                                    text-align:{{ $layout['title']['text_align'] ?? 'right' }};
+                                                    font-family: '{{ $layout['title']['font_family'] ?? 'Raleway' }}', sans-serif;
+                                                    {{ ($layout['title']['show'] ?? true) ? '' : 'display:none;' }}
+                                                ">{{ $layout['title']['text'] ?? ($template->type === 'exam_card' ? 'Kartu Ujian' : 'Kartu Santri') }}</div>
+         
+                                                {{-- Subtitle --}}
+                                                <div id="prevSubtitle" class="draggable-element" data-element="subtitle" style="position:absolute;
+                                                    top:{{ ($layout['subtitle']['top'] ?? 10) * 4 }}px;
+                                                    left:{{ ($layout['subtitle']['left'] ?? 45) * 4 }}px;
+                                                    color:{{ $layout['subtitle']['color'] ?? '#FFFFFF' }};
+                                                    font-size:{{ ($layout['subtitle']['font_size'] ?? 10) * 1.2 }}px;
+                                                    font-weight:{{ $layout['subtitle']['font_weight'] ?? 'bold' }};
+                                                    text-align:{{ $layout['subtitle']['text_align'] ?? 'right' }};
+                                                    font-family: '{{ $layout['subtitle']['font_family'] ?? 'Raleway' }}', sans-serif;
+                                                    {{ ($layout['subtitle']['show'] ?? true) ? '' : 'display:none;' }}
+                                                ">{{ $layout['subtitle']['text'] ?? 'PPTQ Cahaya Tasbih' }}</div>
+         
+                                                {{-- Photo --}}
+                                                <div id="prevPhoto" class="draggable-element" data-element="photo" style="position:absolute;
+                                                    top:{{ ($layout['photo']['top'] ?? 18) * 4 }}px;
+                                                    left:{{ ($layout['photo']['left'] ?? 5) * 4 }}px;
+                                                    width:{{ ($layout['photo']['width'] ?? 18) * 4 }}px;
+                                                    height:{{ ($layout['photo']['height'] ?? 24) * 4 }}px;
+                                                    border-radius:0px;
+                                                    background:#fff;opacity:0.85;
+                                                    display:flex;align-items:center;justify-content:center;
+                                                    {{ ($layout['photo']['show'] ?? false) ? '' : 'display:none;' }}
+                                                "><i class="fa fa-user" style="font-size:24px;color:#ccc;"></i></div>
+         
+                                                {{-- Name --}}
+                                                <div id="prevName" class="draggable-element" data-element="name" style="position:absolute;
+                                                    top:{{ ($layout['name']['top'] ?? 20) * 4 }}px;
+                                                    left:{{ ($layout['name']['left'] ?? 25) * 4 }}px;
+                                                    color:{{ $layout['name']['color'] ?? '#FFFFFF' }};
+                                                    font-size:{{ ($layout['name']['font_size'] ?? 12) * 1.2 }}px;
+                                                    font-weight:{{ $layout['name']['font_weight'] ?? 'bold' }};
+                                                    font-family: '{{ $layout['name']['font_family'] ?? 'Raleway' }}', sans-serif;
+                                                    {{ ($layout['name']['show'] ?? true) ? '' : 'display:none;' }}
+                                                ">Ahmad Santri</div>
+         
+                                                {{-- NIS --}}
+                                                <div id="prevNis" class="draggable-element" data-element="nis" style="position:absolute;
+                                                    top:{{ ($layout['nis']['top'] ?? 27) * 4 }}px;
+                                                    left:{{ ($layout['nis']['left'] ?? 25) * 4 }}px;
+                                                    color:{{ $layout['nis']['color'] ?? '#FFFFFF' }};
+                                                    font-size:{{ ($layout['nis']['font_size'] ?? 14) * 1.2 }}px;
+                                                    font-weight:{{ $layout['nis']['font_weight'] ?? 'bold' }};
+                                                    letter-spacing:2px;
+                                                    font-family: '{{ $layout['nis']['font_family'] ?? 'Kredit' }}', 'Courier New', Courier, monospace;
+                                                    {{ ($layout['nis']['show'] ?? true) ? '' : 'display:none;' }}
+                                                ">2024001</div>
+         
+                                                {{-- Classroom --}}
+                                                <div id="prevClassroom" class="draggable-element" data-element="classroom" style="position:absolute;
+                                                    top:{{ ($layout['classroom']['top'] ?? 35) * 4 }}px;
+                                                    left:{{ ($layout['classroom']['left'] ?? 25) * 4 }}px;
+                                                    color:{{ $layout['classroom']['color'] ?? '#FFFFFF' }};
+                                                    font-size:{{ ($layout['classroom']['font_size'] ?? 9) * 1.2 }}px;
+                                                    font-weight:{{ $layout['classroom']['font_weight'] ?? 'bold' }};
+                                                    font-family: '{{ $layout['classroom']['font_family'] ?? 'Raleway' }}', sans-serif;
+                                                    {{ ($layout['classroom']['show'] ?? true) ? '' : 'display:none;' }}
+                                                ">Kelas 7A</div>
+         
+                                                {{-- School --}}
+                                                <div id="prevSchool" class="draggable-element" data-element="school" style="position:absolute;
+                                                    top:{{ ($layout['school']['top'] ?? 40) * 4 }}px;
+                                                    left:{{ ($layout['school']['left'] ?? 25) * 4 }}px;
+                                                    color:{{ $layout['school']['color'] ?? '#FFFFFF' }};
+                                                    font-size:{{ ($layout['school']['font_size'] ?? 9) * 1.2 }}px;
+                                                    font-weight:{{ $layout['school']['font_weight'] ?? 'bold' }};
+                                                    font-family: '{{ $layout['school']['font_family'] ?? 'Raleway' }}', sans-serif;
+                                                    {{ ($layout['school']['show'] ?? true) ? '' : 'display:none;' }}
+                                                ">SMP Cahaya Tasbih</div>
+
+                                                {{-- Code --}}
+                                                <div id="prevCode" class="draggable-element" data-element="code" style="position:absolute;
+                                                    top:{{ ($layout['code']['top'] ?? 42) * 4 }}px;
+                                                    left:{{ ($layout['code']['left'] ?? 55) * 4 }}px;
+                                                    width:{{ ($layout['code']['width'] ?? 26) * 4 }}px;
+                                                    height:{{ ($layout['code']['height'] ?? 8) * 4 }}px;
+                                                    background:#fff;border-radius:4px;padding:3px;
+                                                    display:flex;align-items:center;justify-content:center;
+                                                    {{ ($layout['code']['show'] ?? true) ? '' : 'display:none;' }}
+                                                ">
+                                                    <span style="font-size:9px;font-family:monospace;color:#333;" id="prevCodeLabel">
+                                                        {{ ($layout['code']['type'] ?? 'barcode') === 'qrcode' ? '▣ QR' : '||||| BARCODE |||||' }}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="card-footer text-center py-3">
+                                <small class="text-muted">Preview diskalakan 4x dari ukuran asli (85.6mm × 53.98mm)</small>
+                            </div>
+                        </div>
+
+                        {{-- Configuration Card --}}
+                        <div class="card card-flush border-0 shadow-[0_8px_30px_rgba(0,0,0,0.04)]" style="border-radius: 24px;">
+                            <div class="card-header border-0 pb-0">
+                                <text-h2 class="text-h2 card-title fw-bolder mb-0">Konfigurasi Elemen</text-h2>
+                            </div>
+                            <div class="card-body pt-2">
+
+                                @php
+                                    $elements = [
+                                        'logo' => ['label' => 'Logo Lembaga', 'icon' => 'fa-image', 'fields' => ['show','width','height']],
+                                        'title' => ['label' => 'Judul Kartu', 'icon' => 'fa-heading', 'fields' => ['show','text','color','font_size','text_align','font_weight','font_family']],
+                                        'subtitle' => ['label' => 'Subtitle / Nama Lembaga', 'icon' => 'fa-font', 'fields' => ['show','text','color','font_size','text_align','font_weight','font_family']],
+                                        'photo' => ['label' => 'Foto Santri', 'icon' => 'fa-user-circle', 'fields' => ['show','width','height']],
+                                        'name' => ['label' => 'Nama Santri', 'icon' => 'fa-id-card', 'fields' => ['show','color','font_size','font_weight','font_family']],
+                                        'nis' => ['label' => 'NIS', 'icon' => 'fa-hashtag', 'fields' => ['show','color','font_size','font_weight','font_family']],
+                                        'classroom' => ['label' => 'Kelas', 'icon' => 'fa-school', 'fields' => ['show','color','font_size','font_weight','font_family']],
+                                        'school' => ['label' => 'Sekolah / UPT', 'icon' => 'fa-building', 'fields' => ['show','color','font_size','font_weight','font_family']],
+                                        'code' => ['label' => 'Barcode / QR Code', 'icon' => 'fa-barcode', 'fields' => ['show','type','width','height']],
+                                    ];
+                                @endphp
+
+                                <div class="row">
+                                    {{-- Column 1 --}}
+                                    <div class="col-md-6">
+                                        <div class="accordion accordion-icon-toggle" id="layoutAccordionCol1">
+                                            @foreach(['logo', 'title', 'subtitle', 'photo'] as $key)
+                                                @php $el = $elements[$key]; @endphp
+                                                <div class="mb-3">
+                                                    <div class="accordion-header py-3 d-flex align-items-center cursor-pointer" data-bs-toggle="collapse" data-bs-target="#acc_{{ $key }}">
+                                                        <span class="accordion-icon"><i class="fa-solid fa-angle-right fs-5"></i></span>
+                                                        <h4 class="fw-bold mb-0 ms-3 fs-6">
+                                                            <i class="fa-solid {{ $el['icon'] }} me-2 text-primary"></i>{{ $el['label'] }}
+                                                        </h4>
+                                                        <div class="form-check form-switch ms-auto me-3">
+                                                            <input class="form-check-input elem-show-toggle" type="checkbox" name="layout[{{ $key }}][show]" value="1"
+                                                                data-element="{{ $key }}"
+                                                                {{ ($layout[$key]['show'] ?? ($key === 'photo' ? false : true)) ? 'checked' : '' }} />
+                                                        </div>
+                                                    </div>
+                                                    <div id="acc_{{ $key }}" class="collapse" data-bs-parent="#layoutAccordionCol1">
+                                                        <div class="p-4 bg-light rounded" style="border-radius:12px;">
+                                                            <div class="row g-3">
+                                                                <input type="hidden" name="layout[{{ $key }}][top]" value="{{ $layout[$key]['top'] ?? 5 }}" data-element="{{ $key }}" data-prop="top" />
+                                                                <input type="hidden" name="layout[{{ $key }}][left]" value="{{ $layout[$key]['left'] ?? 5 }}" data-element="{{ $key }}" data-prop="left" />
+
+                                                                @if(in_array('text', $el['fields']))
+                                                                <div class="col-12">
+                                                                    <label class="form-label form-label-sm">Teks</label>
+                                                                    <input type="text" class="form-control form-control-sm live-input" name="layout[{{ $key }}][text]"
+                                                                        value="{{ $layout[$key]['text'] ?? '' }}" data-element="{{ $key }}" data-prop="text" />
+                                                                </div>
+                                                                @endif
+                                                                @if(in_array('width', $el['fields']))
+                                                                <div class="col-6">
+                                                                    <label class="form-label form-label-sm">Width (mm)</label>
+                                                                    <input type="number" step="0.5" class="form-control form-control-sm live-input" name="layout[{{ $key }}][width]"
+                                                                        value="{{ $layout[$key]['width'] ?? 20 }}" data-element="{{ $key }}" data-prop="width" />
+                                                                </div>
+                                                                @endif
+                                                                @if(in_array('height', $el['fields']))
+                                                                <div class="col-6">
+                                                                    <label class="form-label form-label-sm">Height (mm)</label>
+                                                                    <input type="number" step="0.5" class="form-control form-control-sm live-input" name="layout[{{ $key }}][height]"
+                                                                        value="{{ $layout[$key]['height'] ?? 10 }}" data-element="{{ $key }}" data-prop="height" />
+                                                                </div>
+                                                                @endif
+                                                                @if(in_array('color', $el['fields']))
+                                                                <div class="col-6">
+                                                                    <label class="form-label form-label-sm">Warna</label>
+                                                                    <input type="color" class="form-control form-control-sm form-control-color live-input" name="layout[{{ $key }}][color]"
+                                                                        value="{{ $layout[$key]['color'] ?? '#FFFFFF' }}" data-element="{{ $key }}" data-prop="color" />
+                                                                </div>
+                                                                @endif
+                                                                @if(in_array('font_size', $el['fields']))
+                                                                <div class="col-6">
+                                                                    <label class="form-label form-label-sm">Font Size (pt)</label>
+                                                                    <input type="number" min="6" max="30" class="form-control form-control-sm live-input" name="layout[{{ $key }}][font_size]"
+                                                                        value="{{ $layout[$key]['font_size'] ?? 10 }}" data-element="{{ $key }}" data-prop="font_size" />
+                                                                </div>
+                                                                @endif
+                                                                @if(in_array('font_weight', $el['fields']))
+                                                                <div class="col-6">
+                                                                    <label class="form-label form-label-sm">Font Weight</label>
+                                                                    <select class="form-select form-select-sm live-input" name="layout[{{ $key }}][font_weight]" data-element="{{ $key }}" data-prop="font_weight">
+                                                                        <option value="normal" {{ ($layout[$key]['font_weight'] ?? 'bold') === 'normal' ? 'selected' : '' }}>Normal</option>
+                                                                        <option value="bold" {{ ($layout[$key]['font_weight'] ?? 'bold') === 'bold' ? 'selected' : '' }}>Bold</option>
+                                                                    </select>
+                                                                </div>
+                                                                @endif
+                                                                @if(in_array('text_align', $el['fields']))
+                                                                <div class="col-6">
+                                                                    <label class="form-label form-label-sm">Align</label>
+                                                                    <select class="form-select form-select-sm live-input" name="layout[{{ $key }}][text_align]" data-element="{{ $key }}" data-prop="text_align">
+                                                                        <option value="left" {{ ($layout[$key]['text_align'] ?? 'right') === 'left' ? 'selected' : '' }}>Left</option>
+                                                                        <option value="center" {{ ($layout[$key]['text_align'] ?? 'right') === 'center' ? 'selected' : '' }}>Center</option>
+                                                                        <option value="right" {{ ($layout[$key]['text_align'] ?? 'right') === 'right' ? 'selected' : '' }}>Right</option>
+                                                                    </select>
+                                                                </div>
+                                                                @endif
+                                                                @if(in_array('border_radius', $el['fields']))
+                                                                <div class="col-6">
+                                                                    <label class="form-label form-label-sm">Border Radius (mm)</label>
+                                                                    <input type="number" step="0.5" min="0" class="form-control form-control-sm live-input" name="layout[{{ $key }}][border_radius]"
+                                                                        value="{{ $layout[$key]['border_radius'] ?? 2 }}" data-element="{{ $key }}" data-prop="border_radius" />
+                                                                </div>
+                                                                @endif
+                                                                @if(in_array('font_family', $el['fields']))
+                                                                <div class="col-6">
+                                                                    <label class="form-label form-label-sm">Font Family</label>
+                                                                    <select class="form-select form-select-sm live-input" name="layout[{{ $key }}][font_family]" data-element="{{ $key }}" data-prop="font_family">
+                                                                        <option value="Raleway" {{ ($layout[$key]['font_family'] ?? 'Raleway') === 'Raleway' ? 'selected' : '' }}>Raleway (Default)</option>
+                                                                        <option value="Inter" {{ ($layout[$key]['font_family'] ?? 'Raleway') === 'Inter' ? 'selected' : '' }}>Inter</option>
+                                                                        <option value="Roboto" {{ ($layout[$key]['font_family'] ?? 'Raleway') === 'Roboto' ? 'selected' : '' }}>Roboto</option>
+                                                                        <option value="Poppins" {{ ($layout[$key]['font_family'] ?? 'Raleway') === 'Poppins' ? 'selected' : '' }}>Poppins</option>
+                                                                        <option value="Montserrat" {{ ($layout[$key]['font_family'] ?? 'Raleway') === 'Montserrat' ? 'selected' : '' }}>Montserrat</option>
+                                                                        <option value="Open Sans" {{ ($layout[$key]['font_family'] ?? 'Raleway') === 'Open Sans' ? 'selected' : '' }}>Open Sans</option>
+                                                                        <option value="Lato" {{ ($layout[$key]['font_family'] ?? 'Raleway') === 'Lato' ? 'selected' : '' }}>Lato</option>
+                                                                        <option value="Oswald" {{ ($layout[$key]['font_family'] ?? 'Raleway') === 'Oswald' ? 'selected' : '' }}>Oswald</option>
+                                                                        <option value="Outfit" {{ ($layout[$key]['font_family'] ?? 'Raleway') === 'Outfit' ? 'selected' : '' }}>Outfit</option>
+                                                                        <option value="Merriweather" {{ ($layout[$key]['font_family'] ?? 'Raleway') === 'Merriweather' ? 'selected' : '' }}>Merriweather</option>
+                                                                        <option value="Nunito" {{ ($layout[$key]['font_family'] ?? 'Raleway') === 'Nunito' ? 'selected' : '' }}>Nunito</option>
+                                                                        <option value="Pacifico" {{ ($layout[$key]['font_family'] ?? 'Raleway') === 'Pacifico' ? 'selected' : '' }}>Pacifico</option>
+                                                                        <option value="Caveat" {{ ($layout[$key]['font_family'] ?? 'Raleway') === 'Caveat' ? 'selected' : '' }}>Caveat</option>
+                                                                    </select>
+                                                                </div>
+                                                                @endif
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            @endforeach
+                                        </div>
+                                    </div>
+
+                                    {{-- Column 2 --}}
+                                    <div class="col-md-6">
+                                        <div class="accordion accordion-icon-toggle" id="layoutAccordionCol2">
+                                            @foreach(['name', 'nis', 'classroom', 'school', 'code'] as $key)
+                                                @php $el = $elements[$key]; @endphp
+                                                <div class="mb-3">
+                                                    <div class="accordion-header py-3 d-flex align-items-center cursor-pointer" data-bs-toggle="collapse" data-bs-target="#acc_{{ $key }}">
+                                                        <span class="accordion-icon"><i class="fa-solid fa-angle-right fs-5"></i></span>
+                                                        <h4 class="fw-bold mb-0 ms-3 fs-6">
+                                                            <i class="fa-solid {{ $el['icon'] }} me-2 text-primary"></i>{{ $el['label'] }}
+                                                        </h4>
+                                                        <div class="form-check form-switch ms-auto me-3">
+                                                            <input class="form-check-input elem-show-toggle" type="checkbox" name="layout[{{ $key }}][show]" value="1"
+                                                                data-element="{{ $key }}"
+                                                                {{ ($layout[$key]['show'] ?? ($key === 'photo' ? false : true)) ? 'checked' : '' }} />
+                                                        </div>
+                                                    </div>
+                                                    <div id="acc_{{ $key }}" class="collapse" data-bs-parent="#layoutAccordionCol2">
+                                                        <div class="p-4 bg-light rounded" style="border-radius:12px;">
+                                                            <div class="row g-3">
+                                                                <input type="hidden" name="layout[{{ $key }}][top]" value="{{ $layout[$key]['top'] ?? 5 }}" data-element="{{ $key }}" data-prop="top" />
+                                                                <input type="hidden" name="layout[{{ $key }}][left]" value="{{ $layout[$key]['left'] ?? 5 }}" data-element="{{ $key }}" data-prop="left" />
+
+                                                                @if(in_array('text', $el['fields']))
+                                                                <div class="col-12">
+                                                                    <label class="form-label form-label-sm">Teks</label>
+                                                                    <input type="text" class="form-control form-control-sm live-input" name="layout[{{ $key }}][text]"
+                                                                        value="{{ $layout[$key]['text'] ?? '' }}" data-element="{{ $key }}" data-prop="text" />
+                                                                </div>
+                                                                @endif
+                                                                @if(in_array('width', $el['fields']))
+                                                                <div class="col-6">
+                                                                    <label class="form-label form-label-sm">Width (mm)</label>
+                                                                    <input type="number" step="0.5" class="form-control form-control-sm live-input" name="layout[{{ $key }}][width]"
+                                                                        value="{{ $layout[$key]['width'] ?? 20 }}" data-element="{{ $key }}" data-prop="width" />
+                                                                </div>
+                                                                @endif
+                                                                @if(in_array('height', $el['fields']))
+                                                                <div class="col-6">
+                                                                    <label class="form-label form-label-sm">Height (mm)</label>
+                                                                    <input type="number" step="0.5" class="form-control form-control-sm live-input" name="layout[{{ $key }}][height]"
+                                                                        value="{{ $layout[$key]['height'] ?? 10 }}" data-element="{{ $key }}" data-prop="height" />
+                                                                </div>
+                                                                @endif
+                                                                @if(in_array('color', $el['fields']))
+                                                                <div class="col-6">
+                                                                    <label class="form-label form-label-sm">Warna</label>
+                                                                    <input type="color" class="form-control form-control-sm form-control-color live-input" name="layout[{{ $key }}][color]"
+                                                                        value="{{ $layout[$key]['color'] ?? '#FFFFFF' }}" data-element="{{ $key }}" data-prop="color" />
+                                                                </div>
+                                                                @endif
+                                                                @if(in_array('font_size', $el['fields']))
+                                                                <div class="col-6">
+                                                                    <label class="form-label form-label-sm">Font Size (pt)</label>
+                                                                    <input type="number" min="6" max="30" class="form-control form-control-sm live-input" name="layout[{{ $key }}][font_size]"
+                                                                        value="{{ $layout[$key]['font_size'] ?? 10 }}" data-element="{{ $key }}" data-prop="font_size" />
+                                                                </div>
+                                                                @endif
+                                                                @if(in_array('font_weight', $el['fields']))
+                                                                <div class="col-6">
+                                                                    <label class="form-label form-label-sm">Font Weight</label>
+                                                                    <select class="form-select form-select-sm live-input" name="layout[{{ $key }}][font_weight]" data-element="{{ $key }}" data-prop="font_weight">
+                                                                        <option value="normal" {{ ($layout[$key]['font_weight'] ?? 'bold') === 'normal' ? 'selected' : '' }}>Normal</option>
+                                                                        <option value="bold" {{ ($layout[$key]['font_weight'] ?? 'bold') === 'bold' ? 'selected' : '' }}>Bold</option>
+                                                                    </select>
+                                                                </div>
+                                                                @endif
+                                                                @if(in_array('font_family', $el['fields']))
+                                                                <div class="col-6">
+                                                                    <label class="form-label form-label-sm">Font Family</label>
+                                                                    <select class="form-select form-select-sm live-input" name="layout[{{ $key }}][font_family]" data-element="{{ $key }}" data-prop="font_family">
+                                                                        <option value="Raleway" {{ ($layout[$key]['font_family'] ?? 'Raleway') === 'Raleway' ? 'selected' : '' }}>Raleway (Default)</option>
+                                                                        <option value="Inter" {{ ($layout[$key]['font_family'] ?? 'Raleway') === 'Inter' ? 'selected' : '' }}>Inter</option>
+                                                                        <option value="Roboto" {{ ($layout[$key]['font_family'] ?? 'Raleway') === 'Roboto' ? 'selected' : '' }}>Roboto</option>
+                                                                        <option value="Poppins" {{ ($layout[$key]['font_family'] ?? 'Raleway') === 'Poppins' ? 'selected' : '' }}>Poppins</option>
+                                                                        <option value="Montserrat" {{ ($layout[$key]['font_family'] ?? 'Raleway') === 'Montserrat' ? 'selected' : '' }}>Montserrat</option>
+                                                                        <option value="Open Sans" {{ ($layout[$key]['font_family'] ?? 'Raleway') === 'Open Sans' ? 'selected' : '' }}>Open Sans</option>
+                                                                        <option value="Lato" {{ ($layout[$key]['font_family'] ?? 'Raleway') === 'Lato' ? 'selected' : '' }}>Lato</option>
+                                                                        <option value="Oswald" {{ ($layout[$key]['font_family'] ?? 'Raleway') === 'Oswald' ? 'selected' : '' }}>Oswald</option>
+                                                                        <option value="Outfit" {{ ($layout[$key]['font_family'] ?? 'Raleway') === 'Outfit' ? 'selected' : '' }}>Outfit</option>
+                                                                        <option value="Merriweather" {{ ($layout[$key]['font_family'] ?? 'Raleway') === 'Merriweather' ? 'selected' : '' }}>Merriweather</option>
+                                                                        <option value="Nunito" {{ ($layout[$key]['font_family'] ?? 'Raleway') === 'Nunito' ? 'selected' : '' }}>Nunito</option>
+                                                                        <option value="Pacifico" {{ ($layout[$key]['font_family'] ?? 'Raleway') === 'Pacifico' ? 'selected' : '' }}>Pacifico</option>
+                                                                        <option value="Caveat" {{ ($layout[$key]['font_family'] ?? 'Raleway') === 'Caveat' ? 'selected' : '' }}>Caveat</option>
+                                                                        @if($key === 'nis')
+                                                                            <option value="Kredit" {{ ($layout[$key]['font_family'] ?? 'Kredit') === 'Kredit' ? 'selected' : '' }}>Kredit (Monospace)</option>
+                                                                        @endif
+                                                                    </select>
+                                                                </div>
+                                                                @endif
+                                                                @if(in_array('type', $el['fields']))
+                                                                <div class="col-6">
+                                                                    <label class="form-label form-label-sm">Tipe Kode</label>
+                                                                    <select class="form-select form-select-sm live-input" name="layout[{{ $key }}][type]" data-element="{{ $key }}" data-prop="type">
+                                                                        <option value="barcode" {{ ($layout[$key]['type'] ?? 'barcode') === 'barcode' ? 'selected' : '' }}>Barcode</option>
+                                                                        <option value="qrcode" {{ ($layout[$key]['type'] ?? 'barcode') === 'qrcode' ? 'selected' : '' }}>QR Code</option>
+                                                                    </select>
+                                                                </div>
+                                                                @endif
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            @endforeach
+                                        </div>
+                                    </div>
+                                </div>
+
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+@endsection
+
+@push('js')
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const SCALE = 4; // 1mm = 4px in preview
+
+    const elemMap = {
+        logo: document.getElementById('prevLogo'),
+        title: document.getElementById('prevTitle'),
+        subtitle: document.getElementById('prevSubtitle'),
+        photo: document.getElementById('prevPhoto'),
+        name: document.getElementById('prevName'),
+        nis: document.getElementById('prevNis'),
+        classroom: document.getElementById('prevClassroom'),
+        school: document.getElementById('prevSchool'),
+        code: document.getElementById('prevCode'),
+    };
+
+    let ZOOM = 1.0;
+
+    function updateRulerVisibility(visible) {
+        const rulerH = document.getElementById('rulerHorizontal');
+        const rulerV = document.getElementById('rulerVertical');
+        const container = document.getElementById('previewContainer');
+        const btn = document.getElementById('btnToggleRuler');
+
+        if (visible) {
+            if (rulerH) rulerH.style.display = 'block';
+            if (rulerV) rulerV.style.display = 'block';
+            if (container) {
+                container.style.paddingTop = '20px';
+                container.style.paddingLeft = '20px';
+            }
+            if (btn) {
+                btn.classList.remove('btn-light');
+                btn.classList.add('btn-primary');
+            }
+        } else {
+            if (rulerH) rulerH.style.display = 'none';
+            if (rulerV) rulerV.style.display = 'none';
+            if (container) {
+                container.style.paddingTop = '0';
+                container.style.paddingLeft = '0';
+            }
+            if (btn) {
+                btn.classList.remove('btn-primary');
+                btn.classList.add('btn-light');
+            }
+        }
+    }
+
+    function updateGridVisibility(visible) {
+        const wrapper = document.getElementById('cardPreviewWrapper');
+        const btn = document.getElementById('btnToggleGrid');
+
+        if (visible) {
+            if (wrapper) wrapper.classList.add('show-grid');
+            if (btn) {
+                btn.classList.remove('btn-light');
+                btn.classList.add('btn-primary');
+            }
+        } else {
+            if (wrapper) wrapper.classList.remove('show-grid');
+            if (btn) {
+                btn.classList.remove('btn-primary');
+                btn.classList.add('btn-light');
+            }
+        }
+    }
+
+    function updateZoom(level) {
+        ZOOM = Math.max(0.5, Math.min(2.0, level));
+        const zoomWrapper = document.getElementById('zoomWrapper');
+        const zoomPercent = document.getElementById('zoomPercent');
+        
+        if (zoomWrapper) zoomWrapper.style.transform = `scale(${ZOOM})`;
+        if (zoomPercent) zoomPercent.textContent = Math.round(ZOOM * 100) + '%';
+        
+        localStorage.setItem('card_preview_zoom', ZOOM);
+    }
+
+    function generateRulerLabels() {
+        const rulerH = document.getElementById('rulerHorizontal');
+        const rulerV = document.getElementById('rulerVertical');
+        if (!rulerH || !rulerV) return;
+
+        rulerH.innerHTML = '';
+        rulerV.innerHTML = '';
+
+        for (let mm = 0; mm <= 80; mm += 10) {
+            const label = document.createElement('span');
+            label.className = 'ruler-label';
+            label.style.position = 'absolute';
+            label.style.left = (mm * SCALE) + 'px';
+            label.style.top = '1px';
+            label.style.transform = 'translateX(-50%)';
+            label.textContent = mm;
+            rulerH.appendChild(label);
+        }
+
+        for (let mm = 0; mm <= 50; mm += 10) {
+            const label = document.createElement('span');
+            label.className = 'ruler-label';
+            label.style.position = 'absolute';
+            label.style.top = (mm * SCALE) + 'px';
+            label.style.left = '2px';
+            label.style.transform = 'translateY(-50%)';
+            label.textContent = mm;
+            rulerV.appendChild(label);
+        }
+    }
+
+    const btnToggleRuler = document.getElementById('btnToggleRuler');
+    let rulerVisible = localStorage.getItem('card_preview_ruler') !== 'false';
+    if (btnToggleRuler) {
+        btnToggleRuler.addEventListener('click', function() {
+            rulerVisible = !rulerVisible;
+            localStorage.setItem('card_preview_ruler', rulerVisible);
+            updateRulerVisibility(rulerVisible);
+        });
+    }
+
+    const btnToggleGrid = document.getElementById('btnToggleGrid');
+    let gridVisible = localStorage.getItem('card_preview_grid') === 'true';
+    if (btnToggleGrid) {
+        btnToggleGrid.addEventListener('click', function() {
+            gridVisible = !gridVisible;
+            localStorage.setItem('card_preview_grid', gridVisible);
+            updateGridVisibility(gridVisible);
+        });
+    }
+
+    const btnZoomIn = document.getElementById('btnZoomIn');
+    if (btnZoomIn) {
+        btnZoomIn.addEventListener('click', function() {
+            updateZoom(ZOOM + 0.25);
+        });
+    }
+
+    const btnZoomOut = document.getElementById('btnZoomOut');
+    if (btnZoomOut) {
+        btnZoomOut.addEventListener('click', function() {
+            updateZoom(ZOOM - 0.25);
+        });
+    }
+
+    updateRulerVisibility(rulerVisible);
+    updateGridVisibility(gridVisible);
+    updateZoom(parseFloat(localStorage.getItem('card_preview_zoom')) || 1.0);
+    generateRulerLabels();
+
+    // ── Drag and Drop Preview Elements ──
+    const draggableElements = document.querySelectorAll('.draggable-element');
+
+    draggableElements.forEach(function(el) {
+        el.addEventListener('mousedown', startDrag);
+        el.addEventListener('touchstart', startDrag, { passive: false });
+
+        function startDrag(e) {
+            e.preventDefault();
+            const elementKey = el.dataset.element;
+            el.classList.add('dragging');
+
+            const isTouch = e.type.startsWith('touch');
+            const clientX = isTouch ? e.touches[0].clientX : e.clientX;
+            const clientY = isTouch ? e.touches[0].clientY : e.clientY;
+
+            let startLeftPx = el.offsetLeft;
+            let startTopPx = el.offsetTop;
+
+            function doDrag(moveEvent) {
+                moveEvent.preventDefault();
+                const currentX = (moveEvent.touches && moveEvent.touches.length > 0) ? moveEvent.touches[0].clientX : moveEvent.clientX;
+                const currentY = (moveEvent.touches && moveEvent.touches.length > 0) ? moveEvent.touches[0].clientY : moveEvent.clientY;
+
+                const dx = (currentX - clientX) / ZOOM;
+                const dy = (currentY - clientY) / ZOOM;
+
+                let newLeftPx = startLeftPx + dx;
+                let newTopPx = startTopPx + dy;
+
+                const maxLeft = 342 - el.offsetWidth;
+                const maxTop = 216 - el.offsetHeight;
+
+                newLeftPx = Math.max(0, Math.min(newLeftPx, maxLeft));
+                newTopPx = Math.max(0, Math.min(newTopPx, maxTop));
+
+                const newLeftMm = Math.round((newLeftPx / SCALE) * 2) / 2;
+                const newTopMm = Math.round((newTopPx / SCALE) * 2) / 2;
+
+                el.style.left = (newLeftMm * SCALE) + 'px';
+                el.style.top = (newTopMm * SCALE) + 'px';
+
+                const inputTop = document.querySelector(`input[name="layout[${elementKey}][top]"]`);
+                const inputLeft = document.querySelector(`input[name="layout[${elementKey}][left]"]`);
+                
+                if (inputTop) inputTop.value = newTopMm;
+                if (inputLeft) inputLeft.value = newLeftMm;
+            }
+
+            function stopDrag() {
+                el.classList.remove('dragging');
+                if (isTouch) {
+                    document.removeEventListener('touchmove', doDrag);
+                    document.removeEventListener('touchend', stopDrag);
+                } else {
+                    document.removeEventListener('mousemove', doDrag);
+                    document.removeEventListener('mouseup', stopDrag);
+                }
+            }
+
+            if (isTouch) {
+                document.addEventListener('touchmove', doDrag, { passive: false });
+                document.addEventListener('touchend', stopDrag);
+            } else {
+                document.addEventListener('mousemove', doDrag);
+                document.addEventListener('mouseup', stopDrag);
+            }
+        }
+    });
+
+    // ── Live inputs configuration ──
+    document.querySelectorAll('.live-input').forEach(function(input) {
+        const handler = function() {
+            const el = this.dataset.element;
+            const prop = this.dataset.prop;
+            const val = this.value;
+            const target = elemMap[el];
+            if (!target) return;
+
+            switch(prop) {
+                case 'top':
+                    target.style.top = (parseFloat(val) * SCALE) + 'px';
+                    break;
+                case 'left':
+                    target.style.left = (parseFloat(val) * SCALE) + 'px';
+                    break;
+                case 'width':
+                    target.style.width = (parseFloat(val) * SCALE) + 'px';
+                    break;
+                case 'height':
+                    target.style.height = (parseFloat(val) * SCALE) + 'px';
+                    break;
+                case 'color':
+                    target.style.color = val;
+                    break;
+                case 'font_size':
+                    target.style.fontSize = (parseInt(val) * 1.2) + 'px';
+                    break;
+                case 'font_weight':
+                    target.style.fontWeight = val;
+                    break;
+                case 'font_family':
+                    if (val === 'Kredit') {
+                        target.style.fontFamily = "'Kredit', 'Courier New', Courier, monospace";
+                    } else {
+                        target.style.fontFamily = `'${val}', sans-serif`;
+                    }
+                    break;
+                case 'text_align':
+                    target.style.textAlign = val;
+                    break;
+                case 'text':
+                    target.textContent = val;
+                    break;
+                case 'border_radius':
+                    target.style.borderRadius = (parseFloat(val) * SCALE) + 'px';
+                    break;
+                case 'type':
+                    var label = document.getElementById('prevCodeLabel');
+                    if (label) label.textContent = val === 'qrcode' ? '▣ QR' : '||||| BARCODE |||||';
+                    break;
+            }
+        };
+        input.addEventListener('input', handler);
+        input.addEventListener('change', handler);
+    });
+
+    document.querySelectorAll('.elem-show-toggle').forEach(function(cb) {
+        cb.addEventListener('change', function() {
+            var target = elemMap[this.dataset.element];
+            if (target) target.style.display = this.checked ? '' : 'none';
+        });
+    });
+
+    document.getElementById('bgUpload').addEventListener('change', function(e) {
+        var file = e.target.files[0];
+        if (file) {
+            var reader = new FileReader();
+            reader.onload = function(ev) {
+                document.getElementById('prevBg').style.backgroundImage = 'url(' + ev.target.result + ')';
+            };
+            reader.readAsDataURL(file);
+        }
+    });
+});
+</script>
+@endpush

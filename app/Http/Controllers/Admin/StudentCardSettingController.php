@@ -6,9 +6,14 @@ use Illuminate\Http\Request;
 use App\Models\Student;
 use App\Models\School;
 use App\Models\Classroom;
+use App\Models\AcademicYear;
+use App\Models\BillType;
+use App\Models\Bill;
+use App\Models\CardTemplate;
 use App\Models\ApplicationSetting;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\StudentCardSettingRequest;
+use App\Http\Requests\Admin\CardTemplateRequest;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -18,45 +23,186 @@ use SimpleSoftwareIO\QrCode\Facades\QrCode;
 class StudentCardSettingController extends Controller
 {
     /**
-     * Show the student card design & print management page.
+     * Show the card template management and print page.
      */
     public function index()
     {
-        if (!Auth::user()->can('Manage Pengaturan Aplikasi')) {
+        $canSantri = Auth::user()->can('Manage Kartu Santri');
+        $canUjian = Auth::user()->can('Manage Kartu Ujian');
+
+        if (!$canSantri && !$canUjian) {
             return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
         }
 
-        $setting = ApplicationSetting::first();
-        $layout = $setting->student_card_layout ?? ApplicationSetting::getDefaultStudentCardLayout();
-        $background = $setting->student_card_image ?? '';
+        // Ambil template berdasarkan permission
+        $query = CardTemplate::with('academicYear');
+        if (!$canSantri) {
+            $query->where('type', 'exam_card');
+        } elseif (!$canUjian) {
+            $query->where('type', 'student_card');
+        }
+        $templates = $query->orderBy('type')->orderBy('created_at', 'desc')->get();
+
+        $academicYears = AcademicYear::orderBy('start_year', 'desc')->get();
+        $billTypes = BillType::orderBy('name')->get();
         $schools = School::hasSchool()->orderBy('name')->get();
 
-        return view('admins.student-card-setting.index', compact('setting', 'layout', 'background', 'schools'));
+        // Cari template aktif default untuk pencetakan awal
+        $activeTemplates = CardTemplate::where('is_active', true)->get();
+
+        return view('admins.student-card-setting.index', compact(
+            'templates', 'academicYears', 'billTypes', 'schools', 'activeTemplates', 'canSantri', 'canUjian'
+        ));
     }
 
     /**
-     * Save the student card layout configuration.
+     * Store a new card template metadata.
      */
-    public function store(StudentCardSettingRequest $request)
+    public function storeTemplate(CardTemplateRequest $request)
     {
-        if (!Auth::user()->can('Edit Pengaturan Aplikasi')) {
-            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
+        $type = $request->type;
+        $permission = $type === 'student_card' ? 'Manage Kartu Santri' : 'Manage Kartu Ujian';
+
+        if (!Auth::user()->can($permission)) {
+            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk membuat template jenis ini');
         }
 
-        $setting = ApplicationSetting::firstOrCreate([]);
+        $data = $request->validated();
+        
+        // Default layout kosong dari setting
+        $data['layout'] = ApplicationSetting::getDefaultStudentCardLayout();
+        $data['is_active'] = $request->boolean('is_active');
+
+        // Jika diset aktif, nonaktifkan template lain bertipe sama
+        if ($data['is_active']) {
+            CardTemplate::where('type', $type)->update(['is_active' => false]);
+        }
+
+        CardTemplate::create($data);
+
+        return redirect()->route('student-card-setting.index')->with('success', 'Template kartu baru berhasil dibuat');
+    }
+
+    /**
+     * Update card template metadata.
+     */
+    public function updateTemplate(CardTemplateRequest $request, $id)
+    {
+        $template = CardTemplate::findOrFail($id);
+        $permission = $template->type === 'student_card' ? 'Manage Kartu Santri' : 'Manage Kartu Ujian';
+
+        if (!Auth::user()->can($permission)) {
+            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk mengubah template ini');
+        }
+
+        $data = $request->validated();
+        $data['is_active'] = $request->boolean('is_active');
+
+        // Jika tipe diubah (walau jarang), sesuaikan permission
+        $newPermission = $data['type'] === 'student_card' ? 'Manage Kartu Santri' : 'Manage Kartu Ujian';
+        if (!Auth::user()->can($newPermission)) {
+            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk mengubah tipe template');
+        }
+
+        // Jika diset aktif, nonaktifkan template lain bertipe sama
+        if ($data['is_active']) {
+            CardTemplate::where('type', $data['type'])->where('id', '!=', $id)->update(['is_active' => false]);
+        }
+
+        $template->update($data);
+
+        return redirect()->route('student-card-setting.index')->with('success', 'Metadata template kartu berhasil diperbarui');
+    }
+
+    /**
+     * Delete a template.
+     */
+    public function destroyTemplate($id)
+    {
+        $template = CardTemplate::findOrFail($id);
+        $permission = $template->type === 'student_card' ? 'Manage Kartu Santri' : 'Manage Kartu Ujian';
+
+        if (!Auth::user()->can($permission)) {
+            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk menghapus template ini');
+        }
+
+        // Hapus background image dari disk secara aman
+        if ($template->background_image) {
+            $oldPath = str_replace('storage/', '', $template->background_image);
+            Storage::disk('public')->delete($oldPath);
+        }
+
+        $template->delete();
+
+        return redirect()->route('student-card-setting.index')->with('success', 'Template kartu berhasil dihapus');
+    }
+
+    /**
+     * Toggle the active status of a template.
+     */
+    public function toggleActive($id)
+    {
+        $template = CardTemplate::findOrFail($id);
+        $permission = $template->type === 'student_card' ? 'Manage Kartu Santri' : 'Manage Kartu Ujian';
+
+        if (!Auth::user()->can($permission)) {
+            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk mengubah status template ini');
+        }
+
+        $newStatus = !$template->is_active;
+
+        if ($newStatus) {
+            // Matikan yang lain bertipe sama
+            CardTemplate::where('type', $template->type)->update(['is_active' => false]);
+        }
+
+        $template->is_active = $newStatus;
+        $template->save();
+
+        return redirect()->route('student-card-setting.index')->with('success', 'Status keaktifan template berhasil diubah');
+    }
+
+    /**
+     * Show the designer page for a template.
+     */
+    public function design($id)
+    {
+        $template = CardTemplate::findOrFail($id);
+        $permission = $template->type === 'student_card' ? 'Manage Kartu Santri' : 'Manage Kartu Ujian';
+
+        if (!Auth::user()->can($permission)) {
+            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk mendesain template ini');
+        }
+
+        $layout = $template->layout ?? ApplicationSetting::getDefaultStudentCardLayout();
+        $background = $template->background_image ?? '';
+
+        return view('admins.student-card-setting.design', compact('template', 'layout', 'background'));
+    }
+
+    /**
+     * Save the designer layout for a template.
+     */
+    public function storeDesign(StudentCardSettingRequest $request, $id)
+    {
+        $template = CardTemplate::findOrFail($id);
+        $permission = $template->type === 'student_card' ? 'Manage Kartu Santri' : 'Manage Kartu Ujian';
+
+        if (!Auth::user()->can($permission)) {
+            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk mendesain template ini');
+        }
 
         // Handle background image upload
         if ($request->hasFile('student_card_image')) {
-            // Delete previous image safely using Storage facade
-            if ($setting->student_card_image) {
-                $oldPath = str_replace('storage/', '', $setting->student_card_image);
+            if ($template->background_image) {
+                $oldPath = str_replace('storage/', '', $template->background_image);
                 Storage::disk('public')->delete($oldPath);
             }
             $imagePath = $request->file('student_card_image')->store('images/student-card', 'public');
-            $setting->student_card_image = 'storage/' . $imagePath;
+            $template->background_image = 'storage/' . $imagePath;
         }
 
-        // Build layout config from form inputs
+        // Build layout coordinates from inputs
         $layout = [
             'logo' => [
                 'show' => $request->boolean('layout.logo.show'),
@@ -67,7 +213,7 @@ class StudentCardSettingController extends Controller
             ],
             'title' => [
                 'show' => $request->boolean('layout.title.show'),
-                'text' => $request->input('layout.title.text', 'Kartu Santri'),
+                'text' => $request->input('layout.title.text', $template->type === 'exam_card' ? 'Kartu Ujian' : 'Kartu Santri'),
                 'color' => $request->input('layout.title.color', '#FFFF00'),
                 'font_size' => (int) $request->input('layout.title.font_size', 12),
                 'top' => (float) $request->input('layout.title.top', 5),
@@ -141,21 +287,20 @@ class StudentCardSettingController extends Controller
             ],
         ];
 
-        $setting->student_card_layout = $layout;
-        $setting->save();
+        $template->layout = $layout;
+        $template->save();
 
-        return redirect()->route('student-card-setting.index')->with('success', 'Desain kartu santri berhasil disimpan');
+        return redirect()->route('student-card-setting.index')->with('success', 'Desain layout template kartu berhasil disimpan');
     }
 
     /**
-     * Fetch students by school/classroom for the print tab via AJAX.
+     * Fetch students by school/classroom with bill eligibility checking via AJAX.
      */
     public function getStudents(Request $request)
     {
         try {
-            // Cek apakah tabel student_card_prints exist sebelum eager-load
             $hasCardPrintsTable = \Illuminate\Support\Facades\Schema::hasTable('student_card_prints');
-
+            
             $eagerLoads = ['classroom', 'classroom.school'];
             if ($hasCardPrintsTable) {
                 $eagerLoads[] = 'cardPrints.admin';
@@ -202,8 +347,7 @@ class StudentCardSettingController extends Controller
                       ->orderBy('schools.name', $sortDirection);
             } elseif ($sortBy === 'print_count') {
                 if ($hasCardPrintsTable) {
-                    $query->withCount('cardPrints')
-                          ->orderBy('card_prints_count', $sortDirection);
+                    $query->withCount('cardPrints')->orderBy('card_prints_count', $sortDirection);
                 } else {
                     $query->orderBy('students.name', $sortDirection);
                 }
@@ -214,6 +358,16 @@ class StudentCardSettingController extends Controller
  
             $students = $query->paginate($limit);
 
+            // Muat syarat tagihan dari template jika exam_card
+            $requiredBillTypeIds = [];
+            $template = null;
+            if ($request->filled('template_id')) {
+                $template = CardTemplate::find($request->template_id);
+                if ($template && $template->type === 'exam_card') {
+                    $requiredBillTypeIds = $template->exam_bill_requirements ?? [];
+                }
+            }
+
             return response()->json([
                 'current_page' => $students->currentPage(),
                 'last_page' => $students->lastPage(),
@@ -221,7 +375,7 @@ class StudentCardSettingController extends Controller
                 'total' => $students->total(),
                 'from' => $students->firstItem(),
                 'to' => $students->lastItem(),
-                'data' => $students->getCollection()->map(function ($s) use ($hasCardPrintsTable) {
+                'data' => $students->getCollection()->map(function ($s) use ($hasCardPrintsTable, $requiredBillTypeIds) {
                     $printCount = 0;
                     $lastPrintedAt = null;
                     $lastPrintedBy = null;
@@ -231,6 +385,22 @@ class StudentCardSettingController extends Controller
                         $printCount = $s->cardPrints->count();
                         $lastPrintedAt = $lastPrint ? $lastPrint->printed_at->format('d M Y H:i') : null;
                         $lastPrintedBy = $lastPrint?->admin?->name ?? null;
+                    }
+
+                    // Deteksi tunggakan tagihan kustom (historis semua tahun ajaran sebelumnya)
+                    $isEligible = true;
+                    $unpaidBills = [];
+                    if (!empty($requiredBillTypeIds)) {
+                        $unpaid = Bill::where('student_id', $s->id)
+                            ->whereIn('bill_type_id', $requiredBillTypeIds)
+                            ->where('status', Bill::STATUS_UNPAID)
+                            ->with('billType')
+                            ->get();
+
+                        if ($unpaid->count() > 0) {
+                            $isEligible = false;
+                            $unpaidBills = $unpaid->map(fn($b) => $b->billType?->name ?? 'Tagihan')->unique()->toArray();
+                        }
                     }
 
                     return [
@@ -244,6 +414,8 @@ class StudentCardSettingController extends Controller
                         'print_count' => $printCount,
                         'last_printed_at' => $lastPrintedAt,
                         'last_printed_by' => $lastPrintedBy,
+                        'is_eligible' => $isEligible,
+                        'unpaid_bills' => array_values($unpaidBills),
                     ];
                 })
             ]);
@@ -263,28 +435,32 @@ class StudentCardSettingController extends Controller
     }
 
     /**
-     * Generate and stream a PDF of selected student cards.
+     * Generate and stream a PDF of selected cards.
      */
     public function print(Request $request)
     {
-        if (!Auth::user()->can('Manage Pengaturan Aplikasi')) {
-            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
-        }
-
         $request->validate([
             'student_ids' => 'required|array|min:1',
             'student_ids.*' => 'exists:students,id',
             'print_layout' => 'required|in:pvc,a4_1x1,a4_2x2,a4_2x3,a4_2x4,a4_2x5',
+            'template_id' => 'required|exists:card_templates,id',
         ]);
+
+        $template = CardTemplate::findOrFail($request->template_id);
+        $permission = $template->type === 'student_card' ? 'Manage Kartu Santri' : 'Manage Kartu Ujian';
+
+        if (!Auth::user()->can($permission)) {
+            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk mencetak jenis kartu ini');
+        }
 
         $students = Student::with(['classroom', 'classroom.school'])
             ->whereIn('id', $request->student_ids)
             ->orderBy('name')
             ->get();
 
-        $setting = ApplicationSetting::first();
-        $layout = $setting->student_card_layout ?? ApplicationSetting::getDefaultStudentCardLayout();
-        $cardImage = $setting->student_card_image;
+        $layout = $template->layout ?? ApplicationSetting::getDefaultStudentCardLayout();
+        $cardImage = $template->background_image;
+        
         $background = '';
         if ($cardImage) {
             if (file_exists(public_path($cardImage))) {
@@ -295,17 +471,18 @@ class StudentCardSettingController extends Controller
         }
         $printLayout = $request->print_layout;
 
-        // Log the printing event for each student
+        // Log printing events for each student
         foreach ($students as $student) {
             \App\Models\StudentCardPrint::create([
                 'student_id' => $student->id,
+                'card_template_id' => $template->id,
                 'printed_by' => Auth::id(),
                 'print_layout' => $printLayout,
                 'printed_at' => now(),
             ]);
         }
 
-        // Generate barcodes / QR codes for each student
+        // Generate barcodes / QR codes
         $dns1d = new DNS1D();
         $studentsData = $students->map(function ($student) use ($layout, $dns1d) {
             $codeHtml = '';
@@ -315,7 +492,6 @@ class StudentCardSettingController extends Controller
                     $qr = QrCode::size(100)->generate($student->barcode);
                     $codeHtml = '<img src="data:image/svg+xml;base64,' . base64_encode($qr) . '" />';
                 } else {
-                    // Render barcode as a base64 PNG image so it can stretch to 100% width of the container dynamically
                     $codeHtml = '<img src="data:image/png;base64,' . $dns1d->getBarcodePNG($student->barcode, 'C128', 2, 40) . '" style="width: 100%; height: 100%; display: block;" />';
                 }
             }
@@ -360,7 +536,7 @@ class StudentCardSettingController extends Controller
             ])->setPaper('a4', 'portrait');
         }
 
-        $fileName = 'kartu_santri_' . now()->format('Ymd_His') . '.pdf';
+        $fileName = 'kartu_' . $template->type . '_' . now()->format('Ymd_His') . '.pdf';
         return $pdf->stream($fileName);
     }
 }

@@ -335,23 +335,63 @@ class StudentController extends Controller
 
     public function generateStudentCard($id)
     {
-        $student = Student::findOrFail($id);
-        // generate student card here and return the file to download
-        $background = ApplicationSetting::first()->student_card_image;
-        $qrCode = QrCode::size(300)->generate($student->barcode);
-        // Convert the QR code to base64
-        $qrCodeBase64 = base64_encode($qrCode);
-        $pdf = PDF::loadView('admins.student-card.index', [
-            'background' => $background,
+        if (!Auth::user()->can('Manage Kartu Santri')) {
+            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
+        }
+
+        $student = Student::with(['classroom', 'classroom.school'])->findOrFail($id);
+        
+        // Ambil template Kartu Santri aktif
+        $template = \App\Models\CardTemplate::where('type', 'student_card')
+            ->where('is_active', true)
+            ->first();
+
+        $layout = $template ? $template->layout : ApplicationSetting::getDefaultStudentCardLayout();
+        $cardImage = $template ? $template->background_image : null;
+        
+        $background = '';
+        if ($cardImage) {
+            if (file_exists(public_path($cardImage))) {
+                $background = public_path($cardImage);
+            } else {
+                $background = storage_asset($cardImage);
+            }
+        }
+
+        // Generate barcode / QR code
+        $codeHtml = '';
+        if (($layout['code']['show'] ?? true) && $student->barcode) {
+            $codeType = $layout['code']['type'] ?? 'barcode';
+            if ($codeType === 'qrcode') {
+                $qr = QrCode::size(100)->generate($student->barcode);
+                $codeHtml = '<img src="data:image/svg+xml;base64,' . base64_encode($qr) . '" />';
+            } else {
+                $dns1d = new \Milon\Barcode\DNS1D();
+                $codeHtml = '<img src="data:image/png;base64,' . $dns1d->getBarcodePNG($student->barcode, 'C128', 2, 40) . '" style="width: 100%; height: 100%; display: block;" />';
+            }
+        }
+
+        $studentsData = collect([[
             'student' => $student,
-            'qrCode' => $qrCodeBase64
-        ])
-            ->setPaper('a4', 'landscape');
+            'code_html' => $codeHtml,
+        ]]);
 
-        // Generate a random file name
-        $fileName = 'student_card_' . $student->id . '_' . uniqid() . '.pdf';
+        // Log riwayat cetak
+        \App\Models\StudentCardPrint::create([
+            'student_id' => $student->id,
+            'card_template_id' => $template?->id,
+            'printed_by' => Auth::id(),
+            'print_layout' => 'pvc',
+            'printed_at' => now(),
+        ]);
 
-        // Return the PDF file as a download response
+        $pdf = PDF::loadView('admins.student-card-setting.pdf-pvc', [
+            'studentsData' => $studentsData,
+            'layout' => $layout,
+            'background' => $background,
+        ])->setPaper([0, 0, 242.65, 153.07], 'landscape'); // 85.6mm x 53.98mm in points
+
+        $fileName = 'kartu_santri_' . $student->nis . '_' . now()->format('Ymd_His') . '.pdf';
         return $pdf->stream($fileName);
     }
 

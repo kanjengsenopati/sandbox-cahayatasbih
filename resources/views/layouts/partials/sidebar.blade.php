@@ -120,7 +120,7 @@
                         @endcanany
 
                         {{-- Submenu: Kartu --}}
-                        @can('Manage Pengaturan Aplikasi')
+                        @canany(['Manage Kartu Santri', 'Manage Kartu Ujian'])
                         <div class="menu-item ">
                             <a class="menu-link {{ request()->routeIs('student-card-setting.*') ? ' active' : '' }}"
                                 href="{{ route('student-card-setting.index') }}">
@@ -130,7 +130,7 @@
                                 <span class="menu-title">Kartu</span>
                             </a>
                         </div>
-                        @endcan
+                        @endcanany
 
                         {{-- Non-grouped: Informasi --}}
                         @can('Manage Informasi')

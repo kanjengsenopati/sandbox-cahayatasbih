@@ -15,6 +15,7 @@ class StudentCardPrint extends Model
 
     protected $fillable = [
         'student_id',
+        'card_template_id',
         'printed_by',
         'print_layout',
         'printed_at',
@@ -27,6 +28,11 @@ class StudentCardPrint extends Model
     public function student()
     {
         return $this->belongsTo(Student::class);
+    }
+
+    public function cardTemplate()
+    {
+        return $this->belongsTo(CardTemplate::class);
     }
 
     public function admin()
