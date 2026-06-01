@@ -328,35 +328,51 @@ class CashFlowController extends Controller
         }
 
         // 4. Breakdown per Sumber Pembayaran (Tunai, Debit Saldo, Transfer Aplikasi)
-        $sourceBreakdownRaw = Transaction::where('transactions.status', Transaction::STATUS_PAID)
-            ->where('transactions.type', Transaction::TYPE_BILL)
-            ->when($startDate, fn($q) => $q->whereDate('transactions.paid_at', '>=', $startDate->toDateString()))
-            ->when($endDate, fn($q) => $q->whereDate('transactions.paid_at', '<=', $endDate->toDateString()))
-            ->when($academicYearId, function ($q) use ($academicYearId) {
-                $q->whereHas('transactionDetails.bill', function ($bq) use ($academicYearId) {
-                    $bq->where('academic_year_id', $academicYearId);
-                });
-            })
-            ->join('payment_methods', 'transactions.payment_method_id', '=', 'payment_methods.id')
-            ->select('payment_methods.type', DB::raw('SUM(transactions.pay_amount) as total_amount'))
-            ->groupBy('payment_methods.type')
-            ->get();
+        // Dihitung dari bills (bukan transactions) agar konsisten dengan filter bill_type_name
+        // dan menghindari double-count pada transaksi yang membayar beberapa tagihan sekaligus.
+        $sourceQuery = DB::table('bills as b')
+            ->join('bill_types as bt', 'b.bill_type_id', '=', 'bt.id')
+            ->leftJoinSub($billPaymentsSub, 'bp', 'b.id', '=', 'bp.bill_id')
+            ->whereNull('b.deleted_at')
+            ->where('b.status', 'PAID')
+            ->select(
+                DB::raw("SUM(CASE WHEN bp.pm_type = 'CASH' THEN b.amount ELSE 0 END) as paid_cash"),
+                DB::raw("SUM(CASE WHEN bp.pm_type = 'BALANCE' THEN b.amount ELSE 0 END) as paid_balance"),
+                DB::raw("SUM(CASE WHEN bp.pm_type NOT IN ('CASH', 'BALANCE') THEN b.amount ELSE 0 END) as paid_transfer")
+            );
+
+        if ($academicYearId) {
+            $sourceQuery->where('b.academic_year_id', $academicYearId);
+        }
+        if ($billTypeName) {
+            $sourceQuery->where('bt.name', $billTypeName);
+        }
+        if ($startDate) {
+            $sourceQuery->where(function ($q) use ($startDate) {
+                $q->where('b.year', '>', $startDate->year)
+                    ->orWhere(function ($sub) use ($startDate) {
+                        $sub->where('b.year', '=', $startDate->year)
+                            ->where('b.month', '>=', $startDate->month);
+                    });
+            });
+        }
+        if ($endDate) {
+            $sourceQuery->where(function ($q) use ($endDate) {
+                $q->where('b.year', '<', $endDate->year)
+                    ->orWhere(function ($sub) use ($endDate) {
+                        $sub->where('b.year', '=', $endDate->year)
+                            ->where('b.month', '<=', $endDate->month);
+                    });
+            });
+        }
+
+        $sourceRow = $sourceQuery->first();
 
         $sourceBreakdown = [
-            'Tunai' => 0,
-            'Debit Saldo' => 0,
-            'Transfer Aplikasi' => 0,
+            'Tunai' => (int)($sourceRow->paid_cash ?? 0),
+            'Debit Saldo' => (int)($sourceRow->paid_balance ?? 0),
+            'Transfer Aplikasi' => (int)($sourceRow->paid_transfer ?? 0),
         ];
-
-        foreach ($sourceBreakdownRaw as $item) {
-            if ($item->type == PaymentMethod::TYPE_CASH) {
-                $sourceBreakdown['Tunai'] += $item->total_amount;
-            } elseif ($item->type == PaymentMethod::TYPE_BALANCE) {
-                $sourceBreakdown['Debit Saldo'] += $item->total_amount;
-            } else {
-                $sourceBreakdown['Transfer Aplikasi'] += $item->total_amount;
-            }
-        }
 
         // 5. Tracing Petugas Piket (Tunai)
         $piketOfficers = Transaction::where('transactions.status', Transaction::STATUS_PAID)
