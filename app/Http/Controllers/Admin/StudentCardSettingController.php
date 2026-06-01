@@ -44,7 +44,7 @@ class StudentCardSettingController extends Controller
         $templates = $query->orderBy('type')->orderBy('created_at', 'desc')->get();
 
         $academicYears = AcademicYear::orderBy('start_year', 'desc')->get();
-        $billTypes = BillType::orderBy('name')->get();
+        $billTypes = BillType::with(['academicYear', 'billItem'])->orderBy('name')->get();
         $schools = School::hasSchool()->orderBy('name')->get();
 
         // Cari template aktif default untuk pencetakan awal
@@ -394,12 +394,18 @@ class StudentCardSettingController extends Controller
                         $unpaid = Bill::where('student_id', $s->id)
                             ->whereIn('bill_type_id', $requiredBillTypeIds)
                             ->where('status', Bill::STATUS_UNPAID)
-                            ->with('billType')
+                            ->with(['billType.billItem', 'billType.academicYear'])
                             ->get();
 
                         if ($unpaid->count() > 0) {
                             $isEligible = false;
-                            $unpaidBills = $unpaid->map(fn($b) => $b->billType?->name ?? 'Tagihan')->unique()->toArray();
+                            $unpaidBills = $unpaid->map(function ($b) {
+                                if (!$b->billType) return 'Tagihan';
+                                $unit = $b->billType->billItem->name ?? '';
+                                $year = $b->billType->academicYear->name ?? '';
+                                $suffix = array_filter([$unit, $year]);
+                                return $b->billType->name . (!empty($suffix) ? ' (' . implode(' - ', $suffix) . ')' : '');
+                            })->unique()->toArray();
                         }
                     }
 

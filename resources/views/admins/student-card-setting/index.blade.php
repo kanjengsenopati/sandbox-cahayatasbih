@@ -133,7 +133,12 @@
                                                 <td>
                                                     @if($t->type === 'exam_card' && !empty($t->exam_bill_requirements))
                                                         @php
-                                                            $reqNames = $billTypes->whereIn('id', $t->exam_bill_requirements)->pluck('name')->toArray();
+                                                            $reqNames = $billTypes->whereIn('id', $t->exam_bill_requirements)->map(function ($bt) {
+                                                                $unit = $bt->billItem->name ?? '';
+                                                                $year = $bt->academicYear->name ?? '';
+                                                                $suffix = array_filter([$unit, $year]);
+                                                                return $bt->name . (!empty($suffix) ? ' (' . implode(' - ', $suffix) . ')' : '');
+                                                            })->toArray();
                                                         @endphp
                                                         <span class="text-slate-600 fs-7">{{ implode(', ', $reqNames) }}</span>
                                                     @elseif($t->type === 'exam_card')
@@ -400,7 +405,7 @@
                                 <div class="form-check form-check-custom form-check-solid mb-2">
                                     <input class="form-check-input" type="checkbox" name="exam_bill_requirements[]" value="{{ $bt->id }}" id="req_c_{{ $bt->id }}" />
                                     <label class="form-check-label fw-bold text-slate-700" for="req_c_{{ $bt->id }}">
-                                        {{ $bt->name }}
+                                        {{ $bt->name }} ({{ $bt->billItem->name ?? 'Semua Unit' }} - {{ $bt->academicYear->name ?? 'Semua Tahun' }})
                                     </label>
                                 </div>
                             @endforeach
@@ -467,7 +472,7 @@
                                 <div class="form-check form-check-custom form-check-solid mb-2">
                                     <input class="form-check-input" type="checkbox" name="exam_bill_requirements[]" value="{{ $bt->id }}" id="req_e_{{ $bt->id }}" />
                                     <label class="form-check-label fw-bold text-slate-700" for="req_e_{{ $bt->id }}">
-                                        {{ $bt->name }}
+                                        {{ $bt->name }} ({{ $bt->billItem->name ?? 'Semua Unit' }} - {{ $bt->academicYear->name ?? 'Semua Tahun' }})
                                     </label>
                                 </div>
                             @endforeach
