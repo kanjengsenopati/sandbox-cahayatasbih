@@ -115,7 +115,7 @@
                                                 <td>
                                                     <div class="d-flex flex-column">
                                                         <span class="text-gray-800 text-hover-primary mb-1">{{ $t->name }}</span>
-                                                        <span class="text-muted fs-7">ID: {{ $t->id }}</span>
+                                                        <span class="text-muted fs-7">ID: @if($t->type === 'student_card')KSD-@elseKU-@endif{{ $t->academicYear->name ?? 'Semua' }}</span>
                                                     </div>
                                                 </td>
                                                 <td>
