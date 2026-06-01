@@ -1306,6 +1306,46 @@
         });
     }
 
+    // Filter tables according to search query
+    function filterBreakdownTables() {
+        var query = $('#search-jenis-tagihan').val().toLowerCase().trim();
+        
+        // Saring tabel pertama: Breakdown per Jenis Tagihan
+        $('#breakdown-bills-tbody tr').each(function() {
+            var row = $(this);
+            if (row.find('td').length < 3) {
+                return;
+            }
+            var name = row.find('td:first-child').text().toLowerCase();
+            if (name.indexOf(query) > -1) {
+                row.show();
+            } else {
+                row.hide();
+            }
+        });
+
+        // Saring tabel kedua secara otomatis (Sinkronisasi): Detil Breakdown per Jenis Tagihan
+        $('#breakdown-detail-bills-tbody tr').each(function() {
+            var row = $(this);
+            if (row.find('td').length < 6) {
+                return;
+            }
+            var name = row.find('td:first-child').text().toLowerCase();
+            if (name.indexOf(query) > -1) {
+                row.show();
+            } else {
+                row.hide();
+            }
+        });
+    }
+
+    // Bind event listener ke input pencarian
+    $(document).ready(function() {
+        $('#search-jenis-tagihan').on('keyup input', function() {
+            filterBreakdownTables();
+        });
+    });
+
     // Event listener for tab transitions
     $('a[data-bs-toggle="tab"]').on('shown.bs.tab', function (e) {
         var target = $(e.target).attr("href");
