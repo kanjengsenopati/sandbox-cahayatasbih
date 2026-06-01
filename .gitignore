@@ -32,3 +32,6 @@ docker-compose.yml
 /storage/framework/sessions/*
 /storage/framework/views/*
 /storage/framework/cache/*
+
+/pwa-ct-firebase-adminsdk.json
+/pptq-cahaya-tasbih-firebase-adminsdk-w9fmm-0a9cd58eed.json
