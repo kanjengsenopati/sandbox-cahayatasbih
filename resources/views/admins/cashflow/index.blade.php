@@ -145,9 +145,10 @@
                                 <div>
                                     <label class="form-label mb-1 fw-bold text-gray-700 fs-7">Periode</label>
                                     <select id="period_tab1" class="form-select" style="border-radius: 12px; min-width: 140px; background-color: #fff; border: 1px solid #ccc; padding: 7px 14px; color: #475569; font-weight: 500;">
+                                        <option value="semua_periode" selected>Semua Periode</option>
                                         <option value="hari_ini">Hari Ini</option>
                                         <option value="minggu_ini">Minggu Ini</option>
-                                        <option value="bulan_ini" selected>Bulan Ini</option>
+                                        <option value="bulan_ini">Bulan Ini</option>
                                         <option value="pilih_sendiri">Pilih Sendiri</option>
                                     </select>
                                 </div>
@@ -335,7 +336,8 @@
                                 <div>
                                     <label class="form-label mb-1 fw-bold text-gray-700 fs-7">Periode</label>
                                     <select id="period_tab2" class="form-select" style="border-radius: 12px; min-width: 150px; background-color: #fff; border: 1px solid #ccc; padding: 7px 14px; color: #475569; font-weight: 500;">
-                                        <option value="bulan_ini" selected>Bulan Ini</option>
+                                        <option value="semua_periode" selected>Semua Periode</option>
+                                        <option value="bulan_ini">Bulan Ini</option>
                                         <option value="3_bulan">3 Bulan</option>
                                         <option value="6_bulan">6 Bulan</option>
                                         <option value="tahun_ini">Tahun Ini</option>
@@ -872,10 +874,10 @@
         loadTab1Data();
     });
 
-    // Set initial values for Tab 1
-    $('#start_date_tab1').val(start_tab1.format('YYYY-MM-DD'));
-    $('#end_date_tab1').val(end_tab1.format('YYYY-MM-DD'));
-    $('#dateRange_tab1 span').html(start_tab1.format('D/MM/YYYY') + ' - ' + end_tab1.format('D/MM/YYYY'));
+    // Initial: "Semua Periode" = no date filter
+    $('#start_date_tab1').val('');
+    $('#end_date_tab1').val('');
+    $('#dateRange_tab1 span').html('Semua Periode');
 
     // Tab 2 Date Picker setup
     var start_tab2 = moment().startOf('month');
@@ -903,10 +905,10 @@
         loadTab2Data();
     });
 
-    // Set initial values for Tab 2
-    $('#start_date_tab2').val(start_tab2.format('YYYY-MM-DD'));
-    $('#end_date_tab2').val(end_tab2.format('YYYY-MM-DD'));
-    $('#dateRange_tab2 span').html(start_tab2.format('D/MM/YYYY') + ' - ' + end_tab2.format('D/MM/YYYY'));
+    // Initial: "Semua Periode" = no date filter
+    $('#start_date_tab2').val('');
+    $('#end_date_tab2').val('');
+    $('#dateRange_tab2 span').html('Semua Periode');
 
     // Event listener for Filter Tahun Ajaran Tab 1 & Tab 2
     $('#academic_year_tab1').on('change', function() {
@@ -922,7 +924,13 @@
         var selected = $(this).val();
         var start, end;
         
-        if (selected === 'hari_ini') {
+        if (selected === 'semua_periode') {
+            $('#wrapper_date_tab1').hide();
+            $('#start_date_tab1').val('');
+            $('#end_date_tab1').val('');
+            $('#dateRange_tab1 span').html('Semua Periode');
+            loadTab1Data();
+        } else if (selected === 'hari_ini') {
             $('#wrapper_date_tab1').hide();
             start = moment().startOf('day');
             end = moment().endOf('day');
@@ -947,7 +955,13 @@
         var selected = $(this).val();
         var start, end;
         
-        if (selected === 'bulan_ini') {
+        if (selected === 'semua_periode') {
+            $('#wrapper_date_tab2').hide();
+            $('#start_date_tab2').val('');
+            $('#end_date_tab2').val('');
+            $('#dateRange_tab2 span').html('Semua Periode');
+            loadTab2Data();
+        } else if (selected === 'bulan_ini') {
             $('#wrapper_date_tab2').hide();
             start = moment().startOf('month');
             end = moment().endOf('month');
@@ -988,13 +1002,16 @@
 
     // Tab 1 Loader
     function loadTab1Data() {
+        var params = { type: 'summary' };
+        var sd = $('#start_date_tab1').val();
+        var ed = $('#end_date_tab1').val();
+        var ay = $('#academic_year_tab1').val();
+        if (sd) params.start_date = sd;
+        if (ed) params.end_date = ed;
+        if (ay) params.academic_year_id = ay;
+
         axios.get("{{ route('cashflow.index') }}", {
-            params: {
-                type: 'summary',
-                start_date: $('#start_date_tab1').val(),
-                end_date: $('#end_date_tab1').val(),
-                academic_year_id: $('#academic_year_tab1').val(),
-            }
+            params: params
         })
         .then(function (response) {
             // Update Card values for Tab 1
@@ -1045,13 +1062,16 @@
 
     // Tab 2 Loader
     function loadTab2Data() {
+        var params = { type: 'summary' };
+        var sd = $('#start_date_tab2').val();
+        var ed = $('#end_date_tab2').val();
+        var ay = $('#academic_year_tab2').val();
+        if (sd) params.start_date = sd;
+        if (ed) params.end_date = ed;
+        if (ay) params.academic_year_id = ay;
+
         axios.get("{{ route('cashflow.index') }}", {
-            params: {
-                type: 'summary',
-                start_date: $('#start_date_tab2').val(),
-                end_date: $('#end_date_tab2').val(),
-                academic_year_id: $('#academic_year_tab2').val(),
-            }
+            params: params
         })
         .then(function (response) {
             // Update Card values for Tab 2

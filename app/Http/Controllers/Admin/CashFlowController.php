@@ -169,56 +169,63 @@ class CashFlowController extends Controller
 
         $remainingBalances = max($totalIncomes - $totalExpenses, 0);
 
-        // 3. Breakdown per Jenis/Nama Pembayaran (Unifikasi & Resolusi Ambigu Lembaga + Tahun Ajaran)
-        $allBills = (clone $billQuery)
-            ->with(['billType.billItem', 'billType.academicYear'])
-            ->get();
+        // 3. Breakdown per Jenis/Nama Pembayaran (Efficient DB-level aggregation)
+        $breakdownQuery = DB::table('bills as b')
+            ->join('bill_types as bt', 'b.bill_type_id', '=', 'bt.id')
+            ->leftJoin('bill_items as bi', 'bt.bill_item_id', '=', 'bi.id')
+            ->leftJoin('academic_years as ay', 'bt.academic_year_id', '=', 'ay.id')
+            ->whereNull('b.deleted_at')
+            ->select(
+                'bt.name as type_name',
+                'bi.name as unit_name',
+                'ay.name as year_name',
+                DB::raw('SUM(b.amount) as target'),
+                DB::raw("SUM(CASE WHEN b.status = 'PAID' THEN b.amount ELSE 0 END) as paid")
+            )
+            ->groupBy('bt.name', 'bi.name', 'ay.name');
 
-        $breakdownGrouped = [];
-        foreach ($allBills as $bill) {
-            $billType = $bill->billType;
-            if (!$billType) continue;
+        if ($academicYearId) {
+            $breakdownQuery->where('b.academic_year_id', $academicYearId);
+        }
+        if ($startDate) {
+            $breakdownQuery->where(function ($query) use ($startDate) {
+                $query->where('b.year', '>', $startDate->year)
+                    ->orWhere(function ($sub) use ($startDate) {
+                        $sub->where('b.year', '=', $startDate->year)
+                            ->where('b.month', '>=', $startDate->month);
+                    });
+            });
+        }
+        if ($endDate) {
+            $breakdownQuery->where(function ($query) use ($endDate) {
+                $query->where('b.year', '<', $endDate->year)
+                    ->orWhere(function ($sub) use ($endDate) {
+                        $sub->where('b.year', '=', $endDate->year)
+                            ->where('b.month', '<=', $endDate->month);
+                    });
+            });
+        }
 
-            $typeName = trim($billType->name);
-            $unitName = $billType->billItem?->name ?? '';
-            $yearName = $billType->academicYear?->name ?? '';
+        $breakdownRaw = $breakdownQuery->orderByDesc('target')->get();
 
-            // Buat nama gabungan non-ambigu jika Lembaga atau Tahun Ajaran berbeda
-            $fullName = $typeName;
-            if ($unitName || $yearName) {
-                $parts = [];
-                if ($unitName) $parts[] = $unitName;
-                if ($yearName) $parts[] = $yearName;
+        $breakdownBills = [];
+        foreach ($breakdownRaw as $row) {
+            $fullName = trim($row->type_name);
+            $parts = [];
+            if ($row->unit_name) $parts[] = $row->unit_name;
+            if ($row->year_name) $parts[] = $row->year_name;
+            if (!empty($parts)) {
                 $fullName .= ' (' . implode(' - ', $parts) . ')';
             }
 
-            if (!isset($breakdownGrouped[$fullName])) {
-                $breakdownGrouped[$fullName] = [
-                    'target' => 0,
-                    'paid' => 0,
-                ];
-            }
-            $breakdownGrouped[$fullName]['target'] += $bill->amount;
-            if ($bill->status === 'PAID') {
-                $breakdownGrouped[$fullName]['paid'] += $bill->amount;
-            }
-        }
-
-        $breakdownBills = [];
-        foreach ($breakdownGrouped as $name => $data) {
             $breakdownBills[] = [
-                'name' => $name,
-                'target_amount' => $data['target'],
-                'target_formatted' => 'Rp ' . number_format($data['target'], 0, ',', '.'),
-                'total_amount' => $data['paid'],
-                'total_formatted' => 'Rp ' . number_format($data['paid'], 0, ',', '.'),
+                'name' => $fullName,
+                'target_amount' => (int)$row->target,
+                'target_formatted' => 'Rp ' . number_format($row->target, 0, ',', '.'),
+                'total_amount' => (int)$row->paid,
+                'total_formatted' => 'Rp ' . number_format($row->paid, 0, ',', '.'),
             ];
         }
-
-        // Urutkan berdasarkan target pemasukan tertinggi (descending)
-        usort($breakdownBills, function ($a, $b) {
-            return $b['target_amount'] <=> $a['target_amount'];
-        });
 
         // 4. Breakdown per Sumber Pembayaran (Tunai, Debit Saldo, Transfer Aplikasi)
         $sourceBreakdownRaw = Transaction::where('transactions.status', Transaction::STATUS_PAID)
