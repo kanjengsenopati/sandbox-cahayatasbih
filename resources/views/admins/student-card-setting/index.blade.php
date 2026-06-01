@@ -400,10 +400,19 @@
                     <div class="mb-4 d-none section-bill-reqs-create">
                         <label class="form-label fw-bold d-block">Syarat Pelunasan Tagihan (Historis)</label>
                         <small class="text-muted d-block mb-3">Santri wajib melunasi jenis tagihan berikut untuk mendapatkan lencana Lunas (Bebas tunggakan historis).</small>
-                        <div style="max-height: 150px; overflow-y: auto;" class="p-3 border rounded-xl bg-light">
+                        
+                        <div class="d-flex gap-3 align-items-center mb-3">
+                            <input type="text" id="search_bill_reqs_create" class="form-control form-control-sm border-gray-200 rounded-xl" placeholder="Cari jenis tagihan..." style="font-size: 13px;" />
+                            <div class="form-check form-check-custom form-check-solid flex-shrink-0 d-flex align-items-center">
+                                <input class="form-check-input" type="checkbox" id="select_all_reqs_create" />
+                                <label class="form-check-label fw-bold text-slate-600 ms-2 fs-7" style="white-space: nowrap; cursor: pointer;" for="select_all_reqs_create">Pilih Semua</label>
+                            </div>
+                        </div>
+
+                        <div style="max-height: 150px; overflow-y: auto;" class="p-3 border rounded-xl bg-light" id="bill_reqs_list_create">
                             @foreach($billTypes as $bt)
-                                <div class="form-check form-check-custom form-check-solid mb-2">
-                                    <input class="form-check-input" type="checkbox" name="exam_bill_requirements[]" value="{{ $bt->id }}" id="req_c_{{ $bt->id }}" />
+                                <div class="form-check form-check-custom form-check-solid mb-2 bill-item-row-create" data-name="{{ strtolower($bt->name . ' ' . ($bt->billItem->name ?? '') . ' ' . ($bt->academicYear->name ?? '')) }}">
+                                    <input class="form-check-input bill-req-cb-create" type="checkbox" name="exam_bill_requirements[]" value="{{ $bt->id }}" id="req_c_{{ $bt->id }}" />
                                     <label class="form-check-label fw-bold text-slate-700" for="req_c_{{ $bt->id }}">
                                         {{ $bt->name }} ({{ $bt->billItem->name ?? 'Semua Unit' }} - {{ $bt->academicYear->name ?? 'Semua Tahun' }})
                                     </label>
@@ -467,10 +476,19 @@
                     <div class="mb-4 d-none section-bill-reqs-edit">
                         <label class="form-label fw-bold d-block">Syarat Pelunasan Tagihan (Historis)</label>
                         <small class="text-muted d-block mb-3">Santri wajib melunasi jenis tagihan berikut untuk mendapatkan lencana Lunas (Bebas tunggakan historis).</small>
-                        <div style="max-height: 150px; overflow-y: auto;" class="p-3 border rounded-xl bg-light">
+                        
+                        <div class="d-flex gap-3 align-items-center mb-3">
+                            <input type="text" id="search_bill_reqs_edit" class="form-control form-control-sm border-gray-200 rounded-xl" placeholder="Cari jenis tagihan..." style="font-size: 13px;" />
+                            <div class="form-check form-check-custom form-check-solid flex-shrink-0 d-flex align-items-center">
+                                <input class="form-check-input" type="checkbox" id="select_all_reqs_edit" />
+                                <label class="form-check-label fw-bold text-slate-600 ms-2 fs-7" style="white-space: nowrap; cursor: pointer;" for="select_all_reqs_edit">Pilih Semua</label>
+                            </div>
+                        </div>
+
+                        <div style="max-height: 150px; overflow-y: auto;" class="p-3 border rounded-xl bg-light" id="bill_reqs_list_edit">
                             @foreach($billTypes as $bt)
-                                <div class="form-check form-check-custom form-check-solid mb-2">
-                                    <input class="form-check-input" type="checkbox" name="exam_bill_requirements[]" value="{{ $bt->id }}" id="req_e_{{ $bt->id }}" />
+                                <div class="form-check form-check-custom form-check-solid mb-2 bill-item-row-edit" data-name="{{ strtolower($bt->name . ' ' . ($bt->billItem->name ?? '') . ' ' . ($bt->academicYear->name ?? '')) }}">
+                                    <input class="form-check-input bill-req-cb-edit" type="checkbox" name="exam_bill_requirements[]" value="{{ $bt->id }}" id="req_e_{{ $bt->id }}" />
                                     <label class="form-check-label fw-bold text-slate-700" for="req_e_{{ $bt->id }}">
                                         {{ $bt->name }} ({{ $bt->billItem->name ?? 'Semua Unit' }} - {{ $bt->academicYear->name ?? 'Semua Tahun' }})
                                     </label>
@@ -534,6 +552,70 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
+    // ── Fitur Pencarian & Pilih Semua untuk Checklist Tagihan ──
+    function setupBillReqsFilter(suffix) {
+        var searchInput = document.getElementById('search_bill_reqs_' + suffix);
+        var selectAllCb = document.getElementById('select_all_reqs_' + suffix);
+        var rows = document.querySelectorAll('.bill-item-row-' + suffix);
+        var checkboxes = document.querySelectorAll('.bill-req-cb-' + suffix);
+
+        // Filter pencarian
+        if (searchInput) {
+            searchInput.addEventListener('input', function() {
+                var keyword = this.value.toLowerCase().trim();
+                rows.forEach(function(row) {
+                    var name = row.getAttribute('data-name') || '';
+                    if (keyword === '' || name.indexOf(keyword) !== -1) {
+                        row.style.display = '';
+                    } else {
+                        row.style.display = 'none';
+                    }
+                });
+                syncSelectAll(suffix);
+            });
+        }
+
+        // Pilih Semua (hanya yang terlihat / tidak tersembunyi)
+        if (selectAllCb) {
+            selectAllCb.addEventListener('change', function() {
+                var checked = this.checked;
+                rows.forEach(function(row) {
+                    if (row.style.display !== 'none') {
+                        var cb = row.querySelector('input[type="checkbox"]');
+                        if (cb) cb.checked = checked;
+                    }
+                });
+            });
+        }
+
+        // Sinkronisasi status "Pilih Semua" saat checkbox individu di-toggle
+        checkboxes.forEach(function(cb) {
+            cb.addEventListener('change', function() {
+                syncSelectAll(suffix);
+            });
+        });
+    }
+
+    function syncSelectAll(suffix) {
+        var selectAllCb = document.getElementById('select_all_reqs_' + suffix);
+        var rows = document.querySelectorAll('.bill-item-row-' + suffix);
+        if (!selectAllCb) return;
+
+        var visibleCount = 0;
+        var checkedCount = 0;
+        rows.forEach(function(row) {
+            if (row.style.display !== 'none') {
+                visibleCount++;
+                var cb = row.querySelector('input[type="checkbox"]');
+                if (cb && cb.checked) checkedCount++;
+            }
+        });
+        selectAllCb.checked = visibleCount > 0 && checkedCount === visibleCount;
+    }
+
+    setupBillReqsFilter('create');
+    setupBillReqsFilter('edit');
+
     // ── Edit Metadata Template Modal Handler ──
     document.querySelectorAll('.btn-edit-template').forEach(function(btn) {
         btn.addEventListener('click', function() {
@@ -559,10 +641,18 @@ document.addEventListener('DOMContentLoaded', function() {
             // Populate Reqs Checkboxes
             var editContainer = document.querySelector('.section-bill-reqs-edit');
             if (editContainer) {
-                editContainer.querySelectorAll('input[type="checkbox"]').forEach(function(cb) {
+                editContainer.querySelectorAll('input[type="checkbox"][name="exam_bill_requirements[]"]').forEach(function(cb) {
                     cb.checked = reqs.includes(cb.value);
                 });
             }
+
+            // Reset search filter dan sinkronisasi Pilih Semua
+            var searchEdit = document.getElementById('search_bill_reqs_edit');
+            if (searchEdit) {
+                searchEdit.value = '';
+                searchEdit.dispatchEvent(new Event('input'));
+            }
+            syncSelectAll('edit');
         });
     });
 
