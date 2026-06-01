@@ -203,6 +203,8 @@ class AsatidzPermitController extends Controller
                 'exit_longitude' => $request->input('longitude'),
             ]);
 
+            // Temporarily disabled check-out notification on gate scan
+            /*
             if ($permit->user) {
                 dispatch(new \App\Jobs\SendToPushNotificationJob(
                     "Santri Keluar Pondok",
@@ -211,6 +213,7 @@ class AsatidzPermitController extends Controller
                     $permit
                 ));
             }
+            */
 
             return response()->json([
                 'success' => true,
@@ -235,6 +238,8 @@ class AsatidzPermitController extends Controller
                 'return_longitude' => $request->input('longitude'),
             ]);
 
+            // Temporarily disabled check-in notification on gate scan
+            /*
             if ($permit->user) {
                 dispatch(new \App\Jobs\SendToPushNotificationJob(
                     "Santri Kembali ke Pondok",
@@ -243,6 +248,7 @@ class AsatidzPermitController extends Controller
                     $permit
                 ));
             }
+            */
 
             return response()->json([
                 'success' => true,
