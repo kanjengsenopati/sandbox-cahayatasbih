@@ -8,7 +8,7 @@ import { fetchBills } from "@/lib/api";
 
 export const Route = createFileRoute("/profil_/notifikasi")({
   component: NotifikasiPage,
-  head: () => ({ meta: [{ title: "Notifikasi — SantriPay" }] }),
+  head: () => ({ meta: [{ title: "Pemberitahuan Informasi — SantriPay" }] }),
 });
 
 const fmtIDR = (n: number) =>
@@ -87,25 +87,25 @@ function NotifikasiPage() {
         setPushPermission(result);
         if (result === "granted") {
           setPushEnabled(true);
-          toast.success("Push Notification diaktifkan!", {
+          toast.success("Pemberitahuan Luar Aplikasi diaktifkan!", {
             description: "Anda akan menerima notifikasi tagihan dan informasi penting.",
           });
           // Send a test notification via SW if available
           if ('serviceWorker' in navigator) {
             const reg = await navigator.serviceWorker.ready;
             reg.showNotification("SantriPay", {
-              body: "Push Notification berhasil diaktifkan! 🎉",
+              body: "Pemberitahuan Luar Aplikasi berhasil diaktifkan! 🎉",
               icon: "/icons/icon-192.png",
             });
           } else {
             new Notification("SantriPay", {
-              body: "Push Notification berhasil diaktifkan! 🎉",
+              body: "Pemberitahuan Luar Aplikasi berhasil diaktifkan! 🎉",
               icon: "/icons/icon-192.png",
             });
           }
         } else {
           setPushEnabled(false);
-          toast.info("Push Notification tidak diizinkan", {
+          toast.info("Pemberitahuan Luar Aplikasi tidak diizinkan", {
             description: "Anda bisa mengaktifkannya nanti melalui pengaturan browser.",
           });
         }
@@ -117,11 +117,11 @@ function NotifikasiPage() {
       const nextState = !pushEnabled;
       setPushEnabled(nextState);
       if (!nextState) {
-        toast.info("Push Notification dinonaktifkan", {
+        toast.info("Pemberitahuan Luar Aplikasi dinonaktifkan", {
           description: "Anda tidak akan menerima notifikasi push.",
         });
       } else {
-        toast.success("Push Notification diaktifkan kembali!");
+        toast.success("Pemberitahuan Luar Aplikasi diaktifkan kembali!");
       }
     }
   }, [pushSupported, pushPermission, pushEnabled]);
@@ -132,12 +132,12 @@ function NotifikasiPage() {
     setToasterEnabled(newVal);
     localStorage.setItem("ct_toaster_enabled", String(newVal));
     if (newVal) {
-      toast.success("Toaster Notification diaktifkan!", {
-        description: "Notifikasi in-app akan muncul di layar.",
+      toast.success("Pemberitahuan Dalam Aplikasi diaktifkan!", {
+        description: "Notifikasi pop-up akan muncul di layar.",
       });
     } else {
-      toast("Toaster Notification dinonaktifkan", {
-        description: "Notifikasi in-app tidak akan muncul.",
+      toast("Pemberitahuan Dalam Aplikasi dinonaktifkan", {
+        description: "Notifikasi pop-up tidak akan muncul.",
         icon: <BellOff size={16} />,
       });
     }
@@ -146,7 +146,7 @@ function NotifikasiPage() {
   // Test notification functions
   const sendTestPush = async () => {
     if (!pushEnabled || pushPermission !== "granted") {
-      toast.error("Aktifkan Push Notification terlebih dahulu.");
+      toast.error("Aktifkan Pemberitahuan Luar Aplikasi terlebih dahulu.");
       return;
     }
 
@@ -195,7 +195,7 @@ function NotifikasiPage() {
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex justify-between items-baseline">
-            <span className="text-[10px] font-extrabold uppercase tracking-widest text-blue-400">System Push Notification</span>
+            <span className="text-[10px] font-extrabold uppercase tracking-widest text-blue-400">Pemberitahuan Luar Aplikasi</span>
             <span className="text-[10px] text-slate-400">Baru saja</span>
           </div>
           <p className="text-[14px] font-bold text-white mt-1">SantriPay — {billName}</p>
@@ -228,7 +228,7 @@ function NotifikasiPage() {
 
   const sendTestToaster = () => {
     if (!toasterEnabled) {
-      toast.error("Aktifkan Toaster Notification terlebih dahulu.");
+      toast.error("Aktifkan Pemberitahuan Dalam Aplikasi terlebih dahulu.");
       return;
     }
 
@@ -288,7 +288,7 @@ function NotifikasiPage() {
             </button>
             <div>
               <p className="text-[11px] text-white/70 font-semibold uppercase tracking-wider">Profil</p>
-              <p className="text-base font-bold text-white">Notifikasi</p>
+              <p className="text-base font-bold text-white">Pemberitahuan Informasi</p>
             </div>
           </div>
         </div>
@@ -303,7 +303,7 @@ function NotifikasiPage() {
                   <Smartphone size={22} />
                 </div>
                 <div>
-                  <p className="text-[14px] font-bold text-foreground">Push Notification</p>
+                  <p className="text-[14px] font-bold text-foreground">Pemberitahuan Luar Aplikasi</p>
                   <p className="text-[12px] text-muted-foreground mt-1 leading-relaxed">
                     Terima info tagihan instan & darurat langsung pada status bar perangkat Anda.
                   </p>
@@ -323,7 +323,7 @@ function NotifikasiPage() {
                   onClick={sendTestPush}
                   className="w-full py-3 rounded-2xl bg-primary/5 text-primary text-[12px] font-bold flex items-center justify-center gap-2 hover:bg-primary/10 active:scale-[0.98] transition-all"
                 >
-                  <Sparkles size={14} /> Kirim Test Push Notification
+                  <Sparkles size={14} /> Kirim Test Pemberitahuan Luar Aplikasi
                 </button>
               </div>
             )}
@@ -337,7 +337,7 @@ function NotifikasiPage() {
                   <BellRing size={22} />
                 </div>
                 <div>
-                  <p className="text-[14px] font-bold text-foreground">Toaster Notification</p>
+                  <p className="text-[14px] font-bold text-foreground">Pemberitahuan Dalam Aplikasi</p>
                   <p className="text-[12px] text-muted-foreground mt-1 leading-relaxed">
                     Tampilkan alert pop-up yang informatif & interaktif saat aplikasi sedang dibuka.
                   </p>
@@ -357,7 +357,7 @@ function NotifikasiPage() {
                   onClick={sendTestToaster}
                   className="w-full py-3 rounded-2xl bg-emerald-500/10 text-emerald-600 text-[12px] font-bold flex items-center justify-center gap-2 hover:bg-emerald-500/20 active:scale-[0.98] transition-all"
                 >
-                  <Sparkles size={14} /> Kirim Test Toaster Notification
+                  <Sparkles size={14} /> Kirim Test Pemberitahuan Dalam Aplikasi
                 </button>
               </div>
             )}

@@ -251,7 +251,7 @@ function Profil() {
               <Bell size={18} />
             </div>
             <span className="flex-1 text-left text-[14px] font-semibold text-foreground">
-              Notifikasi
+              Pemberitahuan Informasi
             </span>
             <ChevronRight size={18} className="text-slate-300" />
           </Link>
