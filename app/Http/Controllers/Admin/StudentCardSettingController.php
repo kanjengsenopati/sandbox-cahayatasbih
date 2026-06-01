@@ -356,8 +356,6 @@ class StudentCardSettingController extends Controller
                 $query->orderBy('students.' . $sortColumn, $sortDirection);
             }
  
-            $students = $query->paginate($limit);
-
             // Muat syarat tagihan dari template jika exam_card
             $requiredBillTypeIds = [];
             $template = null;
@@ -367,6 +365,16 @@ class StudentCardSettingController extends Controller
                     $requiredBillTypeIds = $template->exam_bill_requirements ?? [];
                 }
             }
+
+            // Filter lunas jika eligible_only aktif dan bertipe exam_card
+            if ($request->boolean('eligible_only') && !empty($requiredBillTypeIds)) {
+                $query->whereDoesntHave('bills', function ($q) use ($requiredBillTypeIds) {
+                    $q->whereIn('bill_type_id', $requiredBillTypeIds)
+                      ->where('status', Bill::STATUS_UNPAID);
+                });
+            }
+
+            $students = $query->paginate($limit);
 
             return response()->json([
                 'current_page' => $students->currentPage(),

@@ -707,6 +707,10 @@ document.addEventListener('DOMContentLoaded', function() {
         var selectedOpt = document.getElementById('printTemplateSelect').selectedOptions[0];
         var isExamCard = selectedOpt ? selectedOpt.dataset.type === 'exam_card' : false;
 
+        if (isExamCard && filterEligibleOnly) {
+            params.append('eligible_only', '1');
+        }
+
         var tbody = document.getElementById('studentTableBody');
         tbody.innerHTML = '<tr><td colspan="7" class="text-center py-10"><span class="spinner-border spinner-border-sm me-2"></span>Memuat data...</td></tr>';
 
