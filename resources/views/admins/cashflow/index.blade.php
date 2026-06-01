@@ -312,15 +312,40 @@
             <!--begin::Card Datatable-->
             <div class="premium-card">
                 <div class="card-header d-flex justify-content-between align-items-center mb-5 border-0 pt-6">
-                    <!-- Filter Date Range di Kiri -->
                     <div class="d-flex align-items-center gap-4">
-                        <form action="#" id="form-filter" method="get" class="d-flex align-items-center gap-4">
+                        <form action="#" id="form-filter" method="get" class="d-flex align-items-center gap-4 flex-wrap">
                             <input type="text" hidden id="type" name="type" required>
+                            
+                            <!-- Filter Tahun Ajaran -->
                             <div>
-                                <label class="form-label mb-1">Filter Rentang Tanggal</label>
+                                <label class="form-label mb-1">Tahun Ajaran</label>
+                                <select id="academic_year_id" name="academic_year_id" class="form-select" style="border-radius: 12px; min-width: 180px; background-color: #fff; border: 1px solid #ccc; padding: 7px 14px; color: #475569; font-weight: 500;">
+                                    <option value="">Semua Tahun Ajaran</option>
+                                    @if(isset($academicYears))
+                                        @foreach($academicYears as $year)
+                                            <option value="{{ $year->id }}">{{ $year->name }}</option>
+                                        @endforeach
+                                    @endif
+                                </select>
+                            </div>
+
+                            <!-- Filter Periode -->
+                            <div>
+                                <label class="form-label mb-1">Periode</label>
+                                <select id="period_select" class="form-select" style="border-radius: 12px; min-width: 140px; background-color: #fff; border: 1px solid #ccc; padding: 7px 14px; color: #475569; font-weight: 500;">
+                                    <option value="hari_ini">Hari Ini</option>
+                                    <option value="minggu_ini">Minggu Ini</option>
+                                    <option value="bulan_ini" selected>Bulan Ini</option>
+                                    <option value="pilih_sendiri">Pilih Sendiri</option>
+                                </select>
+                            </div>
+
+                            <!-- Custom Date Range Picker -->
+                            <div id="customDateRangeWrapper" style="display: none;">
+                                <label class="form-label mb-1">Pilih Rentang Tanggal</label>
                                 <div class="d-flex gap-2 align-items-center">
                                     <div id="dateRange" class="pull-right"
-                                        style="background: #fff; cursor: pointer; padding: 7px 14px; border: 1px solid #ccc; border-radius: 12px;">
+                                        style="background: #fff; cursor: pointer; padding: 7px 14px; border: 1px solid #ccc; border-radius: 12px; color: #475569; font-weight: 500;">
                                         <i class="glyphicon glyphicon-calendar fa fa-calendar"></i>&nbsp;
                                         <span></span> <b class="caret"></b>
                                     </div>
@@ -485,6 +510,7 @@
                     d.type = 'data';
                     d.start_date = $('#start_date').val();
                     d.end_date = $('#end_date').val();
+                    d.academic_year_id = $('#academic_year_id').val();
                 }
             },
             language: {
@@ -696,10 +722,11 @@
     });
 </script>
 <script>
-    var start = moment().startOf('year');
-    var end = moment().endOf('year');
+    // Inisialisasi awal default periode: Bulan Ini
+    var start = moment().startOf('month');
+    var end = moment().endOf('month');
 
-    // Initialize date range picker
+    // Inisialisasi date range picker
     $('#dateRange').daterangepicker({
         startDate: start,
         endDate: end,
@@ -719,14 +746,61 @@
         $('#start_date').val(start.format('YYYY-MM-DD'));
         $('#end_date').val(end.format('YYYY-MM-DD'));
         
-        // Panggil fungsi load data
+        // Panggil fungsi load data dan reload datatable
         loadCashflowData();
+        if ($.fn.DataTable.isDataTable('#table-cashflow')) {
+            $('#table-cashflow').DataTable().ajax.reload();
+        }
     });
 
     // Set initial values
     $('#start_date').val(start.format('YYYY-MM-DD'));
     $('#end_date').val(end.format('YYYY-MM-DD'));
     $('#dateRange span').html(start.format('D/MM/YYYY') + ' - ' + end.format('D/MM/YYYY'));
+
+    // Event listener untuk Filter Tahun Ajaran
+    $('#academic_year_id').on('change', function() {
+        loadCashflowData();
+        if ($.fn.DataTable.isDataTable('#table-cashflow')) {
+            $('#table-cashflow').DataTable().ajax.reload();
+        }
+    });
+
+    // Event listener untuk Filter Periode
+    $('#period_select').on('change', function() {
+        var selected = $(this).val();
+        var start, end;
+        
+        if (selected === 'hari_ini') {
+            $('#customDateRangeWrapper').hide();
+            start = moment().startOf('day');
+            end = moment().endOf('day');
+            updateDatesAndReload(start, end);
+        } else if (selected === 'minggu_ini') {
+            $('#customDateRangeWrapper').hide();
+            start = moment().startOf('week');
+            end = moment().endOf('week');
+            updateDatesAndReload(start, end);
+        } else if (selected === 'bulan_ini') {
+            $('#customDateRangeWrapper').hide();
+            start = moment().startOf('month');
+            end = moment().endOf('month');
+            updateDatesAndReload(start, end);
+        } else if (selected === 'pilih_sendiri') {
+            $('#customDateRangeWrapper').show();
+        }
+    });
+
+    function updateDatesAndReload(start, end) {
+        $('#start_date').val(start.format('YYYY-MM-DD'));
+        $('#end_date').val(end.format('YYYY-MM-DD'));
+        $('#dateRange span').html(start.format('D/MM/YYYY') + ' - ' + end.format('D/MM/YYYY'));
+        
+        loadCashflowData();
+        if ($.fn.DataTable.isDataTable('#table-cashflow')) {
+            $('#table-cashflow').DataTable().ajax.reload();
+        }
+    }
 
     // Fungsi kanggo ngeload data nganggo Axios
     function loadCashflowData() {
@@ -735,6 +809,7 @@
                 type: 'summary',
                 start_date: $('#start_date').val(),
                 end_date: $('#end_date').val(),
+                academic_year_id: $('#academic_year_id').val(),
             }
         })
         .then(function (response) {

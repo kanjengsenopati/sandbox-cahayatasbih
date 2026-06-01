@@ -99,7 +99,8 @@ class CashFlowController extends Controller
             return $this->summary();
         }
 
-        return view('admins.cashflow.index');
+        $academicYears = \App\Models\AcademicYear::orderBy('name', 'desc')->get();
+        return view('admins.cashflow.index', compact('academicYears'));
     }
 
 
@@ -122,9 +123,13 @@ class CashFlowController extends Controller
 
         $startDate = request()->filled('start_date') ? Carbon::parse(request()->start_date) : null;
         $endDate = request()->filled('end_date') ? Carbon::parse(request()->end_date) : null;
+        $academicYearId = request()->filled('academic_year_id') ? request()->academic_year_id : null;
 
         // 1. Hitung Target & Realisasi dari SEMUA tagihan
         $billQuery = Bill::query();
+        if ($academicYearId) {
+            $billQuery->where('academic_year_id', $academicYearId);
+        }
         
         if ($startDate) {
             $billQuery->where(function ($query) use ($startDate) {
@@ -213,6 +218,11 @@ class CashFlowController extends Controller
             ->where('transactions.type', Transaction::TYPE_BILL)
             ->when($startDate, fn($q) => $q->whereDate('transactions.paid_at', '>=', $startDate->toDateString()))
             ->when($endDate, fn($q) => $q->whereDate('transactions.paid_at', '<=', $endDate->toDateString()))
+            ->when($academicYearId, function ($q) use ($academicYearId) {
+                $q->whereHas('transactionDetails.bill', function ($bq) use ($academicYearId) {
+                    $bq->where('academic_year_id', $academicYearId);
+                });
+            })
             ->join('payment_methods', 'transactions.payment_method_id', '=', 'payment_methods.id')
             ->select('payment_methods.type', DB::raw('SUM(transactions.pay_amount) as total_amount'))
             ->groupBy('payment_methods.type')
@@ -241,6 +251,11 @@ class CashFlowController extends Controller
             ->where('payment_methods.type', PaymentMethod::TYPE_CASH)
             ->when($startDate, fn($q) => $q->whereDate('transactions.paid_at', '>=', $startDate->toDateString()))
             ->when($endDate, fn($q) => $q->whereDate('transactions.paid_at', '<=', $endDate->toDateString()))
+            ->when($academicYearId, function ($q) use ($academicYearId) {
+                $q->whereHas('transactionDetails.bill', function ($bq) use ($academicYearId) {
+                    $bq->where('academic_year_id', $academicYearId);
+                });
+            })
             ->join('admins', 'transactions.admin_id', '=', 'admins.id')
             ->select('admins.id', 'admins.name', DB::raw('SUM(transactions.pay_amount) as total_cash'), DB::raw('COUNT(transactions.id) as total_txs'))
             ->groupBy('admins.id', 'admins.name')
@@ -276,6 +291,11 @@ class CashFlowController extends Controller
             ->where('payment_methods.type', PaymentMethod::TYPE_CASH)
             ->when($startDate, fn($q) => $q->whereDate('transactions.paid_at', '>=', $startDate->toDateString()))
             ->when($endDate, fn($q) => $q->whereDate('transactions.paid_at', '<=', $endDate->toDateString()))
+            ->when($academicYearId, function ($q) use ($academicYearId) {
+                $q->whereHas('transactionDetails.bill', function ($bq) use ($academicYearId) {
+                    $bq->where('academic_year_id', $academicYearId);
+                });
+            })
             ->sum('transactions.pay_amount');
 
         $totalHandedToBendahara = CashFlow::where('status', CashFlow::STATUS_APPROVED)
