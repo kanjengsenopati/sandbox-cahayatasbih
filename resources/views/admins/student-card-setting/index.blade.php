@@ -761,7 +761,14 @@ document.addEventListener('DOMContentLoaded', function() {
                         if (s.is_eligible) {
                             billingColHtml = '<span class="badge bg-light-success text-emerald-600 fw-bold px-3 py-1 rounded" style="background-color: rgba(16, 185, 129, 0.1); color: #10b981;"><i class="fa-solid fa-circle-check text-emerald-600 me-1"></i>Lunas</span>';
                         } else {
-                            billingColHtml = '<span class="badge bg-light-danger text-red-600 fw-bold px-3 py-1 rounded status-unpaid-indicator" style="background-color: rgba(220, 38, 38, 0.1); color: #dc2626;"><i class="fa-solid fa-triangle-exclamation text-red-600 me-1"></i>Tunggakan: ' + s.unpaid_bills.join(', ') + '</span>';
+                            var billItems = '';
+                            s.unpaid_bills.forEach(function(bill) {
+                                billItems += '<span class="badge fw-semibold px-2 py-1 rounded mb-1 d-inline-block" style="background-color: rgba(220, 38, 38, 0.08); color: #dc2626; font-size: 11px; border: 1px solid rgba(220, 38, 38, 0.15);">' + bill + '</span><br>';
+                            });
+                            billingColHtml = '<div class="d-flex flex-column align-items-start gap-1" style="max-width: 240px;">'
+                                + '<span class="fw-bold text-red-600 mb-1" style="font-size: 11px;"><i class="fa-solid fa-triangle-exclamation me-1"></i>Tunggakan:</span>'
+                                + '<div class="status-unpaid-indicator">' + billItems + '</div>'
+                                + '</div>';
                             arrearsClass = 'data-has-arrears="true"';
                         }
                     }
