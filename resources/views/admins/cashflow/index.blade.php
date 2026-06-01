@@ -113,73 +113,65 @@
             <div class="row mb-6 g-5">
                 <!-- Target Total Pemasukan -->
                 <div class="col-md-3">
-                    <div class="premium-card">
-                        <div class="card-body p-0 d-flex flex-column justify-content-between" style="min-height: 110px;">
-                            <div class="d-flex align-items-center justify-content-between">
-                                <x-text.label>Target Pemasukan</x-text.label>
-                                <div class="bg-light-primary rounded-circle p-2 d-flex align-items-center justify-content-center" style="width: 36px; height: 36px;">
-                                    <i class="bi bi-wallet2 text-primary fs-4"></i>
-                                </div>
-                            </div>
-                            <div>
-                                <x-text.caption class="mb-1">Seluruh Tagihan Aktif</x-text.caption>
-                                <x-text.amount id="total-cashflow">Rp 0</x-text.amount>
+                    <div class="premium-card p-6">
+                        <div class="d-flex align-items-center justify-content-between mb-4">
+                            <x-text.label>Target Pemasukan</x-text.label>
+                            <div class="bg-light-primary rounded-circle p-2 d-flex align-items-center justify-content-center" style="width: 36px; height: 36px;">
+                                <i class="bi bi-wallet2 text-primary fs-4"></i>
                             </div>
                         </div>
+                        <div class="mb-1">
+                            <x-text.amount id="total-cashflow" class="d-block">Rp 0</x-text.amount>
+                        </div>
+                        <x-text.caption class="text-muted d-block">Seluruh Tagihan Aktif</x-text.caption>
                     </div>
                 </div>
 
                 <!-- Realisasi Pemasukan -->
                 <div class="col-md-3">
-                    <div class="premium-card">
-                        <div class="card-body p-0 d-flex flex-column justify-content-between" style="min-height: 110px;">
-                            <div class="d-flex align-items-center justify-content-between">
-                                <x-text.label>Realisasi Pemasukan</x-text.label>
-                                <div class="bg-light-success rounded-circle p-2 d-flex align-items-center justify-content-center" style="width: 36px; height: 36px;">
-                                    <i class="bi bi-check-circle text-success fs-4"></i>
-                                </div>
-                            </div>
-                            <div>
-                                <x-text.caption class="mb-1">Tagihan Lunas (PAID)</x-text.caption>
-                                <x-text.amount id="total-payment">Rp 0</x-text.amount>
+                    <div class="premium-card p-6">
+                        <div class="d-flex align-items-center justify-content-between mb-4">
+                            <x-text.label>Realisasi Pemasukan</x-text.label>
+                            <div class="bg-light-success rounded-circle p-2 d-flex align-items-center justify-content-center" style="width: 36px; height: 36px;">
+                                <i class="bi bi-check-circle text-success fs-4"></i>
                             </div>
                         </div>
+                        <div class="mb-1">
+                            <x-text.amount id="total-payment" class="d-block">Rp 0</x-text.amount>
+                        </div>
+                        <x-text.caption class="text-muted d-block">Tagihan Lunas (PAID)</x-text.caption>
                     </div>
                 </div>
 
                 <!-- Dana Mutasi Bendahara -->
                 <div class="col-md-3">
-                    <div class="premium-card">
-                        <div class="card-body p-0 d-flex flex-column justify-content-between" style="min-height: 110px;">
-                            <div class="d-flex align-items-center justify-content-between">
-                                <x-text.label>Dana Mutasi Bendahara</x-text.label>
-                                <div class="bg-light-warning rounded-circle p-2 d-flex align-items-center justify-content-center" style="width: 36px; height: 36px;">
-                                    <i class="bi bi-arrow-down-up text-warning fs-4"></i>
-                                </div>
-                            </div>
-                            <div>
-                                <x-text.caption class="mb-1">Dana Diserahkan ke Bendahara</x-text.caption>
-                                <x-text.amount id="total-mutasi-bendahara">Rp 0</x-text.amount>
+                    <div class="premium-card p-6">
+                        <div class="d-flex align-items-center justify-content-between mb-4">
+                            <x-text.label>Dana Mutasi Bendahara</x-text.label>
+                            <div class="bg-light-warning rounded-circle p-2 d-flex align-items-center justify-content-center" style="width: 36px; height: 36px;">
+                                <i class="bi bi-arrow-down-up text-warning fs-4"></i>
                             </div>
                         </div>
+                        <div class="mb-1">
+                            <x-text.amount id="total-mutasi-bendahara" class="d-block">Rp 0</x-text.amount>
+                        </div>
+                        <x-text.caption class="text-muted d-block">Dana Diserahkan ke Bendahara</x-text.caption>
                     </div>
                 </div>
 
                 <!-- Mutasi Ke Pengurus Yayasan -->
                 <div class="col-md-3">
-                    <div class="premium-card">
-                        <div class="card-body p-0 d-flex flex-column justify-content-between" style="min-height: 110px;">
-                            <div class="d-flex align-items-center justify-content-between">
-                                <x-text.label>Mutasi Ke Pengurus Yayasan</x-text.label>
-                                <div class="bg-light-danger rounded-circle p-2 d-flex align-items-center justify-content-center" style="width: 36px; height: 36px;">
-                                    <i class="bi bi-bank text-danger fs-4"></i>
-                                </div>
-                            </div>
-                            <div>
-                                <x-text.caption class="mb-1">Dana Diterima Pengurus Yayasan</x-text.caption>
-                                <x-text.amount id="total-mutasi-yayasan">Rp 0</x-text.amount>
+                    <div class="premium-card p-6">
+                        <div class="d-flex align-items-center justify-content-between mb-4">
+                            <x-text.label>Mutasi Ke Pengurus Yayasan</x-text.label>
+                            <div class="bg-light-danger rounded-circle p-2 d-flex align-items-center justify-content-center" style="width: 36px; height: 36px;">
+                                <i class="bi bi-bank text-danger fs-4"></i>
                             </div>
                         </div>
+                        <div class="mb-1">
+                            <x-text.amount id="total-mutasi-yayasan" class="d-block">Rp 0</x-text.amount>
+                        </div>
+                        <x-text.caption class="text-muted d-block">Dana Diterima Pengurus Yayasan</x-text.caption>
                     </div>
                 </div>
             </div>
