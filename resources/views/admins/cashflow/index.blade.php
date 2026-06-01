@@ -4,81 +4,82 @@
 <!-- Include Lightbox2 CSS -->
 <link href="https://cdn.jsdelivr.net/npm/lightbox2@2.11.3/dist/css/lightbox.min.css" rel="stylesheet" />
 
-    
-        border-radius: 24px !important;
-        box-shadow: 0 8px 30px rgba(0, 0, 0, 0.04) !important;
-        border: none !important;
-        background: #ffffff;
-        transition: all 0.3s ease;
-    }
-    .premium-card:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 12px 35px rgba(0, 0, 0, 0.06) !important;
-    }
-    .premium-shadow {
-        box-shadow: 0 8px 30px rgba(0, 0, 0, 0.04) !important;
-    }
-    .typography-h1 {
-        font-size: 22px;
-        font-weight: 700;
-        color: #0f172a;
-        font-family: 'Outfit', 'Inter', sans-serif;
-    }
-    .typography-h2 {
-        font-size: 16px;
-        font-weight: 600;
-        color: #1e293b;
-        font-family: 'Outfit', 'Inter', sans-serif;
-    }
-    .typography-amount {
-        font-size: 18px;
-        font-weight: 700;
-        color: #059669; /* Emerald 600 */
-        font-family: 'Outfit', 'Inter', sans-serif;
-    }
-    .typography-label {
-        font-size: 11px;
-        font-weight: 700;
-        text-transform: uppercase;
-        letter-spacing: 0.1em;
-        color: #94a3b8;
-        font-family: 'Outfit', 'Inter', sans-serif;
-    }
-    .typography-body {
-        font-size: 14px;
-        font-weight: 500;
-        color: #475569;
-        font-family: 'Inter', sans-serif;
-    }
-    .typography-caption {
-        font-size: 12px;
-        font-weight: 400;
-        font-style: italic;
-        color: #94a3b8;
-        font-family: 'Inter', sans-serif;
-    }
-    .pipeline-step {
-        position: relative;
-        flex: 1;
-        text-align: center;
-        padding: 20px;
-        border-radius: 16px;
-        background: #f8fafc;
-        border: 1px dashed #e2e8f0;
-    }
-    .pipeline-step.active {
-        background: rgba(16, 185, 129, 0.05);
-        border: 1px solid #10b981;
-    }
-    .pipeline-arrow {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: #94a3b8;
-        font-size: 24px;
-        padding: 0 15px;
-    }
-</style>
+    <style>
+        .premium-card {
+            border-radius: 24px !important;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.04) !important;
+            border: none !important;
+            background: #ffffff;
+            transition: all 0.3s ease;
+        }
+        .premium-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 35px rgba(0, 0, 0, 0.06) !important;
+        }
+        .premium-shadow {
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.04) !important;
+        }
+        .typography-h1 {
+            font-size: 22px;
+            font-weight: 700;
+            color: #0f172a;
+            font-family: 'Outfit', 'Inter', sans-serif;
+        }
+        .typography-h2 {
+            font-size: 16px;
+            font-weight: 600;
+            color: #1e293b;
+            font-family: 'Outfit', 'Inter', sans-serif;
+        }
+        .typography-amount {
+            font-size: 18px;
+            font-weight: 700;
+            color: #059669; /* Emerald 600 */
+            font-family: 'Outfit', 'Inter', sans-serif;
+        }
+        .typography-label {
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: #94a3b8;
+            font-family: 'Outfit', 'Inter', sans-serif;
+        }
+        .typography-body {
+            font-size: 14px;
+            font-weight: 500;
+            color: #475569;
+            font-family: 'Inter', sans-serif;
+        }
+        .typography-caption {
+            font-size: 12px;
+            font-weight: 400;
+            font-style: italic;
+            color: #94a3b8;
+            font-family: 'Inter', sans-serif;
+        }
+        .pipeline-step {
+            position: relative;
+            flex: 1;
+            text-align: center;
+            padding: 20px;
+            border-radius: 16px;
+            background: #f8fafc;
+            border: 1px dashed #e2e8f0;
+        }
+        .pipeline-step.active {
+            background: rgba(16, 185, 129, 0.05);
+            border: 1px solid #10b981;
+        }
+        .pipeline-arrow {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #94a3b8;
+            font-size: 24px;
+            padding: 0 15px;
+        }
+    </style>
 @endpush
 
 @section('content')
@@ -115,14 +116,14 @@
                     <div class="premium-card">
                         <div class="card-body p-0 d-flex flex-column justify-content-between" style="min-height: 110px;">
                             <div class="d-flex align-items-center justify-content-between">
-                                <span class="typography-label">Target Pemasukan</span>
+                                <x-text.label>Target Pemasukan</x-text.label>
                                 <div class="bg-light-primary rounded-circle p-2 d-flex align-items-center justify-content-center" style="width: 36px; height: 36px;">
                                     <i class="bi bi-wallet2 text-primary fs-4"></i>
                                 </div>
                             </div>
                             <div>
-                                <span class="d-block typography-caption text-muted mb-1">Seluruh Tagihan Aktif</span>
-                                <span class="fs-3 fw-bold text-gray-900" id="total-cashflow">Rp 0</span>
+                                <x-text.caption class="mb-1">Seluruh Tagihan Aktif</x-text.caption>
+                                <x-text.amount id="total-cashflow">Rp 0</x-text.amount>
                             </div>
                         </div>
                     </div>
@@ -133,56 +134,50 @@
                     <div class="premium-card">
                         <div class="card-body p-0 d-flex flex-column justify-content-between" style="min-height: 110px;">
                             <div class="d-flex align-items-center justify-content-between">
-                                <span class="typography-label">Realisasi Pemasukan</span>
+                                <x-text.label>Realisasi Pemasukan</x-text.label>
                                 <div class="bg-light-success rounded-circle p-2 d-flex align-items-center justify-content-center" style="width: 36px; height: 36px;">
                                     <i class="bi bi-check-circle text-success fs-4"></i>
                                 </div>
                             </div>
                             <div>
-                                <span class="d-block typography-caption text-muted mb-1">Tagihan Lunas (PAID)</span>
-                                <span class="fs-3 fw-bold text-emerald-600" id="total-payment">Rp 0</span>
+                                <x-text.caption class="mb-1">Tagihan Lunas (PAID)</x-text.caption>
+                                <x-text.amount id="total-payment">Rp 0</x-text.amount>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Status Pemasukan -->
+                <!-- Dana Mutasi Bendahara -->
                 <div class="col-md-3">
                     <div class="premium-card">
                         <div class="card-body p-0 d-flex flex-column justify-content-between" style="min-height: 110px;">
                             <div class="d-flex align-items-center justify-content-between">
-                                <span class="typography-label">Status Pemasukan</span>
+                                <x-text.label>Dana Mutasi Bendahara</x-text.label>
                                 <div class="bg-light-warning rounded-circle p-2 d-flex align-items-center justify-content-center" style="width: 36px; height: 36px;">
-                                    <i class="bi bi-activity text-warning fs-4"></i>
+                                    <i class="bi bi-arrow-down-up text-warning fs-4"></i>
                                 </div>
                             </div>
                             <div>
-                                <span class="d-block typography-caption text-muted mb-1">Target vs Realisasi</span>
-                                <span class="badge fs-6 px-4 py-2" id="status-pemasukan-badge" style="border-radius: 12px;">Sesuai</span>
+                                <x-text.caption class="mb-1">Dana Diserahkan ke Bendahara</x-text.caption>
+                                <x-text.amount id="total-mutasi-bendahara">Rp 0</x-text.amount>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Sisa Saldo & Pengeluaran -->
+                <!-- Mutasi Ke Pengurus Yayasan -->
                 <div class="col-md-3">
                     <div class="premium-card">
                         <div class="card-body p-0 d-flex flex-column justify-content-between" style="min-height: 110px;">
                             <div class="d-flex align-items-center justify-content-between">
-                                <span class="typography-label">Sisa Saldo & Pengeluaran</span>
+                                <x-text.label>Mutasi Ke Pengurus Yayasan</x-text.label>
                                 <div class="bg-light-danger rounded-circle p-2 d-flex align-items-center justify-content-center" style="width: 36px; height: 36px;">
-                                    <i class="bi bi-cash-coin text-danger fs-4"></i>
+                                    <i class="bi bi-bank text-danger fs-4"></i>
                                 </div>
                             </div>
-                            <div class="d-flex justify-content-between align-items-end">
-                                <div>
-                                    <span class="d-block text-muted" style="font-size: 10px;">Pengeluaran</span>
-                                    <span class="fs-6 fw-bold text-red-600" id="total-expenses">Rp 0</span>
-                                </div>
-                                <div class="text-end">
-                                    <span class="d-block text-muted" style="font-size: 10px;">Sisa Saldo</span>
-                                    <span class="fs-5 fw-bolder text-emerald-600" id="remaining-balance">Rp 0</span>
-                                </div>
+                            <div>
+                                <x-text.caption class="mb-1">Dana Diterima Pengurus Yayasan</x-text.caption>
+                                <x-text.amount id="total-mutasi-yayasan">Rp 0</x-text.amount>
                             </div>
                         </div>
                     </div>
@@ -753,25 +748,13 @@
         .then(function (response) {
             // Update nilai pada kartu informasi
             $('#total-payment').text('Rp ' + response.data.total_incomes.toLocaleString());
-            $('#total-expenses').text('Rp ' + response.data.total_expenses.toLocaleString());
-            $('#remaining-balance').text('Rp ' + response.data.remaining_balances.toLocaleString());
             $('#total-cashflow').text('Rp ' + response.data.total_cashflows.toLocaleString());
+            $('#total-mutasi-bendahara').text(response.data.workflow_stats.total_handed_bendahara);
+            $('#total-mutasi-yayasan').text(response.data.workflow_stats.total_handed_yayasan);
 
             // Save global state
             globalCategories = response.data.categories;
             globalAdmins = response.data.active_admins;
-
-            // Status Pemasukan Badge Accent
-            var statusBadge = $('#status-pemasukan-badge');
-            statusBadge.text(response.data.status_pemasukan);
-            statusBadge.removeClass('bg-light-success text-success bg-light-danger text-danger bg-light-warning text-warning');
-            if (response.data.status_pemasukan === 'Sesuai') {
-                statusBadge.addClass('bg-light-success text-success');
-            } else if (response.data.status_pemasukan === 'Defisit') {
-                statusBadge.addClass('bg-light-danger text-danger');
-            } else {
-                statusBadge.addClass('bg-light-warning text-warning');
-            }
 
             // Breakdown Bills Tbody
             var billsTbody = $('#breakdown-bills-tbody');
