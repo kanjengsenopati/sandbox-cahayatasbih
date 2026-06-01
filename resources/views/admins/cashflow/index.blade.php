@@ -16,16 +16,57 @@
             transform: translateY(-2px);
             box-shadow: 0 12px 35px rgba(0, 0, 0, 0.06) !important;
         }
-        .loading-overlay {
+        .loading-overlay-filters {
             display: none !important;
-            background: rgba(255, 255, 255, 0.7);
-            backdrop-filter: blur(4px);
-            z-index: 1050;
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.45);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            z-index: 100;
             border-radius: 24px;
-            transition: all 0.2s ease;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
-        .loading-overlay.active {
+        .loading-overlay-filters.active {
             display: flex !important;
+        }
+        .loading-overlay-filters-content {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            background: #ffffff;
+            padding: 12px 28px;
+            border-radius: 50px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+            border: 1px solid rgba(226, 232, 240, 0.8);
+            animation: bounce-in 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        .loading-overlay-filters-text {
+            font-family: 'Outfit', 'Inter', sans-serif;
+            font-size: 14px;
+            font-weight: 850;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            animation: pulse-text-prominent 1.5s ease-in-out infinite;
+        }
+        .loading-overlay-filters-text.text-primary {
+            color: #2563EB !important; /* Accent primary */
+        }
+        .loading-overlay-filters-text.text-warning {
+            color: #D97706 !important; /* Orange/Warning Accent */
+        }
+        @keyframes bounce-in {
+            0% { transform: scale(0.9); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        @keyframes pulse-text-prominent {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.85; transform: scale(0.98); }
         }
         .premium-shadow {
             box-shadow: 0 8px 30px rgba(0, 0, 0, 0.04) !important;
@@ -135,18 +176,16 @@
             <div class="tab-content">
                 <!--begin::Tab 1: Pemasukan Siswa-->
                 <div class="tab-pane fade show active position-relative" id="tab_pemasukan" role="tabpanel">
-                    <!-- Loading Overlay Tab 1 -->
-                    <div id="loading-overlay-tab1" class="loading-overlay position-absolute top-0 start-0 w-100 h-100 flex-column align-items-center justify-content-center">
-                        <div class="d-flex flex-column align-items-center bg-white p-8 rounded-[24px] shadow-[0_8px_30px_rgb(0,0,0,0.08)]" style="border: none;">
-                            <div class="spinner-border text-primary mb-4" role="status" style="width: 3rem; height: 3rem; border-width: 0.25em; color: #2563EB !important;">
-                                <span class="visually-hidden">Memuat...</span>
-                            </div>
-                            <span class="typography-body fw-bolder text-slate-800" style="font-size: 15px;">Sedang Memuat Data...</span>
-                            <span class="typography-caption mt-1 text-muted">Menyelaraskan laporan pembukuan</span>
-                        </div>
-                    </div>
+
                     <!--begin::Filters ABOVE Cards-->
-                    <div class="premium-card p-6 mb-6">
+                    <div class="premium-card p-6 mb-6 position-relative" style="overflow: hidden;">
+                        <!-- Loading Overlay Tab 1 -->
+                        <div id="loading-overlay-tab1" class="loading-overlay-filters">
+                            <div class="loading-overlay-filters-content">
+                                <div class="spinner-border text-primary" role="status" style="width: 1.5rem; height: 1.5rem; border-width: 0.2em; color: #2563EB !important;"></div>
+                                <span class="loading-overlay-filters-text text-primary">PROSES MEMUAT DATA PEMASUKAN</span>
+                            </div>
+                        </div>
                         <div class="d-flex align-items-center justify-content-between flex-wrap gap-4">
                             <form action="#" id="form-filter-tab1" method="get" class="d-flex align-items-center gap-4 flex-wrap">
                                 <!-- Filter Tahun Ajaran -->
@@ -369,18 +408,16 @@
 
                 <!--begin::Tab 2: Alur & Mutasi Kas Internal-->
                 <div class="tab-pane fade position-relative" id="tab_mutasi" role="tabpanel">
-                    <!-- Loading Overlay Tab 2 -->
-                    <div id="loading-overlay-tab2" class="loading-overlay position-absolute top-0 start-0 w-100 h-100 flex-column align-items-center justify-content-center">
-                        <div class="d-flex flex-column align-items-center bg-white p-8 rounded-[24px] shadow-[0_8px_30px_rgb(0,0,0,0.08)]" style="border: none;">
-                            <div class="spinner-border text-warning mb-4" role="status" style="width: 3rem; height: 3rem; border-width: 0.25em; color: #D97706 !important;">
-                                <span class="visually-hidden">Memuat...</span>
-                            </div>
-                            <span class="typography-body fw-bolder text-slate-800" style="font-size: 15px;">Sedang Memuat Data...</span>
-                            <span class="typography-caption mt-1 text-muted">Melacak alur kas dan mutasi internal</span>
-                        </div>
-                    </div>
+
                     <!--begin::Filters ABOVE Cards-->
-                    <div class="premium-card p-6 mb-6">
+                    <div class="premium-card p-6 mb-6 position-relative" style="overflow: hidden;">
+                        <!-- Loading Overlay Tab 2 -->
+                        <div id="loading-overlay-tab2" class="loading-overlay-filters">
+                            <div class="loading-overlay-filters-content">
+                                <div class="spinner-border text-warning" role="status" style="width: 1.5rem; height: 1.5rem; border-width: 0.2em; color: #D97706 !important;"></div>
+                                <span class="loading-overlay-filters-text text-warning">PROSES MEMUAT DATA MUTASI KAS</span>
+                            </div>
+                        </div>
                         <div class="d-flex align-items-center justify-content-between flex-wrap gap-4">
                             <form action="#" id="form-filter-tab2" method="get" class="d-flex align-items-center gap-4 flex-wrap">
                                 <!-- Filter Tahun Ajaran -->
