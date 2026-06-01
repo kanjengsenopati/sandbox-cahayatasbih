@@ -106,5 +106,8 @@ export const postPermitReturnAction = (id: string | number, data: { action: 'app
 export const updateFcmToken = (token: string | null) => 
   api.post('/update-fcm-token', { fcm_token: token });
 
+export const updateAsatidzFcmToken = (token: string | null) => 
+  api.post('/asatidz/update-fcm-token', { fcm_token: token });
+
 export default api;
 

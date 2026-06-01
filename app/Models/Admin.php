@@ -33,6 +33,7 @@ class Admin extends Authenticatable
         'school_id',
         'last_login_at',
         'access_scope',
+        'fcm_token',
     ];
 
     /**

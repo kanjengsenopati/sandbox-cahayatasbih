@@ -13,6 +13,27 @@ use Carbon\Carbon;
 class AsatidzPermitController extends Controller
 {
     /**
+     * Update FCM registration token for Asatidz.
+     */
+    public function updateFcmToken(Request $request)
+    {
+        $request->validate([
+            'fcm_token' => 'nullable|string',
+        ]);
+
+        $admin = Auth::guard('web')->user();
+        if ($admin) {
+            $admin->update(['fcm_token' => $request->fcm_token]);
+            return response()->json([
+                'success' => true,
+                'message' => 'FCM Token Asatidz berhasil diperbarui'
+            ]);
+        }
+
+        return response()->json(['success' => false, 'message' => 'Unauthorized'], 401);
+    }
+
+    /**
      * View pending permit requests.
      */
     public function pendingList()
@@ -46,7 +67,7 @@ class AsatidzPermitController extends Controller
             'rejection_reason' => 'required_if:action,reject|nullable|string|max:255',
         ]);
 
-        $permit = StudentPermit::findOrFail($id);
+        $permit = StudentPermit::with(['user', 'student'])->findOrFail($id);
         
         if ($permit->status !== 'pending') {
             return response()->json([
@@ -64,25 +85,33 @@ class AsatidzPermitController extends Controller
                 'admin_id' => $adminId,
                 'barcode_token' => 'CT-' . Str::upper(Str::random(12)),
             ]);
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Perizinan santri berhasil disetujui.',
-                'permit' => $permit
-            ]);
         } else {
             $permit->update([
                 'status' => 'rejected',
                 'admin_id' => $adminId,
                 'rejection_reason' => $request->input('rejection_reason'),
             ]);
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Perizinan santri berhasil ditolak.',
-                'permit' => $permit
-            ]);
         }
+
+        if ($permit->user) {
+            $actionName = $action === 'approve' ? 'Disetujui' : 'Ditolak';
+            $bodyText = $action === 'approve'
+                ? "Pengajuan izin {$permit->student->name} telah disetujui oleh Ustadz."
+                : "Pengajuan izin {$permit->student->name} ditolak. Alasan: {$permit->rejection_reason}.";
+
+            dispatch(new \App\Jobs\SendToPushNotificationJob(
+                "Status Perizinan {$actionName}",
+                $bodyText,
+                $permit->user,
+                $permit
+            ));
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => $action === 'approve' ? 'Perizinan santri berhasil disetujui.' : 'Perizinan santri berhasil ditolak.',
+            'permit' => $permit
+        ]);
     }
 
     /**
@@ -153,9 +182,8 @@ class AsatidzPermitController extends Controller
             'escort_relation' => 'required_if:scan_type,exit|nullable|string|max:255',
         ]);
 
-        $token = $request->input('barcode_token');
         $permit = StudentPermit::where('barcode_token', $token)
-            ->with('student')
+            ->with(['student', 'user'])
             ->firstOrFail();
 
         // 1. Process Check-Out (Gerbang Keluar)
@@ -174,6 +202,15 @@ class AsatidzPermitController extends Controller
                 'exit_latitude' => $request->input('latitude'),
                 'exit_longitude' => $request->input('longitude'),
             ]);
+
+            if ($permit->user) {
+                dispatch(new \App\Jobs\SendToPushNotificationJob(
+                    "Santri Keluar Pondok",
+                    "Santri {$permit->student->name} telah melakukan check-out di gerbang keluar.",
+                    $permit->user,
+                    $permit
+                ));
+            }
 
             return response()->json([
                 'success' => true,
@@ -197,6 +234,15 @@ class AsatidzPermitController extends Controller
                 'return_latitude' => $request->input('latitude'),
                 'return_longitude' => $request->input('longitude'),
             ]);
+
+            if ($permit->user) {
+                dispatch(new \App\Jobs\SendToPushNotificationJob(
+                    "Santri Kembali ke Pondok",
+                    "Santri {$permit->student->name} telah melakukan check-in di gerbang masuk.",
+                    $permit->user,
+                    $permit
+                ));
+            }
 
             return response()->json([
                 'success' => true,
@@ -400,7 +446,7 @@ class AsatidzPermitController extends Controller
             'rejection_reason' => 'required_if:action,reject|nullable|string|max:255',
         ]);
 
-        $permit = StudentPermit::findOrFail($id);
+        $permit = StudentPermit::with(['user', 'student'])->findOrFail($id);
 
         if ($permit->status !== 'pending_return') {
             return response()->json([
@@ -417,24 +463,32 @@ class AsatidzPermitController extends Controller
                 'status' => 'returned',
                 'admin_id' => $adminId,
             ]);
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Persetujuan kepulangan santri berhasil dikonfirmasi.',
-                'permit' => $permit
-            ]);
         } else {
             $permit->update([
                 'status' => 'out',
                 'admin_id' => $adminId,
                 'rejection_reason' => $request->input('rejection_reason'),
             ]);
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Laporan kepulangan ditolak. Status santri kembali menjadi KELUAR.',
-                'permit' => $permit
-            ]);
         }
+
+        if ($permit->user) {
+            $actionName = $action === 'approve' ? 'Disetujui' : 'Ditolak';
+            $bodyText = $action === 'approve'
+                ? "Laporan kepulangan santri {$permit->student->name} telah disetujui & dikonfirmasi oleh Ustadz."
+                : "Laporan kepulangan santri {$permit->student->name} ditolak. Alasan: {$permit->rejection_reason}.";
+
+            dispatch(new \App\Jobs\SendToPushNotificationJob(
+                "Konfirmasi Kepulangan {$actionName}",
+                $bodyText,
+                $permit->user,
+                $permit
+            ));
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => $action === 'approve' ? 'Persetujuan kepulangan santri berhasil dikonfirmasi.' : 'Laporan kepulangan ditolak. Status santri kembali menjadi KELUAR.',
+            'permit' => $permit
+        ]);
     }
 }

@@ -193,6 +193,7 @@ Route::prefix('ct-mobile')->middleware(['web'])->group(function () {
 
     // Perizinan Santri (Leave Permits) - Asatidz / Staff Asrama
     Route::middleware(['auth:web'])->group(function () {
+        Route::post('asatidz/update-fcm-token', [App\Http\Controllers\Api\Wali\AsatidzPermitController::class, 'updateFcmToken']);
         Route::get('asatidz/permits/pending', [App\Http\Controllers\Api\Wali\AsatidzPermitController::class, 'pendingList']);
         Route::post('asatidz/permits/{id}/action', [App\Http\Controllers\Api\Wali\AsatidzPermitController::class, 'action']);
         Route::get('asatidz/permits/active', [App\Http\Controllers\Api\Wali\AsatidzPermitController::class, 'activeList']);

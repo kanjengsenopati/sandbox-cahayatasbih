@@ -50,7 +50,7 @@ class WaliPermitController extends Controller
         $studentId = $request->input('student_id');
 
         // Check if student belongs to this parent
-        $student = Student::where('id', $studentId)->where('user_id', $userId)->first();
+        $student = Student::where('id', $studentId)->where('user_id', $userId)->with('asramaHost')->first();
         if (!$student) {
             return response()->json([
                 'success' => false,
@@ -87,6 +87,15 @@ class WaliPermitController extends Controller
             'attachment_photo' => $attachmentPath,
             'status' => 'pending',
         ]);
+
+        if ($student->asramaHost) {
+            dispatch(new \App\Jobs\SendToPushNotificationJob(
+                "Pengajuan Perizinan Baru",
+                "Wali dari {$student->name} mengajukan izin " . str_replace('_', ' ', $permit->permit_type) . ".",
+                $student->asramaHost,
+                $permit
+            ));
+        }
 
         return response()->json([
             'success' => true,
@@ -173,6 +182,7 @@ class WaliPermitController extends Controller
 
         $permit = StudentPermit::where('id', $id)
             ->where('user_id', $userId)
+            ->with('student.asramaHost')
             ->first();
 
         if (!$permit) {
@@ -208,6 +218,15 @@ class WaliPermitController extends Controller
             'return_latitude' => $request->input('latitude'),
             'return_longitude' => $request->input('longitude'),
         ]);
+
+        if ($permit->student && $permit->student->asramaHost) {
+            dispatch(new \App\Jobs\SendToPushNotificationJob(
+                "Laporan Kepulangan Santri",
+                "Wali dari {$permit->student->name} melaporkan bahwa santri telah kembali. Butuh konfirmasi Anda.",
+                $permit->student->asramaHost,
+                $permit
+            ));
+        }
 
         return response()->json([
             'success' => true,

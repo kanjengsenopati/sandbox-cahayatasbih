@@ -2,8 +2,13 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { ArrowLeft, Loader2, Calendar, ClipboardList, CheckCircle2, XCircle, Clock, ShieldAlert, Scan, LogOut, Phone, RefreshCw, ChevronDown, ChevronUp, Image as ImageIcon } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { fetchPendingPermits, fetchActivePermits, fetchOverduePermits, postPermitAction, postLogout, fetchAsatidzStats, fetchMyStudents, fetchStudentHistory, fetchPendingReturnPermits, postPermitReturnAction } from "@/lib/api";
+import { fetchPendingPermits, fetchActivePermits, fetchOverduePermits, postPermitAction, postLogout, fetchAsatidzStats, fetchMyStudents, fetchStudentHistory, fetchPendingReturnPermits, postPermitReturnAction, updateAsatidzFcmToken } from "@/lib/api";
 import { resolveImageUrl } from "@/lib/utils";
+import { getDeviceToken } from "@/lib/firebase";
+import { onMessage } from "firebase/messaging";
+import { messaging } from "@/lib/firebase";
+import { toast } from "sonner";
+
 
 export const Route = createFileRoute("/asatidz/dashboard")({
   component: AsatidzDashboardPage,
@@ -13,6 +18,57 @@ export const Route = createFileRoute("/asatidz/dashboard")({
 function AsatidzDashboardPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+
+  // Register push notifications & FCM token for Asatidz/Ustadz
+  useEffect(() => {
+    const registerPush = async () => {
+      if ("Notification" in window) {
+        if (Notification.permission === "default") {
+          try {
+            const permission = await Notification.requestPermission();
+            if (permission === "granted") {
+              const token = await getDeviceToken();
+              if (token) {
+                await updateAsatidzFcmToken(token);
+              }
+            }
+          } catch (err) {
+            console.error("Gagal meminta izin notifikasi untuk Asatidz:", err);
+          }
+        } else if (Notification.permission === "granted") {
+          try {
+            const token = await getDeviceToken();
+            if (token) {
+              await updateAsatidzFcmToken(token);
+            }
+          } catch (err) {
+            console.error("Gagal memperbarui token FCM Asatidz:", err);
+          }
+        }
+      }
+    };
+    registerPush();
+  }, []);
+
+  // Foreground messages listener to trigger toaster notifications and invalidate queries
+  useEffect(() => {
+    if (!messaging) return;
+    const unsubscribe = onMessage(messaging, (payload) => {
+      console.log("Pesan perizinan diterima di foreground (Asatidz):", payload);
+      toast.info(payload.notification?.title || "Pemberitahuan Baru", {
+        description: payload.notification?.body,
+        duration: 7000,
+      });
+      // Invalidate all relevant permit queries to refresh UI dynamically without page reload
+      queryClient.invalidateQueries({ queryKey: ["asatidz-stats"] });
+      queryClient.invalidateQueries({ queryKey: ["pending-permits"] });
+      queryClient.invalidateQueries({ queryKey: ["active-permits"] });
+      queryClient.invalidateQueries({ queryKey: ["overdue-permits"] });
+      queryClient.invalidateQueries({ queryKey: ["pending-return-permits"] });
+    });
+    return () => unsubscribe();
+  }, [queryClient]);
+
   const [tab, setTab] = useState<"pending" | "active" | "overdue" | "my-students" | "pending_return">("pending");
   const [rejectId, setRejectId] = useState<string | null>(null);
   const [rejectionReason, setRejectionReason] = useState("");
