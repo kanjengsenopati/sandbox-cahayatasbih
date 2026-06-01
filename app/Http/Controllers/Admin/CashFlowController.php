@@ -170,13 +170,12 @@ class CashFlowController extends Controller
         $remainingBalances = max($totalIncomes - $totalExpenses, 0);
 
         // 3. Breakdown per Jenis/Nama Pembayaran (Unifikasi & Resolusi Ambigu Lembaga + Tahun Ajaran)
-        $paidBills = (clone $billQuery)
-            ->where('status', 'PAID')
+        $allBills = (clone $billQuery)
             ->with(['billType.billItem', 'billType.academicYear'])
             ->get();
 
         $breakdownGrouped = [];
-        foreach ($paidBills as $bill) {
+        foreach ($allBills as $bill) {
             $billType = $bill->billType;
             if (!$billType) continue;
 
@@ -194,23 +193,31 @@ class CashFlowController extends Controller
             }
 
             if (!isset($breakdownGrouped[$fullName])) {
-                $breakdownGrouped[$fullName] = 0;
+                $breakdownGrouped[$fullName] = [
+                    'target' => 0,
+                    'paid' => 0,
+                ];
             }
-            $breakdownGrouped[$fullName] += $bill->amount;
+            $breakdownGrouped[$fullName]['target'] += $bill->amount;
+            if ($bill->status === 'PAID') {
+                $breakdownGrouped[$fullName]['paid'] += $bill->amount;
+            }
         }
 
         $breakdownBills = [];
-        foreach ($breakdownGrouped as $name => $amount) {
+        foreach ($breakdownGrouped as $name => $data) {
             $breakdownBills[] = [
                 'name' => $name,
-                'total_amount' => $amount,
-                'total_formatted' => 'Rp ' . number_format($amount, 0, ',', '.'),
+                'target_amount' => $data['target'],
+                'target_formatted' => 'Rp ' . number_format($data['target'], 0, ',', '.'),
+                'total_amount' => $data['paid'],
+                'total_formatted' => 'Rp ' . number_format($data['paid'], 0, ',', '.'),
             ];
         }
 
-        // Urutkan berdasarkan total pemasukan tertinggi (descending)
+        // Urutkan berdasarkan target pemasukan tertinggi (descending)
         usort($breakdownBills, function ($a, $b) {
-            return $b['total_amount'] <=> $a['total_amount'];
+            return $b['target_amount'] <=> $a['target_amount'];
         });
 
         // 4. Breakdown per Sumber Pembayaran (Tunai, Debit Saldo, Transfer Aplikasi)

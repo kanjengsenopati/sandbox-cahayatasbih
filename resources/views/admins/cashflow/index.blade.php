@@ -109,6 +109,54 @@
     <!--begin::Post-->
     <div class="post d-flex flex-column-fluid">
         <div id="kt_content_container" class="container-xxl">
+            <!--begin::Filters ABOVE Cards-->
+            <div class="premium-card p-6 mb-6">
+                <div class="d-flex align-items-center justify-content-between flex-wrap gap-4">
+                    <form action="#" id="form-filter" method="get" class="d-flex align-items-center gap-4 flex-wrap">
+                        <input type="text" hidden id="type" name="type" required>
+                        
+                        <!-- Filter Tahun Ajaran -->
+                        <div>
+                            <label class="form-label mb-1 fw-bold text-gray-700 fs-7">Tahun Ajaran</label>
+                            <select id="academic_year_id" name="academic_year_id" class="form-select" style="border-radius: 12px; min-width: 180px; background-color: #fff; border: 1px solid #ccc; padding: 7px 14px; color: #475569; font-weight: 500;">
+                                <option value="">Semua Tahun Ajaran</option>
+                                @if(isset($academicYears))
+                                    @foreach($academicYears as $year)
+                                        <option value="{{ $year->id }}">{{ $year->name }}</option>
+                                    @endforeach
+                                @endif
+                            </select>
+                        </div>
+
+                        <!-- Filter Periode -->
+                        <div>
+                            <label class="form-label mb-1 fw-bold text-gray-700 fs-7">Periode</label>
+                            <select id="period_select" class="form-select" style="border-radius: 12px; min-width: 140px; background-color: #fff; border: 1px solid #ccc; padding: 7px 14px; color: #475569; font-weight: 500;">
+                                <option value="hari_ini">Hari Ini</option>
+                                <option value="minggu_ini">Minggu Ini</option>
+                                <option value="bulan_ini" selected>Bulan Ini</option>
+                                <option value="pilih_sendiri">Pilih Sendiri</option>
+                            </select>
+                        </div>
+
+                        <!-- Custom Date Range Picker -->
+                        <div id="customDateRangeWrapper" style="display: none;">
+                            <label class="form-label mb-1 fw-bold text-gray-700 fs-7">Pilih Rentang Tanggal</label>
+                            <div class="d-flex gap-2 align-items-center">
+                                <div id="dateRange" class="pull-right"
+                                    style="background: #fff; cursor: pointer; padding: 7px 14px; border: 1px solid #ccc; border-radius: 12px; color: #475569; font-weight: 500;">
+                                    <i class="glyphicon glyphicon-calendar fa fa-calendar"></i>&nbsp;
+                                    <span></span> <b class="caret"></b>
+                                </div>
+                                <input type="text" id="start_date" name="start_date" hidden>
+                                <input type="text" id="end_date" name="end_date" hidden>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            <!--end::Filters ABOVE Cards-->
+
             <!--begin::Cards-->
             <div class="row mb-6 g-5">
                 <!-- Target Total Pemasukan -->
@@ -180,7 +228,7 @@
             <!--begin::BI Grid Breakdown-->
             <div class="row mb-6 g-5">
                 <!-- Breakdown Pemasukan per Jenis Tagihan -->
-                <div class="col-md-6">
+                <div class="col-12 col-md-8" style="width: 70%; flex: 0 0 70%; max-width: 70%;">
                     <div class="premium-card">
                         <div class="card-header border-0 pt-6">
                             <span class="typography-h2">Breakdown per Jenis Tagihan</span>
@@ -191,12 +239,13 @@
                                     <thead>
                                         <tr class="text-start text-gray-800 fw-bolder fs-7 text-uppercase">
                                             <th style="color: #1e293b;">Nama Pembayaran</th>
+                                            <th class="text-end text-nowrap" style="color: #1e293b;">Target Pemasukan</th>
                                             <th class="text-end text-nowrap" style="color: #1e293b;">Total Pemasukan</th>
                                         </tr>
                                     </thead>
                                     <tbody id="breakdown-bills-tbody" class="fw-bold text-gray-600">
                                         <tr>
-                                            <td colspan="2" class="text-center text-muted py-4">Memuat data breakdown...</td>
+                                            <td colspan="3" class="text-center text-muted py-4">Memuat data breakdown...</td>
                                         </tr>
                                     </tbody>
                                 </table>
@@ -206,7 +255,7 @@
                 </div>
 
                 <!-- Sumber Pemasukan -->
-                <div class="col-md-6">
+                <div class="col-12 col-md-4" style="width: 30%; flex: 0 0 30%; max-width: 30%;">
                     <div class="premium-card">
                         <div class="card-header border-0 pt-6">
                             <span class="typography-h2">Sumber Pemasukan</span>
@@ -312,49 +361,8 @@
             <!--begin::Card Datatable-->
             <div class="premium-card">
                 <div class="card-header d-flex justify-content-between align-items-center mb-5 border-0 pt-6">
-                    <div class="d-flex align-items-center gap-4">
-                        <form action="#" id="form-filter" method="get" class="d-flex align-items-center gap-4 flex-wrap">
-                            <input type="text" hidden id="type" name="type" required>
-                            
-                            <!-- Filter Tahun Ajaran -->
-                            <div>
-                                <label class="form-label mb-1">Tahun Ajaran</label>
-                                <select id="academic_year_id" name="academic_year_id" class="form-select" style="border-radius: 12px; min-width: 180px; background-color: #fff; border: 1px solid #ccc; padding: 7px 14px; color: #475569; font-weight: 500;">
-                                    <option value="">Semua Tahun Ajaran</option>
-                                    @if(isset($academicYears))
-                                        @foreach($academicYears as $year)
-                                            <option value="{{ $year->id }}">{{ $year->name }}</option>
-                                        @endforeach
-                                    @endif
-                                </select>
-                            </div>
-
-                            <!-- Filter Periode -->
-                            <div>
-                                <label class="form-label mb-1">Periode</label>
-                                <select id="period_select" class="form-select" style="border-radius: 12px; min-width: 140px; background-color: #fff; border: 1px solid #ccc; padding: 7px 14px; color: #475569; font-weight: 500;">
-                                    <option value="hari_ini">Hari Ini</option>
-                                    <option value="minggu_ini">Minggu Ini</option>
-                                    <option value="bulan_ini" selected>Bulan Ini</option>
-                                    <option value="pilih_sendiri">Pilih Sendiri</option>
-                                </select>
-                            </div>
-
-                            <!-- Custom Date Range Picker -->
-                            <div id="customDateRangeWrapper" style="display: none;">
-                                <label class="form-label mb-1">Pilih Rentang Tanggal</label>
-                                <div class="d-flex gap-2 align-items-center">
-                                    <div id="dateRange" class="pull-right"
-                                        style="background: #fff; cursor: pointer; padding: 7px 14px; border: 1px solid #ccc; border-radius: 12px; color: #475569; font-weight: 500;">
-                                        <i class="glyphicon glyphicon-calendar fa fa-calendar"></i>&nbsp;
-                                        <span></span> <b class="caret"></b>
-                                    </div>
-                                    <input type="text" id="start_date" name="start_date" hidden>
-                                    <input type="text" id="end_date" name="end_date" hidden>
-                                </div>
-                            </div>
-                        </form>
-                    </div>
+                    <!-- Title di Kiri -->
+                    <span class="typography-h2">Riwayat Transaksi Mutasi</span>
 
                     <!-- Button Tambah di Kanan -->
                     <div class="d-flex align-items-center gap-3">
@@ -827,10 +835,10 @@
             var billsTbody = $('#breakdown-bills-tbody');
             billsTbody.empty();
             if (response.data.breakdown_bills.length === 0) {
-                billsTbody.append('<tr><td colspan="2" class="text-center text-muted py-4">Tidak ada data breakdown pembayaran lunas</td></tr>');
+                billsTbody.append('<tr><td colspan="3" class="text-center text-muted py-4">Tidak ada data breakdown pembayaran lunas</td></tr>');
             } else {
                 response.data.breakdown_bills.forEach(function(item) {
-                    billsTbody.append('<tr><td>' + item.name + '</td><td class="text-end text-emerald-600">' + item.total_formatted + '</td></tr>');
+                    billsTbody.append('<tr><td>' + item.name + '</td><td class="text-end text-primary">' + item.target_formatted + '</td><td class="text-end text-emerald-600">' + item.total_formatted + '</td></tr>');
                 });
             }
 
