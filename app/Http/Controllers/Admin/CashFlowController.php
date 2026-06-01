@@ -327,52 +327,19 @@ class CashFlowController extends Controller
             ];
         }
 
-        // 4. Breakdown per Sumber Pembayaran (Tunai, Debit Saldo, Transfer Aplikasi)
-        // Dihitung dari bills (bukan transactions) agar konsisten dengan filter bill_type_name
-        // dan menghindari double-count pada transaksi yang membayar beberapa tagihan sekaligus.
-        $sourceQuery = DB::table('bills as b')
-            ->join('bill_types as bt', 'b.bill_type_id', '=', 'bt.id')
-            ->leftJoinSub($billPaymentsSub, 'bp', 'b.id', '=', 'bp.bill_id')
-            ->whereNull('b.deleted_at')
-            ->where('b.status', 'PAID')
-            ->select(
-                DB::raw("SUM(CASE WHEN bp.pm_type = 'CASH' THEN b.amount ELSE 0 END) as paid_cash"),
-                DB::raw("SUM(CASE WHEN bp.pm_type = 'BALANCE' THEN b.amount ELSE 0 END) as paid_balance"),
-                DB::raw("SUM(CASE WHEN bp.pm_type NOT IN ('CASH', 'BALANCE') THEN b.amount ELSE 0 END) as paid_transfer")
-            );
-
-        if ($academicYearId) {
-            $sourceQuery->where('b.academic_year_id', $academicYearId);
-        }
-        if ($billTypeName) {
-            $sourceQuery->where('bt.name', $billTypeName);
-        }
-        if ($startDate) {
-            $sourceQuery->where(function ($q) use ($startDate) {
-                $q->where('b.year', '>', $startDate->year)
-                    ->orWhere(function ($sub) use ($startDate) {
-                        $sub->where('b.year', '=', $startDate->year)
-                            ->where('b.month', '>=', $startDate->month);
-                    });
-            });
-        }
-        if ($endDate) {
-            $sourceQuery->where(function ($q) use ($endDate) {
-                $q->where('b.year', '<', $endDate->year)
-                    ->orWhere(function ($sub) use ($endDate) {
-                        $sub->where('b.year', '=', $endDate->year)
-                            ->where('b.month', '<=', $endDate->month);
-                    });
-            });
-        }
-
-        $sourceRow = $sourceQuery->first();
-
+        // 4. Breakdown per Sumber Pembayaran — dihitung langsung dari $breakdownDetailBills
+        // yang sudah dihitung dengan benar di atas (termasuk semua filter aktif).
+        // Ini menghindari bug reuse query builder dan double-count.
         $sourceBreakdown = [
-            'Tunai' => (int)($sourceRow->paid_cash ?? 0),
-            'Debit Saldo' => (int)($sourceRow->paid_balance ?? 0),
-            'Transfer Aplikasi' => (int)($sourceRow->paid_transfer ?? 0),
+            'Tunai' => 0,
+            'Debit Saldo' => 0,
+            'Transfer Aplikasi' => 0,
         ];
+        foreach ($breakdownDetailBills as $item) {
+            $sourceBreakdown['Tunai']           += $item['paid_cash'];
+            $sourceBreakdown['Debit Saldo']     += $item['paid_balance'];
+            $sourceBreakdown['Transfer Aplikasi'] += $item['paid_transfer'];
+        }
 
         // 5. Tracing Petugas Piket (Tunai)
         $piketOfficers = Transaction::where('transactions.status', Transaction::STATUS_PAID)
