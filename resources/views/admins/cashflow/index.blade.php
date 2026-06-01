@@ -16,6 +16,17 @@
             transform: translateY(-2px);
             box-shadow: 0 12px 35px rgba(0, 0, 0, 0.06) !important;
         }
+        .loading-overlay {
+            display: none !important;
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(4px);
+            z-index: 1050;
+            border-radius: 24px;
+            transition: all 0.2s ease;
+        }
+        .loading-overlay.active {
+            display: flex !important;
+        }
         .premium-shadow {
             box-shadow: 0 8px 30px rgba(0, 0, 0, 0.04) !important;
         }
@@ -123,7 +134,17 @@
             <!--begin::Tab Content-->
             <div class="tab-content">
                 <!--begin::Tab 1: Pemasukan Siswa-->
-                <div class="tab-pane fade show active" id="tab_pemasukan" role="tabpanel">
+                <div class="tab-pane fade show active position-relative" id="tab_pemasukan" role="tabpanel">
+                    <!-- Loading Overlay Tab 1 -->
+                    <div id="loading-overlay-tab1" class="loading-overlay position-absolute top-0 start-0 w-100 h-100 flex-column align-items-center justify-content-center">
+                        <div class="d-flex flex-column align-items-center bg-white p-8 rounded-[24px] shadow-[0_8px_30px_rgb(0,0,0,0.08)]" style="border: none;">
+                            <div class="spinner-border text-primary mb-4" role="status" style="width: 3rem; height: 3rem; border-width: 0.25em; color: #2563EB !important;">
+                                <span class="visually-hidden">Memuat...</span>
+                            </div>
+                            <span class="typography-body fw-bolder text-slate-800" style="font-size: 15px;">Sedang Memuat Data...</span>
+                            <span class="typography-caption mt-1 text-muted">Menyelaraskan laporan pembukuan</span>
+                        </div>
+                    </div>
                     <!--begin::Filters ABOVE Cards-->
                     <div class="premium-card p-6 mb-6">
                         <div class="d-flex align-items-center justify-content-between flex-wrap gap-4">
@@ -347,7 +368,17 @@
                 <!--end::Tab 1-->
 
                 <!--begin::Tab 2: Alur & Mutasi Kas Internal-->
-                <div class="tab-pane fade" id="tab_mutasi" role="tabpanel">
+                <div class="tab-pane fade position-relative" id="tab_mutasi" role="tabpanel">
+                    <!-- Loading Overlay Tab 2 -->
+                    <div id="loading-overlay-tab2" class="loading-overlay position-absolute top-0 start-0 w-100 h-100 flex-column align-items-center justify-content-center">
+                        <div class="d-flex flex-column align-items-center bg-white p-8 rounded-[24px] shadow-[0_8px_30px_rgb(0,0,0,0.08)]" style="border: none;">
+                            <div class="spinner-border text-warning mb-4" role="status" style="width: 3rem; height: 3rem; border-width: 0.25em; color: #D97706 !important;">
+                                <span class="visually-hidden">Memuat...</span>
+                            </div>
+                            <span class="typography-body fw-bolder text-slate-800" style="font-size: 15px;">Sedang Memuat Data...</span>
+                            <span class="typography-caption mt-1 text-muted">Melacak alur kas dan mutasi internal</span>
+                        </div>
+                    </div>
                     <!--begin::Filters ABOVE Cards-->
                     <div class="premium-card p-6 mb-6">
                         <div class="d-flex align-items-center justify-content-between flex-wrap gap-4">
@@ -1035,6 +1066,7 @@
 
     // Tab 1 Loader
     function loadTab1Data() {
+        $('#loading-overlay-tab1').addClass('active');
         var params = { type: 'summary' };
         var sd = $('#start_date_tab1').val();
         var ed = $('#end_date_tab1').val();
@@ -1126,11 +1158,15 @@
         })
         .catch(function (error) {
             console.error("Error loading Tab 1 data:", error);
+        })
+        .finally(function () {
+            $('#loading-overlay-tab1').removeClass('active');
         });
     }
 
     // Tab 2 Loader
     function loadTab2Data() {
+        $('#loading-overlay-tab2').addClass('active');
         var params = { type: 'summary' };
         var sd = $('#start_date_tab2').val();
         var ed = $('#end_date_tab2').val();
@@ -1191,6 +1227,9 @@
         })
         .catch(function (error) {
             console.error("Error loading Tab 2 data:", error);
+        })
+        .finally(function () {
+            $('#loading-overlay-tab2').removeClass('active');
         });
     }
 
