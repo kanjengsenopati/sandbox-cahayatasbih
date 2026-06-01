@@ -102,44 +102,59 @@ class CashFlowController extends Controller
     }
 
 
+    public function ensureHandoverCategoriesExist()
+    {
+        $catPiket = CashFlowCategory::firstOrCreate(
+            ['name' => 'Serah Terima Piket ke Bendahara'],
+            ['description' => 'Alur serah terima uang tunai dari petugas piket ke bendahara']
+        );
+        $catYayasan = CashFlowCategory::firstOrCreate(
+            ['name' => 'Serah Terima Bendahara ke Yayasan'],
+            ['description' => 'Alur serah terima uang dari bendahara ke pengurus yayasan']
+        );
+        return [$catPiket, $catYayasan];
+    }
+
     public function summary()
     {
-        $billAppFee = [
-            '0a33726f-d9e7-4e78-bb09-db99e81314dd',
-            'da831a2d-069f-46fa-b44d-d7b2cb6a9a8e',
-            'a4e65f7e-c265-4da5-96a9-92076e33f141',
-        ];
+        $this->ensureHandoverCategoriesExist();
 
         $startDate = request()->filled('start_date') ? Carbon::parse(request()->start_date) : null;
         $endDate = request()->filled('end_date') ? Carbon::parse(request()->end_date) : null;
 
-        // Menggabungkan query untuk totalIncomes dan totalCashflows
-        $billQuery = Bill::whereIn('bill_type_id', $billAppFee)
-            ->when($startDate, function ($query) use ($startDate) {
-                $query->where(function ($subQuery) use ($startDate) {
-                    $subQuery->where('year', '>', $startDate->year)
-                        ->orWhere(function ($subSubQuery) use ($startDate) {
-                            $subSubQuery->where('year', '=', $startDate->year)
-                                ->where('month', '>=', $startDate->month);
-                        });
-                });
-            })
-            ->when($endDate, function ($query) use ($endDate) {
-                $query->where(function ($subQuery) use ($endDate) {
-                    $subQuery->where('year', '<', $endDate->year)
-                        ->orWhere(function ($subSubQuery) use ($endDate) {
-                            $subSubQuery->where('year', '=', $endDate->year)
-                                ->where('month', '<=', $endDate->month);
-                        });
-                });
+        // 1. Hitung Target & Realisasi dari SEMUA tagihan
+        $billQuery = Bill::query();
+        
+        if ($startDate) {
+            $billQuery->where(function ($query) use ($startDate) {
+                $query->where('year', '>', $startDate->year)
+                    ->orWhere(function ($sub) use ($startDate) {
+                        $sub->where('year', '=', $startDate->year)
+                            ->where('month', '>=', $startDate->month);
+                    });
             });
+        }
+        if ($endDate) {
+            $billQuery->where(function ($query) use ($endDate) {
+                $query->where('year', '<', $endDate->year)
+                    ->orWhere(function ($sub) use ($endDate) {
+                        $sub->where('year', '=', $endDate->year)
+                            ->where('month', '<=', $endDate->month);
+                    });
+            });
+        }
 
-        $totalIncomes = (clone $billQuery)
-            ->where('status', 'PAID')
-            ->sum('amount');
+        $totalCashflows = (clone $billQuery)->sum('amount'); // Target Total Pemasukan
+        $totalIncomes = (clone $billQuery)->where('status', 'PAID')->sum('amount'); // Realisasi Pemasukan
 
-        $totalCashflows = $billQuery->sum('amount');
+        $statusPemasukan = 'Sesuai';
+        if ($totalIncomes < $totalCashflows) {
+            $statusPemasukan = 'Defisit';
+        } elseif ($totalIncomes > $totalCashflows) {
+            $statusPemasukan = 'Surplus';
+        }
 
+        // 2. Pengeluaran & Sisa Saldo
         $totalExpenses = CashFlow::where('type', CashFlow::TYPE_EXPENSE)
             ->where('status', CashFlow::STATUS_APPROVED)
             ->when($startDate, fn($query) => $query->whereDate('date', '>=', $startDate->toDateString()))
@@ -148,11 +163,127 @@ class CashFlowController extends Controller
 
         $remainingBalances = max($totalIncomes - $totalExpenses, 0);
 
+        // 3. Breakdown per Jenis/Nama Pembayaran
+        $breakdownBills = Bill::where('bills.status', 'PAID')
+            ->join('bill_types', 'bills.bill_type_id', '=', 'bill_types.id')
+            ->select('bill_types.name', DB::raw('SUM(bills.amount) as total_amount'))
+            ->groupBy('bill_types.id', 'bill_types.name')
+            ->get()
+            ->map(function ($item) {
+                return [
+                    'name' => $item->name,
+                    'total_amount' => $item->total_amount,
+                    'total_formatted' => 'Rp ' . number_format($item->total_amount, 0, ',', '.'),
+                ];
+            });
+
+        // 4. Breakdown per Sumber Pembayaran (Tunai, Debit Saldo, Transfer Aplikasi)
+        $sourceBreakdownRaw = Transaction::where('transactions.status', Transaction::STATUS_PAID)
+            ->where('transactions.type', Transaction::TYPE_BILL)
+            ->when($startDate, fn($q) => $q->whereDate('transactions.paid_at', '>=', $startDate->toDateString()))
+            ->when($endDate, fn($q) => $q->whereDate('transactions.paid_at', '<=', $endDate->toDateString()))
+            ->join('payment_methods', 'transactions.payment_method_id', '=', 'payment_methods.id')
+            ->select('payment_methods.type', DB::raw('SUM(transactions.pay_amount) as total_amount'))
+            ->groupBy('payment_methods.type')
+            ->get();
+
+        $sourceBreakdown = [
+            'Tunai' => 0,
+            'Debit Saldo' => 0,
+            'Transfer Aplikasi' => 0,
+        ];
+
+        foreach ($sourceBreakdownRaw as $item) {
+            if ($item->type == PaymentMethod::TYPE_CASH) {
+                $sourceBreakdown['Tunai'] += $item->total_amount;
+            } elseif ($item->type == PaymentMethod::TYPE_BALANCE) {
+                $sourceBreakdown['Debit Saldo'] += $item->total_amount;
+            } else {
+                $sourceBreakdown['Transfer Aplikasi'] += $item->total_amount;
+            }
+        }
+
+        // 5. Tracing Petugas Piket (Tunai)
+        $piketOfficers = Transaction::where('transactions.status', Transaction::STATUS_PAID)
+            ->where('transactions.type', Transaction::TYPE_BILL)
+            ->join('payment_methods', 'transactions.payment_method_id', '=', 'payment_methods.id')
+            ->where('payment_methods.type', PaymentMethod::TYPE_CASH)
+            ->when($startDate, fn($q) => $q->whereDate('transactions.paid_at', '>=', $startDate->toDateString()))
+            ->when($endDate, fn($q) => $q->whereDate('transactions.paid_at', '<=', $endDate->toDateString()))
+            ->join('admins', 'transactions.admin_id', '=', 'admins.id')
+            ->select('admins.id', 'admins.name', DB::raw('SUM(transactions.pay_amount) as total_cash'), DB::raw('COUNT(transactions.id) as total_txs'))
+            ->groupBy('admins.id', 'admins.name')
+            ->get()
+            ->map(function ($officer) {
+                $catPiket = CashFlowCategory::where('name', 'Serah Terima Piket ke Bendahara')->first();
+                $handedOver = CashFlow::where('sender_id', $officer->id)
+                    ->where('status', CashFlow::STATUS_APPROVED)
+                    ->when($catPiket, fn($q) => $q->where('cash_flow_category_id', $catPiket->id))
+                    ->sum('amount');
+                
+                $cashInHand = max($officer->total_cash - $handedOver, 0);
+                
+                return [
+                    'id' => $officer->id,
+                    'name' => $officer->name,
+                    'total_collected' => (int)$officer->total_cash,
+                    'total_collected_formatted' => 'Rp ' . number_format($officer->total_cash, 0, ',', '.'),
+                    'handed_over' => (int)$handedOver,
+                    'handed_over_formatted' => 'Rp ' . number_format($handedOver, 0, ',', '.'),
+                    'cash_in_hand' => (int)$cashInHand,
+                    'cash_in_hand_formatted' => 'Rp ' . number_format($cashInHand, 0, ',', '.'),
+                    'total_txs' => $officer->total_txs,
+                ];
+            });
+
+        // 6. Workflow Stats Piping
+        $catPiket = CashFlowCategory::where('name', 'Serah Terima Piket ke Bendahara')->first();
+        $catYayasan = CashFlowCategory::where('name', 'Serah Terima Bendahara ke Yayasan')->first();
+
+        $totalPiketCash = Transaction::where('transactions.status', Transaction::STATUS_PAID)
+            ->join('payment_methods', 'transactions.payment_method_id', '=', 'payment_methods.id')
+            ->where('payment_methods.type', PaymentMethod::TYPE_CASH)
+            ->when($startDate, fn($q) => $q->whereDate('transactions.paid_at', '>=', $startDate->toDateString()))
+            ->when($endDate, fn($q) => $q->whereDate('transactions.paid_at', '<=', $endDate->toDateString()))
+            ->sum('transactions.pay_amount');
+
+        $totalHandedToBendahara = CashFlow::where('status', CashFlow::STATUS_APPROVED)
+            ->when($catPiket, fn($q) => $q->where('cash_flow_category_id', $catPiket->id))
+            ->when($startDate, fn($q) => $q->whereDate('date', '>=', $startDate->toDateString()))
+            ->when($endDate, fn($q) => $q->whereDate('date', '<=', $endDate->toDateString()))
+            ->sum('amount');
+
+        $totalHandedToYayasan = CashFlow::where('status', CashFlow::STATUS_APPROVED)
+            ->when($catYayasan, fn($q) => $q->where('cash_flow_category_id', $catYayasan->id))
+            ->when($startDate, fn($q) => $q->whereDate('date', '>=', $startDate->toDateString()))
+            ->when($endDate, fn($q) => $q->whereDate('date', '<=', $endDate->toDateString()))
+            ->sum('amount');
+
+        $activeAdmins = Admin::select('id', 'name')->where('id', '!=', Auth::id())->orderBy('name')->get();
+
         return response()->json([
             'total_incomes' => number_format($totalIncomes, 0, ',', '.'),
             'total_expenses' => number_format($totalExpenses, 0, ',', '.'),
             'remaining_balances' => number_format($remainingBalances, 0, ',', '.'),
             'total_cashflows' => number_format($totalCashflows, 0, ',', '.'),
+            'status_pemasukan' => $statusPemasukan,
+            'breakdown_bills' => $breakdownBills,
+            'breakdown_sources' => [
+                'tunai' => number_format($sourceBreakdown['Tunai'], 0, ',', '.'),
+                'saldo' => number_format($sourceBreakdown['Debit Saldo'], 0, ',', '.'),
+                'transfer' => number_format($sourceBreakdown['Transfer Aplikasi'], 0, ',', '.'),
+            ],
+            'piket_officers' => $piketOfficers,
+            'workflow_stats' => [
+                'total_piket_cash' => 'Rp ' . number_format($totalPiketCash, 0, ',', '.'),
+                'total_handed_bendahara' => 'Rp ' . number_format($totalHandedToBendahara, 0, ',', '.'),
+                'total_handed_yayasan' => 'Rp ' . number_format($totalHandedToYayasan, 0, ',', '.'),
+            ],
+            'categories' => [
+                'piket_to_bendahara' => $catPiket?->id,
+                'bendahara_to_yayasan' => $catYayasan?->id,
+            ],
+            'active_admins' => $activeAdmins,
         ]);
     }
 

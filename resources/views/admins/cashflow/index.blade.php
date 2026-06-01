@@ -3,6 +3,82 @@
 @push('css')
 <!-- Include Lightbox2 CSS -->
 <link href="https://cdn.jsdelivr.net/npm/lightbox2@2.11.3/dist/css/lightbox.min.css" rel="stylesheet" />
+<style>
+    .premium-card {
+        border-radius: 24px !important;
+        box-shadow: 0 8px 30px rgba(0, 0, 0, 0.04) !important;
+        border: none !important;
+        background: #ffffff;
+        transition: all 0.3s ease;
+    }
+    .premium-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 12px 35px rgba(0, 0, 0, 0.06) !important;
+    }
+    .premium-shadow {
+        box-shadow: 0 8px 30px rgba(0, 0, 0, 0.04) !important;
+    }
+    .typography-h1 {
+        font-size: 22px;
+        font-weight: 700;
+        color: #0f172a;
+        font-family: 'Outfit', 'Inter', sans-serif;
+    }
+    .typography-h2 {
+        font-size: 16px;
+        font-weight: 600;
+        color: #1e293b;
+        font-family: 'Outfit', 'Inter', sans-serif;
+    }
+    .typography-amount {
+        font-size: 18px;
+        font-weight: 700;
+        color: #059669; /* Emerald 600 */
+        font-family: 'Outfit', 'Inter', sans-serif;
+    }
+    .typography-label {
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        color: #94a3b8;
+        font-family: 'Outfit', 'Inter', sans-serif;
+    }
+    .typography-body {
+        font-size: 14px;
+        font-weight: 500;
+        color: #475569;
+        font-family: 'Inter', sans-serif;
+    }
+    .typography-caption {
+        font-size: 12px;
+        font-weight: 400;
+        font-style: italic;
+        color: #94a3b8;
+        font-family: 'Inter', sans-serif;
+    }
+    .pipeline-step {
+        position: relative;
+        flex: 1;
+        text-align: center;
+        padding: 20px;
+        border-radius: 16px;
+        background: #f8fafc;
+        border: 1px dashed #e2e8f0;
+    }
+    .pipeline-step.active {
+        background: rgba(16, 185, 129, 0.05);
+        border: 1px solid #10b981;
+    }
+    .pipeline-arrow {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #94a3b8;
+        font-size: 24px;
+        padding: 0 15px;
+    }
+</style>
 @endpush
 
 @section('content')
@@ -33,47 +109,80 @@
     <div class="post d-flex flex-column-fluid">
         <div id="kt_content_container" class="container-xxl">
             <!--begin::Cards-->
-            <div class="row mb-5">
+            <div class="row mb-6 g-5">
+                <!-- Target Total Pemasukan -->
                 <div class="col-md-3">
-                    <div class="card bg-success text-white" style="height: 200px;">
-                        <div class="card-body d-flex flex-column align-items-center justify-content-center text-center">
-                            <i class="bi bi-wallet2 fs-3 text-white mb-3"></i>
+                    <div class="card premium-card p-5" style="border-radius: 24px !important;">
+                        <div class="card-body p-0 d-flex flex-column justify-content-between" style="min-height: 110px;">
+                            <div class="d-flex align-items-center justify-content-between">
+                                <span class="typography-label">Target Pemasukan</span>
+                                <div class="bg-light-primary rounded-circle p-2 d-flex align-items-center justify-content-center" style="width: 36px; height: 36px;">
+                                    <i class="bi bi-wallet2 text-primary fs-4"></i>
+                                </div>
+                            </div>
                             <div>
-                                <h5 class="card-title text-white mb-2">Penerimaan Pembayaran</h5>
-                                <p class="card-text fs-2" id="total-payment">Rp 0</p>
+                                <span class="d-block typography-caption text-muted mb-1">Seluruh Tagihan Aktif</span>
+                                <span class="fs-3 fw-bold text-gray-900" id="total-cashflow">Rp 0</span>
                             </div>
                         </div>
                     </div>
                 </div>
+
+                <!-- Realisasi Pemasukan -->
                 <div class="col-md-3">
-                    <div class="card bg-danger text-white" style="height: 200px;">
-                        <div class="card-body d-flex flex-column align-items-center justify-content-center text-center">
-                            <i class="bi bi-credit-card fs-3 text-white mb-3"></i>
+                    <div class="card premium-card p-5" style="border-radius: 24px !important;">
+                        <div class="card-body p-0 d-flex flex-column justify-content-between" style="min-height: 110px;">
+                            <div class="d-flex align-items-center justify-content-between">
+                                <span class="typography-label">Realisasi Pemasukan</span>
+                                <div class="bg-light-success rounded-circle p-2 d-flex align-items-center justify-content-center" style="width: 36px; height: 36px;">
+                                    <i class="bi bi-check-circle text-success fs-4"></i>
+                                </div>
+                            </div>
                             <div>
-                                <h5 class="card-title text-white mb-2">Pengeluaran</h5>
-                                <p class="card-text fs-2" id="total-expenses">Rp 0</p>
+                                <span class="d-block typography-caption text-muted mb-1">Tagihan Lunas (PAID)</span>
+                                <span class="fs-3 fw-bold text-emerald-600" id="total-payment">Rp 0</span>
                             </div>
                         </div>
                     </div>
                 </div>
+
+                <!-- Status Pemasukan -->
                 <div class="col-md-3">
-                    <div class="card bg-primary text-white" style="height: 200px;">
-                        <div class="card-body d-flex flex-column align-items-center justify-content-center text-center">
-                            <i class="bi bi-bank fs-3 text-white mb-3"></i>
+                    <div class="card premium-card p-5" style="border-radius: 24px !important;">
+                        <div class="card-body p-0 d-flex flex-column justify-content-between" style="min-height: 110px;">
+                            <div class="d-flex align-items-center justify-content-between">
+                                <span class="typography-label">Status Pemasukan</span>
+                                <div class="bg-light-warning rounded-circle p-2 d-flex align-items-center justify-content-center" style="width: 36px; height: 36px;">
+                                    <i class="bi bi-activity text-warning fs-4"></i>
+                                </div>
+                            </div>
                             <div>
-                                <h5 class="card-title text-white mb-2">Sisa Saldo</h5>
-                                <p class="card-text fs-2" id="remaining-balance">Rp 0</p>
+                                <span class="d-block typography-caption text-muted mb-1">Target vs Realisasi</span>
+                                <span class="badge fs-6 px-4 py-2" id="status-pemasukan-badge" style="border-radius: 12px;">Sesuai</span>
                             </div>
                         </div>
                     </div>
                 </div>
+
+                <!-- Sisa Saldo & Pengeluaran -->
                 <div class="col-md-3">
-                    <div class="card bg-info text-white" style="height: 200px;">
-                        <div class="card-body d-flex flex-column align-items-center justify-content-center text-center">
-                            <i class="bi bi-currency-exchange fs-3 text-white mb-3"></i>
-                            <div>
-                                <h5 class="card-title text-white mb-2">Target Arus Kas</h5>
-                                <p class="card-text fs-2" id="total-cashflow">Rp 0</p>
+                    <div class="card premium-card p-5" style="border-radius: 24px !important;">
+                        <div class="card-body p-0 d-flex flex-column justify-content-between" style="min-height: 110px;">
+                            <div class="d-flex align-items-center justify-content-between">
+                                <span class="typography-label">Sisa Saldo & Pengeluaran</span>
+                                <div class="bg-light-danger rounded-circle p-2 d-flex align-items-center justify-content-center" style="width: 36px; height: 36px;">
+                                    <i class="bi bi-cash-coin text-danger fs-4"></i>
+                                </div>
+                            </div>
+                            <div class="d-flex justify-content-between align-items-end">
+                                <div>
+                                    <span class="d-block text-muted" style="font-size: 10px;">Pengeluaran</span>
+                                    <span class="fs-6 fw-bold text-red-600" id="total-expenses">Rp 0</span>
+                                </div>
+                                <div class="text-end">
+                                    <span class="d-block text-muted" style="font-size: 10px;">Sisa Saldo</span>
+                                    <span class="fs-5 fw-bolder text-emerald-600" id="remaining-balance">Rp 0</span>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -81,22 +190,150 @@
             </div>
             <!--end::Cards-->
 
-            <!--begin::Card-->
-            <div class="card">
-                {{-- <div class="card-header d-flex align-items-center justify-content-between border-0 pt-6">
-                    <div class="card-title"></div>
-                    <x-action.create name="Arus Kas" action="{{ route('cashflow.create') }}" />
-                </div> --}}
+            <!--begin::BI Grid Breakdown-->
+            <div class="row mb-6 g-5">
+                <!-- Breakdown Pemasukan per Jenis Tagihan -->
+                <div class="col-md-6">
+                    <div class="card premium-card" style="border-radius: 24px !important;">
+                        <div class="card-header border-0 pt-6">
+                            <span class="typography-h2">Breakdown per Jenis Tagihan</span>
+                        </div>
+                        <div class="card-body pt-2" style="max-height: 280px; overflow-y: auto;">
+                            <div class="table-responsive">
+                                <table class="table align-middle table-row-dashed table-sm">
+                                    <thead>
+                                        <tr class="text-start text-gray-400 fw-bold fs-7 text-uppercase">
+                                            <th>Nama Pembayaran</th>
+                                            <th class="text-end">Total Pemasukan</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="breakdown-bills-tbody" class="fw-bold text-gray-600">
+                                        <tr>
+                                            <td colspan="2" class="text-center text-muted py-4">Memuat data breakdown...</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Sumber Pemasukan -->
+                <div class="col-md-6">
+                    <div class="card premium-card" style="border-radius: 24px !important;">
+                        <div class="card-header border-0 pt-6">
+                            <span class="typography-h2">Sumber Pemasukan</span>
+                        </div>
+                        <div class="card-body d-flex flex-column justify-content-around" style="height: 280px;">
+                            <!-- Tunai -->
+                            <div>
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <span class="typography-body fw-bold">Tunai</span>
+                                    <span class="typography-body fw-bolder" id="source-tunai-amount">Rp 0</span>
+                                </div>
+                                <div class="progress" style="height: 10px; border-radius: 6px;">
+                                    <div class="progress-bar bg-primary" id="source-tunai-bar" role="progressbar" style="width: 0%; border-radius: 6px;"></div>
+                                </div>
+                            </div>
+                            <!-- Debit Saldo -->
+                            <div>
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <span class="typography-body fw-bold">Debit Saldo</span>
+                                    <span class="typography-body fw-bolder text-emerald-600" id="source-saldo-amount">Rp 0</span>
+                                </div>
+                                <div class="progress" style="height: 10px; border-radius: 6px;">
+                                    <div class="progress-bar bg-success" id="source-saldo-bar" role="progressbar" style="width: 0%; border-radius: 6px;"></div>
+                                </div>
+                            </div>
+                            <!-- Transfer Aplikasi -->
+                            <div>
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <span class="typography-body fw-bold">Transfer Aplikasi</span>
+                                    <span class="typography-body fw-bolder" id="source-transfer-amount">Rp 0</span>
+                                </div>
+                                <div class="progress" style="height: 10px; border-radius: 6px;">
+                                    <div class="progress-bar bg-info" id="source-transfer-bar" role="progressbar" style="width: 0%; border-radius: 6px;"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!--end::BI Grid Breakdown-->
+
+            <!--begin::Piping Tracing Pipeline-->
+            <div class="card premium-card mb-6" style="border-radius: 24px !important;">
+                <div class="card-header border-0 pt-6">
+                    <span class="typography-h2">Visual Pipeline Alur Penyerahan Dana Tunai (End-to-End)</span>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex flex-column flex-md-row justify-content-between align-items-stretch gap-4">
+                        <!-- Step 1: Petugas Piket -->
+                        <div class="pipeline-step active">
+                            <span class="typography-label d-block mb-1 text-primary">Level 1: Petugas Piket</span>
+                            <span class="typography-caption d-block mb-3 text-muted">Kas Tunai Terkumpul di Piket</span>
+                            <span class="fs-4 fw-bolder text-primary d-block" id="pipe-piket-cash">Rp 0</span>
+                        </div>
+                        <div class="pipeline-arrow"><i class="bi bi-arrow-right fs-1"></i></div>
+                        <!-- Step 2: Bendahara -->
+                        <div class="pipeline-step">
+                            <span class="typography-label d-block mb-1 text-success">Level 2: Bendahara</span>
+                            <span class="typography-caption d-block mb-3 text-muted">Dana Diserahkan ke Bendahara</span>
+                            <span class="fs-4 fw-bolder text-success d-block" id="pipe-bendahara-cash">Rp 0</span>
+                        </div>
+                        <div class="pipeline-arrow"><i class="bi bi-arrow-right fs-1"></i></div>
+                        <!-- Step 3: Yayasan -->
+                        <div class="pipeline-step">
+                            <span class="typography-label d-block mb-1 text-warning">Level 3: Pengurus Yayasan</span>
+                            <span class="typography-caption d-block mb-3 text-muted">Dana Diterima Pengurus Yayasan</span>
+                            <span class="fs-4 fw-bolder text-warning d-block" id="pipe-yayasan-cash">Rp 0</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!--end::Piping Tracing Pipeline-->
+
+            <!--begin::Piket Officers Tracing-->
+            <div class="card premium-card mb-6" style="border-radius: 24px !important;">
+                <div class="card-header border-0 pt-6">
+                    <span class="typography-h2">Tracing Kas Petugas Piket (Transaksi Tunai)</span>
+                </div>
+                <div class="card-body pt-2">
+                    <div class="table-responsive">
+                        <table class="table align-middle table-row-dashed">
+                            <thead>
+                                <tr class="text-start text-gray-400 fw-bold fs-7 text-uppercase">
+                                    <th>Nama Petugas Piket</th>
+                                    <th class="text-center">Jumlah Transaksi</th>
+                                    <th class="text-end">Total Uang Masuk</th>
+                                    <th class="text-end">Sudah Diserahkan</th>
+                                    <th class="text-end text-danger">Kas di Tangan (Belum Diserahkan)</th>
+                                    <th class="text-center">Aksi Serah Terima</th>
+                                </tr>
+                            </thead>
+                            <tbody id="piket-officers-tbody" class="fw-bold text-gray-600">
+                                <tr>
+                                    <td colspan="6" class="text-center text-muted py-4">Memuat petugas piket...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <!--end::Piket Officers Tracing-->
+
+            <!--begin::Card Datatable-->
+            <div class="card premium-card" style="border-radius: 24px !important;">
                 <div class="card-header d-flex justify-content-between align-items-center mb-5 border-0 pt-6">
                     <!-- Filter Date Range di Kiri -->
                     <div class="d-flex align-items-center gap-4">
                         <form action="#" id="form-filter" method="get" class="d-flex align-items-center gap-4">
                             <input type="text" hidden id="type" name="type" required>
                             <div>
-                                <label class="form-label mb-1">Filter Tanggal</label>
+                                <label class="form-label mb-1">Filter Rentang Tanggal</label>
                                 <div class="d-flex gap-2 align-items-center">
                                     <div id="dateRange" class="pull-right"
-                                        style="background: #fff; cursor: pointer; padding: 5px 10px; border: 1px solid #ccc;">
+                                        style="background: #fff; cursor: pointer; padding: 7px 14px; border: 1px solid #ccc; border-radius: 12px;">
                                         <i class="glyphicon glyphicon-calendar fa fa-calendar"></i>&nbsp;
                                         <span></span> <b class="caret"></b>
                                     </div>
@@ -108,11 +345,13 @@
                     </div>
 
                     <!-- Button Tambah di Kanan -->
-                    <div>
+                    <div class="d-flex align-items-center gap-3">
+                        <button class="btn btn-success d-flex align-items-center gap-2" id="btn-serah-terima" style="border-radius: 14px;">
+                            <i class="bi bi-send-check fs-5"></i> Ajukan Serah Terima Dana
+                        </button>
                         <x-action.create name="Arus Kas" action="{{ route('cashflow.create') }}" />
                     </div>
                 </div>
-
 
                 <div class="card-body pt-0">
                     <div class="table-responsive">
@@ -120,16 +359,16 @@
                             <thead>
                                 <tr class="text-start text-gray-400 fw-bolder fs-7 text-uppercase gs-0">
                                     <th style="width: 5%">No</th>
-                                    <th style="width: 5%">Tanggal</th>
-                                    <th style="width: 10%">Kode</th>
+                                    <th style="width: 10%">Tanggal</th>
+                                    <th style="width: 12%">Kode</th>
                                     <th style="width: 10%">Tipe</th>
-                                    <th style="width: 10%">Kategori</th>
-                                    <th style="width: 30%">Dari/Kepada</th>
+                                    <th style="width: 15%">Kategori</th>
+                                    <th style="width: 25%">Dari/Kepada</th>
                                     <th style="width: 10%">Jumlah</th>
                                     <th style="width: 10%">Status</th>
-                                    <th style="width: 10%">Keterangan</th>
-                                    <th style="width: 10%">Bukti Pembayaran</th>
-                                    <th class="text-center min-w-100px" style="width: 22%">Aksi</th>
+                                    <th style="width: 15%">Keterangan</th>
+                                    <th style="width: 10%">Bukti</th>
+                                    <th class="text-center min-w-100px" style="width: 15%">Aksi</th>
                                 </tr>
                             </thead>
                             <tbody class="text-gray-600 fw-bold"></tbody>
@@ -137,16 +376,16 @@
                     </div>
                 </div>
             </div>
-            <!--end::Card-->
+            <!--end::Card Datatable-->
         </div>
     </div>
     <!--end::Post-->
 </div>
 
 <!-- Reject Modal -->
-<div class="modal fade" id="rejectModal" tabindex="-1" aria-labelledby="rejectModalLabel" aria-hidden="true">
+<div class="modal fade" id="rejectModal" tabindex="-1" aria-labelledby="rejectModalLabel" aria-hidden="true" style="border-radius: 24px;">
     <div class="modal-dialog">
-        <div class="modal-content">
+        <div class="modal-content premium-shadow" style="border-radius: 24px;">
             <div class="modal-header">
                 <h5 class="modal-title" id="rejectModalLabel">Alasan Penolakan</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
@@ -156,10 +395,78 @@
                     <input type="hidden" id="reject_cashflow_id" name="cashflow_id">
                     <div class="mb-3">
                         <label for="status_reason" class="form-label">Alasan Penolakan</label>
-                        <textarea class="form-control" id="status_reason" name="status_reason" required></textarea>
+                        <textarea class="form-control" id="status_reason" name="status_reason" required style="border-radius: 12px;"></textarea>
                     </div>
                     <div class="d-flex justify-content-end">
-                        <button type="submit" class="btn btn-danger">Tolak</button>
+                        <button type="submit" class="btn btn-danger" style="border-radius: 12px;">Tolak</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Serah Terima Dana -->
+<div class="modal fade" id="serahTerimaModal" tabindex="-1" aria-labelledby="serahTerimaModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content premium-shadow" style="border-radius: 24px;">
+            <div class="modal-header">
+                <h5 class="modal-title fw-bold" id="serahTerimaModalLabel">Form Serah Terima Dana Arus Kas</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="serahTerimaForm" action="{{ route('cashflow.store') }}" method="POST" enctype="multipart/form-data">
+                    @csrf
+                    <input type="hidden" name="type" value="INCOME">
+                    <input type="hidden" name="payment_method" value="CASH">
+
+                    <div class="row g-4">
+                        <!-- Kategori Serah Terima -->
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Kategori Serah Terima</label>
+                            <select class="form-select" id="handover_category" name="cash_flow_category_id" required style="border-radius: 12px;">
+                                <option value="" disabled selected>Pilih Alur Kategori</option>
+                                <!-- Categories will be populated dynamically -->
+                            </select>
+                        </div>
+
+                        <!-- Penerima Dana -->
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Penerima Dana (Bendahara/Yayasan)</label>
+                            <select class="form-select" id="handover_receiver" name="receiver_id" required style="border-radius: 12px;">
+                                <option value="" disabled selected>Pilih Penerima</option>
+                                <!-- Admins will be populated dynamically -->
+                            </select>
+                        </div>
+
+                        <!-- Nominal Serah Terima -->
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Nominal Penyerahan (Rp)</label>
+                            <input type="text" class="form-control" id="handover_amount" name="amount" required placeholder="Contoh: 50.000" style="border-radius: 12px;">
+                        </div>
+
+                        <!-- Tanggal Penyerahan -->
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold">Tanggal Penyerahan</label>
+                            <input type="date" class="form-control" name="date" required value="{{ date('Y-m-d') }}" style="border-radius: 12px;">
+                        </div>
+
+                        <!-- Bukti Serah Terima -->
+                        <div class="col-md-12">
+                            <label class="form-label fw-bold">Bukti Penyerahan (Foto/PDF)</label>
+                            <input type="file" class="form-control" name="proof_of_payment" accept="image/*,application/pdf" style="border-radius: 12px;">
+                        </div>
+
+                        <!-- Catatan / Keterangan -->
+                        <div class="col-md-12">
+                            <label class="form-label fw-bold">Keterangan / Catatan Tambahan</label>
+                            <textarea class="form-control" name="description" placeholder="Tuliskan keterangan detail di sini..." style="border-radius: 12px; height: 80px;"></textarea>
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-end gap-3 mt-6">
+                        <button type="button" class="btn btn-light" data-bs-dismiss="modal" style="border-radius: 12px;">Batal</button>
+                        <button type="submit" class="btn btn-success" style="border-radius: 12px;">Kirim Pengajuan Serah Terima</button>
                     </div>
                 </form>
             </div>
@@ -171,6 +478,14 @@
 @push('js')
 <script src="https://cdn.jsdelivr.net/npm/lightbox2@2.11.3/dist/js/lightbox.min.js"></script>
 <script>
+    var globalCategories = {};
+    var globalAdmins = [];
+
+    // Helper to format currency
+    function formatRupiah(number) {
+        return 'Rp ' + Number(number).toLocaleString('id-ID');
+    }
+
     $(document).ready(() => {
         var table = $('#table-cashflow').DataTable({
             ordering: false,
@@ -270,11 +585,15 @@
                 },
             ]
         });
-    })
-</script>
 
-<script>
-    $(document).ready(function() {
+        // Format handover amount input as currency on type
+        $('#handover_amount').on('keyup', function() {
+            var val = this.value.replace(/\D/g, '');
+            if (val) {
+                this.value = Number(val).toLocaleString('id-ID');
+            }
+        });
+
         // Approve action
         $(document).on('click', '.approve-btn', function() {
             var cashflowId = $(this).data('id');
@@ -344,6 +663,49 @@
                 });
             }
         });
+
+        // Click on serah terima dana button
+        $('#btn-serah-terima').on('click', function() {
+            populateHandoverForm(null, null);
+        });
+
+        // Quick action: serah terima from officer list
+        $(document).on('click', '.btn-piket-serah', function() {
+            var officerId = $(this).data('id');
+            var cash = $(this).data('cash');
+            populateHandoverForm(officerId, cash);
+        });
+
+        function populateHandoverForm(officerId, cash) {
+            // Fill Categories Dropdown
+            var catSelect = $('#handover_category');
+            catSelect.empty().append('<option value="" disabled selected>Pilih Alur Kategori</option>');
+            
+            if (globalCategories.piket_to_bendahara) {
+                catSelect.append('<option value="'+globalCategories.piket_to_bendahara+'">Serah Terima Piket ke Bendahara</option>');
+            }
+            if (globalCategories.bendahara_to_yayasan) {
+                catSelect.append('<option value="'+globalCategories.bendahara_to_yayasan+'">Serah Terima Bendahara ke Yayasan</option>');
+            }
+
+            // Fill Receivers Dropdown
+            var recSelect = $('#handover_receiver');
+            recSelect.empty().append('<option value="" disabled selected>Pilih Penerima</option>');
+            globalAdmins.forEach(function(admin) {
+                recSelect.append('<option value="'+admin.id+'">'+admin.name+'</option>');
+            });
+
+            // Set Category default if pre-filled from officer cash
+            if (cash !== null && cash > 0) {
+                catSelect.val(globalCategories.piket_to_bendahara);
+                $('#handover_amount').val(Number(cash).toLocaleString('id-ID'));
+            } else {
+                $('#handover_amount').val('');
+            }
+
+            var modal = new bootstrap.Modal(document.getElementById('serahTerimaModal'));
+            modal.show();
+        }
     });
 </script>
 <script>
@@ -395,6 +757,85 @@
             $('#remaining-balance').text('Rp ' + response.data.remaining_balances.toLocaleString());
             $('#total-cashflow').text('Rp ' + response.data.total_cashflows.toLocaleString());
 
+            // Save global state
+            globalCategories = response.data.categories;
+            globalAdmins = response.data.active_admins;
+
+            // Status Pemasukan Badge Accent
+            var statusBadge = $('#status-pemasukan-badge');
+            statusBadge.text(response.data.status_pemasukan);
+            statusBadge.removeClass('bg-light-success text-success bg-light-danger text-danger bg-light-warning text-warning');
+            if (response.data.status_pemasukan === 'Sesuai') {
+                statusBadge.addClass('bg-light-success text-success');
+            } else if (response.data.status_pemasukan === 'Defisit') {
+                statusBadge.addClass('bg-light-danger text-danger');
+            } else {
+                statusBadge.addClass('bg-light-warning text-warning');
+            }
+
+            // Breakdown Bills Tbody
+            var billsTbody = $('#breakdown-bills-tbody');
+            billsTbody.empty();
+            if (response.data.breakdown_bills.length === 0) {
+                billsTbody.append('<tr><td colspan="2" class="text-center text-muted py-4">Tidak ada data breakdown pembayaran lunas</td></tr>');
+            } else {
+                response.data.breakdown_bills.forEach(function(item) {
+                    billsTbody.append('<tr><td>' + item.name + '</td><td class="text-end text-emerald-600">' + item.total_formatted + '</td></tr>');
+                });
+            }
+
+            // Breakdown Sources
+            $('#source-tunai-amount').text('Rp ' + response.data.breakdown_sources.tunai);
+            $('#source-saldo-amount').text('Rp ' + response.data.breakdown_sources.saldo);
+            $('#source-transfer-amount').text('Rp ' + response.data.breakdown_sources.transfer);
+
+            // Compute total for percentages
+            var parseVal = function(str) { return Number(str.replace(/\D/g, '')); };
+            var tunaiVal = parseVal(response.data.breakdown_sources.tunai);
+            var saldoVal = parseVal(response.data.breakdown_sources.saldo);
+            var transferVal = parseVal(response.data.breakdown_sources.transfer);
+            var totalSum = tunaiVal + saldoVal + transferVal;
+
+            var tunaiPct = totalSum > 0 ? (tunaiVal / totalSum * 100).toFixed(1) : 0;
+            var saldoPct = totalSum > 0 ? (saldoVal / totalSum * 100).toFixed(1) : 0;
+            var transferPct = totalSum > 0 ? (transferVal / totalSum * 100).toFixed(1) : 0;
+
+            $('#source-tunai-bar').css('width', tunaiPct + '%');
+            $('#source-saldo-bar').css('width', saldoPct + '%');
+            $('#source-transfer-bar').css('width', transferPct + '%');
+
+            // Visual Pipeline
+            $('#pipe-piket-cash').text(response.data.workflow_stats.total_piket_cash);
+            $('#pipe-bendahara-cash').text(response.data.workflow_stats.total_handed_bendahara);
+            $('#pipe-yayasan-cash').text(response.data.workflow_stats.total_handed_yayasan);
+
+            // Tracing Piket Officers Tbody
+            var piketTbody = $('#piket-officers-tbody');
+            piketTbody.empty();
+            if (response.data.piket_officers.length === 0) {
+                piketTbody.append('<tr><td colspan="6" class="text-center text-muted py-4">Tidak ada aktivitas piket tunai pada periode ini</td></tr>');
+            } else {
+                response.data.piket_officers.forEach(function(off) {
+                    var actionBtn = '';
+                    if (off.cash_in_hand > 0) {
+                        actionBtn = '<button class="btn btn-sm btn-light-success btn-piket-serah font-weight-bold" style="border-radius: 10px;" data-id="'+off.id+'" data-cash="'+off.cash_in_hand+'"><i class="bi bi-arrow-up-right"></i> Serahkan Dana</button>';
+                    } else {
+                        actionBtn = '<span class="badge bg-light-success text-success" style="border-radius: 8px;"><i class="bi bi-check-all"></i> Semua Diserahkan</span>';
+                    }
+
+                    piketTbody.append(
+                        '<tr>' +
+                        '<td>' + off.name + '</td>' +
+                        '<td class="text-center">' + off.total_txs + ' Transaksi</td>' +
+                        '<td class="text-end">' + off.total_collected_formatted + '</td>' +
+                        '<td class="text-end text-success">' + off.handed_over_formatted + '</td>' +
+                        '<td class="text-end text-danger">' + off.cash_in_hand_formatted + '</td>' +
+                        '<td class="text-center">' + actionBtn + '</td>' +
+                        '</tr>'
+                    );
+                });
+            }
+
             // Reload DataTables bila diperlukan
             if ($.fn.DataTable.isDataTable('#table-cashflow')) {
                 $('#table-cashflow').DataTable().ajax.reload();
@@ -402,7 +843,6 @@
         })
         .catch(function (error) {
             console.error(error);
-            alert('Gagal memuat data arus kas.');
         });
     }
 
