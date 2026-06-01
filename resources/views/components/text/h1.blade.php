@@ -1,1 +1,1 @@
-<x-text.h1 class="{{ $attributes->class(['typography-h1']) }}">{{ $slot }}</x-text.h1>
+<h1 {{ $attributes->merge(['class' => 'typography-h1']) }}>{{ $slot }}</h1>
