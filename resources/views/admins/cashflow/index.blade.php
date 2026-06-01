@@ -3,8 +3,8 @@
 @push('css')
 <!-- Include Lightbox2 CSS -->
 <link href="https://cdn.jsdelivr.net/npm/lightbox2@2.11.3/dist/css/lightbox.min.css" rel="stylesheet" />
-<style>
-    .premium-card {
+
+    
         border-radius: 24px !important;
         box-shadow: 0 8px 30px rgba(0, 0, 0, 0.04) !important;
         border: none !important;
@@ -112,7 +112,7 @@
             <div class="row mb-6 g-5">
                 <!-- Target Total Pemasukan -->
                 <div class="col-md-3">
-                    <div class="card premium-card p-5" style="border-radius: 24px !important;">
+                    <div class="premium-card">
                         <div class="card-body p-0 d-flex flex-column justify-content-between" style="min-height: 110px;">
                             <div class="d-flex align-items-center justify-content-between">
                                 <span class="typography-label">Target Pemasukan</span>
@@ -130,7 +130,7 @@
 
                 <!-- Realisasi Pemasukan -->
                 <div class="col-md-3">
-                    <div class="card premium-card p-5" style="border-radius: 24px !important;">
+                    <div class="premium-card">
                         <div class="card-body p-0 d-flex flex-column justify-content-between" style="min-height: 110px;">
                             <div class="d-flex align-items-center justify-content-between">
                                 <span class="typography-label">Realisasi Pemasukan</span>
@@ -148,7 +148,7 @@
 
                 <!-- Status Pemasukan -->
                 <div class="col-md-3">
-                    <div class="card premium-card p-5" style="border-radius: 24px !important;">
+                    <div class="premium-card">
                         <div class="card-body p-0 d-flex flex-column justify-content-between" style="min-height: 110px;">
                             <div class="d-flex align-items-center justify-content-between">
                                 <span class="typography-label">Status Pemasukan</span>
@@ -166,7 +166,7 @@
 
                 <!-- Sisa Saldo & Pengeluaran -->
                 <div class="col-md-3">
-                    <div class="card premium-card p-5" style="border-radius: 24px !important;">
+                    <div class="premium-card">
                         <div class="card-body p-0 d-flex flex-column justify-content-between" style="min-height: 110px;">
                             <div class="d-flex align-items-center justify-content-between">
                                 <span class="typography-label">Sisa Saldo & Pengeluaran</span>
@@ -194,7 +194,7 @@
             <div class="row mb-6 g-5">
                 <!-- Breakdown Pemasukan per Jenis Tagihan -->
                 <div class="col-md-6">
-                    <div class="card premium-card" style="border-radius: 24px !important;">
+                    <div class="premium-card">
                         <div class="card-header border-0 pt-6">
                             <span class="typography-h2">Breakdown per Jenis Tagihan</span>
                         </div>
@@ -220,7 +220,7 @@
 
                 <!-- Sumber Pemasukan -->
                 <div class="col-md-6">
-                    <div class="card premium-card" style="border-radius: 24px !important;">
+                    <div class="premium-card">
                         <div class="card-header border-0 pt-6">
                             <span class="typography-h2">Sumber Pemasukan</span>
                         </div>
@@ -262,7 +262,7 @@
             <!--end::BI Grid Breakdown-->
 
             <!--begin::Piping Tracing Pipeline-->
-            <div class="card premium-card mb-6" style="border-radius: 24px !important;">
+            <div class="premium-card mb-6">
                 <div class="card-header border-0 pt-6">
                     <span class="typography-h2">Visual Pipeline Alur Penyerahan Dana Tunai (End-to-End)</span>
                 </div>
@@ -294,7 +294,7 @@
             <!--end::Piping Tracing Pipeline-->
 
             <!--begin::Piket Officers Tracing-->
-            <div class="card premium-card mb-6" style="border-radius: 24px !important;">
+            <div class="premium-card mb-6">
                 <div class="card-header border-0 pt-6">
                     <span class="typography-h2">Tracing Kas Petugas Piket (Transaksi Tunai)</span>
                 </div>
@@ -323,7 +323,7 @@
             <!--end::Piket Officers Tracing-->
 
             <!--begin::Card Datatable-->
-            <div class="card premium-card" style="border-radius: 24px !important;">
+            <div class="premium-card">
                 <div class="card-header d-flex justify-content-between align-items-center mb-5 border-0 pt-6">
                     <!-- Filter Date Range di Kiri -->
                     <div class="d-flex align-items-center gap-4">
@@ -383,7 +383,7 @@
 </div>
 
 <!-- Reject Modal -->
-<div class="modal fade" id="rejectModal" tabindex="-1" aria-labelledby="rejectModalLabel" aria-hidden="true" style="border-radius: 24px;">
+<div class="modal fade" id="rejectModal" tabindex="-1" aria-labelledby="rejectModalLabel" aria-hidden="true" class="rounded-[24px]">
     <div class="modal-dialog">
         <div class="modal-content premium-shadow" style="border-radius: 24px;">
             <div class="modal-header">
@@ -407,7 +407,7 @@
 </div>
 
 <!-- Modal Serah Terima Dana -->
-<div class="modal fade" id="serahTerimaModal" tabindex="-1" aria-labelledby="serahTerimaModalLabel" aria-hidden="true">
+<div class="modal fade" id="serahTerimaModal" tabindex="-1" aria-labelledby="serahTerimaModalLabel" aria-hidden="true" class="rounded-[24px]">
     <div class="modal-dialog modal-lg">
         <div class="modal-content premium-shadow" style="border-radius: 24px;">
             <div class="modal-header">

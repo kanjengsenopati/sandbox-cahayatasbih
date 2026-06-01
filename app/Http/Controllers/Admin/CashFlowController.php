@@ -164,19 +164,49 @@ class CashFlowController extends Controller
 
         $remainingBalances = max($totalIncomes - $totalExpenses, 0);
 
-        // 3. Breakdown per Jenis/Nama Pembayaran
-        $breakdownBills = Bill::where('bills.status', 'PAID')
-            ->join('bill_types', 'bills.bill_type_id', '=', 'bill_types.id')
-            ->select('bill_types.name', DB::raw('SUM(bills.amount) as total_amount'))
-            ->groupBy('bill_types.id', 'bill_types.name')
-            ->get()
-            ->map(function ($item) {
-                return [
-                    'name' => $item->name,
-                    'total_amount' => $item->total_amount,
-                    'total_formatted' => 'Rp ' . number_format($item->total_amount, 0, ',', '.'),
-                ];
-            });
+        // 3. Breakdown per Jenis/Nama Pembayaran (Unifikasi & Resolusi Ambigu Lembaga + Tahun Ajaran)
+        $paidBills = (clone $billQuery)
+            ->where('status', 'PAID')
+            ->with(['billType.billItem', 'billType.academicYear'])
+            ->get();
+
+        $breakdownGrouped = [];
+        foreach ($paidBills as $bill) {
+            $billType = $bill->billType;
+            if (!$billType) continue;
+
+            $typeName = trim($billType->name);
+            $unitName = $billType->billItem?->name ?? '';
+            $yearName = $billType->academicYear?->name ?? '';
+
+            // Buat nama gabungan non-ambigu jika Lembaga atau Tahun Ajaran berbeda
+            $fullName = $typeName;
+            if ($unitName || $yearName) {
+                $parts = [];
+                if ($unitName) $parts[] = $unitName;
+                if ($yearName) $parts[] = $yearName;
+                $fullName .= ' (' . implode(' - ', $parts) . ')';
+            }
+
+            if (!isset($breakdownGrouped[$fullName])) {
+                $breakdownGrouped[$fullName] = 0;
+            }
+            $breakdownGrouped[$fullName] += $bill->amount;
+        }
+
+        $breakdownBills = [];
+        foreach ($breakdownGrouped as $name => $amount) {
+            $breakdownBills[] = [
+                'name' => $name,
+                'total_amount' => $amount,
+                'total_formatted' => 'Rp ' . number_format($amount, 0, ',', '.'),
+            ];
+        }
+
+        // Urutkan berdasarkan total pemasukan tertinggi (descending)
+        usort($breakdownBills, function ($a, $b) {
+            return $b['total_amount'] <=> $a['total_amount'];
+        });
 
         // 4. Breakdown per Sumber Pembayaran (Tunai, Debit Saldo, Transfer Aplikasi)
         $sourceBreakdownRaw = Transaction::where('transactions.status', Transaction::STATUS_PAID)

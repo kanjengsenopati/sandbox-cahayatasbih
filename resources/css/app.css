@@ -1,0 +1,12 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer components {
+  .premium-card {
+    @apply bg-white rounded-[24px] shadow-[0_8px_30px_rgb(0,0,0,0.04)] p-5;
+  }
+  .premium-shadow {
+    @apply shadow-[0_8px_30px_rgb(0,0,0,0.04)];
+  }
+}
