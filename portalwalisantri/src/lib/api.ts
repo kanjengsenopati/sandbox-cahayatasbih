@@ -103,4 +103,8 @@ export const fetchPendingReturnPermits = () => api.get('/asatidz/permits/pending
 export const postPermitReturnAction = (id: string | number, data: { action: 'approve' | 'reject'; rejection_reason?: string }) => 
   api.post(`/asatidz/permits/${id}/action-return`, data);
 
+export const updateFcmToken = (token: string | null) => 
+  api.post('/update-fcm-token', { fcm_token: token });
+
 export default api;
+

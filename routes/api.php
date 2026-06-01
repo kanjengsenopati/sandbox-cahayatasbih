@@ -157,6 +157,7 @@ Route::prefix('ct-mobile')->middleware(['web'])->group(function () {
     Route::get('payment-methods', [App\Http\Controllers\Api\Wali\PaymentMethodController::class, 'index']);
     Route::get('profile', [App\Http\Controllers\Api\Wali\ProfileController::class, 'show']);
     Route::put('profile', [App\Http\Controllers\Api\Wali\ProfileController::class, 'update']);
+    Route::post('update-fcm-token', [App\Http\Controllers\Api\Wali\ProfileController::class, 'updateFcmToken']);
     Route::post('switch-role', [App\Http\Controllers\Api\Wali\ProfileController::class, 'switchRole']);
     Route::put('password', [App\Http\Controllers\Api\Wali\PasswordController::class, 'update']);
 

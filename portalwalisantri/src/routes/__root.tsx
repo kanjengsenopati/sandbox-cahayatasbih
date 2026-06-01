@@ -1,3 +1,5 @@
+import { useEffect } from "react";
+import { toast } from "sonner";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import {
   Outlet,
@@ -112,6 +114,29 @@ function RootShell({ children }: { children: React.ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+
+  useEffect(() => {
+    if (typeof window !== "undefined" && "Notification" in window) {
+      try {
+        // Dynamic import to avoid breaking if Firebase variables are not set yet or unsupported
+        import("@/lib/firebase").then(({ messaging }) => {
+          import("firebase/messaging").then(({ onMessage }) => {
+            onMessage(messaging, (payload) => {
+              const toasterEnabled = localStorage.getItem("ct_toaster_enabled") !== "false";
+              if (toasterEnabled) {
+                toast.info(payload.notification?.title || "Pemberitahuan Baru", {
+                  description: payload.notification?.body,
+                  duration: 6000,
+                });
+              }
+            });
+          }).catch(console.error);
+        }).catch(console.error);
+      } catch (err) {
+        console.error("Gagal mendaftarkan penerima notifikasi foreground:", err);
+      }
+    }
+  }, []);
 
   return (
     <QueryClientProvider client={queryClient}>

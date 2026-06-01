@@ -4,7 +4,8 @@ import { useState, useEffect, useCallback, useMemo } from "react";
 import { toast } from "sonner";
 import { useSantri } from "@/contexts/SantriContext";
 import { useQuery } from "@tanstack/react-query";
-import { fetchBills } from "@/lib/api";
+import { fetchBills, updateFcmToken } from "@/lib/api";
+import { getDeviceToken } from "@/lib/firebase";
 
 export const Route = createFileRoute("/profil_/notifikasi")({
   component: NotifikasiPage,
@@ -87,6 +88,13 @@ function NotifikasiPage() {
         setPushPermission(result);
         if (result === "granted") {
           setPushEnabled(true);
+          
+          // Ambil token FCM browser dan kirim ke backend
+          const token = await getDeviceToken();
+          if (token) {
+            await updateFcmToken(token);
+          }
+          
           toast.success("Pemberitahuan Luar Aplikasi diaktifkan!", {
             description: "Anda akan menerima notifikasi tagihan dan informasi penting.",
           });
@@ -109,19 +117,32 @@ function NotifikasiPage() {
             description: "Anda bisa mengaktifkannya nanti melalui pengaturan browser.",
           });
         }
-      } catch {
+      } catch (err) {
+        console.error(err);
         toast.error("Gagal meminta izin notifikasi");
       }
     } else {
       // Already granted — toggling off
       const nextState = !pushEnabled;
       setPushEnabled(nextState);
-      if (!nextState) {
-        toast.info("Pemberitahuan Luar Aplikasi dinonaktifkan", {
-          description: "Anda tidak akan menerima notifikasi push.",
-        });
-      } else {
-        toast.success("Pemberitahuan Luar Aplikasi diaktifkan kembali!");
+      try {
+        if (!nextState) {
+          // Hapus token FCM di backend
+          await updateFcmToken(null);
+          toast.info("Pemberitahuan Luar Aplikasi dinonaktifkan", {
+            description: "Anda tidak akan menerima notifikasi push.",
+          });
+        } else {
+          // Daftarkan kembali token FCM ke backend
+          const token = await getDeviceToken();
+          if (token) {
+            await updateFcmToken(token);
+          }
+          toast.success("Pemberitahuan Luar Aplikasi diaktifkan kembali!");
+        }
+      } catch (err) {
+        console.error(err);
+        toast.error("Gagal memperbarui pengaturan notifikasi");
       }
     }
   }, [pushSupported, pushPermission, pushEnabled]);

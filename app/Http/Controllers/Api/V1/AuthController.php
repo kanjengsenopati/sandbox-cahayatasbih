@@ -105,7 +105,7 @@ class AuthController extends Controller
 
     public function updateFcmToken(Request $request)
     {
-        $this->update_fcm_token($request->fcm_token, Auth::user()->firebase_uid, Auth::id());
+        $this->update_fcm_token($request->fcm_token, Auth::id());
         return $this->postSuccessResponse('Fcm Token berhasil diupdate');
     }
 }

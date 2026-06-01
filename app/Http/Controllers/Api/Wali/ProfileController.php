@@ -91,6 +91,23 @@ class ProfileController extends BaseWaliApiController
         return response()->json(['message' => 'Switch role failed'], 400);
     }
 
+    public function updateFcmToken(Request $request)
+    {
+        $request->validate([
+            'fcm_token' => 'nullable|string',
+        ]);
+
+        $user = Auth::guard('wali')->user();
+        if ($user) {
+            $user->update(['fcm_token' => $request->fcm_token]);
+            return response()->json([
+                'message' => 'FCM Token PWA berhasil diperbarui'
+            ]);
+        }
+
+        return response()->json(['message' => 'Unauthorized'], 401);
+    }
+
     protected function getPhoneVariations($phone)
     {
         $digits = preg_replace('/\D/', '', $phone);
