@@ -227,6 +227,83 @@ class CashFlowController extends Controller
             ];
         }
 
+        // 3.5. Detailed Breakdown per Jenis/Nama Pembayaran and Payment Source (Unique mapping subquery)
+        $billPaymentsSub = DB::table('transaction_details as td')
+            ->join('transactions as t', 'td.transaction_id', '=', 't.id')
+            ->join('payment_methods as pm', 't.payment_method_id', '=', 'pm.id')
+            ->where('t.status', 'PAID')
+            ->where('t.type', 'BILL')
+            ->whereNull('t.deleted_at')
+            ->select('td.bill_id', DB::raw('MAX(pm.type) as pm_type'))
+            ->groupBy('td.bill_id');
+
+        $breakdownDetailQuery = DB::table('bills as b')
+            ->join('bill_types as bt', 'b.bill_type_id', '=', 'bt.id')
+            ->leftJoin('bill_items as bi', 'bt.bill_item_id', '=', 'bi.id')
+            ->leftJoin('academic_years as ay', 'bt.academic_year_id', '=', 'ay.id')
+            ->leftJoinSub($billPaymentsSub, 'bp', 'b.id', '=', 'bp.bill_id')
+            ->whereNull('b.deleted_at')
+            ->select(
+                'bt.name as type_name',
+                'bi.name as unit_name',
+                'ay.name as year_name',
+                DB::raw('SUM(b.amount) as target'),
+                DB::raw("SUM(CASE WHEN b.status = 'PAID' THEN b.amount ELSE 0 END) as paid"),
+                DB::raw("SUM(CASE WHEN b.status = 'PAID' AND bp.pm_type = 'CASH' THEN b.amount ELSE 0 END) as paid_cash"),
+                DB::raw("SUM(CASE WHEN b.status = 'PAID' AND bp.pm_type = 'BALANCE' THEN b.amount ELSE 0 END) as paid_balance"),
+                DB::raw("SUM(CASE WHEN b.status = 'PAID' AND bp.pm_type NOT IN ('CASH', 'BALANCE') THEN b.amount ELSE 0 END) as paid_transfer")
+            )
+            ->groupBy('bt.name', 'bi.name', 'ay.name');
+
+        if ($academicYearId) {
+            $breakdownDetailQuery->where('b.academic_year_id', $academicYearId);
+        }
+        if ($startDate) {
+            $breakdownDetailQuery->where(function ($query) use ($startDate) {
+                $query->where('b.year', '>', $startDate->year)
+                    ->orWhere(function ($sub) use ($startDate) {
+                        $sub->where('b.year', '=', $startDate->year)
+                            ->where('b.month', '>=', $startDate->month);
+                    });
+            });
+        }
+        if ($endDate) {
+            $breakdownDetailQuery->where(function ($query) use ($endDate) {
+                $query->where('b.year', '<', $endDate->year)
+                    ->orWhere(function ($sub) use ($endDate) {
+                        $sub->where('b.year', '=', $endDate->year)
+                            ->where('b.month', '<=', $endDate->month);
+                    });
+            });
+        }
+
+        $breakdownDetailRaw = $breakdownDetailQuery->orderByDesc('target')->get();
+
+        $breakdownDetailBills = [];
+        foreach ($breakdownDetailRaw as $row) {
+            $fullName = trim($row->type_name);
+            $parts = [];
+            if ($row->unit_name) $parts[] = $row->unit_name;
+            if ($row->year_name) $parts[] = $row->year_name;
+            if (!empty($parts)) {
+                $fullName .= ' (' . implode(' - ', $parts) . ')';
+            }
+
+            $breakdownDetailBills[] = [
+                'name' => $fullName,
+                'target_amount' => (int)$row->target,
+                'target_formatted' => 'Rp ' . number_format($row->target, 0, ',', '.'),
+                'total_amount' => (int)$row->paid,
+                'total_formatted' => 'Rp ' . number_format($row->paid, 0, ',', '.'),
+                'paid_cash' => (int)$row->paid_cash,
+                'paid_cash_formatted' => 'Rp ' . number_format($row->paid_cash, 0, ',', '.'),
+                'paid_balance' => (int)$row->paid_balance,
+                'paid_balance_formatted' => 'Rp ' . number_format($row->paid_balance, 0, ',', '.'),
+                'paid_transfer' => (int)$row->paid_transfer,
+                'paid_transfer_formatted' => 'Rp ' . number_format($row->paid_transfer, 0, ',', '.'),
+            ];
+        }
+
         // 4. Breakdown per Sumber Pembayaran (Tunai, Debit Saldo, Transfer Aplikasi)
         $sourceBreakdownRaw = Transaction::where('transactions.status', Transaction::STATUS_PAID)
             ->where('transactions.type', Transaction::TYPE_BILL)
@@ -326,13 +403,19 @@ class CashFlowController extends Controller
 
         $activeAdmins = Admin::select('id', 'name')->where('id', '!=', Auth::id())->orderBy('name')->get();
 
+        $diffPemasukan = $totalIncomes - $totalCashflows;
+
         return response()->json([
             'total_incomes' => number_format($totalIncomes, 0, ',', '.'),
             'total_expenses' => number_format($totalExpenses, 0, ',', '.'),
             'remaining_balances' => number_format($remainingBalances, 0, ',', '.'),
             'total_cashflows' => number_format($totalCashflows, 0, ',', '.'),
             'status_pemasukan' => $statusPemasukan,
+            'status_pemasukan_diff' => $diffPemasukan,
+            'status_pemasukan_diff_formatted' => ($diffPemasukan >= 0 ? 'Rp ' : 'Rp -') . number_format(abs($diffPemasukan), 0, ',', '.'),
+            'percentage_realisasi' => number_format($totalCashflows > 0 ? ($totalIncomes / $totalCashflows) * 100 : 0, 2, ',', '.') . '%',
             'breakdown_bills' => $breakdownBills,
+            'breakdown_detail_bills' => $breakdownDetailBills,
             'breakdown_sources' => [
                 'tunai' => number_format($sourceBreakdown['Tunai'], 0, ',', '.'),
                 'saldo' => number_format($sourceBreakdown['Debit Saldo'], 0, ',', '.'),

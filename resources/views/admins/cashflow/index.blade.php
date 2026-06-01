@@ -205,35 +205,35 @@
                             </div>
                         </div>
 
-                        <!-- Dana Mutasi Bendahara -->
+                        <!-- Status Pemasukan (Realisasi - Target) -->
                         <div class="col-md-3">
                             <div class="premium-card p-6">
                                 <div class="d-flex align-items-center justify-content-between mb-2">
-                                    <x-text.label>Dana Mutasi Bendahara</x-text.label>
-                                    <div class="bg-light-warning rounded-circle p-2 d-flex align-items-center justify-content-center" style="width: 36px; height: 36px;">
-                                        <i class="bi bi-arrow-down-up text-warning fs-4"></i>
+                                    <x-text.label>Status Pemasukan</x-text.label>
+                                    <div id="status-pemasukan-icon-bg" class="bg-light-danger rounded-circle p-2 d-flex align-items-center justify-content-center" style="width: 36px; height: 36px;">
+                                        <i id="status-pemasukan-icon" class="bi bi-graph-down text-danger fs-4"></i>
                                     </div>
                                 </div>
                                 <div class="mb-1">
-                                    <x-text.amount id="total-mutasi-bendahara" class="d-block">Rp 0</x-text.amount>
+                                    <x-text.amount id="status-pemasukan-diff" class="d-block text-danger">Rp 0</x-text.amount>
                                 </div>
-                                <x-text.caption class="text-muted d-block">Dana Diserahkan ke Bendahara</x-text.caption>
+                                <x-text.caption id="status-pemasukan-desc" class="text-muted d-block">Defisit Selisih Target</x-text.caption>
                             </div>
                         </div>
 
-                        <!-- Mutasi Ke Pengurus Yayasan -->
+                        <!-- Persentase Realisasi -->
                         <div class="col-md-3">
                             <div class="premium-card p-6">
                                 <div class="d-flex align-items-center justify-content-between mb-2">
-                                    <x-text.label>Mutasi Ke Pengurus Yayasan</x-text.label>
-                                    <div class="bg-light-danger rounded-circle p-2 d-flex align-items-center justify-content-center" style="width: 36px; height: 36px;">
-                                        <i class="bi bi-bank text-danger fs-4"></i>
+                                    <x-text.label>Persentase Pemasukan</x-text.label>
+                                    <div class="bg-light-info rounded-circle p-2 d-flex align-items-center justify-content-center" style="width: 36px; height: 36px;">
+                                        <i class="bi bi-percent text-info fs-4"></i>
                                     </div>
                                 </div>
                                 <div class="mb-1">
-                                    <x-text.amount id="total-mutasi-yayasan" class="d-block">Rp 0</x-text.amount>
+                                    <x-text.amount id="percentage-realisasi" class="d-block text-primary">0%</x-text.amount>
                                 </div>
-                                <x-text.caption class="text-muted d-block">Dana Diterima Pengurus Yayasan</x-text.caption>
+                                <x-text.caption class="text-muted d-block">Rasio Realisasi Pemasukan</x-text.caption>
                             </div>
                         </div>
                     </div>
@@ -310,6 +310,39 @@
                         </div>
                     </div>
                     <!--end::BI Grid Breakdown-->
+
+                    <!--begin::BI Detailed Breakdown Table-->
+                    <div class="row mb-6">
+                        <div class="col-12">
+                            <div class="premium-card">
+                                <div class="card-header border-0 pt-6">
+                                    <span class="typography-h2">Detil Breakdown per Jenis Tagihan</span>
+                                </div>
+                                <div class="card-body pt-2" style="max-height: 400px; overflow-y: auto;">
+                                    <div class="table-responsive">
+                                        <table class="table align-middle table-row-dashed table-sm">
+                                            <thead>
+                                                <tr class="text-start text-gray-800 fw-bolder fs-7 text-uppercase">
+                                                     <th style="color: #1e293b; width: 30%;">Nama Pembayaran</th>
+                                                     <th class="text-end" style="color: #1e293b; width: 15%;">Target Pemasukan</th>
+                                                     <th class="text-end" style="color: #1e293b; width: 15%;">Total Pemasukan</th>
+                                                     <th class="text-end text-primary" style="color: #2563EB; width: 13%;">Tunai</th>
+                                                     <th class="text-end text-success" style="color: #10B981; width: 13%;">Debit Saldo</th>
+                                                     <th class="text-end text-info" style="color: #0EA5E9; width: 14%;">Transfer Aplikasi</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="breakdown-detail-bills-tbody" class="fw-bold text-gray-600">
+                                                <tr>
+                                                    <td colspan="6" class="text-center text-muted py-4">Memuat data detil breakdown...</td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!--end::BI Detailed Breakdown Table-->
                 </div>
                 <!--end::Tab 1-->
 
@@ -1017,8 +1050,24 @@
             // Update Card values for Tab 1
             $('#total-payment').text('Rp ' + response.data.total_incomes);
             $('#total-cashflow').text('Rp ' + response.data.total_cashflows);
-            $('#total-mutasi-bendahara').text(response.data.workflow_stats.total_handed_bendahara);
-            $('#total-mutasi-yayasan').text(response.data.workflow_stats.total_handed_yayasan);
+            
+            // Status Pemasukan (Realisasi - Target)
+            var diff = response.data.status_pemasukan_diff;
+            $('#status-pemasukan-diff').text(response.data.status_pemasukan_diff_formatted);
+            if (diff < 0) {
+                $('#status-pemasukan-diff').css('color', '#dc2626');
+                $('#status-pemasukan-icon-bg').removeClass('bg-light-success bg-light-primary bg-light-info').addClass('bg-light-danger');
+                $('#status-pemasukan-icon').removeClass('bi-graph-up bi-percent').addClass('bi-graph-down').css('color', '#dc2626');
+                $('#status-pemasukan-desc').text('Defisit Selisih Target');
+            } else {
+                $('#status-pemasukan-diff').css('color', '#059669');
+                $('#status-pemasukan-icon-bg').removeClass('bg-light-danger bg-light-primary bg-light-info').addClass('bg-light-success');
+                $('#status-pemasukan-icon').removeClass('bi-graph-down bi-percent').addClass('bi-graph-up').css('color', '#059669');
+                $('#status-pemasukan-desc').text('Surplus / Sesuai Target');
+            }
+
+            // Persentase Realisasi
+            $('#percentage-realisasi').text(response.data.percentage_realisasi);
 
             // Save global state
             globalCategories = response.data.categories;
@@ -1032,6 +1081,26 @@
             } else {
                 response.data.breakdown_bills.forEach(function(item) {
                     billsTbody.append('<tr><td>' + item.name + '</td><td class="text-end text-primary">' + item.target_formatted + '</td><td class="text-end text-emerald-600">' + item.total_formatted + '</td></tr>');
+                });
+            }
+
+            // Breakdown Detail Bills Tbody
+            var detailTbody = $('#breakdown-detail-bills-tbody');
+            detailTbody.empty();
+            if (!response.data.breakdown_detail_bills || response.data.breakdown_detail_bills.length === 0) {
+                detailTbody.append('<tr><td colspan="6" class="text-center text-muted py-4">Tidak ada data detil breakdown</td></tr>');
+            } else {
+                response.data.breakdown_detail_bills.forEach(function(item) {
+                    detailTbody.append(
+                        '<tr>' +
+                        '<td>' + item.name + '</td>' +
+                        '<td class="text-end text-primary">' + item.target_formatted + '</td>' +
+                        '<td class="text-end text-emerald-600">' + item.total_formatted + '</td>' +
+                        '<td class="text-end text-primary" style="opacity: 0.85;">' + item.paid_cash_formatted + '</td>' +
+                        '<td class="text-end text-success" style="opacity: 0.85;">' + item.paid_balance_formatted + '</td>' +
+                        '<td class="text-end text-info" style="opacity: 0.85;">' + item.paid_transfer_formatted + '</td>' +
+                        '</tr>'
+                    );
                 });
             }
 
