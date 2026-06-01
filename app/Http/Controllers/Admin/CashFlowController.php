@@ -247,21 +247,26 @@ class CashFlowController extends Controller
             ];
         }
 
-        // 3.5. Detailed Breakdown per Jenis/Nama Pembayaran and Payment Source (Unique mapping subquery)
-        $billPaymentsSub = DB::table('transaction_details as td')
-            ->join('transactions as t', 'td.transaction_id', '=', 't.id')
-            ->join('payment_methods as pm', 't.payment_method_id', '=', 'pm.id')
-            ->where('t.status', 'PAID')
-            ->where('t.type', 'BILL')
-            ->whereNull('t.deleted_at')
-            ->select('td.bill_id', DB::raw('MAX(pm.type) as pm_type'))
-            ->groupBy('td.bill_id');
+        // 3.5. Detailed Breakdown per Jenis/Nama Pembayaran and Payment Source
+        // Subquery: mapping bill_id -> payment method type (fresh closure agar tidak corrupt saat reuse)
+        $makeBillPaymentsSub = function () {
+            return DB::table('transaction_details as td')
+                ->join('transactions as t', 'td.transaction_id', '=', 't.id')
+                ->join('payment_methods as pm', 't.payment_method_id', '=', 'pm.id')
+                ->where('t.status', 'PAID')
+                ->where('t.type', 'BILL')
+                ->whereNull('t.deleted_at')
+                ->whereNull('td.deleted_at')
+                ->whereNotNull('td.bill_id')
+                ->select('td.bill_id', DB::raw('MAX(pm.type) as pm_type'))
+                ->groupBy('td.bill_id');
+        };
 
         $breakdownDetailQuery = DB::table('bills as b')
             ->join('bill_types as bt', 'b.bill_type_id', '=', 'bt.id')
             ->leftJoin('bill_items as bi', 'bt.bill_item_id', '=', 'bi.id')
             ->leftJoin('academic_years as ay', 'bt.academic_year_id', '=', 'ay.id')
-            ->leftJoinSub($billPaymentsSub, 'bp', 'b.id', '=', 'bp.bill_id')
+            ->leftJoinSub($makeBillPaymentsSub(), 'bp', 'b.id', '=', 'bp.bill_id')
             ->whereNull('b.deleted_at')
             ->select(
                 'bt.name as type_name',
@@ -327,19 +332,57 @@ class CashFlowController extends Controller
             ];
         }
 
-        // 4. Breakdown per Sumber Pembayaran — dihitung langsung dari $breakdownDetailBills
-        // yang sudah dihitung dengan benar di atas (termasuk semua filter aktif).
-        // Ini menghindari bug reuse query builder dan double-count.
+        // 4. Breakdown per Sumber Pembayaran — query independen langsung ke DB
+        // Menggunakan fresh subquery (closure) agar tidak ada bug reuse query builder.
+        // Join: bills -> bill_types -> transaction_details -> transactions -> payment_methods
+        $sourceRaw = DB::table('bills as b')
+            ->join('bill_types as bt', 'b.bill_type_id', '=', 'bt.id')
+            ->join('transaction_details as td', function ($join) {
+                $join->on('td.bill_id', '=', 'b.id')
+                     ->whereNull('td.deleted_at')
+                     ->whereNotNull('td.bill_id');
+            })
+            ->join('transactions as t', function ($join) {
+                $join->on('t.id', '=', 'td.transaction_id')
+                     ->where('t.status', '=', 'PAID')
+                     ->where('t.type', '=', 'BILL')
+                     ->whereNull('t.deleted_at');
+            })
+            ->join('payment_methods as pm', 'pm.id', '=', 't.payment_method_id')
+            ->whereNull('b.deleted_at')
+            ->where('b.status', 'PAID')
+            ->when($academicYearId, fn($q) => $q->where('b.academic_year_id', $academicYearId))
+            ->when($billTypeName, fn($q) => $q->where('bt.name', $billTypeName))
+            ->when($startDate, function ($q) use ($startDate) {
+                $q->where(function ($inner) use ($startDate) {
+                    $inner->where('b.year', '>', $startDate->year)
+                          ->orWhere(function ($sub) use ($startDate) {
+                              $sub->where('b.year', '=', $startDate->year)
+                                  ->where('b.month', '>=', $startDate->month);
+                          });
+                });
+            })
+            ->when($endDate, function ($q) use ($endDate) {
+                $q->where(function ($inner) use ($endDate) {
+                    $inner->where('b.year', '<', $endDate->year)
+                          ->orWhere(function ($sub) use ($endDate) {
+                              $sub->where('b.year', '=', $endDate->year)
+                                  ->where('b.month', '<=', $endDate->month);
+                          });
+                });
+            })
+            ->select(
+                DB::raw("SUM(CASE WHEN pm.type = 'CASH'    THEN b.amount ELSE 0 END) as paid_cash"),
+                DB::raw("SUM(CASE WHEN pm.type = 'BALANCE' THEN b.amount ELSE 0 END) as paid_balance"),
+                DB::raw("SUM(CASE WHEN pm.type NOT IN ('CASH','BALANCE') THEN b.amount ELSE 0 END) as paid_transfer")
+            )
+            ->first();
+
         $sourceBreakdown = [
-            'Tunai' => 0,
-            'Debit Saldo' => 0,
-            'Transfer Aplikasi' => 0,
+            'Tunai'            => (int)($sourceRaw->paid_cash     ?? 0),
+            'Debit Saldo'      => (int)($sourceRaw->paid_balance  ?? 0),
+            'Transfer Aplikasi'=> (int)($sourceRaw->paid_transfer ?? 0),
         ];
-        foreach ($breakdownDetailBills as $item) {
-            $sourceBreakdown['Tunai']           += $item['paid_cash'];
-            $sourceBreakdown['Debit Saldo']     += $item['paid_balance'];
-            $sourceBreakdown['Transfer Aplikasi'] += $item['paid_transfer'];
-        }
 
         // 5. Tracing Petugas Piket (Tunai)
         $piketOfficers = Transaction::where('transactions.status', Transaction::STATUS_PAID)
