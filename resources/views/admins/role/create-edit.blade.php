@@ -113,7 +113,7 @@
                                         <tbody>
                                             @php
                                             $modules = ['Role', 'Admin', 'Santri', 'Wali Santri',
-                                            'Sekolah', 'Bank',
+                                            'Sekolah', 'Bank', 'Outlet',
                                             'Informasi', 'Metode Pembayaran', 'Menu Aplikasi', 'Kontak Bantuan',
                                             'Barang','Saldo Santri', 'Tabungan Santri', 'Jadwal', 'Tahfidz',
                                             'Pos Kasir', 'Tagihan', 'Status Tagihan', 'Perilaku Santri',

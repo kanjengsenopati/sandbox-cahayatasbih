@@ -13,7 +13,7 @@ class OutletController extends Controller
 {
     public function index()
     {
-        if (!Auth::user()->can('Manage Barang')) {
+        if (!Auth::user()->can('Manage Outlet')) {
             return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
         }
         if (request()->ajax()) {
@@ -40,7 +40,7 @@ class OutletController extends Controller
 
     public function create()
     {
-        if (!Auth::user()->can('Manage Barang')) {
+        if (!Auth::user()->can('Create Outlet')) {
             return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
         }
         return view('admins.outlet.create-edit');
@@ -48,7 +48,7 @@ class OutletController extends Controller
 
     public function store(OutletRequest $request)
     {
-        if (!Auth::user()->can('Manage Barang')) {
+        if (!Auth::user()->can('Create Outlet')) {
             return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
         }
         Outlet::create($request->validated());
@@ -57,7 +57,7 @@ class OutletController extends Controller
 
     public function edit(Outlet $outlet)
     {
-        if (!Auth::user()->can('Manage Barang')) {
+        if (!Auth::user()->can('Edit Outlet')) {
             return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
         }
         return view('admins.outlet.create-edit', compact('outlet'));
@@ -65,7 +65,7 @@ class OutletController extends Controller
 
     public function update(OutletRequest $request, Outlet $outlet)
     {
-        if (!Auth::user()->can('Manage Barang')) {
+        if (!Auth::user()->can('Edit Outlet')) {
             return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
         }
         $outlet->update($request->validated());
@@ -74,7 +74,7 @@ class OutletController extends Controller
 
     public function destroy(Outlet $outlet)
     {
-        if (!Auth::user()->can('Manage Barang')) {
+        if (!Auth::user()->can('Delete Outlet')) {
             return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
         }
         $outlet->delete();

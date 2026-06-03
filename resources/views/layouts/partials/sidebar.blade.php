@@ -303,7 +303,7 @@
                             </a>
                         </div>
                         @endcan
-                        @can('Manage Barang')
+                        @can('Manage Outlet')
                         <div class="menu-item">
                             <a class="menu-link {{ request()->routeIs('outlet.*') ? ' active' : '' }}"
                                 href="{{ route('outlet.index') }}">
