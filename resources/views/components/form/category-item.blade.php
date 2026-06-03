@@ -20,7 +20,8 @@ $categoryItem = \App\Models\CategoryItem::find(@$value ?? 0);
             data: function (params) {
                 var queryParameters = {
                     search: params.term,
-                    data_type : "CATEGORY_ITEM"
+                    data_type : "CATEGORY_ITEM",
+                    outlet_id: $('#outlet_id').val()
                 }
                 return queryParameters;
             },

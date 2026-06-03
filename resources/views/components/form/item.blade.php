@@ -20,7 +20,8 @@ $item = \App\Models\Item::find(@$value ?? 0);
             data: function (params) {
                 var queryParameters = {
                     search: params.term,
-                    data_type : "ITEM"
+                    data_type : "ITEM",
+                    outlet_id: $('#outlet_id').val()
                 }
                 return queryParameters;
             },

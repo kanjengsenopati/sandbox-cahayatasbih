@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Models\Item;
+use App\Models\Outlet;
 use App\Models\StockHistory;
 use Illuminate\Http\Request;
 use Yajra\DataTables\DataTables;
@@ -60,7 +61,8 @@ class StockHistoryController extends Controller
         if (!Auth::user()->can('Create Barang')) {
             return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
         }
-        return view('admins.stock-history.create-edit');
+        $outlets = Outlet::where('is_active', 1)->get();
+        return view('admins.stock-history.create-edit', compact('outlets'));
     }
 
     /**
@@ -97,7 +99,7 @@ class StockHistoryController extends Controller
 
             DB::commit();
 
-            return redirect()->route('stock-history.index')->with('success', 'Data Stok Berhasil Ditambahkan');
+            return redirect()->route('item.index')->with('success', 'Data Stok Berhasil Ditambahkan');
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error($e->getMessage());
@@ -125,7 +127,8 @@ class StockHistoryController extends Controller
         if (auth()->user()->outlet_id && $stockHistory->outlet_id !== auth()->user()->outlet_id) {
             return redirect()->back()->with('error', 'Anda tidak memiliki akses ke data stok outlet lain');
         }
-        return view('admins.stock-history.create-edit', compact('stockHistory'));
+        $outlets = Outlet::where('is_active', 1)->get();
+        return view('admins.stock-history.create-edit', compact('stockHistory', 'outlets'));
     }
 
     /**
@@ -164,7 +167,7 @@ class StockHistoryController extends Controller
 
             DB::commit();
 
-            return redirect()->route('stock-history.index')->with('success', 'Data Stok Berhasil Diubah');
+            return redirect()->route('item.index')->with('success', 'Data Stok Berhasil Diubah');
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error($e->getMessage());
@@ -201,7 +204,7 @@ class StockHistoryController extends Controller
 
             DB::commit();
 
-            return redirect()->route('stock-history.index')->with('success', 'Data Stok Berhasil Dihapus');
+            return redirect()->route('item.index')->with('success', 'Data Stok Berhasil Dihapus');
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error($e->getMessage());

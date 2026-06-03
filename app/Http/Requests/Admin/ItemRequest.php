@@ -30,6 +30,7 @@ class ItemRequest extends FormRequest
             'code' => 'required|string|max:255',
             'selling_price' => 'required',
             'profit' => 'nullable',
+            'outlet_id' => auth()->user()->outlet_id ? 'nullable|exists:outlets,id' : 'required|exists:outlets,id',
         ];
     }
 }

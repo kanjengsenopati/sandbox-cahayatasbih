@@ -316,30 +316,12 @@
                         @endcan
                         @can('Manage Barang')
                         <div class="menu-item">
-                            <a class="menu-link {{ request()->routeIs('category-item.*') ? ' active' : '' }}"
-                                href="{{ route('category-item.index') }}">
-                                <span class="menu-bullet">
-                                    <span class="bullet bullet-dot"></span>
-                                </span>
-                                <span class="menu-title">Kategori Barang</span>
-                            </a>
-                        </div>
-                        <div class="menu-item ">
-                            <a class="menu-link {{ request()->routeIs('item.*') ? ' active' : '' }}"
+                            <a class="menu-link {{ request()->routeIs('item.*', 'category-item.*', 'stock-history.*') ? ' active' : '' }}"
                                 href="{{ route('item.index') }}">
                                 <span class="menu-bullet">
                                     <span class="bullet bullet-dot"></span>
                                 </span>
-                                <span class="menu-title">Data Barang</span>
-                            </a>
-                        </div>
-                        <div class="menu-item ">
-                            <a class="menu-link {{ request()->routeIs('stock-history.*') ? ' active' : '' }}"
-                                href="{{ route('stock-history.index') }}">
-                                <span class="menu-bullet">
-                                    <span class="bullet bullet-dot"></span>
-                                </span>
-                                <span class="menu-title">Inventori Barang</span>
+                                <span class="menu-title">Manajemen Barang</span>
                             </a>
                         </div>
                         @endcan

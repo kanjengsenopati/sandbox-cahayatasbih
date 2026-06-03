@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use Carbon\Carbon;
 use App\Models\Item;
+use App\Models\Outlet;
 use App\Imports\ItemImport;
 use Illuminate\Http\Request;
 use Yajra\DataTables\DataTables;
@@ -61,7 +62,8 @@ class ItemController extends Controller
         if (!Auth::user()->can('Create Barang')) {
             return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
         }
-        return view('admins.item.create-edit');
+        $outlets = Outlet::where('is_active', 1)->get();
+        return view('admins.item.create-edit', compact('outlets'));
     }
 
     /**
@@ -102,7 +104,8 @@ class ItemController extends Controller
         if (auth()->user()->outlet_id && $item->outlet_id !== auth()->user()->outlet_id) {
             return redirect()->back()->with('error', 'Anda tidak memiliki akses ke barang outlet lain');
         }
-        return view('admins.item.create-edit', compact('item'));
+        $outlets = Outlet::where('is_active', 1)->get();
+        return view('admins.item.create-edit', compact('item', 'outlets'));
     }
 
     /**
@@ -120,6 +123,9 @@ class ItemController extends Controller
         if ($request->hasFile('image')) {
             file_exists($item->image) ? unlink($item->image) : null;
             $data['image'] = 'storage/' . $request->file('image')->store('images/item', ['disk' => 'public']);
+        }
+        if (auth()->user()->outlet_id) {
+            $data['outlet_id'] = auth()->user()->outlet_id;
         }
         $item->update($data);
         // Invalidate the cache for the top 10 items

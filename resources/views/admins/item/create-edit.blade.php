@@ -88,6 +88,25 @@
                                 </div>
                                 <div class="row g-3">
                                     <div class="col-md-6">
+                                        <!-- Outlet -->
+                                        @if(!auth()->user()->outlet_id)
+                                        <div class="mb-3">
+                                            <label class="form-label fs-6 fw-bold" for="outlet_id">
+                                                <span class="required">Pilih Outlet</span>
+                                            </label>
+                                            <select name="outlet_id" id="outlet_id" data-control="select2" data-placeholder="Pilih Outlet..." class="form-select form-select-solid" required>
+                                                <option value=""></option>
+                                                @foreach($outlets as $outlet)
+                                                    <option value="{{ $outlet->id }}" {{ (old('outlet_id') ?? @$item->outlet_id) == $outlet->id ? 'selected' : '' }}>
+                                                        {{ $outlet->name }}
+                                                    </option>
+                                                @endforeach
+                                            </select>
+                                        </div>
+                                        @else
+                                            <input type="hidden" id="outlet_id" name="outlet_id" value="{{ auth()->user()->outlet_id }}">
+                                        @endif
+                                        
                                         <!-- Category Item -->
                                         <div class="mb-3">
                                             <label class="form-label fs-6 fw-bold" for="category_item_id">Kategori

@@ -87,6 +87,23 @@
                                 method="POST" enctype="multipart/form-data">
                                 @csrf
                                 <x-form.put-method />
+                                @if(!auth()->user()->outlet_id)
+                                <div class="fv-row mb-7">
+                                    <label class="fs-6 fw-bold form-label mt-3" for="outlet_id">
+                                        <span class="required">Pilih Outlet</span>
+                                        <i class="fas fa-exclamation-circle ms-1 fs-7" data-bs-toggle="tooltip" title="Pilih Outlet untuk Kategori Ini"></i>
+                                    </label>
+                                    <select name="outlet_id" id="outlet_id" data-control="select2" data-placeholder="Pilih Outlet..." class="form-select form-select-solid" required>
+                                        <option value=""></option>
+                                        @foreach($outlets as $outlet)
+                                            <option value="{{ $outlet->id }}" {{ (old('outlet_id') ?? @$categoryItem->outlet_id) == $outlet->id ? 'selected' : '' }}>
+                                                {{ $outlet->name }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                                @endif
+
                                 <!--begin::Input group-->
                                 <div class="fv-row mb-7">
                                     <!--begin::Label-->
@@ -124,7 +141,7 @@
                                 <!--begin::Action buttons-->
                                 <div class="d-flex justify-content-end">
                                     <!--begin::Button-->
-                                    <a href="{{ route('category-item.index') }}">
+                                    <a href="{{ route('item.index') }}">
                                         <button type="button" class="btn btn-sm btn-secondary me-3">Batal</button>
                                     </a>
                                     <!--end::Button-->

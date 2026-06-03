@@ -55,17 +55,29 @@ class Select2Controller extends Controller
 
     public function item($request)
     {
-        return Item::whereRaw('LOWER(name) like ?', ['%' . strtolower($request->search) . '%'])
-            ->orWhereRaw('LOWER(code) like ?', ['%' . strtolower($request->search) . '%'])
+        $outletId = $request->outlet_id ?: auth()->user()->outlet_id;
+        return Item::where(function($query) use ($request) {
+                $query->whereRaw('LOWER(name) like ?', ['%' . strtolower($request->search) . '%'])
+                    ->orWhereRaw('LOWER(code) like ?', ['%' . strtolower($request->search) . '%']);
+            })
             ->whereIsActive(true)
+            ->when($outletId, function($q) use ($outletId) {
+                $q->where('outlet_id', $outletId);
+            })
             ->take(10)
             ->get();
     }
 
     public function categoryItem($request)
     {
-        return CategoryItem::whereRaw('LOWER(name) like ?', ['%' . strtolower($request->search) . '%'])
-            ->orWhereRaw('LOWER(code) like ?', ['%' . strtolower($request->search) . '%'])
+        $outletId = $request->outlet_id ?: auth()->user()->outlet_id;
+        return CategoryItem::where(function($query) use ($request) {
+                $query->whereRaw('LOWER(name) like ?', ['%' . strtolower($request->search) . '%'])
+                    ->orWhereRaw('LOWER(code) like ?', ['%' . strtolower($request->search) . '%']);
+            })
+            ->when($outletId, function($q) use ($outletId) {
+                $q->where('outlet_id', $outletId);
+            })
             ->take(10)
             ->get();
     }

@@ -24,6 +24,7 @@ class CategoryItemRequest extends FormRequest
         return [
             'code' => 'required|string|max:255',
             'name' => 'required|string|max:255',
+            'outlet_id' => auth()->user()->outlet_id ? 'nullable|exists:outlets,id' : 'required|exists:outlets,id',
         ];
     }
 }

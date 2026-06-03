@@ -1,99 +1,157 @@
-@extends('layouts.master', ['title' => 'Data Barang'])
+@extends('layouts.master', ['title' => 'Manajemen Barang'])
 @section('content')
 <div class="content d-flex flex-column flex-column-fluid" id="kt_content">
     <!--begin::Toolbar-->
     <div class="toolbar" id="kt_toolbar">
-        <!--begin::Container-->
         <div id="kt_toolbar_container" class="container-fluid d-flex flex-stack">
-            <!--begin::Page title-->
             <div data-kt-swapper="true" data-kt-swapper-mode="prepend"
                 data-kt-swapper-parent="{default: '#kt_content_container', 'lg': '#kt_toolbar_container'}"
                 class="page-title d-flex align-items-center flex-wrap me-3 mb-5 mb-lg-0">
-                <!--begin::Title-->
-                <h1 class="d-flex text-dark fw-bolder fs-3 align-items-center my-1">Data Barang</h1>
-                <!--end::Title-->
-                <!--begin::Separator-->
+                <h1 class="d-flex text-dark fw-bolder fs-3 align-items-center my-1">Manajemen Barang</h1>
                 <span class="h-20px border-gray-300 border-start mx-4"></span>
-                <!--end::Separator-->
-                <!--begin::Breadcrumb-->
                 <ul class="breadcrumb breadcrumb-separatorless fw-bold fs-7 my-1">
-                    <!--begin::Item-->
                     <li class="breadcrumb-item text-muted">
                         <a href="{{ route('item.index') }}" class="text-muted text-hover-primary">Barang</a>
                     </li>
-                    <!--end::Item-->
-                    <!--begin::Item-->
                     <li class="breadcrumb-item">
                         <span class="bullet bg-gray-300 w-5px h-2px"></span>
                     </li>
-                    <!--end::Item-->
-                    <!--begin::Item-->
-                    <li class="breadcrumb-item text-dark">List Barang</li>
-                    <!--end::Item-->
+                    <li class="breadcrumb-item text-dark">Manajemen Barang & Stok</li>
                 </ul>
-                <!--end::Breadcrumb-->
             </div>
-            <!--end::Page title-->
-            <!--begin::Actions-->
-
-            <!--end::Actions-->
         </div>
-        <!--end::Container-->
     </div>
     <!--end::Toolbar-->
+    
     <!--begin::Post-->
     <div class="post d-flex flex-column-fluid">
-        <!--begin::Container-->
-        <div id="kt_content_container" class="container-xxl">
+        <div id="kt_content_container" class="container-xxl px-5">
             <!--begin::Card-->
-            <div class="card">
+            <div class="card premium-card">
                 <!--begin::Card header-->
-                <div
-                    class="card-header d-flex align-items-end gap-5 flex-sm-row mb-5 justify-content-between border-0 pt-6">
-                    <div class="d-flex flex-wrap justify-content-beetween gap-5">
-                        <div class="mb-0">
-                            <x-action.import target="#modalImport" name="Barang" />
-                        </div>
-
+                <div class="card-header border-0 pt-2 pb-5">
+                    <div class="card-title">
+                        <!--begin::Tabs Nav-->
+                        <ul class="nav nav-tabs nav-line-tabs nav-stretch fs-6 border-0">
+                            @can('Manage Barang')
+                            <li class="nav-item">
+                                <a class="nav-link active fw-bolder text-active-primary" data-bs-toggle="tab" href="#tab_barang">Data Barang</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link fw-bolder text-active-primary" data-bs-toggle="tab" href="#tab_kategori">Kategori Barang</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link fw-bolder text-active-primary" data-bs-toggle="tab" href="#tab_stok">Inventori Barang</a>
+                            </li>
+                            @endcan
+                        </ul>
+                        <!--end::Tabs Nav-->
                     </div>
-                    <div class="mt-4 gap-2 d-flex justify-content-beetween align-items-end">
-                        <x-action.create name="Barang" action="{{ route('item.create') }}" />
-                    </div>
-                    <!--end::Card title-->
                 </div>
                 <!--end::Card header-->
+
                 <!--begin::Card body-->
                 <div class="card-body pt-0">
-                    <!--begin::Table-->
-                    <div class="table-responsive">
-                        <table id="table-item" class="table align-middle table-row-dashed ">
-                            <thead>
-                                <tr class="text-start text-gray-400 fw-bolder fs-7 text-uppercase gs-0">
-                                    <th style="width: 5%">No</th>
-                                    <th class="min-w-100px" style="width: 22%">Kategori</th>
-                                    <th class="min-w-100px" style="width: 22%">Kode Barang</th>
-                                    <th class="min-w-100px" style="width: 22%">Nama Barang</th>
-                                    <th class="min-w-100px" style="width: 22%">Harga</th>
-                                    <th class="min-w-100px" style="width: 22%">Stok</th>
-                                    <th class="min-w-100px" style="width: 22%">Status</th>
-                                    <th class="text-center min-w-100px" style="width: 22%">Aksi</th>
-                                </tr>
-                            </thead>
-                            <tbody class="text-gray-600 fw-bold"></tbody>
-                        </table>
+                    <div class="tab-content" id="inventoryTabContent">
+                        @can('Manage Barang')
+                        <!--begin::Tab Pane Data Barang-->
+                        <div class="tab-pane fade show active" id="tab_barang" role="tabpanel">
+                            <div class="d-flex align-items-center justify-content-between mb-5">
+                                <div class="mb-0">
+                                    <x-action.import target="#modalImport" name="Barang" />
+                                </div>
+                                <div class="gap-2 d-flex align-items-end">
+                                    @can('Create Barang')
+                                    <x-action.create name="Barang" action="{{ route('item.create') }}" />
+                                    @endcan
+                                </div>
+                            </div>
+                            <div class="table-responsive">
+                                <table id="table-item" class="table align-middle table-row-dashed w-100">
+                                    <thead>
+                                        <tr class="text-start text-gray-400 fw-bolder fs-7 text-uppercase gs-0">
+                                            <th style="width: 5%">No</th>
+                                            <th class="min-w-100px">Kategori</th>
+                                            <th class="min-w-100px">Kode Barang</th>
+                                            <th class="min-w-150px">Nama Barang</th>
+                                            <th class="min-w-100px">Harga</th>
+                                            <th class="min-w-80px">Stok</th>
+                                            <th class="min-w-80px">Status</th>
+                                            <th class="text-center min-w-100px">Aksi</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="text-gray-600 fw-bold"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <!--end::Tab Pane Data Barang-->
+
+                        <!--begin::Tab Pane Kategori-->
+                        <div class="tab-pane fade" id="tab_kategori" role="tabpanel">
+                            <div class="d-flex align-items-center justify-content-between mb-5">
+                                <div></div>
+                                <div class="gap-2 d-flex align-items-end">
+                                    @can('Create Barang')
+                                    <x-action.create name="Barang" label="Kategori" action="{{ route('category-item.create') }}" />
+                                    @endcan
+                                </div>
+                            </div>
+                            <div class="table-responsive">
+                                <table id="table-category-item" class="table align-middle table-row-dashed w-100">
+                                    <thead>
+                                        <tr class="text-start text-gray-400 fw-bolder fs-7 text-uppercase gs-0">
+                                            <th style="width: 5%">No</th>
+                                            <th class="min-w-150px">Kode</th>
+                                            <th>Nama</th>
+                                            <th class="text-center min-w-100px">Aksi</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="text-gray-600 fw-bold"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <!--end::Tab Pane Kategori-->
+
+                        <!--begin::Tab Pane Stok-->
+                        <div class="tab-pane fade" id="tab_stok" role="tabpanel">
+                            <div class="d-flex align-items-center justify-content-between mb-5">
+                                <div></div>
+                                <div class="gap-2 d-flex align-items-end">
+                                    @can('Create Barang')
+                                    <x-action.create name="Barang" label="Stok" action="{{ route('stock-history.create') }}" />
+                                    @endcan
+                                </div>
+                            </div>
+                            <div class="table-responsive">
+                                <table id="table-stock-history" class="table align-middle table-row-dashed w-100">
+                                    <thead>
+                                        <tr class="text-start text-gray-400 fw-bolder fs-7 text-uppercase gs-0">
+                                            <th style="width: 5%">No</th>
+                                            <th class="min-w-100px">Kategori</th>
+                                            <th class="min-w-100px">Kode Barang</th>
+                                            <th class="min-w-150px">Nama Barang</th>
+                                            <th class="min-w-80px">Jumlah</th>
+                                            <th class="min-w-100px">Admin</th>
+                                            <th class="text-center min-w-100px">Aksi</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="text-gray-600 fw-bold"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <!--end::Tab Pane Stok-->
+                        @endcan
                     </div>
-                    <!--end::Table-->
                 </div>
                 <!--end::Card body-->
             </div>
             <!--end::Card-->
-            <!--begin::Modals-->
-
         </div>
-        <!--end::Container-->
     </div>
     <!--end::Post-->
 </div>
+
+<!-- Modal Import Barang -->
 <div class="modal fade" id="modalImport" tabindex="-1" aria-labelledby="modalImportLabel" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
@@ -106,15 +164,14 @@
                 <div class="modal-body">
                     <div class="mb-3">
                         <label for="file" class="form-label">File Excel</label>
-                        <input class="form-control" type="file" name="file" id="file">
+                        <input class="form-control" type="file" name="file" id="file" required>
                     </div>
                 </div>
                 <div class="modal-footer">
                     <div class="me-auto">
-                        <a href="assets\media\template\import\Template Import Data Barang.xlsx"
+                        <a href="assets/media/template/import/Template Import Data Barang.xlsx"
                             class="btn btn-light-primary"><i class="fa fa-download"></i> Template</a>
                     </div>
-
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
                     <button type="submit" class="btn btn-primary">Import</button>
                 </div>
@@ -123,15 +180,16 @@
     </div>
 </div>
 @endsection
+
 @push('js')
 <script>
     $(document).ready(() => {
-        var table = $('#table-item').DataTable({
-            ordering: true, // Enable sorting
+        // Init DataTable Barang
+        var tableItem = $('#table-item').DataTable({
+            ordering: true,
             processing: true,
             serverSide: true,
             ajax: "{{ route('item.index') }}",
-           
             language: {
                 "paginate": {
                     "next": "<i class='fa fa-angle-right'>",
@@ -140,8 +198,9 @@
                 "loadingRecords": "Loading...",
                 "processing": "Processing...",
             },
-            searchDelay: 500, // Set search delay to 500 ms
-            columns: [{
+            searchDelay: 500,
+            columns: [
+                {
                     "data": null,
                     "sortable": false,
                     "searchable": false,
@@ -152,28 +211,22 @@
                 {
                     data: 'category',
                     name: 'category',
-                    orderable: true,
-                    searchable: true,
                     render: function(data) {
-                        return data ? data : 'N/A'; // Display N/A if null
+                        return data ? data : 'N/A';
                     }
                 },
                 {
                     data: 'code',
                     name: 'code',
-                    orderable: true,
-                    searchable: true,
                     render: function(data) {
-                        return data ? data : 'N/A'; // Display N/A if null
+                        return data ? data : 'N/A';
                     }
                 },
                 {
                     data: 'name',
                     name: 'name',
-                    orderable: true,
-                    searchable: true,
                     render: function(data) {
-                        return data ? data : 'N/A'; // Display N/A if null
+                        return data ? data : 'N/A';
                     }
                 },
                 {
@@ -185,42 +238,141 @@
                         var profitFormatted = row.profit ? new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(row.profit) : 'N/A';
                         
                         return `<small><i>Harga Jual: ${sellingPriceFormatted}
-                                <hr>
+                                <hr class="my-1">
                                 Harga Beli: ${priceFormatted}
-                                <hr>
+                                <hr class="my-1">
                                 Laba: ${profitFormatted}
-                                <hr>
                             </i></small>`;
                     }
                 },
                 {
                     data: 'stock',
                     name: 'stock',
-                    orderable: true,
-                    searchable: true,
                     render: function(data) {
-                        return data !== null ? data : 'N/A'; // Display N/A if null
+                        return data !== null ? data : 'N/A';
                     }
                 },
                 {
                     data: 'status',
                     name: 'status',
-                    orderable: true,
-                    searchable: true,
                     render: function(data) {
-                        return data ? data : 'N/A'; // Display N/A if null
+                        return data ? data : 'N/A';
                     }
                 },
                 {
                     data: 'action',
                     name: 'action',
-                    orderable: true,
-                    searchable: true,
+                    orderable: false,
+                    searchable: false,
                     render: function(data) {
-                        return data ? data : 'N/A'; // Display N/A if null
+                        return data ? data : 'N/A';
                     }
                 },
             ]
+        });
+
+        // Init DataTable Kategori
+        var tableCategory = $('#table-category-item').DataTable({
+            ordering: false,
+            processing: true,
+            serverSide: true,
+            ajax: "{{ route('category-item.index') }}",
+            language: {
+                "paginate": {
+                    "next": "<i class='fa fa-angle-right'>",
+                    "previous": "<i class='fa fa-angle-left'>"
+                },
+                "loadingRecords": "Loading...",
+                "processing": "Processing...",
+            },
+            columns: [
+                {
+                    "data": null,
+                    "sortable": false,
+                    "searchable": false,
+                    render: function(data, type, row, meta) {
+                        return meta.row + meta.settings._iDisplayStart + 1;
+                    }
+                },
+                {
+                    data: 'code',
+                    name: 'code'
+                },
+                {
+                    data: 'name',
+                    name: 'name'
+                },
+                {
+                    data: 'action',
+                    name: 'action',
+                    orderable: false,
+                    searchable: false
+                },
+            ]
+        });
+
+        // Init DataTable Riwayat Stok
+        var tableStock = $('#table-stock-history').DataTable({
+            ordering: false,
+            processing: true,
+            serverSide: true,
+            ajax: "{{ route('stock-history.index') }}",
+            language: {
+                "paginate": {
+                    "next": "<i class='fa fa-angle-right'>",
+                    "previous": "<i class='fa fa-angle-left'>"
+                },
+                "loadingRecords": "Loading...",
+                "processing": "Processing...",
+            },
+            columns: [
+                {
+                    "data": null,
+                    "sortable": false,
+                    "searchable": false,
+                    render: function(data, type, row, meta) {
+                        return meta.row + meta.settings._iDisplayStart + 1;
+                    }
+                },
+                {
+                    data: 'item_category',
+                    name: 'item_category'
+                },
+                {
+                    data: 'item.code',
+                    name: 'item.code'
+                },
+                {
+                    data: 'item.name',
+                    name: 'item.name'
+                },
+                {
+                    data: 'quantity',
+                    name: 'quantity'
+                },
+                {
+                    data: 'admin',
+                    name: 'admin'
+                },
+                {
+                    data: 'action',
+                    name: 'action',
+                    orderable: false,
+                    searchable: false
+                },
+            ]
+        });
+
+        // Refresh DataTables when clicking tabs to ensure correct formatting and sizing
+        $('a[data-bs-toggle="tab"]').on('shown.bs.tab', function (e) {
+            var target = $(e.target).attr("href");
+            if (target === "#tab_barang") {
+                tableItem.columns.adjust().draw();
+            } else if (target === "#tab_kategori") {
+                tableCategory.columns.adjust().draw();
+            } else if (target === "#tab_stok") {
+                tableStock.columns.adjust().draw();
+            }
         });
     });
 </script>

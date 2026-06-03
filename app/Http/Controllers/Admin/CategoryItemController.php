@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Models\CategoryItem;
+use App\Models\Outlet;
 use Illuminate\Http\Request;
 use Yajra\DataTables\DataTables;
 use App\Http\Controllers\Controller;
@@ -44,7 +45,8 @@ class CategoryItemController extends Controller
         if (!Auth::user()->can('Create Barang')) {
             return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
         }
-        return view('admins.category-item.create-edit');
+        $outlets = Outlet::where('is_active', 1)->get();
+        return view('admins.category-item.create-edit', compact('outlets'));
     }
 
     /**
@@ -55,8 +57,12 @@ class CategoryItemController extends Controller
         if (!Auth::user()->can('Create Barang')) {
             return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
         }
-        CategoryItem::create($request->validated());
-        return redirect()->route('category-item.index')->with('success', 'Kategori berhasil ditambahkan');
+        $data = $request->validated();
+        if (auth()->user()->outlet_id) {
+            $data['outlet_id'] = auth()->user()->outlet_id;
+        }
+        CategoryItem::create($data);
+        return redirect()->route('item.index')->with('success', 'Kategori berhasil ditambahkan');
     }
 
     /**
@@ -75,7 +81,11 @@ class CategoryItemController extends Controller
         if (!Auth::user()->can('Edit Barang')) {
             return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
         }
-        return view('admins.category-item.create-edit', compact('categoryItem'));
+        if (auth()->user()->outlet_id && $categoryItem->outlet_id !== auth()->user()->outlet_id) {
+            return redirect()->back()->with('error', 'Anda tidak memiliki akses ke kategori outlet lain');
+        }
+        $outlets = Outlet::where('is_active', 1)->get();
+        return view('admins.category-item.create-edit', compact('categoryItem', 'outlets'));
     }
 
     /**
@@ -86,8 +96,15 @@ class CategoryItemController extends Controller
         if (!Auth::user()->can('Edit Barang')) {
             return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
         }
-        $categoryItem->update($request->validated());
-        return redirect()->route('category-item.index')->with('success', 'Kategori berhasil diubah');
+        if (auth()->user()->outlet_id && $categoryItem->outlet_id !== auth()->user()->outlet_id) {
+            return redirect()->back()->with('error', 'Anda tidak memiliki akses ke kategori outlet lain');
+        }
+        $data = $request->validated();
+        if (auth()->user()->outlet_id) {
+            $data['outlet_id'] = auth()->user()->outlet_id;
+        }
+        $categoryItem->update($data);
+        return redirect()->route('item.index')->with('success', 'Kategori berhasil diubah');
     }
 
     /**
