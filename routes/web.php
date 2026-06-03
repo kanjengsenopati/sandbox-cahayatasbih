@@ -13,6 +13,7 @@ use App\Http\Controllers\Admin\RoleController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\AdminController;
 use App\Http\Controllers\Admin\StudyController;
+use App\Http\Controllers\Admin\OutletController;
 use App\Http\Controllers\Admin\SchoolController;
 use App\Http\Controllers\Admin\ContactController;
 use App\Http\Controllers\Admin\Select2Controller;
@@ -190,6 +191,7 @@ Route::group(['middleware' => ['auth']], function () {
     Route::resource('category-item', CategoryItemController::class);
     Route::post('item/import', [ItemController::class, 'import'])->name('item.import');
     Route::resource('item', ItemController::class);
+    Route::resource('outlet', OutletController::class);
     Route::resource('stock-history', StockHistoryController::class);
     Route::resource('contact', ContactController::class);
 

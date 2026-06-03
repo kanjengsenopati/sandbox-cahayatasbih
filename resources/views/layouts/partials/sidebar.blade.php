@@ -203,7 +203,7 @@
                 @canany(['Manage Wali Santri', 'Manage Santri', 'Manage Sekolah','Manage PPDB', 'Manage Tahun Ajaran',
                 'Manage Kenaikan Kelas', 'Manage Kelulusan Santri', 'Manage Kategori Arus Kas'])
                 <div data-kt-menu-trigger="click" class="menu-item menu-accordion {{ request()->routeIs(['school.*', 'academic-year.*', 'semester.*', 'study.*',
-                    'user.*', 'student.*',
+                    'user.*', 'student.*', 'outlet.*',
                       'category-item.*', 'item.*', 'stock-history.*', 'grade-promotion.*', 'ppdb.*', 'ppdb-registration.*',
                       'student-graduation.*', 'cashflow-category.*']) ? 'show' : '' }}">
                     <span class="menu-link">
@@ -300,6 +300,17 @@
                                     <span class="bullet bullet-dot"></span>
                                 </span>
                                 <span class="menu-title">Data Kelulusan Siswa</span>
+                            </a>
+                        </div>
+                        @endcan
+                        @can('Manage Barang')
+                        <div class="menu-item">
+                            <a class="menu-link {{ request()->routeIs('outlet.*') ? ' active' : '' }}"
+                                href="{{ route('outlet.index') }}">
+                                <span class="menu-bullet">
+                                    <span class="bullet bullet-dot"></span>
+                                </span>
+                                <span class="menu-title">Data Outlet</span>
                             </a>
                         </div>
                         @endcan
