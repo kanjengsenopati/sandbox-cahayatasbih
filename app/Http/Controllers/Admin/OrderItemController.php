@@ -22,15 +22,36 @@ class OrderItemController extends Controller
 
     public function dashboard()
     {
-        $totalTransaction = PointOfSaleTransaction::where('status', PointOfSaleTransaction::STATUS_SUCCESS)->count();
-        $totalProfit = PointOfSaleTransactionDetail::whereHas('pointOfSaleTransaction', function ($query) {
-            $query->where('status', PointOfSaleTransaction::STATUS_SUCCESS);
+        $outletId = auth()->user()->outlet_id;
+        $totalTransaction = PointOfSaleTransaction::where('status', PointOfSaleTransaction::STATUS_SUCCESS)
+            ->when($outletId, function($q) use ($outletId) {
+                $q->where('outlet_id', $outletId);
+            })->count();
+            
+        $totalProfit = PointOfSaleTransactionDetail::whereHas('pointOfSaleTransaction', function ($query) use ($outletId) {
+            $query->where('status', PointOfSaleTransaction::STATUS_SUCCESS)
+                  ->when($outletId, function($q) use ($outletId) {
+                      $q->where('outlet_id', $outletId);
+                  });
         })->sum('total');
-        $totalSellingProduct = PointOfSaleTransactionDetail::whereHas('pointOfSaleTransaction', function ($query) {
-            $query->where('status', PointOfSaleTransaction::STATUS_SUCCESS);
+        
+        $totalSellingProduct = PointOfSaleTransactionDetail::whereHas('pointOfSaleTransaction', function ($query) use ($outletId) {
+            $query->where('status', PointOfSaleTransaction::STATUS_SUCCESS)
+                  ->when($outletId, function($q) use ($outletId) {
+                      $q->where('outlet_id', $outletId);
+                  });
         })->sum('quantity');
-        $totalItemAvailable = Item::where('stock', '>', 0)->where('is_active', true)->count();
-        $totalItem = Item::where('is_active', true)->count();
+        
+        $totalItemAvailable = Item::where('stock', '>', 0)->where('is_active', true)
+            ->when($outletId, function($q) use ($outletId) {
+                $q->where('outlet_id', $outletId);
+            })->count();
+            
+        $totalItem = Item::where('is_active', true)
+            ->when($outletId, function($q) use ($outletId) {
+                $q->where('outlet_id', $outletId);
+            })->count();
+            
         $totalStudent = Student::count();
 
         $statistic = [
@@ -51,7 +72,12 @@ class OrderItemController extends Controller
 
     private function getItemsDataTable()
     {
-        $data = Item::where('is_active', true)->with('categoryItem')->get()->sortByDesc('total_selling');
+        $outletId = auth()->user()->outlet_id;
+        $data = Item::where('is_active', true)->with('categoryItem')
+            ->when($outletId, function($q) use ($outletId) {
+                $q->where('outlet_id', $outletId);
+            })
+            ->get()->sortByDesc('total_selling');
 
         return DataTables::of($data)
             ->addColumn('status', function ($data) {
@@ -174,16 +200,22 @@ class OrderItemController extends Controller
                 $historyId = $history->id;
             }
 
+            $admin = auth()->user();
+            $outletCode = $admin->outlet ? $admin->outlet->code : 'CHM';
+
             // Generate Transaction Code
             // Optimasi: Count bisa berat jika data jutaan, tapi oke untuk skala menengah.
             // Alternatif: Gunakan UUID atau Timestamp precision tinggi jika sangat ramai.
-            $countToday = PointOfSaleTransaction::whereDate('paid_at', now())->count() + 1;
-            $paymentCode = 'POS-' . now()->format('Ymd') . str_pad($countToday, 3, '0', STR_PAD_LEFT);
+            $countToday = PointOfSaleTransaction::whereDate('paid_at', now())
+                ->where('outlet_id', $admin->outlet_id)
+                ->count() + 1;
+            $paymentCode = 'POS-' . $outletCode . '-' . now()->format('Ymd') . '-' . str_pad($countToday, 4, '0', STR_PAD_LEFT);
 
             // Save Transaction
             $transaction = PointOfSaleTransaction::create([
                 'student_id' => $student ? $student->id : null,
                 'admin_id' => $adminId,
+                'outlet_id' => $admin->outlet_id,
                 'payment_code' => $paymentCode,
                 'pay_amount' => $total,
                 'paid_at' => now(),
@@ -436,7 +468,12 @@ class OrderItemController extends Controller
         DB::beginTransaction();
 
         try {
-            $item = Item::where('code', $request->code)->lockForUpdate()->first();
+            $outletId = auth()->user()->outlet_id;
+            $item = Item::where('code', $request->code)
+                ->when($outletId, function($q) use ($outletId) {
+                    $q->where('outlet_id', $outletId);
+                })
+                ->lockForUpdate()->first();
             if (!$item) {
                 return $this->failedResponse("Barang tidak ditemukan", null);
             }
@@ -449,6 +486,7 @@ class OrderItemController extends Controller
             } else {
                 $cart = new PointOfSaleCart();
                 $cart->admin_id = auth()->user()->id;
+                $cart->outlet_id = auth()->user()->outlet_id;
                 $cart->item_id = $item->id;
                 $cart->quantity = $request->quantity;
                 $cart->price = $item->selling_price;

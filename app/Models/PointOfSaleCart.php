@@ -13,11 +13,17 @@ class PointOfSaleCart extends Model
 
     protected $fillable = [
         'admin_id',
+        'outlet_id',
         'item_id',
         'quantity',
         'price',
         'total'
     ];
+
+    public function outlet()
+    {
+        return $this->belongsTo(Outlet::class);
+    }
 
 
     public function item()

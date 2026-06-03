@@ -15,10 +15,16 @@ class StockHistory extends Model
 
     protected $fillable = [
         'item_id',
+        'outlet_id',
         'admin_id',
         'quantity',
         'type',
     ];
+
+    public function outlet()
+    {
+        return $this->belongsTo(Outlet::class);
+    }
 
 
     public function item()

@@ -22,13 +22,20 @@ class PosTransactionController extends Controller
         }
 
         if (request()->ajax()) {
-            $data = PointOfSaleTransaction::when(
-                request()->filled('start_date') && request()->filled('end_date'),
-                function ($query) {
-                    $query->whereDate('created_at', '>=', request()->start_date)
-                        ->whereDate('created_at', '<=', request()->end_date);
-                }
-            )
+            $data = PointOfSaleTransaction::with(['outlet', 'student', 'student.classroom', 'admins'])
+                ->when(
+                    request()->filled('start_date') && request()->filled('end_date'),
+                    function ($query) {
+                        $query->whereDate('created_at', '>=', request()->start_date)
+                            ->whereDate('created_at', '<=', request()->end_date);
+                    }
+                )
+                ->when(auth()->user()->outlet_id, function($q) {
+                    $q->where('outlet_id', auth()->user()->outlet_id);
+                })
+                ->when(!auth()->user()->outlet_id && request()->filled('outlet_id'), function($q) {
+                    $q->where('outlet_id', request()->outlet_id);
+                })
                 // ->schoolFilter('school_id', request()->school_id)
                 // ->classroomFilter('classroom_id', request()->classroom_id)
                 // Apply search on student name if provided
@@ -97,6 +104,9 @@ class PosTransactionController extends Controller
                         </div>
                     </div>';
                     })
+                    ->addColumn('outlet', function ($data) {
+                        return $data->outlet?->name ?? '-';
+                    })
                     ->addColumn('action', function ($data) {
                         $actionDelete = route('report-transaction.destroy', $data->id);
                         return "<div class='d-flex gap-2 flex-nowrap justify-content-center'>" .
@@ -114,7 +124,8 @@ class PosTransactionController extends Controller
         }
 
         $schools = School::orderBy('name')->get();
-        return view('admins.pos-transaction.index', compact('schools'));
+        $outlets = \App\Models\Outlet::orderBy('name')->get();
+        return view('admins.pos-transaction.index', compact('schools', 'outlets'));
     }
     /**
      * Show the form for creating a new resource.

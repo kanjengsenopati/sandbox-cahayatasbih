@@ -55,21 +55,31 @@
                             </h3>
                         </div>
                         <div class="card-body">
-                            <form id="dateRangeForm">
-                                <div class="row mb-4">
+                            <form id="dateRangeForm" method="GET" action="{{ route('report-pos.index') }}">
+                                <div class="d-flex flex-wrap gap-4 align-items-end mb-4">
                                     <div>
                                         <label class="form-label">Filter Tanggal</label>
                                         <div class="d-flex gap-4 align-items-end">
                                             <div id="dateRange" class="pull-right"
-                                                style="background: #fff; cursor: pointer; padding: 5px 10px; border: 1px solid #ccc;float: top;">
+                                                style="background: #fff; cursor: pointer; padding: 5px 10px; border: 1px solid #ccc; border-radius: 4px;">
                                                 <i class="glyphicon glyphicon-calendar fa fa-calendar"></i>&nbsp;
                                                 <span></span> <b class="caret"></b>
                                             </div>
-                                            <input type="text" id="start_date" name="start_date" hidden>
-                                            <input type="text" id="end_date" name="end_date" hidden>
-
+                                            <input type="text" id="start_date" name="start_date" value="{{ request('start_date') }}" hidden>
+                                            <input type="text" id="end_date" name="end_date" value="{{ request('end_date') }}" hidden>
                                         </div>
                                     </div>
+                                    @if(!auth()->user()->outlet_id)
+                                    <div>
+                                        <label class="form-label">Outlet</label>
+                                        <select name="outlet_id" class="form-select form-select-sm" id="filter_outlet_id" style="min-width: 180px;">
+                                            <option value="">Semua Outlet</option>
+                                            @foreach($outlets as $outlet)
+                                                <option value="{{ $outlet->id }}" @if(request('outlet_id') == $outlet->id) selected @endif>{{ $outlet->name }}</option>
+                                            @endforeach
+                                        </select>
+                                    </div>
+                                    @endif
                                 </div>
                             </form>
                             <div class="row">
@@ -184,6 +194,7 @@
                     d.type = 'top-items';
                     d.start_date = $('#start_date').val();
                     d.end_date = $('#end_date').val();
+                    d.outlet_id = $('#filter_outlet_id').val();
                 }
             },
             language: {
@@ -215,8 +226,8 @@
         });
 
         // Initialize the date range picker
-        var start = moment().startOf('month');
-        var end = moment().endOf('month');
+        var start = $('#start_date').val() ? moment($('#start_date').val()) : moment().startOf('month');
+        var end = $('#end_date').val() ? moment($('#end_date').val()) : moment().endOf('month');
         $('#dateRange').daterangepicker({
             startDate: start,
             endDate: end,
@@ -235,13 +246,16 @@
             $('#dateRange span').html(start.format('D/MM/YYYY') + ' - ' + end.format('D/MM/YYYY'));
             $('#start_date').val(start.format('YYYY-MM-DD'));
             $('#end_date').val(end.format('YYYY-MM-DD'));
-            reloadTable(); // Reload the table after the date range is selected
+            $('#dateRangeForm').submit();
         });
 
         // Set initial values for date range
-        $('#start_date').val(start.format('YYYY-MM-DD'));
-        $('#end_date').val(end.format('YYYY-MM-DD'));
         $('#dateRange span').html(start.format('D/MM/YYYY') + ' - ' + end.format('D/MM/YYYY'));
+
+        // Handle outlet change submit
+        $('#filter_outlet_id').on('change', function() {
+            $('#dateRangeForm').submit();
+        });
 
         // Function to reload the DataTable with the updated filters
         function reloadTable() {

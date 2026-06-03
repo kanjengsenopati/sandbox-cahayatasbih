@@ -78,8 +78,9 @@ class AdminController extends Controller
         }
         $roles = Role::get();
         $schools = School::orderBy('name')->get();
+        $outlets = \App\Models\Outlet::where('is_active', true)->orderBy('name')->get();
         $adminSchools = [];
-        return view('admins.admin.create-edit', compact('roles', 'schools', 'adminSchools'));
+        return view('admins.admin.create-edit', compact('roles', 'schools', 'outlets', 'adminSchools'));
     }
 
     /**
@@ -151,9 +152,10 @@ class AdminController extends Controller
         }
         $roles = Role::get();
         $schools = School::orderBy('name')->get();
+        $outlets = \App\Models\Outlet::where('is_active', true)->orderBy('name')->get();
         $adminSchools = $admin->adminSchool->pluck('school_id')->toArray();
         $adminRoles = $admin->roles->pluck('id')->toArray();
-        return view('admins.admin.create-edit', compact('admin', 'roles', 'schools', 'adminSchools', 'adminRoles'));
+        return view('admins.admin.create-edit', compact('admin', 'roles', 'schools', 'outlets', 'adminSchools', 'adminRoles'));
     }
 
     /**

@@ -13,6 +13,7 @@ class Item extends Model
 
     protected $fillable = [
         'category_item_id',
+        'outlet_id',
         'code',
         'name',
         'image',
@@ -22,6 +23,11 @@ class Item extends Model
         'stock',
         'is_active',
     ];
+
+    public function outlet()
+    {
+        return $this->belongsTo(Outlet::class);
+    }
 
     // protected $appends = [
     //     'total_selling'

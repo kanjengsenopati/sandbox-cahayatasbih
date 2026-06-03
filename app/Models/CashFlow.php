@@ -21,6 +21,7 @@ class CashFlow extends Model
     protected $fillable = [
         'sender_id',
         'receiver_id',
+        'outlet_id',
         'cash_flow_category_id',
         'payment_code',
         'type',
@@ -32,6 +33,11 @@ class CashFlow extends Model
         'payment_method',
         'reason',
     ];
+
+    public function outlet()
+    {
+        return $this->belongsTo(Outlet::class);
+    }
 
     public function sender()
     {

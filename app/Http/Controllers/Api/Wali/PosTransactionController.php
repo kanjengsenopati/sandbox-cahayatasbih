@@ -12,7 +12,7 @@ class PosTransactionController extends BaseWaliApiController
         $student = $this->resolveActiveStudent();
         if (!$student) return response()->json(['data' => []]);
         
-        $query = PointOfSaleTransaction::with(['pointOfSaleTransactionDetails.item', 'admins'])
+        $query = PointOfSaleTransaction::with(['pointOfSaleTransactionDetails.item', 'admins', 'outlet'])
             ->where('student_id', $student->id)
             ->latest();
             

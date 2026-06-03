@@ -458,6 +458,18 @@
                                     </select>
                                 </div>
 
+                                @if(!auth()->user()->outlet_id)
+                                <div>
+                                    <label class="form-label mb-1 fw-bold text-gray-700 fs-7">Outlet</label>
+                                    <select id="filter_outlet_id_tab2" name="outlet_id" class="form-select" style="border-radius: 12px; min-width: 180px; background-color: #fff; border: 1px solid #ccc; padding: 7px 14px; color: #475569; font-weight: 500;">
+                                        <option value="">Semua Outlet</option>
+                                        @foreach($outlets as $outlet)
+                                            <option value="{{ $outlet->id }}">{{ $outlet->name }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                                @endif
+
                                 <!-- Custom Date Range Picker -->
                                 <div id="wrapper_date_tab2" style="display: none;">
                                     <label class="form-label mb-1 fw-bold text-gray-700 fs-7">Pilih Rentang Tanggal</label>
@@ -750,6 +762,7 @@
                     d.start_date = $('#start_date_tab2').val();
                     d.end_date = $('#end_date_tab2').val();
                     d.academic_year_id = $('#academic_year_tab2').val();
+                    d.outlet_id = $('#filter_outlet_id_tab2').val();
                 }
             },
             language: {
@@ -1039,6 +1052,10 @@
         loadTab2Data();
     });
 
+    $('#filter_outlet_id_tab2').on('change', function() {
+        loadTab2Data();
+    });
+
     // Event listener for Filter Periode Tab 1
     $('#period_tab1').on('change', function() {
         var selected = $(this).val();
@@ -1244,9 +1261,11 @@
         var sd = $('#start_date_tab2').val();
         var ed = $('#end_date_tab2').val();
         var ay = $('#academic_year_tab2').val();
+        var ot = $('#filter_outlet_id_tab2').val();
         if (sd) params.start_date = sd;
         if (ed) params.end_date = ed;
         if (ay) params.academic_year_id = ay;
+        if (ot) params.outlet_id = ot;
 
         axios.get("{{ route('cashflow.index') }}", {
             params: params

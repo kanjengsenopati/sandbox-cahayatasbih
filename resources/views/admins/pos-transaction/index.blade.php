@@ -95,6 +95,17 @@
                                             <option value="UNPAID">Belum Lunas</option>
                                         </select>
                                     </div>
+                                    @if(!auth()->user()->outlet_id)
+                                    <div>
+                                        <label class="form-label">Outlet</label>
+                                        <select name="outlet_id" class="form-select form-select-sm" id="filter_outlet_id">
+                                            <option value="">Semua Outlet</option>
+                                            @foreach ($outlets as $outlet)
+                                            <option value="{{ $outlet->id }}">{{ $outlet->name }}</option>
+                                            @endforeach
+                                        </select>
+                                    </div>
+                                    @endif
                                 </div>
                             </form>
 
@@ -175,6 +186,7 @@
                                     <th>Santri</th>
                                     <th>Jumlah</th>
                                     <th>Kasir</th>
+                                    <th>Outlet</th>
                                     <th>Aksi</th>
                                 </tr>
                             </thead>
@@ -221,10 +233,10 @@
 
         // Event handlers to reload the table
        $(document).ready(function() {
-        $('#filter_school_id, #filter_classroom_id, #filter_admin,#filter_status').on('change',
-            function() {
-                reloadTable();
-            });
+         $('#filter_school_id, #filter_classroom_id, #filter_admin, #filter_status, #filter_outlet_id').on('change',
+             function() {
+                 reloadTable();
+             });
         });
 
         var start = moment().startOf('month');
@@ -281,6 +293,7 @@
                     d.start_date = $('#start_date').val();
                     d.end_date = $('#end_date').val();
                     d.status = $('#filter_status').val();
+                    d.outlet_id = $('#filter_outlet_id').val();
                 }
             },
             columns: [
@@ -298,6 +311,7 @@
                 { data: 'student', name: 'student' },
                 { data: 'pay_amount', name: 'pay_amount' },
                 { data: 'admin', name: 'admin' },
+                { data: 'outlet', name: 'outlet' },
                 { data: 'action', name: 'action' },
             ],
         });
@@ -316,6 +330,7 @@
                 start_date: $('#start_date').val(),
                 end_date: $('#end_date').val(),
                 status: $('#filter_status').val(),
+                outlet_id: $('#filter_outlet_id').val(),
             },
             success: function(response) {
                 $('#total-paid').text('Rp. ' + response.total_paid);

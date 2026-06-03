@@ -37,6 +37,12 @@ class CashFlowController extends Controller
                 ->when(request()->filled('status'), function ($query) {
                     $query->where('status', request()->status);
                 })
+                ->when(auth()->user()->outlet_id, function($q) {
+                    $q->where('outlet_id', auth()->user()->outlet_id);
+                })
+                ->when(!auth()->user()->outlet_id && request()->filled('outlet_id'), function($q) {
+                    $q->where('outlet_id', request()->outlet_id);
+                })
                 ->latest();
 
             return DataTables::of($data)
@@ -63,7 +69,7 @@ class CashFlowController extends Controller
                         'APPROVED' => "<span class='badge bg-success'>Disetujui</span>",
                         'REJECTED' => "<span class='badge bg-danger'>Ditolak - " . $data->reason . "</span>",
                         default => '-',
-                    };
+                     };
                 })
                 ->addColumn('proof', function ($data) {
                     if ($data->proof_of_payment) {
@@ -100,7 +106,8 @@ class CashFlowController extends Controller
         }
 
         $academicYears = \App\Models\AcademicYear::orderBy('name', 'desc')->get();
-        return view('admins.cashflow.index', compact('academicYears'));
+        $outlets = \App\Models\Outlet::orderBy('name')->get();
+        return view('admins.cashflow.index', compact('academicYears', 'outlets'));
     }
 
 
@@ -121,6 +128,7 @@ class CashFlowController extends Controller
     {
         $this->ensureHandoverCategoriesExist();
 
+        $outletId = auth()->user()->outlet_id ?? request()->input('outlet_id');
         $startDate = request()->filled('start_date') ? Carbon::parse(request()->start_date) : null;
         $endDate = request()->filled('end_date') ? Carbon::parse(request()->end_date) : null;
         $academicYearId = request()->filled('academic_year_id') ? request()->academic_year_id : null;
@@ -169,6 +177,7 @@ class CashFlowController extends Controller
         // 2. Pengeluaran & Sisa Saldo
         $totalExpenses = CashFlow::where('type', CashFlow::TYPE_EXPENSE)
             ->where('status', CashFlow::STATUS_APPROVED)
+            ->when($outletId, fn($q) => $q->where('outlet_id', $outletId))
             ->when($startDate, fn($query) => $query->whereDate('date', '>=', $startDate->toDateString()))
             ->when($endDate, fn($query) => $query->whereDate('date', '<=', $endDate->toDateString()))
             ->sum('amount');
@@ -397,13 +406,15 @@ class CashFlowController extends Controller
                 });
             })
             ->join('admins', 'transactions.admin_id', '=', 'admins.id')
+            ->when($outletId, fn($q) => $q->where('admins.outlet_id', $outletId))
             ->select('admins.id', 'admins.name', DB::raw('SUM(transactions.pay_amount) as total_cash'), DB::raw('COUNT(transactions.id) as total_txs'))
             ->groupBy('admins.id', 'admins.name')
             ->get()
-            ->map(function ($officer) {
+            ->map(function ($officer) use ($outletId) {
                 $catPiket = CashFlowCategory::where('name', 'Serah Terima Piket ke Bendahara')->first();
                 $handedOver = CashFlow::where('sender_id', $officer->id)
                     ->where('status', CashFlow::STATUS_APPROVED)
+                    ->when($outletId, fn($q) => $q->where('outlet_id', $outletId))
                     ->when($catPiket, fn($q) => $q->where('cash_flow_category_id', $catPiket->id))
                     ->sum('amount');
                 
@@ -436,21 +447,28 @@ class CashFlowController extends Controller
                     $bq->where('academic_year_id', $academicYearId);
                 });
             })
+            ->join('admins', 'transactions.admin_id', '=', 'admins.id')
+            ->when($outletId, fn($q) => $q->where('admins.outlet_id', $outletId))
             ->sum('transactions.pay_amount');
 
         $totalHandedToBendahara = CashFlow::where('status', CashFlow::STATUS_APPROVED)
+            ->when($outletId, fn($q) => $q->where('outlet_id', $outletId))
             ->when($catPiket, fn($q) => $q->where('cash_flow_category_id', $catPiket->id))
             ->when($startDate, fn($q) => $q->whereDate('date', '>=', $startDate->toDateString()))
             ->when($endDate, fn($q) => $q->whereDate('date', '<=', $endDate->toDateString()))
             ->sum('amount');
 
         $totalHandedToYayasan = CashFlow::where('status', CashFlow::STATUS_APPROVED)
+            ->when($outletId, fn($q) => $q->where('outlet_id', $outletId))
             ->when($catYayasan, fn($q) => $q->where('cash_flow_category_id', $catYayasan->id))
             ->when($startDate, fn($q) => $q->whereDate('date', '>=', $startDate->toDateString()))
             ->when($endDate, fn($q) => $q->whereDate('date', '<=', $endDate->toDateString()))
             ->sum('amount');
 
-        $activeAdmins = Admin::select('id', 'name')->where('id', '!=', Auth::id())->orderBy('name')->get();
+        $activeAdmins = Admin::select('id', 'name')
+            ->where('id', '!=', Auth::id())
+            ->when($outletId, fn($q) => $q->where('outlet_id', $outletId))
+            ->orderBy('name')->get();
 
         $diffPemasukan = $totalIncomes - $totalCashflows;
 
@@ -505,6 +523,9 @@ class CashFlowController extends Controller
         $data['payment_code'] = 'CT-' . now()->format('Ymd') . str_pad($cashflowCount + 1, 3, '0', STR_PAD_LEFT);
         $data['amount'] = preg_replace('/\D/', '', $data['amount']);
         $data['sender_id'] = Auth::id();
+        if (auth()->user()->outlet_id) {
+            $data['outlet_id'] = auth()->user()->outlet_id;
+        }
         $data['status'] = 'PENDING';
         if ($request->hasFile('proof_of_payment')) {
             $data['proof_of_payment'] = 'storage/' . $request->file('proof_of_payment')->store('images/cashflow', ['disk' => 'public']);
@@ -540,6 +561,9 @@ class CashFlowController extends Controller
         $data = $request->validated();
         $data['amount'] = preg_replace('/\D/', '', $data['amount']);
         $data['sender_id'] = Auth::id();
+        if (auth()->user()->outlet_id) {
+            $data['outlet_id'] = auth()->user()->outlet_id;
+        }
         $data['status'] = 'PENDING';
         if ($request->hasFile('proof_of_payment')) {
             $data['proof_of_payment'] = 'storage/' . $request->file('proof_of_payment')->store('images/cashflow', ['disk' => 'public']);

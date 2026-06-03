@@ -23,7 +23,11 @@ class StockHistoryController extends Controller
             return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
         }
         if (request()->ajax()) {
-            $data = StockHistory::with(['item', 'admin'])->latest();
+            $data = StockHistory::with(['item', 'admin'])
+                ->when(auth()->user()->outlet_id, function($q) {
+                    $q->where('outlet_id', auth()->user()->outlet_id);
+                })
+                ->latest();
             return DataTables::of($data)
                 ->addColumn('admin', function ($data) {
                     return $data->admin->name ?? 'Belum Ada Admin';
@@ -73,6 +77,9 @@ class StockHistoryController extends Controller
 
             $data = $request->validated();
             $data['admin_id'] = auth()->user()->id;
+            if (auth()->user()->outlet_id) {
+                $data['outlet_id'] = auth()->user()->outlet_id;
+            }
             $item = Item::findOrFail($data['item_id']);
 
             if ($data['type'] == StockHistory::TYPE_OUT) {
@@ -115,6 +122,9 @@ class StockHistoryController extends Controller
         if (!Auth::user()->can('Edit Barang')) {
             return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
         }
+        if (auth()->user()->outlet_id && $stockHistory->outlet_id !== auth()->user()->outlet_id) {
+            return redirect()->back()->with('error', 'Anda tidak memiliki akses ke data stok outlet lain');
+        }
         return view('admins.stock-history.create-edit', compact('stockHistory'));
     }
 
@@ -126,11 +136,17 @@ class StockHistoryController extends Controller
         if (!Auth::user()->can('Edit Barang')) {
             return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
         }
+        if (auth()->user()->outlet_id && $stockHistory->outlet_id !== auth()->user()->outlet_id) {
+            return redirect()->back()->with('error', 'Anda tidak memiliki akses ke data stok outlet lain');
+        }
         try {
             DB::beginTransaction();
 
             $data = $request->validated();
             $data['admin_id'] = auth()->user()->id;
+            if (auth()->user()->outlet_id) {
+                $data['outlet_id'] = auth()->user()->outlet_id;
+            }
             $item = Item::findOrFail($data['item_id']);
 
             if ($data['type'] == StockHistory::TYPE_OUT) {
@@ -164,6 +180,9 @@ class StockHistoryController extends Controller
     {
         if (!Auth::user()->can('Delete Barang')) {
             return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
+        }
+        if (auth()->user()->outlet_id && $stockHistory->outlet_id !== auth()->user()->outlet_id) {
+            return redirect()->back()->with('error', 'Anda tidak memiliki akses ke data stok outlet lain');
         }
         try {
             DB::beginTransaction();

@@ -31,10 +31,16 @@ class Admin extends Authenticatable
         'is_active',
         'role_id',
         'school_id',
+        'outlet_id',
         'last_login_at',
         'access_scope',
         'fcm_token',
     ];
+
+    public function outlet()
+    {
+        return $this->belongsTo(Outlet::class);
+    }
 
     /**
      * The attributes that should be hidden for serialization.

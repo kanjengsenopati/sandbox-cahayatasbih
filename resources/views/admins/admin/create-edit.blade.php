@@ -137,6 +137,26 @@
                                              </select>
                                              <!--end::Input-->
                                          </div>
+
+                                         <div class="fv-row mb-6">
+                                             <!--begin::Label-->
+                                             <label class="fs-6 fw-bold form-label" for="outlet_id">
+                                                 <span>Outlet PoS (Hanya untuk Admin / Kasir)</span>
+                                                 <i class="fas fa-exclamation-circle ms-1 fs-7" data-bs-toggle="tooltip"
+                                                     title="Pilih outlet tempat kasir bertugas"></i>
+                                             </label>
+                                             <!--end::Label-->
+                                             <!--begin::Input-->
+                                             <select name="outlet_id" class="form-select form-select-solid mb-3"
+                                                 id="outlet_id" data-control="select2" data-placeholder="-- Pilih Outlet --" data-allow-clear="true">
+                                                 <option></option>
+                                                 @foreach ($outlets as $outlet)
+                                                 <option value="{{ $outlet->id }}" @if (old('outlet_id', @$admin->outlet_id) == $outlet->id) selected @endif>
+                                                     {{ $outlet->name }}</option>
+                                                 @endforeach
+                                             </select>
+                                             <!--end::Input-->
+                                         </div>
                                      </div>
 
                                      <div class="col-md-6">

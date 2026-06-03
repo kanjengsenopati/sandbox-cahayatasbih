@@ -22,6 +22,7 @@ class PointOfSaleTransaction extends Model
     protected $fillable = [
         'student_id',
         'admin_id',
+        'outlet_id',
         'saldo_history_id',
         'payment_code',
         'pay_amount',
@@ -30,6 +31,11 @@ class PointOfSaleTransaction extends Model
         'profit',
         'type',
     ];
+
+    public function outlet()
+    {
+        return $this->belongsTo(Outlet::class);
+    }
 
     protected $casts = [
         'paid_at' => 'datetime',

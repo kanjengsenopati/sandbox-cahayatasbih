@@ -26,7 +26,11 @@ class ItemController extends Controller
             return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
         }
         if (request()->ajax()) {
-            $data = Item::with('categoryItem')->latest();
+            $data = Item::with('categoryItem')
+                ->when(auth()->user()->outlet_id, function($q) {
+                    $q->where('outlet_id', auth()->user()->outlet_id);
+                })
+                ->latest();
             return DataTables::of($data)
                 ->addColumn('status', function ($data) {
                     return $data->is_active == 1 ? '<span class="badge badge-success">Aktif</span>' :
@@ -72,6 +76,9 @@ class ItemController extends Controller
         if ($request->hasFile('image')) {
             $data['image'] = 'storage/' . $request->file('image')->store('images/item', 'public');
         }
+        if (auth()->user()->outlet_id) {
+            $data['outlet_id'] = auth()->user()->outlet_id;
+        }
         Item::create($data);
         return redirect()->route('item.index')->with('success', 'Barang berhasil ditambahkan');
     }
@@ -92,6 +99,9 @@ class ItemController extends Controller
         if (!Auth::user()->can('Edit Barang')) {
             return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
         }
+        if (auth()->user()->outlet_id && $item->outlet_id !== auth()->user()->outlet_id) {
+            return redirect()->back()->with('error', 'Anda tidak memiliki akses ke barang outlet lain');
+        }
         return view('admins.item.create-edit', compact('item'));
     }
 
@@ -102,6 +112,9 @@ class ItemController extends Controller
     {
         if (!Auth::user()->can('Edit Barang')) {
             return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
+        }
+        if (auth()->user()->outlet_id && $item->outlet_id !== auth()->user()->outlet_id) {
+            return redirect()->back()->with('error', 'Anda tidak memiliki akses ke barang outlet lain');
         }
         $data = $request->validated();
         if ($request->hasFile('image')) {
@@ -122,6 +135,9 @@ class ItemController extends Controller
         if (!Auth::user()->can('Delete Barang')) {
             return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
         }
+        if (auth()->user()->outlet_id && $item->outlet_id !== auth()->user()->outlet_id) {
+            return redirect()->back()->with('error', 'Anda tidak memiliki akses ke barang outlet lain');
+        }
         file_exists($item->image) ? unlink($item->image) : null;
         $item->delete();
 
@@ -132,11 +148,15 @@ class ItemController extends Controller
 
     public function searchItem(Request $request)
     {
+        $outletId = auth()->user()->outlet_id;
         if (!$request->search) {
-            $cacheKey = 'top_10_items_last_month';
+            $cacheKey = 'top_10_items_last_month_' . ($outletId ?? 'all');
 
-            $items = Cache::remember($cacheKey, now()->addDays(30), function () {
+            $items = Cache::remember($cacheKey, now()->addDays(30), function () use ($outletId) {
                 return Item::where('stock', '>', 0)
+                    ->when($outletId, function($q) use ($outletId) {
+                        $q->where('outlet_id', $outletId);
+                    })
                     ->where('is_active', true)
                     ->orderBy('stock', 'asc') // Order by stock in ascending order
                     ->limit(10)
@@ -155,7 +175,13 @@ class ItemController extends Controller
 
     public function searchItemCode(Request $request)
     {
-        $item = Item::whereCode($request->search)->whereIsActive(true)->first();
+        $outletId = auth()->user()->outlet_id;
+        $item = Item::whereCode($request->search)
+            ->whereIsActive(true)
+            ->when($outletId, function($q) use ($outletId) {
+                $q->where('outlet_id', $outletId);
+            })
+            ->first();
         if (!$item) {
             return $this->postSuccessResponse("Produk tidak ditemukan", null);
         }
@@ -165,9 +191,13 @@ class ItemController extends Controller
     public function searchItemName(Request $request)
     {
         $searchTerm = strtolower($request->search);
+        $outletId = auth()->user()->outlet_id;
 
         // Limit the number of items returned to 15
         $items = Item::whereIsActive(true)
+            ->when($outletId, function($q) use ($outletId) {
+                $q->where('outlet_id', $outletId);
+            })
             ->whereRaw('LOWER(name) LIKE ?', ['%' . $searchTerm . '%'])
             ->limit(15) // Add this line to limit the results
             ->get();
