@@ -71,12 +71,11 @@
                                     <thead>
                                         <tr class="text-start text-gray-400 fw-bolder fs-7 text-uppercase gs-0">
                                             <th style="width: 5%">No</th>
-                                            <th class="min-w-100px">Kategori</th>
                                             <th class="min-w-100px">Kode Barang</th>
                                             <th class="min-w-150px">Nama Barang</th>
                                             <th class="min-w-100px">Harga</th>
                                             <th class="min-w-80px">Stok</th>
-                                            <th class="min-w-80px">Status</th>
+                                            <th class="min-w-100px">Outlet</th>
                                             <th class="text-center min-w-100px">Aksi</th>
                                         </tr>
                                     </thead>
@@ -103,6 +102,7 @@
                                             <th style="width: 5%">No</th>
                                             <th class="min-w-150px">Kode</th>
                                             <th>Nama</th>
+                                            <th class="min-w-150px">Outlet</th>
                                             <th class="text-center min-w-100px">Aksi</th>
                                         </tr>
                                     </thead>
@@ -132,6 +132,7 @@
                                             <th class="min-w-150px">Nama Barang</th>
                                             <th class="min-w-80px">Jumlah</th>
                                             <th class="min-w-100px">Admin</th>
+                                            <th class="min-w-150px">Outlet</th>
                                             <th class="text-center min-w-100px">Aksi</th>
                                         </tr>
                                     </thead>
@@ -209,13 +210,6 @@
                     }
                 },
                 {
-                    data: 'category',
-                    name: 'category',
-                    render: function(data) {
-                        return data ? data : 'N/A';
-                    }
-                },
-                {
                     data: 'code',
                     name: 'code',
                     render: function(data) {
@@ -253,8 +247,8 @@
                     }
                 },
                 {
-                    data: 'status',
-                    name: 'status',
+                    data: 'outlet',
+                    name: 'outlet',
                     render: function(data) {
                         return data ? data : 'N/A';
                     }
@@ -301,6 +295,13 @@
                 {
                     data: 'name',
                     name: 'name'
+                },
+                {
+                    data: 'outlet',
+                    name: 'outlet',
+                    render: function(data) {
+                        return data ? data : 'N/A';
+                    }
                 },
                 {
                     data: 'action',
@@ -353,6 +354,13 @@
                 {
                     data: 'admin',
                     name: 'admin'
+                },
+                {
+                    data: 'outlet',
+                    name: 'outlet',
+                    render: function(data) {
+                        return data ? data : 'N/A';
+                    }
                 },
                 {
                     data: 'action',

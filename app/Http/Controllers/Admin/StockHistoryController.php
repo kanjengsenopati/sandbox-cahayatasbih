@@ -24,7 +24,7 @@ class StockHistoryController extends Controller
             return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
         }
         if (request()->ajax()) {
-            $data = StockHistory::with(['item', 'admin'])
+            $data = StockHistory::with(['item', 'admin', 'outlet'])
                 ->when(auth()->user()->outlet_id, function($q) {
                     $q->where('outlet_id', auth()->user()->outlet_id);
                 })
@@ -32,6 +32,9 @@ class StockHistoryController extends Controller
             return DataTables::of($data)
                 ->addColumn('admin', function ($data) {
                     return $data->admin->name ?? 'Belum Ada Admin';
+                })
+                ->addColumn('outlet', function ($data) {
+                    return $data->outlet->name ?? 'N/A';
                 })
                 ->addColumn('item_category', function ($data) {
                     return $data->item->categoryItem->name ?? 'Belum Ada Kategori';

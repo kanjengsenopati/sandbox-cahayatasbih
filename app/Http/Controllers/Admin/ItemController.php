@@ -27,18 +27,17 @@ class ItemController extends Controller
             return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
         }
         if (request()->ajax()) {
-            $data = Item::with('categoryItem')
+            $data = Item::with(['categoryItem', 'outlet'])
                 ->when(auth()->user()->outlet_id, function($q) {
                     $q->where('outlet_id', auth()->user()->outlet_id);
                 })
                 ->latest();
             return DataTables::of($data)
-                ->addColumn('status', function ($data) {
-                    return $data->is_active == 1 ? '<span class="badge badge-success">Aktif</span>' :
-                        '<span class="badge badge-danger">Tidak Aktif</span>';
-                })
                 ->addColumn('category', function ($data) {
-                    return $data?->categoryItem?->name ?? 'N/A';
+                    return $data->categoryItem->name ?? 'N/A';
+                })
+                ->addColumn('outlet', function ($data) {
+                    return $data->outlet->name ?? 'N/A';
                 })
                 ->addColumn('action', function ($data) {
                     $actionEdit = route('item.edit', $data->id);
@@ -48,7 +47,7 @@ class ItemController extends Controller
                         view('components.action.delete', ['action' => $actionDelete, 'id' => $data->id, 'name' => 'Barang']) .
                         "</div>";
                 })
-                ->rawColumns(['action', 'status', 'category'])
+                ->rawColumns(['action'])
                 ->make(true);
         }
         return view('admins.item.index');

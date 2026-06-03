@@ -21,8 +21,11 @@ class CategoryItemController extends Controller
             return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
         }
         if (request()->ajax()) {
-            $data = CategoryItem::latest();
+            $data = CategoryItem::with('outlet')->latest();
             return DataTables::of($data)
+                ->addColumn('outlet', function ($data) {
+                    return $data->outlet->name ?? 'N/A';
+                })
                 ->addColumn('action', function ($data) {
                     $actionEdit = route('category-item.edit', $data->id);
                     $actionDelete = route('category-item.destroy', $data->id);
