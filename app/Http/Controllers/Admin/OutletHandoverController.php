@@ -21,7 +21,7 @@ class OutletHandoverController extends Controller
         }
 
         if ($request->ajax()) {
-            $query = OutletHandover::with(['outlet', 'creator'])
+            $query = OutletHandover::with(['outlet', 'recipientOutlet', 'recipient', 'creator'])
                 ->when(auth()->user()->outlet_id, function ($q) {
                     $q->where('outlet_id', auth()->user()->outlet_id);
                 })
@@ -41,7 +41,9 @@ class OutletHandoverController extends Controller
                     return 'Rp ' . number_format($data->amount, 0, ',', '.');
                 })
                 ->addColumn('recipient', function ($data) {
-                    return $data->recipient_name;
+                    $recipientPerson = $data->recipient?->name ?? $data->recipient_name ?? '-';
+                    $recipientOutlet = $data->recipientOutlet?->name ?? '-';
+                    return "$recipientPerson ($recipientOutlet)";
                 })
                 ->addColumn('evidence', function ($data) {
                     if ($data->evidence_path) {
@@ -79,15 +81,19 @@ class OutletHandoverController extends Controller
 
         $request->validate([
             'outlet_id' => 'required|exists:outlets,id',
+            'recipient_outlet_id' => 'required|exists:outlets,id|different:outlet_id',
+            'recipient_id' => 'required|exists:admins,id',
             'amount' => 'required|numeric|min:1',
             'handover_date' => 'required|date',
-            'recipient_name' => 'required|string|max:255',
             'evidence' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
             'notes' => 'nullable|string',
         ]);
 
         try {
-            $data = $request->only(['outlet_id', 'amount', 'handover_date', 'recipient_name', 'notes']);
+            $adminRecipient = \App\Models\Admin::findOrFail($request->recipient_id);
+
+            $data = $request->only(['outlet_id', 'recipient_outlet_id', 'recipient_id', 'amount', 'handover_date', 'notes']);
+            $data['recipient_name'] = $adminRecipient->name;
             $data['created_by'] = auth()->user()->id;
 
             if ($request->hasFile('evidence')) {
@@ -132,15 +138,38 @@ class OutletHandoverController extends Controller
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 
-        $totalSales = PointOfSaleTransaction::where('outlet_id', $outletId)
-            ->where('status', 'SUCCESS')
-            ->where('type', PointOfSaleTransaction::TYPE_SANTRI)
-            ->sum('pay_amount');
+        $outlet = Outlet::findOrFail($outletId);
+        $isMainOutlet = in_array(strtoupper($outlet->code), ['KPR', 'KOPERASI']) || strtoupper($outlet->name) === 'KOPERASI';
 
-        $totalHandovers = OutletHandover::where('outlet_id', $outletId)
-            ->sum('amount');
+        if ($isMainOutlet) {
+            // Main outlet (Koperasi):
+            // Pending amount is the sum of child outlets' pending amounts
+            $childOutlets = Outlet::whereNotIn('id', [$outletId])->get();
+            $pendingAmount = 0;
+            foreach ($childOutlets as $child) {
+                $childSales = PointOfSaleTransaction::where('outlet_id', $child->id)
+                    ->where('status', 'SUCCESS')
+                    ->where('type', PointOfSaleTransaction::TYPE_SANTRI)
+                    ->sum('pay_amount');
+                
+                $childReceived = OutletHandover::where('recipient_outlet_id', $child->id)
+                    ->sum('amount');
 
-        $pendingAmount = max(0, $totalSales - $totalHandovers);
+                $pendingAmount += max(0, $childSales - $childReceived);
+            }
+        } else {
+            // Child outlet:
+            // Pending amount is its own sales minus handovers received from Koperasi
+            $totalSales = PointOfSaleTransaction::where('outlet_id', $outletId)
+                ->where('status', 'SUCCESS')
+                ->where('type', PointOfSaleTransaction::TYPE_SANTRI)
+                ->sum('pay_amount');
+
+            $totalReceived = OutletHandover::where('recipient_outlet_id', $outletId)
+                ->sum('amount');
+
+            $pendingAmount = max(0, $totalSales - $totalReceived);
+        }
 
         return response()->json([
             'status' => 'success',

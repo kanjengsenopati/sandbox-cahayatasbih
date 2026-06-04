@@ -13,6 +13,8 @@ class OutletHandover extends Model
 
     protected $fillable = [
         'outlet_id',
+        'recipient_outlet_id',
+        'recipient_id',
         'amount',
         'handover_date',
         'recipient_name',
@@ -29,6 +31,16 @@ class OutletHandover extends Model
     public function outlet()
     {
         return $this->belongsTo(Outlet::class);
+    }
+
+    public function recipientOutlet()
+    {
+        return $this->belongsTo(Outlet::class, 'recipient_outlet_id');
+    }
+
+    public function recipient()
+    {
+        return $this->belongsTo(Admin::class, 'recipient_id')->withTrashed();
     }
 
     public function creator()

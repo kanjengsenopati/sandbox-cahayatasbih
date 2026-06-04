@@ -312,14 +312,51 @@ class PosTransactionController extends Controller
 
         // Rekap Dana Per Outlet (untuk Tab Serah Terima)
         $outletsSummary = [];
+        
+        // Find main outlet (Koperasi)
+        $mainOutlet = $outlets->first(fn($ot) => in_array(strtoupper($ot->code), ['KPR', 'KOPERASI']) || strtoupper($ot->name) === 'KOPERASI');
+        $mainOutletId = $mainOutlet?->id;
+
+        // Pre-calculate sales, received handovers, and sent handovers for all outlets
+        $salesByOutlet = [];
+        $receivedHandoversByOutlet = [];
+        $sentHandoversByOutlet = [];
+
         foreach ($outlets as $ot) {
-            $totalSales = PointOfSaleTransaction::where('outlet_id', $ot->id)
+            $salesByOutlet[$ot->id] = PointOfSaleTransaction::where('outlet_id', $ot->id)
                 ->where('status', PointOfSaleTransaction::STATUS_SUCCESS)
                 ->where('type', PointOfSaleTransaction::TYPE_SANTRI)
                 ->sum('pay_amount');
 
-            $totalHandovers = OutletHandover::where('outlet_id', $ot->id)
+            $receivedHandoversByOutlet[$ot->id] = OutletHandover::where('recipient_outlet_id', $ot->id)
                 ->sum('amount');
+
+            $sentHandoversByOutlet[$ot->id] = OutletHandover::where('outlet_id', $ot->id)
+                ->sum('amount');
+        }
+
+        // Calculate pending amount based on parent-child logic
+        foreach ($outlets as $ot) {
+            $totalSales = $salesByOutlet[$ot->id] ?? 0;
+
+            if ($mainOutletId && $ot->id == $mainOutletId) {
+                // Main outlet (Koperasi):
+                // Pending amount is the sum of child outlets' pending amounts
+                $pendingAmount = 0;
+                foreach ($outlets as $childOt) {
+                    if ($childOt->id != $mainOutletId) {
+                        $childSales = $salesByOutlet[$childOt->id] ?? 0;
+                        $childReceived = $receivedHandoversByOutlet[$childOt->id] ?? 0;
+                        $pendingAmount += max(0, $childSales - $childReceived);
+                    }
+                }
+                $totalHandovers = $sentHandoversByOutlet[$ot->id] ?? 0;
+            } else {
+                // Child outlet:
+                // Pending amount is its own sales minus handovers received from Koperasi
+                $totalHandovers = $receivedHandoversByOutlet[$ot->id] ?? 0;
+                $pendingAmount = max(0, $totalSales - $totalHandovers);
+            }
 
             $outletsSummary[] = [
                 'id' => $ot->id,
@@ -327,7 +364,7 @@ class PosTransactionController extends Controller
                 'code' => $ot->code,
                 'total_sales' => $totalSales,
                 'total_handovers' => $totalHandovers,
-                'pending_amount' => max(0, $totalSales - $totalHandovers),
+                'pending_amount' => $pendingAmount,
             ];
         }
 
@@ -370,6 +407,8 @@ class PosTransactionController extends Controller
         $totalSales = (clone $transactionQueryGlobal)->sum('pay_amount');
         $totalIncome = (clone $transactionQueryGlobal)->sum('profit');
 
+        $admins = \App\Models\Admin::orderBy('name')->get();
+
         return view('admins.pos-transaction.index', compact(
             'outlets', 
             'rekapWaktu', 
@@ -381,7 +420,8 @@ class PosTransactionController extends Controller
             'totalProduct',
             'totalTransaction',
             'totalSales',
-            'totalIncome'
+            'totalIncome',
+            'admins'
         ));
     }
 

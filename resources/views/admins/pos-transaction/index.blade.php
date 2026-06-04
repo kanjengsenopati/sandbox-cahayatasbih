@@ -462,13 +462,32 @@
                 <div class="modal-body py-6">
                     <x-alert.alert-validation />
                     
-                    <!-- Pilihan Outlet -->
+                    <!-- Pilihan Outlet Pengirim -->
                     <div class="mb-4">
-                        <label class="form-label fw-bold text-slate-700 fs-7">Pilih Outlet</label>
+                        <label class="form-label fw-bold text-slate-700 fs-7">Outlet Pengirim (Sumber)</label>
                         <select name="outlet_id" id="handover_form_outlet_id" class="form-select form-select-solid rounded-3" required>
-                            <option value="">-- Pilih Outlet --</option>
+                            <option value="">-- Pilih Outlet Pengirim --</option>
                             @foreach ($outlets as $outlet)
-                                <option value="{{ $outlet->id }}">{{ $outlet->name }}</option>
+                                @php
+                                    $isMain = in_array(strtoupper($outlet->code), ['KPR', 'KOPERASI']) || strtoupper($outlet->name) === 'KOPERASI';
+                                @endphp
+                                <option value="{{ $outlet->id }}" @if($isMain) selected @endif>{{ $outlet->name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    <!-- Pilihan Outlet Penerima -->
+                    <div class="mb-4">
+                        <label class="form-label fw-bold text-slate-700 fs-7">Outlet Penerima</label>
+                        <select name="recipient_outlet_id" id="handover_form_recipient_outlet_id" class="form-select form-select-solid rounded-3" required>
+                            <option value="">-- Pilih Outlet Penerima --</option>
+                            @foreach ($outlets as $outlet)
+                                @php
+                                    $isMain = in_array(strtoupper($outlet->code), ['KPR', 'KOPERASI']) || strtoupper($outlet->name) === 'KOPERASI';
+                                @endphp
+                                @if(!$isMain)
+                                    <option value="{{ $outlet->id }}">{{ $outlet->name }}</option>
+                                @endif
                             @endforeach
                         </select>
                     </div>
@@ -478,19 +497,24 @@
                         <label class="form-label fw-bold text-slate-700 fs-7">Nominal Serah Terima (Rp)</label>
                         <input type="text" id="handover_form_amount_display" class="form-control form-control-solid rounded-3 input-money" placeholder="0" required>
                         <input type="hidden" name="amount" id="handover_form_amount_real">
-                        <span class="fs-8 text-muted italic d-block mt-1" id="handover_suggestion_text">Pilih outlet untuk melihat rekomendasi nominal.</span>
+                        <span class="fs-8 text-muted italic d-block mt-1" id="handover_suggestion_text">Pilih outlet penerima untuk melihat rekomendasi nominal.</span>
                     </div>
 
-                    <!-- Nama Pemilik / Penerima -->
+                    <!-- Penerima Dana -->
                     <div class="mb-4">
-                        <label class="form-label fw-bold text-slate-700 fs-7">Nama Penerima / Pemilik Outlet</label>
-                        <input type="text" name="recipient_name" class="form-control form-control-solid rounded-3" placeholder="Masukkan nama penerima dana" required>
+                        <label class="form-label fw-bold text-slate-700 fs-7">Penerima Dana (Staff/Kasir)</label>
+                        <select name="recipient_id" class="form-select form-select-solid rounded-3" required>
+                            <option value="">-- Pilih Penerima --</option>
+                            @foreach ($admins as $admin)
+                                <option value="{{ $admin->id }}">{{ $admin->name }}</option>
+                            @endforeach
+                        </select>
                     </div>
 
                     <!-- Tanggal Serah Terima -->
                     <div class="mb-4">
                         <label class="form-label fw-bold text-slate-700 fs-7">Tanggal Serah Terima</label>
-                        <input type="date" name="handover_date" class="form-control form-control-solid rounded-3" value="{{ date('YYYY-MM-DD') }}" required>
+                        <input type="date" name="handover_date" class="form-control form-control-solid rounded-3" value="{{ date('Y-m-d') }}" required>
                     </div>
 
                     <!-- Unggah Bukti Bayar -->
@@ -709,8 +733,8 @@
             }
         });
 
-        // Deteksi pergantian outlet pada form serah terima dana untuk hitung sisa nominal secara dinamis
-        $('#handover_form_outlet_id').on('change', function() {
+        // Deteksi pergantian outlet penerima pada form serah terima dana untuk hitung sisa nominal secara dinamis
+        $('#handover_form_recipient_outlet_id').on('change', function() {
             var outletId = $(this).val();
             if (outletId) {
                 $('#handover_suggestion_text').html('<i class="fas fa-spinner fa-spin me-1"></i> Menghitung sisa dana...');
@@ -720,9 +744,10 @@
                     success: function(response) {
                         if (response.status === 'success') {
                             var pending = response.pending_amount;
+                            // Set dynamic recommendation
                             $('#handover_form_amount_display').val(pending.toLocaleString('id-ID'));
                             $('#handover_form_amount_real').val(pending);
-                            $('#handover_suggestion_text').html('Sisa dana outlet yang belum diserahkan: <strong>Rp ' + response.pending_amount_formatted + '</strong>');
+                            $('#handover_suggestion_text').html('Sisa dana outlet penerima yang belum diserahkan: <strong>Rp ' + response.pending_amount_formatted + '</strong>');
                         }
                     },
                     error: function() {
@@ -732,7 +757,7 @@
             } else {
                 $('#handover_form_amount_display').val('0');
                 $('#handover_form_amount_real').val('0');
-                $('#handover_suggestion_text').text('Pilih outlet untuk melihat rekomendasi nominal.');
+                $('#handover_suggestion_text').text('Pilih outlet penerima untuk melihat rekomendasi nominal.');
             }
         });
 
