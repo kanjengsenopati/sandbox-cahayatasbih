@@ -510,7 +510,7 @@
                 'Manage Laporan Transaksi'])
                 <div data-kt-menu-trigger="click" class="menu-item menu-accordion {{ request()->routeIs(['report-bill.*', 'report-student.*','report-tahfidz.*',
                     'report-student-counseling-score.*', 'report-app-fee.*',
-                    'report-saldo.*', 'report-study-grade.*', 'order-item-history.*', 'report-transaction.*', 'report-bill-student.*'
+                    'report-saldo.*', 'report-study-grade.*', 'order-item-history.*', 'report-transaction.*', 'report-bill-student.*', 'pos-transaction.*'
                     ]) ? 'show' : '' }}">
                     <span class="menu-link ">
                         <span class="menu-icon">
@@ -529,6 +529,17 @@
                                     <span class="bullet bullet-dot"></span>
                                 </span>
                                 <span class="menu-title">POS Kasir</span>
+                            </a>
+                        </div>
+                        @endcan
+                        @can('Manage Laporan Transaksi')
+                        <div class="menu-item ">
+                            <a class="menu-link {{ request()->routeIs('pos-transaction.*') ? ' active' : '' }}"
+                                href="{{ route('pos-transaction.index') }}">
+                                <span class="menu-bullet">
+                                    <span class="bullet bullet-dot"></span>
+                                </span>
+                                <span class="menu-title">Laporan POS Multi Outlet</span>
                             </a>
                         </div>
                         @endcan
