@@ -26,6 +26,7 @@ class SaldoHistory extends Model
 
     protected $fillable = [
         'student_id',
+        'outlet_id',
         'type',
         'amount',
         'description',
@@ -38,6 +39,11 @@ class SaldoHistory extends Model
     public function student()
     {
         return $this->belongsTo(Student::class)->withTrashed();
+    }
+
+    public function outlet()
+    {
+        return $this->belongsTo(Outlet::class)->withTrashed();
     }
 
     public function pointOfSaleTransaction()

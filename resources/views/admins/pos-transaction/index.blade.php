@@ -79,10 +79,17 @@
                     </button>
                 </li>
                 <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="stats-tab" data-bs-toggle="tab" data-bs-target="#stats-pane" type="button" role="tab" aria-controls="stats-pane" aria-selected="false">
+                        <i class="fa-solid fa-chart-column me-2"></i> Statistik & Ringkasan
+                    </button>
+                </li>
+                @canany(['Manage Laporan Pos Multi Outlet', 'Manage Laporan Pos Kasir'])
+                <li class="nav-item" role="presentation">
                     <button class="nav-link" id="handover-tab" data-bs-toggle="tab" data-bs-target="#handover-pane" type="button" role="tab" aria-controls="handover-pane" aria-selected="false">
                         <i class="fa-solid fa-handshake-angle me-2"></i> Serah Terima Dana
                     </button>
                 </li>
+                @endcanany
             </ul>
 
             <!-- Isi Tab Utama -->
@@ -243,6 +250,97 @@
                     </div>
                 </div>
 
+                <!-- TAB STATISTIK & RINGKASAN -->
+                <div class="tab-pane fade" id="stats-pane" role="tabpanel" aria-labelledby="stats-tab">
+                    <!-- GRID REKAP TOTAL -->
+                    <div class="row g-6 mb-6">
+                        <!-- Total Produk -->
+                        <div class="col-md-3">
+                            <div class="card premium-card bg-white p-6" style="border-radius: 24px; box-shadow: 0 8px 30px rgb(0,0,0,0.04);">
+                                <div class="d-flex align-items-center justify-content-between mb-4">
+                                    <x-text.label class="text-slate-400">Total Produk</x-text.label>
+                                    <span class="badge bg-light-primary text-primary px-3 py-2 fw-bold rounded-pill"><i class="fa-solid fa-box text-primary fs-7"></i></span>
+                                </div>
+                                <div class="mb-2">
+                                    <x-text.caption class="text-slate-400">Jumlah Produk Aktif</x-text.caption>
+                                    <div class="fs-2 fw-bold text-slate-800">{{ number_format($totalProduct, 0, ',', '.') }}</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Total Transaksi -->
+                        <div class="col-md-3">
+                            <div class="card premium-card bg-white p-6" style="border-radius: 24px; box-shadow: 0 8px 30px rgb(0,0,0,0.04);">
+                                <div class="d-flex align-items-center justify-content-between mb-4">
+                                    <x-text.label class="text-slate-400">Total Transaksi</x-text.label>
+                                    <span class="badge bg-light-success text-success px-3 py-2 fw-bold rounded-pill"><i class="fa-solid fa-cash-register text-success fs-7"></i></span>
+                                </div>
+                                <div class="mb-2">
+                                    <x-text.caption class="text-slate-400">Transaksi Sukses</x-text.caption>
+                                    <div class="fs-2 fw-bold text-slate-800">{{ number_format($totalTransaction, 0, ',', '.') }}</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Total Penjualan -->
+                        <div class="col-md-3">
+                            <div class="card premium-card bg-white p-6" style="border-radius: 24px; box-shadow: 0 8px 30px rgb(0,0,0,0.04);">
+                                <div class="d-flex align-items-center justify-content-between mb-4">
+                                    <x-text.label class="text-slate-400">Total Omzet</x-text.label>
+                                    <span class="badge bg-light-danger text-danger px-3 py-2 fw-bold rounded-pill"><i class="fa-solid fa-hand-holding-usd text-danger fs-7"></i></span>
+                                </div>
+                                <div class="mb-2">
+                                    <x-text.caption class="text-slate-400">Total Nilai Penjualan</x-text.caption>
+                                    <x-text.amount>Rp {{ number_format($totalSales, 0, ',', '.') }}</x-text.amount>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Total Pendapatan -->
+                        <div class="col-md-3">
+                            <div class="card premium-card bg-white p-6" style="border-radius: 24px; box-shadow: 0 8px 30px rgb(0,0,0,0.04);">
+                                <div class="d-flex align-items-center justify-content-between mb-4">
+                                    <x-text.label class="text-slate-400">Total Keuntungan</x-text.label>
+                                    <span class="badge bg-light-warning text-warning px-3 py-2 fw-bold rounded-pill"><i class="fa-solid fa-coins text-warning fs-7"></i></span>
+                                </div>
+                                <div class="mb-2">
+                                    <x-text.caption class="text-slate-400">Estimasi Laba Bersih</x-text.caption>
+                                    <x-text.amount>Rp {{ number_format($totalIncome, 0, ',', '.') }}</x-text.amount>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- GRAFIK DAN PRODUK TERLARIS -->
+                    <div class="row g-6 mb-6">
+                        <div class="col-lg-8">
+                            <div class="card premium-card bg-white p-6" style="border-radius: 24px; box-shadow: 0 8px 30px rgb(0,0,0,0.04);">
+                                <div id="chart-container" style="width: 100%; height: 400px;"></div>
+                            </div>
+                        </div>
+                        <div class="col-lg-4">
+                            <div class="card premium-card bg-white p-6" style="border-radius: 24px; box-shadow: 0 8px 30px rgb(0,0,0,0.04); min-height: 448px;">
+                                <div class="d-flex align-items-center justify-content-between mb-4">
+                                    <x-text.h2>Produk Terlaris (Top 10)</x-text.h2>
+                                </div>
+                                <div class="table-responsive">
+                                    <table id="table-top-items" class="table align-middle table-row-dashed fs-7 gy-4">
+                                        <thead>
+                                            <tr class="text-start text-gray-400 fw-bold fs-8 text-uppercase gs-0">
+                                                <th style="width: 10%">No</th>
+                                                <th>Nama Produk</th>
+                                                <th class="text-end">Terjual</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody class="text-gray-600 fw-semibold"></tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                @canany(['Manage Laporan Pos Multi Outlet', 'Manage Laporan Pos Kasir'])
                 <!-- TAB 2: SERAH TERIMA DANA -->
                 <div class="tab-pane fade" id="handover-pane" role="tabpanel" aria-labelledby="handover-tab">
                     
@@ -338,6 +436,7 @@
                     </div>
 
                 </div>
+                @endcanany
 
             </div>
 
@@ -346,6 +445,7 @@
     <!--end::Post-->
 </div>
 
+@can('Create Laporan Pos Multi Outlet')
 <!-- MODAL TAMBAH SERAH TERIMA DANA -->
 <div class="modal fade" id="modal-add-handover" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered mw-500px">
@@ -415,10 +515,12 @@
         </div>
     </div>
 </div>
+@endcan
 
 @endsection
 
 @push('js')
+<script src="https://code.highcharts.com/highcharts.js"></script>
 <script>
     var transactionTable;
     var handoverTable;
@@ -456,18 +558,155 @@
 
         // Load Tables
         initializeTransactionTable();
-        initializeHandoverTable();
+        if ($('#table-handovers').length) {
+            initializeHandoverTable();
+        }
+
+        // Initialize Top Items table
+        var tableTopItems = $('#table-top-items').DataTable({
+            ordering: false,
+            processing: true,
+            serverSide: true,
+            searching: false,
+            paging: false,
+            info: false,
+            ajax: {
+                url: '{{ route('pos-transaction.index') }}',
+                data: function(d) {
+                    d.type = 'top-items';
+                    d.start_date = $('#start_date').val();
+                    d.end_date = $('#end_date').val();
+                    d.outlet_id = $('#filter_outlet_id').val();
+                }
+            },
+            columns: [
+                {
+                    data: null,
+                    sortable: false,
+                    searchable: false,
+                    render: function(data, type, row, meta) {
+                        return meta.row + 1;
+                    }
+                },
+                { data: 'name', name: 'name' },
+                { 
+                    data: 'total_transaction', 
+                    name: 'total_transaction',
+                    className: 'text-end fw-bold text-slate-700'
+                }
+            ]
+        });
+
+        // Initialize Highcharts Chart
+        var categories = @json($chartIncomesCategories);
+        var omzet = @json($chartCashierOmzet);
+        var profit = @json($chartCashierProfit);
+
+        var options = {
+            chart: {
+                type: 'column',
+                style: {
+                    fontFamily: 'Inter, sans-serif'
+                }
+            },
+            title: {
+                text: 'Grafik Omzet dan Profit POS',
+                align: 'left',
+                style: {
+                    fontWeight: 'bold',
+                    color: '#1e293b'
+                }
+            },
+            xAxis: {
+                categories: categories,
+                crosshair: true,
+                labels: {
+                    style: {
+                        color: '#64748b'
+                    }
+                }
+            },
+            yAxis: [{
+                title: {
+                    text: 'Omzet (Rp)',
+                    style: {
+                        color: '#2563eb'
+                    }
+                },
+                labels: {
+                    formatter: function() {
+                        return 'Rp ' + this.value.toLocaleString('id-ID');
+                    },
+                    style: {
+                        color: '#64748b'
+                    }
+                }
+            }, {
+                title: {
+                    text: 'Profit (Rp)',
+                    style: {
+                        color: '#10b981'
+                    }
+                },
+                labels: {
+                    formatter: function() {
+                        return 'Rp ' + this.value.toLocaleString('id-ID');
+                    },
+                    style: {
+                        color: '#64748b'
+                    }
+                },
+                opposite: true
+            }],
+            tooltip: {
+                shared: true,
+                useHTML: true,
+                formatter: function() {
+                    var s = '<b>' + this.x + '</b><br/>';
+                    $.each(this.points, function(i, point) {
+                        s += '<span style="color:' + point.color + '">\u25CF</span> ' + point.series.name + ': <b>Rp ' + point.y.toLocaleString('id-ID') + '</b><br/>';
+                    });
+                    return s;
+                }
+            },
+            plotOptions: {
+                column: {
+                    pointPadding: 0.2,
+                    borderWidth: 0,
+                    borderRadius: 4
+                }
+            },
+            series: [{
+                name: 'Omzet',
+                data: omzet,
+                color: '#2563eb'
+            }, {
+                name: 'Profit',
+                data: profit,
+                color: '#10b981',
+                yAxis: 1
+            }],
+            credits: {
+                enabled: false
+            }
+        };
+
+        Highcharts.chart('chart-container', options);
 
         // Load Initial Dynamic Summary
         fetchFilteredSummary();
 
-        // Filter event listeners
         $('#filter_status, #filter_outlet_id').on('change', function() {
             reloadTransactions();
+            if ($('#stats-pane').hasClass('show') || $('#stats-pane').hasClass('active')) {
+                window.location.search = '?outlet_id=' + $('#filter_outlet_id').val();
+            }
         });
 
         $('#handover_filter_outlet_id').on('change', function() {
-            handoverTable.ajax.reload();
+            if (handoverTable) {
+                handoverTable.ajax.reload();
+            }
         });
 
         // Deteksi pergantian outlet pada form serah terima dana untuk hitung sisa nominal secara dinamis

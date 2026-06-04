@@ -67,28 +67,14 @@
                                         </div>
                                     </div>
                                     <div>
-                                        <label class="form-label">UPT</label>
-                                        <select name="school_id" class="form-select" id="filter_school_id">
-                                            <option value="">Semua UPT</option>
-                                            @foreach ($schools as $school)
-                                            <option value="{{ $school->id }}">{{ $school->name }}</option>
-                                            @endforeach
-                                        </select>
-                                    </div>
-                                    <div>
-                                        <label class="form-label">Kelas</label>
-                                        <select name="classroom_id" class="form-select" id="filter_classroom_id">
-                                            <option value="">Semua Kelas</option>
-                                        </select>
-                                    </div>
-                                    <div>
-                                        <label class="form-label">Status</label>
-                                        <select name="status" class="form-select" id="filter_status">
-                                            <option value="">Semua</option>
-                                            <option value="SUCCESS">Berhasil</option>
-                                            <option value="PENDING">Pending</option>
-                                        </select>
-                                    </div>
+                                         <label class="form-label">Outlet</label>
+                                         <select name="outlet_id" class="form-select" id="filter_outlet_id">
+                                             <option value="">Semua Outlet</option>
+                                             @foreach ($outlets as $outlet)
+                                             <option value="{{ $outlet->id }}">{{ $outlet->name }}</option>
+                                             @endforeach
+                                         </select>
+                                     </div>
                                     <!--begin::Export dropdown-->
                                     <button type="button" class="btn btn-sm btn-primary" data-kt-menu-trigger="click"
                                         data-kt-menu-placement="bottom-end">
@@ -175,19 +161,20 @@
                             <table id="table-saldo" class="table align-middle table-row-dashed ">
                                 <thead>
                                     <tr class="text-start text-gray-400 fw-bolder fs-7 text-uppercase gs-0">
-                                        <th style="width: 5%">No</th>
-                                        <th>Tanggal</th>
-                                        <th>NIS</th>
-                                        <th>Nama Siswa</th>
-                                        <th>Nominal</th>
-                                        <th>Status</th>
-                                        <th>Saldo Awal</th>
-                                        <th>Saldo Akhir</th>
-                                        <th>Keterangan</th>
-                                        @if (Auth::user()->can('Delete Laporan Saldo Santri'))
-                                        <th style="width: 10%">Aksi</th>
-                                        @endif
-                                    </tr>
+                                         <th style="width: 5%">No</th>
+                                         <th>Tanggal</th>
+                                         <th>NIS</th>
+                                         <th>Nama Siswa</th>
+                                         <th>Outlet</th>
+                                         <th>Nominal</th>
+                                         <th>Status</th>
+                                         <th>Saldo Awal</th>
+                                         <th>Saldo Akhir</th>
+                                         <th>Keterangan</th>
+                                         @if (Auth::user()->can('Delete Laporan Saldo Santri'))
+                                         <th style="width: 10%">Aksi</th>
+                                         @endif
+                                     </tr>
                                 </thead>
                                 <tbody class="text-gray-600 fw-bold"></tbody>
                             </table>
@@ -223,9 +210,7 @@
                     url: "{{ route('report-saldo.index') }}",
                     data: function(d) {
                         d.type = 'table';
-                        d.school_id = $('#filter_school_id').val();
-                        d.classroom_id = $('#filter_classroom_id').val();
-                        d.status = $('#filter_status').val();
+                        d.outlet_id = $('#filter_outlet_id').val();
                         d.start_date = start_date;
                         d.end_date = end_date;
                     }
@@ -264,6 +249,16 @@
                         searchable: true,
                         render: function(data) {
                             return data ? data : 'Unknown Student';
+                        }
+                    },
+                    {
+                        data: 'outlet.name',
+                        name: 'outlet.name',
+                        defaultContent: '-',
+                        orderable: true,
+                        searchable: true,
+                        render: function(data) {
+                            return data ? data : '-';
                         }
                     },
                     {
@@ -330,9 +325,7 @@
                 dataType: 'json',
                 data: {
                     type: 'total',
-                    school_id: $('#filter_school_id').val(),
-                    classroom_id: $('#filter_classroom_id').val(),
-                    status: $('#filter_status').val(),
+                    outlet_id: $('#filter_outlet_id').val(),
                     start_date: start_date,
                     end_date: end_date
                 },
@@ -350,26 +343,6 @@
             getTotalSaldo(start_date, end_date);
         }
 
-        $('#filter_school_id').on('change', function() {
-            var school_id = $(this).val();
-            $.ajax({
-                url: "{{ route('report-bill.get-classroom') }}",
-                type: "GET",
-                data: { school_id: school_id },
-                success: function(response) {
-                    $('#filter_classroom_id').empty();
-                    if (response.data.length > 0) {
-                        $('#filter_classroom_id').append('<option value="">Semua Kelas</option>');
-                        $.each(response.data, function(key, value) {
-                            $('#filter_classroom_id').append('<option value="' + value.id + '">' + value.name + '</option>');
-                        });
-                    } else {
-                        $('#filter_classroom_id').append('<option value="">Tidak ada kelas</option>');
-                    }
-                }
-            });
-        });
-
         $('#btn_tampilkan').click(function() {
             reloadTable();
         });
@@ -379,7 +352,7 @@
             reloadTable();
         });
 
-        $('#filter_school_id, #filter_classroom_id, #filter_status').on('change', function() {
+        $('#filter_outlet_id').on('change', function() {
             reloadTable();
         });
 

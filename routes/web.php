@@ -32,7 +32,6 @@ use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\OrderItemController;
 use App\Http\Controllers\Admin\PpdbTrackController;
 use App\Http\Controllers\Admin\PpdbWavesController;
-use App\Http\Controllers\Admin\ReportPosController;
 use App\Http\Controllers\Admin\SaldoBankController;
 use App\Http\Controllers\Admin\TranslateController;
 use App\Http\Controllers\Admin\DisclaimerController;
@@ -215,7 +214,7 @@ Route::group(['middleware' => ['auth']], function () {
     Route::resource('order-item', OrderItemController::class);
     Route::get('order-item-history/print/{id}', [OrderItemHistoryController::class, 'print'])->name('order-item-history.print');
     Route::resource('order-item-history', OrderItemHistoryController::class);
-    Route::get('report-pos', [ReportPosController::class, 'index'])->name('report-pos.index');
+    Route::redirect('report-pos', 'pos-transaction')->name('report-pos.index');
     Route::get('pos-transaction', [PosTransactionController::class, 'index'])->name('pos-transaction.index');
     Route::get('outlet-handover/pending-amount/{outlet_id}', [OutletHandoverController::class, 'getPendingAmount'])->name('outlet-handover.pending-amount');
     Route::resource('outlet-handover', OutletHandoverController::class);

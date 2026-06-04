@@ -28,6 +28,49 @@ class PosTransactionController extends Controller
         $outletId = $request->input('outlet_id');
 
         if ($request->ajax()) {
+            if ($request->type == 'top-items') {
+                $startDate = $request->input('start_date');
+                $endDate = $request->input('end_date');
+                
+                if ($hasOutletRestriction) {
+                    $queryOutletId = $outletId && in_array($outletId, $authOutletIds) ? $outletId : $authOutletIds;
+                } else {
+                    $queryOutletId = $outletId;
+                }
+
+                $data = \App\Models\Item::whereIsActive(true)
+                    ->when($queryOutletId, function($q) use ($queryOutletId) {
+                        if (is_array($queryOutletId)) {
+                            $q->whereIn('outlet_id', $queryOutletId);
+                        } else {
+                            $q->where('outlet_id', $queryOutletId);
+                        }
+                    })
+                    ->withCount(['pointOfSaleTransactionDetails' => function ($query) use ($startDate, $endDate, $queryOutletId) {
+                        $query->whereHas('pointOfSaleTransaction', function ($transactionQuery) use ($startDate, $endDate, $queryOutletId) {
+                            $transactionQuery->where('status', PointOfSaleTransaction::STATUS_SUCCESS);
+                            if ($startDate && $endDate) {
+                                $transactionQuery->whereDate('created_at', '>=', $startDate)
+                                                 ->whereDate('created_at', '<=', $endDate);
+                            }
+                            if ($queryOutletId) {
+                                if (is_array($queryOutletId)) {
+                                    $transactionQuery->whereIn('outlet_id', $queryOutletId);
+                                } else {
+                                    $transactionQuery->where('outlet_id', $queryOutletId);
+                                }
+                            }
+                        });
+                    }])
+                    ->orderByDesc('point_of_sale_transaction_details_count')
+                    ->take(10);
+
+                return DataTables::of($data)
+                    ->addColumn('total_transaction', fn($data) => $data->point_of_sale_transaction_details_count ?? 0)
+                    ->rawColumns(['total_transaction'])
+                    ->make(true);
+            }
+
             // Base query untuk tabel transaksi
             $data = PointOfSaleTransaction::with(['outlet', 'student', 'student.classroom', 'admins', 'pointOfSaleTransactionDetails.item'])
                 ->when($hasOutletRestriction, function ($q) use ($authOutletIds) {
@@ -245,7 +288,58 @@ class PosTransactionController extends Controller
             ];
         }
 
-        return view('admins.pos-transaction.index', compact('outlets', 'rekapWaktu', 'outletsSummary', 'hasOutletRestriction'));
+        $year = now()->year;
+        $chartIncomesCategories = collect(range(1, 12))->map(fn($month) => Carbon::create($year, $month, 1)->locale('id')->monthName)->toArray();
+        
+        $chartCashierOmzet = $this->generateMonthlyChartData($year, 'pay_amount', $outletId, $hasOutletRestriction, $authOutletIds);
+        $chartCashierProfit = $this->generateMonthlyChartData($year, 'profit', $outletId, $hasOutletRestriction, $authOutletIds);
+
+        // Count of active products
+        $totalProduct = \App\Models\Item::whereIsActive(true)
+            ->when($hasOutletRestriction, function ($q) use ($authOutletIds) {
+                $q->whereIn('outlet_id', $authOutletIds);
+            })
+            ->when(!$hasOutletRestriction && $outletId, function($q) use ($outletId) {
+                $q->where('outlet_id', $outletId);
+            })
+            ->when($hasOutletRestriction && $outletId, function($q) use ($outletId, $authOutletIds) {
+                if (in_array($outletId, $authOutletIds)) {
+                    $q->where('outlet_id', $outletId);
+                }
+            })
+            ->count();
+
+        // Calculate global totals
+        $transactionQueryGlobal = PointOfSaleTransaction::where('status', PointOfSaleTransaction::STATUS_SUCCESS)
+            ->when($hasOutletRestriction, function ($q) use ($authOutletIds) {
+                $q->whereIn('outlet_id', $authOutletIds);
+            })
+            ->when(!$hasOutletRestriction && $outletId, function ($q) use ($outletId) {
+                $q->where('outlet_id', $outletId);
+            })
+            ->when($hasOutletRestriction && $outletId, function ($q) use ($outletId, $authOutletIds) {
+                if (in_array($outletId, $authOutletIds)) {
+                    $q->where('outlet_id', $outletId);
+                }
+            });
+
+        $totalTransaction = (clone $transactionQueryGlobal)->count();
+        $totalSales = (clone $transactionQueryGlobal)->sum('pay_amount');
+        $totalIncome = (clone $transactionQueryGlobal)->sum('profit');
+
+        return view('admins.pos-transaction.index', compact(
+            'outlets', 
+            'rekapWaktu', 
+            'outletsSummary', 
+            'hasOutletRestriction',
+            'chartCashierOmzet',
+            'chartCashierProfit',
+            'chartIncomesCategories',
+            'totalProduct',
+            'totalTransaction',
+            'totalSales',
+            'totalIncome'
+        ));
     }
 
     /**
@@ -268,5 +362,29 @@ class PosTransactionController extends Controller
         } catch (\Exception $e) {
             return redirect()->back()->with('error', 'Gagal menghapus transaksi: ' . $e->getMessage());
         }
+    }
+
+    /**
+     * Generate monthly chart data (omzet or profit).
+     */
+    private function generateMonthlyChartData($year, $column, $outletId = null, $hasOutletRestriction = false, $authOutletIds = [])
+    {
+        return collect(range(1, 12))->map(function ($month) use ($year, $column, $outletId, $hasOutletRestriction, $authOutletIds) {
+            return intval(PointOfSaleTransaction::whereYear('created_at', $year)
+                ->whereMonth('created_at', $month)
+                ->where('status', PointOfSaleTransaction::STATUS_SUCCESS)
+                ->when($hasOutletRestriction, function ($q) use ($authOutletIds) {
+                    $q->whereIn('outlet_id', $authOutletIds);
+                })
+                ->when(!$hasOutletRestriction && $outletId, function($q) use ($outletId) {
+                    $q->where('outlet_id', $outletId);
+                })
+                ->when($hasOutletRestriction && $outletId, function($q) use ($outletId, $authOutletIds) {
+                    if (in_array($outletId, $authOutletIds)) {
+                        $q->where('outlet_id', $outletId);
+                    }
+                })
+                ->sum($column));
+        })->toArray();
     }
 }

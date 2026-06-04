@@ -6,6 +6,7 @@ use Carbon\Carbon;
 use App\Models\School;
 use App\Models\AcademicYear;
 use App\Models\SaldoHistory;
+use App\Models\Outlet;
 use Illuminate\Http\Request;
 use Yajra\DataTables\DataTables;
 use App\Exports\SaldoStudentExport;
@@ -27,8 +28,8 @@ class ReportSaldoController extends Controller
             return $this->handleAjaxRequest();
         }
 
-        $schools = School::hasSchool()->orderBy('name', 'asc')->get();
-        return view('admins.report-saldo.index', compact('schools'));
+        $outlets = Outlet::orderBy('name', 'asc')->get();
+        return view('admins.report-saldo.index', compact('outlets'));
     }
 
     protected function handleAjaxRequest()
@@ -46,19 +47,9 @@ class ReportSaldoController extends Controller
 
     protected function querySaldoHistory()
     {
-        return SaldoHistory::with('student.classroom.school')
-            ->when(request()->filled('school_id'), function ($query) {
-                $query->whereHas('student.classroom', function ($query) {
-                    $query->where('school_id', request()->school_id);
-                });
-            })
-            ->when(request()->filled('classroom_id'), function ($query) {
-                $query->whereHas('student', function ($query) {
-                    $query->where('classroom_id', request()->classroom_id);
-                });
-            })
-            ->when(request()->filled('status'), function ($query) {
-                $query->where('status', request()->status);
+        return SaldoHistory::with(['student.classroom.school', 'outlet'])
+            ->when(request()->filled('outlet_id'), function ($query) {
+                $query->where('outlet_id', request()->outlet_id);
             })
             ->when(request()->filled('start_date'), function ($query) {
                 $query->whereDate('created_at', '>=', request()->start_date);
@@ -85,13 +76,7 @@ class ReportSaldoController extends Controller
 
     protected function calculateAvailableBalance()
     {
-        return Student::when(request()->filled('school_id'), function ($query) {
-            $query->where('school_id', request()->school_id);
-        })
-            ->when(request()->filled('classroom_id'), function ($query) {
-                $query->where('classroom_id', request()->classroom_id);
-            })
-            ->sum('saldo');
+        return Student::sum('saldo');
     }
 
     protected function formatDataTable($data)
