@@ -504,7 +504,7 @@
                 </div>
                 @endcanany
 
-                @canany(['Manage Laporan Pos Kasir', 'Manage Laporan Tagihan', 'Manage Laporan Santri', 'Manage Laporan
+                @canany(['Manage Laporan Pos Kasir', 'Manage Laporan Pos Multi Outlet', 'Manage Laporan Tagihan', 'Manage Laporan Santri', 'Manage Laporan
                 Nilai Akademik', 'Manage Laporan Tahfidz',
                 'Manage Laporan Perilaku Siswa', 'Manage Laporan Saldo Santri', 'Manage Laporan Fee Aplikasi',
                 'Manage Laporan Transaksi'])
@@ -532,7 +532,7 @@
                             </a>
                         </div>
                         @endcan
-                        @can('Manage Laporan Pos Kasir')
+                        @can('Manage Laporan Pos Multi Outlet')
                         <div class="menu-item ">
                             <a class="menu-link {{ request()->routeIs('pos-transaction.*') ? ' active' : '' }}"
                                 href="{{ route('pos-transaction.index') }}">
