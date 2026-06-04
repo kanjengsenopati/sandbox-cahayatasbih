@@ -566,7 +566,7 @@
         var tableTopItems = $('#table-top-items').DataTable({
             ordering: false,
             processing: true,
-            serverSide: true,
+            serverSide: false,
             searching: false,
             paging: false,
             info: false,
@@ -860,6 +860,9 @@
 
     function reloadTransactions() {
         transactionTable.ajax.reload();
+        if (typeof tableTopItems !== 'undefined') {
+            tableTopItems.ajax.reload();
+        }
         fetchFilteredSummary();
     }
 </script>

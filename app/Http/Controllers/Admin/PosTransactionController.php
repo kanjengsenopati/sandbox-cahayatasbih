@@ -38,37 +38,36 @@ class PosTransactionController extends Controller
                     $queryOutletId = $outletId;
                 }
 
-                $data = \App\Models\Item::whereIsActive(true)
+                $data = \App\Models\PointOfSaleTransactionDetail::query()
+                    ->join('point_of_sale_transactions', 'point_of_sale_transaction_details.point_of_sale_transaction_id', '=', 'point_of_sale_transactions.id')
+                    ->select('point_of_sale_transaction_details.item_id', \DB::raw('COUNT(point_of_sale_transaction_details.id) as total_transaction'))
+                    ->where('point_of_sale_transactions.status', PointOfSaleTransaction::STATUS_SUCCESS)
+                    ->whereNull('point_of_sale_transaction_details.deleted_at')
+                    ->whereNull('point_of_sale_transactions.deleted_at')
+                    ->when($startDate && $endDate, function($q) use ($startDate, $endDate) {
+                        $q->whereDate('point_of_sale_transactions.created_at', '>=', $startDate)
+                          ->whereDate('point_of_sale_transactions.created_at', '<=', $endDate);
+                    })
                     ->when($queryOutletId, function($q) use ($queryOutletId) {
                         if (is_array($queryOutletId)) {
-                            $q->whereIn('outlet_id', $queryOutletId);
+                            $q->whereIn('point_of_sale_transactions.outlet_id', $queryOutletId);
                         } else {
-                            $q->where('outlet_id', $queryOutletId);
+                            $q->where('point_of_sale_transactions.outlet_id', $queryOutletId);
                         }
                     })
-                    ->withCount(['pointOfSaleTransactionDetails' => function ($query) use ($startDate, $endDate, $queryOutletId) {
-                        $query->whereHas('pointOfSaleTransaction', function ($transactionQuery) use ($startDate, $endDate, $queryOutletId) {
-                            $transactionQuery->where('status', PointOfSaleTransaction::STATUS_SUCCESS);
-                            if ($startDate && $endDate) {
-                                $transactionQuery->whereDate('created_at', '>=', $startDate)
-                                                 ->whereDate('created_at', '<=', $endDate);
-                            }
-                            if ($queryOutletId) {
-                                if (is_array($queryOutletId)) {
-                                    $transactionQuery->whereIn('outlet_id', $queryOutletId);
-                                } else {
-                                    $transactionQuery->where('outlet_id', $queryOutletId);
-                                }
-                            }
-                        });
-                    }])
-                    ->orderByDesc('point_of_sale_transaction_details_count')
-                    ->take(10);
+                    ->groupBy('point_of_sale_transaction_details.item_id')
+                    ->orderByDesc('total_transaction')
+                    ->take(10)
+                    ->with('item')
+                    ->get()
+                    ->map(function ($detail) {
+                        return [
+                            'name' => $detail->item?->name ?? 'Barang Terhapus',
+                            'total_transaction' => $detail->total_transaction
+                        ];
+                    });
 
-                return DataTables::of($data)
-                    ->addColumn('total_transaction', fn($data) => $data->point_of_sale_transaction_details_count ?? 0)
-                    ->rawColumns(['total_transaction'])
-                    ->make(true);
+                return DataTables::of($data)->make(true);
             }
 
             // Base query untuk tabel transaksi
@@ -107,8 +106,30 @@ class PosTransactionController extends Controller
                 $filterOutletId = $request->input('outlet_id');
                 $rekapOutletIds = $hasOutletRestriction ? $authOutletIds : [];
 
+                $startDateInput = $request->input('start_date');
+                $endDateInput = $request->input('end_date');
+
+                if ($startDateInput && $endDateInput) {
+                    $startDate = Carbon::parse($startDateInput);
+                    $endDate = Carbon::parse($endDateInput);
+                    $today = Carbon::today();
+                    if ($today->between($startDate, $endDate)) {
+                        $targetDate = Carbon::now();
+                    } else {
+                        $targetDate = $endDate->isFuture() ? Carbon::now() : $endDate->endOfDay();
+                    }
+                } else {
+                    $targetDate = Carbon::now();
+                }
+
+                $targetDateToday = $targetDate->copy()->startOfDay();
+                $targetDateWeekStart = $targetDate->copy()->startOfWeek();
+                $targetDateWeekEnd = $targetDate->copy()->endOfWeek();
+                $targetDateMonthStart = $targetDate->copy()->startOfMonth();
+                $targetDateMonthEnd = $targetDate->copy()->endOfMonth();
+
                 $todayQuery = PointOfSaleTransaction::where('status', PointOfSaleTransaction::STATUS_SUCCESS)
-                    ->whereDate('created_at', Carbon::today())
+                    ->whereDate('created_at', $targetDateToday)
                     ->when(!empty($rekapOutletIds), function ($q) use ($rekapOutletIds) {
                         $q->whereIn('outlet_id', $rekapOutletIds);
                     })
@@ -117,7 +138,7 @@ class PosTransactionController extends Controller
                     });
 
                 $weekQuery = PointOfSaleTransaction::where('status', PointOfSaleTransaction::STATUS_SUCCESS)
-                    ->whereBetween('created_at', [Carbon::now()->startOfWeek(), Carbon::now()->endOfWeek()])
+                    ->whereBetween('created_at', [$targetDateWeekStart, $targetDateWeekEnd])
                     ->when(!empty($rekapOutletIds), function ($q) use ($rekapOutletIds) {
                         $q->whereIn('outlet_id', $rekapOutletIds);
                     })
@@ -126,7 +147,7 @@ class PosTransactionController extends Controller
                     });
 
                 $monthQuery = PointOfSaleTransaction::where('status', PointOfSaleTransaction::STATUS_SUCCESS)
-                    ->whereBetween('created_at', [Carbon::now()->startOfMonth(), Carbon::now()->endOfMonth()])
+                    ->whereBetween('created_at', [$targetDateMonthStart, $targetDateMonthEnd])
                     ->when(!empty($rekapOutletIds), function ($q) use ($rekapOutletIds) {
                         $q->whereIn('outlet_id', $rekapOutletIds);
                     })
@@ -235,20 +256,42 @@ class PosTransactionController extends Controller
         }
 
         // Hitung rekap waktu dinamis untuk inisiasi awal
+        $startDateInput = $request->input('start_date');
+        $endDateInput = $request->input('end_date');
+
+        if ($startDateInput && $endDateInput) {
+            $startDate = Carbon::parse($startDateInput);
+            $endDate = Carbon::parse($endDateInput);
+            $today = Carbon::today();
+            if ($today->between($startDate, $endDate)) {
+                $targetDate = Carbon::now();
+            } else {
+                $targetDate = $endDate->isFuture() ? Carbon::now() : $endDate->endOfDay();
+            }
+        } else {
+            $targetDate = Carbon::now();
+        }
+
+        $targetDateToday = $targetDate->copy()->startOfDay();
+        $targetDateWeekStart = $targetDate->copy()->startOfWeek();
+        $targetDateWeekEnd = $targetDate->copy()->endOfWeek();
+        $targetDateMonthStart = $targetDate->copy()->startOfMonth();
+        $targetDateMonthEnd = $targetDate->copy()->endOfMonth();
+
         $todayQuery = PointOfSaleTransaction::where('status', PointOfSaleTransaction::STATUS_SUCCESS)
-            ->whereDate('created_at', Carbon::today())
+            ->whereDate('created_at', $targetDateToday)
             ->when($hasOutletRestriction, function ($q) use ($authOutletIds) {
                 $q->whereIn('outlet_id', $authOutletIds);
             });
 
         $weekQuery = PointOfSaleTransaction::where('status', PointOfSaleTransaction::STATUS_SUCCESS)
-            ->whereBetween('created_at', [Carbon::now()->startOfWeek(), Carbon::now()->endOfWeek()])
+            ->whereBetween('created_at', [$targetDateWeekStart, $targetDateWeekEnd])
             ->when($hasOutletRestriction, function ($q) use ($authOutletIds) {
                 $q->whereIn('outlet_id', $authOutletIds);
             });
 
         $monthQuery = PointOfSaleTransaction::where('status', PointOfSaleTransaction::STATUS_SUCCESS)
-            ->whereBetween('created_at', [Carbon::now()->startOfMonth(), Carbon::now()->endOfMonth()])
+            ->whereBetween('created_at', [$targetDateMonthStart, $targetDateMonthEnd])
             ->when($hasOutletRestriction, function ($q) use ($authOutletIds) {
                 $q->whereIn('outlet_id', $authOutletIds);
             });
