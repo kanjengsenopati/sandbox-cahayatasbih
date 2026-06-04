@@ -120,18 +120,19 @@
 @endif
 @endforeach
 <script>
-    $(".input-money").on('keyup', function() {
-        
-        var n = parseInt($(this).val().replace(/\D/g, ''), 10) || 0
+    $(document).on('keyup', '.input-money', function() {
+        var val = $(this).val().replace(/\D/g, '');
+        var n = parseInt(val, 10) || 0;
         if (n > 0) {
-        var value = n.toLocaleString()
-        $(this).val(value);
+            $(this).val(n.toLocaleString('id-ID'));
         } else {
-        $(this).val(0);
+            $(this).val(0);
         }
+    });
+
+    $(document).on('submit', 'form', function() {
+        $(this).find('.input-money').each(function() {
+            this.value = this.value.replace(/[.,]/g, '');
         });
-        
-        $(':submit').on('click', function(e) {
-        var x = $(".input-money");
-        for (var i = 0; i < x.length; i++) { var str=x[i].value; x[i].value=str.replace(/,(?=\d{3})/g, '' ); } })
+    });
 </script>

@@ -19,6 +19,66 @@
         left: 50%;
         transform: translate(-50%, -50%);
     }
+
+    /* Typography System wrapper simulation */
+    .text-h1 {
+        font-size: 22px !important;
+        font-weight: 700 !important;
+        color: #0f172a !important;
+    }
+    .text-h2 {
+        font-size: 16px !important;
+        font-weight: 600 !important;
+        color: #1e293b !important;
+    }
+    .text-amount {
+        font-size: 18px !important;
+        font-weight: 700 !important;
+        color: #059669 !important;
+    }
+    .text-label {
+        font-size: 11px !important;
+        font-weight: 700 !important;
+        text-transform: uppercase !important;
+        letter-spacing: 0.1em !important;
+        color: #94a3b8 !important;
+    }
+    .text-body {
+        font-size: 14px !important;
+        font-weight: 500 !important;
+        color: #475569 !important;
+    }
+    .text-caption {
+        font-size: 12px !important;
+        font-weight: 400 !important;
+        font-style: italic !important;
+        color: #94a3b8 !important;
+    }
+
+    /* Product Grid Card styles (borderless cards) */
+    .product-card {
+        border-radius: 16px !important;
+        background-color: #ffffff;
+        border: none !important;
+        box-shadow: 0 8px 30px rgba(0, 0, 0, 0.04) !important;
+        transition: all 0.2s ease-in-out;
+        cursor: pointer;
+        overflow: hidden;
+    }
+    .product-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 12px 35px rgba(0, 0, 0, 0.1) !important;
+    }
+    .product-image {
+        width: 100%;
+        height: 120px;
+        object-fit: cover;
+        border-top-left-radius: 16px;
+        border-top-right-radius: 16px;
+    }
+    .product-info {
+        padding: 12px !important;
+    }
 </style>
 @endpush
 @section('content')
@@ -414,6 +474,40 @@
                         <!--end::Card header-->
                     </div>
                     <!--end::Order details-->
+
+                    <!--begin::Card Katalog Produk-->
+                    <div class="card card-flush py-4 mt-6" style="border-radius: 24px; box-shadow: 0 8px 30px rgba(0,0,0,0.04);">
+                        <div class="card-header">
+                            <div class="d-flex justify-content-between align-items-center w-100">
+                                <div class="card-title">
+                                    <h2 class="text-h2 m-0">Katalog Barang</h2>
+                                </div>
+                                <div class="card-toolbar">
+                                    <div class="position-relative">
+                                        <span class="svg-icon svg-icon-1 position-absolute ms-4" style="top: 50%; transform: translateY(-50%);">
+                                            <i class="fas fa-search text-gray-400"></i>
+                                        </span>
+                                        <input type="text" id="grid-search-product" class="form-control form-control-solid ps-12 w-200px w-md-250px" placeholder="Cari nama barang..." style="border-radius: 12px;" />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-body pt-0">
+                            <!-- Loader -->
+                            <div id="grid-loader" class="text-center py-5" style="display: none;">
+                                <div class="spinner-border text-primary" role="status">
+                                    <span class="visually-hidden">Loading...</span>
+                                </div>
+                                <div class="text-muted mt-2">Memuat katalog barang...</div>
+                            </div>
+                            
+                            <!-- Grid Container -->
+                            <div id="grid-product-list" class="row row-cols-2 row-cols-md-3 row-cols-lg-4 g-4 overflow-y-auto pt-3" style="max-height: 450px;">
+                                <!-- Diberdayakan secara dinamis via AJAX -->
+                            </div>
+                        </div>
+                    </div>
+                    <!--end::Card Katalog Produk-->
                 </div>
                 <!--end::Main column-->
             </form>
@@ -494,6 +588,7 @@
     window.addEventListener('DOMContentLoaded', function () {
         focusOnFirstInput();
         refreshProductList();
+        loadProductCatalog();
 
         var searchProductInput = document.getElementById('search-product');
         if (searchProductInput) {
@@ -502,6 +597,17 @@
             e.preventDefault(); // Prevent the default action (form submission)
             searchProductByCode(e);
             }
+            });
+        }
+
+        var gridSearchInput = document.getElementById('grid-search-product');
+        if (gridSearchInput) {
+            var debounceTimeout = null;
+            gridSearchInput.addEventListener('input', function(e) {
+                clearTimeout(debounceTimeout);
+                debounceTimeout = setTimeout(function() {
+                    loadProductCatalog(e.target.value);
+                }, 300);
             });
         }
     });
@@ -603,9 +709,82 @@
         }).then(function (response) {
             // if success, refresh table product #list-product
             refreshProductList();
+            // Refresh product grid to show updated stock!
+            var searchInput = document.getElementById('grid-search-product');
+            loadProductCatalog(searchInput ? searchInput.value : '');
         }).catch(function (error) {
             console.error(error);
         });
+    }
+
+    // Load Product Catalog Grid on page load and live search
+    function loadProductCatalog(search = '') {
+        var gridLoader = document.getElementById('grid-loader');
+        var gridContainer = document.getElementById('grid-product-list');
+        
+        if (gridLoader) gridLoader.style.display = 'block';
+
+        axios.post("{{ route('item.search-item') }}", {
+            search: search,
+            type: 'NAME'
+        }).then(function (response) {
+            if (gridLoader) gridLoader.style.display = 'none';
+            if (gridContainer) {
+                gridContainer.innerHTML = '';
+                var products = response.data.data;
+                
+                if (products && products.length > 0) {
+                    products.forEach(function (product) {
+                        var cardCol = document.createElement('div');
+                        cardCol.className = 'col-6 col-sm-4 col-md-4 col-lg-3';
+                        
+                        var imageUrl = product.image || defaultImageUrl;
+                        var stockBadge = product.stock <= 5 
+                            ? `<span class="badge bg-light-danger text-danger fw-bold fs-9">Stok Menipis: ${product.stock}</span>`
+                            : `<span class="badge bg-light-success text-success fw-bold fs-9">Stok: ${product.stock}</span>`;
+                        
+                        var formattedPrice = `Rp. ${product.selling_price.toLocaleString('id-ID')}`;
+                        
+                        // Escaping product name for JSON.stringify in HTML attribute
+                        var escapedProduct = JSON.stringify(product).replace(/"/g, '&quot;');
+                        
+                        cardCol.innerHTML = `
+                            <div class="product-card d-flex flex-column h-100" onclick="addProductFromGrid(${escapedProduct})">
+                                <img src="${imageUrl}" class="product-image" alt="${product.name}" />
+                                <div class="product-info d-flex flex-column justify-content-between flex-grow-1">
+                                    <div class="mb-2">
+                                        <div class="text-label mb-1">${product.category_item ? product.category_item.name : 'UMUM'}</div>
+                                        <h4 class="text-body fw-bold mb-1 text-dark" style="display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; height: 36px;">${product.name}</h4>
+                                        <div class="mt-1">${stockBadge}</div>
+                                    </div>
+                                    <div class="d-flex justify-content-between align-items-center mt-auto pt-2">
+                                        <span class="text-amount">${formattedPrice}</span>
+                                        <button type="button" class="btn btn-icon btn-sm btn-light-primary rounded-circle">
+                                            <i class="fas fa-plus"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                        gridContainer.appendChild(cardCol);
+                    });
+                } else {
+                    gridContainer.innerHTML = `
+                        <div class="col-12 text-center py-5">
+                            <span class="text-muted">Tidak ada produk yang ditemukan</span>
+                        </div>
+                    `;
+                }
+            }
+        }).catch(function (error) {
+            console.error(error);
+            if (gridLoader) gridLoader.style.display = 'none';
+        });
+    }
+
+    // Function to handle product click from grid
+    function addProductFromGrid(product) {
+        addProductToCart(product);
     }
 
     function refreshProductList() {
@@ -681,13 +860,15 @@
     }
 
     function deleteProductFromCart(productId) {
-    axios.post("{{ route('order-item.delete-from-cart') }}", {
-    id: productId
-    }).then(function (response) {
-    refreshProductList();
-    }).catch(function (error) {
-    console.error(error);
-    });
+        axios.post("{{ route('order-item.delete-from-cart') }}", {
+            id: productId
+        }).then(function (response) {
+            refreshProductList();
+            var searchInput = document.getElementById('grid-search-product');
+            loadProductCatalog(searchInput ? searchInput.value : '');
+        }).catch(function (error) {
+            console.error(error);
+        });
     }
 
     function updateCartQuantity(productId, quantity) {
@@ -696,6 +877,8 @@
             quantity: quantity
         }).then(function (response) {
             refreshProductList();
+            var searchInput = document.getElementById('grid-search-product');
+            loadProductCatalog(searchInput ? searchInput.value : '');
         }).catch(function (error) {
             console.error(error);
         });
@@ -773,6 +956,8 @@
         .then(function (response) {
         // Menjalankan fungsi refreshProductList() setelah penghapusan berhasil
         refreshProductList();
+        var searchInput = document.getElementById('grid-search-product');
+        loadProductCatalog(searchInput ? searchInput.value : '');
         }).catch(function (error) {
         console.error(error);
         });
