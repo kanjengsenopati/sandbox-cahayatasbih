@@ -196,7 +196,7 @@ class OrderItemController extends Controller
                 $balanceAfter = $student->saldo;
                 $student->save();
 
-                $history = $this->recordSaldoHistory($student, $total, $balanceBefore, $balanceAfter);
+                $history = $this->recordSaldoHistory($student, $total, $balanceBefore, $balanceAfter, auth()->user()->outlet_id);
                 $historyId = $history->id;
             }
 
@@ -299,10 +299,11 @@ class OrderItemController extends Controller
         return true;
     }
 
-    private function recordSaldoHistory($student, $total, $balanceBefore, $balanceAfter)
+    private function recordSaldoHistory($student, $total, $balanceBefore, $balanceAfter, $outletId = null)
     {
         return SaldoHistory::create([
             'student_id' => $student->id,
+            'outlet_id' => $outletId,
             'type' => 'OUT',
             'amount' => $total,
             'description' => 'Pembayaran Pembelian Barang Rp. ' . number_format($total, 0, ',', '.'),
