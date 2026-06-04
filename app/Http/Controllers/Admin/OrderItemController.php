@@ -459,6 +459,16 @@ class OrderItemController extends Controller
     public function getCartData()
     {
         $carts = PointOfSaleCart::with('item')->where('admin_id', auth()->user()->id)->latest()->get();
+
+        // Sinkronkan harga keranjang dengan harga terbaru dari database item
+        foreach ($carts as $cart) {
+            if ($cart->item && $cart->price != $cart->item->selling_price) {
+                $cart->price = $cart->item->selling_price;
+                $cart->total = $cart->quantity * $cart->price;
+                $cart->save();
+            }
+        }
+
         return $this->postSuccessResponse("Data keranjang berhasil diambil", $carts);
     }
 

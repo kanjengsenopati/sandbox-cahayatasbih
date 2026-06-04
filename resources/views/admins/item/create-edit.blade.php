@@ -222,7 +222,7 @@
         var profit = sellingPrice - buyingPrice;
 
         // Display profit
-        $('#profit').val(profit > 0 ? profit.toLocaleString() : 0);
+        $('#profit').val(profit > 0 ? profit.toLocaleString('id-ID') : 0);
     });
 </script>
 @endpush

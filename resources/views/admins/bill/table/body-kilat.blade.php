@@ -306,7 +306,7 @@
         amountDiv.className = 'mb-1';
         const amountSpan = document.createElement('span');
         amountSpan.className = 'fw-bold text-muted';
-        amountSpan.textContent = `Rp ${amount.toLocaleString()}`;
+        amountSpan.textContent = `Rp ${amount.toLocaleString('id-ID')}`;
         amountDiv.appendChild(amountSpan);
 
         cardBodyDiv.appendChild(nameDiv);
@@ -318,7 +318,7 @@
         });
 
         // Update total amount
-        totalAmountElement.textContent = `Rp ${totalAmount.toLocaleString()}`;
+        totalAmountElement.textContent = `Rp ${totalAmount.toLocaleString('id-ID')}`;
         });
 
         });

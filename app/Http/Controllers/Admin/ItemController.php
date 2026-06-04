@@ -155,18 +155,14 @@ class ItemController extends Controller
     {
         $outletId = auth()->user()->outlet_id;
         if (!$request->search) {
-            $cacheKey = 'top_10_items_last_month_' . ($outletId ?? 'all');
-
-            $items = Cache::remember($cacheKey, now()->addDays(30), function () use ($outletId) {
-                return Item::where('stock', '>', 0)
-                    ->when($outletId, function($q) use ($outletId) {
-                        $q->where('outlet_id', $outletId);
-                    })
-                    ->where('is_active', true)
-                    ->orderBy('stock', 'asc') // Order by stock in ascending order
-                    ->limit(10)
-                    ->get();
-            });
+            $items = Item::with('categoryItem')->where('stock', '>', 0)
+                ->when($outletId, function($q) use ($outletId) {
+                    $q->where('outlet_id', $outletId);
+                })
+                ->where('is_active', true)
+                ->orderBy('stock', 'asc') // Order by stock in ascending order
+                ->limit(10)
+                ->get();
 
             return $this->postSuccessResponse("Berhasil mengambil data", $items);
         } else {
@@ -199,7 +195,7 @@ class ItemController extends Controller
         $outletId = auth()->user()->outlet_id;
 
         // Limit the number of items returned to 15
-        $items = Item::whereIsActive(true)
+        $items = Item::with('categoryItem')->whereIsActive(true)
             ->when($outletId, function($q) use ($outletId) {
                 $q->where('outlet_id', $outletId);
             })
