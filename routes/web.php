@@ -216,6 +216,7 @@ Route::group(['middleware' => ['auth']], function () {
     Route::resource('order-item-history', OrderItemHistoryController::class);
     Route::redirect('report-pos', 'pos-transaction')->name('report-pos.index');
     Route::get('pos-transaction', [PosTransactionController::class, 'index'])->name('pos-transaction.index');
+    Route::delete('pos-transaction/{pos_transaction}', [PosTransactionController::class, 'destroy'])->name('pos-transaction.destroy');
     Route::get('outlet-handover/pending-amount/{outlet_id}', [OutletHandoverController::class, 'getPendingAmount'])->name('outlet-handover.pending-amount');
     Route::resource('outlet-handover', OutletHandoverController::class);
 
