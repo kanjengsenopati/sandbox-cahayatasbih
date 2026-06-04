@@ -22,18 +22,25 @@ class PosTransactionController extends Controller
             return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
         }
 
-        // Tentukan outlet_id berdasarkan hak akses admin yang login
-        $authOutletId = auth()->user()->outlet_id;
-        $outletId = $authOutletId ?? $request->input('outlet_id');
+        // Tentukan outlet_ids berdasarkan hak akses admin yang login
+        $authOutletIds = auth()->user()->getOutletIds();
+        $hasOutletRestriction = count($authOutletIds) > 0;
+        $outletId = $request->input('outlet_id');
 
         if ($request->ajax()) {
             // Base query untuk tabel transaksi
             $data = PointOfSaleTransaction::with(['outlet', 'student', 'student.classroom', 'admins', 'pointOfSaleTransactionDetails.item'])
-                ->when($authOutletId, function ($q) use ($authOutletId) {
-                    $q->where('outlet_id', $authOutletId);
+                ->when($hasOutletRestriction, function ($q) use ($authOutletIds) {
+                    $q->whereIn('outlet_id', $authOutletIds);
                 })
-                ->when(!$authOutletId && $request->filled('outlet_id'), function ($q) use ($request) {
+                ->when(!$hasOutletRestriction && $request->filled('outlet_id'), function ($q) use ($request) {
                     $q->where('outlet_id', $request->outlet_id);
+                })
+                ->when($hasOutletRestriction && $request->filled('outlet_id'), function ($q) use ($request, $authOutletIds) {
+                    // Jika admin multi-outlet memilih filter outlet tertentu, pastikan outlet itu ada dalam daftar yang diassign
+                    if (in_array($request->outlet_id, $authOutletIds)) {
+                        $q->where('outlet_id', $request->outlet_id);
+                    }
                 })
                 ->when($request->filled('start_date') && $request->filled('end_date'), function ($query) use ($request) {
                     $query->whereDate('created_at', '>=', $request->start_date)
@@ -54,22 +61,34 @@ class PosTransactionController extends Controller
 
                 // Hitung rekap dinamis Hari Ini, Minggu Ini, Bulan Ini
                 // dengan tetap memperhitungkan filter outlet (jika ada)
+                $filterOutletId = $request->input('outlet_id');
+                $rekapOutletIds = $hasOutletRestriction ? $authOutletIds : [];
+
                 $todayQuery = PointOfSaleTransaction::where('status', PointOfSaleTransaction::STATUS_SUCCESS)
                     ->whereDate('created_at', Carbon::today())
-                    ->when($outletId, function ($q) use ($outletId) {
-                        $q->where('outlet_id', $outletId);
+                    ->when(!empty($rekapOutletIds), function ($q) use ($rekapOutletIds) {
+                        $q->whereIn('outlet_id', $rekapOutletIds);
+                    })
+                    ->when($filterOutletId, function ($q) use ($filterOutletId) {
+                        $q->where('outlet_id', $filterOutletId);
                     });
 
                 $weekQuery = PointOfSaleTransaction::where('status', PointOfSaleTransaction::STATUS_SUCCESS)
                     ->whereBetween('created_at', [Carbon::now()->startOfWeek(), Carbon::now()->endOfWeek()])
-                    ->when($outletId, function ($q) use ($outletId) {
-                        $q->where('outlet_id', $outletId);
+                    ->when(!empty($rekapOutletIds), function ($q) use ($rekapOutletIds) {
+                        $q->whereIn('outlet_id', $rekapOutletIds);
+                    })
+                    ->when($filterOutletId, function ($q) use ($filterOutletId) {
+                        $q->where('outlet_id', $filterOutletId);
                     });
 
                 $monthQuery = PointOfSaleTransaction::where('status', PointOfSaleTransaction::STATUS_SUCCESS)
                     ->whereBetween('created_at', [Carbon::now()->startOfMonth(), Carbon::now()->endOfMonth()])
-                    ->when($outletId, function ($q) use ($outletId) {
-                        $q->where('outlet_id', $outletId);
+                    ->when(!empty($rekapOutletIds), function ($q) use ($rekapOutletIds) {
+                        $q->whereIn('outlet_id', $rekapOutletIds);
+                    })
+                    ->when($filterOutletId, function ($q) use ($filterOutletId) {
+                        $q->where('outlet_id', $filterOutletId);
                     });
 
                 return response()->json([
@@ -145,14 +164,14 @@ class PosTransactionController extends Controller
                     ->addColumn('outlet', function ($data) {
                         return $data->outlet?->name ?? '-';
                     })
-                    ->addColumn('action', function ($data) {
+                    ->addColumn('action', function ($data) use ($hasOutletRestriction) {
                         $actionDelete = route('pos-transaction.destroy', $data->id);
                         $invoiceUrl = route('order-item-history.print', $data->id);
                         
                         $html = "<div class='d-flex gap-2 justify-content-center'>";
                         $html .= "<a href='" . $invoiceUrl . "' target='_blank' class='btn btn-icon btn-bg-light btn-active-color-primary btn-sm me-1' title='Cetak Invoice'><i class='fa-solid fa-print text-primary fs-6'></i></a>";
                         
-                        if (!auth()->user()->outlet_id) { // Hanya superadmin yang bisa hapus transaksi
+                        if (!$hasOutletRestriction) { // Hanya superadmin yang bisa hapus transaksi
                             $html .= view('components.action.delete', ['action' => $actionDelete, 'id' => $data->id, 'name' => 'Transaksi POS']);
                         }
                         
@@ -165,25 +184,30 @@ class PosTransactionController extends Controller
         }
 
         // Tampilkan halaman pertama
-        $outlets = Outlet::orderBy('name')->get();
+        // Jika admin multi-outlet, tampilkan hanya outlet yang diassign
+        if ($hasOutletRestriction) {
+            $outlets = Outlet::whereIn('id', $authOutletIds)->orderBy('name')->get();
+        } else {
+            $outlets = Outlet::orderBy('name')->get();
+        }
 
         // Hitung rekap waktu dinamis untuk inisiasi awal
         $todayQuery = PointOfSaleTransaction::where('status', PointOfSaleTransaction::STATUS_SUCCESS)
             ->whereDate('created_at', Carbon::today())
-            ->when($outletId, function ($q) use ($outletId) {
-                $q->where('outlet_id', $outletId);
+            ->when($hasOutletRestriction, function ($q) use ($authOutletIds) {
+                $q->whereIn('outlet_id', $authOutletIds);
             });
 
         $weekQuery = PointOfSaleTransaction::where('status', PointOfSaleTransaction::STATUS_SUCCESS)
             ->whereBetween('created_at', [Carbon::now()->startOfWeek(), Carbon::now()->endOfWeek()])
-            ->when($outletId, function ($q) use ($outletId) {
-                $q->where('outlet_id', $outletId);
+            ->when($hasOutletRestriction, function ($q) use ($authOutletIds) {
+                $q->whereIn('outlet_id', $authOutletIds);
             });
 
         $monthQuery = PointOfSaleTransaction::where('status', PointOfSaleTransaction::STATUS_SUCCESS)
             ->whereBetween('created_at', [Carbon::now()->startOfMonth(), Carbon::now()->endOfMonth()])
-            ->when($outletId, function ($q) use ($outletId) {
-                $q->where('outlet_id', $outletId);
+            ->when($hasOutletRestriction, function ($q) use ($authOutletIds) {
+                $q->whereIn('outlet_id', $authOutletIds);
             });
 
         $rekapWaktu = [
@@ -220,7 +244,7 @@ class PosTransactionController extends Controller
             ];
         }
 
-        return view('admins.pos-transaction.index', compact('outlets', 'rekapWaktu', 'outletsSummary'));
+        return view('admins.pos-transaction.index', compact('outlets', 'rekapWaktu', 'outletsSummary', 'hasOutletRestriction'));
     }
 
     /**
@@ -228,7 +252,7 @@ class PosTransactionController extends Controller
      */
     public function destroy(string $id)
     {
-        if (auth()->user()->outlet_id) {
+        if (count(auth()->user()->getOutletIds()) > 0 && !auth()->user()->hasRole('Super Admin')) {
             return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk menghapus transaksi');
         }
 

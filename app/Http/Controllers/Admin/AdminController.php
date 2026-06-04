@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Models\Admin;
 use App\Models\School;
 use App\Models\AdminSchool;
+use App\Models\AdminOutlet;
 use Yajra\DataTables\DataTables;
 use Illuminate\Support\Facades\DB;
 use Spatie\Permission\Models\Role;
@@ -80,7 +81,8 @@ class AdminController extends Controller
         $schools = School::orderBy('name')->get();
         $outlets = \App\Models\Outlet::where('is_active', true)->orderBy('name')->get();
         $adminSchools = [];
-        return view('admins.admin.create-edit', compact('roles', 'schools', 'outlets', 'adminSchools'));
+        $adminOutlets = [];
+        return view('admins.admin.create-edit', compact('roles', 'schools', 'outlets', 'adminSchools', 'adminOutlets'));
     }
 
     /**
@@ -95,7 +97,7 @@ class AdminController extends Controller
         try {
             DB::beginTransaction();
 
-            $data = $request->except(['password', 'role_ids']);
+            $data = $request->except(['password', 'role_ids', 'admin_outlets']);
             !empty($request->password) ? $data['password'] = bcrypt($request->password) : '';
 
             if (!empty($avatar = $request->avatar)) {
@@ -105,6 +107,13 @@ class AdminController extends Controller
             // Legacy support: set single role_id field to the first role ID in the array
             if ($request->role_ids && count($request->role_ids) > 0) {
                 $data['role_id'] = $request->role_ids[0];
+            }
+
+            // Set outlet_id utama dari pilihan pertama multi-outlet
+            if ($request->admin_outlets && is_array($request->admin_outlets) && count($request->admin_outlets) > 0) {
+                $data['outlet_id'] = $request->admin_outlets[0];
+            } else {
+                $data['outlet_id'] = null;
             }
 
             $admin = Admin::create($data);
@@ -119,6 +128,16 @@ class AdminController extends Controller
                     AdminSchool::create([
                         'admin_id' => $admin->id,
                         'school_id' => $school
+                    ]);
+                }
+            }
+
+            // Simpan multi-outlet pivot
+            if ($request->admin_outlets && is_array($request->admin_outlets)) {
+                foreach ($request->admin_outlets as $outletId) {
+                    AdminOutlet::create([
+                        'admin_id' => $admin->id,
+                        'outlet_id' => $outletId
                     ]);
                 }
             }
@@ -154,8 +173,9 @@ class AdminController extends Controller
         $schools = School::orderBy('name')->get();
         $outlets = \App\Models\Outlet::where('is_active', true)->orderBy('name')->get();
         $adminSchools = $admin->adminSchool->pluck('school_id')->toArray();
+        $adminOutlets = $admin->adminOutlet->pluck('outlet_id')->toArray();
         $adminRoles = $admin->roles->pluck('id')->toArray();
-        return view('admins.admin.create-edit', compact('admin', 'roles', 'schools', 'outlets', 'adminSchools', 'adminRoles'));
+        return view('admins.admin.create-edit', compact('admin', 'roles', 'schools', 'outlets', 'adminSchools', 'adminOutlets', 'adminRoles'));
     }
 
     /**
@@ -166,7 +186,7 @@ class AdminController extends Controller
         if (!Auth::user()->can('Edit Admin')) {
             return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
         }
-        $data = $request->except(['password', 'role_ids']);
+        $data = $request->except(['password', 'role_ids', 'admin_outlets']);
 
         // check email is unique
         $existAdmin = Admin::where('email', $request->email)->where('id', '!=', $admin->id)->first();
@@ -190,6 +210,13 @@ class AdminController extends Controller
             $data['role_id'] = $request->role_ids[0];
         }
 
+        // Set outlet_id utama dari pilihan pertama multi-outlet
+        if ($request->admin_outlets && is_array($request->admin_outlets) && count($request->admin_outlets) > 0) {
+            $data['outlet_id'] = $request->admin_outlets[0];
+        } else {
+            $data['outlet_id'] = null;
+        }
+
         $admin->update($data);
 
         if ($request->role_ids) {
@@ -206,6 +233,18 @@ class AdminController extends Controller
                 ]);
             }
         }
+
+        // Sync multi-outlet pivot
+        $admin->adminOutlet()->delete();
+        if ($request->admin_outlets && is_array($request->admin_outlets)) {
+            foreach ($request->admin_outlets as $outletId) {
+                AdminOutlet::create([
+                    'admin_id' => $admin->id,
+                    'outlet_id' => $outletId
+                ]);
+            }
+        }
+
         return redirect()->route('admin.index')->with('success', 'Berhasil mengubah data');
     }
 
@@ -219,6 +258,7 @@ class AdminController extends Controller
         }
         file_exists($admin->avatar) ? unlink($admin->avatar) : '';
         $admin->adminSchool()->delete();
+        $admin->adminOutlet()->delete();
         $admin->delete();
         return redirect()->route('admin.index')->with('success', 'Berhasil menghapus admin');
     }

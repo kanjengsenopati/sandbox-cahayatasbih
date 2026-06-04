@@ -90,4 +90,23 @@ class Admin extends Authenticatable
     {
         return $this->hasMany(AdminSchool::class);
     }
+
+    public function adminOutlet(): HasMany
+    {
+        return $this->hasMany(AdminOutlet::class);
+    }
+
+    /**
+     * Ambil semua outlet_id yang diassign ke admin ini
+     * (dari tabel pivot admin_outlets + outlet_id utama)
+     */
+    public function getOutletIds(): array
+    {
+        $outletIds = $this->adminOutlet->pluck('outlet_id')->toArray();
+        // Sertakan outlet_id utama jika ada dan belum ada di list
+        if ($this->outlet_id && !in_array($this->outlet_id, $outletIds)) {
+            $outletIds[] = $this->outlet_id;
+        }
+        return $outletIds;
+    }
 }

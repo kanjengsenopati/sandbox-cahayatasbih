@@ -183,7 +183,7 @@
                                             </select>
                                         </div>
 
-                                        @if(!auth()->user()->outlet_id)
+                                        @if(!$hasOutletRestriction || count($outlets) > 1)
                                         <div>
                                             <x-text.caption class="text-slate-500 d-block mb-1">Outlet</x-text.caption>
                                             <select name="outlet_id" class="form-select form-select-solid rounded-3 fs-7" id="filter_outlet_id" style="width: 200px; border: 1px solid #cbd5e1; height: 38px;">
@@ -194,7 +194,7 @@
                                             </select>
                                         </div>
                                         @else
-                                            <input type="hidden" id="filter_outlet_id" value="{{ auth()->user()->outlet_id }}">
+                                            <input type="hidden" id="filter_outlet_id" value="{{ $outlets->first()->id ?? '' }}">
                                         @endif
                                     </div>
                                 </form>
@@ -252,11 +252,11 @@
                             <div class="card premium-card bg-white p-6 h-100">
                                 <div class="d-flex align-items-center justify-content-between mb-4">
                                     <x-text.h2>Dana Belum Diserahkan</x-text.h2>
-                                    @can('Manage Laporan Transaksi')
+                                    @if(!$hasOutletRestriction)
                                     <button type="button" class="btn btn-primary btn-sm rounded-pill px-4 d-inline-flex align-items-center gap-2" data-bs-toggle="modal" data-bs-target="#modal-add-handover">
                                         <i class="fa-solid fa-file-invoice-dollar fs-6"></i> Catat Serah Terima
                                     </button>
-                                    @endcan
+                                    @endif
                                 </div>
                                 <x-text.body class="text-slate-500 mb-6">Berikut ringkasan total omzet dan dana sisa penjualan POS yang belum diserahterimakan ke pemilik masing-masing outlet.</x-text.body>
                                 
@@ -271,7 +271,7 @@
                                         </thead>
                                         <tbody>
                                             @forelse ($outletsSummary as $otSum)
-                                                @if(!auth()->user()->outlet_id || auth()->user()->outlet_id == $otSum['id'])
+                                                <tr>
                                                 <tr>
                                                     <td>
                                                         <div class="fw-bold text-slate-800 fs-7">{{ $otSum['name'] }}</div>
@@ -286,7 +286,6 @@
                                                         @endif
                                                     </td>
                                                 </tr>
-                                                @endif
                                             @empty
                                                 <tr>
                                                     <td colspan="3" class="text-center py-4 text-slate-400 italic">Data outlet tidak ditemukan</td>
@@ -306,7 +305,7 @@
                                         <x-text.h2>Riwayat Serah Terima Dana</x-text.h2>
                                     </div>
                                     <div class="card-toolbar">
-                                        @if(!auth()->user()->outlet_id)
+                                        @if(!$hasOutletRestriction || count($outlets) > 1)
                                         <select class="form-select form-select-solid rounded-3 fs-7" id="handover_filter_outlet_id" style="width: 180px; border: 1px solid #cbd5e1; height: 34px;">
                                             <option value="">Semua Outlet</option>
                                             @foreach ($outlets as $outlet)
@@ -369,9 +368,7 @@
                         <select name="outlet_id" id="handover_form_outlet_id" class="form-select form-select-solid rounded-3" required>
                             <option value="">-- Pilih Outlet --</option>
                             @foreach ($outlets as $outlet)
-                                @if(!auth()->user()->outlet_id || auth()->user()->outlet_id == $outlet->id)
                                 <option value="{{ $outlet->id }}">{{ $outlet->name }}</option>
-                                @endif
                             @endforeach
                         </select>
                     </div>

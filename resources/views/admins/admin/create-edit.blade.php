@@ -140,21 +140,21 @@
 
                                          <div class="fv-row mb-6">
                                              <!--begin::Label-->
-                                             <label class="fs-6 fw-bold form-label" for="outlet_id">
-                                                 <span>Outlet PoS (Hanya untuk Admin / Kasir)</span>
+                                             <label class="fs-6 fw-bold form-label" for="admin_outlets">
+                                                 <span>Outlet PoS (Multi-Select — Pilih semua outlet yang bisa diakses)</span>
                                                  <i class="fas fa-exclamation-circle ms-1 fs-7" data-bs-toggle="tooltip"
-                                                     title="Pilih outlet tempat kasir bertugas"></i>
+                                                     title="Pilih satu atau lebih outlet. Outlet pertama akan menjadi outlet utama/default untuk kasir."></i>
                                              </label>
                                              <!--end::Label-->
                                              <!--begin::Input-->
-                                             <select name="outlet_id" class="form-select form-select-solid mb-3"
-                                                 id="outlet_id" data-control="select2" data-placeholder="-- Pilih Outlet --" data-allow-clear="true">
-                                                 <option></option>
+                                             <select name="admin_outlets[]" class="form-select form-select-solid mb-3"
+                                                 id="admin_outlets" data-control="select2" data-placeholder="-- Pilih Outlet --" data-allow-clear="true" multiple="multiple">
                                                  @foreach ($outlets as $outlet)
-                                                 <option value="{{ $outlet->id }}" @if (old('outlet_id', @$admin->outlet_id) == $outlet->id) selected @endif>
+                                                 <option value="{{ $outlet->id }}" @if (in_array($outlet->id, old('admin_outlets', @$adminOutlets ?? []))) selected @endif>
                                                      {{ $outlet->name }}</option>
                                                  @endforeach
                                              </select>
+                                             <span class="text-muted fs-8">Outlet pertama yang dipilih akan menjadi outlet utama (default) untuk transaksi kasir.</span>
                                              <!--end::Input-->
                                          </div>
                                      </div>
