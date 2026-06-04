@@ -34,6 +34,12 @@ class RolesAndPermissionsSeeder extends Seeder
             'Manage Perizinan',
             'Approve Perizinan',
             'Scan Perizinan',
+
+            // Laporan Pos Multi Outlet CRUD Permissions
+            'Manage Laporan Pos Multi Outlet',
+            'Create Laporan Pos Multi Outlet',
+            'Edit Laporan Pos Multi Outlet',
+            'Delete Laporan Pos Multi Outlet',
         ];
 
         // Create permissions

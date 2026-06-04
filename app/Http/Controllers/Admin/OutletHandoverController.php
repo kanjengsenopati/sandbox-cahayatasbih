@@ -56,7 +56,7 @@ class OutletHandoverController extends Controller
                     return $data->creator?->name ?? '-';
                 })
                 ->addColumn('action', function ($data) {
-                    if (!auth()->user()->outlet_id) { // Hanya superadmin yang bisa hapus
+                    if (auth()->user()->can('Delete Laporan Pos Multi Outlet')) {
                         $actionDelete = route('outlet-handover.destroy', $data->id);
                         return "<div class='d-flex justify-content-center'>" .
                             view('components.action.delete', ['action' => $actionDelete, 'id' => $data->id, 'name' => 'Serah Terima Dana']) .
@@ -73,8 +73,8 @@ class OutletHandoverController extends Controller
 
     public function store(Request $request)
     {
-        if (!Auth::user()->can('Manage Laporan Pos Multi Outlet')) {
-            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
+        if (!Auth::user()->can('Create Laporan Pos Multi Outlet')) {
+            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk mencatat serah terima dana');
         }
 
         $request->validate([
@@ -106,8 +106,8 @@ class OutletHandoverController extends Controller
 
     public function destroy($id)
     {
-        if (auth()->user()->outlet_id) {
-            return redirect()->back()->with('error', 'Hanya superadmin yang dapat menghapus riwayat serah terima.');
+        if (!Auth::user()->can('Delete Laporan Pos Multi Outlet')) {
+            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk menghapus riwayat serah terima dana.');
         }
 
         try {
@@ -134,6 +134,7 @@ class OutletHandoverController extends Controller
 
         $totalSales = PointOfSaleTransaction::where('outlet_id', $outletId)
             ->where('status', 'SUCCESS')
+            ->where('type', PointOfSaleTransaction::TYPE_SANTRI)
             ->sum('pay_amount');
 
         $totalHandovers = OutletHandover::where('outlet_id', $outletId)

@@ -229,6 +229,7 @@ class PosTransactionController extends Controller
         foreach ($outlets as $ot) {
             $totalSales = PointOfSaleTransaction::where('outlet_id', $ot->id)
                 ->where('status', PointOfSaleTransaction::STATUS_SUCCESS)
+                ->where('type', PointOfSaleTransaction::TYPE_SANTRI)
                 ->sum('pay_amount');
 
             $totalHandovers = OutletHandover::where('outlet_id', $ot->id)

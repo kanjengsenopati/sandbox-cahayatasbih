@@ -252,20 +252,20 @@
                             <div class="card premium-card bg-white p-6 h-100">
                                 <div class="d-flex align-items-center justify-content-between mb-4">
                                     <x-text.h2>Dana Belum Diserahkan</x-text.h2>
-                                    @if(!$hasOutletRestriction)
+                                    @can('Create Laporan Pos Multi Outlet')
                                     <button type="button" class="btn btn-primary btn-sm rounded-pill px-4 d-inline-flex align-items-center gap-2" data-bs-toggle="modal" data-bs-target="#modal-add-handover">
                                         <i class="fa-solid fa-file-invoice-dollar fs-6"></i> Catat Serah Terima
                                     </button>
-                                    @endif
+                                    @endcan
                                 </div>
-                                <x-text.body class="text-slate-500 mb-6">Berikut ringkasan total omzet dan dana sisa penjualan POS yang belum diserahterimakan ke pemilik masing-masing outlet.</x-text.body>
+                                <x-text.body class="text-slate-500 mb-6">Berikut ringkasan total omzet nontunai (Saldo Santri) yang belum diserahterimakan ke pemilik masing-masing outlet. Aliran dana ini bersumber dari deposit Transaksi Topup Saldo masing-masing santri.</x-text.body>
                                 
                                 <div class="table-responsive">
                                     <table class="table align-middle table-row-dashed fs-7 gy-4">
                                         <thead>
                                             <tr class="text-start text-gray-400 fw-bold fs-8 text-uppercase gs-0">
                                                 <th>Outlet</th>
-                                                <th class="text-end">Total Omzet</th>
+                                                <th class="text-end">Omzet Saldo Santri</th>
                                                 <th class="text-end">Belum Diserahkan</th>
                                             </tr>
                                         </thead>
