@@ -3,8 +3,9 @@
 namespace App\Http\Controllers\Admin;
 
 use Carbon\Carbon;
-use App\Models\School;
+use App\Models\Outlet;
 use Illuminate\Http\Request;
+use App\Models\OutletHandover;
 use Yajra\DataTables\DataTables;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Auth;
@@ -15,156 +16,211 @@ class PosTransactionController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
-        if (!Auth::user()->can('Manage Laporan Tagihan')) {
+        if (!Auth::user()->can('Manage Laporan Transaksi')) {
             return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
         }
 
-        if (request()->ajax()) {
-            $data = PointOfSaleTransaction::with(['outlet', 'student', 'student.classroom', 'admins'])
-                ->when(
-                    request()->filled('start_date') && request()->filled('end_date'),
-                    function ($query) {
-                        $query->whereDate('created_at', '>=', request()->start_date)
-                            ->whereDate('created_at', '<=', request()->end_date);
-                    }
-                )
-                ->when(auth()->user()->outlet_id, function($q) {
-                    $q->where('outlet_id', auth()->user()->outlet_id);
+        // Tentukan outlet_id berdasarkan hak akses admin yang login
+        $authOutletId = auth()->user()->outlet_id;
+        $outletId = $authOutletId ?? $request->input('outlet_id');
+
+        if ($request->ajax()) {
+            // Base query untuk tabel transaksi
+            $data = PointOfSaleTransaction::with(['outlet', 'student', 'student.classroom', 'admins', 'pointOfSaleTransactionDetails.item'])
+                ->when($authOutletId, function ($q) use ($authOutletId) {
+                    $q->where('outlet_id', $authOutletId);
                 })
-                ->when(!auth()->user()->outlet_id && request()->filled('outlet_id'), function($q) {
-                    $q->where('outlet_id', request()->outlet_id);
+                ->when(!$authOutletId && $request->filled('outlet_id'), function ($q) use ($request) {
+                    $q->where('outlet_id', $request->outlet_id);
                 })
-                // ->schoolFilter('school_id', request()->school_id)
-                // ->classroomFilter('classroom_id', request()->classroom_id)
-                // Apply search on student name if provided
-                ->when(request()->has('search') && is_array(request()->search) && isset(request()->search['value']), function ($query) {
-                    $searchTerm = request()->search['value'];
-                    $query->whereHas('student', function ($subQuery) use ($searchTerm) {
-                        $subQuery->where('name', 'like', '%' . $searchTerm . '%');
-                    });
+                ->when($request->filled('start_date') && $request->filled('end_date'), function ($query) use ($request) {
+                    $query->whereDate('created_at', '>=', $request->start_date)
+                        ->whereDate('created_at', '<=', $request->end_date);
+                })
+                ->when($request->filled('status'), function ($query) use ($request) {
+                    $query->where('status', $request->status);
                 })
                 ->latest();
 
-            if (request()->data == 'total') {
-                // Fetch all types of transactions and sum them separately
-                $totals = $data->selectRaw('SUM(CASE WHEN status = "PAID" THEN pay_amount ELSE 0 END) as total_paid, SUM(CASE WHEN status = "UNPAID" THEN pay_amount ELSE 0 END) as total_unpaid, SUM(pay_amount) as total')->first();
+            // Hitung total ringkasan terfilter
+            if ($request->data == 'total') {
+                $totals = (clone $data)->selectRaw('
+                    COUNT(id) as count,
+                    SUM(pay_amount) as sales,
+                    SUM(profit) as profit
+                ')->first();
 
-                // Format the totals using number_format
-                $formattedTotalPaid = number_format($totals->total_paid, 0, ',', '.');
-                $formattedTotalUnpaid = number_format($totals->total_unpaid, 0, ',', '.');
-                $formattedTotal = number_format($totals->total, 0, ',', '.');
+                // Hitung rekap dinamis Hari Ini, Minggu Ini, Bulan Ini
+                // dengan tetap memperhitungkan filter outlet (jika ada)
+                $todayQuery = PointOfSaleTransaction::where('status', PointOfSaleTransaction::STATUS_SUCCESS)
+                    ->whereDate('created_at', Carbon::today())
+                    ->when($outletId, function ($q) use ($outletId) {
+                        $q->where('outlet_id', $outletId);
+                    });
+
+                $weekQuery = PointOfSaleTransaction::where('status', PointOfSaleTransaction::STATUS_SUCCESS)
+                    ->whereBetween('created_at', [Carbon::now()->startOfWeek(), Carbon::now()->endOfWeek()])
+                    ->when($outletId, function ($q) use ($outletId) {
+                        $q->where('outlet_id', $outletId);
+                    });
+
+                $monthQuery = PointOfSaleTransaction::where('status', PointOfSaleTransaction::STATUS_SUCCESS)
+                    ->whereBetween('created_at', [Carbon::now()->startOfMonth(), Carbon::now()->endOfMonth()])
+                    ->when($outletId, function ($q) use ($outletId) {
+                        $q->where('outlet_id', $outletId);
+                    });
 
                 return response()->json([
-                    'total_paid' => $formattedTotalPaid,
-                    'total_unpaid' => $formattedTotalUnpaid,
-                    'target_revenue' => $formattedTotal
+                    'total_sales' => 'Rp ' . number_format($totals->sales ?? 0, 0, ',', '.'),
+                    'total_profit' => 'Rp ' . number_format($totals->profit ?? 0, 0, ',', '.'),
+                    'total_transactions' => number_format($totals->count ?? 0, 0, ',', '.'),
+
+                    // Rekap waktu
+                    'today_sales' => 'Rp ' . number_format($todayQuery->sum('pay_amount'), 0, ',', '.'),
+                    'today_profit' => 'Rp ' . number_format($todayQuery->sum('profit'), 0, ',', '.'),
+                    'today_count' => number_format($todayQuery->count(), 0, ',', '.'),
+
+                    'week_sales' => 'Rp ' . number_format($weekQuery->sum('pay_amount'), 0, ',', '.'),
+                    'week_profit' => 'Rp ' . number_format($weekQuery->sum('profit'), 0, ',', '.'),
+                    'week_count' => number_format($weekQuery->count(), 0, ',', '.'),
+
+                    'month_sales' => 'Rp ' . number_format($monthQuery->sum('pay_amount'), 0, ',', '.'),
+                    'month_profit' => 'Rp ' . number_format($monthQuery->sum('profit'), 0, ',', '.'),
+                    'month_count' => number_format($monthQuery->count(), 0, ',', '.'),
                 ]);
-            } elseif (request()->data == 'table') {
+            } elseif ($request->data == 'table') {
                 return DataTables::of($data)
+                    ->addColumn('payment_code', function ($data) {
+                        return '<strong>' . ($data->payment_code ?? '-') . '</strong>';
+                    })
                     ->addColumn('pay_amount', function ($data) {
-                        return 'Rp' . number_format($data->pay_amount, 0, ',', '.');
+                        return 'Rp ' . number_format($data->pay_amount, 0, ',', '.');
+                    })
+                    ->addColumn('profit', function ($data) {
+                        return 'Rp ' . number_format($data->profit, 0, ',', '.');
                     })
                     ->addColumn('date', function ($data) {
                         return Carbon::parse($data->created_at)->translatedFormat('d F Y H:i:s');
                     })
                     ->addColumn('status', function ($data) {
-                        return $data->status == 'UNPAID' ? '<span class="badge badge-danger">Belum Lunas</span>' : '<span class="badge badge-success">Lunas</span>';
+                        if ($data->status == PointOfSaleTransaction::STATUS_SUCCESS) {
+                            return '<span class="badge badge-success px-3 py-2">Sukses</span>';
+                        } elseif ($data->status == PointOfSaleTransaction::STATUS_PENDING) {
+                            return '<span class="badge badge-warning px-3 py-2 text-dark">Pending</span>';
+                        } else {
+                            return '<span class="badge badge-danger px-3 py-2">Gagal</span>';
+                        }
+                    })
+                    ->addColumn('details', function ($data) {
+                        $items = [];
+                        foreach ($data->pointOfSaleTransactionDetails as $detail) {
+                            $items[] = ($detail->item?->name ?? 'Barang') . ' (' . $detail->quantity . 'x)';
+                        }
+                        return implode(', ', $items) ?: '-';
                     })
                     ->addColumn('student', function ($data) {
-                        $studentName = $data->student?->name ? $data->student->name : '-';
-                        $className = $data->student?->classroom?->name ? $data->student?->classroom->name : '-';
+                        if ($data->type == PointOfSaleTransaction::TYPE_UMUM || !$data->student) {
+                            return '<div class="d-flex align-items-center gap-2">
+                                <span class="badge badge-light-secondary px-3 py-2 text-dark">Umum</span>
+                            </div>';
+                        }
 
-                        // Check if avatar exists, if not, use default avatar
-                        $avatarUrl = $data->student?->avatar ? $data->student->avatar : asset('assets/media/avatars/default.png');
+                        $studentName = $data->student->name;
+                        $className = $data->student->classroom?->name ?? '-';
+                        $avatarUrl = $data->student->avatar ? asset($data->student->avatar) : asset('assets/media/avatars/default.png');
 
-                        // Return HTML structure for the card with avatar, name, and class
                         return '<div class="student-card" style="display: flex; align-items: center; gap: 10px;">
-                        <img src="' . $avatarUrl . '" alt="Avatar" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover;">
-                        <div>
-                            <div><strong>' . $studentName . '</strong></div>
-                            <div>' . $className . '</div>
-                        </div>
-                    </div>';
+                            <img src="' . $avatarUrl . '" alt="Avatar" style="width: 32px; height: 32px; border-radius: 50%; object-fit: cover;">
+                            <div>
+                                <div style="font-weight: 600; color: #1e293b; font-size: 13px;">' . $studentName . '</div>
+                                <div style="font-size: 11px; color: #64748b;">Kelas: ' . $className . '</div>
+                            </div>
+                        </div>';
                     })
                     ->addColumn('admin', function ($data) {
-                        $adminAvatar = $data->admins?->name ? $data->admins->name : '-';
-                        $role = $data->admins?->role ? $data->admins?->role->name : '-';
-
-                        // Check if avatar exists, if not, use default avatar
-                        $avatarUrl = $data->admins?->avatar ? $data->admins->avatar : asset('assets/media/avatars/default.png');
-
-                        // Return HTML structure for the card with avatar, name, and class
-                        return '<div class="student-card" style="display: flex; align-items: center; gap: 10px;">
-                        <img src="' . $avatarUrl . '" alt="Avatar" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover;">
-                        <div>
-                            <div><strong>' . $adminAvatar . '</strong></div>
-                            <div>' . $role . '</div>
-                        </div>
-                    </div>';
+                        return $data->admins?->name ?? '-';
                     })
                     ->addColumn('outlet', function ($data) {
                         return $data->outlet?->name ?? '-';
                     })
                     ->addColumn('action', function ($data) {
-                        $actionDelete = route('report-transaction.destroy', $data->id);
-                        return "<div class='d-flex gap-2 flex-nowrap justify-content-center'>" .
-                            // add icon print invoice
-                            view('components.action.delete', ['action' => $actionDelete, 'id' => $data->id, 'name' => 'Laporan Transaksi']) .
-                            "</div>";
-                        // add delete action
+                        $actionDelete = route('pos-transaction.destroy', $data->id);
+                        $invoiceUrl = route('order-item-history.print', $data->id);
+                        
+                        $html = "<div class='d-flex gap-2 justify-content-center'>";
+                        $html .= "<a href='" . $invoiceUrl . "' target='_blank' class='btn btn-icon btn-bg-light btn-active-color-primary btn-sm me-1' title='Cetak Invoice'><i class='fa-solid fa-print text-primary fs-6'></i></a>";
+                        
+                        if (!auth()->user()->outlet_id) { // Hanya superadmin yang bisa hapus transaksi
+                            $html .= view('components.action.delete', ['action' => $actionDelete, 'id' => $data->id, 'name' => 'Transaksi POS']);
+                        }
+                        
+                        $html .= "</div>";
+                        return $html;
                     })
-                    ->editColumn('pay_amount', function ($data) {
-                        return 'Rp' . number_format($data->pay_amount, 0, ',', '.');
-                    })
-                    ->rawColumns(['date', 'action', 'student', 'status', 'admin'])
+                    ->rawColumns(['payment_code', 'date', 'action', 'student', 'status', 'details'])
                     ->make(true);
             }
         }
 
-        $schools = School::orderBy('name')->get();
-        $outlets = \App\Models\Outlet::orderBy('name')->get();
-        return view('admins.pos-transaction.index', compact('schools', 'outlets'));
-    }
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
-    {
-        //
-    }
+        // Tampilkan halaman pertama
+        $outlets = Outlet::orderBy('name')->get();
 
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(Request $request)
-    {
-        //
-    }
+        // Hitung rekap waktu dinamis untuk inisiasi awal
+        $todayQuery = PointOfSaleTransaction::where('status', PointOfSaleTransaction::STATUS_SUCCESS)
+            ->whereDate('created_at', Carbon::today())
+            ->when($outletId, function ($q) use ($outletId) {
+                $q->where('outlet_id', $outletId);
+            });
 
-    /**
-     * Display the specified resource.
-     */
-    public function show(string $id)
-    {
-        //
-    }
+        $weekQuery = PointOfSaleTransaction::where('status', PointOfSaleTransaction::STATUS_SUCCESS)
+            ->whereBetween('created_at', [Carbon::now()->startOfWeek(), Carbon::now()->endOfWeek()])
+            ->when($outletId, function ($q) use ($outletId) {
+                $q->where('outlet_id', $outletId);
+            });
 
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(string $id)
-    {
-        //
-    }
+        $monthQuery = PointOfSaleTransaction::where('status', PointOfSaleTransaction::STATUS_SUCCESS)
+            ->whereBetween('created_at', [Carbon::now()->startOfMonth(), Carbon::now()->endOfMonth()])
+            ->when($outletId, function ($q) use ($outletId) {
+                $q->where('outlet_id', $outletId);
+            });
 
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, string $id)
-    {
-        //
+        $rekapWaktu = [
+            'today_sales' => $todayQuery->sum('pay_amount'),
+            'today_profit' => $todayQuery->sum('profit'),
+            'today_count' => $todayQuery->count(),
+
+            'week_sales' => $weekQuery->sum('pay_amount'),
+            'week_profit' => $weekQuery->sum('profit'),
+            'week_count' => $weekQuery->count(),
+
+            'month_sales' => $monthQuery->sum('pay_amount'),
+            'month_profit' => $monthQuery->sum('profit'),
+            'month_count' => $monthQuery->count(),
+        ];
+
+        // Rekap Dana Per Outlet (untuk Tab Serah Terima)
+        $outletsSummary = [];
+        foreach ($outlets as $ot) {
+            $totalSales = PointOfSaleTransaction::where('outlet_id', $ot->id)
+                ->where('status', PointOfSaleTransaction::STATUS_SUCCESS)
+                ->sum('pay_amount');
+
+            $totalHandovers = OutletHandover::where('outlet_id', $ot->id)
+                ->sum('amount');
+
+            $outletsSummary[] = [
+                'id' => $ot->id,
+                'name' => $ot->name,
+                'code' => $ot->code,
+                'total_sales' => $totalSales,
+                'total_handovers' => $totalHandovers,
+                'pending_amount' => max(0, $totalSales - $totalHandovers),
+            ];
+        }
+
+        return view('admins.pos-transaction.index', compact('outlets', 'rekapWaktu', 'outletsSummary'));
     }
 
     /**
@@ -172,6 +228,20 @@ class PosTransactionController extends Controller
      */
     public function destroy(string $id)
     {
-        //
+        if (auth()->user()->outlet_id) {
+            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk menghapus transaksi');
+        }
+
+        try {
+            $transaction = PointOfSaleTransaction::findOrFail($id);
+            
+            // Hapus detail transaksi juga
+            $transaction->pointOfSaleTransactionDetails()->delete();
+            $transaction->delete();
+
+            return redirect()->back()->with('success', 'Transaksi berhasil dihapus');
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'Gagal menghapus transaksi: ' . $e->getMessage());
+        }
     }
 }

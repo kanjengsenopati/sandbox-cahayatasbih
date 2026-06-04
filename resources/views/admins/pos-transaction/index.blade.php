@@ -1,295 +1,530 @@
-@extends('layouts.master', ['title' => 'Laporan Tagihan Siswa'])
+@extends('layouts.master', ['title' => 'Laporan Transaksi POS Multi-Outlet'])
 @section('content')
-<div class="content d-flex flex-column flex-column-fluid" id="kt_content">
+<style>
+    .premium-card {
+        border-radius: 24px !important;
+        box-shadow: 0 8px 30px rgba(0, 0, 0, 0.04) !important;
+        border: none !important;
+    }
+    .safe-padding {
+        padding-left: 20px !important;
+        padding-right: 20px !important;
+    }
+    .nav-tabs-custom {
+        border-bottom: 2px solid #f1f5f9;
+    }
+    .nav-tabs-custom .nav-link {
+        border: none;
+        color: #64748b;
+        font-weight: 600;
+        padding: 12px 20px;
+        position: relative;
+        transition: all 0.2s ease;
+    }
+    .nav-tabs-custom .nav-link.active {
+        color: #2563eb;
+        background: transparent;
+    }
+    .nav-tabs-custom .nav-link.active::after {
+        content: '';
+        position: absolute;
+        bottom: -2px;
+        left: 0;
+        right: 0;
+        height: 2px;
+        background-color: #2563eb;
+    }
+    .stat-badge {
+        background-color: rgba(16, 185, 129, 0.1);
+        color: #10b981;
+        font-weight: 700;
+        padding: 4px 8px;
+        border-radius: 8px;
+    }
+    .modal-custom {
+        border-radius: 24px !important;
+    }
+</style>
+
+<div class="content d-flex flex-column flex-column-fluid safe-padding" id="kt_content">
     <!--begin::Toolbar-->
-    <div class="toolbar" id="kt_toolbar">
-        <!--begin::Container-->
-        <div id="kt_toolbar_container" class="container-fluid d-flex flex-stack">
-            <!--begin::Page title-->
-            <div data-kt-swapper="true" data-kt-swapper-mode="prepend"
-                data-kt-swapper-parent="{default: '#kt_content_container', 'lg': '#kt_toolbar_container'}"
-                class="page-title d-flex align-items-center flex-wrap me-3 mb-5 mb-lg-0">
-                <!--begin::Title-->
-                <h1 class="d-flex text-dark fw-bolder fs-3 align-items-center my-1">Laporan</h1>
-                <!--end::Title-->
-                <!--begin::Separator-->
+    <div class="toolbar py-5" id="kt_toolbar">
+        <div id="kt_toolbar_container" class="container-fluid d-flex flex-stack px-0">
+            <div class="page-title d-flex align-items-center flex-wrap me-3 mb-5 mb-lg-0">
+                <x-text.h1 class="my-1">Laporan Transaksi POS</x-text.h1>
                 <span class="h-20px border-gray-300 border-start mx-4"></span>
-                <!--end::Separator-->
-                <!--begin::Breadcrumb-->
                 <ul class="breadcrumb breadcrumb-separatorless fw-bold fs-7 my-1">
-                    <!--begin::Item-->
                     <li class="breadcrumb-item text-muted">
-                        <a href="{{ route('pos-transaction.index') }}" class="text-muted text-hover-primary">Laporan
-                            Transaksi POS</a>
+                        <a href="#" class="text-muted text-hover-primary">Laporan</a>
                     </li>
-                    <!--end::Item-->
-                    <!--begin::Item-->
                     <li class="breadcrumb-item">
                         <span class="bullet bg-gray-300 w-5px h-2px"></span>
                     </li>
-                    <!--end::Item-->
-                    <!--begin::Item-->
-                    <li class="breadcrumb-item text-dark">Data Transaksi</li>
-                    <!--end::Item-->
+                    <li class="breadcrumb-item text-dark">POS Multi-Outlet</li>
                 </ul>
-                <!--end::Breadcrumb-->
             </div>
-            <!--end::Page title-->
-            <!--begin::Actions-->
-
-            <!--end::Actions-->
         </div>
-        <!--end::Container-->
     </div>
     <!--end::Toolbar-->
+
     <!--begin::Post-->
     <div class="post d-flex flex-column-fluid">
-        <!--begin::Container-->
-        <div id="kt_content_container" class="container-xxl">
-            <!--begin::Card-->
-            <div class="card mb-5">
-                <!--begin::Card header-->
-                <div
-                    class="card-header d-flex align-items-end gap-5 flex-sm-row mb-5 justify-content-between border-0 pt-6">
-                    <div class="d-flex flex-wrap justify-content-beetween gap-5">
-                        <div class="mb-0">
-                            <form action="#" id="form-filter" method="get">
-                                <input type="text" hidden id="type" name="type" required>
-                                <div class="d-flex flex-wrap gap-4 align-items-end">
-                                    <div>
-                                        <label class="form-label">Filter Tanggal</label>
-                                        <div class="d-flex gap-4 align-items-end">
-                                            <div id="dateRange" class="pull-right"
-                                                style="background: #fff; cursor: pointer; padding: 5px 10px; border: 1px solid #ccc;float: top;">
-                                                <i class="glyphicon glyphicon-calendar fa fa-calendar"></i>&nbsp;
-                                                <span></span> <b class="caret"></b>
+        <div id="kt_content_container" class="container-fluid px-0">
+
+            <!-- Navigasi Tab Utama -->
+            <ul class="nav nav-tabs nav-tabs-custom mb-6" id="reportTabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="transactions-tab" data-bs-toggle="tab" data-bs-target="#transactions-pane" type="button" role="tab" aria-controls="transactions-pane" aria-selected="true">
+                        <i class="fa-solid fa-list-check me-2"></i> Laporan Transaksi
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="handover-tab" data-bs-toggle="tab" data-bs-target="#handover-pane" type="button" role="tab" aria-controls="handover-pane" aria-selected="false">
+                        <i class="fa-solid fa-handshake-angle me-2"></i> Serah Terima Dana
+                    </button>
+                </li>
+            </ul>
+
+            <!-- Isi Tab Utama -->
+            <div class="tab-content" id="reportTabsContent">
+
+                <!-- TAB 1: LAPORAN TRANSAKSI -->
+                <div class="tab-pane fade show active" id="transactions-pane" role="tabpanel" aria-labelledby="transactions-tab">
+                    
+                    <!-- GRID REKAP HARI INI, MINGGU INI, BULAN INI -->
+                    <div class="row g-6 mb-6">
+                        <!-- Hari Ini -->
+                        <div class="col-md-4">
+                            <div class="card premium-card bg-white p-6">
+                                <div class="d-flex align-items-center justify-content-between mb-4">
+                                    <x-text.label class="text-slate-400">Hari Ini</x-text.label>
+                                    <span class="badge bg-light-primary text-primary px-3 py-1 fw-bold rounded-pill" id="today-count-badge">{{ $rekapWaktu['today_count'] }} Transaksi</span>
+                                </div>
+                                <div class="mb-2">
+                                    <x-text.caption class="text-slate-400">Total Omzet</x-text.caption>
+                                    <div class="d-flex align-items-baseline">
+                                        <x-text.amount id="today-sales-text">Rp {{ number_format($rekapWaktu['today_sales'], 0, ',', '.') }}</x-text.amount>
+                                    </div>
+                                </div>
+                                <div>
+                                    <x-text.caption class="text-slate-400">Estimasi Keuntungan</x-text.caption>
+                                    <div class="text-slate-800 fw-bold fs-6" id="today-profit-text">Rp {{ number_format($rekapWaktu['today_profit'], 0, ',', '.') }}</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Minggu Ini -->
+                        <div class="col-md-4">
+                            <div class="card premium-card bg-white p-6">
+                                <div class="d-flex align-items-center justify-content-between mb-4">
+                                    <x-text.label class="text-slate-400">Minggu Ini</x-text.label>
+                                    <span class="badge bg-light-success text-success px-3 py-1 fw-bold rounded-pill" id="week-count-badge">{{ $rekapWaktu['week_count'] }} Transaksi</span>
+                                </div>
+                                <div class="mb-2">
+                                    <x-text.caption class="text-slate-400">Total Omzet</x-text.caption>
+                                    <div class="d-flex align-items-baseline">
+                                        <x-text.amount id="week-sales-text">Rp {{ number_format($rekapWaktu['week_sales'], 0, ',', '.') }}</x-text.amount>
+                                    </div>
+                                </div>
+                                <div>
+                                    <x-text.caption class="text-slate-400">Estimasi Keuntungan</x-text.caption>
+                                    <div class="text-slate-800 fw-bold fs-6" id="week-profit-text">Rp {{ number_format($rekapWaktu['week_profit'], 0, ',', '.') }}</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Bulan Ini -->
+                        <div class="col-md-4">
+                            <div class="card premium-card bg-white p-6">
+                                <div class="d-flex align-items-center justify-content-between mb-4">
+                                    <x-text.label class="text-slate-400">Bulan Ini</x-text.label>
+                                    <span class="badge bg-light-warning text-warning px-3 py-1 fw-bold rounded-pill" id="month-count-badge">{{ $rekapWaktu['month_count'] }} Transaksi</span>
+                                </div>
+                                <div class="mb-2">
+                                    <x-text.caption class="text-slate-400">Total Omzet</x-text.caption>
+                                    <div class="d-flex align-items-baseline">
+                                        <x-text.amount id="month-sales-text">Rp {{ number_format($rekapWaktu['month_sales'], 0, ',', '.') }}</x-text.amount>
+                                    </div>
+                                </div>
+                                <div>
+                                    <x-text.caption class="text-slate-400">Estimasi Keuntungan</x-text.caption>
+                                    <div class="text-slate-800 fw-bold fs-6" id="month-profit-text">Rp {{ number_format($rekapWaktu['month_profit'], 0, ',', '.') }}</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- CARD UTAMA: FILTER DAN TABEL TRANSAKSI -->
+                    <div class="card premium-card mb-5">
+                        <div class="card-header border-0 pt-6 px-8">
+                            <div class="card-title">
+                                <x-text.h2>Daftar Riwayat Transaksi</x-text.h2>
+                            </div>
+                            <div class="card-toolbar flex-wrap gap-4">
+                                <form action="#" id="form-filter" method="get">
+                                    <div class="d-flex flex-wrap gap-4 align-items-end">
+                                        <div>
+                                            <x-text.caption class="text-slate-500 d-block mb-1">Filter Tanggal</x-text.caption>
+                                            <div id="dateRange" class="d-flex align-items-center justify-content-between" style="background: #fff; cursor: pointer; padding: 7px 12px; border: 1px solid #cbd5e1; border-radius: 12px;">
+                                                <i class="fa-solid fa-calendar-days text-slate-400 me-2"></i>
+                                                <span class="fs-7 fw-bold text-slate-700"></span> <b class="caret ms-2 text-slate-400"></b>
                                             </div>
                                             <input type="text" id="start_date" name="start_date" hidden>
                                             <input type="text" id="end_date" name="end_date" hidden>
+                                        </div>
 
+                                        <div>
+                                            <x-text.caption class="text-slate-500 d-block mb-1">Status</x-text.caption>
+                                            <select name="status" class="form-select form-select-solid rounded-3 fs-7" id="filter_status" style="width: 150px; border: 1px solid #cbd5e1; height: 38px;">
+                                                <option value="">Semua Status</option>
+                                                <option value="SUCCESS">Sukses</option>
+                                                <option value="PENDING">Pending</option>
+                                                <option value="FAILED">Gagal</option>
+                                            </select>
+                                        </div>
+
+                                        @if(!auth()->user()->outlet_id)
+                                        <div>
+                                            <x-text.caption class="text-slate-500 d-block mb-1">Outlet</x-text.caption>
+                                            <select name="outlet_id" class="form-select form-select-solid rounded-3 fs-7" id="filter_outlet_id" style="width: 200px; border: 1px solid #cbd5e1; height: 38px;">
+                                                <option value="">Semua Outlet</option>
+                                                @foreach ($outlets as $outlet)
+                                                <option value="{{ $outlet->id }}">{{ $outlet->name }}</option>
+                                                @endforeach
+                                            </select>
+                                        </div>
+                                        @else
+                                            <input type="hidden" id="filter_outlet_id" value="{{ auth()->user()->outlet_id }}">
+                                        @endif
+                                    </div>
+                                </form>
+
+                                <div class="d-flex gap-2">
+                                    <div class="card bg-light-primary border-0 p-3 d-flex flex-row align-items-center gap-3">
+                                        <i class="fa-solid fa-money-bill-trend-up text-primary fs-4"></i>
+                                        <div>
+                                            <div class="fs-8 text-slate-500 fw-bold">Omzet Filter</div>
+                                            <div class="fs-6 fw-bolder text-primary" id="total-filtered-sales">Rp 0</div>
                                         </div>
                                     </div>
+                                    <div class="card bg-light-success border-0 p-3 d-flex flex-row align-items-center gap-3">
+                                        <i class="fa-solid fa-chart-line text-success fs-4"></i>
+                                        <div>
+                                            <div class="fs-8 text-slate-500 fw-bold">Profit Filter</div>
+                                            <div class="fs-6 fw-bolder text-success" id="total-filtered-profit">Rp 0</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
 
-                                    <div>
-                                        <label class="form-label">Lembaga</label>
-                                        <select name="school_id" class="form-select form-select-sm"
-                                            id="filter_school_id">
-                                            <option value="">Semua Lembaga</option>
-                                            @foreach ($schools as $school)
-                                            <option value="{{ $school->id }}">{{ $school->name }}</option>
-                                            @endforeach
-                                        </select>
+                        <div class="card-body pt-0 px-8 pb-8">
+                            <div class="table-responsive mt-6">
+                                <table id="table-transactions" class="table align-middle table-row-dashed fs-7 gy-5">
+                                    <thead>
+                                        <tr class="text-start text-gray-400 fw-bold fs-8 text-uppercase gs-0">
+                                            <th style="width: 5%">No</th>
+                                            <th>Invoice</th>
+                                            <th>Waktu</th>
+                                            <th>Outlet</th>
+                                            <th>Kasir</th>
+                                            <th>Pembeli</th>
+                                            <th>Item Belanja</th>
+                                            <th>Total Omzet</th>
+                                            <th>Profit</th>
+                                            <th>Status</th>
+                                            <th class="text-center" style="width: 10%">Aksi</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="text-gray-600 fw-semibold"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TAB 2: SERAH TERIMA DANA -->
+                <div class="tab-pane fade" id="handover-pane" role="tabpanel" aria-labelledby="handover-tab">
+                    
+                    <div class="row g-6 mb-6">
+                        <!-- PANEL RINGKASAN OUTLET & TOMBOL AKSI -->
+                        <div class="col-md-5">
+                            <div class="card premium-card bg-white p-6 h-100">
+                                <div class="d-flex align-items-center justify-content-between mb-4">
+                                    <x-text.h2>Dana Belum Diserahkan</x-text.h2>
+                                    @can('Manage Laporan Transaksi')
+                                    <button type="button" class="btn btn-primary btn-sm rounded-pill px-4 d-inline-flex align-items-center gap-2" data-bs-toggle="modal" data-bs-target="#modal-add-handover">
+                                        <i class="fa-solid fa-file-invoice-dollar fs-6"></i> Catat Serah Terima
+                                    </button>
+                                    @endcan
+                                </div>
+                                <x-text.body class="text-slate-500 mb-6">Berikut ringkasan total omzet dan dana sisa penjualan POS yang belum diserahterimakan ke pemilik masing-masing outlet.</x-text.body>
+                                
+                                <div class="table-responsive">
+                                    <table class="table align-middle table-row-dashed fs-7 gy-4">
+                                        <thead>
+                                            <tr class="text-start text-gray-400 fw-bold fs-8 text-uppercase gs-0">
+                                                <th>Outlet</th>
+                                                <th class="text-end">Total Omzet</th>
+                                                <th class="text-end">Belum Diserahkan</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @forelse ($outletsSummary as $otSum)
+                                                @if(!auth()->user()->outlet_id || auth()->user()->outlet_id == $otSum['id'])
+                                                <tr>
+                                                    <td>
+                                                        <div class="fw-bold text-slate-800 fs-7">{{ $otSum['name'] }}</div>
+                                                        <div class="text-slate-400 fs-8">Kode: {{ $otSum['code'] }}</div>
+                                                    </td>
+                                                    <td class="text-end fw-semibold text-slate-600">Rp {{ number_format($otSum['total_sales'], 0, ',', '.') }}</td>
+                                                    <td class="text-end">
+                                                        @if ($otSum['pending_amount'] > 0)
+                                                            <span class="badge bg-light-warning text-warning px-3 py-2 fw-bolder">Rp {{ number_format($otSum['pending_amount'], 0, ',', '.') }}</span>
+                                                        @else
+                                                            <span class="badge bg-light-success text-success px-3 py-2 fw-bolder">Lunas (Rp 0)</span>
+                                                        @endif
+                                                    </td>
+                                                </tr>
+                                                @endif
+                                            @empty
+                                                <tr>
+                                                    <td colspan="3" class="text-center py-4 text-slate-400 italic">Data outlet tidak ditemukan</td>
+                                                </tr>
+                                            @endforelse
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- PANEL TABEL RIWAYAT SERAH TERIMA -->
+                        <div class="col-md-7">
+                            <div class="card premium-card bg-white p-6 h-100">
+                                <div class="card-header border-0 p-0 mb-4">
+                                    <div class="card-title">
+                                        <x-text.h2>Riwayat Serah Terima Dana</x-text.h2>
                                     </div>
-                                    <div>
-                                        <label class="form-label">Kelas</label>
-                                        <select name="classroom_id" class="form-select form-select-sm"
-                                            id="filter_classroom_id">
-                                            <option value="">Semua Kelas</option>
-                                        </select>
-                                    </div>
-                                    <div>
-                                        <label class="form-label">Status</label>
-                                        <select name="status" class="form-select form-select-sm" id="filter_status">
-                                            <option value="">Semua</option>
-                                            <option value="PAID">Lunas</option>
-                                            <option value="UNPAID">Belum Lunas</option>
-                                        </select>
-                                    </div>
-                                    @if(!auth()->user()->outlet_id)
-                                    <div>
-                                        <label class="form-label">Outlet</label>
-                                        <select name="outlet_id" class="form-select form-select-sm" id="filter_outlet_id">
+                                    <div class="card-toolbar">
+                                        @if(!auth()->user()->outlet_id)
+                                        <select class="form-select form-select-solid rounded-3 fs-7" id="handover_filter_outlet_id" style="width: 180px; border: 1px solid #cbd5e1; height: 34px;">
                                             <option value="">Semua Outlet</option>
                                             @foreach ($outlets as $outlet)
                                             <option value="{{ $outlet->id }}">{{ $outlet->name }}</option>
                                             @endforeach
                                         </select>
+                                        @endif
                                     </div>
-                                    @endif
                                 </div>
-                            </form>
-
-                            <div class="d-flex flex-wrap gap-2 mt-4">
-                                <!-- Card for "Target Pemasukan" (Revenue Target) -->
-                                <div class="card bg-light-warning bg-active-warning flex-grow-1">
-                                    <!--begin::Body-->
-                                    <div class="card-body d-flex align-items-center">
-                                        <div class="me-3">
-                                            <i class="fas fa-bullseye text-warning fs-2"></i>
-                                        </div>
-                                        <div>
-                                            <!--begin::Label-->
-                                            <div class="fw-bolder fs-5 text-gray-800">Target Pemasukan</div>
-                                            <!--end::Label-->
-                                            <!--begin::Stats-->
-                                            <div class="text-warning fs-3 fw-bolder" id="target-revenue">Rp. 0</div>
-                                            <!--end::Stats-->
-                                        </div>
-                                    </div>
-                                    <!--end::Body-->
+                                
+                                <div class="table-responsive">
+                                    <table id="table-handovers" class="table align-middle table-row-dashed fs-7 gy-4">
+                                        <thead>
+                                            <tr class="text-start text-gray-400 fw-bold fs-8 text-uppercase gs-0">
+                                                <th style="width: 5%">No</th>
+                                                <th>Tanggal</th>
+                                                <th>Outlet</th>
+                                                <th>Penerima</th>
+                                                <th>Nominal</th>
+                                                <th>Bukti</th>
+                                                <th>Diserahkan Oleh</th>
+                                                <th class="text-center" style="width: 10%">Aksi</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody class="text-gray-600 fw-semibold"></tbody>
+                                    </table>
                                 </div>
-                                <!-- Card for "Lunas" (Paid) -->
-                                <div class="card bg-light-primary bg-active-primary flex-grow-1">
-                                    <!--begin::Body-->
-                                    <div class="card-body d-flex align-items-center">
-                                        <div class="me-3">
-                                            <i class="fas fa-check-circle text-primary fs-2"></i>
-                                        </div>
-                                        <div>
-                                            <!--begin::Label-->
-                                            <div class="fw-bolder fs-5 text-gray-800">Lunas</div>
-                                            <!--end::Label-->
-                                            <!--begin::Stats-->
-                                            <div class="text-primary fs-3 fw-bolder" id="total-paid">Rp. 0</div>
-                                            <!--end::Stats-->
-                                        </div>
-                                    </div>
-                                    <!--end::Body-->
-                                </div>
-
-                                <!-- Card for "Belum Lunas" (Unpaid) -->
-                                <div class="card bg-light-danger bg-active-danger flex-grow-1">
-                                    <!--begin::Body-->
-                                    <div class="card-body d-flex align-items-center">
-                                        <div class="me-3">
-                                            <i class="fas fa-times-circle text-danger fs-2"></i>
-                                        </div>
-                                        <div>
-                                            <!--begin::Label-->
-                                            <div class="fw-bolder fs-5 text-gray-800">Belum Lunas</div>
-                                            <!--end::Label-->
-                                            <!--begin::Stats-->
-                                            <div class="text-danger fs-3 fw-bolder" id="total-unpaid">Rp. 0</div>
-                                            <!--end::Stats-->
-                                        </div>
-                                    </div>
-                                    <!--end::Body-->
-                                </div>
-
-
                             </div>
                         </div>
                     </div>
+
                 </div>
-                <!--end::Card header-->
-                <!--begin::Card body-->
-                <div class="card-body pt-0">
-                    <!--begin::Table-->
-                    <div class="table-responsive">
-                        <table id="table-saldo" class="table table-striped border rounded gy-5 gs-7">
-                            <thead>
-                                <tr class="fw-bolder fs-6 text-gray-800 px-7">
-                                    <th style="width: 5%">No</th>
-                                    <th>Tanggal</th>
-                                    <th>Kode Pembayaran</th>
-                                    <th>Tipe</th>
-                                    <th>Santri</th>
-                                    <th>Jumlah</th>
-                                    <th>Kasir</th>
-                                    <th>Outlet</th>
-                                    <th>Aksi</th>
-                                </tr>
-                            </thead>
-                            <tbody></tbody>
-                        </table>
-                    </div>
-                    <!--end::Table-->
-                </div>
-                <!--end::Card body-->
+
             </div>
-            <!--end::Card-->
+
         </div>
-        <!--end::Container-->
     </div>
     <!--end::Post-->
 </div>
 
+<!-- MODAL TAMBAH SERAH TERIMA DANA -->
+<div class="modal fade" id="modal-add-handover" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered mw-500px">
+        <div class="modal-content premium-card modal-custom p-6">
+            <div class="modal-header border-0 pb-0">
+                <x-text.h1>Catat Serah Terima Dana</x-text.h1>
+                <div class="btn btn-sm btn-icon btn-active-color-primary" data-bs-dismiss="modal">
+                    <i class="fa-solid fa-xmark fs-4"></i>
+                </div>
+            </div>
+            
+            <form action="{{ route('outlet-handover.store') }}" method="POST" enctype="multipart/form-data">
+                @csrf
+                <div class="modal-body py-6">
+                    <x-alert.alert-validation />
+                    
+                    <!-- Pilihan Outlet -->
+                    <div class="mb-4">
+                        <label class="form-label fw-bold text-slate-700 fs-7">Pilih Outlet</label>
+                        <select name="outlet_id" id="handover_form_outlet_id" class="form-select form-select-solid rounded-3" required>
+                            <option value="">-- Pilih Outlet --</option>
+                            @foreach ($outlets as $outlet)
+                                @if(!auth()->user()->outlet_id || auth()->user()->outlet_id == $outlet->id)
+                                <option value="{{ $outlet->id }}">{{ $outlet->name }}</option>
+                                @endif
+                            @endforeach
+                        </select>
+                    </div>
+
+                    <!-- Jumlah Nominal Dana -->
+                    <div class="mb-4">
+                        <label class="form-label fw-bold text-slate-700 fs-7">Nominal Serah Terima (Rp)</label>
+                        <input type="text" id="handover_form_amount_display" class="form-control form-control-solid rounded-3 input-money" placeholder="0" required>
+                        <input type="hidden" name="amount" id="handover_form_amount_real">
+                        <span class="fs-8 text-muted italic d-block mt-1" id="handover_suggestion_text">Pilih outlet untuk melihat rekomendasi nominal.</span>
+                    </div>
+
+                    <!-- Nama Pemilik / Penerima -->
+                    <div class="mb-4">
+                        <label class="form-label fw-bold text-slate-700 fs-7">Nama Penerima / Pemilik Outlet</label>
+                        <input type="text" name="recipient_name" class="form-control form-control-solid rounded-3" placeholder="Masukkan nama penerima dana" required>
+                    </div>
+
+                    <!-- Tanggal Serah Terima -->
+                    <div class="mb-4">
+                        <label class="form-label fw-bold text-slate-700 fs-7">Tanggal Serah Terima</label>
+                        <input type="date" name="handover_date" class="form-control form-control-solid rounded-3" value="{{ date('YYYY-MM-DD') }}" required>
+                    </div>
+
+                    <!-- Unggah Bukti Bayar -->
+                    <div class="mb-4">
+                        <label class="form-label fw-bold text-slate-700 fs-7">Unggah Bukti Transfer / Pembayaran</label>
+                        <input type="file" name="evidence" class="form-control form-control-solid rounded-3" accept="image/*">
+                        <span class="fs-9 text-slate-400 d-block mt-1">Format file: jpeg, png, jpg, gif, svg (Maks. 2MB)</span>
+                    </div>
+
+                    <!-- Catatan Tambahan -->
+                    <div class="mb-0">
+                        <label class="form-label fw-bold text-slate-700 fs-7">Catatan / Keterangan</label>
+                        <textarea name="notes" class="form-control form-control-solid rounded-3" rows="3" placeholder="Tambahkan keterangan tambahan jika ada..."></textarea>
+                    </div>
+                </div>
+
+                <div class="modal-footer border-0 pt-0 justify-content-end gap-3">
+                    <button type="button" class="btn btn-light rounded-pill px-5" data-bs-dismiss="modal">Batal</button>
+                    <button type="submit" class="btn btn-primary rounded-pill px-5">Simpan Data</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 @endsection
+
 @push('js')
 <script>
-    var saldoTable;
+    var transactionTable;
+    var handoverTable;
 
     $(document).ready(function() {
-        // Fetch classroom data on school_id change
-        $('#filter_school_id').on('change', function() {
-            let school_id = $(this).val();
-            $.ajax({
-                url: "{{ route('report-bill.get-classroom') }}",
-                type: "GET",
-                data: { school_id: school_id },
-                success: function(response) {
-                    $('#filter_classroom_id').empty();
-                    if (response.data.length > 0) {
-                        $('#filter_classroom_id').append('<option value="">Semua Kelas</option>');
-                        $.each(response.data, function(key, value) {
-                            $('#filter_classroom_id').append('<option value="' + value.id + '">' + value.name + '</option>');
-                        });
-                    } else {
-                        $('#filter_classroom_id').append('<option value="">Tidak ada kelas</option>');
-                    }
-                }
-            });
-        });
-
-        // Event handlers to reload the table
-       $(document).ready(function() {
-         $('#filter_school_id, #filter_classroom_id, #filter_admin, #filter_status, #filter_outlet_id').on('change',
-             function() {
-                 reloadTable();
-             });
-        });
-
+        // Tentukan tanggal awal filter
         var start = moment().startOf('month');
         var end = moment().endOf('month');
 
-        // Initialize date range picker
+        // Set nilai ke input hidden
+        $('#start_date').val(start.format('YYYY-MM-DD'));
+        $('#end_date').val(end.format('YYYY-MM-DD'));
+
+        // Initialize Date Range Picker
         $('#dateRange').daterangepicker({
             startDate: start,
             endDate: end,
             ranges: {
+                'Hari Ini': [moment(), moment()],
+                'Kemarin': [moment().subtract(1, 'days'), moment().subtract(1, 'days')],
+                '7 Hari Terakhir': [moment().subtract(6, 'days'), moment()],
                 'Bulan Ini': [moment().startOf('month'), moment().endOf('month')],
                 'Bulan Kemarin': [moment().subtract(1, 'month').startOf('month'), moment().subtract(1, 'month').endOf('month')],
-                '3 Bulan Terakhir': [moment().subtract(3, 'month').startOf('month'), moment().endOf('month')],
-                '6 Bulan Terakhir': [moment().subtract(6, 'month').startOf('month'), moment().endOf('month')],
-                '9 Bulan Terakhir': [moment().subtract(9, 'month').startOf('month'), moment().endOf('month')],
-                'Tahun Ini': [moment().startOf('year'), moment().endOf('year')],
-                'Tahun Kemarin': [moment().subtract(1, 'year').startOf('year'), moment().subtract(1, 'year').endOf('year')],
+                'Tahun Ini': [moment().startOf('year'), moment().endOf('year')]
             }
         }, function(start, end) {
-            $('#dateRange span').html(start.format('D/MM/YYYY') + ' - ' + end.format('D/MM/YYYY'));
+            $('#dateRange span').html(start.format('D MMM YYYY') + ' - ' + end.format('D MMM YYYY'));
             $('#start_date').val(start.format('YYYY-MM-DD'));
             $('#end_date').val(end.format('YYYY-MM-DD'));
-            reloadTable();
+            reloadTransactions();
         });
 
-        // Set initial values
-        $('#start_date').val(start.format('YYYY-MM-DD'));
-        $('#end_date').val(end.format('YYYY-MM-DD'));
-        $('#dateRange span').html(start.format('D/MM/YYYY') + ' - ' + end.format('D/MM/YYYY'));
+        // Set display teks awal
+        $('#dateRange span').html(start.format('D MMM YYYY') + ' - ' + end.format('D MMM YYYY'));
 
-        // Initialize table
-        initializeTable();
+        // Load Tables
+        initializeTransactionTable();
+        initializeHandoverTable();
 
-        // Initial total saldo calculation
-        getTotalSaldo();
+        // Load Initial Dynamic Summary
+        fetchFilteredSummary();
+
+        // Filter event listeners
+        $('#filter_status, #filter_outlet_id').on('change', function() {
+            reloadTransactions();
+        });
+
+        $('#handover_filter_outlet_id').on('change', function() {
+            handoverTable.ajax.reload();
+        });
+
+        // Deteksi pergantian outlet pada form serah terima dana untuk hitung sisa nominal secara dinamis
+        $('#handover_form_outlet_id').on('change', function() {
+            var outletId = $(this).val();
+            if (outletId) {
+                $('#handover_suggestion_text').html('<i class="fas fa-spinner fa-spin me-1"></i> Menghitung sisa dana...');
+                $.ajax({
+                    url: "{{ route('outlet-handover.pending-amount', ':id') }}".replace(':id', outletId),
+                    type: "GET",
+                    success: function(response) {
+                        if (response.status === 'success') {
+                            var pending = response.pending_amount;
+                            $('#handover_form_amount_display').val(pending.toLocaleString('id-ID'));
+                            $('#handover_form_amount_real').val(pending);
+                            $('#handover_suggestion_text').html('Sisa dana outlet yang belum diserahkan: <strong>Rp ' + response.pending_amount_formatted + '</strong>');
+                        }
+                    },
+                    error: function() {
+                        $('#handover_suggestion_text').text('Gagal mengambil data sisa dana outlet.');
+                    }
+                });
+            } else {
+                $('#handover_form_amount_display').val('0');
+                $('#handover_form_amount_real').val('0');
+                $('#handover_suggestion_text').text('Pilih outlet untuk melihat rekomendasi nominal.');
+            }
+        });
+
+        // Sinkronisasi input money kustom ke input real hidden saat user mengetik
+        $('#handover_form_amount_display').on('keyup', function() {
+            var displayVal = $(this).val();
+            var numericVal = displayVal.replace(/[.,]/g, '') || 0;
+            $('#handover_form_amount_real').val(numericVal);
+        });
+
+        // Pastikan form menyinkronkan nominal sebelum submit
+        $('#modal-add-handover form').on('submit', function() {
+            var displayVal = $('#handover_form_amount_display').val();
+            var numericVal = displayVal.replace(/[.,]/g, '') || 0;
+            $('#handover_form_amount_real').val(numericVal);
+        });
     });
 
-    function initializeTable() {
-        if ($.fn.DataTable.isDataTable('#table-saldo')) {
-            $('#table-saldo').DataTable().destroy();
-        }
-        saldoTable = $('#table-saldo').DataTable({
+    function initializeTransactionTable() {
+        transactionTable = $('#table-transactions').DataTable({
             processing: true,
             serverSide: true,
             responsive: true,
-            orderable: true,
             searchDelay: 300,
             ajax: {
                 url: "{{ route('pos-transaction.index') }}",
                 data: function(d) {
                     d.data = 'table';
-                    d.school_id = $('#filter_school_id').val();
-                    d.classroom_id = $('#filter_classroom_id').val();
                     d.start_date = $('#start_date').val();
                     d.end_date = $('#end_date').val();
                     d.status = $('#filter_status').val();
@@ -305,51 +540,91 @@
                         return meta.row + meta.settings._iDisplayStart + 1;
                     }
                 },
-                { data: 'date', name: 'date' },
                 { data: 'payment_code', name: 'payment_code' },
-                { data: 'type', name: 'type' },
-                { data: 'student', name: 'student' },
-                { data: 'pay_amount', name: 'pay_amount' },
-                { data: 'admin', name: 'admin' },
+                { data: 'date', name: 'date' },
                 { data: 'outlet', name: 'outlet' },
-                { data: 'action', name: 'action' },
+                { data: 'admin', name: 'admin' },
+                { data: 'student', name: 'student' },
+                { data: 'details', name: 'details' },
+                { data: 'pay_amount', name: 'pay_amount' },
+                { data: 'profit', name: 'profit' },
+                { data: 'status', name: 'status' },
+                { data: 'action', name: 'action', orderable: false, searchable: false }
             ],
+            language: {
+                processing: '<div class="d-flex align-items-center justify-content-center h-100"><i class="fas fa-spinner fa-spin fa-2x text-primary"></i></div>'
+            }
         });
     }
 
-    function getTotalSaldo() {
+    function initializeHandoverTable() {
+        handoverTable = $('#table-handovers').DataTable({
+            processing: true,
+            serverSide: true,
+            responsive: true,
+            searchDelay: 300,
+            ajax: {
+                url: "{{ route('outlet-handover.index') }}",
+                data: function(d) {
+                    d.outlet_id = $('#handover_filter_outlet_id').val() || $('#filter_outlet_id').val();
+                }
+            },
+            columns: [
+                {
+                    data: null,
+                    sortable: false,
+                    searchable: false,
+                    render: function(data, type, row, meta) {
+                        return meta.row + meta.settings._iDisplayStart + 1;
+                    }
+                },
+                { data: 'date', name: 'handover_date' },
+                { data: 'outlet', name: 'outlet.name' },
+                { data: 'recipient', name: 'recipient_name' },
+                { data: 'amount', name: 'amount' },
+                { data: 'evidence', name: 'evidence', orderable: false, searchable: false },
+                { data: 'creator', name: 'creator.name' },
+                { data: 'action', name: 'action', orderable: false, searchable: false }
+            ]
+        });
+    }
+
+    function fetchFilteredSummary() {
         $.ajax({
             url: "{{ route('pos-transaction.index') }}",
             type: "GET",
             dataType: 'json',
             data: {
                 data: 'total',
-                school_id: $('#filter_school_id').val(),
-                classroom_id: $('#filter_classroom_id').val(),
-                admin_id: $('#filter_admin').val(),
                 start_date: $('#start_date').val(),
                 end_date: $('#end_date').val(),
                 status: $('#filter_status').val(),
-                outlet_id: $('#filter_outlet_id').val(),
+                outlet_id: $('#filter_outlet_id').val()
             },
             success: function(response) {
-                $('#total-paid').text('Rp. ' + response.total_paid);
-                $('#total-unpaid').text('Rp. ' + response.total_unpaid);
-                $('#target-revenue').text('Rp. ' + response.target_revenue);
+                // Update rekap filter di sebelah kanan form
+                $('#total-filtered-sales').text(response.total_sales);
+                $('#total-filtered-profit').text(response.total_profit);
+
+                // Update 3 card rekap utama secara dinamis berdasarkan filter outlet
+                $('#today-sales-text').text(response.today_sales);
+                $('#today-profit-text').text(response.today_profit);
+                $('#today-count-badge').text(response.today_count + ' Transaksi');
+
+                $('#week-sales-text').text(response.week_sales);
+                $('#week-profit-text').text(response.week_profit);
+                $('#week-count-badge').text(response.week_count + ' Transaksi');
+
+                $('#month-sales-text').text(response.month_sales);
+                $('#month-profit-text').text(response.month_profit);
+                $('#month-count-badge').text(response.month_count + ' Transaksi');
             }
         });
     }
 
-    // Function to reload DataTables and get total saldo
-    function reloadTable() {
-        saldoTable.ajax.reload();
-        getTotalSaldo();
+    function reloadTransactions() {
+        transactionTable.ajax.reload();
+        fetchFilteredSummary();
     }
-
-    // onclick export button event handler to set the type and submit the form to export and action to route transaction.export
-    $('.btn-export').on('click', function() {
-        $('#type').val($(this).data('type'));
-        $('#form-filter').attr('action', "{{ route('report-transaction.export') }}").submit();
-    });
 </script>
 @endpush

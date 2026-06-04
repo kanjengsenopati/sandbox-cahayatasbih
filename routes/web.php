@@ -64,6 +64,7 @@ use App\Http\Controllers\Admin\AppInformationController;
 use App\Http\Controllers\Admin\GradePromotionController;
 use App\Http\Controllers\Admin\MenuNavigationController;
 use App\Http\Controllers\Admin\PosTransactionController;
+use App\Http\Controllers\Admin\OutletHandoverController;
 use App\Http\Controllers\Admin\StudentBarcodeController;
 use App\Http\Controllers\Admin\ApplicationMenuController;
 use App\Http\Controllers\Admin\CashFlowCategoryController;
@@ -216,6 +217,8 @@ Route::group(['middleware' => ['auth']], function () {
     Route::resource('order-item-history', OrderItemHistoryController::class);
     Route::get('report-pos', [ReportPosController::class, 'index'])->name('report-pos.index');
     Route::get('pos-transaction', [PosTransactionController::class, 'index'])->name('pos-transaction.index');
+    Route::get('outlet-handover/pending-amount/{outlet_id}', [OutletHandoverController::class, 'getPendingAmount'])->name('outlet-handover.pending-amount');
+    Route::resource('outlet-handover', OutletHandoverController::class);
 
     Route::resource('bill-item', BillItemController::class);
     Route::resource('bill-type', BillTypeController::class);
