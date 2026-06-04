@@ -18,7 +18,7 @@ class PosTransactionController extends Controller
      */
     public function index(Request $request)
     {
-        if (!Auth::user()->can('Manage Laporan Transaksi')) {
+        if (!Auth::user()->can('Manage Laporan Pos Kasir')) {
             return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
         }
 

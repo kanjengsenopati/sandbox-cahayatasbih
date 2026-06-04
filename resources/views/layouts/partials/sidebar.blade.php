@@ -532,7 +532,7 @@
                             </a>
                         </div>
                         @endcan
-                        @can('Manage Laporan Transaksi')
+                        @can('Manage Laporan Pos Kasir')
                         <div class="menu-item ">
                             <a class="menu-link {{ request()->routeIs('pos-transaction.*') ? ' active' : '' }}"
                                 href="{{ route('pos-transaction.index') }}">

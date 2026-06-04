@@ -16,7 +16,7 @@ class OutletHandoverController extends Controller
 {
     public function index(Request $request)
     {
-        if (!Auth::user()->can('Manage Laporan Transaksi')) {
+        if (!Auth::user()->can('Manage Laporan Pos Kasir')) {
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 
@@ -73,7 +73,7 @@ class OutletHandoverController extends Controller
 
     public function store(Request $request)
     {
-        if (!Auth::user()->can('Manage Laporan Transaksi')) {
+        if (!Auth::user()->can('Manage Laporan Pos Kasir')) {
             return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
         }
 
@@ -128,7 +128,7 @@ class OutletHandoverController extends Controller
 
     public function getPendingAmount($outletId)
     {
-        if (!Auth::user()->can('Manage Laporan Transaksi')) {
+        if (!Auth::user()->can('Manage Laporan Pos Kasir')) {
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 
