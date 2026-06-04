@@ -521,18 +521,7 @@
                     </span>
 
                     <div class="menu-sub menu-sub-accordion menu-active-bg">
-                        @can('Manage Laporan Pos Kasir')
-                        <div class="menu-item ">
-                            <a class="menu-link {{ request()->routeIs('order-item-history.*') ? ' active' : '' }}"
-                                href="{{ route('order-item-history.index') }}">
-                                <span class="menu-bullet">
-                                    <span class="bullet bullet-dot"></span>
-                                </span>
-                                <span class="menu-title">POS Kasir</span>
-                            </a>
-                        </div>
-                        @endcan
-                        @can('Manage Laporan Pos Multi Outlet')
+                        @canany(['Manage Laporan Pos Kasir', 'Manage Laporan Pos Multi Outlet'])
                         <div class="menu-item ">
                             <a class="menu-link {{ request()->routeIs('pos-transaction.*') ? ' active' : '' }}"
                                 href="{{ route('pos-transaction.index') }}">
@@ -542,7 +531,7 @@
                                 <span class="menu-title">Laporan POS Multi Outlet</span>
                             </a>
                         </div>
-                        @endcan
+                        @endcanany
                         @can('Manage Laporan Transaksi')
                         <div class="menu-item ">
                             <a class="menu-link {{ request()->routeIs('report-transaction.*') ? ' active' : '' }}"

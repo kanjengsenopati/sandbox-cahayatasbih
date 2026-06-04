@@ -16,7 +16,7 @@ class OutletHandoverController extends Controller
 {
     public function index(Request $request)
     {
-        if (!Auth::user()->can('Manage Laporan Pos Multi Outlet')) {
+        if (!Auth::user()->can('Manage Laporan Pos Multi Outlet') && !Auth::user()->can('Manage Laporan Pos Kasir')) {
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 
@@ -128,7 +128,7 @@ class OutletHandoverController extends Controller
 
     public function getPendingAmount($outletId)
     {
-        if (!Auth::user()->can('Manage Laporan Pos Multi Outlet')) {
+        if (!Auth::user()->can('Manage Laporan Pos Multi Outlet') && !Auth::user()->can('Manage Laporan Pos Kasir')) {
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 
