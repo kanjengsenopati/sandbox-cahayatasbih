@@ -73,7 +73,7 @@ class OutletHandoverController extends Controller
 
     public function store(Request $request)
     {
-        if (!Auth::user()->can('Create Laporan Pos Multi Outlet')) {
+        if (!Auth::user()->can('Create Laporan Pos Multi Outlet') && !Auth::user()->can('Manage Laporan Pos Kasir')) {
             return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk mencatat serah terima dana');
         }
 

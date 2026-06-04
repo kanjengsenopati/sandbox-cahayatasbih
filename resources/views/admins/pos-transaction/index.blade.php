@@ -350,11 +350,11 @@
                             <div class="card premium-card bg-white p-6 h-100">
                                 <div class="d-flex align-items-center justify-content-between mb-4">
                                     <x-text.h2>Dana Belum Diserahkan</x-text.h2>
-                                    @can('Create Laporan Pos Multi Outlet')
+                                    @canany(['Create Laporan Pos Multi Outlet', 'Manage Laporan Pos Kasir'])
                                     <button type="button" class="btn btn-primary btn-sm rounded-pill px-4 d-inline-flex align-items-center gap-2" data-bs-toggle="modal" data-bs-target="#modal-add-handover">
                                         <i class="fa-solid fa-file-invoice-dollar fs-6"></i> Catat Serah Terima
                                     </button>
-                                    @endcan
+                                    @endcanany
                                 </div>
                                 <x-text.body class="text-slate-500 mb-6">Berikut ringkasan total omzet nontunai (Saldo Santri) yang belum diserahterimakan ke pemilik masing-masing outlet. Aliran dana ini bersumber dari deposit Transaksi Topup Saldo masing-masing santri.</x-text.body>
                                 
@@ -445,7 +445,7 @@
     <!--end::Post-->
 </div>
 
-@can('Create Laporan Pos Multi Outlet')
+@canany(['Create Laporan Pos Multi Outlet', 'Manage Laporan Pos Kasir'])
 <!-- MODAL TAMBAH SERAH TERIMA DANA -->
 <div class="modal fade" id="modal-add-handover" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered mw-500px">
@@ -515,7 +515,7 @@
         </div>
     </div>
 </div>
-@endcan
+@endcanany
 
 @endsection
 
