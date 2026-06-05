@@ -390,6 +390,8 @@ Route::group(['middleware' => ['auth']], function () {
     Route::post('cashflow/reject/{id}', [CashFlowController::class, 'reject'])->name('cashflow.reject');
     Route::resource('cashflow', CashFlowController::class);
     Route::get('report-profit-loss', [App\Http\Controllers\Admin\ProfitLossReportController::class, 'index'])->name('report-profit-loss.index');
+    Route::post('report-profit-loss/store-expense', [App\Http\Controllers\Admin\ProfitLossReportController::class, 'storeExpense'])->name('report-profit-loss.store-expense');
+    Route::delete('report-profit-loss/delete-expense/{id}', [App\Http\Controllers\Admin\ProfitLossReportController::class, 'destroyExpense'])->name('report-profit-loss.destroy-expense');
 });
 
 
