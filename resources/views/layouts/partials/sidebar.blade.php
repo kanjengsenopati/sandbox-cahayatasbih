@@ -507,10 +507,10 @@
                 @canany(['Manage Laporan Pos Kasir', 'Manage Laporan Pos Multi Outlet', 'Manage Laporan Tagihan', 'Manage Laporan Santri', 'Manage Laporan
                 Nilai Akademik', 'Manage Laporan Tahfidz',
                 'Manage Laporan Perilaku Siswa', 'Manage Laporan Saldo Santri', 'Manage Laporan Fee Aplikasi',
-                'Manage Laporan Transaksi'])
+                'Manage Laporan Transaksi', 'Manage Laporan Rugi Laba'])
                 <div data-kt-menu-trigger="click" class="menu-item menu-accordion {{ request()->routeIs(['report-bill.*', 'report-student.*','report-tahfidz.*',
                     'report-student-counseling-score.*', 'report-app-fee.*',
-                    'report-saldo.*', 'report-study-grade.*', 'order-item-history.*', 'report-transaction.*', 'report-bill-student.*', 'pos-transaction.*'
+                    'report-saldo.*', 'report-study-grade.*', 'order-item-history.*', 'report-transaction.*', 'report-bill-student.*', 'pos-transaction.*', 'report-profit-loss.*'
                     ]) ? 'show' : '' }}">
                     <span class="menu-link ">
                         <span class="menu-icon">
@@ -529,6 +529,17 @@
                                     <span class="bullet bullet-dot"></span>
                                 </span>
                                 <span class="menu-title">Laporan POS Multi Outlet</span>
+                            </a>
+                        </div>
+                        @endcanany
+                        @canany(['Manage Arus Kas', 'Manage Laporan Pos Multi Outlet', 'Manage Laporan Rugi Laba'])
+                        <div class="menu-item ">
+                            <a class="menu-link {{ request()->routeIs('report-profit-loss.*') ? ' active' : '' }}"
+                                href="{{ route('report-profit-loss.index') }}">
+                                <span class="menu-bullet">
+                                    <span class="bullet bullet-dot"></span>
+                                </span>
+                                <span class="menu-title">Rugi Laba Outlet</span>
                             </a>
                         </div>
                         @endcanany

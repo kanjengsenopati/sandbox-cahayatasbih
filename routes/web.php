@@ -389,6 +389,7 @@ Route::group(['middleware' => ['auth']], function () {
     Route::post('cashflow/approve/{id}', [CashFlowController::class, 'approve'])->name('cashflow.approve');
     Route::post('cashflow/reject/{id}', [CashFlowController::class, 'reject'])->name('cashflow.reject');
     Route::resource('cashflow', CashFlowController::class);
+    Route::get('report-profit-loss', [App\Http\Controllers\Admin\ProfitLossReportController::class, 'index'])->name('report-profit-loss.index');
 });
 
 

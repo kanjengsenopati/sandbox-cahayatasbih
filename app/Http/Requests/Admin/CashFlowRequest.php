@@ -30,6 +30,7 @@ class CashFlowRequest extends FormRequest
             'description' => ['nullable', 'string'],
             'proof_of_payment' => ['nullable', 'file', 'mimes:jpg,jpeg,png,pdf'],
             'payment_method' => ['required'],
+            'outlet_id' => ['nullable', 'uuid', 'exists:outlets,id'],
         ];
     }
 }

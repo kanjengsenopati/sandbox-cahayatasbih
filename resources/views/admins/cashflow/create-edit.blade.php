@@ -74,6 +74,22 @@
 
                                 <!--begin::Input group (responsive columns)-->
                                 <div class="row g-7">
+                                    @if(!auth()->user()->outlet_id)
+                                    <div class="col-md-6 fv-row mb-7">
+                                        <label class="fs-6 fw-bold form-label mt-3" for="outlet_id">
+                                            <span class="required">Outlet</span>
+                                            <i class="fas fa-exclamation-circle ms-1 fs-7" data-bs-toggle="tooltip"
+                                                title="Pilih Outlet"></i>
+                                        </label>
+                                        <select class="form-select form-select-solid" name="outlet_id" id="outlet_id" required>
+                                            <option value="">Pilih Outlet</option>
+                                            @foreach ($outlets as $outlet)
+                                            <option value="{{ $outlet->id }}" {{ @$cashflow->outlet_id == $outlet->id ? 'selected' : '' }}>
+                                                {{ $outlet->name }}</option>
+                                            @endforeach
+                                        </select>
+                                    </div>
+                                    @endif
                                     <div class="col-md-6 fv-row mb-7">
                                         <label class="fs-6 fw-bold form-label mt-3" for="cash_flow_category_id">
                                             <span class="required">Kategori</span>
@@ -221,13 +237,18 @@
 <!--end::Wrapper-->
 @endsection
 @push('js')
-<script>
-    // Initialize Select2 for the "Penerima" select
+    // Initialize Select2 for the selects
         $(document).ready(function() {
             $('#receiver_id').select2({
                 placeholder: 'Pilih Penerima',
                 allowClear: true
             });
+            if ($('#outlet_id').length) {
+                $('#outlet_id').select2({
+                    placeholder: 'Pilih Outlet',
+                    allowClear: true
+                });
+            }
         });
 </script>
 @endpush

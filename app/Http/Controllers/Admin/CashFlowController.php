@@ -510,7 +510,8 @@ class CashFlowController extends Controller
     {
         $categories = CashFlowCategory::select('id', 'name')->orderBy('name')->get();
         $admins = Admin::select('id', 'name')->where('id', '!=', Auth::id())->orderBy('name')->get();
-        return view('admins.cashflow.create-edit', compact('categories', 'admins'));
+        $outlets = \App\Models\Outlet::orderBy('name')->get();
+        return view('admins.cashflow.create-edit', compact('categories', 'admins', 'outlets'));
     }
 
     /**
@@ -525,6 +526,8 @@ class CashFlowController extends Controller
         $data['sender_id'] = Auth::id();
         if (auth()->user()->outlet_id) {
             $data['outlet_id'] = auth()->user()->outlet_id;
+        } else {
+            $data['outlet_id'] = $request->outlet_id;
         }
         $data['status'] = 'PENDING';
         if ($request->hasFile('proof_of_payment')) {
@@ -550,7 +553,8 @@ class CashFlowController extends Controller
     {
         $categories = CashFlowCategory::select('id', 'name')->orderBy('name')->get();
         $admins = Admin::select('id', 'name')->where('id', '!=', Auth::id())->orderBy('name')->get();
-        return view('admins.cashflow.create-edit', compact('categories', 'admins', 'cashflow'));
+        $outlets = \App\Models\Outlet::orderBy('name')->get();
+        return view('admins.cashflow.create-edit', compact('categories', 'admins', 'cashflow', 'outlets'));
     }
 
     /**
@@ -563,6 +567,8 @@ class CashFlowController extends Controller
         $data['sender_id'] = Auth::id();
         if (auth()->user()->outlet_id) {
             $data['outlet_id'] = auth()->user()->outlet_id;
+        } else {
+            $data['outlet_id'] = $request->outlet_id;
         }
         $data['status'] = 'PENDING';
         if ($request->hasFile('proof_of_payment')) {
