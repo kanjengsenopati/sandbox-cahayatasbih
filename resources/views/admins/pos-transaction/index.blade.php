@@ -263,7 +263,7 @@
                                 </div>
                                 <div class="mb-2">
                                     <x-text.caption class="text-slate-400">Jumlah Produk Aktif</x-text.caption>
-                                    <div class="fs-2 fw-bold text-slate-800">{{ number_format($totalProduct, 0, ',', '.') }}</div>
+                                    <div class="fs-2 fw-bold text-slate-800" id="total-products-count">{{ number_format($totalProduct, 0, ',', '.') }}</div>
                                 </div>
                             </div>
                         </div>
@@ -277,7 +277,7 @@
                                 </div>
                                 <div class="mb-2">
                                     <x-text.caption class="text-slate-400">Transaksi Sukses</x-text.caption>
-                                    <div class="fs-2 fw-bold text-slate-800">{{ number_format($totalTransaction, 0, ',', '.') }}</div>
+                                    <div class="fs-2 fw-bold text-slate-800" id="total-transactions-count">{{ number_format($totalTransaction, 0, ',', '.') }}</div>
                                 </div>
                             </div>
                         </div>
@@ -291,7 +291,7 @@
                                 </div>
                                 <div class="mb-2">
                                     <x-text.caption class="text-slate-400">Total Nilai Penjualan</x-text.caption>
-                                    <x-text.amount>Rp {{ number_format($totalSales, 0, ',', '.') }}</x-text.amount>
+                                    <x-text.amount id="total-sales-count">Rp {{ number_format($totalSales, 0, ',', '.') }}</x-text.amount>
                                 </div>
                             </div>
                         </div>
@@ -305,7 +305,7 @@
                                 </div>
                                 <div class="mb-2">
                                     <x-text.caption class="text-slate-400">Estimasi Laba Bersih</x-text.caption>
-                                    <x-text.amount>Rp {{ number_format($totalIncome, 0, ',', '.') }}</x-text.amount>
+                                    <x-text.amount id="total-profit-count">Rp {{ number_format($totalIncome, 0, ',', '.') }}</x-text.amount>
                                 </div>
                             </div>
                         </div>
@@ -548,6 +548,8 @@
 <script>
     var transactionTable;
     var handoverTable;
+    var posChart;
+    var tableTopItems;
 
     $(document).ready(function() {
         // Tentukan tanggal awal filter
@@ -587,7 +589,7 @@
         }
 
         // Initialize Top Items table
-        var tableTopItems = $('#table-top-items').DataTable({
+        tableTopItems = $('#table-top-items').DataTable({
             ordering: false,
             processing: true,
             serverSide: false,
@@ -715,7 +717,7 @@
             }
         };
 
-        Highcharts.chart('chart-container', options);
+        posChart = Highcharts.chart('chart-container', options);
 
         // Load Initial Dynamic Summary
         fetchFilteredSummary();
@@ -879,6 +881,26 @@
                 $('#month-sales-text').text(response.month_sales);
                 $('#month-profit-text').text(response.month_profit);
                 $('#month-count-badge').text(response.month_count + ' Transaksi');
+
+                // Update 4 card rekap utama di tab Statistik & Ringkasan
+                $('#total-products-count').text(response.total_products);
+                $('#total-transactions-count').text(response.total_transactions);
+                $('#total-sales-count').text(response.total_sales);
+                $('#total-profit-count').text(response.total_profit);
+
+                // Update Highcharts Chart secara dinamis
+                if (typeof posChart !== 'undefined' && posChart) {
+                    posChart.update({
+                        xAxis: {
+                            categories: response.chart_categories
+                        },
+                        series: [{
+                            data: response.chart_omzet
+                        }, {
+                            data: response.chart_profit
+                        }]
+                    });
+                }
             }
         });
     }

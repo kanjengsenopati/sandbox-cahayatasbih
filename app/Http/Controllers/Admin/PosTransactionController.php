@@ -155,10 +155,30 @@ class PosTransactionController extends Controller
                         $q->where('outlet_id', $filterOutletId);
                     });
 
+                $totalProduct = \App\Models\Item::whereIsActive(true)
+                    ->when(!empty($rekapOutletIds), function ($q) use ($rekapOutletIds) {
+                        $q->whereIn('outlet_id', $rekapOutletIds);
+                    })
+                    ->when($filterOutletId, function ($q) use ($filterOutletId) {
+                        $q->where('outlet_id', $filterOutletId);
+                    })
+                    ->count();
+
+                $year = $startDateInput ? Carbon::parse($startDateInput)->year : now()->year;
+                $chartIncomesCategories = collect(range(1, 12))->map(fn($month) => Carbon::create($year, $month, 1)->locale('id')->monthName)->toArray();
+                $chartCashierOmzet = $this->generateMonthlyChartData($year, 'pay_amount', $filterOutletId, $hasOutletRestriction, $authOutletIds);
+                $chartCashierProfit = $this->generateMonthlyChartData($year, 'profit', $filterOutletId, $hasOutletRestriction, $authOutletIds);
+
                 return response()->json([
                     'total_sales' => 'Rp ' . number_format($totals->sales ?? 0, 0, ',', '.'),
                     'total_profit' => 'Rp ' . number_format($totals->profit ?? 0, 0, ',', '.'),
                     'total_transactions' => number_format($totals->count ?? 0, 0, ',', '.'),
+                    'total_products' => number_format($totalProduct, 0, ',', '.'),
+
+                    // Chart data
+                    'chart_categories' => $chartIncomesCategories,
+                    'chart_omzet' => $chartCashierOmzet,
+                    'chart_profit' => $chartCashierProfit,
 
                     // Rekap waktu
                     'today_sales' => 'Rp ' . number_format($todayQuery->sum('pay_amount'), 0, ',', '.'),
@@ -368,7 +388,7 @@ class PosTransactionController extends Controller
             ];
         }
 
-        $year = now()->year;
+        $year = $startDateInput ? Carbon::parse($startDateInput)->year : now()->year;
         $chartIncomesCategories = collect(range(1, 12))->map(fn($month) => Carbon::create($year, $month, 1)->locale('id')->monthName)->toArray();
         
         $chartCashierOmzet = $this->generateMonthlyChartData($year, 'pay_amount', $outletId, $hasOutletRestriction, $authOutletIds);
@@ -391,6 +411,10 @@ class PosTransactionController extends Controller
 
         // Calculate global totals
         $transactionQueryGlobal = PointOfSaleTransaction::where('status', PointOfSaleTransaction::STATUS_SUCCESS)
+            ->when($startDateInput && $endDateInput, function ($q) use ($startDateInput, $endDateInput) {
+                $q->whereDate('created_at', '>=', $startDateInput)
+                  ->whereDate('created_at', '<=', $endDateInput);
+            })
             ->when($hasOutletRestriction, function ($q) use ($authOutletIds) {
                 $q->whereIn('outlet_id', $authOutletIds);
             })
