@@ -121,6 +121,7 @@
                                             'PPDB', 'Mata Pelajaran', 'Tahun Ajaran', 'Semester', 'Kenaikan Kelas',
                                             'Pengaturan Aplikasi', 'Item Bayar', 'Jenis Bayar','Laporan Pos Kasir',
                                             'Laporan Pos Multi Outlet',
+                                            'Laporan Rugi Laba',
                                             'Laporan Tagihan',
                                             'Laporan Santri', 'Laporan Tahfidz', 'Laporan Perilaku Siswa',
                                             'Laporan Saldo Santri', 'Laporan Fee Aplikasi', 'Laporan Transaksi',
