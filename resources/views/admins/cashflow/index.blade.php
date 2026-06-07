@@ -733,8 +733,8 @@
         <div class="modal-content premium-shadow" style="border-radius: 24px; border: none; background: #ffffff;">
             <div class="modal-header border-0 pb-0 pt-6 px-8 d-flex align-items-center justify-content-between">
                 <div>
-                    <h5 class="modal-title typography-h1" id="detailTransaksiModalLabel" style="font-size: 22px; font-weight: 700; color: #0f172a; font-family: 'Outfit', sans-serif;">Detail Transaksi Tunai</h5>
-                    <span class="typography-caption text-muted" id="detailTransaksiOfficer" style="font-size: 12px; color: #94a3b8; font-style: italic; display: block; margin-top: 4px;">Petugas: -</span>
+                    <h5 class="modal-title typography-h1" id="detailTransaksiModalLabel">Detail Transaksi Tunai</h5>
+                    <span class="typography-caption text-muted" id="detailTransaksiOfficer" style="display: block; margin-top: 4px;">Petugas: -</span>
                 </div>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
@@ -743,12 +743,12 @@
                 <div class="d-flex flex-column flex-sm-row align-items-sm-center justify-content-between gap-4 mb-5">
                     <!-- Page Size Selector -->
                     <div class="d-flex align-items-center gap-2">
-                        <span class="typography-body text-slate-600" style="font-size: 14px; font-weight: 500; font-family: 'Inter', sans-serif;">Tampilkan</span>
+                        <span class="typography-body text-slate-600">Tampilkan</span>
                         <select id="modal-page-size" class="form-select form-select-solid py-2 px-3" style="border-radius: 12px; width: 85px; font-weight: 600; border: 1px solid #cbd5e1; background-color: #f8fafc; color: #1e293b;">
                             <option value="10" selected>10</option>
                             <option value="20">20</option>
                         </select>
-                        <span class="typography-body text-slate-600" style="font-size: 14px; font-weight: 500; font-family: 'Inter', sans-serif;">data</span>
+                        <span class="typography-body text-slate-600">data</span>
                     </div>
 
                     <!-- Search Input -->
@@ -763,20 +763,20 @@
                     <table class="table align-middle table-row-dashed table-hover mb-0">
                         <thead>
                             <tr class="text-start text-gray-500 fw-bold fs-7 text-uppercase" style="border-bottom: 2px solid #e2e8f0; background: #f8fafc;">
-                                <th class="ps-5 py-4" style="width: 60px; color: #94a3b8; font-family: 'Outfit', sans-serif; font-size: 11px; font-weight: 700; letter-spacing: 0.1em;">No</th>
-                                <th class="py-4 cursor-pointer text-hover-primary modal-sortable-column" data-sort="date_raw" style="color: #94a3b8; font-family: 'Outfit', sans-serif; font-size: 11px; font-weight: 700; letter-spacing: 0.1em; user-select: none; white-space: nowrap;">
+                                <th class="ps-5 py-4 typography-label" style="width: 60px;">No</th>
+                                <th class="py-4 cursor-pointer text-hover-primary modal-sortable-column typography-label" data-sort="date_raw" style="user-select: none; white-space: nowrap;">
                                     Tgl Transaksi <i class="bi bi-arrow-down-up ms-1 text-slate-400 modal-sort-icon" style="font-size: 10px;"></i>
                                 </th>
-                                <th class="py-4 cursor-pointer text-hover-primary modal-sortable-column" data-sort="bill_type" style="color: #94a3b8; font-family: 'Outfit', sans-serif; font-size: 11px; font-weight: 700; letter-spacing: 0.1em; user-select: none; white-space: nowrap;">
+                                <th class="py-4 cursor-pointer text-hover-primary modal-sortable-column typography-label" data-sort="bill_type" style="user-select: none; white-space: nowrap;">
                                     Nama Tagihan <i class="bi bi-arrow-down-up ms-1 text-slate-400 modal-sort-icon" style="font-size: 10px;"></i>
                                 </th>
-                                <th class="py-4 text-end cursor-pointer text-hover-primary modal-sortable-column" data-sort="amount" style="color: #94a3b8; font-family: 'Outfit', sans-serif; font-size: 11px; font-weight: 700; letter-spacing: 0.1em; user-select: none; white-space: nowrap;">
+                                <th class="py-4 text-end cursor-pointer text-hover-primary modal-sortable-column typography-label" data-sort="amount" style="user-select: none; white-space: nowrap;">
                                     Nominal <i class="bi bi-arrow-down-up ms-1 text-slate-400 modal-sort-icon" style="font-size: 10px;"></i>
                                 </th>
-                                <th class="py-4 cursor-pointer text-hover-primary modal-sortable-column" data-sort="student_name" style="color: #94a3b8; font-family: 'Outfit', sans-serif; font-size: 11px; font-weight: 700; letter-spacing: 0.1em; user-select: none; white-space: nowrap;">
+                                <th class="py-4 cursor-pointer text-hover-primary modal-sortable-column typography-label" data-sort="student_name" style="user-select: none; white-space: nowrap;">
                                     Nama Siswa <i class="bi bi-arrow-down-up ms-1 text-slate-400 modal-sort-icon" style="font-size: 10px;"></i>
                                 </th>
-                                <th class="pe-5 py-4 cursor-pointer text-hover-primary modal-sortable-column" data-sort="classroom" style="color: #94a3b8; font-family: 'Outfit', sans-serif; font-size: 11px; font-weight: 700; letter-spacing: 0.1em; user-select: none; white-space: nowrap;">
+                                <th class="pe-5 py-4 cursor-pointer text-hover-primary modal-sortable-column typography-label" data-sort="classroom" style="user-select: none; white-space: nowrap;">
                                     Kelas <i class="bi bi-arrow-down-up ms-1 text-slate-400 modal-sort-icon" style="font-size: 10px;"></i>
                                 </th>
                             </tr>
@@ -826,7 +826,6 @@
                     d.start_date = $('#start_date_tab2').val();
                     d.end_date = $('#end_date_tab2').val();
                     d.academic_year_id = $('#academic_year_tab2').val();
-                    d.outlet_id = $('#filter_outlet_id_tab2').val();
                 }
             },
             language: {
@@ -1074,11 +1073,9 @@
             var sd = $('#start_date_tab2').val();
             var ed = $('#end_date_tab2').val();
             var ay = $('#academic_year_tab2').val();
-            var ot = $('#filter_outlet_id_tab2').val();
             if (sd) params.start_date = sd;
             if (ed) params.end_date = ed;
             if (ay) params.academic_year_id = ay;
-            if (ot) params.outlet_id = ot;
 
             axios.get("{{ route('cashflow.index') }}", {
                 params: params
@@ -1158,7 +1155,7 @@
                 tbody.append(
                     '<tr>' +
                     '<td class="ps-5 py-3 text-muted" style="font-family: \'Outfit\', sans-serif;">' + globalIdx + '</td>' +
-                    '<td class="py-3 text-slate-800">' + item.date + '<br><span class="typography-caption text-muted" style="font-size: 11px; color: #94a3b8; font-style: italic;">' + item.time + ' WIB</span></td>' +
+                    '<td class="py-3 text-slate-800">' + item.date + '<br><span class="typography-caption text-muted">' + item.time + ' WIB</span></td>' +
                     '<td class="py-3 text-slate-800">' + billTypeDisplay + '</td>' +
                     '<td class="py-3 text-end text-emerald-600 font-weight-bold" style="font-family: \'Outfit\', sans-serif;">' + item.amount_formatted + '</td>' +
                     '<td class="py-3 text-slate-800">' + item.student_name + '</td>' +
@@ -1537,11 +1534,9 @@
         var sd = $('#start_date_tab2').val();
         var ed = $('#end_date_tab2').val();
         var ay = $('#academic_year_tab2').val();
-        var ot = $('#filter_outlet_id_tab2').val();
         if (sd) params.start_date = sd;
         if (ed) params.end_date = ed;
         if (ay) params.academic_year_id = ay;
-        if (ot) params.outlet_id = ot;
 
         axios.get("{{ route('cashflow.index') }}", {
             params: params
