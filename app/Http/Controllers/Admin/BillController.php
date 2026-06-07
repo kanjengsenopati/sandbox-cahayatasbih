@@ -100,7 +100,7 @@ class BillController extends Controller
 
     private function getTransactionData()
     {
-        $transactions = Transaction::with('student', 'paymentMethod', 'activeProof')
+        $transactions = Transaction::with('student', 'paymentMethod', 'activeProof.bank')
             ->whereHas('paymentMethod', fn($query) => $query->where('type', PaymentMethod::TYPE_TRANSFER))
             ->where('type', Transaction::TYPE_BILL)
             ->where('status', Transaction::STATUS_PENDING_CONFIRMATION)
@@ -112,7 +112,12 @@ class BillController extends Controller
             ->editColumn('pay_amount', fn($transaction) => 'Rp ' . number_format($transaction->pay_amount, 0, ',', '.'))
             ->editColumn('status', fn($transaction) => $this->formatStatusColumn($transaction))
             ->addColumn('action', fn($transaction) => $this->formatActionColumn($transaction))
-            ->rawColumns(['proof', 'action', 'status'])
+            ->addColumn('bank_recipient', function ($transaction) {
+                $bank = $transaction->activeProof?->bank;
+                if (!$bank) return '-';
+                return "{$bank->name}<br><small class='text-muted'>No. Rek: {$bank->account_number}</small><br><small class='text-muted'>A.N: {$bank->account_name}</small>";
+            })
+            ->rawColumns(['proof', 'action', 'status', 'bank_recipient'])
             ->make(true);
     }
 

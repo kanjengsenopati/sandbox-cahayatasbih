@@ -614,6 +614,12 @@
                         name: 'unique_payment'
                     },
                     {
+                        data: 'bank_recipient',
+                        name: 'bank_recipient',
+                        orderable: false,
+                        searchable: false
+                    },
+                    {
                         data: 'proof',
                         name: 'proof',
                     },

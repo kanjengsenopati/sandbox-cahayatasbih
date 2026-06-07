@@ -60,7 +60,7 @@ class SavingHistoryController extends Controller
                 ->make(true);
         }
         if (request()->ajax() && request()->type === 'topup') {
-            $transactions = Transaction::with('student', 'paymentMethod', 'activeProof')
+            $transactions = Transaction::with('student', 'paymentMethod', 'activeProof.bank')
                 ->whereHas('paymentMethod', function ($query) {
                     $query->where('type', PaymentMethod::TYPE_TRANSFER);
                 })
@@ -121,9 +121,12 @@ class SavingHistoryController extends Controller
                         return $action;
                     }
                 })
-
-
-                ->rawColumns(['proof', 'action', 'type', 'status'])
+                ->addColumn('bank_recipient', function ($transaction) {
+                    $bank = $transaction->activeProof?->bank;
+                    if (!$bank) return '-';
+                    return "{$bank->name}<br><small class='text-muted'>No. Rek: {$bank->account_number}</small><br><small class='text-muted'>A.N: {$bank->account_name}</small>";
+                })
+                ->rawColumns(['proof', 'action', 'type', 'status', 'bank_recipient'])
                 ->make(true);
         }
         return view('admins.saving-history.index');

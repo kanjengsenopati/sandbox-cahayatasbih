@@ -106,6 +106,7 @@
                                             <th>Siswa</th>
                                             <th>Jumlah Pembayaran</th>
                                             <th>Kode Unik</th>
+                                            <th>Bank Tujuan</th>
                                             <th>Bukti Transfer</th>
                                             <th>Status</th>
                                             <th class="text-center min-w-100px" style="width: 22%">Aksi</th>
@@ -244,6 +245,12 @@
                     {
                         data: 'unique_payment',
                         name: 'unique_payment'
+                    },
+                    {
+                        data: 'bank_recipient',
+                        name: 'bank_recipient',
+                        orderable: false,
+                        searchable: false
                     },
                     {
                         data: 'proof',
