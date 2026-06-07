@@ -155,6 +155,7 @@ class CashFlowController extends Controller
 
                     $data[] = [
                         'date' => Carbon::parse($tx->paid_at)->translatedFormat('d F Y'),
+                        'time' => Carbon::parse($tx->paid_at)->translatedFormat('H:i'),
                         'date_raw' => $tx->paid_at,
                         'bill_type' => $billTypeFormatted,
                         'amount' => $bill->amount,

@@ -458,17 +458,7 @@
                                     </select>
                                 </div>
 
-                                @if(!auth()->user()->outlet_id)
-                                <div>
-                                    <label class="form-label mb-1 fw-bold text-gray-700 fs-7">Outlet</label>
-                                    <select id="filter_outlet_id_tab2" name="outlet_id" class="form-select" style="border-radius: 12px; min-width: 180px; background-color: #fff; border: 1px solid #ccc; padding: 7px 14px; color: #475569; font-weight: 500;">
-                                        <option value="">Semua Outlet</option>
-                                        @foreach($outlets as $outlet)
-                                            <option value="{{ $outlet->id }}">{{ $outlet->name }}</option>
-                                        @endforeach
-                                    </select>
-                                </div>
-                                @endif
+
 
                                 <!-- Custom Date Range Picker -->
                                 <div id="wrapper_date_tab2" style="display: none;">
@@ -1168,7 +1158,7 @@
                 tbody.append(
                     '<tr>' +
                     '<td class="ps-5 py-3 text-muted" style="font-family: \'Outfit\', sans-serif;">' + globalIdx + '</td>' +
-                    '<td class="py-3 text-slate-800">' + item.date + '</td>' +
+                    '<td class="py-3 text-slate-800">' + item.date + '<br><span class="typography-caption text-muted" style="font-size: 11px; color: #94a3b8; font-style: italic;">' + item.time + ' WIB</span></td>' +
                     '<td class="py-3 text-slate-800">' + billTypeDisplay + '</td>' +
                     '<td class="py-3 text-end text-emerald-600 font-weight-bold" style="font-family: \'Outfit\', sans-serif;">' + item.amount_formatted + '</td>' +
                     '<td class="py-3 text-slate-800">' + item.student_name + '</td>' +
@@ -1340,9 +1330,7 @@
         loadTab2Data();
     });
 
-    $('#filter_outlet_id_tab2').on('change', function() {
-        loadTab2Data();
-    });
+
 
     // Event listener for Filter Periode Tab 1
     $('#period_tab1').on('change', function() {
