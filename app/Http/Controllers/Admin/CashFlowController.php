@@ -355,15 +355,23 @@ class CashFlowController extends Controller
             ->leftJoin('bill_items as bi', 'bt.bill_item_id', '=', 'bi.id')
             ->leftJoin('academic_years as ay', 'bt.academic_year_id', '=', 'ay.id')
             ->leftJoinSub($makeBillPaymentsSub($paymentSource), 'bp', 'b.id', '=', 'bp.bill_id')
-            ->join('students as s', 'b.student_id', '=', 's.id')
-            ->join('classrooms as c', 's.classroom_id', '=', 'c.id')
-            ->join('schools as sc', 'c.school_id', '=', 'sc.id')
+            ->leftJoin('students as s', function ($join) {
+                $join->on('b.student_id', '=', 's.id')->whereNull('s.deleted_at');
+            })
+            ->leftJoin('classrooms as c', function ($join) {
+                $join->on('s.classroom_id', '=', 'c.id')->whereNull('c.deleted_at');
+            })
+            ->leftJoin('schools as sc', function ($join) {
+                $join->on('c.school_id', '=', 'sc.id')->whereNull('sc.deleted_at');
+            })
             ->whereNull('b.deleted_at')
-            ->whereNull('s.deleted_at')
-            ->whereNull('c.deleted_at')
-            ->whereNull('sc.deleted_at')
-            ->where('sc.type', '!=', \App\Models\School::TYPE_DEMO)
-            ->where('sc.name', 'NOT LIKE', '%DEMO%')
+            ->where(function ($q) {
+                $q->whereNull('sc.id')
+                  ->orWhere(function ($inner) {
+                      $inner->where('sc.type', '!=', \App\Models\School::TYPE_DEMO)
+                            ->where('sc.name', 'NOT LIKE', '%DEMO%');
+                  });
+            })
             ->select(
                 'bt.name as type_name',
                 'bi.name as unit_name',
@@ -435,15 +443,23 @@ class CashFlowController extends Controller
             ->leftJoin('bill_items as bi', 'bt.bill_item_id', '=', 'bi.id')
             ->leftJoin('academic_years as ay', 'bt.academic_year_id', '=', 'ay.id')
             ->leftJoinSub($makeBillPaymentsSub($paymentSource), 'bp', 'b.id', '=', 'bp.bill_id')
-            ->join('students as s', 'b.student_id', '=', 's.id')
-            ->join('classrooms as c', 's.classroom_id', '=', 'c.id')
-            ->join('schools as sc', 'c.school_id', '=', 'sc.id')
+            ->leftJoin('students as s', function ($join) {
+                $join->on('b.student_id', '=', 's.id')->whereNull('s.deleted_at');
+            })
+            ->leftJoin('classrooms as c', function ($join) {
+                $join->on('s.classroom_id', '=', 'c.id')->whereNull('c.deleted_at');
+            })
+            ->leftJoin('schools as sc', function ($join) {
+                $join->on('c.school_id', '=', 'sc.id')->whereNull('sc.deleted_at');
+            })
             ->whereNull('b.deleted_at')
-            ->whereNull('s.deleted_at')
-            ->whereNull('c.deleted_at')
-            ->whereNull('sc.deleted_at')
-            ->where('sc.type', '!=', \App\Models\School::TYPE_DEMO)
-            ->where('sc.name', 'NOT LIKE', '%DEMO%')
+            ->where(function ($q) {
+                $q->whereNull('sc.id')
+                  ->orWhere(function ($inner) {
+                      $inner->where('sc.type', '!=', \App\Models\School::TYPE_DEMO)
+                            ->where('sc.name', 'NOT LIKE', '%DEMO%');
+                  });
+            })
             ->select(
                 'bt.id as bill_type_id',
                 'bt.name as type_name',
@@ -546,101 +562,28 @@ class CashFlowController extends Controller
 
         // 4. Breakdown per Sumber Pembayaran — query independen langsung ke DB
         // Menggunakan fresh subquery (closure) agar tidak ada bug reuse query builder.
-        // Join: bills -> bill_types -> transaction_details -> transactions -> payment_methods
-        $sourceRaw = DB::table('bills as b')
-            ->join('bill_types as bt', 'b.bill_type_id', '=', 'bt.id')
-            ->join('transaction_details as td', function ($join) {
-                $join->on('td.bill_id', '=', 'b.id')
-                     ->whereNull('td.deleted_at')
-                     ->whereNotNull('td.bill_id');
-            })
-            ->join('transactions as t', function ($join) {
-                $join->on('t.id', '=', 'td.transaction_id')
-                     ->where('t.status', '=', 'PAID')
-                     ->where('t.type', '=', 'BILL')
-                     ->whereNull('t.deleted_at');
-            })
-            ->join('payment_methods as pm', 'pm.id', '=', 't.payment_method_id')
-            ->join('students as s', 'b.student_id', '=', 's.id')
-            ->join('classrooms as c', 's.classroom_id', '=', 'c.id')
-            ->join('schools as sc', 'c.school_id', '=', 'sc.id')
-            ->where('sc.type', '!=', \App\Models\School::TYPE_DEMO)
-            ->where('sc.name', 'NOT LIKE', '%DEMO%')
-            ->whereNull('b.deleted_at')
-            ->where('b.status', 'PAID')
-            ->when($academicYearId, fn($q) => $q->where('b.academic_year_id', $academicYearId))
-            ->when($billTypeName, fn($q) => $q->where('bt.name', $billTypeName))
-            ->when($startDate, function ($q) use ($startDate) {
-                $q->where(function ($inner) use ($startDate) {
-                    $inner->where('b.year', '>', $startDate->year)
-                          ->orWhere(function ($sub) use ($startDate) {
-                              $sub->where('b.year', '=', $startDate->year)
-                                  ->where('b.month', '>=', $startDate->month);
-                          });
-                });
-            })
-            ->when($endDate, function ($q) use ($endDate) {
-                $q->where(function ($inner) use ($endDate) {
-                    $inner->where('b.year', '<', $endDate->year)
-                          ->orWhere(function ($sub) use ($endDate) {
-                              $sub->where('b.year', '=', $endDate->year)
-                                  ->where('b.month', '<=', $endDate->month);
-                          });
-                });
-            })
-            ->select(
-                DB::raw("SUM(CASE WHEN pm.type = 'CASH'    THEN b.amount ELSE 0 END) as paid_cash"),
-                DB::raw("SUM(CASE WHEN pm.type = 'BALANCE' THEN b.amount ELSE 0 END) as paid_balance"),
-                DB::raw("SUM(CASE WHEN pm.type NOT IN ('CASH','BALANCE') THEN b.amount ELSE 0 END) as paid_transfer")
-            )
-            ->first();
-
         $sourceRawQuery = DB::table('bills as b')
             ->join('bill_types as bt', 'b.bill_type_id', '=', 'bt.id')
-            ->join('transaction_details as td', function ($join) {
-                $join->on('td.bill_id', '=', 'b.id')
-                     ->whereNull('td.deleted_at')
-                     ->whereNotNull('td.bill_id');
+            ->leftJoin('students as s', function ($join) {
+                $join->on('b.student_id', '=', 's.id')->whereNull('s.deleted_at');
             })
-            ->join('transactions as t', function ($join) {
-                $join->on('t.id', '=', 'td.transaction_id')
-                     ->where('t.status', '=', 'PAID')
-                     ->where('t.type', '=', 'BILL')
-                     ->whereNull('t.deleted_at');
+            ->leftJoin('classrooms as c', function ($join) {
+                $join->on('s.classroom_id', '=', 'c.id')->whereNull('c.deleted_at');
             })
-            ->join('payment_methods as pm', 'pm.id', '=', 't.payment_method_id')
-            ->leftJoin('transaction_proofs as tp', function($join) {
-                $join->on('tp.transaction_id', '=', 't.id')
-                     ->where('tp.is_active', '=', 1)
-                     ->whereNull('tp.deleted_at');
+            ->leftJoin('schools as sc', function ($join) {
+                $join->on('c.school_id', '=', 'sc.id')->whereNull('sc.deleted_at');
             })
-            ->join('students as s', 'b.student_id', '=', 's.id')
-            ->join('classrooms as c', 's.classroom_id', '=', 'c.id')
-            ->join('schools as sc', 'c.school_id', '=', 'sc.id')
-            ->where('sc.type', '!=', \App\Models\School::TYPE_DEMO)
-            ->where('sc.name', 'NOT LIKE', '%DEMO%')
+            ->leftJoinSub($makeBillPaymentsSub($paymentSource), 'bp', 'b.id', '=', 'bp.bill_id')
             ->whereNull('b.deleted_at')
-            ->where('b.status', 'PAID');
-
-        if ($paymentSource) {
-            if ($paymentSource === 'saldo') {
-                $sourceRawQuery->where('pm.type', '=', 'BALANCE');
-            } else {
-                $sourceRawQuery->where(function($q) use ($paymentSource) {
-                    $q->where('tp.bank_id', '=', $paymentSource)
-                      ->orWhere(function($sub) use ($paymentSource) {
-                          $sub->whereNull('tp.bank_id')
-                              ->whereExists(function($ex) use ($paymentSource) {
-                                  $ex->select(DB::raw(1))
-                                     ->from('bill_type_banks as btb')
-                                     ->whereColumn('btb.bill_type_id', 'b.bill_type_id')
-                                     ->where('btb.bank_id', $paymentSource)
-                                     ->whereNull('btb.deleted_at');
-                              });
-                      });
-                });
-            }
-        }
+            ->where('b.status', 'PAID')
+            ->whereNotNull('bp.bill_id')
+            ->where(function ($q) {
+                $q->whereNull('sc.id')
+                  ->orWhere(function ($inner) {
+                      $inner->where('sc.type', '!=', \App\Models\School::TYPE_DEMO)
+                            ->where('sc.name', 'NOT LIKE', '%DEMO%');
+                  });
+            });
 
         $sourceRaw = $sourceRawQuery
             ->when($academicYearId, fn($q) => $q->where('b.academic_year_id', $academicYearId))
@@ -664,9 +607,9 @@ class CashFlowController extends Controller
                 });
             })
             ->select(
-                DB::raw("SUM(CASE WHEN pm.type = 'CASH' AND " . ($paymentSource ? '1=0' : '1=1') . " THEN b.amount ELSE 0 END) as paid_cash"),
-                DB::raw("SUM(CASE WHEN pm.type = 'BALANCE' AND " . (($paymentSource && $paymentSource !== 'saldo') ? '1=0' : '1=1') . " THEN b.amount ELSE 0 END) as paid_balance"),
-                DB::raw("SUM(CASE WHEN pm.type NOT IN ('CASH','BALANCE') AND " . (($paymentSource && $paymentSource === 'saldo') ? '1=0' : '1=1') . " THEN b.amount ELSE 0 END) as paid_transfer")
+                DB::raw("SUM(CASE WHEN bp.pm_type = 'CASH' AND " . ($paymentSource ? '1=0' : '1=1') . " THEN b.amount ELSE 0 END) as paid_cash"),
+                DB::raw("SUM(CASE WHEN bp.pm_type = 'BALANCE' AND " . (($paymentSource && $paymentSource !== 'saldo') ? '1=0' : '1=1') . " THEN b.amount ELSE 0 END) as paid_balance"),
+                DB::raw("SUM(CASE WHEN bp.pm_type NOT IN ('CASH','BALANCE') AND " . (($paymentSource && $paymentSource === 'saldo') ? '1=0' : '1=1') . " THEN b.amount ELSE 0 END) as paid_transfer")
             )
             ->first();
 
