@@ -210,6 +210,48 @@ class CashFlowController extends Controller
         $billTypeName = request()->filled('bill_type_name') ? request()->bill_type_name : null;
         $paymentSource = request()->input('payment_source');
 
+        // Subquery: mapping bill_id -> payment method type (fresh closure agar tidak corrupt saat reuse)
+        $makeBillPaymentsSub = function ($paymentSource = null) {
+            $query = DB::table('transaction_details as td')
+                ->join('transactions as t', 'td.transaction_id', '=', 't.id')
+                ->join('payment_methods as pm', 't.payment_method_id', '=', 'pm.id')
+                ->leftJoin('transaction_proofs as tp', function($join) {
+                    $join->on('tp.transaction_id', '=', 't.id')
+                         ->where('tp.is_active', '=', 1)
+                         ->whereNull('tp.deleted_at');
+                })
+                ->where('t.status', 'PAID')
+                ->where('t.type', 'BILL')
+                ->whereNull('t.deleted_at')
+                ->whereNull('td.deleted_at')
+                ->whereNotNull('td.bill_id')
+                ->select('td.bill_id', DB::raw('MAX(pm.type) as pm_type'))
+                ->groupBy('td.bill_id');
+
+            if ($paymentSource) {
+                if ($paymentSource === 'saldo') {
+                    $query->where('pm.type', '=', 'BALANCE');
+                } else {
+                    $query->where(function($q) use ($paymentSource) {
+                        $q->where('tp.bank_id', '=', $paymentSource)
+                          ->orWhere(function($sub) use ($paymentSource) {
+                              $sub->whereNull('tp.bank_id')
+                                  ->whereExists(function($ex) use ($paymentSource) {
+                                      $ex->select(DB::raw(1))
+                                         ->from('bill_type_banks as btb')
+                                         ->join('bills as bl', 'bl.bill_type_id', '=', 'btb.bill_type_id')
+                                         ->whereColumn('bl.id', 'td.bill_id')
+                                         ->where('btb.bank_id', $paymentSource)
+                                         ->whereNull('btb.deleted_at');
+                                  });
+                          });
+                    });
+                }
+            }
+
+            return $query;
+        };
+
         // 1. Hitung Target & Realisasi dari SEMUA tagihan
         $billQuery = Bill::query();
         if ($academicYearId) {
@@ -313,7 +355,15 @@ class CashFlowController extends Controller
             ->leftJoin('bill_items as bi', 'bt.bill_item_id', '=', 'bi.id')
             ->leftJoin('academic_years as ay', 'bt.academic_year_id', '=', 'ay.id')
             ->leftJoinSub($makeBillPaymentsSub($paymentSource), 'bp', 'b.id', '=', 'bp.bill_id')
+            ->join('students as s', 'b.student_id', '=', 's.id')
+            ->join('classrooms as c', 's.classroom_id', '=', 'c.id')
+            ->join('schools as sc', 'c.school_id', '=', 'sc.id')
             ->whereNull('b.deleted_at')
+            ->whereNull('s.deleted_at')
+            ->whereNull('c.deleted_at')
+            ->whereNull('sc.deleted_at')
+            ->where('sc.type', '!=', \App\Models\School::TYPE_DEMO)
+            ->where('sc.name', 'NOT LIKE', '%DEMO%')
             ->select(
                 'bt.name as type_name',
                 'bi.name as unit_name',
@@ -380,54 +430,20 @@ class CashFlowController extends Controller
         }
 
         // 3.5. Detailed Breakdown per Jenis/Nama Pembayaran and Payment Source
-        // Subquery: mapping bill_id -> payment method type (fresh closure agar tidak corrupt saat reuse)
-        $makeBillPaymentsSub = function ($paymentSource = null) {
-            $query = DB::table('transaction_details as td')
-                ->join('transactions as t', 'td.transaction_id', '=', 't.id')
-                ->join('payment_methods as pm', 't.payment_method_id', '=', 'pm.id')
-                ->leftJoin('transaction_proofs as tp', function($join) {
-                    $join->on('tp.transaction_id', '=', 't.id')
-                         ->where('tp.is_active', '=', 1)
-                         ->whereNull('tp.deleted_at');
-                })
-                ->where('t.status', 'PAID')
-                ->where('t.type', 'BILL')
-                ->whereNull('t.deleted_at')
-                ->whereNull('td.deleted_at')
-                ->whereNotNull('td.bill_id')
-                ->select('td.bill_id', DB::raw('MAX(pm.type) as pm_type'))
-                ->groupBy('td.bill_id');
-
-            if ($paymentSource) {
-                if ($paymentSource === 'saldo') {
-                    $query->where('pm.type', '=', 'BALANCE');
-                } else {
-                    $query->where(function($q) use ($paymentSource) {
-                        $q->where('tp.bank_id', '=', $paymentSource)
-                          ->orWhere(function($sub) use ($paymentSource) {
-                              $sub->whereNull('tp.bank_id')
-                                  ->whereExists(function($ex) use ($paymentSource) {
-                                      $ex->select(DB::raw(1))
-                                         ->from('bill_type_banks as btb')
-                                         ->join('bills as bl', 'bl.bill_type_id', '=', 'btb.bill_type_id')
-                                         ->whereColumn('bl.id', 'td.bill_id')
-                                         ->where('btb.bank_id', $paymentSource)
-                                         ->whereNull('btb.deleted_at');
-                                  });
-                          });
-                    });
-                }
-            }
-
-            return $query;
-        };
-
         $breakdownDetailQuery = DB::table('bills as b')
             ->join('bill_types as bt', 'b.bill_type_id', '=', 'bt.id')
             ->leftJoin('bill_items as bi', 'bt.bill_item_id', '=', 'bi.id')
             ->leftJoin('academic_years as ay', 'bt.academic_year_id', '=', 'ay.id')
             ->leftJoinSub($makeBillPaymentsSub($paymentSource), 'bp', 'b.id', '=', 'bp.bill_id')
+            ->join('students as s', 'b.student_id', '=', 's.id')
+            ->join('classrooms as c', 's.classroom_id', '=', 'c.id')
+            ->join('schools as sc', 'c.school_id', '=', 'sc.id')
             ->whereNull('b.deleted_at')
+            ->whereNull('s.deleted_at')
+            ->whereNull('c.deleted_at')
+            ->whereNull('sc.deleted_at')
+            ->where('sc.type', '!=', \App\Models\School::TYPE_DEMO)
+            ->where('sc.name', 'NOT LIKE', '%DEMO%')
             ->select(
                 'bt.id as bill_type_id',
                 'bt.name as type_name',
