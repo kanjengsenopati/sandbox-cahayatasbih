@@ -181,7 +181,8 @@ class CashFlowController extends Controller
 
         $academicYears = \App\Models\AcademicYear::orderBy('name', 'desc')->get();
         $outlets = \App\Models\Outlet::orderBy('name')->get();
-        return view('admins.cashflow.index', compact('academicYears', 'outlets'));
+        $banks = \App\Models\Bank::where('is_active', true)->orderBy('name')->get();
+        return view('admins.cashflow.index', compact('academicYears', 'outlets', 'banks'));
     }
 
 
@@ -207,6 +208,7 @@ class CashFlowController extends Controller
         $endDate = request()->filled('end_date') ? Carbon::parse(request()->end_date) : null;
         $academicYearId = request()->filled('academic_year_id') ? request()->academic_year_id : null;
         $billTypeName = request()->filled('bill_type_name') ? request()->bill_type_name : null;
+        $paymentSource = request()->input('payment_source');
 
         // 1. Hitung Target & Realisasi dari SEMUA tagihan
         $billQuery = Bill::query();
@@ -238,12 +240,44 @@ class CashFlowController extends Controller
             });
         }
 
-        $totalCashflows = (clone $billQuery)->whereDoesntHave('student.classroom.school', function ($q) {
+        $totalCashflowsQuery = (clone $billQuery)->whereDoesntHave('student.classroom.school', function ($q) {
             $q->where('type', \App\Models\School::TYPE_DEMO)->orWhere('name', 'LIKE', '%DEMO%');
-        })->sum('amount'); // Target Total Pemasukan
-        $totalIncomes = (clone $billQuery)->where('status', 'PAID')->whereDoesntHave('student.classroom.school', function ($q) {
+        });
+        if ($paymentSource && $paymentSource !== 'saldo') {
+            $totalCashflowsQuery->whereHas('billType.billTypeBank', function($q) use ($paymentSource) {
+                $q->where('bank_id', $paymentSource);
+            });
+        }
+        $totalCashflows = $totalCashflowsQuery->sum('amount'); // Target Total Pemasukan
+
+        $totalIncomesQuery = (clone $billQuery)->where('status', 'PAID')->whereDoesntHave('student.classroom.school', function ($q) {
             $q->where('type', \App\Models\School::TYPE_DEMO)->orWhere('name', 'LIKE', '%DEMO%');
-        })->sum('amount'); // Realisasi Pemasukan
+        });
+        if ($paymentSource) {
+            if ($paymentSource === 'saldo') {
+                $totalIncomesQuery->whereHas('transactions', function($tq) {
+                    $tq->where('transactions.status', 'PAID')
+                       ->whereHas('paymentMethod', function($pq) {
+                           $pq->where('type', 'BALANCE');
+                       });
+                });
+            } else {
+                $totalIncomesQuery->where(function($q) use ($paymentSource) {
+                    $q->whereHas('transactions', function($tq) use ($paymentSource) {
+                        $tq->where('transactions.status', 'PAID')
+                           ->whereHas('activeProof', function($pq) use ($paymentSource) {
+                               $pq->where('bank_id', $paymentSource);
+                           });
+                    })
+                    ->orWhere(function($sub) use ($paymentSource) {
+                        $sub->whereHas('billType.billTypeBank', function($tqb) use ($paymentSource) {
+                            $tqb->where('bank_id', $paymentSource);
+                        })->whereDoesntHave('transactions.activeProof');
+                    });
+                });
+            }
+        }
+        $totalIncomes = $totalIncomesQuery->sum('amount'); // Realisasi Pemasukan
 
         $statusPemasukan = 'Sesuai';
         if ($totalIncomes < $totalCashflows) {
@@ -278,15 +312,26 @@ class CashFlowController extends Controller
             ->join('bill_types as bt', 'b.bill_type_id', '=', 'bt.id')
             ->leftJoin('bill_items as bi', 'bt.bill_item_id', '=', 'bi.id')
             ->leftJoin('academic_years as ay', 'bt.academic_year_id', '=', 'ay.id')
+            ->leftJoinSub($makeBillPaymentsSub($paymentSource), 'bp', 'b.id', '=', 'bp.bill_id')
             ->whereNull('b.deleted_at')
             ->select(
                 'bt.name as type_name',
                 'bi.name as unit_name',
                 'ay.name as year_name',
                 DB::raw('SUM(b.amount) as target'),
-                DB::raw("SUM(CASE WHEN b.status = 'PAID' THEN b.amount ELSE 0 END) as paid")
+                DB::raw("SUM(CASE WHEN b.status = 'PAID' AND bp.bill_id IS NOT NULL THEN b.amount ELSE 0 END) as paid")
             )
             ->groupBy('bt.name', 'bi.name', 'ay.name');
+
+        if ($paymentSource && $paymentSource !== 'saldo') {
+            $breakdownQuery->whereExists(function($q) use ($paymentSource) {
+                $q->select(DB::raw(1))
+                  ->from('bill_type_banks as btb')
+                  ->whereColumn('btb.bill_type_id', 'b.bill_type_id')
+                  ->where('btb.bank_id', $paymentSource)
+                  ->whereNull('btb.deleted_at');
+            });
+        }
 
         if ($academicYearId) {
             $breakdownQuery->where('b.academic_year_id', $academicYearId);
@@ -336,10 +381,15 @@ class CashFlowController extends Controller
 
         // 3.5. Detailed Breakdown per Jenis/Nama Pembayaran and Payment Source
         // Subquery: mapping bill_id -> payment method type (fresh closure agar tidak corrupt saat reuse)
-        $makeBillPaymentsSub = function () {
-            return DB::table('transaction_details as td')
+        $makeBillPaymentsSub = function ($paymentSource = null) {
+            $query = DB::table('transaction_details as td')
                 ->join('transactions as t', 'td.transaction_id', '=', 't.id')
                 ->join('payment_methods as pm', 't.payment_method_id', '=', 'pm.id')
+                ->leftJoin('transaction_proofs as tp', function($join) {
+                    $join->on('tp.transaction_id', '=', 't.id')
+                         ->where('tp.is_active', '=', 1)
+                         ->whereNull('tp.deleted_at');
+                })
                 ->where('t.status', 'PAID')
                 ->where('t.type', 'BILL')
                 ->whereNull('t.deleted_at')
@@ -347,13 +397,36 @@ class CashFlowController extends Controller
                 ->whereNotNull('td.bill_id')
                 ->select('td.bill_id', DB::raw('MAX(pm.type) as pm_type'))
                 ->groupBy('td.bill_id');
+
+            if ($paymentSource) {
+                if ($paymentSource === 'saldo') {
+                    $query->where('pm.type', '=', 'BALANCE');
+                } else {
+                    $query->where(function($q) use ($paymentSource) {
+                        $q->where('tp.bank_id', '=', $paymentSource)
+                          ->orWhere(function($sub) use ($paymentSource) {
+                              $sub->whereNull('tp.bank_id')
+                                  ->whereExists(function($ex) use ($paymentSource) {
+                                      $ex->select(DB::raw(1))
+                                         ->from('bill_type_banks as btb')
+                                         ->join('bills as bl', 'bl.bill_type_id', '=', 'btb.bill_type_id')
+                                         ->whereColumn('bl.id', 'td.bill_id')
+                                         ->where('btb.bank_id', $paymentSource)
+                                         ->whereNull('btb.deleted_at');
+                                  });
+                          });
+                    });
+                }
+            }
+
+            return $query;
         };
 
         $breakdownDetailQuery = DB::table('bills as b')
             ->join('bill_types as bt', 'b.bill_type_id', '=', 'bt.id')
             ->leftJoin('bill_items as bi', 'bt.bill_item_id', '=', 'bi.id')
             ->leftJoin('academic_years as ay', 'bt.academic_year_id', '=', 'ay.id')
-            ->leftJoinSub($makeBillPaymentsSub(), 'bp', 'b.id', '=', 'bp.bill_id')
+            ->leftJoinSub($makeBillPaymentsSub($paymentSource), 'bp', 'b.id', '=', 'bp.bill_id')
             ->whereNull('b.deleted_at')
             ->select(
                 'bt.id as bill_type_id',
@@ -361,12 +434,22 @@ class CashFlowController extends Controller
                 'bi.name as unit_name',
                 'ay.name as year_name',
                 DB::raw('SUM(b.amount) as target'),
-                DB::raw("SUM(CASE WHEN b.status = 'PAID' THEN b.amount ELSE 0 END) as paid"),
-                DB::raw("SUM(CASE WHEN b.status = 'PAID' AND bp.pm_type = 'CASH' THEN b.amount ELSE 0 END) as paid_cash"),
-                DB::raw("SUM(CASE WHEN b.status = 'PAID' AND bp.pm_type = 'BALANCE' THEN b.amount ELSE 0 END) as paid_balance"),
-                DB::raw("SUM(CASE WHEN b.status = 'PAID' AND bp.pm_type NOT IN ('CASH', 'BALANCE') THEN b.amount ELSE 0 END) as paid_transfer")
+                DB::raw("SUM(CASE WHEN b.status = 'PAID' AND bp.bill_id IS NOT NULL THEN b.amount ELSE 0 END) as paid"),
+                DB::raw("SUM(CASE WHEN b.status = 'PAID' AND bp.bill_id IS NOT NULL AND bp.pm_type = 'CASH' THEN b.amount ELSE 0 END) as paid_cash"),
+                DB::raw("SUM(CASE WHEN b.status = 'PAID' AND bp.bill_id IS NOT NULL AND bp.pm_type = 'BALANCE' THEN b.amount ELSE 0 END) as paid_balance"),
+                DB::raw("SUM(CASE WHEN b.status = 'PAID' AND bp.bill_id IS NOT NULL AND bp.pm_type NOT IN ('CASH', 'BALANCE') THEN b.amount ELSE 0 END) as paid_transfer")
             )
             ->groupBy('bt.id', 'bt.name', 'bi.name', 'ay.name');
+
+        if ($paymentSource && $paymentSource !== 'saldo') {
+            $breakdownDetailQuery->whereExists(function($q) use ($paymentSource) {
+                $q->select(DB::raw(1))
+                  ->from('bill_type_banks as btb')
+                  ->whereColumn('btb.bill_type_id', 'b.bill_type_id')
+                  ->where('btb.bank_id', $paymentSource)
+                  ->whereNull('btb.deleted_at');
+            });
+        }
 
         if ($academicYearId) {
             $breakdownDetailQuery->where('b.academic_year_id', $academicYearId);
@@ -496,6 +579,81 @@ class CashFlowController extends Controller
             )
             ->first();
 
+        $sourceRawQuery = DB::table('bills as b')
+            ->join('bill_types as bt', 'b.bill_type_id', '=', 'bt.id')
+            ->join('transaction_details as td', function ($join) {
+                $join->on('td.bill_id', '=', 'b.id')
+                     ->whereNull('td.deleted_at')
+                     ->whereNotNull('td.bill_id');
+            })
+            ->join('transactions as t', function ($join) {
+                $join->on('t.id', '=', 'td.transaction_id')
+                     ->where('t.status', '=', 'PAID')
+                     ->where('t.type', '=', 'BILL')
+                     ->whereNull('t.deleted_at');
+            })
+            ->join('payment_methods as pm', 'pm.id', '=', 't.payment_method_id')
+            ->leftJoin('transaction_proofs as tp', function($join) {
+                $join->on('tp.transaction_id', '=', 't.id')
+                     ->where('tp.is_active', '=', 1)
+                     ->whereNull('tp.deleted_at');
+            })
+            ->join('students as s', 'b.student_id', '=', 's.id')
+            ->join('classrooms as c', 's.classroom_id', '=', 'c.id')
+            ->join('schools as sc', 'c.school_id', '=', 'sc.id')
+            ->where('sc.type', '!=', \App\Models\School::TYPE_DEMO)
+            ->where('sc.name', 'NOT LIKE', '%DEMO%')
+            ->whereNull('b.deleted_at')
+            ->where('b.status', 'PAID');
+
+        if ($paymentSource) {
+            if ($paymentSource === 'saldo') {
+                $sourceRawQuery->where('pm.type', '=', 'BALANCE');
+            } else {
+                $sourceRawQuery->where(function($q) use ($paymentSource) {
+                    $q->where('tp.bank_id', '=', $paymentSource)
+                      ->orWhere(function($sub) use ($paymentSource) {
+                          $sub->whereNull('tp.bank_id')
+                              ->whereExists(function($ex) use ($paymentSource) {
+                                  $ex->select(DB::raw(1))
+                                     ->from('bill_type_banks as btb')
+                                     ->whereColumn('btb.bill_type_id', 'b.bill_type_id')
+                                     ->where('btb.bank_id', $paymentSource)
+                                     ->whereNull('btb.deleted_at');
+                              });
+                      });
+                });
+            }
+        }
+
+        $sourceRaw = $sourceRawQuery
+            ->when($academicYearId, fn($q) => $q->where('b.academic_year_id', $academicYearId))
+            ->when($billTypeName, fn($q) => $q->where('bt.name', $billTypeName))
+            ->when($startDate, function ($q) use ($startDate) {
+                $q->where(function ($inner) use ($startDate) {
+                    $inner->where('b.year', '>', $startDate->year)
+                          ->orWhere(function ($sub) use ($startDate) {
+                              $sub->where('b.year', '=', $startDate->year)
+                                  ->where('b.month', '>=', $startDate->month);
+                          });
+                });
+            })
+            ->when($endDate, function ($q) use ($endDate) {
+                $q->where(function ($inner) use ($endDate) {
+                    $inner->where('b.year', '<', $endDate->year)
+                          ->orWhere(function ($sub) use ($endDate) {
+                              $sub->where('b.year', '=', $endDate->year)
+                                  ->where('b.month', '<=', $endDate->month);
+                          });
+                });
+            })
+            ->select(
+                DB::raw("SUM(CASE WHEN pm.type = 'CASH' AND " . ($paymentSource ? '1=0' : '1=1') . " THEN b.amount ELSE 0 END) as paid_cash"),
+                DB::raw("SUM(CASE WHEN pm.type = 'BALANCE' AND " . (($paymentSource && $paymentSource !== 'saldo') ? '1=0' : '1=1') . " THEN b.amount ELSE 0 END) as paid_balance"),
+                DB::raw("SUM(CASE WHEN pm.type NOT IN ('CASH','BALANCE') AND " . (($paymentSource && $paymentSource === 'saldo') ? '1=0' : '1=1') . " THEN b.amount ELSE 0 END) as paid_transfer")
+            )
+            ->first();
+
         $sourceBreakdown = [
             'Tunai'            => (int)($sourceRaw->paid_cash     ?? 0),
             'Debit Saldo'      => (int)($sourceRaw->paid_balance  ?? 0),
@@ -503,72 +661,77 @@ class CashFlowController extends Controller
         ];
 
         // 5. Tracing Petugas Piket (Tunai)
-        $piketOfficers = Transaction::where('transactions.status', Transaction::STATUS_PAID)
-            ->where('transactions.type', Transaction::TYPE_BILL)
-            ->join('payment_methods', 'transactions.payment_method_id', '=', 'payment_methods.id')
-            ->where('payment_methods.type', PaymentMethod::TYPE_CASH)
-            ->join('students as s', 'transactions.student_id', '=', 's.id')
-            ->join('classrooms as c', 's.classroom_id', '=', 'c.id')
-            ->join('schools as sc', 'c.school_id', '=', 'sc.id')
-            ->where('sc.type', '!=', \App\Models\School::TYPE_DEMO)
-            ->where('sc.name', 'NOT LIKE', '%DEMO%')
-            ->when($startDate, fn($q) => $q->whereDate('transactions.paid_at', '>=', $startDate->toDateString()))
-            ->when($endDate, fn($q) => $q->whereDate('transactions.paid_at', '<=', $endDate->toDateString()))
-            ->when($academicYearId, function ($q) use ($academicYearId) {
-                $q->whereHas('transactionDetails.bill', function ($bq) use ($academicYearId) {
-                    $bq->where('academic_year_id', $academicYearId);
+        if ($paymentSource) {
+            $piketOfficers = collect();
+            $totalPiketCash = 0;
+        } else {
+            $piketOfficers = Transaction::where('transactions.status', Transaction::STATUS_PAID)
+                ->where('transactions.type', Transaction::TYPE_BILL)
+                ->join('payment_methods', 'transactions.payment_method_id', '=', 'payment_methods.id')
+                ->where('payment_methods.type', PaymentMethod::TYPE_CASH)
+                ->join('students as s', 'transactions.student_id', '=', 's.id')
+                ->join('classrooms as c', 's.classroom_id', '=', 'c.id')
+                ->join('schools as sc', 'c.school_id', '=', 'sc.id')
+                ->where('sc.type', '!=', \App\Models\School::TYPE_DEMO)
+                ->where('sc.name', 'NOT LIKE', '%DEMO%')
+                ->when($startDate, fn($q) => $q->whereDate('transactions.paid_at', '>=', $startDate->toDateString()))
+                ->when($endDate, fn($q) => $q->whereDate('transactions.paid_at', '<=', $endDate->toDateString()))
+                ->when($academicYearId, function ($q) use ($academicYearId) {
+                    $q->whereHas('transactionDetails.bill', function ($bq) use ($academicYearId) {
+                        $bq->where('academic_year_id', $academicYearId);
+                    });
+                })
+                ->join('admins', 'transactions.admin_id', '=', 'admins.id')
+                ->when($outletId, fn($q) => $q->where('admins.outlet_id', $outletId))
+                ->select('admins.id', 'admins.name', DB::raw('SUM(transactions.pay_amount) as total_cash'), DB::raw('COUNT(transactions.id) as total_txs'))
+                ->groupBy('admins.id', 'admins.name')
+                ->get()
+                ->map(function ($officer) use ($outletId) {
+                    $catPiket = CashFlowCategory::where('name', 'Serah Terima Piket ke Bendahara')->first();
+                    $handedOver = CashFlow::where('sender_id', $officer->id)
+                        ->where('status', CashFlow::STATUS_APPROVED)
+                        ->when($outletId, fn($q) => $q->where('outlet_id', $outletId))
+                        ->when($catPiket, fn($q) => $q->where('cash_flow_category_id', $catPiket->id))
+                        ->sum('amount');
+                    
+                    $cashInHand = max($officer->total_cash - $handedOver, 0);
+                    
+                    return [
+                        'id' => $officer->id,
+                        'name' => $officer->name,
+                        'total_collected' => (int)$officer->total_cash,
+                        'total_collected_formatted' => 'Rp ' . number_format($officer->total_cash, 0, ',', '.'),
+                        'handed_over' => (int)$handedOver,
+                        'handed_over_formatted' => 'Rp ' . number_format($handedOver, 0, ',', '.'),
+                        'cash_in_hand' => (int)$cashInHand,
+                        'cash_in_hand_formatted' => 'Rp ' . number_format($cashInHand, 0, ',', '.'),
+                        'total_txs' => $officer->total_txs,
+                    ];
                 });
-            })
-            ->join('admins', 'transactions.admin_id', '=', 'admins.id')
-            ->when($outletId, fn($q) => $q->where('admins.outlet_id', $outletId))
-            ->select('admins.id', 'admins.name', DB::raw('SUM(transactions.pay_amount) as total_cash'), DB::raw('COUNT(transactions.id) as total_txs'))
-            ->groupBy('admins.id', 'admins.name')
-            ->get()
-            ->map(function ($officer) use ($outletId) {
-                $catPiket = CashFlowCategory::where('name', 'Serah Terima Piket ke Bendahara')->first();
-                $handedOver = CashFlow::where('sender_id', $officer->id)
-                    ->where('status', CashFlow::STATUS_APPROVED)
-                    ->when($outletId, fn($q) => $q->where('outlet_id', $outletId))
-                    ->when($catPiket, fn($q) => $q->where('cash_flow_category_id', $catPiket->id))
-                    ->sum('amount');
-                
-                $cashInHand = max($officer->total_cash - $handedOver, 0);
-                
-                return [
-                    'id' => $officer->id,
-                    'name' => $officer->name,
-                    'total_collected' => (int)$officer->total_cash,
-                    'total_collected_formatted' => 'Rp ' . number_format($officer->total_cash, 0, ',', '.'),
-                    'handed_over' => (int)$handedOver,
-                    'handed_over_formatted' => 'Rp ' . number_format($handedOver, 0, ',', '.'),
-                    'cash_in_hand' => (int)$cashInHand,
-                    'cash_in_hand_formatted' => 'Rp ' . number_format($cashInHand, 0, ',', '.'),
-                    'total_txs' => $officer->total_txs,
-                ];
-            });
+
+            $totalPiketCash = Transaction::where('transactions.status', Transaction::STATUS_PAID)
+                ->join('payment_methods', 'transactions.payment_method_id', '=', 'payment_methods.id')
+                ->where('payment_methods.type', PaymentMethod::TYPE_CASH)
+                ->join('students as s', 'transactions.student_id', '=', 's.id')
+                ->join('classrooms as c', 's.classroom_id', '=', 'c.id')
+                ->join('schools as sc', 'c.school_id', '=', 'sc.id')
+                ->where('sc.type', '!=', \App\Models\School::TYPE_DEMO)
+                ->where('sc.name', 'NOT LIKE', '%DEMO%')
+                ->when($startDate, fn($q) => $q->whereDate('transactions.paid_at', '>=', $startDate->toDateString()))
+                ->when($endDate, fn($q) => $q->whereDate('transactions.paid_at', '<=', $endDate->toDateString()))
+                ->when($academicYearId, function ($q) use ($academicYearId) {
+                    $q->whereHas('transactionDetails.bill', function ($bq) use ($academicYearId) {
+                        $bq->where('academic_year_id', $academicYearId);
+                    });
+                })
+                ->join('admins', 'transactions.admin_id', '=', 'admins.id')
+                ->when($outletId, fn($q) => $q->where('admins.outlet_id', $outletId))
+                ->sum('transactions.pay_amount');
+        }
 
         // 6. Workflow Stats Piping
         $catPiket = CashFlowCategory::where('name', 'Serah Terima Piket ke Bendahara')->first();
         $catYayasan = CashFlowCategory::where('name', 'Serah Terima Bendahara ke Yayasan')->first();
-
-        $totalPiketCash = Transaction::where('transactions.status', Transaction::STATUS_PAID)
-            ->join('payment_methods', 'transactions.payment_method_id', '=', 'payment_methods.id')
-            ->where('payment_methods.type', PaymentMethod::TYPE_CASH)
-            ->join('students as s', 'transactions.student_id', '=', 's.id')
-            ->join('classrooms as c', 's.classroom_id', '=', 'c.id')
-            ->join('schools as sc', 'c.school_id', '=', 'sc.id')
-            ->where('sc.type', '!=', \App\Models\School::TYPE_DEMO)
-            ->where('sc.name', 'NOT LIKE', '%DEMO%')
-            ->when($startDate, fn($q) => $q->whereDate('transactions.paid_at', '>=', $startDate->toDateString()))
-            ->when($endDate, fn($q) => $q->whereDate('transactions.paid_at', '<=', $endDate->toDateString()))
-            ->when($academicYearId, function ($q) use ($academicYearId) {
-                $q->whereHas('transactionDetails.bill', function ($bq) use ($academicYearId) {
-                    $bq->where('academic_year_id', $academicYearId);
-                });
-            })
-            ->join('admins', 'transactions.admin_id', '=', 'admins.id')
-            ->when($outletId, fn($q) => $q->where('admins.outlet_id', $outletId))
-            ->sum('transactions.pay_amount');
 
         $totalHandedToBendahara = CashFlow::where('status', CashFlow::STATUS_APPROVED)
             ->when($outletId, fn($q) => $q->where('outlet_id', $outletId))

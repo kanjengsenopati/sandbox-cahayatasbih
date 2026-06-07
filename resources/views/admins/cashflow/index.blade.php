@@ -268,6 +268,22 @@
                                     </select>
                                 </div>
 
+                                <!-- Filter Sumber Dana / Rekening -->
+                                <div>
+                                    <label class="form-label mb-1 fw-bold text-gray-700 fs-7">Sumber Dana / Rekening</label>
+                                    <select id="payment_source_tab1" name="payment_source" class="form-select" style="border-radius: 12px; min-width: 220px; background-color: #fff; border: 1px solid #ccc; padding: 7px 14px; color: #475569; font-weight: 500;">
+                                        <option value="">Semua Pembayaran</option>
+                                        <option value="saldo">Bayar by Saldo (Debit Saldo)</option>
+                                        @if(isset($banks) && count($banks) > 0)
+                                            <optgroup label="Transfer Bank Rekening:">
+                                                @foreach($banks as $bank)
+                                                    <option value="{{ $bank->id }}">{{ $bank->name }} - {{ $bank->account_number }} (A/N: {{ $bank->account_name }})</option>
+                                                @endforeach
+                                            </optgroup>
+                                        @endif
+                                    </select>
+                                </div>
+
                                 <!-- Custom Date Range Picker -->
                                 <div id="wrapper_date_tab1" style="display: none;">
                                     <label class="form-label mb-1 fw-bold text-gray-700 fs-7">Pilih Rentang Tanggal</label>
@@ -1371,6 +1387,11 @@
         loadTab1Data();
     });
 
+    // Event listener for Filter Sumber Dana / Rekening Tab 1
+    $('#payment_source_tab1').on('change', function() {
+        loadTab1Data();
+    });
+
     $('#academic_year_tab2').on('change', function() {
         loadTab2Data();
     });
@@ -1466,10 +1487,12 @@
         var ed = $('#end_date_tab1').val();
         var ay = $('#academic_year_tab1').val();
         var bt = $('#bill_type_tab1').val();
+        var ps = $('#payment_source_tab1').val();
         if (sd) params.start_date = sd;
         if (ed) params.end_date = ed;
         if (ay) params.academic_year_id = ay;
         if (bt) params.bill_type_name = bt;
+        if (ps) params.payment_source = ps;
 
         axios.get("{{ route('cashflow.index') }}", {
             params: params
