@@ -128,7 +128,8 @@ class CashFlowController extends Controller
                 ->with([
                     'transactionDetails.bill.billType',
                     'transactionDetails.bill.academicYear',
-                    'transactionDetails.bill.student.classroom.school'
+                    'transactionDetails.bill.student.classroom.school',
+                    'transactionDetails.bill.classroom'
                 ])
                 ->select('transactions.*')
                 ->latest('transactions.paid_at')
@@ -145,11 +146,15 @@ class CashFlowController extends Controller
                     }
 
                     $data[] = [
+                        'date' => Carbon::parse($tx->paid_at)->translatedFormat('d F Y'),
+                        'date_raw' => $tx->paid_at,
                         'bill_type' => $bill->billType?->name ?? '-',
                         'amount' => $bill->amount,
                         'amount_formatted' => 'Rp ' . number_format($bill->amount, 0, ',', '.'),
-                        'academic_year' => $bill->academicYear?->name ?? '-',
+                        'student_name' => $bill->student?->name ?? '-',
+                        'classroom' => $bill->classroom?->name ?? $bill->student?->classroom?->name ?? '-',
                         'upt' => $bill->student?->classroom?->school?->name ?? '-',
+                        'academic_year' => $bill->academicYear?->name ?? '-',
                     ];
                 }
             }
