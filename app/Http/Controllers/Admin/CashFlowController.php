@@ -228,8 +228,12 @@ class CashFlowController extends Controller
             });
         }
 
-        $totalCashflows = (clone $billQuery)->sum('amount'); // Target Total Pemasukan
-        $totalIncomes = (clone $billQuery)->where('status', 'PAID')->sum('amount'); // Realisasi Pemasukan
+        $totalCashflows = (clone $billQuery)->whereDoesntHave('student.classroom.school', function ($q) {
+            $q->where('type', \App\Models\School::TYPE_DEMO)->orWhere('name', 'LIKE', '%DEMO%');
+        })->sum('amount'); // Target Total Pemasukan
+        $totalIncomes = (clone $billQuery)->where('status', 'PAID')->whereDoesntHave('student.classroom.school', function ($q) {
+            $q->where('type', \App\Models\School::TYPE_DEMO)->orWhere('name', 'LIKE', '%DEMO%');
+        })->sum('amount'); // Realisasi Pemasukan
 
         $statusPemasukan = 'Sesuai';
         if ($totalIncomes < $totalCashflows) {
@@ -422,6 +426,11 @@ class CashFlowController extends Controller
                      ->whereNull('t.deleted_at');
             })
             ->join('payment_methods as pm', 'pm.id', '=', 't.payment_method_id')
+            ->join('students as s', 'b.student_id', '=', 's.id')
+            ->join('classrooms as c', 's.classroom_id', '=', 'c.id')
+            ->join('schools as sc', 'c.school_id', '=', 'sc.id')
+            ->where('sc.type', '!=', \App\Models\School::TYPE_DEMO)
+            ->where('sc.name', 'NOT LIKE', '%DEMO%')
             ->whereNull('b.deleted_at')
             ->where('b.status', 'PAID')
             ->when($academicYearId, fn($q) => $q->where('b.academic_year_id', $academicYearId))
@@ -462,6 +471,11 @@ class CashFlowController extends Controller
             ->where('transactions.type', Transaction::TYPE_BILL)
             ->join('payment_methods', 'transactions.payment_method_id', '=', 'payment_methods.id')
             ->where('payment_methods.type', PaymentMethod::TYPE_CASH)
+            ->join('students as s', 'transactions.student_id', '=', 's.id')
+            ->join('classrooms as c', 's.classroom_id', '=', 'c.id')
+            ->join('schools as sc', 'c.school_id', '=', 'sc.id')
+            ->where('sc.type', '!=', \App\Models\School::TYPE_DEMO)
+            ->where('sc.name', 'NOT LIKE', '%DEMO%')
             ->when($startDate, fn($q) => $q->whereDate('transactions.paid_at', '>=', $startDate->toDateString()))
             ->when($endDate, fn($q) => $q->whereDate('transactions.paid_at', '<=', $endDate->toDateString()))
             ->when($academicYearId, function ($q) use ($academicYearId) {
@@ -504,6 +518,11 @@ class CashFlowController extends Controller
         $totalPiketCash = Transaction::where('transactions.status', Transaction::STATUS_PAID)
             ->join('payment_methods', 'transactions.payment_method_id', '=', 'payment_methods.id')
             ->where('payment_methods.type', PaymentMethod::TYPE_CASH)
+            ->join('students as s', 'transactions.student_id', '=', 's.id')
+            ->join('classrooms as c', 's.classroom_id', '=', 'c.id')
+            ->join('schools as sc', 'c.school_id', '=', 'sc.id')
+            ->where('sc.type', '!=', \App\Models\School::TYPE_DEMO)
+            ->where('sc.name', 'NOT LIKE', '%DEMO%')
             ->when($startDate, fn($q) => $q->whereDate('transactions.paid_at', '>=', $startDate->toDateString()))
             ->when($endDate, fn($q) => $q->whereDate('transactions.paid_at', '<=', $endDate->toDateString()))
             ->when($academicYearId, function ($q) use ($academicYearId) {
