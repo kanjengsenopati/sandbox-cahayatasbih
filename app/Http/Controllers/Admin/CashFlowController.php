@@ -145,16 +145,25 @@ class CashFlowController extends Controller
                         continue;
                     }
 
+                    $billTypeName = strtoupper($bill->billType?->name ?? '-');
+                    $monthName = strtoupper($bill->translated_month ?? '-');
+                    $academicYear = $bill->academicYear?->name ?? '-';
+                    $billTypeFormatted = "{$billTypeName} {$monthName} {$academicYear}";
+
+                    $school = $bill->student?->classroom?->school;
+                    $isDemo = $school && ($school->type === \App\Models\School::TYPE_DEMO || stripos($school->name, 'DEMO') !== false);
+
                     $data[] = [
                         'date' => Carbon::parse($tx->paid_at)->translatedFormat('d F Y'),
                         'date_raw' => $tx->paid_at,
-                        'bill_type' => $bill->billType?->name ?? '-',
+                        'bill_type' => $billTypeFormatted,
                         'amount' => $bill->amount,
                         'amount_formatted' => 'Rp ' . number_format($bill->amount, 0, ',', '.'),
                         'student_name' => $bill->student?->name ?? '-',
                         'classroom' => $bill->classroom?->name ?? $bill->student?->classroom?->name ?? '-',
                         'upt' => $bill->student?->classroom?->school?->name ?? '-',
                         'academic_year' => $bill->academicYear?->name ?? '-',
+                        'is_demo' => (bool)$isDemo,
                     ];
                 }
             }

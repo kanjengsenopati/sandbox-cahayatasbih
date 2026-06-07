@@ -786,14 +786,8 @@
                                 <th class="py-4 cursor-pointer text-hover-primary modal-sortable-column" data-sort="student_name" style="color: #94a3b8; font-family: 'Outfit', sans-serif; font-size: 11px; font-weight: 700; letter-spacing: 0.1em; user-select: none; white-space: nowrap;">
                                     Nama Siswa <i class="bi bi-arrow-down-up ms-1 text-slate-400 modal-sort-icon" style="font-size: 10px;"></i>
                                 </th>
-                                <th class="py-4 cursor-pointer text-hover-primary modal-sortable-column" data-sort="classroom" style="color: #94a3b8; font-family: 'Outfit', sans-serif; font-size: 11px; font-weight: 700; letter-spacing: 0.1em; user-select: none; white-space: nowrap;">
+                                <th class="pe-5 py-4 cursor-pointer text-hover-primary modal-sortable-column" data-sort="classroom" style="color: #94a3b8; font-family: 'Outfit', sans-serif; font-size: 11px; font-weight: 700; letter-spacing: 0.1em; user-select: none; white-space: nowrap;">
                                     Kelas <i class="bi bi-arrow-down-up ms-1 text-slate-400 modal-sort-icon" style="font-size: 10px;"></i>
-                                </th>
-                                <th class="py-4 cursor-pointer text-hover-primary modal-sortable-column" data-sort="upt" style="color: #94a3b8; font-family: 'Outfit', sans-serif; font-size: 11px; font-weight: 700; letter-spacing: 0.1em; user-select: none; white-space: nowrap;">
-                                    UPT <i class="bi bi-arrow-down-up ms-1 text-slate-400 modal-sort-icon" style="font-size: 10px;"></i>
-                                </th>
-                                <th class="pe-5 py-4 text-center cursor-pointer text-hover-primary modal-sortable-column" data-sort="academic_year" style="color: #94a3b8; font-family: 'Outfit', sans-serif; font-size: 11px; font-weight: 700; letter-spacing: 0.1em; user-select: none; white-space: nowrap;">
-                                    Tahun Ajaran <i class="bi bi-arrow-down-up ms-1 text-slate-400 modal-sort-icon" style="font-size: 10px;"></i>
                                 </th>
                             </tr>
                         </thead>
@@ -1066,7 +1060,7 @@
             var officerName = $(this).data('name');
 
             $('#detailTransaksiOfficer').text('Petugas: ' + officerName);
-            $('#modal-transactions-tbody').html('<tr><td colspan="8" class="text-center text-muted py-4"><div class="spinner-border spinner-border-sm text-primary me-2" role="status"></div> Memuat detail transaksi...</td></tr>');
+            $('#modal-transactions-tbody').html('<tr><td colspan="6" class="text-center text-muted py-4"><div class="spinner-border spinner-border-sm text-primary me-2" role="status"></div> Memuat detail transaksi...</td></tr>');
             $('#modal-table-info').text('Menampilkan 0 sampai 0 dari 0 data');
             $('#modal-pagination').empty();
 
@@ -1105,12 +1099,12 @@
                     modalPage = 1;
                     renderModalTable();
                 } else {
-                    $('#modal-transactions-tbody').html('<tr><td colspan="8" class="text-center text-danger py-4">Gagal memuat data detail transaksi.</td></tr>');
+                    $('#modal-transactions-tbody').html('<tr><td colspan="6" class="text-center text-danger py-4">Gagal memuat data detail transaksi.</td></tr>');
                 }
             })
             .catch(function(error) {
                 console.error("Error loading piket transactions:", error);
-                $('#modal-transactions-tbody').html('<tr><td colspan="8" class="text-center text-danger py-4">Terjadi kesalahan saat menghubungi server.</td></tr>');
+                $('#modal-transactions-tbody').html('<tr><td colspan="6" class="text-center text-danger py-4">Terjadi kesalahan saat menghubungi server.</td></tr>');
             });
         });
 
@@ -1122,15 +1116,11 @@
                 if (!modalSearchQuery) return true;
                 var query = modalSearchQuery.toLowerCase().trim();
                 var billType = (item.bill_type || '').toLowerCase();
-                var upt = (item.upt || '').toLowerCase();
-                var year = (item.academic_year || '').toLowerCase();
                 var student = (item.student_name || '').toLowerCase();
                 var classroom = (item.classroom || '').toLowerCase();
                 var date = (item.date || '').toLowerCase();
                 return billType.indexOf(query) !== -1 || 
-                       upt.indexOf(query) !== -1 || 
-                       year.indexOf(query) !== -1 ||
-                       student.indexOf(query) !== -1 ||
+                       student.indexOf(query) !== -1 || 
                        classroom.indexOf(query) !== -1 ||
                        date.indexOf(query) !== -1;
             });
@@ -1160,7 +1150,7 @@
             var pageData = filtered.slice(startIdx, endIdx);
 
             if (total === 0) {
-                tbody.append('<tr><td colspan="8" class="text-center text-muted py-4">Tidak ada data transaksi yang cocok</td></tr>');
+                tbody.append('<tr><td colspan="6" class="text-center text-muted py-4">Tidak ada data transaksi yang cocok</td></tr>');
                 $('#modal-table-info').text('Menampilkan 0 sampai 0 dari 0 data');
                 $('#modal-pagination').empty();
                 return;
@@ -1169,22 +1159,20 @@
             pageData.forEach(function(item, idx) {
                 var globalIdx = startIdx + idx + 1;
                 
-                var isDemo = item.upt && item.upt.toLowerCase().includes('demo');
-                var uptDisplay = item.upt;
+                var isDemo = item.is_demo || (item.upt && item.upt.toLowerCase().includes('demo'));
+                var billTypeDisplay = item.bill_type;
                 if (isDemo) {
-                    uptDisplay = item.upt + ' <span class="badge bg-light-danger text-danger ms-2" style="border-radius: 6px; font-size: 10px; padding: 2px 6px; font-weight: 700; text-transform: uppercase;">Demo</span>';
+                    billTypeDisplay = item.bill_type + ' <span class="badge bg-light-danger text-danger ms-2" style="border-radius: 6px; font-size: 10px; padding: 2px 6px; font-weight: 700; text-transform: uppercase;">Demo</span>';
                 }
 
                 tbody.append(
                     '<tr>' +
                     '<td class="ps-5 py-3 text-muted" style="font-family: \'Outfit\', sans-serif;">' + globalIdx + '</td>' +
                     '<td class="py-3 text-slate-800">' + item.date + '</td>' +
-                    '<td class="py-3 text-slate-800">' + item.bill_type + '</td>' +
+                    '<td class="py-3 text-slate-800">' + billTypeDisplay + '</td>' +
                     '<td class="py-3 text-end text-emerald-600 font-weight-bold" style="font-family: \'Outfit\', sans-serif;">' + item.amount_formatted + '</td>' +
                     '<td class="py-3 text-slate-800">' + item.student_name + '</td>' +
-                    '<td class="py-3 text-slate-800">' + item.classroom + '</td>' +
-                    '<td class="py-3 text-slate-800">' + uptDisplay + '</td>' +
-                    '<td class="pe-5 py-3 text-center text-slate-600">' + item.academic_year + '</td>' +
+                    '<td class="pe-5 py-3 text-slate-800">' + item.classroom + '</td>' +
                     '</tr>'
                 );
             });
