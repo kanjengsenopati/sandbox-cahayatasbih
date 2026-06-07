@@ -356,6 +356,7 @@ class CashFlowController extends Controller
             ->leftJoinSub($makeBillPaymentsSub(), 'bp', 'b.id', '=', 'bp.bill_id')
             ->whereNull('b.deleted_at')
             ->select(
+                'bt.id as bill_type_id',
                 'bt.name as type_name',
                 'bi.name as unit_name',
                 'ay.name as year_name',
@@ -365,7 +366,7 @@ class CashFlowController extends Controller
                 DB::raw("SUM(CASE WHEN b.status = 'PAID' AND bp.pm_type = 'BALANCE' THEN b.amount ELSE 0 END) as paid_balance"),
                 DB::raw("SUM(CASE WHEN b.status = 'PAID' AND bp.pm_type NOT IN ('CASH', 'BALANCE') THEN b.amount ELSE 0 END) as paid_transfer")
             )
-            ->groupBy('bt.name', 'bi.name', 'ay.name');
+            ->groupBy('bt.id', 'bt.name', 'bi.name', 'ay.name');
 
         if ($academicYearId) {
             $breakdownDetailQuery->where('b.academic_year_id', $academicYearId);
@@ -394,6 +395,17 @@ class CashFlowController extends Controller
 
         $breakdownDetailRaw = $breakdownDetailQuery->orderByDesc('target')->get();
 
+        $billTypeIds = $breakdownDetailRaw->pluck('bill_type_id')->filter()->unique()->toArray();
+        $billTypeBanks = \App\Models\BillTypeBank::whereIn('bill_type_id', $billTypeIds)
+            ->whereHas('bank', function ($q) {
+                $q->whereNull('deleted_at')->where('is_active', true);
+            })
+            ->with(['bank' => function ($q) {
+                $q->where('is_active', true);
+            }])
+            ->get()
+            ->groupBy('bill_type_id');
+
         $breakdownDetailBills = [];
         foreach ($breakdownDetailRaw as $row) {
             $fullName = trim($row->type_name);
@@ -402,6 +414,19 @@ class CashFlowController extends Controller
             if ($row->year_name) $parts[] = $row->year_name;
             if (!empty($parts)) {
                 $fullName .= ' (' . implode(' - ', $parts) . ')';
+            }
+
+            $banks = [];
+            if (isset($billTypeBanks[$row->bill_type_id])) {
+                foreach ($billTypeBanks[$row->bill_type_id] as $btBank) {
+                    if ($btBank->bank) {
+                        $banks[] = [
+                            'bank_name' => $btBank->bank->name,
+                            'account_number' => $btBank->bank->account_number,
+                            'account_name' => $btBank->bank->account_name,
+                        ];
+                    }
+                }
             }
 
             $breakdownDetailBills[] = [
@@ -416,6 +441,7 @@ class CashFlowController extends Controller
                 'paid_balance_formatted' => 'Rp ' . number_format($row->paid_balance, 0, ',', '.'),
                 'paid_transfer' => (int)$row->paid_transfer,
                 'paid_transfer_formatted' => 'Rp ' . number_format($row->paid_transfer, 0, ',', '.'),
+                'banks' => $banks,
             ];
         }
 
@@ -473,7 +499,7 @@ class CashFlowController extends Controller
         $sourceBreakdown = [
             'Tunai'            => (int)($sourceRaw->paid_cash     ?? 0),
             'Debit Saldo'      => (int)($sourceRaw->paid_balance  ?? 0),
-            'Transfer Aplikasi'=> (int)($sourceRaw->paid_transfer ?? 0),
+            'Transfer Bank'    => (int)($sourceRaw->paid_transfer ?? 0),
         ];
 
         // 5. Tracing Petugas Piket (Tunai)
@@ -580,7 +606,7 @@ class CashFlowController extends Controller
             'breakdown_sources' => [
                 'tunai' => number_format($sourceBreakdown['Tunai'], 0, ',', '.'),
                 'saldo' => number_format($sourceBreakdown['Debit Saldo'], 0, ',', '.'),
-                'transfer' => number_format($sourceBreakdown['Transfer Aplikasi'], 0, ',', '.'),
+                'transfer' => number_format($sourceBreakdown['Transfer Bank'], 0, ',', '.'),
             ],
             'piket_officers' => $piketOfficers,
             'workflow_stats' => [
@@ -593,6 +619,13 @@ class CashFlowController extends Controller
                 'bendahara_to_yayasan' => $catYayasan?->id,
             ],
             'active_admins' => $activeAdmins,
+            'active_banks' => \App\Models\Bank::where('is_active', true)->get()->map(function($bank) {
+                return [
+                    'bank_name' => $bank->name,
+                    'account_number' => $bank->account_number,
+                    'account_name' => $bank->account_name,
+                ];
+            })->toArray(),
         ]);
     }
 

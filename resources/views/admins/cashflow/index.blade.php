@@ -131,6 +131,53 @@
             font-size: 24px;
             padding: 0 15px;
         }
+        .bank-tooltip-card {
+            display: none;
+            position: absolute;
+            z-index: 1080;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            border: 1px solid rgba(226, 232, 240, 0.8);
+            border-radius: 16px;
+            padding: 12px 16px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+            pointer-events: none;
+            min-width: 240px;
+            transition: opacity 0.2s ease;
+        }
+        .bank-tooltip-title {
+            font-family: 'Outfit', sans-serif;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: #94a3b8;
+            margin-bottom: 8px;
+            border-bottom: 1px solid #f1f5f9;
+            padding-bottom: 4px;
+        }
+        .bank-tooltip-item {
+            font-family: 'Inter', sans-serif;
+            font-size: 13px;
+            color: #1e293b;
+            margin-bottom: 8px;
+        }
+        .bank-tooltip-item:last-child {
+            margin-bottom: 0;
+        }
+        .bank-tooltip-bank-name {
+            font-weight: 700;
+            color: #2563EB;
+        }
+        .bank-tooltip-account-number {
+            font-weight: 600;
+            color: #0f172a;
+        }
+        .bank-tooltip-account-name {
+            font-size: 11px;
+            color: #64748b;
+        }
     </style>
 @endpush
 
@@ -367,10 +414,10 @@
                                             <div class="progress-bar bg-success" id="source-saldo-bar" role="progressbar" style="width: 0%; border-radius: 6px;"></div>
                                         </div>
                                     </div>
-                                    <!-- Transfer Aplikasi -->
-                                    <div>
+                                    <!-- Transfer Bank -->
+                                    <div class="hover-bank-trigger" style="cursor: pointer;">
                                         <div class="d-flex justify-content-between align-items-center mb-1">
-                                            <span class="typography-body fw-bold">Transfer Aplikasi</span>
+                                            <span class="typography-body fw-bold">Transfer Bank</span>
                                             <span class="typography-body fw-bolder" id="source-transfer-amount">Rp 0</span>
                                         </div>
                                         <div class="progress" style="height: 10px; border-radius: 6px;">
@@ -400,7 +447,7 @@
                                                      <th class="text-end" style="color: #1e293b; width: 15%;">Total Pemasukan</th>
                                                      <th class="text-end text-primary" style="color: #2563EB; width: 13%;">Tunai</th>
                                                      <th class="text-end text-success" style="color: #10B981; width: 13%;">Debit Saldo</th>
-                                                     <th class="text-end text-info" style="color: #0EA5E9; width: 14%;">Transfer Aplikasi</th>
+                                                     <th class="text-end text-info" style="color: #0EA5E9; width: 14%;">Transfer Bank</th>
                                                 </tr>
                                             </thead>
                                             <tbody id="breakdown-detail-bills-tbody" class="fw-bold text-gray-600">
@@ -807,6 +854,7 @@
 <script>
     var globalCategories = {};
     var globalAdmins = [];
+    var globalActiveBanks = [];
 
     // Helper to format currency
     function formatRupiah(number) {
@@ -1452,6 +1500,7 @@
             // Save global state
             globalCategories = response.data.categories;
             globalAdmins = response.data.active_admins;
+            globalActiveBanks = response.data.active_banks || [];
 
             // Breakdown Bills Tbody
             var billsTbody = $('#breakdown-bills-tbody');
@@ -1490,7 +1539,7 @@
                         '<td class="text-end text-emerald-600">' + item.total_formatted + '</td>' +
                         '<td class="text-end text-primary" style="opacity: 0.85;">' + item.paid_cash_formatted + '</td>' +
                         '<td class="text-end text-success" style="opacity: 0.85;">' + item.paid_balance_formatted + '</td>' +
-                        '<td class="text-end text-info" style="opacity: 0.85;">' + item.paid_transfer_formatted + '</td>' +
+                        '<td class="text-end text-info hover-bank-detail-trigger" style="opacity: 0.85; cursor: pointer;" data-banks=\'' + JSON.stringify(item.banks || []) + '\'>' + item.paid_transfer_formatted + '</td>' +
                         '</tr>'
                     );
                 });
@@ -1649,6 +1698,69 @@
     // Initial default load
     $(document).ready(function() {
         loadTab1Data();
+    });
+
+    $(document).ready(function() {
+        if ($('#bank-hover-tooltip').length === 0) {
+            $('body').append('<div id="bank-hover-tooltip" class="bank-tooltip-card"></div>');
+        }
+
+        $(document).on('mouseenter', '.hover-bank-trigger', function() {
+            let html = '<div class="bank-tooltip-title">Daftar Rekening Bank</div>';
+            if (globalActiveBanks && globalActiveBanks.length > 0) {
+                globalActiveBanks.forEach(function(bank) {
+                    html += '<div class="bank-tooltip-item">' +
+                            '<span class="bank-tooltip-bank-name">' + bank.bank_name + '</span><br>' +
+                            '<span class="bank-tooltip-account-number">' + bank.account_number + '</span><br>' +
+                            '<span class="bank-tooltip-account-name">A/N: ' + bank.account_name + '</span>' +
+                            '</div>';
+                });
+            } else {
+                html += '<div class="bank-tooltip-item text-muted" style="font-size: 12px;">Tidak ada rekening bank aktif</div>';
+            }
+            $('#bank-hover-tooltip').html(html).show();
+        });
+
+        $(document).on('mouseenter', '.hover-bank-detail-trigger', function() {
+            let banks = $(this).data('banks');
+            if (typeof banks === 'string') {
+                try { banks = JSON.parse(banks); } catch(e) { banks = []; }
+            }
+            let html = '<div class="bank-tooltip-title">Rekening Pembayaran</div>';
+            if (banks && banks.length > 0) {
+                banks.forEach(function(bank) {
+                    html += '<div class="bank-tooltip-item">' +
+                            '<span class="bank-tooltip-bank-name">' + bank.bank_name + '</span><br>' +
+                            '<span class="bank-tooltip-account-number">' + bank.account_number + '</span><br>' +
+                            '<span class="bank-tooltip-account-name">A/N: ' + bank.account_name + '</span>' +
+                            '</div>';
+                });
+            } else {
+                html += '<div class="bank-tooltip-item text-muted" style="font-size: 12px;">Belum ada pengaturan bank</div>';
+            }
+            $('#bank-hover-tooltip').html(html).show();
+        });
+
+        $(document).on('mousemove', '.hover-bank-trigger, .hover-bank-detail-trigger', function(e) {
+            let tooltip = $('#bank-hover-tooltip');
+            let x = e.pageX + 15;
+            let y = e.pageY + 15;
+            
+            let winWidth = $(window).width();
+            let tooltipWidth = tooltip.outerWidth();
+            if (x + tooltipWidth > winWidth) {
+                x = e.pageX - tooltipWidth - 15;
+            }
+
+            tooltip.css({
+                top: y + 'px',
+                left: x + 'px'
+            });
+        });
+
+        $(document).on('mouseleave', '.hover-bank-trigger, .hover-bank-detail-trigger', function() {
+            $('#bank-hover-tooltip').hide();
+        });
     });
 </script>
 @endpush
