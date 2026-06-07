@@ -101,6 +101,65 @@ class CashFlowController extends Controller
                 ->make(true);
         }
 
+        if (request()->type == 'piket_transactions') {
+            $adminId = request()->input('admin_id');
+            $startDate = request()->filled('start_date') ? Carbon::parse(request()->start_date) : null;
+            $endDate = request()->filled('end_date') ? Carbon::parse(request()->end_date) : null;
+            $academicYearId = request()->filled('academic_year_id') ? request()->academic_year_id : null;
+            $outletId = auth()->user()->outlet_id ?? request()->input('outlet_id');
+
+            $transactions = Transaction::where('transactions.status', Transaction::STATUS_PAID)
+                ->where('transactions.type', Transaction::TYPE_BILL)
+                ->where('transactions.admin_id', $adminId)
+                ->join('payment_methods', 'transactions.payment_method_id', '=', 'payment_methods.id')
+                ->where('payment_methods.type', PaymentMethod::TYPE_CASH)
+                ->when($startDate, fn($q) => $q->whereDate('transactions.paid_at', '>=', $startDate->toDateString()))
+                ->when($endDate, fn($q) => $q->whereDate('transactions.paid_at', '<=', $endDate->toDateString()))
+                ->when($academicYearId, function ($q) use ($academicYearId) {
+                    $q->whereHas('transactionDetails.bill', function ($bq) use ($academicYearId) {
+                        $bq->where('academic_year_id', $academicYearId);
+                    });
+                })
+                ->when($outletId, function ($q) use ($outletId) {
+                    $q->whereHas('admin', function ($aq) use ($outletId) {
+                        $aq->where('outlet_id', $outletId);
+                    });
+                })
+                ->with([
+                    'transactionDetails.bill.billType',
+                    'transactionDetails.bill.academicYear',
+                    'transactionDetails.bill.student.classroom.school'
+                ])
+                ->select('transactions.*')
+                ->latest('transactions.paid_at')
+                ->get();
+
+            $data = [];
+            foreach ($transactions as $tx) {
+                foreach ($tx->transactionDetails as $detail) {
+                    $bill = $detail->bill;
+                    if (!$bill) continue;
+
+                    if ($academicYearId && $bill->academic_year_id != $academicYearId) {
+                        continue;
+                    }
+
+                    $data[] = [
+                        'bill_type' => $bill->billType?->name ?? '-',
+                        'amount' => $bill->amount,
+                        'amount_formatted' => 'Rp ' . number_format($bill->amount, 0, ',', '.'),
+                        'academic_year' => $bill->academicYear?->name ?? '-',
+                        'upt' => $bill->student?->classroom?->school?->name ?? '-',
+                    ];
+                }
+            }
+
+            return response()->json([
+                'success' => true,
+                'data' => $data
+            ]);
+        }
+
         if (request()->type == 'summary') {
             return $this->summary();
         }

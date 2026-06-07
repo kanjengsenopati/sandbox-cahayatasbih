@@ -736,6 +736,77 @@
         </div>
     </div>
 </div>
+
+<!-- Modal Detail Transaksi Piket -->
+<div class="modal fade" id="detailTransaksiModal" tabindex="-1" aria-labelledby="detailTransaksiModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
+        <div class="modal-content premium-shadow" style="border-radius: 24px; border: none; background: #ffffff;">
+            <div class="modal-header border-0 pb-0 pt-6 px-8 d-flex align-items-center justify-content-between">
+                <div>
+                    <h5 class="modal-title typography-h1" id="detailTransaksiModalLabel" style="font-size: 22px; font-weight: 700; color: #0f172a; font-family: 'Outfit', sans-serif;">Detail Transaksi Tunai</h5>
+                    <span class="typography-caption text-muted" id="detailTransaksiOfficer" style="font-size: 12px; color: #94a3b8; font-style: italic; display: block; margin-top: 4px;">Petugas: -</span>
+                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body px-8 pb-8 pt-4">
+                <!-- Search & Entries Control -->
+                <div class="d-flex flex-column flex-sm-row align-items-sm-center justify-content-between gap-4 mb-5">
+                    <!-- Page Size Selector -->
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="typography-body text-slate-600" style="font-size: 14px; font-weight: 500; font-family: 'Inter', sans-serif;">Tampilkan</span>
+                        <select id="modal-page-size" class="form-select form-select-solid py-2 px-3" style="border-radius: 12px; width: 85px; font-weight: 600; border: 1px solid #cbd5e1; background-color: #f8fafc; color: #1e293b;">
+                            <option value="10" selected>10</option>
+                            <option value="20">20</option>
+                        </select>
+                        <span class="typography-body text-slate-600" style="font-size: 14px; font-weight: 500; font-family: 'Inter', sans-serif;">data</span>
+                    </div>
+
+                    <!-- Search Input -->
+                    <div class="position-relative">
+                        <i class="bi bi-search position-absolute top-50 translate-middle-y ms-4 text-slate-400" style="font-size: 14px;"></i>
+                        <input type="text" id="modal-search" class="form-control form-control-solid ps-10 py-2 fs-7" placeholder="Cari tagihan atau UPT..." style="border-radius: 12px; width: 260px; font-weight: 500; border: 1px solid #cbd5e1; background-color: #f8fafc; color: #1e293b;" />
+                    </div>
+                </div>
+
+                <!-- Table Container -->
+                <div class="table-responsive" style="border-radius: 16px; border: 1px solid #e2e8f0; background: #ffffff;">
+                    <table class="table align-middle table-row-dashed table-hover mb-0">
+                        <thead>
+                            <tr class="text-start text-gray-500 fw-bold fs-7 text-uppercase" style="border-bottom: 2px solid #e2e8f0; background: #f8fafc;">
+                                <th class="ps-5 py-4" style="width: 80px; color: #94a3b8; font-family: 'Outfit', sans-serif; font-size: 11px; font-weight: 700; letter-spacing: 0.1em;">No</th>
+                                <th class="py-4 cursor-pointer text-hover-primary modal-sortable-column" data-sort="bill_type" style="color: #94a3b8; font-family: 'Outfit', sans-serif; font-size: 11px; font-weight: 700; letter-spacing: 0.1em; user-select: none;">
+                                    Nama Tagihan <i class="bi bi-arrow-down-up ms-1 text-slate-400 modal-sort-icon" style="font-size: 10px;"></i>
+                                </th>
+                                <th class="py-4 text-end cursor-pointer text-hover-primary modal-sortable-column" data-sort="amount" style="color: #94a3b8; font-family: 'Outfit', sans-serif; font-size: 11px; font-weight: 700; letter-spacing: 0.1em; user-select: none;">
+                                    Nominal <i class="bi bi-arrow-down-up ms-1 text-slate-400 modal-sort-icon" style="font-size: 10px;"></i>
+                                </th>
+                                <th class="py-4 text-center cursor-pointer text-hover-primary modal-sortable-column" data-sort="academic_year" style="color: #94a3b8; font-family: 'Outfit', sans-serif; font-size: 11px; font-weight: 700; letter-spacing: 0.1em; user-select: none;">
+                                    Tahun Ajaran <i class="bi bi-arrow-down-up ms-1 text-slate-400 modal-sort-icon" style="font-size: 10px;"></i>
+                                </th>
+                                <th class="pe-5 py-4 cursor-pointer text-hover-primary modal-sortable-column" data-sort="upt" style="color: #94a3b8; font-family: 'Outfit', sans-serif; font-size: 11px; font-weight: 700; letter-spacing: 0.1em; user-select: none;">
+                                    UPT <i class="bi bi-arrow-down-up ms-1 text-slate-400 modal-sort-icon" style="font-size: 10px;"></i>
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody id="modal-transactions-tbody" class="fw-bold text-gray-700">
+                            <!-- Rows will be injected dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Pagination & Info -->
+                <div class="d-flex flex-column flex-sm-row align-items-center justify-content-between gap-4 mt-5 px-2">
+                    <div class="typography-caption text-slate-400" id="modal-table-info" style="font-size: 12px; color: #94a3b8; font-family: 'Inter', sans-serif;">
+                        Menampilkan 0 sampai 0 dari 0 data
+                    </div>
+                    <ul class="pagination pagination-outline justify-content-end mb-0" id="modal-pagination" style="gap: 6px;">
+                        <!-- Pagination buttons injected dynamically -->
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 @endsection
 
 @push('js')
@@ -971,6 +1042,208 @@
             var modal = new bootstrap.Modal(document.getElementById('serahTerimaModal'));
             modal.show();
         }
+
+        // --- Detail Transaksi Piket Modal JS Engine ---
+        let currentModalData = [];
+        let modalPage = 1;
+        let modalPageSize = 10;
+        let modalSearchQuery = "";
+        let modalSortColumn = null;
+        let modalSortDir = 'asc';
+
+        $(document).on('click', '.btn-detail-transaksi', function(e) {
+            e.preventDefault();
+            var officerId = $(this).data('id');
+            var officerName = $(this).data('name');
+
+            $('#detailTransaksiOfficer').text('Petugas: ' + officerName);
+            $('#modal-transactions-tbody').html('<tr><td colspan="5" class="text-center text-muted py-4"><div class="spinner-border spinner-border-sm text-primary me-2" role="status"></div> Memuat detail transaksi...</td></tr>');
+            $('#modal-table-info').text('Menampilkan 0 sampai 0 dari 0 data');
+            $('#modal-pagination').empty();
+
+            $('#modal-search').val('');
+            modalSearchQuery = "";
+            $('#modal-page-size').val(10);
+            modalPageSize = 10;
+
+            modalSortColumn = null;
+            modalSortDir = 'asc';
+            $('.modal-sort-icon').removeClass('bi-arrow-down bi-arrow-up').addClass('bi-arrow-down-up');
+
+            var modalEl = document.getElementById('detailTransaksiModal');
+            var modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+            modal.show();
+
+            var params = {
+                type: 'piket_transactions',
+                admin_id: officerId
+            };
+            var sd = $('#start_date_tab2').val();
+            var ed = $('#end_date_tab2').val();
+            var ay = $('#academic_year_tab2').val();
+            var ot = $('#filter_outlet_id_tab2').val();
+            if (sd) params.start_date = sd;
+            if (ed) params.end_date = ed;
+            if (ay) params.academic_year_id = ay;
+            if (ot) params.outlet_id = ot;
+
+            axios.get("{{ route('cashflow.index') }}", {
+                params: params
+            })
+            .then(function(response) {
+                if (response.data && response.data.success) {
+                    currentModalData = response.data.data;
+                    modalPage = 1;
+                    renderModalTable();
+                } else {
+                    $('#modal-transactions-tbody').html('<tr><td colspan="5" class="text-center text-danger py-4">Gagal memuat data detail transaksi.</td></tr>');
+                }
+            })
+            .catch(function(error) {
+                console.error("Error loading piket transactions:", error);
+                $('#modal-transactions-tbody').html('<tr><td colspan="5" class="text-center text-danger py-4">Terjadi kesalahan saat menghubungi server.</td></tr>');
+            });
+        });
+
+        function renderModalTable() {
+            var tbody = $('#modal-transactions-tbody');
+            tbody.empty();
+
+            var filtered = currentModalData.filter(function(item) {
+                if (!modalSearchQuery) return true;
+                var query = modalSearchQuery.toLowerCase().trim();
+                var billType = (item.bill_type || '').toLowerCase();
+                var upt = (item.upt || '').toLowerCase();
+                var year = (item.academic_year || '').toLowerCase();
+                return billType.indexOf(query) !== -1 || upt.indexOf(query) !== -1 || year.indexOf(query) !== -1;
+            });
+
+            if (modalSortColumn) {
+                filtered.sort(function(a, b) {
+                    var valA = a[modalSortColumn];
+                    var valB = b[modalSortColumn];
+
+                    if (modalSortColumn === 'amount') {
+                        valA = Number(valA) || 0;
+                        valB = Number(valB) || 0;
+                    } else {
+                        valA = String(valA).toLowerCase();
+                        valB = String(valB).toLowerCase();
+                    }
+
+                    if (valA < valB) return modalSortDir === 'asc' ? -1 : 1;
+                    if (valA > valB) return modalSortDir === 'asc' ? 1 : -1;
+                    return 0;
+                });
+            }
+
+            var total = filtered.length;
+            var startIdx = (modalPage - 1) * modalPageSize;
+            var endIdx = startIdx + modalPageSize;
+            var pageData = filtered.slice(startIdx, endIdx);
+
+            if (total === 0) {
+                tbody.append('<tr><td colspan="5" class="text-center text-muted py-4">Tidak ada data transaksi yang cocok</td></tr>');
+                $('#modal-table-info').text('Menampilkan 0 sampai 0 dari 0 data');
+                $('#modal-pagination').empty();
+                return;
+            }
+
+            pageData.forEach(function(item, idx) {
+                var globalIdx = startIdx + idx + 1;
+                tbody.append(
+                    '<tr>' +
+                    '<td class="ps-5 py-3 text-muted" style="font-family: \'Outfit\', sans-serif;">' + globalIdx + '</td>' +
+                    '<td class="py-3 text-slate-800">' + item.bill_type + '</td>' +
+                    '<td class="py-3 text-end text-emerald-600 font-weight-bold" style="font-family: \'Outfit\', sans-serif;">' + item.amount_formatted + '</td>' +
+                    '<td class="py-3 text-center text-slate-600">' + item.academic_year + '</td>' +
+                    '<td class="pe-5 py-3 text-slate-600">' + item.upt + '</td>' +
+                    '</tr>'
+                );
+            });
+
+            var showStart = startIdx + 1;
+            var showEnd = Math.min(endIdx, total);
+            $('#modal-table-info').text('Menampilkan ' + showStart + ' sampai ' + showEnd + ' dari ' + total + ' data');
+
+            renderModalPagination(total);
+        }
+
+        function renderModalPagination(total) {
+            var paginationUl = $('#modal-pagination');
+            paginationUl.empty();
+
+            var totalPages = Math.ceil(total / modalPageSize);
+            if (totalPages <= 1) return;
+
+            var prevClass = modalPage === 1 ? 'disabled' : '';
+            paginationUl.append(
+                '<li class="page-item ' + prevClass + '">' +
+                '<a class="page-link modal-page-btn" href="#" data-page="' + (modalPage - 1) + '" style="border-radius: 8px; border: 1px solid #cbd5e1; padding: 6px 12px;"><i class="fa fa-angle-left"></i></a>' +
+                '</li>'
+            );
+
+            for (var p = 1; p <= totalPages; p++) {
+                var activeClass = modalPage === p ? 'active' : '';
+                var activeStyle = modalPage === p ? 'background-color: #2563EB !important; border-color: #2563EB !important; color: white !important;' : 'border: 1px solid #cbd5e1;';
+                paginationUl.append(
+                    '<li class="page-item ' + activeClass + '">' +
+                    '<a class="page-link modal-page-btn" href="#" data-page="' + p + '" style="border-radius: 8px; padding: 6px 12px; ' + activeStyle + '">' + p + '</a>' +
+                    '</li>'
+                );
+            }
+
+            var nextClass = modalPage === totalPages ? 'disabled' : '';
+            paginationUl.append(
+                '<li class="page-item ' + nextClass + '">' +
+                '<a class="page-link modal-page-btn" href="#" data-page="' + (modalPage + 1) + '" style="border-radius: 8px; border: 1px solid #cbd5e1; padding: 6px 12px;"><i class="fa fa-angle-right"></i></a>' +
+                '</li>'
+            );
+        }
+
+        $('#modal-page-size').on('change', function() {
+            modalPageSize = parseInt($(this).val(), 10);
+            modalPage = 1;
+            renderModalTable();
+        });
+
+        $('#modal-search').on('keyup input', function() {
+            modalSearchQuery = $(this).val();
+            modalPage = 1;
+            renderModalTable();
+        });
+
+        $('.modal-sortable-column').on('click', function() {
+            var col = $(this).data('sort');
+            if (modalSortColumn === col) {
+                modalSortDir = modalSortDir === 'asc' ? 'desc' : 'asc';
+            } else {
+                modalSortColumn = col;
+                modalSortDir = 'asc';
+            }
+
+            $('.modal-sort-icon').removeClass('bi-arrow-down bi-arrow-up').addClass('bi-arrow-down-up');
+
+            var activeIcon = $(this).find('.modal-sort-icon');
+            activeIcon.removeClass('bi-arrow-down-up');
+            if (modalSortDir === 'asc') {
+                activeIcon.addClass('bi-arrow-down');
+            } else {
+                activeIcon.addClass('bi-arrow-up');
+            }
+
+            modalPage = 1;
+            renderModalTable();
+        });
+
+        $(document).on('click', '.modal-page-btn', function(e) {
+            e.preventDefault();
+            var targetPage = $(this).data('page');
+            if (targetPage) {
+                modalPage = parseInt(targetPage, 10);
+                renderModalTable();
+            }
+        });
     });
 </script>
 <script>
@@ -1302,7 +1575,7 @@
                     piketTbody.append(
                         '<tr>' +
                         '<td>' + off.name + '</td>' +
-                        '<td class="text-center">' + off.total_txs + ' Transaksi</td>' +
+                        '<td class="text-center"><a href="#" class="btn-detail-transaksi text-primary text-decoration-none font-weight-bold" style="color: #2563EB !important;" data-id="'+off.id+'" data-name="'+off.name+'">' + off.total_txs + ' Transaksi</a></td>' +
                         '<td class="text-end">' + off.total_collected_formatted + '</td>' +
                         '<td class="text-end text-success">' + off.handed_over_formatted + '</td>' +
                         '<td class="text-end text-danger">' + off.cash_in_hand_formatted + '</td>' +
