@@ -28,7 +28,7 @@ class StudentExport implements FromCollection, WithHeadings, ShouldAutoSize, Wit
         $schoolId = request()->input('school_id');
         $classroomId = request()->input('classroom_id');
 
-        $query = Student::query();
+        $query = Student::where('status', Student::STATUS_GRADUATED);
 
         if ($schoolId) {
             $query->whereHas('classroom', function ($query) use ($schoolId) {

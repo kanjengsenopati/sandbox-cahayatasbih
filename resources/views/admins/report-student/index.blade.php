@@ -46,6 +46,82 @@
     <div class="post d-flex flex-column-fluid">
         <!--begin::Container-->
         <div id="kt_content_container" class="container-xxl">
+            <!--begin::Summary Cards-->
+            <div class="row row-cols-2 row-cols-md-3 row-cols-lg-6 g-4 mb-8 px-5">
+                <!-- Card 1: Total Siswa Aktif -->
+                <div class="col">
+                    <div class="card h-100 border-0 p-5 shadow-[0_8px_30px_rgb(0,0,0,0.04)] rounded-[24px]" style="background: rgba(37, 99, 235, 0.05); transition: transform 0.2s;" onmouseover="this.style.transform='translateY(-4px)'" onmouseout="this.style.transform='translateY(0)'">
+                        <div class="d-flex flex-column h-100 justify-content-between">
+                            <span class="text-slate-400 fw-bold uppercase tracking-widest" style="font-size: 11px;">SISWA AKTIF</span>
+                            <div class="d-flex align-items-center justify-content-between mt-4">
+                                <span id="summary-active" class="fw-bold text-slate-900" style="font-size: 24px;">{{ $summary['total_active'] }}</span>
+                                <i class="fa-solid fa-user-check text-blue-600 fs-4"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- Card 2: Total Lulus -->
+                <div class="col">
+                    <div class="card h-100 border-0 p-5 shadow-[0_8px_30px_rgb(0,0,0,0.04)] rounded-[24px]" style="background: rgba(16, 185, 129, 0.05); transition: transform 0.2s;" onmouseover="this.style.transform='translateY(-4px)'" onmouseout="this.style.transform='translateY(0)'">
+                        <div class="d-flex flex-column h-100 justify-content-between">
+                            <span class="text-slate-400 fw-bold uppercase tracking-widest" style="font-size: 11px;">TOTAL LULUS</span>
+                            <div class="d-flex align-items-center justify-content-between mt-4">
+                                <span id="summary-graduated" class="fw-bold text-emerald-600" style="font-size: 24px;">{{ $summary['total_graduated'] }}</span>
+                                <i class="fa-solid fa-graduation-cap text-emerald-600 fs-4"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- Card 3: Siswa Putra -->
+                <div class="col">
+                    <div class="card h-100 border-0 p-5 shadow-[0_8px_30px_rgb(0,0,0,0.04)] rounded-[24px]" style="background: rgba(59, 130, 246, 0.05); transition: transform 0.2s;" onmouseover="this.style.transform='translateY(-4px)'" onmouseout="this.style.transform='translateY(0)'">
+                        <div class="d-flex flex-column h-100 justify-content-between">
+                            <span class="text-slate-400 fw-bold uppercase tracking-widest" style="font-size: 11px;">SISWA PUTRA</span>
+                            <div class="d-flex align-items-center justify-content-between mt-4">
+                                <span id="summary-male" class="fw-bold text-slate-800" style="font-size: 24px;">{{ $summary['total_male'] }}</span>
+                                <i class="fa-solid fa-mars text-blue-500 fs-4"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- Card 4: Siswa Putri -->
+                <div class="col">
+                    <div class="card h-100 border-0 p-5 shadow-[0_8px_30px_rgb(0,0,0,0.04)] rounded-[24px]" style="background: rgba(236, 72, 153, 0.05); transition: transform 0.2s;" onmouseover="this.style.transform='translateY(-4px)'" onmouseout="this.style.transform='translateY(0)'">
+                        <div class="d-flex flex-column h-100 justify-content-between">
+                            <span class="text-slate-400 fw-bold uppercase tracking-widest" style="font-size: 11px;">SISWA PUTRI</span>
+                            <div class="d-flex align-items-center justify-content-between mt-4">
+                                <span id="summary-female" class="fw-bold text-slate-800" style="font-size: 24px;">{{ $summary['total_female'] }}</span>
+                                <i class="fa-solid fa-venus text-pink-500 fs-4"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- Card 5: Tidak Lulus -->
+                <div class="col">
+                    <div class="card h-100 border-0 p-5 shadow-[0_8px_30px_rgb(0,0,0,0.04)] rounded-[24px]" style="background: rgba(239, 68, 68, 0.05); transition: transform 0.2s;" onmouseover="this.style.transform='translateY(-4px)'" onmouseout="this.style.transform='translateY(0)'">
+                        <div class="d-flex flex-column h-100 justify-content-between">
+                            <span class="text-slate-400 fw-bold uppercase tracking-widest" style="font-size: 11px;">TIDAK LULUS</span>
+                            <div class="d-flex align-items-center justify-content-between mt-4">
+                                <span id="summary-inactive" class="fw-bold text-red-600" style="font-size: 24px;">{{ $summary['total_inactive'] }}</span>
+                                <i class="fa-solid fa-user-xmark text-red-600 fs-4"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- Card 6: Keluar -->
+                <div class="col">
+                    <div class="card h-100 border-0 p-5 shadow-[0_8px_30px_rgb(0,0,0,0.04)] rounded-[24px]" style="background: rgba(107, 114, 128, 0.05); transition: transform 0.2s;" onmouseover="this.style.transform='translateY(-4px)'" onmouseout="this.style.transform='translateY(0)'">
+                        <div class="d-flex flex-column h-100 justify-content-between">
+                            <span class="text-slate-400 fw-bold uppercase tracking-widest" style="font-size: 11px;">KELUAR</span>
+                            <div class="d-flex align-items-center justify-content-between mt-4">
+                                <span id="summary-dropped-out" class="fw-bold text-slate-600" style="font-size: 24px;">{{ $summary['total_dropped_out'] }}</span>
+                                <i class="fa-solid fa-right-from-bracket text-gray-500 fs-4"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!--end::Summary Cards-->
             <!--begin::Card-->
             <div class="card mb-5">
                 <!--begin::Card header-->
@@ -152,6 +228,7 @@
                                     <th>NISN</th>
                                     <th>Nama Siswa</th>
                                     <th>Kelas</th>
+                                    <th>Tunggakan</th>
                                     <th class="text-center min-w-100px" style="width: 22%">Aksi</th>
                                 </tr>
                             </thead>
@@ -213,6 +290,9 @@
     d.classroom_id = $('#filter_classroom_id').val();
     }
     },
+    drawCallback: function(settings) {
+        $('[data-bs-toggle="tooltip"]').tooltip();
+    },
     columns: [
     {
     data: null,
@@ -227,12 +307,29 @@
     { data: 'name', name: 'name' },
     { data: 'classroom.name', name: 'classroom.name' },
     {
+    data: 'unpaid_bills',
+    name: 'unpaid_bills',
+    orderable: false,
+    searchable: false
+    },
+    {
     data: 'action',
     name: 'action',
     orderable: false,
     searchable: false
     }
     ]
+    });
+
+    table.on('xhr.dt', function(e, settings, json, xhr) {
+        if (json && json.summary) {
+            $('#summary-active').text(json.summary.total_active);
+            $('#summary-graduated').text(json.summary.total_graduated);
+            $('#summary-male').text(json.summary.total_male);
+            $('#summary-female').text(json.summary.total_female);
+            $('#summary-inactive').text(json.summary.total_inactive);
+            $('#summary-dropped-out').text(json.summary.total_dropped_out);
+        }
     });
     
     // Fungsi untuk memperbarui data tabel saat melakukan pencarian

@@ -342,6 +342,8 @@ Route::group(['middleware' => ['auth']], function () {
     //     ->name('report-student.search-student');
 
     Route::resource('grade-promotion', GradePromotionController::class, ['only' => ['index', 'store']]);
+    Route::get('student-graduation/get-classroom', [StudentGraduationController::class, 'getClassroom'])
+        ->name('student-graduation.get-classroom');
     Route::resource('student-graduation', StudentGraduationController::class, ['only' => ['index', 'store']]);
     Route::post('bank/status/{id}', [BankController::class, 'status'])->name('bank.status');
     Route::resource('bank', BankController::class, ['except' => ['show']]);

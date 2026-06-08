@@ -89,6 +89,7 @@
                                         <th>Nama Siswa</th>
                                         <th>Kelas</th>
                                         <th>Status</th>
+                                        <th>Tunggakan</th>
                                         <th style="align-content: center">Pilih Semua<br><input type="checkbox"
                                                 id="select_all"></th>
                                     </tr>
@@ -123,7 +124,7 @@
     // Function to get classrooms by school id
     function getClassroomBySchoolId(schoolId) {
     $.ajax({
-    url: "{{ route('report-bill.get-classroom') }}",
+    url: "{{ route('student-graduation.get-classroom') }}",
     type: "GET",
     data: {
     school_id: schoolId
@@ -159,12 +160,15 @@
     processing: true,
     serverSide: true,
     ajax: {
-    url: "{{ route('grade-promotion.index') }}",
+    url: "{{ route('student-graduation.index') }}",
     data: function(d) {
     // Get filter data from form elements
     d.school_id = $('#filter_school_id').val();
     d.classroom_id = $('#filter_classroom_id').val();
     }
+    },
+    drawCallback: function(settings) {
+        $('[data-bs-toggle="tooltip"]').tooltip();
     },
     columns: [
     {
@@ -199,6 +203,12 @@
     name: 'status',
     orderable: true,
     searchable: true
+    },
+    {
+    data: 'unpaid_bills',
+    name: 'unpaid_bills',
+    orderable: false,
+    searchable: false
     },
     {
     // add checkbox input

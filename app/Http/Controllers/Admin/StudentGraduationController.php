@@ -22,7 +22,25 @@ class StudentGraduationController extends Controller
             return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
         }
         if (request()->ajax()) {
-            $data = Student::with('user', 'classroom.school')
+            $data = Student::with(['user', 'classroom.school', 'bills.billType'])
+                ->whereHas('classroom.school', function ($query) {
+                    $query->whereIn('type', [School::TYPE_SMP, School::TYPE_MA]);
+                })
+                ->where(function ($query) {
+                    $query->where(function ($q) {
+                        $q->whereHas('classroom', function ($sub) {
+                            $sub->whereHas('school', function ($sch) {
+                                $sch->where('type', School::TYPE_SMP);
+                            })->where('name', 'like', '9%');
+                        });
+                    })->orWhere(function ($q) {
+                        $q->whereHas('classroom', function ($sub) {
+                            $sub->whereHas('school', function ($sch) {
+                                $sch->where('type', School::TYPE_MA);
+                            })->where('name', 'like', '12%');
+                        });
+                    });
+                })
                 ->when(request('school_id'), function ($query) {
                     $query->whereHas('classroom', function ($query) {
                         $query->where('school_id', request('school_id'));
@@ -63,6 +81,22 @@ class StudentGraduationController extends Controller
                             return '<span class="badge bg-secondary">Tidak Diketahui</span>';
                     }
                 })
+                ->addColumn('unpaid_bills', function ($data) {
+                    $unpaid = $data->bills->where('status', \App\Models\Bill::STATUS_UNPAID);
+                    if ($unpaid->isEmpty()) {
+                        return '<span class="badge bg-light-success text-success">Bersih</span>';
+                    }
+                    
+                    $details = [];
+                    foreach ($unpaid as $bill) {
+                        $billName = $bill->billType->name ?? 'Tagihan';
+                        $monthName = $bill->month ? \Carbon\Carbon::parse($bill->year . '-' . $bill->month . '-01')->translatedFormat('F') : '';
+                        $details[] = "• {$billName} {$monthName} ({$bill->year}): Rp " . number_format($bill->amount, 0, ',', '.');
+                    }
+                    
+                    $detailsHtml = implode('<br>', $details);
+                    return '<span class="badge bg-light-danger text-danger cursor-pointer" style="font-weight: 700;" data-bs-toggle="tooltip" data-bs-html="true" title="' . e($detailsHtml) . '">Tunggakan (' . $unpaid->count() . ')</span>';
+                })
                 ->addColumn('action', function ($data) {
                     $actionEdit = route('student.edit', $data->id);
                     $actionDelete = route('student.destroy', $data->id);
@@ -73,13 +107,39 @@ class StudentGraduationController extends Controller
                         view('components.action.qr-code', ['action' => $actionPrint, 'label' => 'Cetak Kartu']) .
                         "</div>";
                 })
-                ->rawColumns(['action', 'saldo', 'classroom', 'school', 'status'])
+                ->rawColumns(['action', 'saldo', 'classroom', 'school', 'status', 'unpaid_bills'])
                 ->make(true);
         }
 
-        $schools = School::hasSchool()->orderBy('name', 'asc')->get();
+        $schools = School::hasSchool()
+            ->whereIn('type', [School::TYPE_SMP, School::TYPE_MA])
+            ->orderBy('name', 'asc')
+            ->get();
         $academicYears = AcademicYear::orderBy('name', 'asc')->get();
         return view('admins.student-graduation.index', compact('schools', 'academicYears'));
+    }
+
+    public function getClassroom(Request $request)
+    {
+        $schoolId = $request->school_id;
+        $school = School::find($schoolId);
+        
+        $query = \App\Models\Classroom::where('school_id', $schoolId);
+        
+        if ($school) {
+            if ($school->type === School::TYPE_SMP) {
+                $query->where('name', 'like', '9%');
+            } elseif ($school->type === School::TYPE_MA) {
+                $query->where('name', 'like', '12%');
+            }
+        }
+        
+        $classrooms = $query->orderBy('name', 'asc')->get();
+        return response()->json([
+            'code' => '200',
+            'message' => 'Success',
+            'data' => $classrooms
+        ]);
     }
 
     /**

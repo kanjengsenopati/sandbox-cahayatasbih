@@ -245,7 +245,9 @@ class CashFlowController extends Controller
         };
 
         // 1. Hitung Target & Realisasi dari SEMUA tagihan
-        $billQuery = Bill::query();
+        $billQuery = Bill::query()->whereHas('student', function ($query) {
+            $query->where('status', '!=', \App\Models\Student::STATUS_GRADUATED);
+        });
         if ($academicYearId) {
             $billQuery->where('academic_year_id', $academicYearId);
         }
@@ -360,6 +362,10 @@ class CashFlowController extends Controller
             })
             ->whereNull('b.deleted_at')
             ->where(function ($q) {
+                $q->where('s.status', '!=', \App\Models\Student::STATUS_GRADUATED)
+                  ->orWhereNull('s.id');
+            })
+            ->where(function ($q) {
                 $q->whereNull('sc.id')
                   ->orWhere(function ($inner) {
                       $inner->where('sc.type', '!=', \App\Models\School::TYPE_DEMO)
@@ -447,6 +453,10 @@ class CashFlowController extends Controller
                 $join->on('c.school_id', '=', 'sc.id')->whereNull('sc.deleted_at');
             })
             ->whereNull('b.deleted_at')
+            ->where(function ($q) {
+                $q->where('s.status', '!=', \App\Models\Student::STATUS_GRADUATED)
+                  ->orWhereNull('s.id');
+            })
             ->where(function ($q) {
                 $q->whereNull('sc.id')
                   ->orWhere(function ($inner) {
@@ -569,6 +579,10 @@ class CashFlowController extends Controller
             })
             ->leftJoinSub($makeBillPaymentsSub($paymentSource), 'bp', 'b.id', '=', 'bp.bill_id')
             ->whereNull('b.deleted_at')
+            ->where(function ($q) {
+                $q->where('s.status', '!=', \App\Models\Student::STATUS_GRADUATED)
+                  ->orWhereNull('s.id');
+            })
             ->where('b.status', 'PAID')
             ->whereNotNull('bp.bill_id')
             ->where(function ($q) {
