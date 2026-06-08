@@ -47,43 +47,151 @@
         <!--begin::Container-->
         <div id="kt_content_container" class="container-xxl">
             <!--begin::Summary Cards-->
-            <div class="row row-cols-1 row-cols-md-3 g-4 mb-8 px-5">
-                <!-- Card 1: Total -->
+            <style>
+                .summary-card {
+                    border-radius: 24px !important;
+                    border: none !important;
+                    position: relative;
+                    overflow: hidden;
+                    transition: transform 0.25s cubic-bezier(.34,1.56,.64,1), box-shadow 0.25s ease;
+                    cursor: default;
+                }
+                .summary-card:hover {
+                    transform: translateY(-6px) scale(1.015);
+                }
+                .summary-card .card-blob {
+                    position: absolute;
+                    border-radius: 50%;
+                    opacity: 0.18;
+                    pointer-events: none;
+                }
+                .summary-card .card-number {
+                    font-size: 42px;
+                    font-weight: 800;
+                    line-height: 1;
+                    letter-spacing: -1px;
+                    font-family: 'Outfit', sans-serif;
+                }
+                .summary-card .card-label {
+                    font-size: 11px;
+                    font-weight: 700;
+                    letter-spacing: 0.12em;
+                    text-transform: uppercase;
+                    opacity: 0.75;
+                }
+                .summary-card .card-icon-wrap {
+                    width: 52px;
+                    height: 52px;
+                    border-radius: 16px;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    font-size: 22px;
+                    flex-shrink: 0;
+                }
+                .summary-card .card-sub {
+                    font-size: 12px;
+                    font-weight: 500;
+                    opacity: 0.65;
+                    margin-top: 6px;
+                }
+                /* Card 1 – Total (Blue) */
+                .summary-card-total {
+                    background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 60%, #3b82f6 100%) !important;
+                    box-shadow: 0 16px 48px rgba(37,99,235,0.35), 0 4px 12px rgba(37,99,235,0.2);
+                    color: #fff;
+                }
+                .summary-card-total:hover {
+                    box-shadow: 0 24px 64px rgba(37,99,235,0.45), 0 8px 24px rgba(37,99,235,0.25);
+                }
+                /* Card 2 – Putra (Cyan/Sky) */
+                .summary-card-putra {
+                    background: linear-gradient(135deg, #0c4a6e 0%, #0284c7 60%, #38bdf8 100%) !important;
+                    box-shadow: 0 16px 48px rgba(2,132,199,0.35), 0 4px 12px rgba(2,132,199,0.2);
+                    color: #fff;
+                }
+                .summary-card-putra:hover {
+                    box-shadow: 0 24px 64px rgba(2,132,199,0.45), 0 8px 24px rgba(2,132,199,0.25);
+                }
+                /* Card 3 – Putri (Rose/Pink) */
+                .summary-card-putri {
+                    background: linear-gradient(135deg, #831843 0%, #db2777 60%, #f472b6 100%) !important;
+                    box-shadow: 0 16px 48px rgba(219,39,119,0.35), 0 4px 12px rgba(219,39,119,0.2);
+                    color: #fff;
+                }
+                .summary-card-putri:hover {
+                    box-shadow: 0 24px 64px rgba(219,39,119,0.45), 0 8px 24px rgba(219,39,119,0.25);
+                }
+            </style>
+
+            <div class="row row-cols-1 row-cols-md-3 g-5 mb-8 px-5">
+
+                <!-- Card 1: Total Siswa -->
                 <div class="col">
-                    <div class="card h-100 border-0 p-5 shadow-[0_8px_30px_rgb(0,0,0,0.04)] rounded-[24px]" style="background: rgba(37, 99, 235, 0.05); transition: transform 0.2s;" onmouseover="this.style.transform='translateY(-4px)'" onmouseout="this.style.transform='translateY(0)'">
-                        <div class="d-flex flex-column h-100 justify-content-between">
-                            <span id="summary-total-label" class="text-slate-400 fw-bold uppercase tracking-widest" style="font-size: 11px;">TOTAL SISWA</span>
-                            <div class="d-flex align-items-center justify-content-between mt-4">
-                                <span id="summary-total" class="fw-bold text-slate-900" style="font-size: 24px;">{{ $summary['total'] }}</span>
-                                <i class="fa-solid fa-users text-blue-600 fs-4"></i>
+                    <div class="card summary-card summary-card-total p-6" style="padding: 28px 28px 24px 28px;">
+                        <!-- Decorative blobs -->
+                        <div class="card-blob" style="width:180px;height:180px;background:#fff;top:-60px;right:-60px;"></div>
+                        <div class="card-blob" style="width:80px;height:80px;background:#fff;bottom:-20px;left:20px;"></div>
+                        <!-- Content -->
+                        <div style="position:relative;z-index:1;">
+                            <div class="d-flex align-items-start justify-content-between mb-4">
+                                <div>
+                                    <div class="card-label" style="color:rgba(255,255,255,0.75);">TOTAL SISWA</div>
+                                </div>
+                                <div class="card-icon-wrap" style="background:rgba(255,255,255,0.2); backdrop-filter:blur(8px);">
+                                    <i class="fa-solid fa-users" style="color:#fff;"></i>
+                                </div>
                             </div>
+                            <div id="summary-total" class="card-number" style="color:#fff;">{{ $summary['total'] }}</div>
+                            <div class="card-sub" style="color:rgba(255,255,255,0.7);">SMP · MA · Pondok</div>
                         </div>
                     </div>
                 </div>
+
                 <!-- Card 2: Siswa Putra -->
                 <div class="col">
-                    <div class="card h-100 border-0 p-5 shadow-[0_8px_30px_rgb(0,0,0,0.04)] rounded-[24px]" style="background: rgba(6, 182, 212, 0.05); transition: transform 0.2s;" onmouseover="this.style.transform='translateY(-4px)'" onmouseout="this.style.transform='translateY(0)'">
-                        <div class="d-flex flex-column h-100 justify-content-between">
-                            <span class="text-slate-400 fw-bold uppercase tracking-widest" style="font-size: 11px;">SISWA PUTRA</span>
-                            <div class="d-flex align-items-center justify-content-between mt-4">
-                                <span id="summary-male" class="fw-bold text-slate-800" style="font-size: 24px;">{{ $summary['total_male'] }}</span>
-                                <i class="fa-solid fa-mars text-info fs-4"></i>
+                    <div class="card summary-card summary-card-putra p-6" style="padding: 28px 28px 24px 28px;">
+                        <!-- Decorative blobs -->
+                        <div class="card-blob" style="width:160px;height:160px;background:#fff;top:-50px;right:-50px;"></div>
+                        <div class="card-blob" style="width:70px;height:70px;background:#fff;bottom:-15px;left:30px;"></div>
+                        <!-- Content -->
+                        <div style="position:relative;z-index:1;">
+                            <div class="d-flex align-items-start justify-content-between mb-4">
+                                <div>
+                                    <div class="card-label" style="color:rgba(255,255,255,0.75);">SISWA PUTRA</div>
+                                </div>
+                                <div class="card-icon-wrap" style="background:rgba(255,255,255,0.2); backdrop-filter:blur(8px);">
+                                    <i class="fa-solid fa-mars" style="color:#fff;"></i>
+                                </div>
                             </div>
+                            <div id="summary-male" class="card-number" style="color:#fff;">{{ $summary['total_male'] }}</div>
+                            <div class="card-sub" style="color:rgba(255,255,255,0.7);">Laki-laki terdaftar</div>
                         </div>
                     </div>
                 </div>
+
                 <!-- Card 3: Siswa Putri -->
                 <div class="col">
-                    <div class="card h-100 border-0 p-5 shadow-[0_8px_30px_rgb(0,0,0,0.04)] rounded-[24px]" style="background: rgba(236, 72, 153, 0.05); transition: transform 0.2s;" onmouseover="this.style.transform='translateY(-4px)'" onmouseout="this.style.transform='translateY(0)'">
-                        <div class="d-flex flex-column h-100 justify-content-between">
-                            <span class="text-slate-400 fw-bold uppercase tracking-widest" style="font-size: 11px;">SISWA PUTRI</span>
-                            <div class="d-flex align-items-center justify-content-between mt-4">
-                                <span id="summary-female" class="fw-bold text-slate-800" style="font-size: 24px;">{{ $summary['total_female'] }}</span>
-                                <i class="fa-solid fa-venus text-pink-500 fs-4"></i>
+                    <div class="card summary-card summary-card-putri p-6" style="padding: 28px 28px 24px 28px;">
+                        <!-- Decorative blobs -->
+                        <div class="card-blob" style="width:170px;height:170px;background:#fff;top:-55px;right:-55px;"></div>
+                        <div class="card-blob" style="width:75px;height:75px;background:#fff;bottom:-18px;left:25px;"></div>
+                        <!-- Content -->
+                        <div style="position:relative;z-index:1;">
+                            <div class="d-flex align-items-start justify-content-between mb-4">
+                                <div>
+                                    <div class="card-label" style="color:rgba(255,255,255,0.75);">SISWA PUTRI</div>
+                                </div>
+                                <div class="card-icon-wrap" style="background:rgba(255,255,255,0.2); backdrop-filter:blur(8px);">
+                                    <i class="fa-solid fa-venus" style="color:#fff;"></i>
+                                </div>
                             </div>
+                            <div id="summary-female" class="card-number" style="color:#fff;">{{ $summary['total_female'] }}</div>
+                            <div class="card-sub" style="color:rgba(255,255,255,0.7);">Perempuan terdaftar</div>
                         </div>
                     </div>
                 </div>
+
             </div>
             <!--end::Summary Cards-->
 
