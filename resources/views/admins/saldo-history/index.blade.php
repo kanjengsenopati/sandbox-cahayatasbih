@@ -78,6 +78,10 @@
                                 role="tab" aria-controls="top-up-saldo" aria-selected="false">Top Up Saldo</a>
                         </li>
                         <li class="nav-item" role="presentation">
+                            <a class="nav-link" id="arsip-topup-saldo-tab" data-bs-toggle="tab" href="#arsip-topup-saldo"
+                                role="tab" aria-controls="arsip-topup-saldo" aria-selected="false">Arsip Topup Saldo</a>
+                        </li>
+                        <li class="nav-item" role="presentation">
                             <a class="nav-link" id="saldo-history-tab" data-bs-toggle="tab" href="#saldo-history"
                                 role="tab" aria-controls="saldo-history" aria-selected="true">Riwayat Saldo</a>
                         </li>
@@ -130,6 +134,10 @@
                             <!--end::Table-->
 
                             <!--end::Top Up Form-->
+                        </div>
+                        <div class="tab-pane fade" id="arsip-topup-saldo" role="tabpanel"
+                            aria-labelledby="arsip-topup-saldo-tab">
+                            @include('admins.saldo-history.transfer-tab.archive')
                         </div>
                     </div>
                     <!--end::Tabs-->
@@ -405,5 +413,164 @@
         });
         });
     }
+</script>
+<script>
+    $(document).ready(() => {
+        var archiveTable = $('#table-archive').DataTable({
+            ordering: true,
+            sortable: true,
+            processing: true,
+            serverSide: true,
+            pageLength: 20,
+            lengthMenu: [20, 30, 40],
+            ajax: {
+                url: "{{ route('saldo-history.index') }}",
+                data: function(d) {
+                    d.type = 'archive';
+                    d.start_date = $('#archive-start-date').val();
+                    d.end_date = $('#archive-end-date').val();
+                }
+            },
+            language: {
+                "paginate": {
+                    "next": "<i class='fa fa-angle-right'>",
+                    "previous": "<i class='fa fa-angle-left'>"
+                },
+                "loadingRecords": "Loading...",
+                "processing": "Processing...",
+            },
+            columns: [
+                {
+                    "data": null,
+                    "sortable": false,
+                    "searchable": false,
+                    render: function(data, type, row, meta) {
+                        return meta.row + meta.settings._iDisplayStart + 1;
+                    }
+                },
+                {
+                    data: 'student.name',
+                    name: 'student.name',
+                    orderable: false,
+                },
+                {
+                    data: 'pay_amount',
+                    name: 'pay_amount'
+                },
+                {
+                    data: 'unique_payment',
+                    name: 'unique_payment'
+                },
+                {
+                    data: 'bank_recipient',
+                    name: 'bank_recipient',
+                    orderable: false,
+                    searchable: false
+                },
+                {
+                    data: 'proof',
+                    name: 'proof',
+                    orderable: false,
+                    searchable: false
+                },
+                {
+                    data: 'status',
+                    name: 'status',
+                    orderable: true,
+                    searchable: false
+                },
+                {
+                    data: 'officer',
+                    name: 'officer',
+                    orderable: false
+                },
+                {
+                    data: 'updated_at_formatted',
+                    name: 'updated_at',
+                    orderable: true
+                },
+                {
+                    data: 'action',
+                    name: 'action',
+                    orderable: false,
+                    searchable: false
+                }
+            ]
+        });
+
+        $('#archive-btn-filter').click(function() {
+            archiveTable.ajax.reload();
+        });
+
+        $('#archive-btn-reset').click(function() {
+            $('#archive-start-date').val('');
+            $('#archive-end-date').val('');
+            archiveTable.ajax.reload();
+        });
+
+        $(document).on('click', '.delete-archive-btn', function() {
+            var id = $(this).data('id');
+            Swal.fire({
+                title: 'Apakah Anda yakin?',
+                text: "Arsip riwayat ini akan disembunyikan. Tindakan ini tidak dapat dibatalkan!",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#3085d6',
+                cancelButtonColor: '#d33',
+                confirmButtonText: 'Ya, hapus!',
+                cancelButtonText: 'Batal'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    Swal.fire({
+                        title: 'Menghapus...',
+                        text: 'Harap tunggu',
+                        allowOutsideClick: false,
+                        didOpen: () => {
+                            Swal.showLoading();
+                        }
+                    });
+
+                    axios.delete(`{{ url('saldo-history') }}/${id}`, {
+                        data: {
+                            _token: '{{ csrf_token() }}'
+                        }
+                    })
+                    .then((response) => {
+                        if (response.data.code == '200') {
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Berhasil',
+                                text: response.data.message
+                            });
+                            archiveTable.ajax.reload();
+                        } else {
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Gagal',
+                                text: response.data.message
+                            });
+                        }
+                    })
+                    .catch((error) => {
+                        console.error('Error deleting archive:', error);
+                        var msg = 'Terjadi kesalahan saat menghapus arsip';
+                        if (error.response && error.response.data && error.response.data.message) {
+                            msg = error.response.data.message;
+                        }
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Gagal',
+                            text: msg
+                        });
+                    });
+                }
+            });
+        });
+
+        // Adjust columns on tab switch
+        $('a[href="#arsip-topup-saldo"]').on('shown.bs.tab', function (e) {
+            archiveTable.columns.adjust().draw();
+        });
+    });
 </script>
 @endpush

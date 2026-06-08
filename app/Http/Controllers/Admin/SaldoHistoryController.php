@@ -35,6 +35,9 @@ class SaldoHistoryController extends Controller
         if (!Auth::user()->can('Manage Saldo Santri')) {
             return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
         }
+        if (request()->ajax() && request()->type === 'archive') {
+            return $this->getArchiveTransactionData();
+        }
         if (request()->ajax() && request()->type === 'saldo') {
             $data = SaldoHistory::with('student')->hasSchool()->latest();
             return DataTables::of($data)
@@ -335,12 +338,33 @@ class SaldoHistoryController extends Controller
         return redirect()->route('saldo-history.index')->with('success', 'Saldo History berhasil diubah');
     }
 
-    /**
-     * Remove the specified resource from storage.
-     */
     public function destroy(string $id)
     {
-        //
+        if (!Auth::user()->can('Edit Saldo Santri')) {
+            return response()->json([
+                'code' => '403',
+                'message' => 'Anda tidak memiliki hak akses untuk menghapus arsip.'
+            ], 403);
+        }
+
+        $transaction = Transaction::findOrFail($id);
+
+        $daysDiff = $transaction->updated_at ? $transaction->updated_at->diffInDays(now()) : 0;
+        if ($daysDiff <= 30) {
+            return response()->json([
+                'code' => '400',
+                'message' => 'Gagal menghapus: Arsip hanya dapat dihapus jika usianya sudah lebih dari 30 hari.'
+            ], 400);
+        }
+
+        $transaction->update([
+            'is_deleted_from_archive' => true
+        ]);
+
+        return response()->json([
+            'code' => '200',
+            'message' => 'Arsip riwayat topup saldo berhasil dihapus.'
+        ]);
     }
 
     public function updateStatusPayment(UpdateStatusTopupSaldoRequest $request, $id)
@@ -382,6 +406,92 @@ class SaldoHistoryController extends Controller
             Log::error('Import Saldo History Failed: ' . $e->getMessage());
 
             return redirect()->back()->with('error', 'Gagal mengimpor data saldo. Pastikan sesuai template');
+        }
+    }
+
+    private function getArchiveTransactionData()
+    {
+        $transactions = Transaction::with('student', 'paymentMethod', 'activeProof.bank', 'admin')
+            ->whereHas('paymentMethod', function ($query) {
+                $query->where('type', PaymentMethod::TYPE_TRANSFER);
+            })
+            ->where('type', Transaction::TYPE_SALDO)
+            ->whereIn('status', [Transaction::STATUS_PAID, Transaction::STATUS_REJECTED])
+            ->where('is_deleted_from_archive', false)
+            ->hasSchool();
+
+        if ($startDate = request()->start_date) {
+            $transactions->whereDate('updated_at', '>=', $startDate);
+        }
+        if ($endDate = request()->end_date) {
+            $transactions->whereDate('updated_at', '<=', $endDate);
+        }
+
+        $transactions->latest('updated_at');
+
+        return DataTables::of($transactions)
+            ->addColumn('proof', function ($transaction) {
+                $proofUrl = $transaction?->activeProof?->proof_image_url ?? $transaction?->activeProof?->proof_image;
+                if (!$proofUrl) return '-';
+                return "<a href='" . $proofUrl . "' target='_blank'>
+                    <img src='" . $proofUrl . "' class='img-fluid img-thumbnail' style='max-width: 100px;'>
+                </a>";
+            })
+            ->editColumn('pay_amount', function ($transaction) {
+                return 'Rp ' . number_format($transaction->pay_amount, 0, ',', '.');
+            })
+            ->editColumn('status', function ($transaction) {
+                if ($transaction->status == Transaction::STATUS_PENDING) {
+                    return '<span class="badge badge-primary">Belum Dibayar</span>';
+                } elseif ($transaction->status == Transaction::STATUS_PENDING_PAYMENT) {
+                    return '<span class="badge badge-warning">Menunggu Pembayaran</span>';
+                } elseif ($transaction->status == Transaction::STATUS_PENDING_CONFIRMATION) {
+                    return '<span class="badge badge-danger">Menunggu Verifikasi</span>';
+                } elseif ($transaction->status == Transaction::STATUS_PAID) {
+                    return '<span class="badge badge-success">Lunas</span>';
+                } elseif ($transaction->status == Transaction::STATUS_EXPIRED) {
+                    return '<span class="badge badge-secondary">Kedaluwarsa</span>';
+                } elseif ($transaction->status == Transaction::STATUS_CANCELLED) {
+                    return '<span class="badge badge-secondary">Dibatalkan</span>';
+                } elseif ($transaction->status == Transaction::STATUS_REJECTED) {
+                    return '<span class="badge badge-danger">Ditolak</span><br><small>' . $transaction->activeProof?->note . '</small>';
+                }
+            })
+            ->addColumn('action', function ($transaction) {
+                return $this->formatArchiveActionColumn($transaction);
+            })
+            ->addColumn('bank_recipient', function ($transaction) {
+                $bank = $transaction->activeProof?->bank;
+                if (!$bank) return '-';
+                return "{$bank->name}<br><small class='text-muted'>No. Rek: {$bank->account_number}</small><br><small class='text-muted'>A.N: {$bank->account_name}</small>";
+            })
+            ->addColumn('officer', function ($transaction) {
+                return $transaction->admin?->name ?? '-';
+            })
+            ->addColumn('updated_at_formatted', function ($transaction) {
+                return $transaction->updated_at ? $transaction->updated_at->translatedFormat('d F Y H:i') : '-';
+            })
+            ->rawColumns(['proof', 'action', 'status', 'bank_recipient'])
+            ->make(true);
+    }
+
+    private function formatArchiveActionColumn($transaction)
+    {
+        if (!Auth::user()->can('Edit Saldo Santri')) {
+            return '';
+        }
+
+        $daysDiff = $transaction->updated_at ? $transaction->updated_at->diffInDays(now()) : 0;
+        $canDelete = $daysDiff > 30;
+
+        if ($canDelete) {
+            return "<button class='btn btn-danger btn-sm delete-archive-btn' data-id='{$transaction->id}'>
+                        <i class='fas fa-trash me-1'></i> Hapus
+                    </button>";
+        } else {
+            return "<button class='btn btn-danger btn-sm' disabled data-bs-toggle='tooltip' title='Hapus dinonaktifkan karena usia arsip kurang dari 30 hari'>
+                        <i class='fas fa-trash me-1'></i> Hapus
+                    </button>";
         }
     }
 }
