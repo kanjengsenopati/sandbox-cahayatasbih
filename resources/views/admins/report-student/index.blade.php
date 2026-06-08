@@ -104,107 +104,71 @@
             </ul>
             <!--end::Tabs Navigation-->
             <!--begin::Card-->
-            <div class="card mb-5">
+            <div class="card">
                 <!--begin::Card header-->
-                <div
-                    class="card-header d-flex align-items-end gap-5 flex-sm-row mb-5 justify-content-between border-0 pt-6">
-                    <div class="d-flex flex-wrap justify-content-beetween gap-5">
-                        {{-- <div class="mb-0">
-                            <label class="form-label">Filter Tanggal</label>
-                            <div class="d-flex
-                                                gap-4 align-items-end">
-                                <div id="dateRange" class="pull-right"
-                                    style="background: #fff; cursor: pointer; padding: 5px 10px; border: 1px solid #ccc;float: top;">
-                                    <i class="glyphicon glyphicon-calendar fa fa-calendar"></i>&nbsp;
-                                    <span></span> <b class="caret"></b>
-                                </div>
-                            </div>
-                        </div> --}}
+                <div class="card-header d-flex align-items-end gap-5 flex-sm-row justify-content-between border-0 pt-6 pb-2">
+                    <div class="d-flex flex-wrap justify-content-between gap-5">
                         <div class="mb-0">
                              <form action="{{ route('report-student.export') }}" id="form-filter" method="get">
-                                 <input type="text" hidden id="type" name="type" required>
-                                 <input type="hidden" name="tab" id="tab_hidden" value="total">
-                                 <div class="d-flex flex-wrap gap-4 align-items-end">
-                                     <div>
-                                         <label class="form-label">Tahun Ajaran</label>
-                                         <select name="academic_year_id" class="form-select" id="filter_academic_year_id">
-                                             <option value="">Pilih Tahun Ajaran</option>
-                                             @foreach ($academicYears as $year)
-                                             <option value="{{ $year->id }}">{{ $year->name }}</option>
+                                  <input type="text" hidden id="type" name="type" required>
+                                  <input type="hidden" name="tab" id="tab_hidden" value="total">
+                                  <div class="d-flex flex-wrap gap-4 align-items-end">
+                                      <div>
+                                          <label class="form-label">Tahun Ajaran</label>
+                                          <select name="academic_year_id" class="form-select" id="filter_academic_year_id">
+                                              <option value="">Pilih Tahun Ajaran</option>
+                                              @foreach ($academicYears as $year)
+                                              <option value="{{ $year->id }}">{{ $year->name }}</option>
+                                              @endforeach
+                                          </select>
+                                      </div>
+                                      <div>
+                                          <label class="form-label">UPT</label>
+                                          <select name="school_id" class="form-select" id="filter_school_id">
+                                             <option value="">Pilih Pendidikan</option>
+                                             @foreach ($schools as $school)
+                                             <option value="{{ $school->id }}">{{ $school->name }}</option>
                                              @endforeach
                                          </select>
                                      </div>
                                      <div>
-                                         <label class="form-label">UPT</label>
-                                         <select name="school_id" class="form-select" id="filter_school_id">
-                                            <option value="">Pilih Pendidikan</option>
-                                            @foreach ($schools as $school)
-                                            <option value="{{ $school->id }}">{{ $school->name }}</option>
-                                            @endforeach
-                                        </select>
-                                    </div>
-                                    <div>
-                                        <label class="form-label">Kelas</label>
-                                        <select name="classroom_id" class="form-select" id="filter_classroom_id">
-                                            <option value="">Pilih Kelas</option>
-                                        </select>
-                                    </div>
-                                    <!--begin::Export dropdown-->
-                                    <button type="button" class="btn btn-sm btn-primary" data-kt-menu-trigger="click"
-                                        data-kt-menu-placement="bottom-end">
-                                        <i class="ki-duotone fa fa-caret-down fs-2"><span class="path1"></span><span
-                                                class="path2"></span></i>
-                                        Export Report
-                                    </button>
-                                    <!--begin::Menu-->
-                                    <div id="kt_datatable_example_export_menu"
-                                        class="menu menu-sub menu-sub-dropdown menu-column menu-rounded menu-gray-600 menu-state-bg-light-primary fw-semibold fs-7 w-200px py-4"
-                                        data-kt-menu="true">
-                                        <!--begin::Menu item-->
-                                        <div class="menu-item px-3">
-                                            <a type="button" class="menu-link btn-export px-3" data-type="xlsx">
-                                                Export as Excel
-                                            </a>
-                                        </div>
-                                        <!--end::Menu item-->
-                                        <!--begin::Menu item-->
-                                        <div class="menu-item px-3">
-                                            <a type="button" class="menu-link btn-export px-3" data-type="csv">
-                                                Export as CSV
-                                            </a>
-                                        </div>
-                                        <!--end::Menu item-->
-                                    </div>
-                                    <!--end::Menu-->
-                                    <!--end::Export dropdown-->
-                                </div>
-                            </form>
+                                         <label class="form-label">Kelas</label>
+                                         <select name="classroom_id" class="form-select" id="filter_classroom_id">
+                                             <option value="">Pilih Kelas</option>
+                                         </select>
+                                     </div>
+                                     <!--begin::Export dropdown-->
+                                     <button type="button" class="btn btn-sm btn-primary" data-kt-menu-trigger="click"
+                                         data-kt-menu-placement="bottom-end">
+                                         <i class="ki-duotone fa fa-caret-down fs-2"><span class="path1"></span><span
+                                                 class="path2"></span></i>
+                                         Export Report
+                                     </button>
+                                     <!--begin::Menu-->
+                                     <div id="kt_datatable_example_export_menu"
+                                         class="menu menu-sub menu-sub-dropdown menu-column menu-rounded menu-gray-600 menu-state-bg-light-primary fw-semibold fs-7 w-200px py-4"
+                                         data-kt-menu="true">
+                                         <!--begin::Menu item-->
+                                         <div class="menu-item px-3">
+                                             <a type="button" class="menu-link btn-export px-3" data-type="xlsx">
+                                                 Export as Excel
+                                             </a>
+                                         </div>
+                                         <!--end::Menu item-->
+                                         <!--begin::Menu item-->
+                                         <div class="menu-item px-3">
+                                             <a type="button" class="menu-link btn-export px-3" data-type="csv">
+                                                 Export as CSV
+                                             </a>
+                                         </div>
+                                         <!--end::Menu item-->
+                                     </div>
+                                     <!--end::Menu-->
+                                     <!--end::Export dropdown-->
+                                 </div>
+                             </form>
                         </div>
                     </div>
-                    <div class="mt-4 gap-2 d-flex justify-content-beetween align-items-end">
-
-                    </div>
-                    <!--end::Card title-->
-                </div>
-                <!--end::Card header-->
-                <!--begin::Card body-->
-                <div class="card-body">
-                </div>
-                <!--end::Card body-->
-            </div>
-            <!--end::Card-->
-
-            <!--begin::Card-->
-            <div class="card">
-                <!--begin::Card header-->
-                <div class="card-header d-flex align-items-center justify-content-between border-0 pt-6">
-                    <!--begin::Card title-->
-                    <div class="card-title">
-                        {{-- <h3 class="text-dark">Sekolah</h3> --}}
-                    </div>
-                    <div class="">
-                    </div>
-                    <!--end::Card title-->
                 </div>
                 <!--end::Card header-->
                 <!--begin::Card body-->
@@ -219,8 +183,8 @@
                                     <th>NISN</th>
                                     <th>Nama Siswa</th>
                                     <th>Kelas</th>
+                                    <th>UPT</th>
                                     <th>Tunggakan</th>
-                                    <th class="text-center min-w-100px" style="width: 22%">Aksi</th>
                                 </tr>
                             </thead>
                             <tbody class="text-gray-600 fw-bold"></tbody>
@@ -320,15 +284,10 @@
     { data: 'nisn', name: 'nisn' },
     { data: 'name', name: 'name' },
     { data: 'classroom.name', name: 'classroom.name' },
+    { data: 'school.name', name: 'school.name', defaultContent: '-' },
     {
     data: 'unpaid_bills',
     name: 'unpaid_bills',
-    orderable: false,
-    searchable: false
-    },
-    {
-    data: 'action',
-    name: 'action',
     orderable: false,
     searchable: false
     }
