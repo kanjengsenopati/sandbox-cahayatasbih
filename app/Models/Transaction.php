@@ -46,6 +46,7 @@ class Transaction extends Model
         'admin_id',
         'user_id',
         'unique_payment',
+        'is_deleted_from_archive',
     ];
 
     public function transactionDetails()

@@ -57,6 +57,9 @@ class BillController extends Controller
         }
 
         if (request()->ajax()) {
+            if (request()->tab === 'archive') {
+                return $this->getArchiveTransactionData();
+            }
             return $this->getTransactionData();
         }
 
@@ -201,6 +204,64 @@ class BillController extends Controller
                 <button class='btn btn-primary btn-sm mt-2' onclick='saveStatus(\"{$transaction->id}\")'>Simpan</button>";
 
         return $action;
+    }
+
+    private function getArchiveTransactionData()
+    {
+        $transactions = Transaction::with('student', 'paymentMethod', 'activeProof.bank', 'admin')
+            ->whereHas('paymentMethod', fn($query) => $query->where('type', PaymentMethod::TYPE_TRANSFER))
+            ->where('type', Transaction::TYPE_BILL)
+            ->whereIn('status', [Transaction::STATUS_PAID, Transaction::STATUS_REJECTED])
+            ->where('is_deleted_from_archive', false)
+            ->hasSchool();
+
+        if ($startDate = request()->start_date) {
+            $transactions->whereDate('updated_at', '>=', $startDate);
+        }
+        if ($endDate = request()->end_date) {
+            $transactions->whereDate('updated_at', '<=', $endDate);
+        }
+
+        $transactions->latest('updated_at');
+
+        return DataTables::of($transactions)
+            ->addColumn('proof', fn($transaction) => $this->formatProofColumn($transaction))
+            ->editColumn('pay_amount', fn($transaction) => 'Rp ' . number_format($transaction->pay_amount, 0, ',', '.'))
+            ->editColumn('status', fn($transaction) => $this->formatStatusColumn($transaction))
+            ->addColumn('action', fn($transaction) => $this->formatArchiveActionColumn($transaction))
+            ->addColumn('bank_recipient', function ($transaction) {
+                $bank = $transaction->activeProof?->bank;
+                if (!$bank) return '-';
+                return "{$bank->name}<br><small class='text-muted'>No. Rek: {$bank->account_number}</small><br><small class='text-muted'>A.N: {$bank->account_name}</small>";
+            })
+            ->addColumn('officer', function ($transaction) {
+                return $transaction->admin?->name ?? '-';
+            })
+            ->addColumn('updated_at_formatted', function ($transaction) {
+                return $transaction->updated_at ? $transaction->updated_at->translatedFormat('d F Y H:i') : '-';
+            })
+            ->rawColumns(['proof', 'action', 'status', 'bank_recipient'])
+            ->make(true);
+    }
+
+    private function formatArchiveActionColumn($transaction)
+    {
+        if (!Auth::user()->can('Edit Tagihan')) {
+            return '';
+        }
+
+        $daysDiff = $transaction->updated_at ? $transaction->updated_at->diffInDays(now()) : 0;
+        $canDelete = $daysDiff > 30;
+
+        if ($canDelete) {
+            return "<button class='btn btn-danger btn-sm delete-archive-btn' data-id='{$transaction->id}'>
+                        <i class='fas fa-trash me-1'></i> Hapus
+                    </button>";
+        } else {
+            return "<button class='btn btn-danger btn-sm' disabled data-bs-toggle='tooltip' title='Hapus dinonaktifkan karena usia arsip kurang dari 30 hari'>
+                        <i class='fas fa-trash me-1'></i> Hapus
+                    </button>";
+        }
     }
 
     /**
@@ -352,12 +413,33 @@ class BillController extends Controller
         }
     }
 
-    /**
-     * Remove the specified resource from storage.
-     */
     public function destroy(string $id)
     {
-        //
+        if (!Auth::user()->can('Edit Tagihan')) {
+            return response()->json([
+                'code' => '403',
+                'message' => 'Anda tidak memiliki hak akses untuk menghapus arsip.'
+            ], 403);
+        }
+
+        $transaction = Transaction::findOrFail($id);
+
+        $daysDiff = $transaction->updated_at ? $transaction->updated_at->diffInDays(now()) : 0;
+        if ($daysDiff <= 30) {
+            return response()->json([
+                'code' => '400',
+                'message' => 'Gagal menghapus: Arsip hanya dapat dihapus jika usianya sudah lebih dari 30 hari.'
+            ], 400);
+        }
+
+        $transaction->update([
+            'is_deleted_from_archive' => true
+        ]);
+
+        return response()->json([
+            'code' => '200',
+            'message' => 'Arsip riwayat pembayaran berhasil dihapus.'
+        ]);
     }
 
     public function getBillData()
