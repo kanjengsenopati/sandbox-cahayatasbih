@@ -28,10 +28,10 @@ class ReportStudentController extends Controller
         if (request()->ajax()) {
             $baseQuery = Student::select('students.*')->hasSchool()
                 ->when(request()->school_id, function ($q) {
-                    $q->where('school_id', request()->school_id);
+                    $q->where('students.school_id', request()->school_id);
                 })
                 ->when(request()->classroom_id, function ($q) {
-                    $q->where('classroom_id', request()->classroom_id);
+                    $q->where('students.classroom_id', request()->classroom_id);
                 })
                 ->when(request()->academic_year_id, function ($q) {
                     $q->where(function ($sub) {
@@ -47,17 +47,17 @@ class ReportStudentController extends Controller
             $tab = request()->input('tab', 'total');
             $dataQuery = clone $baseQuery;
             if ($tab === 'active') {
-                $dataQuery->where('status', Student::STATUS_ACTIVE);
+                $dataQuery->where('students.status', Student::STATUS_ACTIVE);
             } elseif ($tab === 'graduated') {
-                $dataQuery->where('status', Student::STATUS_GRADUATED);
+                $dataQuery->where('students.status', Student::STATUS_GRADUATED);
             } elseif ($tab === 'dropped_out') {
-                $dataQuery->where('status', Student::STATUS_DROPPED_OUT);
+                $dataQuery->where('students.status', Student::STATUS_DROPPED_OUT);
             }
 
             $summary = [
                 'total' => (clone $dataQuery)->count(),
-                'total_male' => (clone $dataQuery)->where('gender', 'L')->count(),
-                'total_female' => (clone $dataQuery)->where('gender', 'P')->count(),
+                'total_male' => (clone $dataQuery)->where('students.gender', 'L')->count(),
+                'total_female' => (clone $dataQuery)->where('students.gender', 'P')->count(),
             ];
 
             $data = $dataQuery->with(['classroom', 'school', 'bills.billType'])
