@@ -26,7 +26,7 @@ class ReportStudentController extends Controller
         $academicYears = AcademicYear::orderBy('name', 'asc')->get();
 
         if (request()->ajax()) {
-            $baseQuery = Student::hasSchool()
+            $baseQuery = Student::select('students.*')->hasSchool()
                 ->when(request()->school_id, function ($q) {
                     $q->where('school_id', request()->school_id);
                 })
