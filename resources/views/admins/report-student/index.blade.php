@@ -313,7 +313,7 @@
     {
     data: 'unpaid_bills',
     name: 'unpaid_bills',
-    orderable: false,
+    orderable: true,
     searchable: false
     }
     ]

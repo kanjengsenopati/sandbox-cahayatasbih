@@ -26,7 +26,9 @@ class ReportStudentController extends Controller
         $academicYears = AcademicYear::orderBy('name', 'asc')->get();
 
         if (request()->ajax()) {
-            $baseQuery = Student::select('students.*')->hasSchool()
+            $baseQuery = Student::select('students.*')
+                ->selectRaw("(SELECT COUNT(*) FROM bills WHERE bills.student_id = students.id AND bills.status = 'UNPAID' AND bills.deleted_at IS NULL) as unpaid_bills_count")
+                ->hasSchool()
                 ->when(request()->school_id, function ($q) {
                     $q->where('students.school_id', request()->school_id);
                 })
@@ -67,7 +69,8 @@ class ReportStudentController extends Controller
                 ->addColumn('unpaid_bills', function ($data) {
                     $unpaid = $data->bills->where('status', \App\Models\Bill::STATUS_UNPAID);
                     if ($unpaid->isEmpty()) {
-                        return '<span class="badge bg-light-success text-success">Bersih</span>';
+                        $billsJson = json_encode([]);
+                        return '<span class="badge bg-light-success text-success cursor-pointer btn-show-tunggakan" style="font-weight: 700;" data-name="' . e($data->name) . '" data-bills="' . e($billsJson) . '">Tunggakan (0)</span>';
                     }
                     
                     $billsArray = [];
@@ -93,6 +96,9 @@ class ReportStudentController extends Controller
                             'icon' => 'fa fa-print'
                         ]) .
                         "</div>";
+                })
+                ->orderColumn('unpaid_bills', function ($query, $order) {
+                    $query->reorder()->orderBy('unpaid_bills_count', $order);
                 })
                 ->rawColumns(['action', 'unpaid_bills'])
                 ->with('summary', $summary)
