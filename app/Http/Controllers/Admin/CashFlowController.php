@@ -401,7 +401,7 @@ class CashFlowController extends Controller
             )
             ->groupBy('bt.name', 'bi.name', 'ay.name');
 
-        if ($paymentSource && $paymentSource !== 'saldo') {
+        if ($paymentSource && $paymentSource !== 'saldo' && $paymentSource !== 'tunai') {
             $breakdownQuery->whereExists(function($q) use ($paymentSource) {
                 $q->select(DB::raw(1))
                   ->from('bill_type_banks as btb')
@@ -493,7 +493,7 @@ class CashFlowController extends Controller
             )
             ->groupBy('bt.id', 'bt.name', 'bi.name', 'ay.name');
 
-        if ($paymentSource && $paymentSource !== 'saldo') {
+        if ($paymentSource && $paymentSource !== 'saldo' && $paymentSource !== 'tunai') {
             $breakdownDetailQuery->whereExists(function($q) use ($paymentSource) {
                 $q->select(DB::raw(1))
                   ->from('bill_type_banks as btb')
