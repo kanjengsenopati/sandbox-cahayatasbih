@@ -200,6 +200,11 @@ class Student extends Model
         return $this->hasMany(StudentCardPrint::class)->orderBy('printed_at', 'desc');
     }
 
+    public function classroomHistories()
+    {
+        return $this->hasMany(StudentClassroomHistory::class);
+    }
+
     public function translatedStatus(): string
     {
         return match ($this->status) {

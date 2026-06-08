@@ -32,26 +32,35 @@ class ReportStudentController extends Controller
                 })
                 ->when(request()->classroom_id, function ($q) {
                     $q->where('classroom_id', request()->classroom_id);
+                })
+                ->when(request()->academic_year_id, function ($q) {
+                    $q->where(function ($sub) {
+                        $sub->whereHas('classroomHistories', function ($historyQuery) {
+                            $historyQuery->where('academic_year_id', request()->academic_year_id);
+                        })
+                        ->orWhereHas('bills', function ($billQuery) {
+                            $billQuery->where('academic_year_id', request()->academic_year_id);
+                        });
+                    });
                 });
 
+            $tab = request()->input('tab', 'total');
+            $dataQuery = clone $baseQuery;
+            if ($tab === 'active') {
+                $dataQuery->where('status', Student::STATUS_ACTIVE);
+            } elseif ($tab === 'graduated') {
+                $dataQuery->where('status', Student::STATUS_GRADUATED);
+            } elseif ($tab === 'dropped_out') {
+                $dataQuery->where('status', Student::STATUS_DROPPED_OUT);
+            }
+
             $summary = [
-                'total_active' => (clone $baseQuery)->where('status', Student::STATUS_ACTIVE)->count(),
-                'total_graduated' => (clone $baseQuery)->where('status', Student::STATUS_GRADUATED)->count(),
-                'total_male' => (clone $baseQuery)->where('gender', 'L')->count(),
-                'total_female' => (clone $baseQuery)->where('gender', 'P')->count(),
-                'total_inactive' => (clone $baseQuery)->where('status', Student::STATUS_INACTIVE)->count(),
-                'total_dropped_out' => (clone $baseQuery)->where('status', Student::STATUS_DROPPED_OUT)->count(),
+                'total' => (clone $dataQuery)->count(),
+                'total_male' => (clone $dataQuery)->where('gender', 'L')->count(),
+                'total_female' => (clone $dataQuery)->where('gender', 'P')->count(),
             ];
 
-            $data = Student::with(['classroom', 'school', 'bills.billType'])
-                ->when(request()->school_id, function ($query) {
-                    $query->where('school_id', request()->school_id);
-                })
-                ->when(request()->classroom_id, function ($query) {
-                    $query->where('classroom_id', request()->classroom_id);
-                })
-                ->where('status', Student::STATUS_GRADUATED)
-                ->hasSchool()
+            $data = $dataQuery->with(['classroom', 'school', 'bills.billType'])
                 ->orderBy('name', 'asc');
 
             return DataTables::of($data)
@@ -88,12 +97,9 @@ class ReportStudentController extends Controller
         // Global summaries for initial load
         $baseQuery = Student::hasSchool();
         $summary = [
-            'total_active' => (clone $baseQuery)->where('status', Student::STATUS_ACTIVE)->count(),
-            'total_graduated' => (clone $baseQuery)->where('status', Student::STATUS_GRADUATED)->count(),
+            'total' => (clone $baseQuery)->count(),
             'total_male' => (clone $baseQuery)->where('gender', 'L')->count(),
             'total_female' => (clone $baseQuery)->where('gender', 'P')->count(),
-            'total_inactive' => (clone $baseQuery)->where('status', Student::STATUS_INACTIVE)->count(),
-            'total_dropped_out' => (clone $baseQuery)->where('status', Student::STATUS_DROPPED_OUT)->count(),
         ];
 
         return view('admins.report-student.index', compact('schools', 'academicYears', 'summary'));

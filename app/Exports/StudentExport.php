@@ -27,8 +27,10 @@ class StudentExport implements FromCollection, WithHeadings, ShouldAutoSize, Wit
     {
         $schoolId = request()->input('school_id');
         $classroomId = request()->input('classroom_id');
+        $academicYearId = request()->input('academic_year_id');
+        $tab = request()->input('tab', 'total');
 
-        $query = Student::where('status', Student::STATUS_GRADUATED);
+        $query = Student::hasSchool();
 
         if ($schoolId) {
             $query->whereHas('classroom', function ($query) use ($schoolId) {
@@ -38,6 +40,25 @@ class StudentExport implements FromCollection, WithHeadings, ShouldAutoSize, Wit
 
         if ($classroomId) {
             $query->where('classroom_id', $classroomId);
+        }
+
+        if ($academicYearId) {
+            $query->where(function ($sub) use ($academicYearId) {
+                $sub->whereHas('classroomHistories', function ($historyQuery) use ($academicYearId) {
+                    $historyQuery->where('academic_year_id', $academicYearId);
+                })
+                ->orWhereHas('bills', function ($billQuery) use ($academicYearId) {
+                    $billQuery->where('academic_year_id', $academicYearId);
+                });
+            });
+        }
+
+        if ($tab === 'active') {
+            $query->where('status', Student::STATUS_ACTIVE);
+        } elseif ($tab === 'graduated') {
+            $query->where('status', Student::STATUS_GRADUATED);
+        } elseif ($tab === 'dropped_out') {
+            $query->where('status', Student::STATUS_DROPPED_OUT);
         }
 
         $query->orderBy('name', 'asc');

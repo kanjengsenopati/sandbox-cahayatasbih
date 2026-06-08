@@ -47,44 +47,32 @@
         <!--begin::Container-->
         <div id="kt_content_container" class="container-xxl">
             <!--begin::Summary Cards-->
-            <div class="row row-cols-2 row-cols-md-3 row-cols-lg-6 g-4 mb-8 px-5">
-                <!-- Card 1: Total Siswa Aktif -->
+            <div class="row row-cols-1 row-cols-md-3 g-4 mb-8 px-5">
+                <!-- Card 1: Total -->
                 <div class="col">
                     <div class="card h-100 border-0 p-5 shadow-[0_8px_30px_rgb(0,0,0,0.04)] rounded-[24px]" style="background: rgba(37, 99, 235, 0.05); transition: transform 0.2s;" onmouseover="this.style.transform='translateY(-4px)'" onmouseout="this.style.transform='translateY(0)'">
                         <div class="d-flex flex-column h-100 justify-content-between">
-                            <span class="text-slate-400 fw-bold uppercase tracking-widest" style="font-size: 11px;">SISWA AKTIF</span>
+                            <span id="summary-total-label" class="text-slate-400 fw-bold uppercase tracking-widest" style="font-size: 11px;">TOTAL SISWA</span>
                             <div class="d-flex align-items-center justify-content-between mt-4">
-                                <span id="summary-active" class="fw-bold text-slate-900" style="font-size: 24px;">{{ $summary['total_active'] }}</span>
-                                <i class="fa-solid fa-user-check text-blue-600 fs-4"></i>
+                                <span id="summary-total" class="fw-bold text-slate-900" style="font-size: 24px;">{{ $summary['total'] }}</span>
+                                <i class="fa-solid fa-users text-blue-600 fs-4"></i>
                             </div>
                         </div>
                     </div>
                 </div>
-                <!-- Card 2: Total Lulus -->
+                <!-- Card 2: Siswa Putra -->
                 <div class="col">
-                    <div class="card h-100 border-0 p-5 shadow-[0_8px_30px_rgb(0,0,0,0.04)] rounded-[24px]" style="background: rgba(16, 185, 129, 0.05); transition: transform 0.2s;" onmouseover="this.style.transform='translateY(-4px)'" onmouseout="this.style.transform='translateY(0)'">
-                        <div class="d-flex flex-column h-100 justify-content-between">
-                            <span class="text-slate-400 fw-bold uppercase tracking-widest" style="font-size: 11px;">TOTAL LULUS</span>
-                            <div class="d-flex align-items-center justify-content-between mt-4">
-                                <span id="summary-graduated" class="fw-bold text-emerald-600" style="font-size: 24px;">{{ $summary['total_graduated'] }}</span>
-                                <i class="fa-solid fa-graduation-cap text-emerald-600 fs-4"></i>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <!-- Card 3: Siswa Putra -->
-                <div class="col">
-                    <div class="card h-100 border-0 p-5 shadow-[0_8px_30px_rgb(0,0,0,0.04)] rounded-[24px]" style="background: rgba(59, 130, 246, 0.05); transition: transform 0.2s;" onmouseover="this.style.transform='translateY(-4px)'" onmouseout="this.style.transform='translateY(0)'">
+                    <div class="card h-100 border-0 p-5 shadow-[0_8px_30px_rgb(0,0,0,0.04)] rounded-[24px]" style="background: rgba(6, 182, 212, 0.05); transition: transform 0.2s;" onmouseover="this.style.transform='translateY(-4px)'" onmouseout="this.style.transform='translateY(0)'">
                         <div class="d-flex flex-column h-100 justify-content-between">
                             <span class="text-slate-400 fw-bold uppercase tracking-widest" style="font-size: 11px;">SISWA PUTRA</span>
                             <div class="d-flex align-items-center justify-content-between mt-4">
                                 <span id="summary-male" class="fw-bold text-slate-800" style="font-size: 24px;">{{ $summary['total_male'] }}</span>
-                                <i class="fa-solid fa-mars text-blue-500 fs-4"></i>
+                                <i class="fa-solid fa-mars text-info fs-4"></i>
                             </div>
                         </div>
                     </div>
                 </div>
-                <!-- Card 4: Siswa Putri -->
+                <!-- Card 3: Siswa Putri -->
                 <div class="col">
                     <div class="card h-100 border-0 p-5 shadow-[0_8px_30px_rgb(0,0,0,0.04)] rounded-[24px]" style="background: rgba(236, 72, 153, 0.05); transition: transform 0.2s;" onmouseover="this.style.transform='translateY(-4px)'" onmouseout="this.style.transform='translateY(0)'">
                         <div class="d-flex flex-column h-100 justify-content-between">
@@ -96,32 +84,25 @@
                         </div>
                     </div>
                 </div>
-                <!-- Card 5: Tidak Lulus -->
-                <div class="col">
-                    <div class="card h-100 border-0 p-5 shadow-[0_8px_30px_rgb(0,0,0,0.04)] rounded-[24px]" style="background: rgba(239, 68, 68, 0.05); transition: transform 0.2s;" onmouseover="this.style.transform='translateY(-4px)'" onmouseout="this.style.transform='translateY(0)'">
-                        <div class="d-flex flex-column h-100 justify-content-between">
-                            <span class="text-slate-400 fw-bold uppercase tracking-widest" style="font-size: 11px;">TIDAK LULUS</span>
-                            <div class="d-flex align-items-center justify-content-between mt-4">
-                                <span id="summary-inactive" class="fw-bold text-red-600" style="font-size: 24px;">{{ $summary['total_inactive'] }}</span>
-                                <i class="fa-solid fa-user-xmark text-red-600 fs-4"></i>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <!-- Card 6: Keluar -->
-                <div class="col">
-                    <div class="card h-100 border-0 p-5 shadow-[0_8px_30px_rgb(0,0,0,0.04)] rounded-[24px]" style="background: rgba(107, 114, 128, 0.05); transition: transform 0.2s;" onmouseover="this.style.transform='translateY(-4px)'" onmouseout="this.style.transform='translateY(0)'">
-                        <div class="d-flex flex-column h-100 justify-content-between">
-                            <span class="text-slate-400 fw-bold uppercase tracking-widest" style="font-size: 11px;">KELUAR</span>
-                            <div class="d-flex align-items-center justify-content-between mt-4">
-                                <span id="summary-dropped-out" class="fw-bold text-slate-600" style="font-size: 24px;">{{ $summary['total_dropped_out'] }}</span>
-                                <i class="fa-solid fa-right-from-bracket text-gray-500 fs-4"></i>
-                            </div>
-                        </div>
-                    </div>
-                </div>
             </div>
             <!--end::Summary Cards-->
+
+            <!--begin::Tabs Navigation-->
+            <ul class="nav nav-tabs nav-line-tabs mb-6 fs-6 px-5" id="report_student_tabs" role="tablist" style="border-bottom: 2px solid #e2e8f0;">
+                <li class="nav-item">
+                    <a class="nav-link active fw-bolder text-active-primary px-4 py-3 cursor-pointer" data-tab="total" role="tab" style="font-family: 'Outfit', sans-serif;">Total Siswa (SMP, MA, Pondok)</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link fw-bolder text-active-primary px-4 py-3 cursor-pointer" data-tab="active" role="tab" style="font-family: 'Outfit', sans-serif;">Siswa Aktif</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link fw-bolder text-active-primary px-4 py-3 cursor-pointer" data-tab="graduated" role="tab" style="font-family: 'Outfit', sans-serif;">Siswa Lulus</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link fw-bolder text-active-primary px-4 py-3 cursor-pointer" data-tab="dropped_out" role="tab" style="font-family: 'Outfit', sans-serif;">Siswa Keluar</a>
+                </li>
+            </ul>
+            <!--end::Tabs Navigation-->
             <!--begin::Card-->
             <div class="card mb-5">
                 <!--begin::Card header-->
@@ -140,12 +121,22 @@
                             </div>
                         </div> --}}
                         <div class="mb-0">
-                            <form action="{{ route('report-student.export') }}" id="form-filter" method="get">
-                                <input type="text" hidden id="type" name="type" required>
-                                <div class="d-flex flex-wrap gap-4 align-items-end">
-                                    <div>
-                                        <label class="form-label">UPT</label>
-                                        <select name="school_id" class="form-select" id="filter_school_id">
+                             <form action="{{ route('report-student.export') }}" id="form-filter" method="get">
+                                 <input type="text" hidden id="type" name="type" required>
+                                 <input type="hidden" name="tab" id="tab_hidden" value="total">
+                                 <div class="d-flex flex-wrap gap-4 align-items-end">
+                                     <div>
+                                         <label class="form-label">Tahun Ajaran</label>
+                                         <select name="academic_year_id" class="form-select" id="filter_academic_year_id">
+                                             <option value="">Pilih Tahun Ajaran</option>
+                                             @foreach ($academicYears as $year)
+                                             <option value="{{ $year->id }}">{{ $year->name }}</option>
+                                             @endforeach
+                                         </select>
+                                     </div>
+                                     <div>
+                                         <label class="form-label">UPT</label>
+                                         <select name="school_id" class="form-select" id="filter_school_id">
                                             <option value="">Pilih Pendidikan</option>
                                             @foreach ($schools as $school)
                                             <option value="{{ $school->id }}">{{ $school->name }}</option>
@@ -278,6 +269,27 @@
         });
 
        $(document).ready(function() {
+    var currentTab = 'total';
+
+    // Tabs Navigation Change
+    $('#report_student_tabs a').on('click', function(e) {
+        e.preventDefault();
+        $('#report_student_tabs a').removeClass('active');
+        $(this).addClass('active');
+        currentTab = $(this).data('tab');
+        
+        // Update label of Card 1
+        var labels = {
+            'total': 'TOTAL SISWA',
+            'active': 'SISWA AKTIF',
+            'graduated': 'SISWA LULUS',
+            'dropped_out': 'SISWA KELUAR'
+        };
+        $('#summary-total-label').text(labels[currentTab]);
+        
+        searchData();
+    });
+
     // Inisialisasi DataTables
     var table = $('#table-report-bill').DataTable({
     processing: true,
@@ -288,6 +300,8 @@
     // Mengambil data filter dari elemen formulir
     d.school_id = $('#filter_school_id').val();
     d.classroom_id = $('#filter_classroom_id').val();
+    d.academic_year_id = $('#filter_academic_year_id').val();
+    d.tab = currentTab;
     }
     },
     drawCallback: function(settings) {
@@ -323,12 +337,9 @@
 
     table.on('xhr.dt', function(e, settings, json, xhr) {
         if (json && json.summary) {
-            $('#summary-active').text(json.summary.total_active);
-            $('#summary-graduated').text(json.summary.total_graduated);
+            $('#summary-total').text(json.summary.total);
             $('#summary-male').text(json.summary.total_male);
             $('#summary-female').text(json.summary.total_female);
-            $('#summary-inactive').text(json.summary.total_inactive);
-            $('#summary-dropped-out').text(json.summary.total_dropped_out);
         }
     });
     
@@ -348,8 +359,8 @@
     searchData();
     });
 
-    // onchange school_id and classroom_id reload datatable
-    $('#filter_school_id, #filter_classroom_id').on('change', function() {
+    // onchange school_id, classroom_id and academic_year_id reload datatable
+    $('#filter_school_id, #filter_classroom_id, #filter_academic_year_id').on('change', function() {
         searchData();
     });
 
@@ -357,8 +368,7 @@
     $('.btn-export').on('click', function() {
         var type = $(this).data('type');
         $('#type').val(type);
-        $('#school_id').val($('#filter_school_id').val());
-        $('#classroom_id').val($('#filter_classroom_id').val());
+        $('#tab_hidden').val(currentTab);
         $('#form-filter').submit();
     });
     });
