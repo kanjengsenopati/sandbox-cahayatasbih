@@ -411,7 +411,7 @@
                                 </div>
                                 <div class="card-body d-flex flex-column justify-content-around" style="height: 280px;">
                                     <!-- Tunai -->
-                                    <div>
+                                    <div id="source-row-tunai">
                                         <div class="d-flex justify-content-between align-items-center mb-1">
                                             <span class="typography-body fw-bold">Tunai</span>
                                             <span class="typography-body fw-bolder" id="source-tunai-amount">Rp 0</span>
@@ -421,7 +421,7 @@
                                         </div>
                                     </div>
                                     <!-- Debit Saldo -->
-                                    <div>
+                                    <div id="source-row-saldo">
                                         <div class="d-flex justify-content-between align-items-center mb-1">
                                             <span class="typography-body fw-bold">Debit Saldo</span>
                                             <span class="typography-body fw-bolder text-emerald-600" id="source-saldo-amount">Rp 0</span>
@@ -431,7 +431,7 @@
                                         </div>
                                     </div>
                                     <!-- Transfer Bank -->
-                                    <div class="hover-bank-trigger" style="cursor: pointer;">
+                                    <div id="source-row-transfer" class="hover-bank-trigger" style="cursor: pointer;">
                                         <div class="d-flex justify-content-between align-items-center mb-1">
                                             <span class="typography-body fw-bold">Transfer Bank</span>
                                             <span class="typography-body fw-bolder" id="source-transfer-amount">Rp 0</span>
@@ -1590,6 +1590,25 @@
             $('#source-tunai-bar').css('width', tunaiPct + '%');
             $('#source-saldo-bar').css('width', saldoPct + '%');
             $('#source-transfer-bar').css('width', transferPct + '%');
+
+            // === Visibility Sumber Pemasukan berdasarkan filter aktif ===
+            var psFilter = $('#payment_source_tab1').val();
+            if (psFilter && psFilter !== 'saldo') {
+                // Filter bank spesifik → hanya tampilkan Transfer Bank
+                $('#source-row-tunai').slideUp(200);
+                $('#source-row-saldo').slideUp(200);
+                $('#source-row-transfer').slideDown(200);
+            } else if (psFilter === 'saldo') {
+                // Filter Saldo → hanya tampilkan Debit Saldo
+                $('#source-row-tunai').slideUp(200);
+                $('#source-row-saldo').slideDown(200);
+                $('#source-row-transfer').slideUp(200);
+            } else {
+                // Semua Pembayaran → tampilkan semua
+                $('#source-row-tunai').slideDown(200);
+                $('#source-row-saldo').slideDown(200);
+                $('#source-row-transfer').slideDown(200);
+            }
         })
         .catch(function (error) {
             console.error("Error loading Tab 1 data:", error);

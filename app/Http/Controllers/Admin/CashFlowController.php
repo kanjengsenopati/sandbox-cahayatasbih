@@ -232,6 +232,9 @@ class CashFlowController extends Controller
                 if ($paymentSource === 'saldo') {
                     $query->where('pm.type', '=', 'BALANCE');
                 } else {
+                    // Hanya transfer-type yang relevan untuk filter bank spesifik
+                    // Tanpa ini, pembayaran tunai/saldo ikut cocok via fallback whereNull tp.bank_id
+                    $query->whereNotIn('pm.type', ['CASH', 'BALANCE']);
                     $query->where(function($q) use ($paymentSource) {
                         $q->where('tp.bank_id', '=', $paymentSource)
                           ->orWhere(function($sub) use ($paymentSource) {
@@ -314,7 +317,14 @@ class CashFlowController extends Controller
                     ->orWhere(function($sub) use ($paymentSource) {
                         $sub->whereHas('billType.billTypeBank', function($tqb) use ($paymentSource) {
                             $tqb->where('bank_id', $paymentSource);
-                        })->whereDoesntHave('transactions.activeProof');
+                        })
+                        ->whereDoesntHave('transactions.activeProof')
+                        ->whereHas('transactions', function($tq) {
+                            $tq->where('transactions.status', 'PAID')
+                               ->whereHas('paymentMethod', function($pq) {
+                                   $pq->whereNotIn('type', ['CASH', 'BALANCE']);
+                               });
+                        });
                     });
                 });
             }
