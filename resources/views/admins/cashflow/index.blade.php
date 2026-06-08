@@ -273,6 +273,7 @@
                                     <label class="form-label mb-1 fw-bold text-gray-700 fs-7">Sumber Dana / Rekening</label>
                                     <select id="payment_source_tab1" name="payment_source" class="form-select" style="border-radius: 12px; min-width: 220px; background-color: #fff; border: 1px solid #ccc; padding: 7px 14px; color: #475569; font-weight: 500;">
                                         <option value="">Semua Pembayaran</option>
+                                        <option value="tunai">Bayar Tunai</option>
                                         <option value="saldo">Bayar by Saldo (Debit Saldo)</option>
                                         @if(isset($banks) && count($banks) > 0)
                                             <optgroup label="Transfer Bank Rekening:">
@@ -1593,16 +1594,21 @@
 
             // === Visibility Sumber Pemasukan berdasarkan filter aktif ===
             var psFilter = $('#payment_source_tab1').val();
-            if (psFilter && psFilter !== 'saldo') {
-                // Filter bank spesifik → hanya tampilkan Transfer Bank
-                $('#source-row-tunai').slideUp(200);
+            if (psFilter === 'tunai') {
+                // Filter Tunai → hanya tampilkan Tunai
+                $('#source-row-tunai').slideDown(200);
                 $('#source-row-saldo').slideUp(200);
-                $('#source-row-transfer').slideDown(200);
+                $('#source-row-transfer').slideUp(200);
             } else if (psFilter === 'saldo') {
                 // Filter Saldo → hanya tampilkan Debit Saldo
                 $('#source-row-tunai').slideUp(200);
                 $('#source-row-saldo').slideDown(200);
                 $('#source-row-transfer').slideUp(200);
+            } else if (psFilter) {
+                // Filter bank spesifik → hanya tampilkan Transfer Bank
+                $('#source-row-tunai').slideUp(200);
+                $('#source-row-saldo').slideUp(200);
+                $('#source-row-transfer').slideDown(200);
             } else {
                 // Semua Pembayaran → tampilkan semua
                 $('#source-row-tunai').slideDown(200);

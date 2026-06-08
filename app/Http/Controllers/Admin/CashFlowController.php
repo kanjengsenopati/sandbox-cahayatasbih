@@ -231,6 +231,8 @@ class CashFlowController extends Controller
             if ($paymentSource) {
                 if ($paymentSource === 'saldo') {
                     $query->where('pm.type', '=', 'BALANCE');
+                } elseif ($paymentSource === 'tunai') {
+                    $query->where('pm.type', '=', 'CASH');
                 } else {
                     // Hanya transfer-type yang relevan untuk filter bank spesifik
                     // Tanpa ini, pembayaran tunai/saldo ikut cocok via fallback whereNull tp.bank_id
@@ -288,7 +290,8 @@ class CashFlowController extends Controller
         $totalCashflowsQuery = (clone $billQuery)->whereDoesntHave('student.classroom.school', function ($q) {
             $q->where('type', \App\Models\School::TYPE_DEMO)->orWhere('name', 'LIKE', '%DEMO%');
         });
-        if ($paymentSource && $paymentSource !== 'saldo') {
+        // Filter target hanya untuk bank spesifik (tunai & saldo tidak terikat bank tertentu)
+        if ($paymentSource && $paymentSource !== 'saldo' && $paymentSource !== 'tunai') {
             $totalCashflowsQuery->whereHas('billType.billTypeBank', function($q) use ($paymentSource) {
                 $q->where('bank_id', $paymentSource);
             });
@@ -304,6 +307,13 @@ class CashFlowController extends Controller
                     $tq->where('transactions.status', 'PAID')
                        ->whereHas('paymentMethod', function($pq) {
                            $pq->where('type', 'BALANCE');
+                       });
+                });
+            } elseif ($paymentSource === 'tunai') {
+                $totalIncomesQuery->whereHas('transactions', function($tq) {
+                    $tq->where('transactions.status', 'PAID')
+                       ->whereHas('paymentMethod', function($pq) {
+                           $pq->where('type', 'CASH');
                        });
                 });
             } else {
@@ -617,9 +627,10 @@ class CashFlowController extends Controller
                 });
             })
             ->select(
-                DB::raw("SUM(CASE WHEN bp.pm_type = 'CASH' AND " . ($paymentSource ? '1=0' : '1=1') . " THEN b.amount ELSE 0 END) as paid_cash"),
+                // Pivot: paid_cash tampil saat filter=tunai atau semua; paid_balance saat saldo atau semua; paid_transfer saat bank atau semua
+                DB::raw("SUM(CASE WHEN bp.pm_type = 'CASH' AND " . (($paymentSource && $paymentSource !== 'tunai') ? '1=0' : '1=1') . " THEN b.amount ELSE 0 END) as paid_cash"),
                 DB::raw("SUM(CASE WHEN bp.pm_type = 'BALANCE' AND " . (($paymentSource && $paymentSource !== 'saldo') ? '1=0' : '1=1') . " THEN b.amount ELSE 0 END) as paid_balance"),
-                DB::raw("SUM(CASE WHEN bp.pm_type NOT IN ('CASH','BALANCE') AND " . (($paymentSource && $paymentSource === 'saldo') ? '1=0' : '1=1') . " THEN b.amount ELSE 0 END) as paid_transfer")
+                DB::raw("SUM(CASE WHEN bp.pm_type NOT IN ('CASH','BALANCE') AND " . (($paymentSource && in_array($paymentSource, ['saldo', 'tunai'])) ? '1=0' : '1=1') . " THEN b.amount ELSE 0 END) as paid_transfer")
             )
             ->first();
 
@@ -630,7 +641,8 @@ class CashFlowController extends Controller
         ];
 
         // 5. Tracing Petugas Piket (Tunai)
-        if ($paymentSource) {
+        // Piket officers tetap relevan saat filter tunai (tracking kas langsung)
+        if ($paymentSource && $paymentSource !== 'tunai') {
             $piketOfficers = collect();
             $totalPiketCash = 0;
         } else {
