@@ -196,7 +196,32 @@
             </div>
             <!--end::Card-->
             <!--begin::Modals-->
-
+            <div class="modal fade" id="tunggakanModal" tabindex="-1" aria-hidden="true">
+                <div class="modal-dialog modal-lg modal-dialog-centered">
+                    <div class="modal-content border-0 shadow-[0_8px_30px_rgb(0,0,0,0.04)] rounded-[24px]">
+                        <div class="modal-header border-0 pb-0 pt-7 px-8 d-flex justify-content-between align-items-center">
+                            <div>
+                                <span class="text-slate-400 fw-bold uppercase tracking-widest" style="font-size: 11px;">Rincian Tunggakan</span>
+                                <h2 class="modal-title fw-bolder text-slate-900 mt-1" style="font-size: 18px; font-family: 'Outfit', sans-serif;" id="tunggakanModalLabel">Nama Siswa</h2>
+                            </div>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body px-8 py-6" style="max-height: 60vh; overflow-y: auto;">
+                            <div id="tunggakan-container" class="row g-4">
+                                <!-- Grouped bills will be inserted here dynamically -->
+                            </div>
+                        </div>
+                        <div class="modal-footer border-0 bg-light-soft px-8 py-5 d-flex justify-content-between align-items-center rounded-bottom-[24px]" style="background: rgba(0, 0, 0, 0.01); border-top: 1px solid #f1f5f9;">
+                            <div>
+                                <span class="text-slate-400 fw-bold uppercase tracking-widest" style="font-size: 10px;">Total Seluruh Tunggakan</span>
+                                <div class="fw-bold text-danger mt-1" style="font-size: 20px;" id="tunggakan-grand-total">Rp 0</div>
+                            </div>
+                            <button type="button" class="btn btn-secondary rounded-xl px-5" data-bs-dismiss="modal">Tutup</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!--end::Modals-->
         </div>
         <!--end::Container-->
     </div>
@@ -330,6 +355,74 @@
         $('#tab_hidden').val(currentTab);
         $('#form-filter').submit();
     });
+
+    $(document).on('click', '.btn-show-tunggakan', function() {
+        var studentName = $(this).data('name');
+        var bills = $(this).data('bills');
+        
+        $('#tunggakanModalLabel').text(studentName);
+        
+        // Group bills by type
+        var grouped = {};
+        var grandTotal = 0;
+        
+        if (bills && Array.isArray(bills)) {
+            bills.forEach(function(bill) {
+                if (!grouped[bill.bill_type]) {
+                    grouped[bill.bill_type] = {
+                        items: [],
+                        total: 0
+                    };
+                }
+                grouped[bill.bill_type].items.push(bill);
+                grouped[bill.bill_type].total += bill.amount;
+                grandTotal += bill.amount;
+            });
+        }
+        
+        var html = '';
+        Object.keys(grouped).forEach(function(type) {
+            var group = grouped[type];
+            var itemsHtml = '';
+            
+            group.items.forEach(function(item) {
+                var period = item.month ? item.month + ' ' + item.year : item.year;
+                itemsHtml += `
+                    <div class="d-flex justify-content-between align-items-center py-2" style="border-bottom: 1px dashed #e2e8f0 !important;">
+                        <span class="text-slate-600" style="font-size: 13px;">${period}</span>
+                        <span class="fw-bold text-slate-800" style="font-size: 13px;">Rp ${formatRupiah(item.amount)}</span>
+                    </div>
+                `;
+            });
+            
+            html += `
+                <div class="col-12 col-md-6">
+                    <div class="card p-5 rounded-[16px]" style="border: 1px solid #e2e8f0 !important; background: #fafafa;">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <span class="fw-bolder text-slate-900" style="font-size: 14px; font-family: 'Outfit', sans-serif;">${type}</span>
+                            <span class="fw-bold text-danger" style="font-size: 14px;">Total: Rp ${formatRupiah(group.total)}</span>
+                        </div>
+                        <div class="d-flex flex-column">
+                            ${itemsHtml}
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+        
+        if (html === '') {
+            html = '<div class="col-12 text-center py-5 text-slate-400">Tidak ada tunggakan</div>';
+        }
+        
+        $('#tunggakan-container').html(html);
+        $('#tunggakan-grand-total').text('Rp ' + formatRupiah(grandTotal));
+        
+        $('#tunggakanModal').modal('show');
+    });
+    
+    function formatRupiah(amount) {
+        return new Intl.NumberFormat('id-ID').format(amount);
+    }
     });
 
 </script>

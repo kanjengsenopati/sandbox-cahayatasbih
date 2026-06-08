@@ -70,15 +70,20 @@ class ReportStudentController extends Controller
                         return '<span class="badge bg-light-success text-success">Bersih</span>';
                     }
                     
-                    $details = [];
+                    $billsArray = [];
                     foreach ($unpaid as $bill) {
                         $billName = $bill->billType->name ?? 'Tagihan';
                         $monthName = $bill->month ? \Carbon\Carbon::parse($bill->year . '-' . $bill->month . '-01')->translatedFormat('F') : '';
-                        $details[] = "• {$billName} {$monthName} ({$bill->year}): Rp " . number_format($bill->amount, 0, ',', '.');
+                        $billsArray[] = [
+                            'bill_type' => $billName,
+                            'month' => $monthName,
+                            'year' => $bill->year,
+                            'amount' => (int) $bill->amount
+                        ];
                     }
                     
-                    $detailsHtml = implode('<br>', $details);
-                    return '<span class="badge bg-light-danger text-danger cursor-pointer" style="font-weight: 700;" data-bs-toggle="tooltip" data-bs-html="true" title="' . e($detailsHtml) . '">Tunggakan (' . $unpaid->count() . ')</span>';
+                    $billsJson = json_encode($billsArray);
+                    return '<span class="badge bg-light-danger text-danger cursor-pointer btn-show-tunggakan" style="font-weight: 700;" data-name="' . e($data->name) . '" data-bills="' . e($billsJson) . '">Tunggakan (' . $unpaid->count() . ')</span>';
                 })
                 ->addColumn('action', function ($data) {
                     $actionShow = route('report-bill.show', $data->id);
