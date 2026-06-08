@@ -1,3 +1,26 @@
+<style>
+    /* Make active menu links in sidebar more prominent */
+    .aside-dark .menu .menu-item .menu-link.active {
+        background-color: #2563EB !important; /* Accent Primary Blue-600 */
+        color: #ffffff !important;
+        font-weight: 700 !important;
+        box-shadow: 0 4px 15px rgba(37, 99, 235, 0.25) !important;
+        border-radius: 10px !important;
+        transition: all 0.2s ease-in-out !important;
+    }
+    .aside-dark .menu .menu-item .menu-link.active .menu-title {
+        color: #ffffff !important;
+        font-weight: 700 !important;
+    }
+    .aside-dark .menu .menu-item .menu-link.active .menu-bullet .bullet-dot {
+        background-color: #ffffff !important;
+        transform: scale(1.3) !important;
+        box-shadow: 0 0 8px rgba(255, 255, 255, 0.8) !important;
+    }
+    .aside-dark .menu .menu-item .menu-link.active .menu-icon i {
+        color: #ffffff !important;
+    }
+</style>
 <div id="kt_aside" class="aside aside-dark aside-hoverable" data-kt-drawer="true" data-kt-drawer-name="aside"
     data-kt-drawer-activate="{default: true, lg: false}" data-kt-drawer-overlay="true"
     data-kt-drawer-width="{default:'200px', '300px': '250px'}" data-kt-drawer-direction="start"
