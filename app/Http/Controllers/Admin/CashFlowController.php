@@ -218,6 +218,7 @@ class CashFlowController extends Controller
                 ->leftJoin('transaction_proofs as tp', function($join) {
                     $join->on('tp.transaction_id', '=', 't.id')
                          ->where('tp.is_active', '=', 1)
+                         ->where('tp.status', '=', 'PAID')
                          ->whereNull('tp.deleted_at');
                 })
                 ->where('t.status', 'PAID')
@@ -235,22 +236,8 @@ class CashFlowController extends Controller
                     $query->where('pm.type', '=', 'CASH');
                 } else {
                     // Hanya transfer-type yang relevan untuk filter bank spesifik
-                    // Tanpa ini, pembayaran tunai/saldo ikut cocok via fallback whereNull tp.bank_id
                     $query->whereNotIn('pm.type', ['CASH', 'BALANCE']);
-                    $query->where(function($q) use ($paymentSource) {
-                        $q->where('tp.bank_id', '=', $paymentSource)
-                          ->orWhere(function($sub) use ($paymentSource) {
-                              $sub->whereNull('tp.bank_id')
-                                  ->whereExists(function($ex) use ($paymentSource) {
-                                      $ex->select(DB::raw(1))
-                                         ->from('bill_type_banks as btb')
-                                         ->join('bills as bl', 'bl.bill_type_id', '=', 'btb.bill_type_id')
-                                         ->whereColumn('bl.id', 'td.bill_id')
-                                         ->where('btb.bank_id', $paymentSource)
-                                         ->whereNull('btb.deleted_at');
-                                  });
-                          });
-                    });
+                    $query->where('tp.bank_id', '=', $paymentSource);
                 }
             }
 
@@ -317,25 +304,12 @@ class CashFlowController extends Controller
                        });
                 });
             } else {
-                $totalIncomesQuery->where(function($q) use ($paymentSource) {
-                    $q->whereHas('transactions', function($tq) use ($paymentSource) {
-                        $tq->where('transactions.status', 'PAID')
-                           ->whereHas('activeProof', function($pq) use ($paymentSource) {
-                               $pq->where('bank_id', $paymentSource);
-                           });
-                    })
-                    ->orWhere(function($sub) use ($paymentSource) {
-                        $sub->whereHas('billType.billTypeBank', function($tqb) use ($paymentSource) {
-                            $tqb->where('bank_id', $paymentSource);
-                        })
-                        ->whereDoesntHave('transactions.activeProof')
-                        ->whereHas('transactions', function($tq) {
-                            $tq->where('transactions.status', 'PAID')
-                               ->whereHas('paymentMethod', function($pq) {
-                                   $pq->whereNotIn('type', ['CASH', 'BALANCE']);
-                               });
-                        });
-                    });
+                $totalIncomesQuery->whereHas('transactions', function($tq) use ($paymentSource) {
+                    $tq->where('transactions.status', 'PAID')
+                       ->whereHas('activeProof', function($pq) use ($paymentSource) {
+                           $pq->where('bank_id', $paymentSource)
+                              ->where('status', 'PAID');
+                       });
                 });
             }
         }

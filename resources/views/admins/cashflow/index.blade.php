@@ -49,9 +49,9 @@
         .loading-overlay-filters-text {
             font-family: 'Outfit', 'Inter', sans-serif;
             font-size: 14px;
-            font-weight: 850;
-            letter-spacing: 0.12em;
-            text-transform: uppercase;
+            font-weight: 700;
+            letter-spacing: -0.01em;
+            text-transform: none;
             animation: pulse-text-prominent 1.5s ease-in-out infinite;
         }
         .loading-overlay-filters-text.text-primary {
@@ -230,7 +230,7 @@
                         <div id="loading-overlay-tab1" class="loading-overlay-filters">
                             <div class="loading-overlay-filters-content">
                                 <div class="spinner-border text-primary" role="status" style="width: 1.5rem; height: 1.5rem; border-width: 0.2em; color: #2563EB !important;"></div>
-                                <span class="loading-overlay-filters-text text-primary">PROSES MEMUAT DATA PEMASUKAN</span>
+                                <span class="loading-overlay-filters-text text-primary">Proses Memuat Data Pemasukan</span>
                             </div>
                         </div>
                         <div class="d-flex align-items-center justify-content-between flex-wrap gap-4">
@@ -491,7 +491,7 @@
                         <div id="loading-overlay-tab2" class="loading-overlay-filters">
                             <div class="loading-overlay-filters-content">
                                 <div class="spinner-border text-warning" role="status" style="width: 1.5rem; height: 1.5rem; border-width: 0.2em; color: #D97706 !important;"></div>
-                                <span class="loading-overlay-filters-text text-warning">PROSES MEMUAT DATA MUTASI KAS</span>
+                                <span class="loading-overlay-filters-text text-warning">Proses Memuat Data Mutasi Kas</span>
                             </div>
                         </div>
                         <div class="d-flex align-items-center justify-content-between flex-wrap gap-4">
