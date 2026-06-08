@@ -61,7 +61,7 @@ class ReportStudentController extends Controller
             ];
 
             $data = $dataQuery->with(['classroom', 'school', 'bills.billType'])
-                ->orderBy('name', 'asc');
+                ->orderBy('students.name', 'asc');
 
             return DataTables::of($data)
                 ->addColumn('unpaid_bills', function ($data) {

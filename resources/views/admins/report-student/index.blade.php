@@ -280,9 +280,9 @@
     return meta.row + meta.settings._iDisplayStart + 1;
     }
     },
-    { data: 'nis', name: 'nis' },
-    { data: 'nisn', name: 'nisn' },
-    { data: 'name', name: 'name' },
+    { data: 'nis', name: 'students.nis' },
+    { data: 'nisn', name: 'students.nisn' },
+    { data: 'name', name: 'students.name' },
     { data: 'classroom.name', name: 'classroom.name' },
     { data: 'school.name', name: 'school.name', defaultContent: '-' },
     {
