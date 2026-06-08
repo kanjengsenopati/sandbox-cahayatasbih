@@ -33,6 +33,10 @@ class SyncMasterDatabase extends Command
         $oneMonthAgo = now()->subDays(30)->toDateTimeString();
 
         $tables = [
+            'banks',
+            'bill_type_banks',
+            'topup_banks',
+            'transaction_proofs',
             'point_of_sale_carts',
             'point_of_sale_transactions',
             'transactions',
