@@ -103,7 +103,7 @@ class BillController extends Controller
 
     private function getTransactionData()
     {
-        $transactions = Transaction::with('student', 'paymentMethod', 'activeProof.bank')
+        $transactions = Transaction::with('student', 'paymentMethod', 'activeProof.bank', 'transactionProofs.bank')
             ->whereHas('paymentMethod', fn($query) => $query->where('type', PaymentMethod::TYPE_TRANSFER))
             ->where('type', Transaction::TYPE_BILL)
             ->where('status', Transaction::STATUS_PENDING_CONFIRMATION)
@@ -116,7 +116,8 @@ class BillController extends Controller
             ->editColumn('status', fn($transaction) => $this->formatStatusColumn($transaction))
             ->addColumn('action', fn($transaction) => $this->formatActionColumn($transaction))
             ->addColumn('bank_recipient', function ($transaction) {
-                $bank = $transaction->activeProof?->bank;
+                $proof = $transaction->activeProof ?? $transaction->transactionProofs->first();
+                $bank = $proof?->bank;
                 if (!$bank) return '-';
                 return "{$bank->name}<br><small class='text-muted'>No. Rek: {$bank->account_number}</small><br><small class='text-muted'>A.N: {$bank->account_name}</small>";
             })
@@ -126,11 +127,10 @@ class BillController extends Controller
 
     private function formatProofColumn($transaction)
     {
-        $proofUrl = $transaction->activeProof?->proof_image_url ?? $transaction->activeProof?->proof_image;
+        $proof = $transaction->activeProof ?? $transaction->transactionProofs->first();
+        $proofUrl = $proof?->proof_image_url ?? $proof?->proof_image;
         if (!$proofUrl) return '-';
-        return "<a href='{$proofUrl}' target='_blank'>
-                <img src='{$proofUrl}' class='img-fluid img-thumbnail' style='max-width: 100px;'>
-            </a>";
+        return "<img src='{$proofUrl}' class='img-fluid img-thumbnail cursor-pointer view-proof-image' data-src='{$proofUrl}' style='max-width: 80px; height: auto; border-radius: 8px;'>";
     }
 
     private function formatStatusColumn($transaction)
@@ -208,7 +208,7 @@ class BillController extends Controller
 
     private function getArchiveTransactionData()
     {
-        $transactions = Transaction::with('student', 'paymentMethod', 'activeProof.bank', 'admin')
+        $transactions = Transaction::with('student', 'paymentMethod', 'activeProof.bank', 'transactionProofs.bank', 'admin')
             ->whereHas('paymentMethod', fn($query) => $query->where('type', PaymentMethod::TYPE_TRANSFER))
             ->where('type', Transaction::TYPE_BILL)
             ->whereIn('status', [Transaction::STATUS_PAID, Transaction::STATUS_REJECTED])
@@ -230,7 +230,8 @@ class BillController extends Controller
             ->editColumn('status', fn($transaction) => $this->formatStatusColumn($transaction))
             ->addColumn('action', fn($transaction) => $this->formatArchiveActionColumn($transaction))
             ->addColumn('bank_recipient', function ($transaction) {
-                $bank = $transaction->activeProof?->bank;
+                $proof = $transaction->activeProof ?? $transaction->transactionProofs->first();
+                $bank = $proof?->bank;
                 if (!$bank) return '-';
                 return "{$bank->name}<br><small class='text-muted'>No. Rek: {$bank->account_number}</small><br><small class='text-muted'>A.N: {$bank->account_name}</small>";
             })

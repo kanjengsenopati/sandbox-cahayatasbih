@@ -73,7 +73,7 @@ class SaldoHistoryController extends Controller
                 ->make(true);
         }
         if (request()->ajax() && request()->type === 'topup') {
-            $transactions = Transaction::with('student', 'paymentMethod', 'activeProof.bank')
+            $transactions = Transaction::with('student', 'paymentMethod', 'activeProof.bank', 'transactionProofs.bank')
                 ->whereHas('paymentMethod', function ($query) {
                     $query->where('type', PaymentMethod::TYPE_TRANSFER);
                 })
@@ -84,12 +84,10 @@ class SaldoHistoryController extends Controller
 
             return DataTables::of($transactions)
                 ->addColumn('proof', function ($transaction) {
-                    $proofUrl = $transaction?->activeProof?->proof_image_url ?? $transaction?->activeProof?->proof_image;
+                    $proof = $transaction->activeProof ?? $transaction->transactionProofs->first();
+                    $proofUrl = $proof?->proof_image_url ?? $proof?->proof_image;
                     if (!$proofUrl) return '-';
-                    // add image preview on click zoom the image
-                    return "<a href='" . $proofUrl . "' target='_blank'>
-                        <img src='" . $proofUrl . "' class='img-fluid img-thumbnail' style='max-width: 100px;'>
-                    </a>";
+                    return "<img src='{$proofUrl}' class='img-fluid img-thumbnail cursor-pointer view-proof-image' data-src='{$proofUrl}' style='max-width: 80px; height: auto; border-radius: 8px;'>";
                 })
                 ->editColumn('pay_amount', function ($transaction) {
                     return 'Rp ' . number_format($transaction->pay_amount, 0, ',', '.');
@@ -135,7 +133,8 @@ class SaldoHistoryController extends Controller
                     }
                 })
                 ->addColumn('bank_recipient', function ($transaction) {
-                    $bank = $transaction->activeProof?->bank;
+                    $proof = $transaction->activeProof ?? $transaction->transactionProofs->first();
+                    $bank = $proof?->bank;
                     if (!$bank) return '-';
                     return "{$bank->name}<br><small class='text-muted'>No. Rek: {$bank->account_number}</small><br><small class='text-muted'>A.N: {$bank->account_name}</small>";
                 })
@@ -411,7 +410,7 @@ class SaldoHistoryController extends Controller
 
     private function getArchiveTransactionData()
     {
-        $transactions = Transaction::with('student', 'paymentMethod', 'activeProof.bank', 'admin')
+        $transactions = Transaction::with('student', 'paymentMethod', 'activeProof.bank', 'transactionProofs.bank', 'admin')
             ->whereHas('paymentMethod', function ($query) {
                 $query->where('type', PaymentMethod::TYPE_TRANSFER);
             })
@@ -431,11 +430,10 @@ class SaldoHistoryController extends Controller
 
         return DataTables::of($transactions)
             ->addColumn('proof', function ($transaction) {
-                $proofUrl = $transaction?->activeProof?->proof_image_url ?? $transaction?->activeProof?->proof_image;
+                $proof = $transaction->activeProof ?? $transaction->transactionProofs->first();
+                $proofUrl = $proof?->proof_image_url ?? $proof?->proof_image;
                 if (!$proofUrl) return '-';
-                return "<a href='" . $proofUrl . "' target='_blank'>
-                    <img src='" . $proofUrl . "' class='img-fluid img-thumbnail' style='max-width: 100px;'>
-                </a>";
+                return "<img src='{$proofUrl}' class='img-fluid img-thumbnail cursor-pointer view-proof-image' data-src='{$proofUrl}' style='max-width: 80px; height: auto; border-radius: 8px;'>";
             })
             ->editColumn('pay_amount', function ($transaction) {
                 return 'Rp ' . number_format($transaction->pay_amount, 0, ',', '.');
@@ -461,7 +459,8 @@ class SaldoHistoryController extends Controller
                 return $this->formatArchiveActionColumn($transaction);
             })
             ->addColumn('bank_recipient', function ($transaction) {
-                $bank = $transaction->activeProof?->bank;
+                $proof = $transaction->activeProof ?? $transaction->transactionProofs->first();
+                $bank = $proof?->bank;
                 if (!$bank) return '-';
                 return "{$bank->name}<br><small class='text-muted'>No. Rek: {$bank->account_number}</small><br><small class='text-muted'>A.N: {$bank->account_name}</small>";
             })

@@ -501,6 +501,20 @@
         </div>
     </div>
 </div>
+<!-- Modal View Bukti Transfer -->
+<div class="modal fade" id="imagePreviewModal" tabindex="-1" aria-labelledby="imagePreviewModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content" style="border-radius: 24px; overflow: hidden; border: none; box-shadow: 0 10px 40px rgba(0,0,0,0.08);">
+            <div class="modal-header border-0 bg-light px-6 py-4">
+                <h5 class="modal-title fw-bold text-slate-800" id="imagePreviewModalLabel">Detail Bukti Transfer</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body text-center p-6 bg-white">
+                <img id="imagePreviewSrc" src="" class="img-fluid rounded-3 shadow-sm" alt="Bukti Transfer" style="max-height: 70vh; object-fit: contain; border: 1px solid #e2e8f0;">
+            </div>
+        </div>
+    </div>
+</div>
 <!--end::Post-->
 @endsection
 @push('js')
@@ -799,6 +813,13 @@
             // Adjust columns on tab switch
             $('a[href="#arsip_riwayat"]').on('shown.bs.tab', function (e) {
                 archiveTable.columns.adjust().draw();
+            });
+
+            // Click handler for viewing proof images in a modal
+            $(document).on('click', '.view-proof-image', function() {
+                var src = $(this).data('src');
+                $('#imagePreviewSrc').attr('src', src);
+                $('#imagePreviewModal').modal('show');
             });
 
         });
