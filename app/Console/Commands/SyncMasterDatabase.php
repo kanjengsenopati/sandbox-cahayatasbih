@@ -102,8 +102,9 @@ class SyncMasterDatabase extends Command
                 // Add time window if time columns exist
                 $hasCreatedAt = in_array('created_at', $commonColumns);
                 $hasUpdatedAt = in_array('updated_at', $commonColumns);
-
-                if ($hasCreatedAt || $hasUpdatedAt) {
+                // Configuration/reference tables should be synced fully to avoid missing references
+                $isConfigTable = in_array($table, ['banks', 'bill_type_banks', 'topup_banks']);
+                if (($hasCreatedAt || $hasUpdatedAt) && !$isConfigTable) {
                     $query->where(function ($q) use ($oneMonthAgo, $hasCreatedAt, $hasUpdatedAt) {
                         if ($hasCreatedAt) {
                             $q->orWhere('created_at', '>=', $oneMonthAgo);
