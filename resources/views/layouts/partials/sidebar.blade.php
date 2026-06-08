@@ -1,12 +1,14 @@
 <style>
-    /* Make active menu links in sidebar more prominent */
+    /* Make active menu links in sidebar more prominent and styled as a pill inside the margins */
     .aside-dark .menu .menu-item .menu-link.active {
-        background-color: #2563EB !important; /* Accent Primary Blue-600 */
+        background-color: #432A84 !important; /* Darker Purple matching sidebar basic theme */
         color: #ffffff !important;
         font-weight: 700 !important;
-        box-shadow: 0 4px 15px rgba(37, 99, 235, 0.25) !important;
-        border-radius: 10px !important;
+        border-radius: 8px !important;
+        margin-left: 15px !important;
+        margin-right: 15px !important;
         transition: all 0.2s ease-in-out !important;
+        box-shadow: none !important;
     }
     .aside-dark .menu .menu-item .menu-link.active .menu-title {
         color: #ffffff !important;
