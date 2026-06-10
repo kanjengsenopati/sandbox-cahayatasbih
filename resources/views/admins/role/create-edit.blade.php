@@ -126,7 +126,7 @@
                                             'Laporan Santri', 'Laporan Tahfidz', 'Laporan Perilaku Siswa',
                                             'Laporan Saldo Santri', 'Laporan Fee Aplikasi', 'Laporan Transaksi',
                                             'Kelulusan Santri', 'Kategori Arus Kas', 'Arus Kas', 'Laporan Arus Kas',
-                                            'Gelombang PPDB', 'Kartu Santri', 'Kartu Ujian'
+                                            'Gelombang PPDB', 'Kartu Santri', 'Kartu Ujian', 'Petugas'
                                             ];
                                             @endphp
 
