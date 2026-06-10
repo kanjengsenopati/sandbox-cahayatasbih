@@ -6,6 +6,7 @@ use App\Models\Asrama;
 use App\Models\Student;
 use App\Models\Officer;
 use App\Models\Admin;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Yajra\DataTables\DataTables;
 use App\Http\Controllers\Controller;
@@ -68,7 +69,12 @@ class AsramaController extends Controller
             return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
         }
 
-        $officers = Officer::where('is_active', 1)->orderBy('name', 'asc')->get();
+        $officers = Officer::with('user')
+            ->select('officers.*')
+            ->leftJoin('users', 'users.id', '=', 'officers.user_id')
+            ->where('officers.is_active', 1)
+            ->orderBy('users.name', 'asc')
+            ->get();
         
         // Fetch all active students that don't have an asrama yet, or we can fetch all active students
         $students = Student::where('status', Student::STATUS_ACTIVE)
@@ -111,10 +117,39 @@ class AsramaController extends Controller
                 $officer = Officer::findOrFail($request->input('officer_id'));
                 $hostAdminId = $this->getOrCreateAdminForOfficer($officer);
             } else {
+                // Resolve or create a new User record first since 'name' is in the users table
+                $phone = $request->input('new_officer_phone');
+                $name = $request->input('new_officer_name');
+
+                $user = User::where('phone', $phone)->first();
+                if (!$user) {
+                    $emailName = Str::slug($name, '');
+                    $email = $emailName . '@cahayatasbih.com';
+                    $count = User::where('email', $email)->count();
+                    if ($count > 0) {
+                        $email = $emailName . rand(100, 999) . '@cahayatasbih.com';
+                    }
+
+                    $user = User::create([
+                        'name' => $name,
+                        'phone' => $phone,
+                        'email' => $email,
+                        'password' => bcrypt('12345678'),
+                        'is_active' => 1,
+                    ]);
+                } else {
+                    $user->update([
+                        'name' => $name,
+                        'is_active' => 1,
+                    ]);
+                }
+
+                $user->assignRole('Asatidz');
+
                 // Create new officer record
                 $officer = Officer::create([
-                    'name' => $request->input('new_officer_name'),
-                    'phone' => $request->input('new_officer_phone'),
+                    'user_id' => $user->id,
+                    'phone' => $phone,
                     'position' => $request->input('new_officer_position'),
                     'duty' => $request->input('new_officer_duty'),
                     'is_active' => 1,
@@ -157,7 +192,12 @@ class AsramaController extends Controller
         }
 
         $asrama = Asrama::with('students')->findOrFail($id);
-        $officers = Officer::where('is_active', 1)->orderBy('name', 'asc')->get();
+        $officers = Officer::with('user')
+            ->select('officers.*')
+            ->leftJoin('users', 'users.id', '=', 'officers.user_id')
+            ->where('officers.is_active', 1)
+            ->orderBy('users.name', 'asc')
+            ->get();
         
         // Find which officer is currently linked to the host_admin_id
         $currentOfficerId = null;
@@ -217,10 +257,39 @@ class AsramaController extends Controller
                 $officer = Officer::findOrFail($request->input('officer_id'));
                 $hostAdminId = $this->getOrCreateAdminForOfficer($officer);
             } else {
+                // Resolve or create a new User record first since 'name' is in the users table
+                $phone = $request->input('new_officer_phone');
+                $name = $request->input('new_officer_name');
+
+                $user = User::where('phone', $phone)->first();
+                if (!$user) {
+                    $emailName = Str::slug($name, '');
+                    $email = $emailName . '@cahayatasbih.com';
+                    $count = User::where('email', $email)->count();
+                    if ($count > 0) {
+                        $email = $emailName . rand(100, 999) . '@cahayatasbih.com';
+                    }
+
+                    $user = User::create([
+                        'name' => $name,
+                        'phone' => $phone,
+                        'email' => $email,
+                        'password' => bcrypt('12345678'),
+                        'is_active' => 1,
+                    ]);
+                } else {
+                    $user->update([
+                        'name' => $name,
+                        'is_active' => 1,
+                    ]);
+                }
+
+                $user->assignRole('Asatidz');
+
                 // Create new officer record
                 $officer = Officer::create([
-                    'name' => $request->input('new_officer_name'),
-                    'phone' => $request->input('new_officer_phone'),
+                    'user_id' => $user->id,
+                    'phone' => $phone,
                     'position' => $request->input('new_officer_position'),
                     'duty' => $request->input('new_officer_duty'),
                     'is_active' => 1,
