@@ -89,18 +89,15 @@
         border-bottom: 1px solid rgba(0, 0, 0, 0.08);
     }
 
-    /* Gradasi menu (ungu dan lavender) */
-    /* .aside-menu {
-        background: linear-gradient(174.06deg, #8a63d2 -14.74%, #d1c6f3 95.3%);
-    } */
+    /* Deep purple/burgundy sidebar background color */
     .aside-menu {
-        background-color: #8a63d2;
+        background-color: #5A306B !important;
     }
 
-    /* Warna footer (ungu dengan gradasi lavender) */
+    /* Deep purple footer background color */
     .aside-footer {
-        background-color: #9979d3;
-        color: #263238;
+        background-color: #4C265C !important;
+        color: #ffffff !important;
     }
 
     /* Warna teks pada sidebar gelap */
@@ -110,22 +107,27 @@
         color: #fff !important;
     }
 
-    /* Warna link pada sidebar gelap (abu-abu) */
-    .aside-dark .menu .menu-item .menu-link,
-    .aside-dark .menu .menu-item .menu-link.active {
-        color: #9899ac;
+    /* Warna link pada sidebar gelap */
+    .aside-dark .menu .menu-item .menu-link {
+        color: rgba(255, 255, 255, 0.75) !important;
     }
 
-    /* Warna background link pada sidebar gelap saat hover (ungu) */
+    /* Warna background link pada sidebar gelap saat hover */
     .aside-dark .menu .menu-item .menu-link:hover:not(.disabled):not(.active),
-    .aside-dark .menu .menu-item.hover>.menu-link:not(.disabled):not(.active),
-    .aside-dark .menu .menu-item .menu-link.active {
-        background-color: #8a63d2 !important;
+    .aside-dark .menu .menu-item.hover>.menu-link:not(.disabled):not(.active) {
+        background-color: rgba(255, 255, 255, 0.04) !important;
+        color: #ffffff !important;
     }
 
-    /* Scrollbar pada sidebar gelap (ungu) */
+    /* Active menu item styling: full width, flat, border-radius: 0 */
+    .aside-dark .menu .menu-item .menu-link.active {
+        background-color: #4C265C !important;
+        color: #ffffff !important;
+    }
+
+    /* Scrollbar pada sidebar gelap */
     .aside-dark .hover-scroll-overlay-y {
-        scrollbar-color: #8a63d2 transparent;
+        scrollbar-color: #5A306B transparent;
     }
 
     /* Font Inter untuk seluruh teks */
@@ -191,25 +193,45 @@
         }
     }
 
-    /* Refine Sidebar Menu Spacing (Gap & Padding) */
+    /* Refine Sidebar Menu Spacing (Gap & Padding) - Full-width style with separators */
     .aside-dark .menu > .menu-item {
-        margin-top: 6px !important;
-        margin-bottom: 6px !important;
+        margin-top: 0 !important;
+        margin-bottom: 0 !important;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
     }
 
     .aside-dark .menu > .menu-item > .menu-link {
-        padding-top: 12px !important;
-        padding-bottom: 12px !important;
+        padding-top: 16px !important;
+        padding-bottom: 16px !important;
+        padding-left: 24px !important;
+        padding-right: 24px !important;
+        border-radius: 0 !important;
+        margin: 0 !important;
+    }
+
+    .aside-dark .menu .menu-sub {
+        background-color: #4C265C !important; /* Darker sub-menu background matching active link */
     }
 
     .aside-dark .menu .menu-sub .menu-item {
-        margin-top: 4px !important;
-        margin-bottom: 4px !important;
+        margin-top: 0 !important;
+        margin-bottom: 0 !important;
+        border-bottom: none !important;
     }
 
     .aside-dark .menu .menu-sub .menu-item .menu-link {
-        padding-top: 10px !important;
-        padding-bottom: 10px !important;
+        padding-top: 12px !important;
+        padding-bottom: 12px !important;
+        padding-left: 36px !important;
+        border-radius: 0 !important;
+        margin: 0 !important;
+    }
+
+    /* Arrow icon for folders and accordion submenus */
+    .aside-dark .menu .menu-item .menu-link .menu-arrow:after {
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23ffffff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='9 18 15 12 9 6'%3E%3C/polyline%3E%3C/svg%3E") !important;
+        width: 12px;
+        height: 12px;
     }
 </style>
 
