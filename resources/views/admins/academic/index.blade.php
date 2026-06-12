@@ -67,7 +67,7 @@
     <div class="content d-flex flex-column flex-column-fluid px-5" id="kt_content">
         <!--begin::Toolbar-->
         <div class="toolbar" id="kt_toolbar">
-            <div id="kt_toolbar_container" class="container-fluid d-flex flex-stack px-0">
+            <div id="kt_toolbar_container" class="container-fluid d-flex flex-stack px-5">
                 <div class="page-title d-flex align-items-center flex-wrap me-3 mb-5 mb-lg-0">
                     <x-text.h1 class="my-1">Modul Akademik</x-text.h1>
                     <span class="h-20px border-gray-300 border-start mx-4"></span>

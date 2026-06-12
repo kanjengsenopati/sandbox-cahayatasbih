@@ -83,9 +83,10 @@
         border-color: #8a63d2 !important;
     }
 
-    /* Warna logo (ungu dengan opacity) */
+    /* Warna logo (light) */
     .aside.aside-dark .aside-logo {
-        background-color: rgba(138, 99, 210, 0.8);
+        background-color: #ffffff;
+        border-bottom: 1px solid rgba(0, 0, 0, 0.08);
     }
 
     /* Gradasi menu (ungu dan lavender) */

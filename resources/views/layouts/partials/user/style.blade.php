@@ -121,8 +121,9 @@
     }
 
     .aside.aside-dark .aside-logo {
-        background-color: rgba(47, 213, 197, 0.8);
-        /* Teal dengan opacity untuk logo */
+        background-color: #ffffff;
+        border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+        /* Light background untuk logo */
     }
 
     .aside-menu {

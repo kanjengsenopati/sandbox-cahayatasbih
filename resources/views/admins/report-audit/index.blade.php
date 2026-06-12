@@ -54,7 +54,7 @@
         <!--begin::Toolbar-->
         <div class="toolbar" id="kt_toolbar">
             <!--begin::Container-->
-            <div id="kt_toolbar_container" class="container-fluid d-flex flex-stack px-0">
+            <div id="kt_toolbar_container" class="container-fluid d-flex flex-stack px-5">
                 <!--begin::Page title-->
                 <div data-kt-swapper="true" data-kt-swapper-mode="prepend"
                     data-kt-swapper-parent="{default: '#kt_content_container', 'lg': '#kt_toolbar_container'}"
