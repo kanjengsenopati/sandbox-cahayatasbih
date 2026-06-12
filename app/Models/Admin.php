@@ -15,7 +15,7 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 
 class Admin extends Authenticatable
 {
-    use HasFactory, HasRoles, UuidTrait, SoftDeletes, HasAvatarUrl;
+    use HasFactory, HasRoles, UuidTrait, SoftDeletes, HasAvatarUrl, LogActivityTrait;
 
     /**
      * The attributes that are mass assignable.

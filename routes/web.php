@@ -338,6 +338,10 @@ Route::group(['middleware' => ['auth']], function () {
     Route::get('report-study-grade/export', [ReportStudyGradeController::class, 'export'])->name('report-study-grade.export');
     Route::get('report-user', [ReportUserController::class, 'index'])->name('report-user.index');
     Route::get('report-user/export', [ReportUserController::class, 'export'])->name('report-user.export');
+
+    // start report audit
+    Route::get('report-audit', [App\Http\Controllers\Admin\ReportAuditController::class, 'index'])->name('report-audit.index');
+    Route::get('report-audit/export', [App\Http\Controllers\Admin\ReportAuditController::class, 'export'])->name('report-audit.export');
     // Route::get('report-student/search-student', [ReportStudentController::class, 'searchStudent'])
     //     ->name('report-student.search-student');
 

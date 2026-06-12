@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use App\Traits\LogActivityTrait;
 
 class Student extends Model
 {
@@ -17,7 +18,7 @@ class Student extends Model
     const STATUS_GRADUATED = "GRADUATED";
     const STATUS_TRANSFERRED = "TRANSFERRED";
     const STATUS_DROPPED_OUT = "DROPPED_OUT";
-    use HasFactory, SoftDeletes, HasAvatarUrl;
+    use HasFactory, SoftDeletes, HasAvatarUrl, LogActivityTrait;
 
     protected $keyType = 'string';
     public $incrementing = false;

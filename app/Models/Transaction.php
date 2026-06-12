@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use App\Traits\LogActivityTrait;
 
 class Transaction extends Model
 {
@@ -28,7 +29,7 @@ class Transaction extends Model
         self::STATUS_EXPIRED,
         self::STATUS_CANCELLED
     ];
-    use HasFactory, UuidTrait, SoftDeletes, GeneralTrait;
+    use HasFactory, UuidTrait, SoftDeletes, GeneralTrait, LogActivityTrait;
 
     protected $fillable = [
         'payment_method_id',
