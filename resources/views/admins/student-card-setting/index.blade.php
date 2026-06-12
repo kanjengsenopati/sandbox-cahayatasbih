@@ -149,11 +149,11 @@
                                                 </td>
                                                 <td>
                                                     @if($t->is_active)
-                                                        <span class="badge bg-light-success text-emerald-600 px-3 py-1 rounded" style="background-color: rgba(16, 185, 129, 0.1);">
+                                                        <span class="badge bg-light-success text-emerald-600 px-3 py-1 rounded" style="background-color: rgba(16, 185, 129, 0.15); color: #10b981 !important; font-weight: 700 !important; font-size: 11px !important;">
                                                             Aktif (Utama)
                                                         </span>
                                                     @else
-                                                        <span class="badge bg-light text-slate-400 px-3 py-1 rounded" style="background-color: rgba(241, 245, 249, 1);">
+                                                        <span class="badge bg-light text-slate-400 px-3 py-1 rounded" style="background-color: rgba(241, 245, 249, 1); color: #64748b !important; font-weight: 700 !important; font-size: 11px !important;">
                                                             Arsip / Inaktif
                                                         </span>
                                                     @endif
