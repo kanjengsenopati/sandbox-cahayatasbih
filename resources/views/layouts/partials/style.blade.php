@@ -190,6 +190,27 @@
             margin-top: 1rem !important;
         }
     }
+
+    /* Refine Sidebar Menu Spacing (Gap & Padding) */
+    .aside-dark .menu > .menu-item {
+        margin-top: 6px !important;
+        margin-bottom: 6px !important;
+    }
+
+    .aside-dark .menu > .menu-item > .menu-link {
+        padding-top: 12px !important;
+        padding-bottom: 12px !important;
+    }
+
+    .aside-dark .menu .menu-sub .menu-item {
+        margin-top: 4px !important;
+        margin-bottom: 4px !important;
+    }
+
+    .aside-dark .menu .menu-sub .menu-item .menu-link {
+        padding-top: 10px !important;
+        padding-bottom: 10px !important;
+    }
 </style>
 
 @stack('css')
