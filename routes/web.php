@@ -164,6 +164,44 @@ Route::post('translate_post', [TranslateController::class, 'translatePost'])->na
 Route::post('/status/{id}', [AcademicYearController::class, 'status'])->name('academic-year.status');
 // end status
 Route::group(['middleware' => ['auth']], function () {
+    Route::get('academic', [App\Http\Controllers\Admin\AcademicController::class, 'index'])->name('academic.index');
+    Route::get('school', function (\Illuminate\Http\Request $request) {
+        if ($request->ajax()) {
+            return app()->call([\App\Http\Controllers\Admin\SchoolController::class, 'index']);
+        }
+        return redirect()->route('academic.index', ['tab' => 'school']);
+    })->name('school.index');
+    Route::get('academic-year', function (\Illuminate\Http\Request $request) {
+        if ($request->ajax()) {
+            return app()->call([\App\Http\Controllers\Admin\AcademicYearController::class, 'index']);
+        }
+        return redirect()->route('academic.index', ['tab' => 'academic-year']);
+    })->name('academic-year.index');
+    Route::get('semester', function (\Illuminate\Http\Request $request) {
+        if ($request->ajax()) {
+            return app()->call([\App\Http\Controllers\Admin\SemesterController::class, 'index']);
+        }
+        return redirect()->route('academic.index', ['tab' => 'semester']);
+    })->name('semester.index');
+    Route::get('study', function (\Illuminate\Http\Request $request) {
+        if ($request->ajax()) {
+            return app()->call([\App\Http\Controllers\Admin\StudyController::class, 'index']);
+        }
+        return redirect()->route('academic.index', ['tab' => 'study']);
+    })->name('study.index');
+    Route::get('grade-promotion', function (\Illuminate\Http\Request $request) {
+        if ($request->ajax()) {
+            return app()->call([\App\Http\Controllers\Admin\GradePromotionController::class, 'index']);
+        }
+        return redirect()->route('academic.index', ['tab' => 'grade-promotion']);
+    })->name('grade-promotion.index');
+    Route::get('student-graduation', function (\Illuminate\Http\Request $request) {
+        if ($request->ajax()) {
+            return app()->call([\App\Http\Controllers\Admin\StudentGraduationController::class, 'index']);
+        }
+        return redirect()->route('academic.index', ['tab' => 'student-graduation']);
+    })->name('student-graduation.index');
+
     Route::get('student/generate-student-card/{id}', [StudentController::class, 'generateStudentCard'])
         ->name('student.generate-student-card');
     Route::get('bill/get-bill-data', [BillController::class, 'getBillData'])->name('bill.get-bill-data');

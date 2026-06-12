@@ -81,6 +81,18 @@
                     </a>
                 </div>
 
+                @canany(['Manage Sekolah', 'Manage Tahun Ajaran', 'Manage Semester', 'Manage Mata Pelajaran', 'Manage Kenaikan Kelas', 'Manage Kelulusan Santri'])
+                <div class="menu-item">
+                    <a class="menu-link {{ request()->routeIs(['academic.index', 'school.*', 'academic-year.*', 'semester.*', 'study.*', 'grade-promotion.*', 'student-graduation.*']) ? ' active' : '' }}"
+                        href="{{ route('academic.index') }}">
+                        <span class="menu-icon">
+                            <i class="fa-solid fa-graduation-cap" style="color: #ffffff;"></i>
+                        </span>
+                        <span class="menu-title">Akademik</span>
+                    </a>
+                </div>
+                @endcanany
+
                 <!-- @can('Manage PPDB')
                 <div class="menu-item">
                     <a class="menu-link {{ request()->routeIs('admin.registrations.*') ? ' active' : '' }}"
@@ -225,12 +237,11 @@
                 </div>
                 @endcanany
 
-                @canany(['Manage Wali Santri', 'Manage Santri', 'Manage Sekolah','Manage PPDB', 'Manage Tahun Ajaran',
-                'Manage Kenaikan Kelas', 'Manage Kelulusan Santri', 'Manage Kategori Arus Kas'])
-                <div data-kt-menu-trigger="click" class="menu-item menu-accordion {{ request()->routeIs(['school.*', 'academic-year.*', 'semester.*', 'study.*',
+                @canany(['Manage Wali Santri', 'Manage Santri', 'Manage PPDB', 'Manage Kategori Arus Kas'])
+                <div data-kt-menu-trigger="click" class="menu-item menu-accordion {{ request()->routeIs([
                     'user.*', 'student.*', 'outlet.*',
-                      'category-item.*', 'item.*', 'stock-history.*', 'grade-promotion.*', 'ppdb.*', 'ppdb-registration.*',
-                      'student-graduation.*', 'cashflow-category.*']) ? 'show' : '' }}">
+                      'category-item.*', 'item.*', 'stock-history.*', 'ppdb.*', 'ppdb-registration.*',
+                      'cashflow-category.*']) ? 'show' : '' }}">
                     <span class="menu-link">
                         <span class="menu-icon">
                             <i class="fa-solid fa-school" style="color: #ffffff;"></i>
@@ -238,52 +249,8 @@
                         <span class="menu-title">Master Data</span>
                         <span class="menu-arrow"></span>
                     </span>
-                    <div class="menu-sub menu-sub-accordion menu-active-bg">
-                        @can('Manage Sekolah')
-                        <div class="menu-item ">
-                            <a class="menu-link {{ request()->routeIs('school.*') ? ' active' : '' }}"
-                                href="{{ route('school.index') }}">
-                                <span class="menu-bullet">
-                                    <span class="bullet bullet-dot"></span>
-                                </span>
-                                <span class="menu-title">Data Sekolah</span>
-                            </a>
-                        </div>
-                        @endcan
-                        @can('Manage Tahun Ajaran')
-                        <div class="menu-item ">
-                            <a class="menu-link {{ request()->routeIs('academic-year.*') ? ' active' : '' }}"
-                                href="{{ route('academic-year.index') }}">
-                                <span class="menu-bullet">
-                                    <span class="bullet bullet-dot"></span>
-                                </span>
-                                <span class="menu-title">Data Tahun Ajaran</span>
-                            </a>
-                        </div>
-                        @endcan
-                        @can('Manage Semester')
-                        <div class="menu-item ">
-                            <a class="menu-link {{ request()->routeIs('semester.*') ? ' active' : '' }}"
-                                href="{{ route('semester.index') }}">
-                                <span class="menu-bullet">
-                                    <span class="bullet bullet-dot"></span>
-                                </span>
-                                <span class="menu-title">Data Semester</span>
-                            </a>
-                        </div>
-                        @endcan
-                        @can('Manage Mata Pelajaran')
-                        <div class="menu-item ">
-                            <a class="menu-link {{ request()->routeIs('study.*') ? ' active' : '' }}"
-                                href="{{ route('study.index') }}">
-                                <span class="menu-bullet">
-                                    <span class="bullet bullet-dot"></span>
-                                </span>
-                                <span class="menu-title">Data Mata Pelajaran</span>
-                            </a>
-                        </div>
-                        @endcan
 
+                    <div class="menu-sub menu-sub-accordion menu-active-bg">
                         @can('Manage Wali Santri')
                         <div class="menu-item ">
                             <a class="menu-link {{ request()->routeIs('user.*') ? ' active' : '' }}"
@@ -306,28 +273,7 @@
                             </a>
                         </div>
                         @endcan
-                        @can('Manage Kenaikan Kelas')
-                        <div class="menu-item">
-                            <a class="menu-link {{ request()->routeIs('grade-promotion.*') ? ' active' : '' }}"
-                                href="{{ route('grade-promotion.index') }}">
-                                <span class="menu-bullet">
-                                    <span class="bullet bullet-dot"></span>
-                                </span>
-                                <span class="menu-title">Data Kenaikan Kelas</span>
-                            </a>
-                        </div>
-                        @endcan
-                        @can('Manage Kelulusan Santri')
-                        <div class="menu-item">
-                            <a class="menu-link {{ request()->routeIs('student-graduation.*') ? ' active' : '' }}"
-                                href="{{ route('student-graduation.index') }}">
-                                <span class="menu-bullet">
-                                    <span class="bullet bullet-dot"></span>
-                                </span>
-                                <span class="menu-title">Data Kelulusan Siswa</span>
-                            </a>
-                        </div>
-                        @endcan
+
                         @can('Manage Outlet')
                         <div class="menu-item">
                             <a class="menu-link {{ request()->routeIs('outlet.*') ? ' active' : '' }}"
