@@ -216,6 +216,10 @@
     .aside-dark .menu .menu-sub .menu-item {
         margin-top: 0 !important;
         margin-bottom: 0 !important;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.04) !important;
+    }
+
+    .aside-dark .menu .menu-sub .menu-item:last-child {
         border-bottom: none !important;
     }
 

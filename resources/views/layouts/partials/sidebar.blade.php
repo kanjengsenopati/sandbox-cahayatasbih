@@ -99,7 +99,7 @@
                             <a class="menu-link {{ (request()->routeIs(['permission.*', 'role.*', 'admin.*']) && !request()->routeIs('admin.audit')) ? ' active' : '' }}"
                                 href="{{ auth()->user()->can('Manage Admin') ? route('admin.index') : (auth()->user()->can('Manage Role') ? route('role.index') : route('permission.index')) }}">
                                 <span class="menu-bullet">
-                                    <span class="bullet bullet-dot"></span>
+                                    <i class="fa-solid fa-user-lock text-white/80 fs-7"></i>
                                 </span>
                                 <span class="menu-title">Akses & Pengguna</span>
                             </a>
@@ -112,7 +112,7 @@
                             <a class="menu-link {{ request()->routeIs(['bill-type.*', 'bill-item.*', 'bank.*']) ? ' active' : '' }}"
                                 href="{{ auth()->user()->can('Manage Jenis Bayar') ? route('bill-type.index') : (auth()->user()->can('Manage Item Bayar') ? route('bill-item.index') : (auth()->user()->can('Item Bayar') ? route('bill-item.index') : route('bank.index'))) }}">
                                 <span class="menu-bullet">
-                                    <span class="bullet bullet-dot"></span>
+                                    <i class="fa-solid fa-wallet text-white/80 fs-7"></i>
                                 </span>
                                 <span class="menu-title">Keuangan & Bank</span>
                             </a>
@@ -125,7 +125,7 @@
                             <a class="menu-link {{ request()->routeIs(['application-setting.*', 'admin.audit', 'application-menu.*']) ? ' active' : '' }}"
                                 href="{{ auth()->user()->can('Manage Pengaturan Aplikasi') ? route('application-setting.index') : route('application-menu.index') }}">
                                 <span class="menu-bullet">
-                                    <span class="bullet bullet-dot"></span>
+                                    <i class="fa-solid fa-sliders text-white/80 fs-7"></i>
                                 </span>
                                 <span class="menu-title">Pengaturan Aplikasi</span>
                             </a>
@@ -138,7 +138,7 @@
                             <a class="menu-link {{ request()->routeIs('student-card-setting.*') ? ' active' : '' }}"
                                 href="{{ route('student-card-setting.index') }}">
                                 <span class="menu-bullet">
-                                    <span class="bullet bullet-dot"></span>
+                                    <i class="fa-solid fa-id-card text-white/80 fs-7"></i>
                                 </span>
                                 <span class="menu-title">Kartu</span>
                             </a>
@@ -151,7 +151,7 @@
                             <a class="menu-link {{ request()->routeIs('information.*', 'information-category.*') ? ' active' : '' }}"
                                 href="{{ route('information.index') }}">
                                 <span class="menu-bullet">
-                                    <span class="bullet bullet-dot"></span>
+                                    <i class="fa-solid fa-bullhorn text-white/80 fs-7"></i>
                                 </span>
                                 <span class="menu-title">Informasi</span>
                             </a>
@@ -164,7 +164,7 @@
                             <a class="menu-link {{ request()->routeIs('payment-method.*') ? ' active' : '' }}"
                                 href="{{ route('payment-method.index') }}">
                                 <span class="menu-bullet">
-                                    <span class="bullet bullet-dot"></span>
+                                    <i class="fa-solid fa-credit-card text-white/80 fs-7"></i>
                                 </span>
                                 <span class="menu-title">Metode Pembayaran</span>
                             </a>
@@ -177,7 +177,7 @@
                             <a class="menu-link {{ request()->routeIs('help.*') ? ' active' : '' }}"
                                 href="{{ route('help.index') }}">
                                 <span class="menu-bullet">
-                                    <span class="bullet bullet-dot"></span>
+                                    <i class="fa-solid fa-headset text-white/80 fs-7"></i>
                                 </span>
                                 <span class="menu-title">Kontak Bantuan</span>
                             </a>
@@ -190,7 +190,7 @@
                             <a class="menu-link {{ request()->routeIs('officer.*') ? ' active' : '' }}"
                                 href="{{ route('officer.index') }}">
                                 <span class="menu-bullet">
-                                    <span class="bullet bullet-dot"></span>
+                                    <i class="fa-solid fa-user-tie text-white/80 fs-7"></i>
                                 </span>
                                 <span class="menu-title">Data Petugas</span>
                             </a>
@@ -203,7 +203,7 @@
                             <a class="menu-link {{ request()->routeIs('app-information.*') ? ' active' : '' }}"
                                 href="{{ route('app-information.index') }}">
                                 <span class="menu-bullet">
-                                    <span class="bullet bullet-dot"></span>
+                                    <i class="fa-solid fa-bullhorn text-white/80 fs-7"></i>
                                 </span>
                                 <span class="menu-title">Informasi Aplikasi</span>
                             </a>
@@ -232,7 +232,7 @@
                             <a class="menu-link {{ request()->routeIs('user.*') ? ' active' : '' }}"
                                 href="{{ route('user.index') }}">
                                 <span class="menu-bullet">
-                                    <span class="bullet bullet-dot"></span>
+                                    <i class="fa-solid fa-users text-white/80 fs-7"></i>
                                 </span>
                                 <span class="menu-title">Data Wali Siswa</span>
                             </a>
@@ -243,7 +243,7 @@
                             <a class="menu-link {{ request()->routeIs('student.*') ? ' active' : '' }}"
                                 href="{{ route('student.index') }}">
                                 <span class="menu-bullet">
-                                    <span class="bullet bullet-dot"></span>
+                                    <i class="fa-solid fa-user-graduate text-white/80 fs-7"></i>
                                 </span>
                                 <span class="menu-title">Data Siswa</span>
                             </a>
@@ -255,7 +255,7 @@
                             <a class="menu-link {{ request()->routeIs('outlet.*') ? ' active' : '' }}"
                                 href="{{ route('outlet.index') }}">
                                 <span class="menu-bullet">
-                                    <span class="bullet bullet-dot"></span>
+                                    <i class="fa-solid fa-store text-white/80 fs-7"></i>
                                 </span>
                                 <span class="menu-title">Data Outlet</span>
                             </a>
@@ -266,7 +266,7 @@
                             <a class="menu-link {{ request()->routeIs('item.*', 'category-item.*', 'stock-history.*') ? ' active' : '' }}"
                                 href="{{ route('item.index') }}">
                                 <span class="menu-bullet">
-                                    <span class="bullet bullet-dot"></span>
+                                    <i class="fa-solid fa-boxes-stacked text-white/80 fs-7"></i>
                                 </span>
                                 <span class="menu-title">Manajemen Barang</span>
                             </a>
@@ -277,7 +277,7 @@
                             <a class="menu-link {{ request()->routeIs('ppdb.*','ppdb-registration.*') ? ' active' : '' }}"
                                 href="{{ route('ppdb.index') }}">
                                 <span class="menu-bullet">
-                                    <span class="bullet bullet-dot"></span>
+                                    <i class="fa-solid fa-address-book text-white/80 fs-7"></i>
                                 </span>
                                 <span class="menu-title">Data PPDB</span>
                             </a>
@@ -289,7 +289,7 @@
                             <a class="menu-link {{ request()->routeIs('cashflow-category.*') ? ' active' : '' }}"
                                 href="{{ route('cashflow-category.index') }}">
                                 <span class="menu-bullet">
-                                    <span class="bullet bullet-dot"></span>
+                                    <i class="fa-solid fa-tags text-white/80 fs-7"></i>
                                 </span>
                                 <span class="menu-title">Kategori Arus Kas</span>
                             </a>
@@ -318,7 +318,7 @@
                             <a class="menu-link {{ request()->routeIs('bill.*') ? ' active' : '' }}"
                                 href="{{ route('bill.index') }}">
                                 <span class="menu-bullet">
-                                    <span class="bullet bullet-dot"></span>
+                                    <i class="fa-solid fa-file-invoice-dollar text-white/80 fs-7"></i>
                                 </span>
                                 <span class="menu-title">Tagihan</span>
                             </a>
@@ -329,7 +329,7 @@
                             <a class="menu-link {{ request()->routeIs('saldo-history.*', 'saldo-bank.*'
                             ) ? ' active' : '' }}" href="{{ route('saldo-history.index') }}">
                                 <span class="menu-bullet">
-                                    <span class="bullet bullet-dot"></span>
+                                    <i class="fa-solid fa-coins text-white/80 fs-7"></i>
                                 </span>
                                 <span class="menu-title">Saldo Santri</span>
                             </a>
@@ -340,7 +340,7 @@
                             <a class="menu-link {{ request()->routeIs('saving-history.*', 'saving-bank.*'
                             ) ? ' active' : '' }}" href="{{ route('saving-history.index') }}">
                                 <span class="menu-bullet">
-                                    <span class="bullet bullet-dot"></span>
+                                    <i class="fa-solid fa-piggy-bank text-white/80 fs-7"></i>
                                 </span>
                                 <span class="menu-title">Tabungan Santri</span>
                             </a>
@@ -351,7 +351,7 @@
                             <a class="menu-link {{ request()->routeIs('order-item.*') ? ' active' : '' }}"
                                 href="{{ route('order-item.index') }}">
                                 <span class="menu-bullet">
-                                    <span class="bullet bullet-dot"></span>
+                                    <i class="fa-solid fa-boxes-stacked text-white/80 fs-7"></i>
                                 </span>
                                 <span class="menu-title">POS Kasir</span>
                             </a>
@@ -362,7 +362,7 @@
                             <a class="menu-link {{ request()->routeIs('cashflow.*') ? ' active' : '' }}"
                                 href="{{ route('cashflow.index') }}">
                                 <span class="menu-bullet">
-                                    <span class="bullet bullet-dot"></span>
+                                    <i class="fa-solid fa-money-bill-wave text-white/80 fs-7"></i>
                                 </span>
                                 <span class="menu-title">Arus Kas</span>
                             </a>
@@ -373,7 +373,7 @@
                             <a class="menu-link {{ request()->routeIs('student-permit.*') ? ' active' : '' }}"
                                 href="{{ route('student-permit.index') }}">
                                 <span class="menu-bullet">
-                                    <span class="bullet bullet-dot"></span>
+                                    <i class="fa-solid fa-file-signature text-white/80 fs-7"></i>
                                 </span>
                                 <span class="menu-title">Perizinan Santri</span>
                             </a>
@@ -385,7 +385,7 @@
                             <a class="menu-link {{ request()->routeIs('asrama.*') ? ' active' : '' }}"
                                 href="{{ route('asrama.index') }}">
                                 <span class="menu-bullet">
-                                    <span class="bullet bullet-dot"></span>
+                                    <i class="fa-solid fa-hotel text-white/80 fs-7"></i>
                                 </span>
                                 <span class="menu-title">Data Asrama</span>
                             </a>
@@ -397,7 +397,7 @@
                             <a class="menu-link {{ request()->routeIs('study-grade.*') ? ' active' : '' }}"
                                 href="{{ route('study-grade.index') }}">
                                 <span class="menu-bullet">
-                                    <span class="bullet bullet-dot"></span>
+                                    <i class="fa-solid fa-file-circle-check text-white/80 fs-7"></i>
                                 </span>
                                 <span class="menu-title">Nilai Santri</span>
                             </a>
@@ -408,7 +408,7 @@
                             <a class="menu-link {{ request()->routeIs('student-achievement.*') ? ' active' : '' }}"
                                 href="{{ route('student-achievement.index') }}">
                                 <span class="menu-bullet">
-                                    <span class="bullet bullet-dot"></span>
+                                    <i class="fa-solid fa-trophy text-white/80 fs-7"></i>
                                 </span>
                                 <span class="menu-title">Prestasi Santri</span>
                             </a>
@@ -419,7 +419,7 @@
                             <a class="menu-link {{ request()->routeIs('tahfidz.*') ? ' active' : '' }}"
                                 href="{{ route('tahfidz.index') }}">
                                 <span class="menu-bullet">
-                                    <span class="bullet bullet-dot"></span>
+                                    <i class="fa-solid fa-book-quran text-white/80 fs-7"></i>
                                 </span>
                                 <span class="menu-title">Tahfidz</span>
                             </a>
@@ -430,7 +430,7 @@
                             <a class="menu-link {{ request()->routeIs('student-counseling-score.*') ? ' active' : '' }}"
                                 href="{{ route('student-counseling-score.index') }}">
                                 <span class="menu-bullet">
-                                    <span class="bullet bullet-dot"></span>
+                                    <i class="fa-solid fa-star text-white/80 fs-7"></i>
                                 </span>
                                 <span class="menu-title">Perilaku Santri</span>
                             </a>
@@ -441,7 +441,7 @@
                             <a class="menu-link {{ request()->routeIs('schedule.*') ? ' active' : '' }}"
                                 href="{{ route('schedule.index') }}">
                                 <span class="menu-bullet">
-                                    <span class="bullet bullet-dot"></span>
+                                    <i class="fa-solid fa-calendar-days text-white/80 fs-7"></i>
                                 </span>
                                 <span class="menu-title">Jadwal Agenda</span>
                             </a>
@@ -473,7 +473,7 @@
                             <a class="menu-link {{ request()->routeIs('pos-transaction.*') ? ' active' : '' }}"
                                 href="{{ route('pos-transaction.index') }}">
                                 <span class="menu-bullet">
-                                    <span class="bullet bullet-dot"></span>
+                                    <i class="fa-solid fa-chart-line text-white/80 fs-7"></i>
                                 </span>
                                 <span class="menu-title">Laporan POS Multi Outlet</span>
                             </a>
@@ -484,7 +484,7 @@
                             <a class="menu-link {{ request()->routeIs('report-profit-loss.*') ? ' active' : '' }}"
                                 href="{{ route('report-profit-loss.index') }}">
                                 <span class="menu-bullet">
-                                    <span class="bullet bullet-dot"></span>
+                                    <i class="fa-solid fa-scale-balanced text-white/80 fs-7"></i>
                                 </span>
                                 <span class="menu-title">Rugi Laba Outlet</span>
                             </a>
@@ -495,7 +495,7 @@
                             <a class="menu-link {{ request()->routeIs('report-transaction.*') ? ' active' : '' }}"
                                 href="{{ route('report-transaction.index') }}">
                                 <span class="menu-bullet">
-                                    <span class="bullet bullet-dot"></span>
+                                    <i class="fa-solid fa-list-check text-white/80 fs-7"></i>
                                 </span>
                                 <span class="menu-title">Transaksi</span>
                             </a>
@@ -506,7 +506,7 @@
                             <a class="menu-link {{ request()->routeIs('report-bill.*') ? ' active' : '' }}"
                                 href="{{ route('report-bill.index') }}">
                                 <span class="menu-bullet">
-                                    <span class="bullet bullet-dot"></span>
+                                    <i class="fa-solid fa-receipt text-white/80 fs-7"></i>
                                 </span>
                                 <span class="menu-title">Tagihan</span>
                             </a>
@@ -515,7 +515,7 @@
                             <a class="menu-link {{ request()->routeIs('report-bill-student.*') ? ' active' : '' }}"
                                 href="{{ route('report-bill-student.index') }}">
                                 <span class="menu-bullet">
-                                    <span class="bullet bullet-dot"></span>
+                                    <i class="fa-solid fa-file-invoice text-white/80 fs-7"></i>
                                 </span>
                                 <span class="menu-title">Tagihan Pembayaran</span>
                             </a>
@@ -526,7 +526,7 @@
                             <a class="menu-link {{ request()->routeIs('report-student.*') ? ' active' : '' }}"
                                 href="{{ route('report-student.index') }}">
                                 <span class="menu-bullet">
-                                    <span class="bullet bullet-dot"></span>
+                                    <i class="fa-solid fa-users-viewfinder text-white/80 fs-7"></i>
                                 </span>
                                 <span class="menu-title">Siswa</span>
                             </a>
@@ -537,7 +537,7 @@
                             <a class="menu-link {{ request()->routeIs('report-study-grade.*') ? ' active' : '' }}"
                                 href="{{ route('report-study-grade.index') }}">
                                 <span class="menu-bullet">
-                                    <span class="bullet bullet-dot"></span>
+                                    <i class="fa-solid fa-chart-bar text-white/80 fs-7"></i>
                                 </span>
                                 <span class="menu-title">Nilai Akademik</span>
                             </a>
@@ -548,7 +548,7 @@
                             <a class="menu-link {{ request()->routeIs('report-tahfidz.*') ? ' active' : '' }}"
                                 href="{{ route('report-tahfidz.index') }}">
                                 <span class="menu-bullet">
-                                    <span class="bullet bullet-dot"></span>
+                                    <i class="fa-solid fa-book-open text-white/80 fs-7"></i>
                                 </span>
                                 <span class="menu-title">Tahfidz</span>
                             </a>
@@ -559,7 +559,7 @@
                             <a class="menu-link {{ request()->routeIs('report-student-counseling-score.*') ? ' active' : '' }}"
                                 href="{{ route('report-student-counseling-score.index') }}">
                                 <span class="menu-bullet">
-                                    <span class="bullet bullet-dot"></span>
+                                    <i class="fa-solid fa-clipboard-list text-white/80 fs-7"></i>
                                 </span>
                                 <span class="menu-title">Perilaku Siswa</span>
                             </a>
@@ -570,7 +570,7 @@
                             <a class="menu-link {{ request()->routeIs('report-saldo.*') ? ' active' : '' }}"
                                 href="{{ route('report-saldo.index') }}">
                                 <span class="menu-bullet">
-                                    <span class="bullet bullet-dot"></span>
+                                    <i class="fa-solid fa-vault text-white/80 fs-7"></i>
                                 </span>
                                 <span class="menu-title">Saldo Santri</span>
                             </a>
@@ -581,7 +581,7 @@
                             <a class="menu-link {{ request()->routeIs('report-app-fee.*') ? ' active' : '' }}"
                                 href="{{ route('report-app-fee.index') }}">
                                 <span class="menu-bullet">
-                                    <span class="bullet bullet-dot"></span>
+                                    <i class="fa-solid fa-percent text-white/80 fs-7"></i>
                                 </span>
                                 <span class="menu-title">Fee Aplikasi</span>
                             </a>
@@ -592,7 +592,7 @@
                             <a class="menu-link {{ request()->routeIs('report-audit.*') ? ' active' : '' }}"
                                 href="{{ route('report-audit.index') }}">
                                 <span class="menu-bullet">
-                                    <span class="bullet bullet-dot"></span>
+                                    <i class="fa-solid fa-clock-rotate-left text-white/80 fs-7"></i>
                                 </span>
                                 <span class="menu-title">Audit Log</span>
                             </a>
