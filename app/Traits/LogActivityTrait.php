@@ -18,16 +18,18 @@ trait LogActivityTrait
                 $name = $this->name ?? $this->title ?? $this->id ?? 'Data';
                 return "Data dari tabel " . (new static)->getTable() . " (Nama/ID: {$name}) telah {$eventName}";
             })
-            ->logFillable()
-            ->tapActivity(function($activity, $eventName) {
-                $userAgent = request()->userAgent() ?? 'Unknown';
-                $device = $this->parseDevice($userAgent);
+            ->logFillable();
+    }
 
-                $activity->properties = $activity->properties->merge([
-                    'device' => $device,
-                    'ip' => request()->ip(),
-                ]);
-            });
+    public function tapActivity($activity, string $eventName): void
+    {
+        $userAgent = request()->userAgent() ?? 'Unknown';
+        $device = $this->parseDevice($userAgent);
+
+        $activity->properties = $activity->properties->merge([
+            'device' => $device,
+            'ip' => request()->ip(),
+        ]);
     }
 
     protected function parseDevice(string $userAgent): string
