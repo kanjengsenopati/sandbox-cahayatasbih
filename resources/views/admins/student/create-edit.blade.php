@@ -187,6 +187,16 @@
                                             value="{{ @$student->name ?? old('name') }}" required />
                                     </div>
                                     <div class="fv-row mb-6">
+                                        <label class="fs-6 fw-bold form-label" for="nickname">
+                                            <span>Nama Panggilan</span>
+                                            <i class="fas fa-exclamation-circle ms-1 fs-7" data-bs-toggle="tooltip"
+                                                title="Masukkan nama panggilan siswa"></i>
+                                        </label>
+                                        <input type="text" class="form-control form-control-solid" id="nickname" name="nickname"
+                                            placeholder="Masukkan Nama Panggilan"
+                                            value="{{ @$student->nickname ?? old('nickname') }}" />
+                                    </div>
+                                    <div class="fv-row mb-6">
                                         <label class="fs-6 fw-bold form-label" for="birth_date">
                                             <span class="required">Tanggal Lahir</span>
                                             <i class="fas fa-exclamation-circle ms-1 fs-7" data-bs-toggle="tooltip"
@@ -258,6 +268,26 @@
                                             placeholder="Masukkan Alamat Siswa"
                                             required>{{ @$student->address ?? old('address') }}</textarea>
                                     </div>
+                                    <div class="fv-row mb-6">
+                                        <label class="fs-6 fw-bold form-label" for="city">
+                                            <span>Kota / Kabupaten</span>
+                                            <i class="fas fa-exclamation-circle ms-1 fs-7" data-bs-toggle="tooltip"
+                                                title="Masukkan Kota / Kabupaten"></i>
+                                        </label>
+                                        <input type="text" class="form-control form-control-solid" id="city" name="city"
+                                            placeholder="Masukkan Kota / Kabupaten"
+                                            value="{{ @$student->city ?? old('city') }}" />
+                                    </div>
+                                    <div class="fv-row mb-6">
+                                        <label class="fs-6 fw-bold form-label" for="province">
+                                            <span>Provinsi</span>
+                                            <i class="fas fa-exclamation-circle ms-1 fs-7" data-bs-toggle="tooltip"
+                                                title="Masukkan Provinsi"></i>
+                                        </label>
+                                        <input type="text" class="form-control form-control-solid" id="province" name="province"
+                                            placeholder="Masukkan Provinsi"
+                                            value="{{ @$student->province ?? old('province') }}" />
+                                    </div>
                                 </div>
                             </div>
                             <!--end::Input group-->
@@ -322,5 +352,25 @@
         }
     }); 
 
+    // Auto-fill Nama Panggilan from Nama Siswa (first name)
+    const nicknameInput = document.getElementById('nickname');
+    const nameInput = document.getElementById('name');
+    if (nicknameInput && nameInput) {
+        let nicknameManuallyTouched = nicknameInput.value.trim() !== '';
+        nicknameInput.addEventListener('input', function() {
+            nicknameManuallyTouched = nicknameInput.value.trim() !== '';
+        });
+        nameInput.addEventListener('input', function() {
+            if (!nicknameManuallyTouched) {
+                const fullName = nameInput.value.trim();
+                if (fullName) {
+                    const firstName = fullName.split(' ')[0];
+                    nicknameInput.value = firstName;
+                } else {
+                    nicknameInput.value = '';
+                }
+            }
+        });
+    }
 </script>
 @endpush

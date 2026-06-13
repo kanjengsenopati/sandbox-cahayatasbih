@@ -163,6 +163,9 @@ class StudentController extends Controller
         if ($request->hasFile('avatar')) {
             $data['avatar'] = 'storage/' . $request->file('avatar')->store('images/avatar', 'public');
         }
+        if (empty($data['nickname']) && !empty($data['name'])) {
+            $data['nickname'] = explode(' ', trim($data['name']))[0];
+        }
         Student::create($data);
         return redirect()->route('student.index')->with('success', 'Siswa berhasil ditambahkan');
     }

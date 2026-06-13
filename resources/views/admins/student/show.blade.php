@@ -116,6 +116,11 @@
                                                     <td>{{ $student->name ?? 'Belum diatur' }}</td>
                                                 </tr>
                                                 <tr>
+                                                    <td class="grey" width="20%">Nama Panggilan</td>
+                                                    <td></td>
+                                                    <td>{{ $student->nickname ?? '-' }}</td>
+                                                </tr>
+                                                <tr>
                                                     <td class="grey" width="20%">Tempat, Tanggal Lahir</td>
                                                     <td></td>
                                                     <td>{{ $student->born_place ?? 'Belum diatur' }},
@@ -160,6 +165,16 @@
                                                     <td class="grey" width="20%">Alamat</td>
                                                     <td></td>
                                                     <td>{{ $student->address ?? 'Belum diatur' }}</td>
+                                                </tr>
+                                                <tr>
+                                                    <td class="grey" width="20%">Kota / Kabupaten</td>
+                                                    <td></td>
+                                                    <td>{{ $student->city ?? '-' }}</td>
+                                                </tr>
+                                                <tr>
+                                                    <td class="grey" width="20%">Provinsi</td>
+                                                    <td></td>
+                                                    <td>{{ $student->province ?? '-' }}</td>
                                                 </tr>
                                             </table>
                                         </div>

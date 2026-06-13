@@ -27,6 +27,7 @@ class StudentRequest extends FormRequest
             'asrama_host_id' => 'nullable|uuid|exists:admins,id',
             'asrama_name' => 'nullable|string|max:255',
             'name' => 'required|string|max:255',
+            'nickname' => 'nullable|string|max:255',
             'born_place' => 'required|string|max:255',
             'birth_date' => 'required|date',
             'gender' => 'required',
@@ -36,6 +37,8 @@ class StudentRequest extends FormRequest
             'classroom_id' => 'required|exists:classrooms,id',
             'status' => 'required',
             'address' => 'nullable|string',
+            'city' => 'nullable|string|max:255',
+            'province' => 'nullable|string|max:255',
         ];
     }
 }

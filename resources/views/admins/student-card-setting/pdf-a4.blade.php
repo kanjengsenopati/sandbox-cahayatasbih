@@ -5,7 +5,7 @@
     <title>Cetak Kartu Santri A4 Grid</title>
     @php
         $usedFonts = [];
-        foreach (['title', 'subtitle', 'name', 'nis', 'classroom', 'school'] as $k) {
+        foreach (['title', 'subtitle', 'name', 'nickname', 'nis', 'classroom', 'school', 'city', 'province'] as $k) {
             if (($layout[$k]['show'] ?? true) && isset($layout[$k]['font_family']) && !in_array($layout[$k]['font_family'], ['Kredit', 'Raleway'])) {
                 $usedFonts[] = $layout[$k]['font_family'];
             }
@@ -194,6 +194,21 @@
                                             {{ $student->name }}
                                         </div>
                                     @endif
+
+                                    {{-- Nickname --}}
+                                    @if($layout['nickname']['show'] ?? false)
+                                        <div class="element" style="
+                                            top: {{ $layout['nickname']['top'] ?? 24 }}mm;
+                                            left: {{ $layout['nickname']['left'] ?? 25 }}mm;
+                                            color: {{ $layout['nickname']['color'] ?? '#FFFFFF' }};
+                                            font-size: {{ $layout['nickname']['font_size'] ?? 10 }}pt;
+                                            font-weight: {{ $layout['nickname']['font_weight'] ?? 'normal' }};
+                                            font-family: '{{ $layout['nickname']['font_family'] ?? 'Raleway' }}', sans-serif;
+                                            white-space: nowrap;
+                                        ">
+                                            {{ $student->nickname ?? '-' }}
+                                        </div>
+                                    @endif
  
                                     {{-- NIS --}}
                                     @if($layout['nis']['show'] ?? true)
@@ -239,6 +254,36 @@
                                             white-space: nowrap;
                                         ">
                                             {{ $student->classroom?->school?->name ?? '-' }}
+                                        </div>
+                                    @endif
+
+                                    {{-- City --}}
+                                    @if($layout['city']['show'] ?? false)
+                                        <div class="element" style="
+                                            top: {{ $layout['city']['top'] ?? 31 }}mm;
+                                            left: {{ $layout['city']['left'] ?? 25 }}mm;
+                                            color: {{ $layout['city']['color'] ?? '#FFFFFF' }};
+                                            font-size: {{ $layout['city']['font_size'] ?? 9 }}pt;
+                                            font-weight: {{ $layout['city']['font_weight'] ?? 'normal' }};
+                                            font-family: '{{ $layout['city']['font_family'] ?? 'Raleway' }}', sans-serif;
+                                            white-space: nowrap;
+                                        ">
+                                            {{ $student->city ?? '-' }}
+                                        </div>
+                                    @endif
+
+                                    {{-- Province --}}
+                                    @if($layout['province']['show'] ?? false)
+                                        <div class="element" style="
+                                            top: {{ $layout['province']['top'] ?? 31 }}mm;
+                                            left: {{ $layout['province']['left'] ?? 50 }}mm;
+                                            color: {{ $layout['province']['color'] ?? '#FFFFFF' }};
+                                            font-size: {{ $layout['province']['font_size'] ?? 9 }}pt;
+                                            font-weight: {{ $layout['province']['font_weight'] ?? 'normal' }};
+                                            font-family: '{{ $layout['province']['font_family'] ?? 'Raleway' }}', sans-serif;
+                                            white-space: nowrap;
+                                        ">
+                                            {{ $student->province ?? '-' }}
                                         </div>
                                     @endif
 

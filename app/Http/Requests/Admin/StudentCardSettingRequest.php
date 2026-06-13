@@ -89,6 +89,33 @@ class StudentCardSettingRequest extends FormRequest
             'layout.school.font_weight' => 'nullable|in:normal,bold',
             'layout.school.font_family' => 'nullable|string|max:50',
 
+            // Nickname
+            'layout.nickname.show' => 'nullable',
+            'layout.nickname.color' => 'nullable|string|max:20',
+            'layout.nickname.font_size' => 'nullable|integer|min:6|max:30',
+            'layout.nickname.top' => 'nullable|numeric|min:0|max:54',
+            'layout.nickname.left' => 'nullable|numeric|min:0|max:86',
+            'layout.nickname.font_weight' => 'nullable|in:normal,bold',
+            'layout.nickname.font_family' => 'nullable|string|max:50',
+
+            // City
+            'layout.city.show' => 'nullable',
+            'layout.city.color' => 'nullable|string|max:20',
+            'layout.city.font_size' => 'nullable|integer|min:6|max:30',
+            'layout.city.top' => 'nullable|numeric|min:0|max:54',
+            'layout.city.left' => 'nullable|numeric|min:0|max:86',
+            'layout.city.font_weight' => 'nullable|in:normal,bold',
+            'layout.city.font_family' => 'nullable|string|max:50',
+
+            // Province
+            'layout.province.show' => 'nullable',
+            'layout.province.color' => 'nullable|string|max:20',
+            'layout.province.font_size' => 'nullable|integer|min:6|max:30',
+            'layout.province.top' => 'nullable|numeric|min:0|max:54',
+            'layout.province.left' => 'nullable|numeric|min:0|max:86',
+            'layout.province.font_weight' => 'nullable|in:normal,bold',
+            'layout.province.font_family' => 'nullable|string|max:50',
+
             // Code (Barcode/QR)
             'layout.code.show' => 'nullable',
             'layout.code.type' => 'nullable|in:barcode,qrcode',

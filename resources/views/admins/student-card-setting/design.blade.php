@@ -307,6 +307,39 @@
                                                     {{ ($layout['school']['show'] ?? true) ? '' : 'display:none;' }}
                                                 ">SMP Cahaya Tasbih</div>
 
+                                                {{-- Nickname --}}
+                                                <div id="prevNickname" class="draggable-element" data-element="nickname" style="position:absolute;
+                                                    top:{{ ($layout['nickname']['top'] ?? 24) * 4 }}px;
+                                                    left:{{ ($layout['nickname']['left'] ?? 25) * 4 }}px;
+                                                    color:{{ $layout['nickname']['color'] ?? '#FFFFFF' }};
+                                                    font-size:{{ ($layout['nickname']['font_size'] ?? 10) * 1.2 }}px;
+                                                    font-weight:{{ $layout['nickname']['font_weight'] ?? 'normal' }};
+                                                    font-family: '{{ $layout['nickname']['font_family'] ?? 'Raleway' }}', sans-serif;
+                                                    {{ ($layout['nickname']['show'] ?? false) ? '' : 'display:none;' }}
+                                                ">Ahmad</div>
+
+                                                {{-- City --}}
+                                                <div id="prevCity" class="draggable-element" data-element="city" style="position:absolute;
+                                                    top:{{ ($layout['city']['top'] ?? 31) * 4 }}px;
+                                                    left:{{ ($layout['city']['left'] ?? 25) * 4 }}px;
+                                                    color:{{ $layout['city']['color'] ?? '#FFFFFF' }};
+                                                    font-size:{{ ($layout['city']['font_size'] ?? 9) * 1.2 }}px;
+                                                    font-weight:{{ $layout['city']['font_weight'] ?? 'normal' }};
+                                                    font-family: '{{ $layout['city']['font_family'] ?? 'Raleway' }}', sans-serif;
+                                                    {{ ($layout['city']['show'] ?? false) ? '' : 'display:none;' }}
+                                                ">Kota Semarang</div>
+
+                                                {{-- Province --}}
+                                                <div id="prevProvince" class="draggable-element" data-element="province" style="position:absolute;
+                                                    top:{{ ($layout['province']['top'] ?? 31) * 4 }}px;
+                                                    left:{{ ($layout['province']['left'] ?? 50) * 4 }}px;
+                                                    color:{{ $layout['province']['color'] ?? '#FFFFFF' }};
+                                                    font-size:{{ ($layout['province']['font_size'] ?? 9) * 1.2 }}px;
+                                                    font-weight:{{ $layout['province']['font_weight'] ?? 'normal' }};
+                                                    font-family: '{{ $layout['province']['font_family'] ?? 'Raleway' }}', sans-serif;
+                                                    {{ ($layout['province']['show'] ?? false) ? '' : 'display:none;' }}
+                                                ">Jawa Tengah</div>
+
                                                 {{-- Code --}}
                                                 <div id="prevCode" class="draggable-element" data-element="code" style="position:absolute;
                                                     top:{{ ($layout['code']['top'] ?? 42) * 4 }}px;
@@ -345,9 +378,12 @@
                                         'subtitle' => ['label' => 'Subtitle / Nama Lembaga', 'icon' => 'fa-font', 'fields' => ['show','text','color','font_size','text_align','font_weight','font_family']],
                                         'photo' => ['label' => 'Foto Santri', 'icon' => 'fa-user-circle', 'fields' => ['show','width','height']],
                                         'name' => ['label' => 'Nama Santri', 'icon' => 'fa-id-card', 'fields' => ['show','color','font_size','font_weight','font_family']],
+                                        'nickname' => ['label' => 'Nama Panggilan', 'icon' => 'fa-id-badge', 'fields' => ['show','color','font_size','font_weight','font_family']],
                                         'nis' => ['label' => 'NIS', 'icon' => 'fa-hashtag', 'fields' => ['show','color','font_size','font_weight','font_family']],
                                         'classroom' => ['label' => 'Kelas', 'icon' => 'fa-school', 'fields' => ['show','color','font_size','font_weight','font_family']],
                                         'school' => ['label' => 'Sekolah / UPT', 'icon' => 'fa-building', 'fields' => ['show','color','font_size','font_weight','font_family']],
+                                        'city' => ['label' => 'Kota / Kabupaten', 'icon' => 'fa-map-marker-alt', 'fields' => ['show','color','font_size','font_weight','font_family']],
+                                        'province' => ['label' => 'Provinsi', 'icon' => 'fa-map', 'fields' => ['show','color','font_size','font_weight','font_family']],
                                         'code' => ['label' => 'Barcode / QR Code', 'icon' => 'fa-barcode', 'fields' => ['show','type','width','height']],
                                     ];
                                 @endphp
@@ -468,7 +504,7 @@
                                     {{-- Column 2 --}}
                                     <div class="col-md-6">
                                         <div class="accordion accordion-icon-toggle" id="layoutAccordionCol2">
-                                            @foreach(['name', 'nis', 'classroom', 'school', 'code'] as $key)
+                                            @foreach(['name', 'nickname', 'nis', 'classroom', 'school', 'city', 'province', 'code'] as $key)
                                                 @php $el = $elements[$key]; @endphp
                                                 <div class="mb-3">
                                                     <div class="accordion-header py-3 d-flex align-items-center cursor-pointer" data-bs-toggle="collapse" data-bs-target="#acc_{{ $key }}">
@@ -594,9 +630,12 @@ document.addEventListener('DOMContentLoaded', function() {
         subtitle: document.getElementById('prevSubtitle'),
         photo: document.getElementById('prevPhoto'),
         name: document.getElementById('prevName'),
+        nickname: document.getElementById('prevNickname'),
         nis: document.getElementById('prevNis'),
         classroom: document.getElementById('prevClassroom'),
         school: document.getElementById('prevSchool'),
+        city: document.getElementById('prevCity'),
+        province: document.getElementById('prevProvince'),
         code: document.getElementById('prevCode'),
     };
 

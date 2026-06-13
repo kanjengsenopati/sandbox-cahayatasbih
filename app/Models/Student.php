@@ -33,6 +33,7 @@ class Student extends Model
         'school_id',
         'classroom_id',
         'name',
+        'nickname',
         'born_place',
         'birth_date',
         'gender',
@@ -44,6 +45,8 @@ class Student extends Model
         'saving',
         'status',
         'address',
+        'city',
+        'province',
     ];
 
     protected $casts = [
