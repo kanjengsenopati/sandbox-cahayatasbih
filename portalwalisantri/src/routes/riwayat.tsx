@@ -357,10 +357,17 @@ function TxRow({ tx, open, onToggle }: { tx: Tx; open: boolean; onToggle: () => 
   const Icon = meta.icon;
   const isIn = tx.type === "in";
   const itemTotal = tx.items?.reduce((a, b) => a + b.qty * b.price, 0) ?? 0;
+  const isPengeluaranSaldo = tx.name === "Pengeluaran Saldo";
 
   return (
     <div>
-      <button onClick={onToggle} className="w-full flex items-center gap-3 p-4 active:bg-secondary transition text-left">
+      <button
+        onClick={isPengeluaranSaldo ? undefined : onToggle}
+        disabled={isPengeluaranSaldo}
+        className={`w-full flex items-center gap-3 p-4 transition text-left ${
+          isPengeluaranSaldo ? "cursor-default" : "active:bg-secondary cursor-pointer"
+        }`}
+      >
         <div className={`w-11 h-11 rounded-2xl flex items-center justify-center ${meta.tone}`}>
           <Icon size={18} />
         </div>
@@ -396,14 +403,16 @@ function TxRow({ tx, open, onToggle }: { tx: Tx; open: boolean; onToggle: () => 
               {tx.items ? `${tx.items.length} item` : tx.method ?? ""}
             </p>
           </div>
-          <ChevronDown
-            size={16}
-            className={`text-muted-foreground transition-transform ${open ? "rotate-180" : ""}`}
-          />
+          {!isPengeluaranSaldo && (
+            <ChevronDown
+              size={16}
+              className={`text-muted-foreground transition-transform ${open ? "rotate-180" : ""}`}
+            />
+          )}
         </div>
       </button>
 
-      {open && (
+      {open && !isPengeluaranSaldo && (
         <div className="px-4 pb-4 pt-1 bg-secondary/40 border-t border-border">
           {/* Meta grid */}
           <div className="grid grid-cols-2 gap-3 mt-3 mb-3">
@@ -459,12 +468,6 @@ function TxRow({ tx, open, onToggle }: { tx: Tx; open: boolean; onToggle: () => 
               <p className="text-[12px] text-destructive/90 font-medium leading-relaxed italic">"{tx.note}"</p>
             </div>
           )}
-
-          <div className="mt-3">
-            <button className="w-full py-2.5 rounded-xl bg-[var(--gradient-card)] text-primary-foreground text-[11px] font-bold">
-              Laporkan Masalah
-            </button>
-          </div>
         </div>
       )}
     </div>
