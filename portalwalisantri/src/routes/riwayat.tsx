@@ -224,23 +224,13 @@ function RiwayatPage() {
           </div>
 
           <div className="relative mt-5 grid grid-cols-2 gap-3">
-            <div className="rounded-[24px] bg-white p-4 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border-l-4 border-emerald-500 flex items-center gap-3">
-              <div className="w-10 h-10 rounded-2xl bg-emerald-50 flex items-center justify-center text-emerald-600 shrink-0">
-                <ArrowDownLeft size={18} strokeWidth={2.5} />
-              </div>
-              <div className="min-w-0">
-                <Text.Label className="block text-slate-400 text-[10px] font-bold uppercase tracking-wider">Pemasukan</Text.Label>
-                <Text.Amount className="block text-emerald-600 mt-1">{fmt(totalIn)}</Text.Amount>
-              </div>
+            <div className="rounded-[24px] bg-white/80 backdrop-blur-md p-4 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border-y border-r border-white/20 border-l-4 border-l-emerald-500 flex flex-col justify-center min-h-[76px]">
+              <Text.Label className="block text-slate-500 text-[10px] font-bold uppercase tracking-wider">Pemasukan</Text.Label>
+              <Text.Amount className="block text-emerald-600 mt-1">{fmt(totalIn)}</Text.Amount>
             </div>
-            <div className="rounded-[24px] bg-white p-4 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border-l-4 border-red-500 flex items-center gap-3">
-              <div className="w-10 h-10 rounded-2xl bg-red-50 flex items-center justify-center text-red-600 shrink-0">
-                <ArrowUpRight size={18} strokeWidth={2.5} />
-              </div>
-              <div className="min-w-0">
-                <Text.Label className="block text-slate-400 text-[10px] font-bold uppercase tracking-wider">Pengeluaran</Text.Label>
-                <span className="block text-[18px] font-bold text-red-600 leading-none mt-1">{fmt(Math.abs(totalOut))}</span>
-              </div>
+            <div className="rounded-[24px] bg-white/80 backdrop-blur-md p-4 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border-y border-r border-white/20 border-l-4 border-l-red-500 flex flex-col justify-center min-h-[76px]">
+              <Text.Label className="block text-slate-500 text-[10px] font-bold uppercase tracking-wider">Pengeluaran</Text.Label>
+              <span className="block text-[18px] font-bold text-red-600 leading-none mt-1">{fmt(Math.abs(totalOut))}</span>
             </div>
           </div>
         </div>
