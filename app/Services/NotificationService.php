@@ -17,6 +17,33 @@ use Kreait\Firebase\Messaging\Notification as FirebaseNotification;
 class NotificationService
 {
 
+    public static function sendFromTemplate($templateKey, $user, $replacements = [], $payload = null, $image = null)
+    {
+        try {
+            $template = \App\Models\NotificationTemplate::where('key', $templateKey)->first();
+
+            if (!$template) {
+                \Illuminate\Support\Facades\Log::warning("Notification template not found for key: {$templateKey}");
+                return false;
+            }
+
+            $title = $template->title_template;
+            $body = $template->body_template;
+
+            foreach ($replacements as $placeholder => $value) {
+                $title = str_replace('{' . $placeholder . '}', $value, $title);
+                $body = str_replace('{' . $placeholder . '}', $value, $body);
+            }
+
+            // Dispatch job to keep it asynchronous
+            dispatch(new \App\Jobs\SendToPushNotificationJob($title, $body, $user, $payload, $image));
+            return true;
+        } catch (\Throwable $th) {
+            \Illuminate\Support\Facades\Log::error("Failed to send notification from template: " . $th->getMessage());
+            return false;
+        }
+    }
+
     public static function sendToTopic($title, $body, $topic, $payload = null, $image = null)
     {
         $payload ? $type = get_class($payload) : $type = null;

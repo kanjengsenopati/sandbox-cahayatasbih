@@ -89,12 +89,15 @@ class WaliPermitController extends Controller
         ]);
 
         if ($student->asramaHost) {
-            dispatch(new \App\Jobs\SendToPushNotificationJob(
-                "Pengajuan Perizinan Baru",
-                "Wali dari {$student->name} mengajukan izin " . str_replace('_', ' ', $permit->permit_type) . ".",
+            \App\Services\NotificationService::sendFromTemplate(
+                'permit_new',
                 $student->asramaHost,
+                [
+                    'student_name' => $student->name,
+                    'permit_type' => str_replace('_', ' ', $permit->permit_type)
+                ],
                 $permit
-            ));
+            );
         }
 
         return response()->json([
@@ -220,12 +223,14 @@ class WaliPermitController extends Controller
         ]);
 
         if ($permit->student && $permit->student->asramaHost) {
-            dispatch(new \App\Jobs\SendToPushNotificationJob(
-                "Laporan Kepulangan Santri",
-                "Wali dari {$permit->student->name} melaporkan bahwa santri telah kembali. Butuh konfirmasi Anda.",
+            \App\Services\NotificationService::sendFromTemplate(
+                'permit_return_report',
                 $permit->student->asramaHost,
+                [
+                    'student_name' => $permit->student->name
+                ],
                 $permit
-            ));
+            );
         }
 
         return response()->json([

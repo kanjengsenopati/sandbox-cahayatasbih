@@ -290,12 +290,19 @@ class SaldoHistoryController extends Controller
     private function sendNotifications($student, $saldoHistory)
     {
         $activity = ($saldoHistory->type === 'IN') ? 'Topup Saldo' : 'Tarik Saldo';
-        $title = 'Pemberitahuan Saldo';
-        $body = 'Santri ' . $student->name . ' telah melakukan ' . $activity . ' sebesar Rp. ' . number_format($saldoHistory->amount, 0, ',', '.') .
-            ', Saldo Terkini Rp. ' . number_format($student->saldo, 0, ',', '.');
         $messageWhatsapp = SendNotifWaService::balanceAdjustment($student, $saldoHistory, "SALDO");
 
-        dispatch(new SendToPushNotificationJob($title, $body, $student->user, null));
+        \App\Services\NotificationService::sendFromTemplate(
+            'balance_update',
+            $student->user,
+            [
+                'student_name' => $student->name,
+                'activity' => $activity,
+                'amount' => number_format($saldoHistory->amount, 0, ',', '.'),
+                'balance' => number_format($student->saldo, 0, ',', '.')
+            ],
+            null
+        );
         dispatch(new SendToWhatsappNotificationJob($student->user?->phone, $messageWhatsapp));
 
         $contacts = Contact::where('type', Contact::TYPE_BENDAHARA)->orWhere('type', Contact::TYPE_SUPERADMIN)->get();

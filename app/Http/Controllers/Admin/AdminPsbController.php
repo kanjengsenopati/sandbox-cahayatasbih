@@ -256,12 +256,12 @@ class AdminPsbController extends Controller
     {
         $messageWhatsapp = SendNotifWaService::sendMessageAcceptedPpdb($registration);
 
-        dispatch(new SendToPushNotificationJob(
-            'PPDB Berhasil – Lanjut Daftar Ulang',
-            'Selamat! Pendaftaran PPDB kamu telah berhasil. Silakan lakukan daftar ulang sesuai jadwal.',
+        \App\Services\NotificationService::sendFromTemplate(
+            'ppdb_success',
             $student->user,
+            [],
             $registration
-        ));
+        );
 
         dispatch(new SendToWhatsappNotificationJob(
             $student->user->phone,
@@ -283,12 +283,12 @@ class AdminPsbController extends Controller
     {
         $messageWhatsapp = SendNotifWaService::sendMessageRejectedPpdb($registration);
 
-        dispatch(new SendToPushNotificationJob(
-            'PPDB Ditolak',
-            'Mohon maaf, pendaftaran PPDB belum dapat kami terima. Silakan lihat keterangan penolakan.',
+        \App\Services\NotificationService::sendFromTemplate(
+            'ppdb_rejected',
             $registration->user,
+            [],
             $registration
-        ));
+        );
 
         dispatch(new SendToWhatsappNotificationJob(
             $registration->user->phone,

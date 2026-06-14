@@ -305,10 +305,8 @@ class TransactionService
 
     public static function dispatchNotifications($transaction)
     {
-        $title = 'Yeay!, Pembayaran Berhasil';
-        $body = 'Pembayaran di Pondok Pesantren Cahaya Tasbih berhasil! Terima kasih telah membayar tagihan';
         $messageWhatsapp = SendNotifWaService::sendMessageBillNotification($transaction);
-        dispatch(new SendToPushNotificationJob($title, $body, $transaction->student->user, $transaction));
+        \App\Services\NotificationService::sendFromTemplate('payment_success', $transaction->student->user, [], $transaction);
         dispatch(new SendToWhatsappNotificationJob($transaction->student->user->phone, $messageWhatsapp));
         $contacts = Contact::where('type', Contact::TYPE_BENDAHARA)->orWhere('type', Contact::TYPE_SUPERADMIN)->get();
         if ($contacts->isNotEmpty()) {
@@ -469,9 +467,7 @@ class TransactionService
                     }
                     // send notification to whatsapp
                     $messageWhatsapp = SendNotifWaService::sendMessageRejectedPayment($transaction);
-                    $title = 'Bukti Pembayaran Ditolak';
-                    $body = 'Maaf, Bukti pembayaran anda ditolak. Silahkan upload ulang bukti pembayaran';
-                    dispatch(new SendToPushNotificationJob($title, $body, $transaction->student->user, $transaction));
+                    \App\Services\NotificationService::sendFromTemplate('payment_rejected', $transaction->student->user, [], $transaction);
                     dispatch(new SendToWhatsappNotificationJob($transaction->student->user->phone, $messageWhatsapp));
                     $contacts = Contact::where('type', Contact::TYPE_BENDAHARA)->orWhere('type', Contact::TYPE_SUPERADMIN)->get();
                     foreach ($contacts as $contact) {

@@ -129,6 +129,16 @@ function RootComponent() {
                   duration: 6000,
                 });
               }
+
+              // Real-time PWA cache invalidation
+              console.log("Real-time notification received, invalidating queries...");
+              queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+              queryClient.invalidateQueries({ queryKey: ["profile"] });
+              queryClient.invalidateQueries({ queryKey: ["permits"] });
+              queryClient.invalidateQueries({ queryKey: ["bills"] });
+              queryClient.invalidateQueries({ queryKey: ["payment"] });
+              queryClient.invalidateQueries({ queryKey: ["students"] });
+              queryClient.invalidateQueries({ queryKey: ["active"] });
             });
           }).catch(console.error);
         }).catch(console.error);

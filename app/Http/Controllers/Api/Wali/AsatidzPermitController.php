@@ -94,17 +94,16 @@ class AsatidzPermitController extends Controller
         }
 
         if ($permit->user) {
-            $actionName = $action === 'approve' ? 'Disetujui' : 'Ditolak';
-            $bodyText = $action === 'approve'
-                ? "Pengajuan izin {$permit->student->name} telah disetujui oleh Ustadz."
-                : "Pengajuan izin {$permit->student->name} ditolak. Alasan: {$permit->rejection_reason}.";
-
-            dispatch(new \App\Jobs\SendToPushNotificationJob(
-                "Status Perizinan {$actionName}",
-                $bodyText,
+            $templateKey = $action === 'approve' ? 'permit_approved' : 'permit_rejected';
+            \App\Services\NotificationService::sendFromTemplate(
+                $templateKey,
                 $permit->user,
+                [
+                    'student_name' => $permit->student->name,
+                    'rejection_reason' => $permit->rejection_reason
+                ],
                 $permit
-            ));
+            );
         }
 
         return response()->json([
@@ -478,17 +477,16 @@ class AsatidzPermitController extends Controller
         }
 
         if ($permit->user) {
-            $actionName = $action === 'approve' ? 'Disetujui' : 'Ditolak';
-            $bodyText = $action === 'approve'
-                ? "Laporan kepulangan santri {$permit->student->name} telah disetujui & dikonfirmasi oleh Ustadz."
-                : "Laporan kepulangan santri {$permit->student->name} ditolak. Alasan: {$permit->rejection_reason}.";
-
-            dispatch(new \App\Jobs\SendToPushNotificationJob(
-                "Konfirmasi Kepulangan {$actionName}",
-                $bodyText,
+            $templateKey = $action === 'approve' ? 'permit_return_approved' : 'permit_return_rejected';
+            \App\Services\NotificationService::sendFromTemplate(
+                $templateKey,
                 $permit->user,
+                [
+                    'student_name' => $permit->student->name,
+                    'rejection_reason' => $permit->rejection_reason
+                ],
                 $permit
-            ));
+            );
         }
 
         return response()->json([

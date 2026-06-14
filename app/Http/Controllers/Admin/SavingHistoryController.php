@@ -203,11 +203,18 @@ class SavingHistoryController extends Controller
 
     private function sendNotifications(Student $student, $savingHistory, $description)
     {
-        $title = 'Pemberitahuan Tabungan';
-        $body = 'Santri ' . $student->name . ' ' . $description . ' menjadi Rp. ' . number_format($student->saving, 0, ',', '.');
         $messageWhatsapp = SendNotifWaService::balanceAdjustment($student, $savingHistory, "SAVING");
 
-        dispatch(new SendToPushNotificationJob($title, $body, $student->user, null));
+        \App\Services\NotificationService::sendFromTemplate(
+            'saving_update',
+            $student->user,
+            [
+                'student_name' => $student->name,
+                'description' => $description,
+                'saving' => number_format($student->saving, 0, ',', '.')
+            ],
+            null
+        );
         dispatch(new SendToWhatsappNotificationJob($student->user?->phone, $messageWhatsapp));
     }
 

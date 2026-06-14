@@ -87,18 +87,14 @@ class TransactionController extends Controller
 
     private function dispatchNotifications($transaction)
     {
-        $title = 'Yeay!, Pembayaran Berhasil';
-        $body = 'Pembayaran di Pondok Pesantren Cahaya Tasbih berhasil! Terima kasih telah membayar tagihan';
         $messageWhatsapp = SendNotifWaService::sendMessageBillNotification($transaction);
-        dispatch(new SendToPushNotificationJob($title, $body, $transaction->student->user, $transaction));
+        \App\Services\NotificationService::sendFromTemplate('payment_success', $transaction->student->user, [], $transaction);
         dispatch(new SendToWhatsappNotificationJob($transaction->student->user->phone, $messageWhatsapp));
     }
 
     private function dispatchNotificationsUser($transaction)
     {
-        $title = 'Yeay!, Pembayaran Berhasil';
-        $body = 'Pembayaran di Pondok Pesantren Cahaya Tasbih berhasil! Terima kasih telah membayar tagihan';
-        dispatch(new SendToPushNotificationJob($title, $body, $transaction->user, $transaction));
+        \App\Services\NotificationService::sendFromTemplate('payment_success', $transaction->user, [], $transaction);
     }
 
     public function uploadProof(UploadProofRequest $request)
