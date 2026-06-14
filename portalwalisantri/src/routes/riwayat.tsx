@@ -460,11 +460,8 @@ function TxRow({ tx, open, onToggle }: { tx: Tx; open: boolean; onToggle: () => 
             </div>
           )}
 
-          <div className="mt-3 grid grid-cols-2 gap-2">
-            <button className="py-2.5 rounded-xl bg-card border border-border text-[11px] font-bold text-foreground">
-              Unduh Struk
-            </button>
-            <button className="py-2.5 rounded-xl bg-[var(--gradient-card)] text-primary-foreground text-[11px] font-bold">
+          <div className="mt-3">
+            <button className="w-full py-2.5 rounded-xl bg-[var(--gradient-card)] text-primary-foreground text-[11px] font-bold">
               Laporkan Masalah
             </button>
           </div>
