@@ -41,25 +41,5 @@
     </script>
     @endif
 
-    <!-- Bypass & Clear Cache Script -->
-    <script>
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.getRegistrations().then(function(registrations) {
-                for(let registration of registrations) {
-                    registration.unregister();
-                    console.log('ServiceWorker unregistered');
-                }
-            });
-        }
-        // Also clear caches
-        if ('caches' in window) {
-            caches.keys().then((keyList) => {
-                return Promise.all(keyList.map((key) => {
-                    console.log('Clearing cache: ', key);
-                    return caches.delete(key);
-                }));
-            });
-        }
-    </script>
 </body>
 </html>
