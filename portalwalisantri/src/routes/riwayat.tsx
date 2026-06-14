@@ -224,13 +224,25 @@ function RiwayatPage() {
           </div>
 
           <div className="relative mt-5 grid grid-cols-2 gap-3">
-            <div className="rounded-[24px] bg-white/80 backdrop-blur-md p-4 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border-y border-r border-white/20 border-l-4 border-l-emerald-500 flex flex-col justify-center min-h-[76px]">
-              <Text.Label className="block text-slate-500 text-[10px] font-bold uppercase tracking-wider">Pemasukan</Text.Label>
-              <Text.Amount className="block text-emerald-600 mt-1">{fmt(totalIn)}</Text.Amount>
+            <div className="relative overflow-hidden rounded-[24px] bg-gradient-to-br from-emerald-50/95 to-teal-50/90 p-4 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-emerald-100/80 flex flex-col justify-center h-[82px]">
+              <div className="relative z-10">
+                <Text.Label className="block text-slate-600 text-[10px] font-bold uppercase tracking-wider">Pemasukan</Text.Label>
+                <span className="block text-[18px] font-bold text-emerald-700 leading-none mt-1">{fmt(totalIn)}</span>
+              </div>
+              <svg className="absolute right-4 top-1/2 -translate-y-1/2 w-12 h-8 text-emerald-500/12 pointer-events-none" viewBox="0 0 48 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="16" cy="16" r="14" fill="currentColor" />
+                <circle cx="32" cy="16" r="14" fill="currentColor" />
+              </svg>
             </div>
-            <div className="rounded-[24px] bg-white/80 backdrop-blur-md p-4 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border-y border-r border-white/20 border-l-4 border-l-red-500 flex flex-col justify-center min-h-[76px]">
-              <Text.Label className="block text-slate-500 text-[10px] font-bold uppercase tracking-wider">Pengeluaran</Text.Label>
-              <span className="block text-[18px] font-bold text-red-600 leading-none mt-1">{fmt(Math.abs(totalOut))}</span>
+            <div className="relative overflow-hidden rounded-[24px] bg-gradient-to-br from-red-50/95 to-rose-50/90 p-4 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-red-100/80 flex flex-col justify-center h-[82px]">
+              <div className="relative z-10">
+                <Text.Label className="block text-slate-600 text-[10px] font-bold uppercase tracking-wider">Pengeluaran</Text.Label>
+                <span className="block text-[18px] font-bold text-red-700 leading-none mt-1">{fmt(Math.abs(totalOut))}</span>
+              </div>
+              <svg className="absolute right-4 top-1/2 -translate-y-1/2 w-12 h-8 text-red-500/12 pointer-events-none" viewBox="0 0 48 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="16" cy="16" r="14" fill="currentColor" />
+                <circle cx="32" cy="16" r="14" fill="currentColor" />
+              </svg>
             </div>
           </div>
         </div>
