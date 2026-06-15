@@ -330,6 +330,10 @@
 }
 
 @layer base {
+  html {
+    font-size: calc(16px * var(--font-scale, 1.0)) !important;
+  }
+
   * {
     border-color: var(--color-border);
   }
@@ -338,7 +342,7 @@
     background-color: var(--color-background);
     color: var(--color-foreground);
     font-family: 'Inter', system-ui, sans-serif;
-    font-size: 14px;
+    font-size: 0.875rem !important;
     -webkit-font-smoothing: antialiased;
   }
 }
