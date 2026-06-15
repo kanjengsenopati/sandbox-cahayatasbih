@@ -171,6 +171,112 @@
   --shadow-inset: inset 4px 4px 8px oklch(0.12 0.02 260 / 0.8), inset -4px -4px 8px oklch(0.24 0.02 260 / 0.15);
 }
 
+/* Global Neumorphism Overrides */
+.theme-modern {
+  /* Cards, Containers, and Sections */
+  .bg-card, 
+  .rounded-3xl, 
+  .rounded-\[24px\], 
+  [class*="rounded-3xl"], 
+  [class*="rounded-[24px]"] {
+    background-color: var(--card) !important;
+    box-shadow: var(--shadow-card) !important;
+    border: none !important;
+    border-color: transparent !important;
+  }
+
+  /* Inset Containers and Slate Backgrounds */
+  .bg-slate-100, 
+  .bg-secondary, 
+  .dark .bg-slate-800 {
+    background-color: var(--secondary) !important;
+    box-shadow: var(--shadow-inset) !important;
+    border-color: transparent !important;
+  }
+
+  /* Inputs, Selects, Textareas */
+  input, 
+  select, 
+  textarea, 
+  .bg-input {
+    background-color: var(--secondary) !important;
+    box-shadow: var(--shadow-inset) !important;
+    border: none !important;
+    border-color: transparent !important;
+    color: var(--foreground) !important;
+  }
+
+  /* Primary Action / CTA Buttons */
+  .bg-primary, 
+  button.bg-primary, 
+  [class*="bg-primary"] {
+    background: var(--gradient-card) !important;
+    box-shadow: 4px 4px 10px oklch(0.48 0.22 295 / 0.4), -4px -4px 10px oklch(1 0 0 / 0.8) !important;
+    color: var(--primary-foreground) !important;
+    border: none !important;
+    transition: all 0.2s ease !important;
+  }
+  .bg-primary:active, 
+  button.bg-primary:active {
+    box-shadow: inset 4px 4px 10px oklch(0.32 0.18 290 / 0.6), inset -4px -4px 10px oklch(1 0 0 / 0.2) !important;
+    transform: scale(0.97) !important;
+  }
+
+  /* Secondary, Outline, and Row Buttons */
+  button:not(.bg-primary):not(.bg-transparent):not(.text-white), 
+  .bg-secondary, 
+  button[class*="border"] {
+    background-color: var(--card) !important;
+    box-shadow: var(--shadow-soft) !important;
+    border: none !important;
+    border-color: transparent !important;
+    transition: all 0.2s ease !important;
+  }
+  button:not(.bg-primary):not(.bg-transparent):not(.text-white):active, 
+  .bg-secondary:active, 
+  button[class*="border"]:active {
+    box-shadow: var(--shadow-inset) !important;
+    transform: scale(0.97) !important;
+  }
+
+  /* Bottom Navigation Overrides */
+  nav {
+    background-color: transparent !important;
+    box-shadow: none !important;
+    border: none !important;
+  }
+  nav > div {
+    background-color: var(--card) !important;
+    box-shadow: var(--shadow-card) !important;
+    border: none !important;
+    backdrop-filter: none !important;
+  }
+  nav a {
+    background-color: transparent !important;
+  }
+  nav a.bg-primary\/10 {
+    background-color: transparent !important;
+  }
+  nav a .text-white {
+    background-color: var(--card) !important;
+    color: var(--primary) !important;
+    box-shadow: var(--shadow-inset) !important;
+    border: none !important;
+    transform: scale(1.05) !important;
+  }
+}
+
+/* Dark Mode specific Neumorphism overrides */
+.dark.theme-modern {
+  .bg-primary, 
+  button.bg-primary {
+    box-shadow: 4px 4px 12px oklch(0.12 0.02 260 / 0.8), -4px -4px 12px oklch(0.24 0.02 260 / 0.15) !important;
+  }
+  nav a .text-white {
+    box-shadow: var(--shadow-inset) !important;
+  }
+}
+
 @layer base {
   * {
     border-color: var(--color-border);
