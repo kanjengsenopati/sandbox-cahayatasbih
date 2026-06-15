@@ -112,8 +112,41 @@ function RootShell({ children }: { children: React.ReactNode }) {
   );
 }
 
+const APP_VERSION = "1.1.0"; // Increment this to force update and purge caches
+
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+
+  useEffect(() => {
+    // 1. Initialize Theme (Original vs Modern/Neumorphism)
+    const savedTheme = localStorage.getItem("ct-ui-theme") || "asli";
+    document.documentElement.classList.toggle("theme-modern", savedTheme === "modern");
+
+    // 2. Initialize Font Scale
+    const savedScale = localStorage.getItem("ct-font-scale") || "1.0";
+    document.documentElement.style.setProperty("--font-scale", savedScale);
+
+    // 3. Auto Remove Old Cache & Force Update on version change
+    const savedVersion = localStorage.getItem("ct-app-version");
+    if (savedVersion !== APP_VERSION) {
+      console.log(`New version detected (${APP_VERSION}). Purging caches and force-refreshing...`);
+      if (typeof window !== "undefined" && "caches" in window) {
+        caches.keys().then((keys) => {
+          return Promise.all(keys.map((key) => caches.delete(key)));
+        }).then(() => {
+          localStorage.setItem("ct-app-version", APP_VERSION);
+          window.location.reload();
+        }).catch((err) => {
+          console.error("Failed to clear old caches:", err);
+          localStorage.setItem("ct-app-version", APP_VERSION);
+          window.location.reload();
+        });
+      } else {
+        localStorage.setItem("ct-app-version", APP_VERSION);
+        window.location.reload();
+      }
+    }
+  }, []);
 
   useEffect(() => {
     if (typeof window !== "undefined" && "Notification" in window) {
