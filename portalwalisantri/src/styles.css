@@ -173,12 +173,8 @@
 
 /* Global Neumorphism Overrides */
 .theme-modern {
-  /* Cards, Containers, and Sections */
-  .bg-card, 
-  .rounded-3xl, 
-  .rounded-\[24px\], 
-  [class*="rounded-3xl"], 
-  [class*="rounded-[24px]"] {
+  /* Cards, Containers, and Sections - Exclude elements inside gradient heros or with custom gradients */
+  .bg-card:not([style*="gradient"]):not([class*="from-"]):not([class*="bg-primary"]) {
     background-color: var(--card) !important;
     box-shadow: var(--shadow-card) !important;
     border: none !important;
@@ -186,57 +182,111 @@
   }
 
   /* Inset Containers and Slate Backgrounds */
-  .bg-slate-100, 
-  .bg-secondary, 
+  .bg-slate-100:not([style*="gradient"]):not([class*="from-"]), 
+  .bg-secondary:not([style*="gradient"]):not([class*="from-"]), 
   .dark .bg-slate-800 {
     background-color: var(--secondary) !important;
     box-shadow: var(--shadow-inset) !important;
     border-color: transparent !important;
   }
 
-  /* Inputs, Selects, Textareas */
-  input, 
+  /* Soften Inputs, Selects, Textareas with inset styling */
+  input[type="text"],
+  input[type="search"],
+  input[type="tel"],
+  input[type="password"],
+  input[type="number"],
+  input[type="email"],
   select, 
   textarea, 
   .bg-input {
     background-color: var(--secondary) !important;
     box-shadow: var(--shadow-inset) !important;
-    border: none !important;
+    border: 1px solid rgba(0, 0, 0, 0.02) !important;
     border-color: transparent !important;
     color: var(--foreground) !important;
+    transition: all 0.2s ease !important;
+  }
+  
+  /* Focus glow for inputs */
+  input[type="text"]:focus,
+  input[type="search"]:focus,
+  input[type="tel"]:focus,
+  input[type="password"]:focus,
+  input[type="number"]:focus,
+  select:focus,
+  textarea:focus {
+    outline: none !important;
+    border-color: var(--primary-glow) !important;
+    box-shadow: var(--shadow-inset), 0 0 0 2px var(--primary-glow) !important;
   }
 
-  /* Primary Action / CTA Buttons */
-  .bg-primary, 
-  button.bg-primary, 
-  [class*="bg-primary"] {
+  /* Primary Action / CTA Buttons - Exact matching to avoid breaking opacity modifiers (bg-primary/10) */
+  button.bg-primary,
+  .bg-primary:not([class*="/"]):not([class*="-glow"]):not([class*="-deep"]) {
     background: var(--gradient-card) !important;
     box-shadow: 4px 4px 10px oklch(0.48 0.22 295 / 0.4), -4px -4px 10px oklch(1 0 0 / 0.8) !important;
     color: var(--primary-foreground) !important;
     border: none !important;
     transition: all 0.2s ease !important;
   }
-  .bg-primary:active, 
-  button.bg-primary:active {
+  button.bg-primary:active,
+  .bg-primary:not([class*="/"]):not([class*="-glow"]):not([class*="-deep"]):active {
     box-shadow: inset 4px 4px 10px oklch(0.32 0.18 290 / 0.6), inset -4px -4px 10px oklch(1 0 0 / 0.2) !important;
     transform: scale(0.97) !important;
   }
 
-  /* Secondary, Outline, and Row Buttons */
-  button:not(.bg-primary):not(.bg-transparent):not(.text-white), 
-  .bg-secondary, 
-  button[class*="border"] {
+  /* Secondary, Outline, and Row Buttons - Highly surgical to avoid targeting hero headers or active navigation links */
+  button:not(.bg-primary):not(.bg-transparent):not(.text-white):not([class*="text-white"]):not(.inline-flex):not([class*="bg-white/"]):not([class*="bg-transparent"]):not([class*="bg-primary/"]):not([class*="text-primary"]):not(.shrink-0) {
     background-color: var(--card) !important;
     box-shadow: var(--shadow-soft) !important;
     border: none !important;
     border-color: transparent !important;
     transition: all 0.2s ease !important;
   }
-  button:not(.bg-primary):not(.bg-transparent):not(.text-white):active, 
-  .bg-secondary:active, 
-  button[class*="border"]:active {
+  button:not(.bg-primary):not(.bg-transparent):not(.text-white):not([class*="text-white"]):not(.inline-flex):not([class*="bg-white/"]):not([class*="bg-transparent"]):not([class*="bg-primary/"]):not([class*="text-primary"]):not(.shrink-0):active {
     box-shadow: var(--shadow-inset) !important;
     transform: scale(0.97) !important;
+  }
+
+  /* Exclude Switcher segment buttons and other transparent controls */
+  .bg-secondary button:not([class*="shadow"]):not([class*="bg-card"]),
+  .bg-slate-100 button:not([class*="shadow"]):not([class*="bg-card"]),
+  button.bg-transparent,
+  button.inline-flex.items-center.text-white\/90,
+  button.text-white\/90 {
+    background-color: transparent !important;
+    box-shadow: none !important;
+    border: none !important;
+    color: inherit !important;
+  }
+
+  /* Reset Back Button inside Gradient Heros */
+  [style*="gradient-hero"] button,
+  [class*="bg-gradient-"] button,
+  .bg-primary button {
+    background-color: rgba(255, 255, 255, 0.15) !important;
+    box-shadow: none !important;
+    border: 1px solid rgba(255, 255, 255, 0.2) !important;
+    color: white !important;
+  }
+
+  /* Reset Switcher Trigger (Ganti Santri) text color and background inside Hero */
+  [style*="gradient-hero"] button.text-white\/90,
+  [style*="gradient-hero"] button.inline-flex,
+  .bg-primary button.text-white\/90,
+  .bg-primary button.inline-flex {
+    background-color: transparent !important;
+    box-shadow: none !important;
+    border: none !important;
+    color: rgba(255, 255, 255, 0.9) !important;
+  }
+
+  /* Selected Payment Method row inset look */
+  button.bg-primary\/5 {
+    background-color: var(--secondary) !important;
+    box-shadow: var(--shadow-inset) !important;
+    border: none !important;
   }
 
   /* Bottom Navigation Overrides */
@@ -257,8 +307,9 @@
   nav a.bg-primary\/10 {
     background-color: transparent !important;
   }
-  nav a .text-white {
-    background-color: var(--card) !important;
+  nav a div[style*="gradient-card"],
+  nav a div.text-white {
+    background: var(--card) !important;
     color: var(--primary) !important;
     box-shadow: var(--shadow-inset) !important;
     border: none !important;
@@ -272,7 +323,8 @@
   button.bg-primary {
     box-shadow: 4px 4px 12px oklch(0.12 0.02 260 / 0.8), -4px -4px 12px oklch(0.24 0.02 260 / 0.15) !important;
   }
-  nav a .text-white {
+  nav a div[style*="gradient-card"],
+  nav a div.text-white {
     box-shadow: var(--shadow-inset) !important;
   }
 }
