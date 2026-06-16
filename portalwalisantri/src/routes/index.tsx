@@ -30,8 +30,8 @@ function RootDispatcher() {
     if (!isLoading) {
       if (isError || !profileRes) {
         navigate({ to: "/login" });
-      } else if (profileRes.role === "asatidz") {
-        navigate({ to: "/asatidz/dashboard" });
+      } else if (profileRes.role === "penanggung_jawab") {
+        navigate({ to: "/penanggung-jawab/dashboard" });
       } else {
         navigate({ to: "/dashboard" });
       }

@@ -144,7 +144,7 @@ class AsramaController extends Controller
                     ]);
                 }
 
-                $user->assignRole('Asatidz');
+                $user->assignRole('Penanggung Jawab');
 
                 // Create new officer record
                 $officer = Officer::create([
@@ -284,7 +284,7 @@ class AsramaController extends Controller
                     ]);
                 }
 
-                $user->assignRole('Asatidz');
+                $user->assignRole('Penanggung Jawab');
 
                 // Create new officer record
                 $officer = Officer::create([

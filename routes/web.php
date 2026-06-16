@@ -97,7 +97,7 @@ Route::prefix('admin')->middleware(['auth'])->group(function () {
     Route::get('audit', [App\Http\Controllers\Admin\AuditController::class, 'index'])->name('admin.audit');
     Route::post('sync-master', [App\Http\Controllers\Admin\AuditController::class, 'syncMaster'])->name('admin.sync-master');
 });
-// start wali santri & asatidz (CT-Mobile)
+// start wali santri & penanggung jawab (CT-Mobile)
 // add route group prefix and middleware
 
 Route::any('wali/{any?}', function ($any = null) {

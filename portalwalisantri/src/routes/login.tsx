@@ -39,8 +39,8 @@ function LoginPage() {
       queryClient.invalidateQueries({ queryKey: ["active-student"] });
       queryClient.invalidateQueries({ queryKey: ["dashboard"] });
 
-      if (data.role === "asatidz") {
-        navigate({ to: "/asatidz/dashboard" });
+      if (data.role === "penanggung_jawab") {
+        navigate({ to: "/penanggung-jawab/dashboard" });
       } else {
         navigate({ to: "/dashboard" });
       }
@@ -184,7 +184,7 @@ function LoginPage() {
               Pilih Peran Masuk
             </h3>
             <p className="text-[13px] font-medium text-slate-500 text-center mb-6 leading-relaxed">
-              Nomor WhatsApp Anda terdaftar sebagai Wali Santri dan juga Asatidz. Silakan pilih identitas untuk masuk:
+              Nomor WhatsApp Anda terdaftar sebagai Wali Santri dan juga Penanggung Jawab. Silakan pilih identitas untuk masuk:
             </p>
 
             <div className="space-y-3">
@@ -204,14 +204,14 @@ function LoginPage() {
 
               <button
                 type="button"
-                onClick={() => selectRoleAndLogin("asatidz")}
+                onClick={() => selectRoleAndLogin("penanggung_jawab")}
                 className="w-full p-4 rounded-[20px] bg-slate-50 hover:bg-slate-100 border border-slate-200 transition-all active:scale-[0.98] flex items-center gap-4 text-left group"
               >
                 <div className="w-10 h-10 rounded-full bg-emerald-50 flex items-center justify-center text-emerald-600 group-hover:bg-emerald-600 group-hover:text-white transition-all shrink-0">
-                  <span className="font-bold text-[14px]">AZ</span>
+                  <span className="font-bold text-[14px]">PJ</span>
                 </div>
                 <div>
-                  <div className="font-bold text-slate-800 text-[14px]">Asatidz / Ustadz</div>
+                  <div className="font-bold text-slate-800 text-[14px]">Penanggung Jawab</div>
                   <div className="text-slate-400 text-[11px] font-medium leading-tight mt-0.5">Akses Persetujuan Izin & Supervisi Santri</div>
                 </div>
               </button>

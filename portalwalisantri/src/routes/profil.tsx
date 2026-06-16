@@ -29,8 +29,8 @@ function Profil() {
     },
     onSuccess: (data: any) => {
       queryClient.invalidateQueries();
-      if (data.role === "asatidz") {
-        window.location.href = '/ct-mobile/asatidz/dashboard';
+      if (data.role === "penanggung_jawab") {
+        window.location.href = '/ct-mobile/penanggung-jawab/dashboard';
       } else {
         window.location.href = '/ct-mobile/dashboard';
       }
@@ -86,9 +86,9 @@ function Profil() {
                 Wali dari {students.map((s: any) => s.name).join(', ')}
               </p>
             )}
-            {profileData?.role === 'asatidz' && (
+            {profileData?.role === 'penanggung_jawab' && (
               <p className="text-[11px] text-white/60 mt-1">
-                Ustadz / Ustadzah Pembimbing
+                Penanggung Jawab Pembimbing
               </p>
             )}
           </div>
@@ -116,7 +116,7 @@ function Profil() {
                 <Loader2 className="animate-spin" size={12} />
               ) : (
                 <>
-                  Pindah ke {profileData?.role === 'wali' ? 'Asatidz' : 'Wali'}
+                  Pindah ke {profileData?.role === 'wali' ? 'Penanggung Jawab' : 'Wali'}
                 </>
               )}
             </button>
@@ -207,7 +207,7 @@ function Profil() {
             </div>
           )}
 
-          {profileData?.role === 'asatidz' && user?.access_scope && (
+          {profileData?.role === 'penanggung_jawab' && user?.access_scope && (
             <div className="flex items-center gap-4 p-4">
               <div className="w-10 h-10 rounded-xl bg-secondary flex items-center justify-center text-primary shrink-0">
                 <ShieldCheck size={18} />

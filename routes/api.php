@@ -191,18 +191,18 @@ Route::prefix('ct-mobile')->middleware(['web'])->group(function () {
     Route::post('permits/{id}/report-return', [App\Http\Controllers\Api\Wali\WaliPermitController::class, 'reportReturn']);
     });
 
-    // Perizinan Santri (Leave Permits) - Asatidz / Staff Asrama
+    // Perizinan Santri (Leave Permits) - Penanggung Jawab / Staff Asrama
     Route::middleware(['auth:web'])->group(function () {
-        Route::post('asatidz/update-fcm-token', [App\Http\Controllers\Api\Wali\AsatidzPermitController::class, 'updateFcmToken']);
-        Route::get('asatidz/permits/pending', [App\Http\Controllers\Api\Wali\AsatidzPermitController::class, 'pendingList']);
-        Route::post('asatidz/permits/{id}/action', [App\Http\Controllers\Api\Wali\AsatidzPermitController::class, 'action']);
-        Route::get('asatidz/permits/active', [App\Http\Controllers\Api\Wali\AsatidzPermitController::class, 'activeList']);
-        Route::get('asatidz/permits/overdue', [App\Http\Controllers\Api\Wali\AsatidzPermitController::class, 'overdueList']);
-        Route::get('asatidz/permits/pending-return', [App\Http\Controllers\Api\Wali\AsatidzPermitController::class, 'pendingReturnList']);
-        Route::post('asatidz/permits/{id}/action-return', [App\Http\Controllers\Api\Wali\AsatidzPermitController::class, 'actionReturn']);
-        Route::post('asatidz/permits/scan', [App\Http\Controllers\Api\Wali\AsatidzPermitController::class, 'scanBarcode']);
-        Route::get('asatidz/dashboard-stats', [App\Http\Controllers\Api\Wali\AsatidzPermitController::class, 'dashboardStats']);
-        Route::get('asatidz/my-students', [App\Http\Controllers\Api\Wali\AsatidzPermitController::class, 'myStudents']);
-        Route::get('asatidz/my-students/{studentId}/history', [App\Http\Controllers\Api\Wali\AsatidzPermitController::class, 'studentHistory']);
+        Route::post('penanggung-jawab/update-fcm-token', [App\Http\Controllers\Api\Wali\PenanggungJawabPermitController::class, 'updateFcmToken']);
+        Route::get('penanggung-jawab/permits/pending', [App\Http\Controllers\Api\Wali\PenanggungJawabPermitController::class, 'pendingList']);
+        Route::post('penanggung-jawab/permits/{id}/action', [App\Http\Controllers\Api\Wali\PenanggungJawabPermitController::class, 'action']);
+        Route::get('penanggung-jawab/permits/active', [App\Http\Controllers\Api\Wali\PenanggungJawabPermitController::class, 'activeList']);
+        Route::get('penanggung-jawab/permits/overdue', [App\Http\Controllers\Api\Wali\PenanggungJawabPermitController::class, 'overdueList']);
+        Route::get('penanggung-jawab/permits/pending-return', [App\Http\Controllers\Api\Wali\PenanggungJawabPermitController::class, 'pendingReturnList']);
+        Route::post('penanggung-jawab/permits/{id}/action-return', [App\Http\Controllers\Api\Wali\PenanggungJawabPermitController::class, 'actionReturn']);
+        Route::post('penanggung-jawab/permits/scan', [App\Http\Controllers\Api\Wali\PenanggungJawabPermitController::class, 'scanBarcode']);
+        Route::get('penanggung-jawab/dashboard-stats', [App\Http\Controllers\Api\Wali\PenanggungJawabPermitController::class, 'dashboardStats']);
+        Route::get('penanggung-jawab/my-students', [App\Http\Controllers\Api\Wali\PenanggungJawabPermitController::class, 'myStudents']);
+        Route::get('penanggung-jawab/my-students/{studentId}/history', [App\Http\Controllers\Api\Wali\PenanggungJawabPermitController::class, 'studentHistory']);
     });
 });

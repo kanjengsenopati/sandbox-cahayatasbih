@@ -77,7 +77,7 @@ class OfficerController extends Controller
             $user->phone = $data['phone'];
         }
         $user->save();
-        $user->assignRole('Asatidz');
+        $user->assignRole('Penanggung Jawab');
 
         if ($request->hasFile('photo')) {
             $data['photo'] = 'storage/' . $request->file('photo')->store('images/officers', 'public');

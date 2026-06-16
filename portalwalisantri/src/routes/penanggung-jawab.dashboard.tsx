@@ -2,7 +2,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { ArrowLeft, Loader2, Calendar, ClipboardList, CheckCircle2, XCircle, Clock, ShieldAlert, Scan, LogOut, Phone, RefreshCw, ChevronDown, ChevronUp, Image as ImageIcon } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { fetchPendingPermits, fetchActivePermits, fetchOverduePermits, postPermitAction, postLogout, fetchAsatidzStats, fetchMyStudents, fetchStudentHistory, fetchPendingReturnPermits, postPermitReturnAction, updateAsatidzFcmToken } from "@/lib/api";
+import { fetchPendingPermits, fetchActivePermits, fetchOverduePermits, postPermitAction, postLogout, fetchPenanggungJawabStats, fetchMyStudents, fetchStudentHistory, fetchPendingReturnPermits, postPermitReturnAction, updatePenanggungJawabFcmToken } from "@/lib/api";
 import { resolveImageUrl } from "@/lib/utils";
 import { getDeviceToken } from "@/lib/firebase";
 import { onMessage } from "firebase/messaging";
@@ -10,16 +10,16 @@ import { messaging } from "@/lib/firebase";
 import { toast } from "sonner";
 
 
-export const Route = createFileRoute("/asatidz/dashboard")({
-  component: AsatidzDashboardPage,
+export const Route = createFileRoute("/penanggung-jawab/dashboard")({
+  component: PenanggungJawabDashboardPage,
   head: () => ({ meta: [{ title: "Dashboard Pengasuh Asrama — CT-Mobile" }] }),
 });
 
-function AsatidzDashboardPage() {
+function PenanggungJawabDashboardPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
-  // Register push notifications & FCM token for Asatidz/Ustadz
+  // Register push notifications & FCM token for Penanggung Jawab
   useEffect(() => {
     const registerPush = async () => {
       if ("Notification" in window) {
@@ -29,20 +29,20 @@ function AsatidzDashboardPage() {
             if (permission === "granted") {
               const token = await getDeviceToken();
               if (token) {
-                await updateAsatidzFcmToken(token);
+                await updatePenanggungJawabFcmToken(token);
               }
             }
           } catch (err) {
-            console.error("Gagal meminta izin notifikasi untuk Asatidz:", err);
+            console.error("Gagal meminta izin notifikasi untuk Penanggung Jawab:", err);
           }
         } else if (Notification.permission === "granted") {
           try {
             const token = await getDeviceToken();
             if (token) {
-              await updateAsatidzFcmToken(token);
+              await updatePenanggungJawabFcmToken(token);
             }
           } catch (err) {
-            console.error("Gagal memperbarui token FCM Asatidz:", err);
+            console.error("Gagal memperbarui token FCM Penanggung Jawab:", err);
           }
         }
       }
@@ -54,13 +54,13 @@ function AsatidzDashboardPage() {
   useEffect(() => {
     if (!messaging) return;
     const unsubscribe = onMessage(messaging, (payload) => {
-      console.log("Pesan perizinan diterima di foreground (Asatidz):", payload);
+      console.log("Pesan perizinan diterima di foreground (Penanggung Jawab):", payload);
       toast.info(payload.notification?.title || "Pemberitahuan Baru", {
         description: payload.notification?.body,
         duration: 7000,
       });
       // Invalidate all relevant permit queries to refresh UI dynamically without page reload
-      queryClient.invalidateQueries({ queryKey: ["asatidz-stats"] });
+      queryClient.invalidateQueries({ queryKey: ["penanggung-jawab-stats"] });
       queryClient.invalidateQueries({ queryKey: ["pending-permits"] });
       queryClient.invalidateQueries({ queryKey: ["active-permits"] });
       queryClient.invalidateQueries({ queryKey: ["overdue-permits"] });
@@ -154,9 +154,9 @@ function AsatidzDashboardPage() {
   };
 
   const { data: statsRes } = useQuery({
-    queryKey: ["asatidz-stats"],
+    queryKey: ["penanggung-jawab-stats"],
     queryFn: async () => {
-      const res = await fetchAsatidzStats();
+      const res = await fetchPenanggungJawabStats();
       return res.data;
     },
     refetchInterval: 10000,
@@ -227,7 +227,7 @@ function AsatidzDashboardPage() {
       queryClient.invalidateQueries({ queryKey: ["pending-permits"] });
       queryClient.invalidateQueries({ queryKey: ["active-permits"] });
       queryClient.invalidateQueries({ queryKey: ["overdue-permits"] });
-      queryClient.invalidateQueries({ queryKey: ["asatidz-stats"] });
+      queryClient.invalidateQueries({ queryKey: ["penanggung-jawab-stats"] });
     },
   });
 
@@ -242,7 +242,7 @@ function AsatidzDashboardPage() {
       queryClient.invalidateQueries({ queryKey: ["pending-return-permits"] });
       queryClient.invalidateQueries({ queryKey: ["active-permits"] });
       queryClient.invalidateQueries({ queryKey: ["overdue-permits"] });
-      queryClient.invalidateQueries({ queryKey: ["asatidz-stats"] });
+      queryClient.invalidateQueries({ queryKey: ["penanggung-jawab-stats"] });
     },
   });
 
@@ -309,7 +309,7 @@ function AsatidzDashboardPage() {
                   {statsRes?.asrama_name || "Asrama Binaan"}
                 </p>
                 <p className="text-base font-semibold text-white leading-tight mt-1">
-                  {statsRes?.host_name || "Ustadz / Ustadzah"}
+                  {statsRes?.host_name || "Penanggung Jawab"}
                 </p>
                 <p className="text-[10px] text-indigo-300 font-medium mt-1 leading-none">
                   Supervisi: <span className="text-white font-semibold">{statsRes?.total_students || 0} Santri Saya</span>
@@ -327,7 +327,7 @@ function AsatidzDashboardPage() {
           {/* Quick CTA to Scan */}
           <div className="mt-6 flex gap-3">
             <button
-              onClick={() => navigate({ to: "/asatidz/scan" })}
+              onClick={() => navigate({ to: "/penanggung-jawab/scan" })}
               className="flex-1 py-3.5 bg-emerald-500 hover:bg-emerald-600 active:scale-[0.98] transition rounded-2xl text-white font-semibold text-xs flex items-center justify-center gap-2 shadow-lg shadow-emerald-950/20"
             >
               <Scan size={16} /> Pindai Barcode Gerbang
@@ -468,7 +468,7 @@ function AsatidzDashboardPage() {
 
                         {/* Expandable Panel */}
                         {isExpanded && (
-                          <div className="px-4 pb-5 pt-2 bg-slate-50/30 border-t border-slate-100/50 space-y-4">
+                           <div className="px-4 pb-5 pt-2 bg-slate-50/30 border-t border-slate-100/50 space-y-4">
                             <div className="grid grid-cols-2 gap-3 text-xs bg-white rounded-2xl p-3 border border-slate-100/80 shadow-[0_2px_8px_rgba(0,0,0,0.01)]">
                               <div>
                                 <p className="text-[11px] font-semibold text-slate-400 !normal-case tracking-tight">Rencana Keluar</p>
@@ -764,7 +764,7 @@ function AsatidzDashboardPage() {
                           <span className={`inline-block px-2.5 py-0.5 rounded-full text-[10px] font-semibold border !normal-case tracking-tight ${
                             isOut ? "bg-blue-50 text-blue-700 border-blue-100" : "bg-emerald-50 text-emerald-700 border-emerald-100"
                           }`}>
-                            {isOut ? "Sedang Diluar" : "Disetujui Ustadz"}
+                            {isOut ? "Sedang Diluar" : "Disetujui Penanggung Jawab"}
                           </span>
                           <span className="inline-block px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-indigo-50 text-indigo-700 border border-indigo-100 !normal-case tracking-tight">
                             {permit.permit_type ? permit.permit_type.replace(/_/g, " ") : "-"}
@@ -1285,8 +1285,6 @@ function AsatidzDashboardPage() {
             </div>
           </div>
         )}
-
-
 
         {/* Photo Zoom Viewer Modal */}
         {zoomPhotoUrl && (

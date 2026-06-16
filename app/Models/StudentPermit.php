@@ -62,7 +62,7 @@ class StudentPermit extends Model
     }
 
     /**
-     * Get the admin/asatidz who approved the leave permit.
+     * Get the admin/penanggung jawab who approved the leave permit.
      */
     public function admin(): BelongsTo
     {

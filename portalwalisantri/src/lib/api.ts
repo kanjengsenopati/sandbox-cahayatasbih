@@ -77,12 +77,12 @@ export const fetchPermits = () => api.get('/permits');
 export const postPermitRequest = (data: any) => api.post('/permits', data);
 export const fetchPermitDetail = (id: string | number) => api.get(`/permits/${id}`);
 
-// --- ASATIDZ API METHODS ---
-export const fetchPendingPermits = () => api.get('/asatidz/permits/pending');
+// --- PENANGGUNG JAWAB API METHODS ---
+export const fetchPendingPermits = () => api.get('/penanggung-jawab/permits/pending');
 export const postPermitAction = (id: string | number, data: { action: 'approve' | 'reject', rejection_reason?: string }) => 
-  api.post(`/asatidz/permits/${id}/action`, data);
-export const fetchActivePermits = () => api.get('/asatidz/permits/active');
-export const fetchOverduePermits = () => api.get('/asatidz/permits/overdue');
+  api.post(`/penanggung-jawab/permits/${id}/action`, data);
+export const fetchActivePermits = () => api.get('/penanggung-jawab/permits/active');
+export const fetchOverduePermits = () => api.get('/penanggung-jawab/permits/overdue');
 export const postScanBarcode = (data: { 
   barcode_token: string, 
   latitude?: string, 
@@ -91,23 +91,23 @@ export const postScanBarcode = (data: {
   photo_escort: string, 
   escort_name?: string, 
   escort_relation?: string 
-}) => api.post('/asatidz/permits/scan', data);
-export const fetchAsatidzStats = () => api.get('/asatidz/dashboard-stats');
-export const fetchMyStudents = () => api.get('/asatidz/my-students');
-export const fetchStudentHistory = (studentId: string | number) => api.get(`/asatidz/my-students/${studentId}/history`);
+}) => api.post('/penanggung-jawab/permits/scan', data);
+export const fetchPenanggungJawabStats = () => api.get('/penanggung-jawab/dashboard-stats');
+export const fetchMyStudents = () => api.get('/penanggung-jawab/my-students');
+export const fetchStudentHistory = (studentId: string | number) => api.get(`/penanggung-jawab/my-students/${studentId}/history`);
 
 // Return flow API methods
 export const postReportReturn = (id: string | number, data: { return_photo_santri: string; return_photo_escort: string; latitude?: string; longitude?: string }) => 
   api.post(`/permits/${id}/report-return`, data);
-export const fetchPendingReturnPermits = () => api.get('/asatidz/permits/pending-return');
+export const fetchPendingReturnPermits = () => api.get('/penanggung-jawab/permits/pending-return');
 export const postPermitReturnAction = (id: string | number, data: { action: 'approve' | 'reject'; rejection_reason?: string }) => 
-  api.post(`/asatidz/permits/${id}/action-return`, data);
+  api.post(`/penanggung-jawab/permits/${id}/action-return`, data);
 
 export const updateFcmToken = (token: string | null) => 
   api.post('/update-fcm-token', { fcm_token: token });
 
-export const updateAsatidzFcmToken = (token: string | null) => 
-  api.post('/asatidz/update-fcm-token', { fcm_token: token });
+export const updatePenanggungJawabFcmToken = (token: string | null) => 
+  api.post('/penanggung-jawab/update-fcm-token', { fcm_token: token });
 
 export default api;
 

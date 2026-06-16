@@ -102,7 +102,7 @@ class WaliPermitController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Perizinan berhasil diajukan, menunggu persetujuan Ustadz.',
+            'message' => 'Perizinan berhasil diajukan, menunggu persetujuan Penanggung Jawab.',
             'permit' => $permit
         ]);
     }
@@ -235,7 +235,7 @@ class WaliPermitController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Laporan kepulangan berhasil dikirim. Menunggu persetujuan Ustadz.',
+            'message' => 'Laporan kepulangan berhasil dikirim. Menunggu persetujuan Penanggung Jawab.',
             'permit' => $permit
         ]);
     }

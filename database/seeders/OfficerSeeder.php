@@ -45,7 +45,7 @@ class OfficerSeeder extends Seeder
         // 4. Seed default officers
         $officers = [
             [
-                'name' => 'Ustadz H. Ahmad Fauzi, M.Pd.',
+                'name' => 'Penanggung Jawab H. Ahmad Fauzi, M.Pd.',
                 'position' => 'Kepala Pengasuhan Santri',
                 'duty' => 'Konsultasi ketertiban, kedisiplinan, izin kepulangan santri, dan administrasi asrama.',
                 'phone' => '6281234567890',
@@ -53,7 +53,7 @@ class OfficerSeeder extends Seeder
                 'is_active' => true,
             ],
             [
-                'name' => 'Ustadzah Siti Aminah, S.Ag.',
+                'name' => 'Penanggung Jawab Siti Aminah, S.Ag.',
                 'position' => 'Kepala Kurikulum & Tahfidz',
                 'duty' => 'Konsultasi perkembangan hafalan quran, setoran tajwid, ujian tahfidz, dan penilaian rapor santri.',
                 'phone' => '6289876543210',
@@ -61,7 +61,7 @@ class OfficerSeeder extends Seeder
                 'is_active' => true,
             ],
             [
-                'name' => 'Ustadz M. Ridwan, S.E.',
+                'name' => 'Penanggung Jawab M. Ridwan, S.E.',
                 'position' => 'Bendahara Pesantren',
                 'duty' => 'Konsultasi administrasi keuangan, SPP bulanan, pencairan tabungan santri, dan top up kartu jajan.',
                 'phone' => '6281122334455',

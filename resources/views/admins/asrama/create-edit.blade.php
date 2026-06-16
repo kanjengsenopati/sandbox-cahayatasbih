@@ -68,11 +68,11 @@
                         <!--end::Divider-->
 
                         <!--begin::Host Section-->
-                        <h4 class="fw-bolder mb-6"><i class="fa fa-user-tie text-primary me-2"></i>Pengaturan Asatidz Pengampu</h4>
+                        <h4 class="fw-bolder mb-6"><i class="fa fa-user-tie text-primary me-2"></i>Pengaturan Penanggung Jawab Pengampu</h4>
                         
                         <!--begin::Host Type Radio Selection-->
                         <div class="fv-row mb-7">
-                            <label class="fw-bold fs-6 mb-3">Tipe Input Ustadz Host</label>
+                            <label class="fw-bold fs-6 mb-3">Tipe Input Penanggung Jawab Host</label>
                             <div class="d-flex align-items-center gap-10 mt-2">
                                 <div class="form-check form-check-custom form-check-solid">
                                     <input class="form-check-input" type="radio" value="existing" name="host_type" id="host_existing" 
@@ -93,8 +93,8 @@
 
                         <!--begin::Existing Host Select Group-->
                         <div class="fv-row mb-7" id="existing_host_group">
-                            <label class="required fw-bold fs-6 mb-2">Pilih Asatidz Pengampu</label>
-                            <select name="officer_id" class="form-select form-select-solid" data-control="select2" data-placeholder="Pilih Asatidz Pengampu...">
+                            <label class="required fw-bold fs-6 mb-2">Pilih Penanggung Jawab Pengampu</label>
+                            <select name="officer_id" class="form-select form-select-solid" data-control="select2" data-placeholder="Pilih Penanggung Jawab Pengampu...">
                                 <option value=""></option>
                                 @foreach($officers as $officer)
                                     <option value="{{ $officer->id }}" 
@@ -103,7 +103,7 @@
                                     </option>
                                 @endforeach
                             </select>
-                            <div class="text-muted fs-7 mt-2">Akun Admin PWA Asatidz akan secara otomatis disinkronkan ke nomor WA petugas ini.</div>
+                            <div class="text-muted fs-7 mt-2">Akun Admin PWA Penanggung Jawab akan secara otomatis disinkronkan ke nomor WA petugas ini.</div>
                         </div>
 
                         <!--begin::New Host Form Group (Hidden by default)-->
@@ -114,7 +114,7 @@
                                 <div class="col-md-6 fv-row">
                                     <label class="required fw-bold fs-6 mb-2">Nama Lengkap Petugas</label>
                                     <input type="text" name="new_officer_name" class="form-control form-control-solid" 
-                                        placeholder="Nama Lengkap Ustadz/Ustadzah" value="{{ old('new_officer_name') }}" />
+                                        placeholder="Nama Lengkap Penanggung Jawab" value="{{ old('new_officer_name') }}" />
                                 </div>
                                 <div class="col-md-6 fv-row">
                                     <label class="required fw-bold fs-6 mb-2">No. WhatsApp Petugas (Format: 08...)</label>
@@ -136,7 +136,7 @@
                                 </div>
                             </div>
                             <div class="text-primary fs-7 mt-4">
-                                <i class="fa fa-info-circle text-primary me-1"></i> Sistem akan secara otomatis membuatkan akun login PWA Asatidz dengan password default: <strong>12345678</strong>.
+                                <i class="fa fa-info-circle text-primary me-1"></i> Sistem akan secara otomatis membuatkan akun login PWA Penanggung Jawab dengan password default: <strong>12345678</strong>.
                             </div>
                         </div>
                         <!--end::New Host Form Group-->

@@ -110,7 +110,7 @@ function Tahfidz() {
               <BookOpen className="w-12 h-12 text-muted-foreground mx-auto mb-3" strokeWidth={1.5} />
               <p className="text-sm font-bold text-foreground">Belum Ada Setoran</p>
               <p className="text-xs text-muted-foreground mt-1">
-                Data setoran hafalan Al-Quran dari ustadz pembimbing akan tampil secara berkala di sini.
+                Data setoran hafalan Al-Quran dari Penanggung Jawab pembimbing akan tampil secara berkala di sini.
               </p>
             </div>
           ) : (
@@ -142,7 +142,7 @@ function Tahfidz() {
                       <div className="mt-3 pt-3 border-t border-border flex gap-2">
                         <MessageSquare size={14} className="text-primary shrink-0 mt-0.5" />
                         <div className="bg-secondary/50 rounded-xl p-3 flex-1">
-                          <span className="text-[9px] font-bold text-muted-foreground block mb-0.5">Saran Ustadz:</span>
+                          <span className="text-[9px] font-bold text-muted-foreground block mb-0.5">Saran Penanggung Jawab:</span>
                           <p className="text-xs text-foreground font-medium italic">
                             "{log.feedback}"
                           </p>

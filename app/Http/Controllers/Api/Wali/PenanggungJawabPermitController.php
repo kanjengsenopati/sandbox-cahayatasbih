@@ -10,10 +10,10 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Carbon\Carbon;
 
-class AsatidzPermitController extends Controller
+class PenanggungJawabPermitController extends Controller
 {
     /**
-     * Update FCM registration token for Asatidz.
+     * Update FCM registration token for Penanggung Jawab.
      */
     public function updateFcmToken(Request $request)
     {
@@ -26,7 +26,7 @@ class AsatidzPermitController extends Controller
             $admin->update(['fcm_token' => $request->fcm_token]);
             return response()->json([
                 'success' => true,
-                'message' => 'FCM Token Asatidz berhasil diperbarui'
+                'message' => 'FCM Token Penanggung Jawab berhasil diperbarui'
             ]);
         }
 
@@ -181,6 +181,7 @@ class AsatidzPermitController extends Controller
             'escort_relation' => 'required_if:scan_type,exit|nullable|string|max:255',
         ]);
 
+        $token = $request->input('barcode_token');
         $permit = StudentPermit::where('barcode_token', $token)
             ->with(['student', 'user'])
             ->firstOrFail();
@@ -201,18 +202,6 @@ class AsatidzPermitController extends Controller
                 'exit_latitude' => $request->input('latitude'),
                 'exit_longitude' => $request->input('longitude'),
             ]);
-
-            // Temporarily disabled check-out notification on gate scan
-            /*
-            if ($permit->user) {
-                dispatch(new \App\Jobs\SendToPushNotificationJob(
-                    "Santri Keluar Pondok",
-                    "Santri {$permit->student->name} telah melakukan check-out di gerbang keluar.",
-                    $permit->user,
-                    $permit
-                ));
-            }
-            */
 
             return response()->json([
                 'success' => true,
@@ -236,18 +225,6 @@ class AsatidzPermitController extends Controller
                 'return_latitude' => $request->input('latitude'),
                 'return_longitude' => $request->input('longitude'),
             ]);
-
-            // Temporarily disabled check-in notification on gate scan
-            /*
-            if ($permit->user) {
-                dispatch(new \App\Jobs\SendToPushNotificationJob(
-                    "Santri Kembali ke Pondok",
-                    "Santri {$permit->student->name} telah melakukan check-in di gerbang masuk.",
-                    $permit->user,
-                    $permit
-                ));
-            }
-            */
 
             return response()->json([
                 'success' => true,
@@ -307,7 +284,7 @@ class AsatidzPermitController extends Controller
         // Get asrama name from first student
         $asramaName = \App\Models\Student::where('asrama_host_id', $adminId)
             ->whereNotNull('asrama_name')
-            ->value('asrama_name') ?: 'Asrama Asatidz';
+            ->value('asrama_name') ?: 'Asrama Penanggung Jawab';
 
         // Count permits
         $pendingCount = StudentPermit::where('status', 'pending')
@@ -394,7 +371,7 @@ class AsatidzPermitController extends Controller
     {
         $adminId = Auth::guard('web')->id();
         
-        // Ensure student is supervised by this ustadz
+        // Ensure student is supervised by this penanggung jawab
         $student = \App\Models\Student::where('id', $studentId)
             ->where('asrama_host_id', $adminId)
             ->firstOrFail();

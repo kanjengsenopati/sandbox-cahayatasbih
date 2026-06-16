@@ -15,7 +15,7 @@ class ProfileController extends BaseWaliApiController
             $isDualRole = \App\Models\User::whereIn('phone', $this->getPhoneVariations($user->phone))->exists();
             return response()->json([
                 'user' => $user,
-                'role' => 'asatidz',
+                'role' => 'penanggung_jawab',
                 'is_dual_role' => $isDualRole,
                 'students' => []
             ]);
@@ -71,8 +71,8 @@ class ProfileController extends BaseWaliApiController
                 Auth::guard('wali')->logout();
                 Auth::guard('web')->login($admin);
                 return response()->json([
-                    'message' => 'Switched to Asatidz successfully',
-                    'role' => 'asatidz'
+                    'message' => 'Switched to Penanggung Jawab successfully',
+                    'role' => 'penanggung_jawab'
                 ]);
             }
         } elseif (Auth::guard('web')->check()) {

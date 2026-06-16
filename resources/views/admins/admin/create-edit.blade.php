@@ -105,7 +105,7 @@
                                          <div class="fv-row mb-7">
                                              <!--begin::Label-->
                                              <label class="fs-6 fw-bold form-label" for="phone">
-                                                 <span>No. WhatsApp (Untuk Login PWA Asatidz)</span>
+                                                 <span>No. WhatsApp (Untuk Login PWA Penanggung Jawab)</span>
                                                  <i class="fas fa-exclamation-circle ms-1 fs-7" data-bs-toggle="tooltip"
                                                      title="Masukkan Nomor WhatsApp tanpa tanda + atau spasi, contoh: 628123456789"></i>
                                              </label>

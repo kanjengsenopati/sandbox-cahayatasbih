@@ -18,7 +18,7 @@ class Asrama extends Model
     ];
 
     /**
-     * Get the host admin (ustadz) supervising this dormitory.
+     * Get the host admin (penanggung jawab) supervising this dormitory.
      */
     public function hostAdmin(): BelongsTo
     {

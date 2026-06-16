@@ -13,7 +13,7 @@ class AuthController extends Controller
         $credentials = $request->validate([
             'phone' => 'required',
             'password' => 'required',
-            'role' => 'nullable|string|in:wali,asatidz',
+            'role' => 'nullable|string|in:wali,penanggung_jawab',
         ]);
 
         $phone = $credentials['phone'];
@@ -25,16 +25,16 @@ class AuthController extends Controller
         // Pre-Check Dual Role Identity
         if (!$role) {
             $waliUser = \App\Models\User::whereIn('phone', $variations)->first();
-            $asatidzUser = \App\Models\Admin::whereIn('phone', $variations)->first();
+            $penanggungJawabUser = \App\Models\Admin::whereIn('phone', $variations)->first();
 
             $isWaliValid = $waliUser && \Illuminate\Support\Facades\Hash::check($password, $waliUser->password);
-            $isAsatidzValid = $asatidzUser && \Illuminate\Support\Facades\Hash::check($password, $asatidzUser->password);
+            $isPenanggungJawabValid = $penanggungJawabUser && \Illuminate\Support\Facades\Hash::check($password, $penanggungJawabUser->password);
 
-            if ($isWaliValid && $isAsatidzValid) {
+            if ($isWaliValid && $isPenanggungJawabValid) {
                 return response()->json([
                     'status' => 'requires_role_selection',
                     'message' => 'Identitas ganda terdeteksi. Silakan pilih peran masuk Anda.',
-                    'roles' => ['wali', 'asatidz']
+                    'roles' => ['wali', 'penanggung_jawab']
                 ]);
             }
         }
@@ -60,11 +60,11 @@ class AuthController extends Controller
             }
         }
 
-        // 2. Attempt Asatidz Auth (Admin model)
-        if (!$role || $role === 'asatidz') {
-            $asatidzUser = \App\Models\Admin::whereIn('phone', $variations)->first();
-            if ($asatidzUser) {
-                if (Auth::guard('web')->attempt(['phone' => $asatidzUser->phone, 'password' => $password])) {
+        // 2. Attempt Penanggung Jawab Auth (Admin model)
+        if (!$role || $role === 'penanggung_jawab') {
+            $penanggungJawabUser = \App\Models\Admin::whereIn('phone', $variations)->first();
+            if ($penanggungJawabUser) {
+                if (Auth::guard('web')->attempt(['phone' => $penanggungJawabUser->phone, 'password' => $password])) {
                     $admin = Auth::guard('web')->user();
                     if ($admin->is_active) {
                         // Check if Admin is allowed to access PWA
@@ -82,7 +82,7 @@ class AuthController extends Controller
                         $admin->update(['last_login_at' => now()]);
                         return response()->json([
                             'message' => 'Login successful',
-                            'role' => 'asatidz',
+                            'role' => 'penanggung_jawab',
                             'user' => $admin
                         ]);
                     } else {

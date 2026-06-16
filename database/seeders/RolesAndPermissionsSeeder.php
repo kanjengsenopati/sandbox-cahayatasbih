@@ -60,9 +60,9 @@ class RolesAndPermissionsSeeder extends Seeder
         // Super Admin gets all permissions
         $superAdminRole->syncPermissions(Permission::where('guard_name', 'web')->get());
 
-        // Ustadz Asrama (Dormitory Head) Role
+        // Penanggung Jawab Asrama (Dormitory Head) Role
         $ustadzAsramaRole = Role::firstOrCreate([
-            'name' => 'Ustadz Asrama',
+            'name' => 'Penanggung Jawab Asrama',
             'guard_name' => 'web'
         ]);
         $ustadzAsramaRole->syncPermissions([

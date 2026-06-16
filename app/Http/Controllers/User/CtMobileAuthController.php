@@ -47,18 +47,18 @@ class CtMobileAuthController extends Controller
             }
         }
 
-        // 2. Attempt Asatidz Auth (Admin model)
+        // 2. Attempt Penanggung Jawab Auth (Admin model)
         if (Auth::guard('web')->attempt(['phone' => $phone, 'password' => $password], $remember)) {
             $admin = Auth::guard('web')->user();
             if ($admin->is_active) {
                 if ($request->expectsJson()) {
                     return response()->json([
                         'success' => true,
-                        'role' => 'asatidz',
-                        'redirect' => '/ct-mobile/app#/asatidz/dashboard'
+                        'role' => 'penanggung_jawab',
+                        'redirect' => '/ct-mobile/app#/penanggung-jawab/dashboard'
                     ]);
                 }
-                return redirect('/ct-mobile/app#/asatidz/dashboard');
+                return redirect('/ct-mobile/app#/penanggung-jawab/dashboard');
             } else {
                 Auth::guard('web')->logout();
                 return back()->with(['warning' => 'Maaf akun Anda dinonaktifkan, silakan hubungi administrator !!'])->withInput($request->only('phone'));

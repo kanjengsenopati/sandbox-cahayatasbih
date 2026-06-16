@@ -1121,7 +1121,7 @@ function PerizinanPage() {
                 <div className="mt-4 text-center">
                   <p className="text-xs font-mono font-bold text-[#9b1de8] tracking-widest">{activeBarcode}</p>
                   <p className="text-[10px] text-slate-400 mt-1 font-semibold leading-relaxed">
-                    Tunjukkan QR code ini kepada Ustadz atau Satpam di pos gerbang luar pondok pesantren.
+                    Tunjukkan QR code ini kepada Penanggung Jawab atau Satpam di pos gerbang luar pondok pesantren.
                   </p>
                 </div>
               </div>
@@ -1602,7 +1602,7 @@ function PerizinanPage() {
                       setReturnPhotoEscort(null);
                       setSuccessDialog({
                         open: true,
-                        message: "Laporan kepulangan berhasil dikirim! Silakan hubungi Ustadz untuk persetujuan."
+                        message: "Laporan kepulangan berhasil dikirim! Silakan hubungi Penanggung Jawab untuk persetujuan."
                       });
                     } else {
                       setReportError(res.data?.message || "Gagal mengirim laporan kepulangan.");

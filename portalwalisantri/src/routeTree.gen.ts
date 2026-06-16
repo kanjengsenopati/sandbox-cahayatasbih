@@ -32,10 +32,10 @@ import { Route as ProfilPembayaranRouteImport } from './routes/profil_.pembayara
 import { Route as ProfilNotifikasiRouteImport } from './routes/profil_.notifikasi'
 import { Route as ProfilKeamananRouteImport } from './routes/profil_.keamanan'
 import { Route as ProfilBantuanRouteImport } from './routes/profil_.bantuan'
+import { Route as PenanggungJawabScanRouteImport } from './routes/penanggung-jawab.scan'
+import { Route as PenanggungJawabDashboardRouteImport } from './routes/penanggung-jawab.dashboard'
 import { Route as PembayaranPayIdRouteImport } from './routes/pembayaran.$payId'
 import { Route as BeritaNewsIdRouteImport } from './routes/berita.$newsId'
-import { Route as AsatidzScanRouteImport } from './routes/asatidz.scan'
-import { Route as AsatidzDashboardRouteImport } from './routes/asatidz.dashboard'
 import { Route as AdminApprovalRouteImport } from './routes/admin.approval'
 
 const TopupRoute = TopupRouteImport.update({
@@ -153,6 +153,17 @@ const ProfilBantuanRoute = ProfilBantuanRouteImport.update({
   path: '/profil/bantuan',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PenanggungJawabScanRoute = PenanggungJawabScanRouteImport.update({
+  id: '/penanggung-jawab/scan',
+  path: '/penanggung-jawab/scan',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PenanggungJawabDashboardRoute =
+  PenanggungJawabDashboardRouteImport.update({
+    id: '/penanggung-jawab/dashboard',
+    path: '/penanggung-jawab/dashboard',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const PembayaranPayIdRoute = PembayaranPayIdRouteImport.update({
   id: '/pembayaran/$payId',
   path: '/pembayaran/$payId',
@@ -161,16 +172,6 @@ const PembayaranPayIdRoute = PembayaranPayIdRouteImport.update({
 const BeritaNewsIdRoute = BeritaNewsIdRouteImport.update({
   id: '/berita/$newsId',
   path: '/berita/$newsId',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AsatidzScanRoute = AsatidzScanRouteImport.update({
-  id: '/asatidz/scan',
-  path: '/asatidz/scan',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AsatidzDashboardRoute = AsatidzDashboardRouteImport.update({
-  id: '/asatidz/dashboard',
-  path: '/asatidz/dashboard',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminApprovalRoute = AdminApprovalRouteImport.update({
@@ -198,10 +199,10 @@ export interface FileRoutesByFullPath {
   '/tahfidz': typeof TahfidzRoute
   '/topup': typeof TopupRoute
   '/admin/approval': typeof AdminApprovalRoute
-  '/asatidz/dashboard': typeof AsatidzDashboardRoute
-  '/asatidz/scan': typeof AsatidzScanRoute
   '/berita/$newsId': typeof BeritaNewsIdRoute
   '/pembayaran/$payId': typeof PembayaranPayIdRoute
+  '/penanggung-jawab/dashboard': typeof PenanggungJawabDashboardRoute
+  '/penanggung-jawab/scan': typeof PenanggungJawabScanRoute
   '/profil/bantuan': typeof ProfilBantuanRoute
   '/profil/keamanan': typeof ProfilKeamananRoute
   '/profil/notifikasi': typeof ProfilNotifikasiRoute
@@ -228,10 +229,10 @@ export interface FileRoutesByTo {
   '/tahfidz': typeof TahfidzRoute
   '/topup': typeof TopupRoute
   '/admin/approval': typeof AdminApprovalRoute
-  '/asatidz/dashboard': typeof AsatidzDashboardRoute
-  '/asatidz/scan': typeof AsatidzScanRoute
   '/berita/$newsId': typeof BeritaNewsIdRoute
   '/pembayaran/$payId': typeof PembayaranPayIdRoute
+  '/penanggung-jawab/dashboard': typeof PenanggungJawabDashboardRoute
+  '/penanggung-jawab/scan': typeof PenanggungJawabScanRoute
   '/profil/bantuan': typeof ProfilBantuanRoute
   '/profil/keamanan': typeof ProfilKeamananRoute
   '/profil/notifikasi': typeof ProfilNotifikasiRoute
@@ -259,10 +260,10 @@ export interface FileRoutesById {
   '/tahfidz': typeof TahfidzRoute
   '/topup': typeof TopupRoute
   '/admin/approval': typeof AdminApprovalRoute
-  '/asatidz/dashboard': typeof AsatidzDashboardRoute
-  '/asatidz/scan': typeof AsatidzScanRoute
   '/berita/$newsId': typeof BeritaNewsIdRoute
   '/pembayaran/$payId': typeof PembayaranPayIdRoute
+  '/penanggung-jawab/dashboard': typeof PenanggungJawabDashboardRoute
+  '/penanggung-jawab/scan': typeof PenanggungJawabScanRoute
   '/profil_/bantuan': typeof ProfilBantuanRoute
   '/profil_/keamanan': typeof ProfilKeamananRoute
   '/profil_/notifikasi': typeof ProfilNotifikasiRoute
@@ -291,10 +292,10 @@ export interface FileRouteTypes {
     | '/tahfidz'
     | '/topup'
     | '/admin/approval'
-    | '/asatidz/dashboard'
-    | '/asatidz/scan'
     | '/berita/$newsId'
     | '/pembayaran/$payId'
+    | '/penanggung-jawab/dashboard'
+    | '/penanggung-jawab/scan'
     | '/profil/bantuan'
     | '/profil/keamanan'
     | '/profil/notifikasi'
@@ -321,10 +322,10 @@ export interface FileRouteTypes {
     | '/tahfidz'
     | '/topup'
     | '/admin/approval'
-    | '/asatidz/dashboard'
-    | '/asatidz/scan'
     | '/berita/$newsId'
     | '/pembayaran/$payId'
+    | '/penanggung-jawab/dashboard'
+    | '/penanggung-jawab/scan'
     | '/profil/bantuan'
     | '/profil/keamanan'
     | '/profil/notifikasi'
@@ -351,10 +352,10 @@ export interface FileRouteTypes {
     | '/tahfidz'
     | '/topup'
     | '/admin/approval'
-    | '/asatidz/dashboard'
-    | '/asatidz/scan'
     | '/berita/$newsId'
     | '/pembayaran/$payId'
+    | '/penanggung-jawab/dashboard'
+    | '/penanggung-jawab/scan'
     | '/profil_/bantuan'
     | '/profil_/keamanan'
     | '/profil_/notifikasi'
@@ -382,10 +383,10 @@ export interface RootRouteChildren {
   TahfidzRoute: typeof TahfidzRoute
   TopupRoute: typeof TopupRoute
   AdminApprovalRoute: typeof AdminApprovalRoute
-  AsatidzDashboardRoute: typeof AsatidzDashboardRoute
-  AsatidzScanRoute: typeof AsatidzScanRoute
   BeritaNewsIdRoute: typeof BeritaNewsIdRoute
   PembayaranPayIdRoute: typeof PembayaranPayIdRoute
+  PenanggungJawabDashboardRoute: typeof PenanggungJawabDashboardRoute
+  PenanggungJawabScanRoute: typeof PenanggungJawabScanRoute
   ProfilBantuanRoute: typeof ProfilBantuanRoute
   ProfilKeamananRoute: typeof ProfilKeamananRoute
   ProfilNotifikasiRoute: typeof ProfilNotifikasiRoute
@@ -557,6 +558,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProfilBantuanRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/penanggung-jawab/scan': {
+      id: '/penanggung-jawab/scan'
+      path: '/penanggung-jawab/scan'
+      fullPath: '/penanggung-jawab/scan'
+      preLoaderRoute: typeof PenanggungJawabScanRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/penanggung-jawab/dashboard': {
+      id: '/penanggung-jawab/dashboard'
+      path: '/penanggung-jawab/dashboard'
+      fullPath: '/penanggung-jawab/dashboard'
+      preLoaderRoute: typeof PenanggungJawabDashboardRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/pembayaran/$payId': {
       id: '/pembayaran/$payId'
       path: '/pembayaran/$payId'
@@ -569,20 +584,6 @@ declare module '@tanstack/react-router' {
       path: '/berita/$newsId'
       fullPath: '/berita/$newsId'
       preLoaderRoute: typeof BeritaNewsIdRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/asatidz/scan': {
-      id: '/asatidz/scan'
-      path: '/asatidz/scan'
-      fullPath: '/asatidz/scan'
-      preLoaderRoute: typeof AsatidzScanRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/asatidz/dashboard': {
-      id: '/asatidz/dashboard'
-      path: '/asatidz/dashboard'
-      fullPath: '/asatidz/dashboard'
-      preLoaderRoute: typeof AsatidzDashboardRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin/approval': {
@@ -614,10 +615,10 @@ const rootRouteChildren: RootRouteChildren = {
   TahfidzRoute: TahfidzRoute,
   TopupRoute: TopupRoute,
   AdminApprovalRoute: AdminApprovalRoute,
-  AsatidzDashboardRoute: AsatidzDashboardRoute,
-  AsatidzScanRoute: AsatidzScanRoute,
   BeritaNewsIdRoute: BeritaNewsIdRoute,
   PembayaranPayIdRoute: PembayaranPayIdRoute,
+  PenanggungJawabDashboardRoute: PenanggungJawabDashboardRoute,
+  PenanggungJawabScanRoute: PenanggungJawabScanRoute,
   ProfilBantuanRoute: ProfilBantuanRoute,
   ProfilKeamananRoute: ProfilKeamananRoute,
   ProfilNotifikasiRoute: ProfilNotifikasiRoute,

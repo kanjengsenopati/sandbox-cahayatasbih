@@ -4,12 +4,12 @@ import { ArrowLeft, Loader2, Scan, Camera, MapPin, CheckCircle2, UserCheck, Shie
 import { useMutation } from "@tanstack/react-query";
 import { postScanBarcode } from "@/lib/api";
 
-export const Route = createFileRoute("/asatidz/scan")({
-  component: AsatidzScanPage,
+export const Route = createFileRoute("/penanggung-jawab/scan")({
+  component: PenanggungJawabScanPage,
   head: () => ({ meta: [{ title: "Verifikasi Gerbang — CT-Mobile" }] }),
 });
 
-function AsatidzScanPage() {
+function PenanggungJawabScanPage() {
   const navigate = useNavigate();
   const [barcodeToken, setBarcodeToken] = useState("");
   
@@ -40,6 +40,7 @@ function AsatidzScanPage() {
       return;
     }
 
+    const options = { enableHighAccuracy: true, timeout: 10000 };
     setGpsLoading(true);
     setGpsError("");
 
@@ -53,7 +54,7 @@ function AsatidzScanPage() {
         setGpsError("Gagal mengambil GPS: Aktifkan GPS pada gawai Anda.");
         setGpsLoading(false);
       },
-      { enableHighAccuracy: true, timeout: 10000 }
+      options
     );
   };
 
@@ -123,7 +124,7 @@ function AsatidzScanPage() {
       setEscortName("");
       setTimeout(() => {
         setSuccessMsg("");
-        navigate({ to: "/asatidz/dashboard" });
+        navigate({ to: "/penanggung-jawab/dashboard" });
       }, 3000);
     },
     onError: (err: any) => {
@@ -164,7 +165,7 @@ function AsatidzScanPage() {
         {/* Top Navbar */}
         <div className="px-6 pt-12 pb-4 flex items-center gap-3 border-b border-slate-100 bg-card">
           <button
-            onClick={() => navigate({ to: "/asatidz/dashboard" })}
+            onClick={() => navigate({ to: "/penanggung-jawab/dashboard" })}
             className="w-10 h-10 rounded-xl bg-secondary border border-border flex items-center justify-center text-slate-600 active:scale-95"
           >
             <ArrowLeft size={18} />
