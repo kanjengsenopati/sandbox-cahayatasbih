@@ -323,32 +323,50 @@
                         // Append hidden input to form
                         document.getElementById('form-multi-payment').appendChild(hiddenInput);
 
-                        // Create a new card element for each selected bill in modal
-                        const cardDiv = document.createElement('div');
-                        cardDiv.className = 'card payment-card';
+                        // Create a new col-md-6 wrapper for 2 columns layout
+                        const colDiv = document.createElement('div');
+                        colDiv.className = 'col-md-6';
+
+                        // Card element for selected bill details
+                        const itemCard = document.createElement('div');
+                        itemCard.className = 'card h-100 border border-gray-200 shadow-none';
+                        itemCard.style.borderRadius = '16px';
+                        itemCard.style.backgroundColor = '#f8fafc';
 
                         const cardBodyDiv = document.createElement('div');
-                        cardBodyDiv.className = 'card-body pt-5';
+                        cardBodyDiv.className = 'card-body p-4 d-flex justify-content-between align-items-center';
 
-                        const nameDiv = document.createElement('div');
-                        nameDiv.className = 'mb-1';
+                        // Left side: Item Name & Date info
+                        const leftDiv = document.createElement('div');
+                        leftDiv.className = 'd-flex flex-column';
+                        
                         const nameSpan = document.createElement('span');
-                        nameSpan.className = 'fw-bold fs-5';
-                        nameSpan.textContent = `${billName}, ${translatedMonth} ${year}`;
-                        nameDiv.appendChild(nameSpan);
+                        nameSpan.className = 'fw-bold fs-6 text-slate-800';
+                        nameSpan.textContent = billName;
+                        
+                        const dateSpan = document.createElement('span');
+                        dateSpan.className = 'text-slate-500 fs-7 mt-1';
+                        dateSpan.textContent = `${translatedMonth} ${year}`;
+                        
+                        leftDiv.appendChild(nameSpan);
+                        leftDiv.appendChild(dateSpan);
 
-                        const amountDiv = document.createElement('div');
-                        amountDiv.className = 'mb-1';
+                        // Right side: Nominal value
+                        const rightDiv = document.createElement('div');
+                        rightDiv.className = 'text-end';
+                        
                         const amountSpan = document.createElement('span');
-                        amountSpan.className = 'fw-bold text-muted';
+                        amountSpan.className = 'fw-boldest fs-6 text-slate-900';
                         amountSpan.textContent = `Rp ${amount.toLocaleString('id-ID')}`;
-                        amountDiv.appendChild(amountSpan);
+                        
+                        rightDiv.appendChild(amountSpan);
 
-                        cardBodyDiv.appendChild(nameDiv);
-                        cardBodyDiv.appendChild(amountDiv);
-                        cardDiv.appendChild(cardBodyDiv);
+                        cardBodyDiv.appendChild(leftDiv);
+                        cardBodyDiv.appendChild(rightDiv);
+                        itemCard.appendChild(cardBodyDiv);
+                        colDiv.appendChild(itemCard);
 
-                        paymentDetails.appendChild(cardDiv);
+                        paymentDetails.appendChild(colDiv);
                     }
                 });
 
