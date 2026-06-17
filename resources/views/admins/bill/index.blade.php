@@ -126,6 +126,12 @@
         border-color: #7A3FEF;
         color: white;
     }
+
+    @media (min-width: 992px) {
+        .border-lg-end {
+            border-right: 1px solid #eff2f5 !important;
+        }
+    }
 </style>
 
 @endpush
@@ -278,58 +284,107 @@
                                     @if ($student ?? false)
                                     <div class="card-body pt-3">
                                         <div class="card-information">
-                                            <div class="info-item">
-                                                <span class="info-label">Tahun Ajaran</span>
-                                                <span class="info-colon">:</span>
-                                                <span class="info-value">
-                                                    <span class="text-slate-800 fw-bold">
-                                                        @if(request('academic_year_id'))
-                                                            {{ $academicYears->where('id', request('academic_year_id'))->first()->name ?? 'Semua Tahun Ajaran' }}
-                                                        @else
-                                                            Semua Tahun Ajaran
-                                                        @endif
-                                                    </span>
-                                                </span>
-                                            </div>
-                                            <div class="info-item">
-                                                <span class="info-label">NIS</span>
-                                                <span class="info-colon">:</span>
-                                                <span class="info-value">
-                                                    <span class="text-slate-700 fw-semibold">{{ @$student->nis ?? '' }}</span>
-                                                </span>
-                                            </div>
-                                            <div class="info-item">
-                                                <span class="info-label">Nama</span>
-                                                <span class="info-colon">:</span>
-                                                <span class="info-value">
-                                                    <span class="text-slate-900 fw-bold">{{ @$student->name ?? '' }}</span>
-                                                </span>
-                                            </div>
-                                            <div class="info-item">
-                                                <span class="info-label">Kelas</span>
-                                                <span class="info-colon">:</span>
-                                                <span class="info-value">
-                                                    <span class="text-slate-700 fw-semibold">{{ @$student->classroom->name ?? '' }}</span>
-                                                </span>
-                                            </div>
-                                            <div class="info-item">
-                                                <span class="info-label">Status</span>
-                                                <span class="info-colon">:</span>
-                                                <span class="info-value">
+                                            <div class="row align-items-center g-5">
+                                                <!-- Left Side: Student Info -->
+                                                <div class="col-lg-6 col-12 border-lg-end pe-lg-5">
+                                                    <div class="info-item">
+                                                        <span class="info-label">Tahun Ajaran</span>
+                                                        <span class="info-colon">:</span>
+                                                        <span class="info-value">
+                                                            <span class="text-slate-800 fw-bold">
+                                                                @if(request('academic_year_id'))
+                                                                    {{ $academicYears->where('id', request('academic_year_id'))->first()->name ?? 'Semua Tahun Ajaran' }}
+                                                                @else
+                                                                    Semua Tahun Ajaran
+                                                                @endif
+                                                            </span>
+                                                        </span>
+                                                    </div>
+                                                    <div class="info-item">
+                                                        <span class="info-label">NIS</span>
+                                                        <span class="info-colon">:</span>
+                                                        <span class="info-value">
+                                                            <span class="text-slate-700 fw-semibold">{{ @$student->nis ?? '' }}</span>
+                                                        </span>
+                                                    </div>
+                                                    <div class="info-item">
+                                                        <span class="info-label">Nama</span>
+                                                        <span class="info-colon">:</span>
+                                                        <span class="info-value">
+                                                            <span class="text-slate-900 fw-bold">{{ @$student->name ?? '' }}</span>
+                                                        </span>
+                                                    </div>
+                                                    <div class="info-item">
+                                                        <span class="info-label">Kelas</span>
+                                                        <span class="info-colon">:</span>
+                                                        <span class="info-value">
+                                                            <span class="text-slate-700 fw-semibold">{{ @$student->classroom->name ?? '' }}</span>
+                                                        </span>
+                                                    </div>
+                                                    <div class="info-item">
+                                                        <span class="info-label">Status</span>
+                                                        <span class="info-colon">:</span>
+                                                        <span class="info-value">
+                                                            @php
+                                                                $statusClass = match(@$student->status) {
+                                                                    'ACTIVE' => 'status-badge-active',
+                                                                    'INACTIVE' => 'status-badge-inactive',
+                                                                    'GRADUATED' => 'status-badge-graduated',
+                                                                    'TRANSFERRED' => 'status-badge-transferred',
+                                                                    'DROPPED_OUT' => 'status-badge-dropped-out',
+                                                                    default => 'status-badge-active',
+                                                                };
+                                                            @endphp
+                                                            <span class="status-badge {{ $statusClass }}">
+                                                                {{ @$student->translatedStatus() ?? '' }}
+                                                            </span>
+                                                        </span>
+                                                    </div>
+                                                </div>
+
+                                                <!-- Right Side: Billing Cards (Total, Terbayar, Sisa Tagihan) -->
+                                                <div class="col-lg-6 col-12 ps-lg-5">
                                                     @php
-                                                        $statusClass = match(@$student->status) {
-                                                            'ACTIVE' => 'status-badge-active',
-                                                            'INACTIVE' => 'status-badge-inactive',
-                                                            'GRADUATED' => 'status-badge-graduated',
-                                                            'TRANSFERRED' => 'status-badge-transferred',
-                                                            'DROPPED_OUT' => 'status-badge-dropped-out',
-                                                            default => 'status-badge-active',
-                                                        };
+                                                        $totalBill = (isset($billMonth) ? $billMonth->sum('total_bill') : 0) + (isset($billOthers) ? $billOthers->sum('total_bill') : 0);
+                                                        $totalPaid = (isset($billMonth) ? $billMonth->sum('total_paid') : 0) + (isset($billOthers) ? $billOthers->sum('total_paid') : 0);
+                                                        $totalUnpaid = (isset($billMonth) ? $billMonth->sum('total_unpaid') : 0) + (isset($billOthers) ? $billOthers->sum('total_unpaid') : 0);
                                                     @endphp
-                                                    <span class="status-badge {{ $statusClass }}">
-                                                        {{ @$student->translatedStatus() ?? '' }}
-                                                    </span>
-                                                </span>
+                                                    
+                                                    <!-- Row 1: Total & Terbayar -->
+                                                    <div class="row g-4 mb-4">
+                                                        <div class="col-6">
+                                                            <div class="p-4 bg-light-primary border border-primary border-opacity-10 d-flex flex-column justify-content-between h-100" style="border-radius: 16px;">
+                                                                <div class="d-flex align-items-center justify-content-between mb-3">
+                                                                    <span class="text-slate-500 fs-8 fw-boldest text-uppercase tracking-wider">Total Tagihan</span>
+                                                                    <i class="fas fa-file-invoice-dollar text-primary fs-4"></i>
+                                                                </div>
+                                                                <span class="fs-4 fw-boldest text-slate-900">Rp {{ number_format($totalBill, 0, ',', '.') }}</span>
+                                                            </div>
+                                                        </div>
+                                                        <div class="col-6">
+                                                            <div class="p-4 bg-light-success border border-success border-opacity-10 d-flex flex-column justify-content-between h-100" style="border-radius: 16px;">
+                                                                <div class="d-flex align-items-center justify-content-between mb-3">
+                                                                    <span class="text-slate-500 fs-8 fw-boldest text-uppercase tracking-wider">Tagihan Terbayar</span>
+                                                                    <i class="fas fa-check-circle text-success fs-4"></i>
+                                                                </div>
+                                                                <span class="fs-4 fw-boldest text-emerald-600">Rp {{ number_format($totalPaid, 0, ',', '.') }}</span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
+                                                    <!-- Row 2: Sisa Tagihan -->
+                                                    <div class="row g-4">
+                                                        <div class="col-12">
+                                                            <div class="p-4 bg-light-danger border border-danger border-opacity-10 d-flex flex-column justify-content-between" style="border-radius: 16px;">
+                                                                <div class="d-flex align-items-center justify-content-between mb-3">
+                                                                    <span class="text-slate-500 fs-8 fw-boldest text-uppercase tracking-wider">Sisa Tagihan</span>
+                                                                    <i class="fas fa-exclamation-circle text-danger fs-3"></i>
+                                                                </div>
+                                                                <span class="fs-3 fw-boldest text-danger">Rp {{ number_format($totalUnpaid, 0, ',', '.') }}</span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
                                             </div>
                                         </div>
                                         <div class="separator mb-6"></div>
