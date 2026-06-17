@@ -39,13 +39,14 @@
 @endpush
 
 <div class="accordion" id="accordionLainnyaParent">
-    @foreach ($billOthers as $bill)
-    @php
-        $paidAmount = $bill->bills->where('student_id', $student->id)->where('status', 'PAID')->sum('amount');
-        $unpaidAmount = $bill->total_unpaid;
-    @endphp
-    
-    <div class="accordion-item mb-5 border border-gray-300 shadow-sm rounded-3 overflow-hidden">
+    <div class="row g-4">
+        @foreach ($billOthers as $bill)
+        @php
+            $paidAmount = $bill->bills->where('student_id', $student->id)->where('status', 'PAID')->sum('amount');
+            $unpaidAmount = $bill->total_unpaid;
+        @endphp
+        <div class="col-md-6">
+            <div class="accordion-item mb-5 border border-gray-300 shadow-sm rounded-3 overflow-hidden">
         <h2 class="accordion-header" id="headingLainnya{{ $bill->id }}">
             <button class="accordion-button fs-4 fw-bold collapsed bg-light text-dark d-block" type="button" 
                 data-bs-toggle="collapse" 
@@ -53,11 +54,11 @@
                 aria-expanded="false" 
                 aria-controls="collapseLainnya{{ $bill->id }}">
                 
-                <div class="row w-100 align-items-center pe-3">
+                <div class="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center w-100 gap-3 pe-3">
                     <!-- Left: Title & Year -->
-                    <div class="col-md-6 d-flex flex-column text-start">
-                         <div class="d-flex align-items-center mb-1">
-                             <span class="text-slate-900 fs-5 fw-bolder me-2">{{ $bill->name }}</span>
+                    <div class="d-flex flex-column text-start">
+                         <div class="d-flex align-items-center flex-wrap gap-2 mb-1">
+                             <span class="text-slate-900 fs-5 fw-bolder">{{ $bill->name }}</span>
                              <span class="badge badge-warning fw-bold fs-8 px-3 py-1 text-white">Tagihan Lain</span>
                          </div>
                          <span class="text-slate-500 fs-7 fw-bold">
@@ -67,20 +68,20 @@
                     </div>
 
                     <!-- Right: Stats & Action -->
-                    <div class="col-md-6 d-flex justify-content-md-end align-items-center mt-3 mt-md-0 gap-2 gap-md-4">
+                    <div class="d-flex align-items-center gap-3 mt-2 mt-sm-0">
                          <!-- Paid Stat -->
-                         <div class="d-flex flex-column align-items-start align-items-md-end">
+                         <div class="d-flex flex-column align-items-start align-items-sm-end">
                              <span class="fs-8 text-slate-500 fw-bold text-uppercase mb-1">Terbayar</span>
                              <span class="badge badge-success fs-7 fw-bolder px-3 py-1 text-white">Rp {{ number_format($paidAmount, 0, ',', '.') }}</span>
                          </div>
  
-                        <!-- Unpaid Stat -->
-                         <div class="d-flex flex-column align-items-start align-items-md-end border-start border-gray-300 ps-3 ms-1">
+                         <!-- Unpaid Stat -->
+                         <div class="d-flex flex-column align-items-start align-items-sm-end border-start border-gray-300 ps-3">
                              <span class="fs-8 text-slate-500 fw-bold text-uppercase mb-1">Sisa Tagihan</span>
                              <span class="badge badge-danger fs-7 fw-bolder px-3 py-1 text-white">Rp {{ number_format($unpaidAmount, 0, ',', '.') }}</span>
                          </div>
                          
-                         <div class="d-none d-md-block ms-3 text-slate-400 fs-8 fw-bold">
+                         <div class="d-none d-sm-block ms-1 text-slate-400 fs-8 fw-bold">
                             Lihat Rincian
                          </div>
                     </div>
@@ -182,7 +183,8 @@
                     @endforeach
                 </div>
             </div>
+            </div>
         </div>
+        @endforeach
     </div>
-    @endforeach
 </div>
