@@ -26,6 +26,11 @@
         background-color: #fffbeb;
         border-color: #f59e0b;
     }
+    .month-card.selected {
+        background-color: #e0f2fe !important; /* Sky-100 (Primary accent tint) */
+        border-color: #2563eb !important;     /* Accent Primary */
+        box-shadow: 0 4px 12px rgba(37, 99, 235, 0.08), 0 0 0 2px rgba(37, 99, 235, 0.15) !important;
+    }
     .form-check-custom .form-check-input {
         width: 1.5rem;
         height: 1.5rem;
@@ -104,11 +109,7 @@
 
                     @if($billDetail)
                     <div class="col-6 col-md-4 col-lg-2">
-                        <div class="month-card rounded-3 p-3 h-100 d-flex flex-column justify-content-between position-relative {{ $cardClass }} {{ $showModal ? 'cursor-pointer' : '' }}"
-                            @if($showModal)
-                                data-bs-toggle="modal" data-bs-target="#{{ $modalId }}"
-                            @endif
-                        >
+                        <div class="month-card rounded-3 p-3 h-100 d-flex flex-column justify-content-between position-relative {{ $cardClass }} {{ $showModal ? 'cursor-pointer clickable-payment-card' : '' }}">
                             <!-- Header: Month & Year -->
                             <div class="d-flex justify-content-between align-items-center mb-2">
                                 <span class="fw-bold fs-7 text-slate-800">
@@ -185,22 +186,3 @@
     </div>
     @endforeach
 </div>
-
-<!-- Modals placed outside the grid to prevent CSS stacking context issues -->
-@foreach ($billOthers as $bill)
-    @foreach (array_merge(range(7, 12), range(1, 6)) as $month)
-        @php
-            $billDetail = $bill->bills->where('month', $month)->where('student_id', $student->id)->first();
-            $amount = $billDetail ? $billDetail->amount : 0;
-            $status = $billDetail ? $billDetail->status : 'UNPAID';
-            $isPaid = $status == 'PAID';
-            $modalId = "bayarLainnya{$bill->id}_{$month}";
-            $showModal = $billDetail && !$isPaid && $amount > 0;
-        @endphp
-
-        @if($showModal)
-            @include('admins.bill.table.modals.payment-modal', ['modalId' => $modalId, 'bill' => $bill, 'month' => $month,
-            'student' => $student, 'amount' => $amount, 'billDetail' => $billDetail])
-        @endif
-    @endforeach
-@endforeach
