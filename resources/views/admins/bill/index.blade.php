@@ -31,34 +31,85 @@
         padding: 24px;
         border-radius: 24px;
         box-shadow: 0 8px 30px rgba(0,0,0,0.04);
-        border: 1px solid #f1f5f9;
+        border: none;
     }
 
-    .card-information .mb-3 {
+    .card-information .info-item {
         display: flex;
         align-items: center;
-        justify-content: space-between;
+        margin-bottom: 12px;
     }
 
-    .card-information .fw-bold {
-        width: 30%;
+    .card-information .info-item:last-child {
+        margin-bottom: 0;
     }
 
-    .card-information span {
-        width: 60%;
+    .card-information .info-label {
+        width: 140px;
+        flex-shrink: 0;
+        font-weight: 700;
+        color: var(--pakrt-slate-500) !important;
+    }
+
+    .card-information .info-colon {
+        width: 20px;
+        flex-shrink: 0;
+        color: var(--pakrt-slate-500) !important;
+    }
+
+    .card-information .info-value {
+        flex-grow: 1;
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
+        display: flex;
+        align-items: center;
+        font-weight: 500;
     }
 
-    @media (max-width: 768px) {
-        .card-information .fw-bold {
-            width: 40%;
+    @media (max-width: 576px) {
+        .card-information .info-label {
+            width: 100px;
         }
+    }
 
-        .card-information span {
-            width: 50%;
-        }
+    /* Premium Status Badges */
+    .status-badge {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 6px 16px;
+        font-size: 13px;
+        font-weight: 700;
+        border-radius: 30px;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        line-height: 1;
+        border: 1px solid transparent;
+    }
+
+    .status-badge-active {
+        background-color: rgba(16, 185, 129, 0.1) !important;
+        color: #10b981 !important;
+        border-color: rgba(16, 185, 129, 0.2) !important;
+    }
+
+    .status-badge-inactive, .status-badge-dropped-out {
+        background-color: rgba(220, 38, 38, 0.1) !important;
+        color: #dc2626 !important;
+        border-color: rgba(220, 38, 38, 0.2) !important;
+    }
+
+    .status-badge-graduated {
+        background-color: rgba(37, 99, 235, 0.1) !important;
+        color: #2563eb !important;
+        border-color: rgba(37, 99, 235, 0.2) !important;
+    }
+
+    .status-badge-transferred {
+        background-color: rgba(217, 119, 6, 0.1) !important;
+        color: #d97706 !important;
+        border-color: rgba(217, 119, 6, 0.2) !important;
     }
 
     .btn-custom-purple {
@@ -227,36 +278,58 @@
                                     @if ($student ?? false)
                                     <div class="card-body pt-3">
                                         <div class="card-information">
-                                            <div class="mb-3">
-                                                <span class="fw-bold text-slate-500">Tahun Ajaran</span>
-                                                :&nbsp;
-                                                <span><b class="text-slate-800">
-                                                    @if(request('academic_year_id'))
-                                                        {{ $academicYears->where('id', request('academic_year_id'))->first()->name ?? 'Semua Tahun Ajaran' }}
-                                                    @else
-                                                        Semua Tahun Ajaran
-                                                    @endif
-                                                </b></span>
+                                            <div class="info-item">
+                                                <span class="info-label">Tahun Ajaran</span>
+                                                <span class="info-colon">:</span>
+                                                <span class="info-value">
+                                                    <span class="text-slate-800 fw-bold">
+                                                        @if(request('academic_year_id'))
+                                                            {{ $academicYears->where('id', request('academic_year_id'))->first()->name ?? 'Semua Tahun Ajaran' }}
+                                                        @else
+                                                            Semua Tahun Ajaran
+                                                        @endif
+                                                    </span>
+                                                </span>
                                             </div>
-                                            <div class="mb-3">
-                                                <span class="fw-bold text-slate-500">NIS</span>
-                                                :&nbsp;
-                                                <span class="text-slate-700 fw-semibold">{{ @$student->nis ?? '' }}</span>
+                                            <div class="info-item">
+                                                <span class="info-label">NIS</span>
+                                                <span class="info-colon">:</span>
+                                                <span class="info-value">
+                                                    <span class="text-slate-700 fw-semibold">{{ @$student->nis ?? '' }}</span>
+                                                </span>
                                             </div>
-                                            <div class="mb-3">
-                                                <span class="fw-bold text-slate-500">Nama</span>
-                                                :&nbsp;
-                                                <span class="text-slate-900 fw-bold">{{ @$student->name ?? '' }}</span>
+                                            <div class="info-item">
+                                                <span class="info-label">Nama</span>
+                                                <span class="info-colon">:</span>
+                                                <span class="info-value">
+                                                    <span class="text-slate-900 fw-bold">{{ @$student->name ?? '' }}</span>
+                                                </span>
                                             </div>
-                                            <div class="mb-3">
-                                                <span class="fw-bold text-slate-500">Kelas</span>
-                                                :&nbsp;
-                                                <span class="text-slate-700 fw-semibold">{{ @$student->classroom->name ?? '' }}</span>
+                                            <div class="info-item">
+                                                <span class="info-label">Kelas</span>
+                                                <span class="info-colon">:</span>
+                                                <span class="info-value">
+                                                    <span class="text-slate-700 fw-semibold">{{ @$student->classroom->name ?? '' }}</span>
+                                                </span>
                                             </div>
-                                            <div class="mb-3">
-                                                <span class="fw-bold text-slate-500">Status</span>
-                                                :&nbsp;
-                                                <span class="badge badge-light-success fw-bold">{{ @$student->translatedStatus() ?? '' }}</span>
+                                            <div class="info-item">
+                                                <span class="info-label">Status</span>
+                                                <span class="info-colon">:</span>
+                                                <span class="info-value">
+                                                    @php
+                                                        $statusClass = match(@$student->status) {
+                                                            'ACTIVE' => 'status-badge-active',
+                                                            'INACTIVE' => 'status-badge-inactive',
+                                                            'GRADUATED' => 'status-badge-graduated',
+                                                            'TRANSFERRED' => 'status-badge-transferred',
+                                                            'DROPPED_OUT' => 'status-badge-dropped-out',
+                                                            default => 'status-badge-active',
+                                                        };
+                                                    @endphp
+                                                    <span class="status-badge {{ $statusClass }}">
+                                                        {{ @$student->translatedStatus() ?? '' }}
+                                                    </span>
+                                                </span>
                                             </div>
                                         </div>
                                         <div class="separator mb-6"></div>
