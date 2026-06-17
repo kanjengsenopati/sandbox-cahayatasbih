@@ -109,7 +109,7 @@
                     @endphp
 
                     @if($billDetail)
-                    <div class="col-6 col-md-4 col-lg-2">
+                    <div class="col-6 col-sm-6 col-md-4">
                         <div class="month-card rounded-3 p-3 h-100 d-flex flex-column justify-content-between position-relative {{ $cardClass }} {{ $showModal ? 'cursor-pointer clickable-payment-card' : '' }}">
                             <!-- Header: Month & Year -->
                             <div class="d-flex justify-content-between align-items-center mb-2">
