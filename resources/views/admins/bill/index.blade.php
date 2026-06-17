@@ -535,22 +535,22 @@
         <div class="modal-content" style="border-radius: 24px; overflow: hidden; border: none; box-shadow: 0 10px 40px rgba(0,0,0,0.08);">
             <form action="{{ route('bill.store') }}" method="post" id="form-multi-payment">
                 @csrf
-                <div class="modal-header border-0 bg-light px-6 py-4">
+                <div class="modal-header border-0 bg-light px-5 py-3">
                     <h5 class="modal-title fw-bold text-slate-800" id="paymentModalLabel">Informasi Pembayaran</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-                <div class="modal-body p-6 bg-white">
-                    <!-- Prominent Total Amount Banner -->
-                    <div class="text-center bg-light-success rounded-3 p-6 mb-6 border border-success border-opacity-10">
-                        <span class="text-slate-500 fs-7 fw-bold text-uppercase tracking-wider mb-2 d-block">Total Pembayaran Tagihan</span>
+                <div class="modal-body p-5 bg-white">
+                    <!-- Prominent Total Amount Banner (Compact) -->
+                    <div class="text-center bg-light-success rounded-3 p-4 mb-4 border border-success border-opacity-10">
+                        <span class="text-slate-500 fs-7 fw-bold text-uppercase tracking-wider mb-1 d-block">Total Pembayaran Tagihan</span>
                         <span class="text-emerald-600 fw-boldest fs-2hx" id="total-amount">Rp 0</span>
                     </div>
 
-                    <!-- Payment Method Select -->
-                    <div class="mb-6">
+                    <!-- Payment Method Select (Compact) -->
+                    <div class="mb-4">
                         <span class="fw-bold text-slate-700 fs-6 d-block mb-2">Metode Pembayaran</span>
                         <div class="card shadow-none border border-gray-200" style="border-radius: 16px;">
-                            <div class="card-body p-4">
+                            <div class="card-body p-3">
                                 <select class="form-select form-select-solid" name="payment_method" id="payment-method" required>
                                     <option value="">Pilih Metode Pembayaran</option>
                                     <option value="BALANCE">Saldo</option>
@@ -560,17 +560,19 @@
                         </div>
                     </div>
 
-                    <!-- Payment Details (2 Columns) -->
+                    <!-- Payment Details (2 Columns - Scrollable & Compact) -->
                     <div class="mb-2">
-                        <span class="fw-bold text-slate-700 fs-6 d-block mb-3">Rincian Pembayaran</span>
-                        <div class="row g-3" id="payment-details">
-                            <!-- Informasi pembayaran akan ditambahkan di sini -->
+                        <span class="fw-bold text-slate-700 fs-6 d-block mb-2">Rincian Pembayaran</span>
+                        <div style="max-height: 200px; overflow-y: auto; overflow-x: hidden; padding-right: 4px;">
+                            <div class="row g-2" id="payment-details">
+                                <!-- Informasi pembayaran akan ditambahkan di sini -->
+                            </div>
                         </div>
                     </div>
 
                     <input type="hidden" name="student_id" id="student-id" value="{{ @$student->id }}">
                 </div>
-                <div class="modal-footer border-0 bg-light px-6 py-4">
+                <div class="modal-footer border-0 bg-light px-5 py-3">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
                     <button type="submit" class="btn btn-primary px-6">Bayar Sekarang</button>
                 </div>

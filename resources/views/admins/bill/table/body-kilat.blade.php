@@ -334,7 +334,7 @@
                         itemCard.style.backgroundColor = '#f8fafc';
 
                         const cardBodyDiv = document.createElement('div');
-                        cardBodyDiv.className = 'card-body p-4 d-flex justify-content-between align-items-center';
+                        cardBodyDiv.className = 'card-body p-3 d-flex justify-content-between align-items-center';
 
                         // Left side: Item Name & Date info
                         const leftDiv = document.createElement('div');
