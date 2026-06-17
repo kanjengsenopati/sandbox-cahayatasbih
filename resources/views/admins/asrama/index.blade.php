@@ -72,10 +72,10 @@
                             <thead>
                                 <tr class="fw-bolder fs-6 text-gray-800 border-bottom border-gray-200">
                                     <th width="3%">No</th>
-                                    <th>Nama Asrama</th>
-                                    <th>Penanggung Jawab Pengampu</th>
-                                    <th>No WhatsApp Penanggung Jawab</th>
-                                    <th>Jumlah Santri Binaan</th>
+                                    <th>Kamar</th>
+                                    <th>Nama Penanggung Jawab</th>
+                                    <th>No Whatsapp</th>
+                                    <th>Jumlah Santri</th>
                                     <th class="text-center min-w-100px">Aksi</th>
                                 </tr>
                             </thead>
@@ -106,26 +106,21 @@
         html += '<thead>';
         html += '<tr class="fw-bolder fs-7 text-gray-800 border-bottom border-gray-200 bg-light-primary gs-4">';
         html += '<th class="ps-4" width="5%">No</th>';
-        html += '<th width="20%">NISN</th>';
-        html += '<th width="45%">Nama Santri</th>';
+        html += '<th width="25%">Kamar</th>';
+        html += '<th width="50%">Nama</th>';
         html += '<th width="20%">Kelas</th>';
-        html += '<th width="10%" class="text-center pe-4">Gender</th>';
         html += '</tr>';
         html += '</thead>';
         html += '<tbody>';
 
         $.each(data.students, function(index, student) {
             var classroomName = student.classroom ? student.classroom.name : '<span class="text-muted italic">Tanpa Kelas</span>';
-            var genderBadge = student.gender === 'L' 
-                ? '<span class="badge badge-light-info fw-bold">Laki-laki</span>' 
-                : '<span class="badge badge-light-danger fw-bold">Perempuan</span>';
             
             html += '<tr class="gs-4">';
             html += '<td class="ps-4 fw-bold">' + (index + 1) + '</td>';
-            html += '<td class="font-monospace text-gray-600">' + (student.nisn || '-') + '</td>';
+            html += '<td>' + data.name + '</td>';
             html += '<td class="fw-bolder text-gray-800">' + student.name + '</td>';
             html += '<td>' + classroomName + '</td>';
-            html += '<td class="text-center pe-4">' + genderBadge + '</td>';
             html += '</tr>';
         });
 
