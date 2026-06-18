@@ -21,8 +21,12 @@ use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 
+use Illuminate\Foundation\Testing\DatabaseTransactions;
+
 class AttendancePayrollTest extends TestCase
 {
+    use DatabaseTransactions;
+
     protected function setUp(): void
     {
         parent::setUp();
@@ -33,23 +37,24 @@ class AttendancePayrollTest extends TestCase
         });
 
         // 1. Buat tabel-tabel secara dinamis untuk menghindari kegagalan migrasi warisan di SQLite
-        Schema::dropIfExists('role_has_permissions');
-        Schema::dropIfExists('model_has_roles');
-        Schema::dropIfExists('model_has_permissions');
-        Schema::dropIfExists('roles');
-        Schema::dropIfExists('permissions');
-        Schema::dropIfExists('activity_log');
-        Schema::dropIfExists('salary_slips');
-        Schema::dropIfExists('employee_salaries');
-        Schema::dropIfExists('attendances');
-        Schema::dropIfExists('biometric_mappings');
-        Schema::dropIfExists('biometric_devices');
-        Schema::dropIfExists('prayer_times');
-        Schema::dropIfExists('employee_monthly_shifts');
-        Schema::dropIfExists('working_shifts');
-        Schema::dropIfExists('students');
-        Schema::dropIfExists('admins');
-        Schema::dropIfExists('users');
+        if (\Illuminate\Support\Facades\DB::connection()->getDriverName() === 'sqlite') {
+            Schema::dropIfExists('role_has_permissions');
+            Schema::dropIfExists('model_has_roles');
+            Schema::dropIfExists('model_has_permissions');
+            Schema::dropIfExists('roles');
+            Schema::dropIfExists('permissions');
+            Schema::dropIfExists('activity_log');
+            Schema::dropIfExists('salary_slips');
+            Schema::dropIfExists('employee_salaries');
+            Schema::dropIfExists('attendances');
+            Schema::dropIfExists('biometric_mappings');
+            Schema::dropIfExists('biometric_devices');
+            Schema::dropIfExists('prayer_times');
+            Schema::dropIfExists('employee_monthly_shifts');
+            Schema::dropIfExists('working_shifts');
+            Schema::dropIfExists('students');
+            Schema::dropIfExists('admins');
+            Schema::dropIfExists('users');
 
         Schema::create('permissions', function (Blueprint $table) {
             $table->id();
@@ -238,16 +243,19 @@ class AttendancePayrollTest extends TestCase
             $table->enum('status', ['draft', 'approved', 'paid'])->default('draft');
             $table->uuid('approved_by')->nullable();
             $table->dateTime('approved_at')->nullable();
-            $table->timestamps();
         });
+        }
 
         // Seed Jadwal Sholat default
-        PrayerTime::create([
-            'prayer_name' => 'Subuh',
-            'adzan_time' => '04:30:00',
-            'iqomah_time' => '04:45:00',
-            'grace_period' => 5,
-        ]);
+        if (!PrayerTime::where('prayer_name', 'Subuh')->exists()) {
+            PrayerTime::create([
+                'id' => (string) Str::uuid(),
+                'prayer_name' => 'Subuh',
+                'adzan_time' => '04:30:00',
+                'iqomah_time' => '04:45:00',
+                'grace_period' => 5,
+            ]);
+        }
     }
 
     public function test_biometric_log_webhook_for_student_prayer()
