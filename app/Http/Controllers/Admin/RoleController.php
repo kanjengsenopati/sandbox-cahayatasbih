@@ -39,9 +39,28 @@ class RoleController extends Controller
                         "</div>";
                 })
                 ->editColumn('permissions', function ($query) {
-                    return $query->permissions->map(function ($permission) {
+                    $permissionsHtml = $query->permissions->map(function ($permission) {
                         return "<span class='badge bg-success m-1'>{$permission->name}</span>";
                     })->implode('');
+
+                    $admins = \App\Models\Admin::role($query->name)->get();
+                    $walis = \App\Models\User::role($query->name)->get();
+                    $users = $admins->concat($walis);
+
+                    $usersHtml = '';
+                    if ($users->count() > 0) {
+                        $usersBadges = $users->map(function ($user) {
+                            return "<span class='badge m-1' style='background-color: #8b5cf6; color: white;'>{$user->name}</span>";
+                        })->implode('');
+                        $usersHtml = "<div class='mt-2 border-top pt-2 d-flex flex-wrap align-items-center gap-1'><span class='text-muted me-1' style='font-size: 11px; font-weight: 600;'>User:</span>{$usersBadges}</div>";
+                    } else {
+                        $usersHtml = "<div class='mt-2 border-top pt-2'><span class='text-muted italic' style='font-size: 11px;'>Belum ada user yang ditugaskan</span></div>";
+                    }
+
+                    return "<div class='d-flex flex-column'>" .
+                        "<div class='d-flex flex-wrap'>{$permissionsHtml}</div>" .
+                        $usersHtml .
+                        "</div>";
                 })
                 ->rawColumns(['action', 'permissions'])
                 ->make(true);
