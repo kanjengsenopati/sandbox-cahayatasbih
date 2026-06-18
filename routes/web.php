@@ -293,9 +293,15 @@ Route::group(['middleware' => ['auth']], function () {
     // payroll backoffice
     Route::get('payroll', [\App\Http\Controllers\Admin\PayrollController::class, 'index'])->name('payroll.index');
     Route::post('payroll/process', [\App\Http\Controllers\Admin\PayrollController::class, 'process'])->name('payroll.process');
+    Route::get('payroll-settings', [\App\Http\Controllers\Admin\PayrollController::class, 'settings'])->name('payroll.settings');
+    Route::post('payroll-settings/save', [\App\Http\Controllers\Admin\PayrollController::class, 'saveSetting'])->name('payroll.settings.save');
     Route::get('payroll/{id}', [\App\Http\Controllers\Admin\PayrollController::class, 'show'])->name('payroll.show');
     Route::post('payroll/{id}/approve', [\App\Http\Controllers\Admin\PayrollController::class, 'approve'])->name('payroll.approve');
     Route::post('payroll/{id}/pay', [\App\Http\Controllers\Admin\PayrollController::class, 'pay'])->name('payroll.pay');
+
+    // working shift backoffice
+    Route::post('working-shift/{id}/status', [\App\Http\Controllers\Admin\WorkingShiftController::class, 'status'])->name('working-shift.status');
+    Route::resource('working-shift', \App\Http\Controllers\Admin\WorkingShiftController::class);
 
     // asrama backoffice
     Route::resource('asrama', \App\Http\Controllers\Admin\AsramaController::class);
@@ -387,6 +393,9 @@ Route::group(['middleware' => ['auth']], function () {
     // start report audit
     Route::get('report-audit', [App\Http\Controllers\Admin\ReportAuditController::class, 'index'])->name('report-audit.index');
     Route::get('report-audit/export', [App\Http\Controllers\Admin\ReportAuditController::class, 'export'])->name('report-audit.export');
+
+    // start report attendance
+    Route::get('report-attendance', [\App\Http\Controllers\Admin\ReportAttendanceController::class, 'index'])->name('report-attendance.index');
     // Route::get('report-student/search-student', [ReportStudentController::class, 'searchStudent'])
     //     ->name('report-student.search-student');
 

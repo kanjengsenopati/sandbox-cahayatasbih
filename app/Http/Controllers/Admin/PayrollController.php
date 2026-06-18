@@ -126,7 +126,11 @@ class PayrollController extends Controller
                 $totalAttendanceAllowance = $totalPresentDays * $salaryConfig->attendance_allowance;
                 $totalTransportAllowance = $totalPresentDays * $salaryConfig->transport_allowance;
 
-                $totalLatenessPenalty = $totalLateMinutes * $salaryConfig->lateness_penalty_per_minute;
+                $latenessPenaltyRate = $salaryConfig->lateness_penalty_type === 'percentage'
+                    ? ($salaryConfig->lateness_penalty_value / 100) * $baseSalary
+                    : ($salaryConfig->lateness_penalty_value > 0 ? $salaryConfig->lateness_penalty_value : $salaryConfig->lateness_penalty_per_minute);
+
+                $totalLatenessPenalty = $totalLateMinutes * $latenessPenaltyRate;
                 $totalAbsencePenalty = $totalAbsentDays * $salaryConfig->absence_penalty;
 
                 $netSalary = ($baseSalary + $totalAttendanceAllowance + $totalTransportAllowance) - ($totalLatenessPenalty + $totalAbsencePenalty);
@@ -222,6 +226,165 @@ class PayrollController extends Controller
             'status' => 'paid',
         ]);
 
-        return redirect()->route('payroll.show', $id)->with('success', 'Slip gaji berhasil ditandai sebagai dibayarkan (Paid).');
+        // Hubungkan ke CashFlow Outlet (Pengeluaran - Honor Kasir)
+        $employee = $slip->presensiable;
+        $outletId = $employee && isset($employee->outlet_id) ? $employee->outlet_id : null;
+
+        if (!$outletId && $employee) {
+            $firstOutlet = \App\Models\Outlet::first();
+            $outletId = $firstOutlet ? $firstOutlet->id : null;
+        }
+
+        if ($outletId) {
+            $category = \App\Models\CashFlowCategory::firstOrCreate([
+                'name' => 'Pengeluaran - Honor Kasir'
+            ]);
+
+            $cashflowCount = \App\Models\CashFlow::whereDate('created_at', now())->count();
+            $paymentCode = 'CT-' . now()->format('Ymd') . str_pad($cashflowCount + 1, 3, '0', STR_PAD_LEFT);
+            
+            $adminId = Auth::id() ?: (\App\Models\Admin::first() ? \App\Models\Admin::first()->id : null);
+            $receiverId = $employee ? $employee->id : $adminId;
+
+            if ($adminId && $receiverId) {
+                \App\Models\CashFlow::create([
+                    'sender_id' => $adminId,
+                    'receiver_id' => $receiverId,
+                    'outlet_id' => $outletId,
+                    'cash_flow_category_id' => $category->id,
+                    'payment_code' => $paymentCode,
+                    'type' => \App\Models\CashFlow::TYPE_EXPENSE,
+                    'amount' => (int) $slip->net_salary,
+                    'date' => now()->toDateString(),
+                    'description' => 'Pembayaran gaji periode ' . $slip->period_start->format('d/m/Y') . ' - ' . $slip->period_end->format('d/m/Y') . ' untuk ' . ($employee ? $employee->name : 'Karyawan'),
+                    'status' => \App\Models\CashFlow::STATUS_APPROVED,
+                    'payment_method' => 'cash',
+                ]);
+            }
+        }
+
+        return redirect()->route('payroll.show', $id)->with('success', 'Slip gaji berhasil ditandai sebagai dibayarkan (Paid) dan dicatat sebagai Pengeluaran - Honor Kasir pada CashFlow Outlet.');
+    }
+
+    /**
+     * Tampilkan Pengaturan Gaji Karyawan via DataTables/View
+     */
+    public function settings(Request $request)
+    {
+        if (!Auth::user()->can('Manage Payroll')) {
+            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
+        }
+
+        if ($request->ajax()) {
+            // Kita ingin memuat semua Admins dan Users (Karyawan)
+            $admins = Admin::all()->map(function ($item) {
+                $item->type_class = Admin::class;
+                $item->role_name = $item->roles->first()->name ?? 'Admin';
+                return $item;
+            });
+            
+            $users = User::where('jamaah_status', '!=', 'JAMAAH')->get()->map(function ($item) {
+                $item->type_class = User::class;
+                $item->role_name = 'User / Officer';
+                return $item;
+            });
+
+            $employees = $admins->concat($users);
+
+            return DataTables::of($employees)
+                ->addColumn('employee_name', function ($row) {
+                    return $row->name;
+                })
+                ->addColumn('employee_type', function ($row) {
+                    return $row->type_class === Admin::class ? '<span class="badge badge-light-primary">Admin/Staff</span>' : '<span class="badge badge-light-success">User/Officer</span>';
+                })
+                ->addColumn('role_label', function ($row) {
+                    return $row->role_name;
+                })
+                ->addColumn('base_salary_label', function ($row) {
+                    $config = $row->employeeSalary;
+                    return $config ? 'Rp ' . number_format($config->base_salary, 0, ',', '.') : '-';
+                })
+                ->addColumn('allowance_label', function ($row) {
+                    $config = $row->employeeSalary;
+                    if (!$config) return '-';
+                    return 'Hadir: Rp ' . number_format($config->attendance_allowance, 0, ',', '.') . '<br>Trans: Rp ' . number_format($config->transport_allowance, 0, ',', '.');
+                })
+                ->addColumn('lateness_penalty_label', function ($row) {
+                    $config = $row->employeeSalary;
+                    if (!$config) return '-';
+                    if ($config->lateness_penalty_type === 'percentage') {
+                        return $config->lateness_penalty_value . '% dari Gaji Pokok';
+                    }
+                    return 'Rp ' . number_format($config->lateness_penalty_value, 0, ',', '.') . ' (Fixed)';
+                })
+                ->addColumn('btnAction', function ($row) {
+                    $config = $row->employeeSalary;
+                    $dataAttr = 'data-id="' . $row->id . '" ' .
+                        'data-type="' . urlencode($row->type_class) . '" ' .
+                        'data-name="' . htmlspecialchars($row->name) . '" ' .
+                        'data-base_salary="' . ($config ? (int)$config->base_salary : 0) . '" ' .
+                        'data-attendance_allowance="' . ($config ? (int)$config->attendance_allowance : 0) . '" ' .
+                        'data-transport_allowance="' . ($config ? (int)$config->transport_allowance : 0) . '" ' .
+                        'data-lateness_penalty_type="' . ($config ? $config->lateness_penalty_type : 'fixed') . '" ' .
+                        'data-lateness_penalty_value="' . ($config ? (int)$config->lateness_penalty_value : 0) . '" ' .
+                        'data-absence_penalty="' . ($config ? (int)$config->absence_penalty : 0) . '"';
+                    
+                    return '<button class="btn btn-sm btn-light-primary btn-edit-salary" ' . $dataAttr . '><i class="fa-solid fa-pencil fs-7 me-1"></i> Atur Gaji</button>';
+                })
+                ->rawColumns(['employee_type', 'allowance_label', 'btnAction'])
+                ->make(true);
+        }
+
+        return redirect()->route('payroll.index');
+    }
+
+    /**
+     * Simpan Pengaturan Gaji Karyawan
+     */
+    public function saveSetting(Request $request)
+    {
+        if (!Auth::user()->can('Manage Payroll')) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
+        }
+
+        $request->validate([
+            'employee_id' => 'required|string',
+            'employee_type' => 'required|string',
+            'base_salary' => 'required|numeric|min:0',
+            'attendance_allowance' => 'required|numeric|min:0',
+            'transport_allowance' => 'required|numeric|min:0',
+            'lateness_penalty_type' => 'required|string|in:fixed,percentage',
+            'lateness_penalty_value' => 'required|numeric|min:0',
+            'absence_penalty' => 'required|numeric|min:0',
+        ]);
+
+        $employeeType = urldecode($request->employee_type);
+        if (!in_array($employeeType, [Admin::class, User::class])) {
+            return response()->json(['success' => false, 'message' => 'Tipe Karyawan tidak valid.'], 400);
+        }
+
+        $employee = $employeeType::findOrFail($request->employee_id);
+
+        EmployeeSalary::updateOrCreate(
+            [
+                'presensiable_type' => $employeeType,
+                'presensiable_id' => $employee->id,
+            ],
+            [
+                'base_salary' => $request->base_salary,
+                'attendance_allowance' => $request->attendance_allowance,
+                'transport_allowance' => $request->transport_allowance,
+                'lateness_penalty_type' => $request->lateness_penalty_type,
+                'lateness_penalty_value' => $request->lateness_penalty_value,
+                'absence_penalty' => $request->absence_penalty,
+                'lateness_penalty_per_minute' => $request->lateness_penalty_type === 'fixed' ? $request->lateness_penalty_value : 0,
+            ]
+        );
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Pengaturan gaji untuk ' . $employee->name . ' berhasil disimpan.'
+        ]);
     }
 }

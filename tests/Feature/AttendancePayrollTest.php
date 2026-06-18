@@ -365,6 +365,8 @@ class AttendancePayrollTest extends TestCase
             'email' => 'budi@example.com',
             'password' => bcrypt('password'),
             'is_active' => true,
+            'avatar' => '',
+            'role_id' => 1,
         ]);
 
         EmployeeSalary::create([

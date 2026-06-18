@@ -17,6 +17,8 @@ class EmployeeSalary extends Model
         'transport_allowance',
         'lateness_penalty_per_minute',
         'absence_penalty',
+        'lateness_penalty_type',
+        'lateness_penalty_value',
     ];
 
     protected $casts = [
@@ -25,6 +27,8 @@ class EmployeeSalary extends Model
         'transport_allowance' => 'decimal:2',
         'lateness_penalty_per_minute' => 'decimal:2',
         'absence_penalty' => 'decimal:2',
+        'lateness_penalty_type' => 'string',
+        'lateness_penalty_value' => 'decimal:2',
     ];
 
     public function presensiable()

@@ -466,10 +466,10 @@
                 @canany(['Manage Laporan Pos Kasir', 'Manage Laporan Pos Multi Outlet', 'Manage Laporan Tagihan', 'Manage Laporan Santri', 'Manage Laporan
                 Nilai Akademik', 'Manage Laporan Tahfidz',
                 'Manage Laporan Perilaku Siswa', 'Manage Laporan Saldo Santri', 'Manage Laporan Fee Aplikasi',
-                'Manage Laporan Transaksi', 'Manage Laporan Rugi Laba', 'Manage Laporan Audit Log'])
+                'Manage Laporan Transaksi', 'Manage Laporan Rugi Laba', 'Manage Laporan Audit Log', 'Manage Laporan Presensi'])
                 <div data-kt-menu-trigger="click" class="menu-item menu-accordion {{ request()->routeIs(['report-bill.*', 'report-student.*','report-tahfidz.*',
                     'report-student-counseling-score.*', 'report-app-fee.*',
-                    'report-saldo.*', 'report-study-grade.*', 'order-item-history.*', 'report-transaction.*', 'report-bill-student.*', 'pos-transaction.*', 'report-profit-loss.*', 'report-audit.*'
+                    'report-saldo.*', 'report-study-grade.*', 'order-item-history.*', 'report-transaction.*', 'report-bill-student.*', 'pos-transaction.*', 'report-profit-loss.*', 'report-audit.*', 'report-attendance.*'
                     ]) ? 'show' : '' }}">
                     <span class="menu-link ">
                         <span class="menu-icon">
@@ -607,6 +607,17 @@
                                     <i class="fa-solid fa-clock-rotate-left text-white/80 fs-7"></i>
                                 </span>
                                 <span class="menu-title">Audit Log</span>
+                            </a>
+                        </div>
+                        @endcan
+                        @can('Manage Laporan Presensi')
+                        <div class="menu-item">
+                            <a class="menu-link {{ request()->routeIs('report-attendance.*') ? ' active' : '' }}"
+                                href="{{ route('report-attendance.index') }}">
+                                <span class="menu-bullet">
+                                    <i class="fa-solid fa-clipboard-user text-white/80 fs-7"></i>
+                                </span>
+                                <span class="menu-title">Presensi</span>
                             </a>
                         </div>
                         @endcan
