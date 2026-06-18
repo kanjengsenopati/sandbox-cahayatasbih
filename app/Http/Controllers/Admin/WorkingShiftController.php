@@ -12,7 +12,7 @@ class WorkingShiftController extends Controller
 {
     public function index()
     {
-        if (!Auth::user()->can('Manage Pengaturan Aplikasi')) {
+        if (!Auth::user()->can('Manage Shift')) {
             return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
         }
 
@@ -40,7 +40,7 @@ class WorkingShiftController extends Controller
                     $actionEdit = route('working-shift.edit', $row->id);
                     $actionDelete = route('working-shift.destroy', $row->id);
                     return "<div class='d-flex justify-content-center'>" .
-                        view('components.action.status', ['action' => $actionStatus, 'status' => $row->is_active, 'id' => $row->id]) .
+                        view('components.action.status', ['action' => $actionStatus, 'status' => $row->is_active, 'id' => $row->id, 'name' => 'Shift']) .
                         view('components.action.edit', ['action' => $actionEdit, 'name' => 'Shift']) .
                         view('components.action.delete', ['action' => $actionDelete, 'id' => $row->id, 'name' => 'Shift']) .
                         "</div>";
@@ -54,7 +54,7 @@ class WorkingShiftController extends Controller
 
     public function create()
     {
-        if (!Auth::user()->can('Manage Pengaturan Aplikasi')) {
+        if (!Auth::user()->can('Create Shift')) {
             return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
         }
         return view('admins.working-shift.create-edit');
@@ -62,7 +62,7 @@ class WorkingShiftController extends Controller
 
     public function store(Request $request)
     {
-        if (!Auth::user()->can('Manage Pengaturan Aplikasi')) {
+        if (!Auth::user()->can('Create Shift')) {
             return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
         }
 
@@ -91,7 +91,7 @@ class WorkingShiftController extends Controller
 
     public function edit(WorkingShift $workingShift)
     {
-        if (!Auth::user()->can('Manage Pengaturan Aplikasi')) {
+        if (!Auth::user()->can('Edit Shift')) {
             return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
         }
         return view('admins.working-shift.create-edit', compact('workingShift'));
@@ -99,7 +99,7 @@ class WorkingShiftController extends Controller
 
     public function update(Request $request, WorkingShift $workingShift)
     {
-        if (!Auth::user()->can('Manage Pengaturan Aplikasi')) {
+        if (!Auth::user()->can('Edit Shift')) {
             return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
         }
 
@@ -127,7 +127,7 @@ class WorkingShiftController extends Controller
 
     public function destroy(WorkingShift $workingShift)
     {
-        if (!Auth::user()->can('Manage Pengaturan Aplikasi')) {
+        if (!Auth::user()->can('Delete Shift')) {
             return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
         }
         $workingShift->delete();
@@ -136,7 +136,7 @@ class WorkingShiftController extends Controller
 
     public function status(string $id)
     {
-        if (!Auth::user()->can('Manage Pengaturan Aplikasi')) {
+        if (!Auth::user()->can('Edit Shift')) {
             return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
         }
         $shift = WorkingShift::findOrFail($id);

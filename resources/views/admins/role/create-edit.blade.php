@@ -119,7 +119,7 @@
                                              'Pos Kasir', 'Tagihan', 'Status Tagihan', 'Perilaku Santri',
                                              'Prestasi Santri', 'Nilai Santri', 'Perizinan', 'Asrama',
                                              'PPDB', 'Mata Pelajaran', 'Tahun Ajaran', 'Semester', 'Kenaikan Kelas',
-                                             'Pengaturan Aplikasi', 'Item Bayar', 'Jenis Bayar', 'Payroll', 'Laporan Presensi', 'Laporan Pos Kasir',
+                                             'Pengaturan Aplikasi', 'Item Bayar', 'Jenis Bayar', 'Payroll', 'Laporan Presensi', 'Shift', 'Laporan Pos Kasir',
                                              'Laporan Pos Multi Outlet',
                                              'Laporan Rugi Laba',
                                              'Laporan Tagihan',
