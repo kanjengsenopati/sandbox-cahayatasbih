@@ -122,7 +122,7 @@
                         {{-- Group 3: Pengaturan Aplikasi --}}
                         @canany(['Manage Pengaturan Aplikasi', 'Manage Menu Aplikasi'])
                         <div class="menu-item ">
-                            <a class="menu-link {{ request()->routeIs(['application-setting.*', 'admin.audit', 'application-menu.*']) ? ' active' : '' }}"
+                            <a class="menu-link {{ request()->routeIs(['application-setting.*', 'admin.audit', 'application-menu.*', 'working-shift.*', 'biometric-device.*', 'biometric-mapping.*']) ? ' active' : '' }}"
                                 href="{{ auth()->user()->can('Manage Pengaturan Aplikasi') ? route('application-setting.index') : route('application-menu.index') }}">
                                 <span class="menu-bullet">
                                     <i class="fa-solid fa-sliders text-white/80 fs-7"></i>
@@ -131,6 +131,19 @@
                             </a>
                         </div>
                         @endcanany
+
+                        {{-- Kiosk Presensi Wajah --}}
+                        @can('Manage Biometric')
+                        <div class="menu-item ">
+                            <a class="menu-link {{ request()->routeIs('biometric-mapping.kiosk') ? ' active' : '' }}"
+                                href="{{ route('biometric-mapping.kiosk') }}">
+                                <span class="menu-bullet">
+                                    <i class="fa-solid fa-camera text-white/80 fs-7"></i>
+                                </span>
+                                <span class="menu-title">Kiosk Presensi Wajah</span>
+                            </a>
+                        </div>
+                        @endcan
 
                         {{-- Submenu: Kartu --}}
                         @canany(['Manage Kartu Santri', 'Manage Kartu Ujian'])

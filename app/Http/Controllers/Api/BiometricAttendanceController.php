@@ -113,7 +113,7 @@ class BiometricAttendanceController extends Controller
     /**
      * Core Engine untuk Memproses dan Mencocokkan Log Presensi
      */
-    private function processAttendance(
+    public function processAttendance(
         $user, 
         Carbon $timestamp, 
         $logType, 

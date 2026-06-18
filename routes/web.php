@@ -303,6 +303,17 @@ Route::group(['middleware' => ['auth']], function () {
     Route::post('working-shift/{id}/status', [\App\Http\Controllers\Admin\WorkingShiftController::class, 'status'])->name('working-shift.status');
     Route::resource('working-shift', \App\Http\Controllers\Admin\WorkingShiftController::class);
 
+    // biometric device backoffice
+    Route::post('biometric-device/{id}/status', [\App\Http\Controllers\Admin\BiometricDeviceController::class, 'status'])->name('biometric-device.status');
+    Route::resource('biometric-device', \App\Http\Controllers\Admin\BiometricDeviceController::class);
+
+    // biometric mapping backoffice
+    Route::get('biometric-mapping/kiosk', [\App\Http\Controllers\Admin\BiometricMappingController::class, 'kiosk'])->name('biometric-mapping.kiosk');
+    Route::get('biometric-mapping/descriptors', [\App\Http\Controllers\Admin\BiometricMappingController::class, 'descriptors'])->name('biometric-mapping.descriptors');
+    Route::post('biometric-mapping/scan', [\App\Http\Controllers\Admin\BiometricMappingController::class, 'scan'])->name('biometric-mapping.scan');
+    Route::get('biometric-mapping/search-users', [\App\Http\Controllers\Admin\BiometricMappingController::class, 'searchUsers'])->name('biometric-mapping.search-users');
+    Route::resource('biometric-mapping', \App\Http\Controllers\Admin\BiometricMappingController::class)->only(['index', 'store', 'destroy']);
+
     // asrama backoffice
     Route::resource('asrama', \App\Http\Controllers\Admin\AsramaController::class);
     // home

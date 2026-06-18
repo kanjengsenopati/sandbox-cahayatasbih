@@ -16,6 +16,18 @@
         </a>
     </li>
     @endcan
+    @can('Manage Biometric')
+    <li class="nav-item">
+        <a class="nav-link {{ request()->routeIs('biometric-device.*') ? 'active fw-bolder' : '' }}" href="{{ route('biometric-device.index') }}">
+            <i class="fa-solid fa-fingerprint me-2"></i>Mesin Biometrik
+        </a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link {{ request()->routeIs('biometric-mapping.*') ? 'active fw-bolder' : '' }}" href="{{ route('biometric-mapping.index') }}">
+            <i class="fa-solid fa-user-gear me-2"></i>Pemetaan Biometrik
+        </a>
+    </li>
+    @endcan
     @can('Manage Menu Aplikasi')
     <li class="nav-item">
         <a class="nav-link {{ request()->routeIs('application-menu.*') ? 'active fw-bolder' : '' }}" href="{{ route('application-menu.index') }}">
