@@ -220,4 +220,15 @@ class Student extends Model
             default => 'Tidak Diketahui',
         };
     }
+
+    public function attendances()
+    {
+        return $this->morphMany(Attendance::class, 'presensiable');
+    }
+
+    public function biometricMappings()
+    {
+        return $this->morphMany(BiometricMapping::class, 'presensiable');
+    }
 }
+

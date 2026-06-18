@@ -1,0 +1,30 @@
+<?php
+
+namespace App\Models;
+
+use App\Traits\UuidTrait;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
+
+class WorkingShift extends Model
+{
+    use UuidTrait, SoftDeletes;
+
+    protected $fillable = [
+        'name',
+        'start_time',
+        'end_time',
+        'grace_period',
+        'is_active',
+    ];
+
+    protected $casts = [
+        'is_active' => 'boolean',
+        'grace_period' => 'integer',
+    ];
+
+    public function monthlyShifts()
+    {
+        return $this->hasMany(EmployeeMonthlyShift::class);
+    }
+}

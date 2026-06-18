@@ -53,6 +53,13 @@ jobs:
       - name: Create storage symlink
         run: php artisan storage:link
       - name: Run tests
+        env:
+          DB_CONNECTION: mysql
+          DB_HOST: 127.0.0.1
+          DB_PORT: 3306
+          DB_DATABASE: testing
+          DB_USERNAME: root
+          DB_PASSWORD: root
         run: php artisan test
 
   deploy:

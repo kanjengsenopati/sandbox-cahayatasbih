@@ -290,6 +290,13 @@ Route::group(['middleware' => ['auth']], function () {
     // student perizinan backoffice
     Route::resource('student-permit', \App\Http\Controllers\Admin\StudentPermitController::class);
 
+    // payroll backoffice
+    Route::get('payroll', [\App\Http\Controllers\Admin\PayrollController::class, 'index'])->name('payroll.index');
+    Route::post('payroll/process', [\App\Http\Controllers\Admin\PayrollController::class, 'process'])->name('payroll.process');
+    Route::get('payroll/{id}', [\App\Http\Controllers\Admin\PayrollController::class, 'show'])->name('payroll.show');
+    Route::post('payroll/{id}/approve', [\App\Http\Controllers\Admin\PayrollController::class, 'approve'])->name('payroll.approve');
+    Route::post('payroll/{id}/pay', [\App\Http\Controllers\Admin\PayrollController::class, 'pay'])->name('payroll.pay');
+
     // asrama backoffice
     Route::resource('asrama', \App\Http\Controllers\Admin\AsramaController::class);
     // home

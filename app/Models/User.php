@@ -95,4 +95,30 @@ class User extends Authenticatable
             });
         });
     }
+
+    public function attendances()
+    {
+        return $this->morphMany(Attendance::class, 'presensiable');
+    }
+
+    public function biometricMappings()
+    {
+        return $this->morphMany(BiometricMapping::class, 'presensiable');
+    }
+
+    public function employeeSalary()
+    {
+        return $this->morphOne(EmployeeSalary::class, 'presensiable');
+    }
+
+    public function salarySlips()
+    {
+        return $this->morphMany(SalarySlip::class, 'presensiable');
+    }
+
+    public function monthlyShifts()
+    {
+        return $this->morphMany(EmployeeMonthlyShift::class, 'presensiable');
+    }
 }
+

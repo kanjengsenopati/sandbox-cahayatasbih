@@ -71,6 +71,8 @@ export const fetchAchievements = () => api.get('/achievements');
 export const fetchStudyGrades = (params?: { semester_id?: string | number }) => api.get('/study-grades', { params });
 export const fetchSemesters = () => api.get('/semesters');
 export const fetchOfficers = () => api.get('/officers');
+export const fetchAttendances = (params?: any) => api.get('/attendances', { params });
+export const postMobileCheckin = (data: any) => api.post('/attendance/mobile-checkin', data);
 
 // --- PERIZINAN API METHODS ---
 export const fetchPermits = () => api.get('/permits');

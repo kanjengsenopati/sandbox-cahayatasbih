@@ -167,6 +167,7 @@ Route::prefix('ct-mobile')->middleware(['web'])->group(function () {
 
     // Tahfidz
     Route::get('tahfidz', [App\Http\Controllers\Api\Wali\TahfidzController::class, 'index']);
+    Route::get('attendances', [App\Http\Controllers\Api\Wali\WaliAttendanceController::class, 'index']);
 
     // Perilaku (Counseling)
     Route::get('counseling', [App\Http\Controllers\Api\Wali\CounselingController::class, 'index']);
@@ -205,4 +206,8 @@ Route::prefix('ct-mobile')->middleware(['web'])->group(function () {
         Route::get('penanggung-jawab/my-students', [App\Http\Controllers\Api\Wali\PenanggungJawabPermitController::class, 'myStudents']);
         Route::get('penanggung-jawab/my-students/{studentId}/history', [App\Http\Controllers\Api\Wali\PenanggungJawabPermitController::class, 'studentHistory']);
     });
+
+    // Biometric & Mobile Attendance Routes
+    Route::post('biometric/log', [App\Http\Controllers\Api\BiometricAttendanceController::class, 'logWebhook']);
+    Route::post('attendance/mobile-checkin', [App\Http\Controllers\Api\BiometricAttendanceController::class, 'mobileCheckin']);
 });
