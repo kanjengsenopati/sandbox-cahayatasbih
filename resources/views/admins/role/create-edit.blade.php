@@ -111,94 +111,100 @@
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            @php
-                                            $modules = ['Role', 'Admin', 'Santri', 'Wali Santri',
-                                            'Sekolah', 'Bank', 'Outlet',
-                                            'Informasi', 'Metode Pembayaran', 'Menu Aplikasi', 'Kontak Bantuan',
-                                            'Barang','Saldo Santri', 'Tabungan Santri', 'Jadwal', 'Tahfidz',
-                                            'Pos Kasir', 'Tagihan', 'Status Tagihan', 'Perilaku Santri',
-                                            'Prestasi Santri', 'Nilai Santri', 'Perizinan', 'Asrama',
-                                            'PPDB', 'Mata Pelajaran', 'Tahun Ajaran', 'Semester', 'Kenaikan Kelas',
-                                            'Pengaturan Aplikasi', 'Item Bayar', 'Jenis Bayar','Laporan Pos Kasir',
-                                            'Laporan Pos Multi Outlet',
-                                            'Laporan Rugi Laba',
-                                            'Laporan Tagihan',
-                                            'Laporan Santri', 'Laporan Tahfidz', 'Laporan Perilaku Siswa',
-                                            'Laporan Saldo Santri', 'Laporan Fee Aplikasi', 'Laporan Transaksi',
-                                            'Kelulusan Santri', 'Kategori Arus Kas', 'Arus Kas', 'Laporan Arus Kas',
-                                            'Gelombang PPDB', 'Kartu Santri', 'Kartu Ujian', 'Petugas'
-                                            ];
-                                            @endphp
+                                             @php
+                                             $modules = ['Role', 'Admin', 'Santri', 'Wali Santri',
+                                             'Sekolah', 'Bank', 'Outlet',
+                                             'Informasi', 'Metode Pembayaran', 'Menu Aplikasi', 'Kontak Bantuan',
+                                             'Barang','Saldo Santri', 'Tabungan Santri', 'Jadwal', 'Tahfidz',
+                                             'Pos Kasir', 'Tagihan', 'Status Tagihan', 'Perilaku Santri',
+                                             'Prestasi Santri', 'Nilai Santri', 'Perizinan', 'Asrama',
+                                             'PPDB', 'Mata Pelajaran', 'Tahun Ajaran', 'Semester', 'Kenaikan Kelas',
+                                             'Pengaturan Aplikasi', 'Item Bayar', 'Jenis Bayar', 'Payroll', 'Laporan Presensi', 'Laporan Pos Kasir',
+                                             'Laporan Pos Multi Outlet',
+                                             'Laporan Rugi Laba',
+                                             'Laporan Tagihan',
+                                             'Laporan Santri', 'Laporan Tahfidz', 'Laporan Perilaku Siswa',
+                                             'Laporan Saldo Santri', 'Laporan Fee Aplikasi', 'Laporan Transaksi',
+                                             'Kelulusan Santri', 'Kategori Arus Kas', 'Arus Kas', 'Laporan Arus Kas',
+                                             'Gelombang PPDB', 'Kartu Santri', 'Kartu Ujian', 'Petugas'
+                                             ];
+                                             @endphp
 
-                                            @foreach ($modules as $module)
-                                            <tr>
-                                                <td>
-                                                    <div class="form-check form-check-inline">
-                                                        <input class="form-check-input module-checkbox" type="checkbox"
-                                                            data-module="{{ str_replace(' ', '', $module) }}">
-                                                    </div>
-                                                </td>
-                                                <td>{{ ucfirst($module) }}</td>
-                                                <td>
-                                                    @if (in_array('Manage ' . $module, (array) $permissions))
-                                                    @php
-                                                    $manageKey = array_search('Manage ' . $module, $permissions);
-                                                    @endphp
-                                                    <div class="form-check form-check-inline">
-                                                        <input
-                                                            class="form-check-input permission-checkbox isscheck_{{ str_replace(' ', '', $module) }}"
-                                                            type="checkbox" name="permissions[]"
-                                                            value="{{ $manageKey }}" id="permission{{ $manageKey }}"
-                                                            @if(in_array($manageKey, (array) $permissionValue)) checked
-                                                            @endif>
-                                                    </div>
-                                                    @endif
-                                                </td>
-                                                <td>
-                                                    @if (in_array('Create ' . $module, (array) $permissions))
-                                                    @php
-                                                    $createKey = array_search('Create ' . $module, $permissions);
-                                                    @endphp
-                                                    <div class="form-check form-check-inline">
-                                                        <input
-                                                            class="form-check-input permission-checkbox isscheck_{{ str_replace(' ', '', $module) }}"
-                                                            type="checkbox" name="permissions[]"
-                                                            value="{{ $createKey }}" id="permission{{ $createKey }}"
-                                                            @if(in_array($createKey, (array) $permissionValue)) checked
-                                                            @endif>
-                                                    </div>
-                                                    @endif
-                                                </td>
-                                                <td>
-                                                    @if (in_array('Edit ' . $module, (array) $permissions))
-                                                    @php
-                                                    $editKey = array_search('Edit ' . $module, $permissions);
-                                                    @endphp
-                                                    <div class="form-check form-check-inline">
-                                                        <input
-                                                            class="form-check-input permission-checkbox isscheck_{{ str_replace(' ', '', $module) }}"
-                                                            type="checkbox" name="permissions[]" value="{{ $editKey }}"
-                                                            id="permission{{ $editKey }}" @if(in_array($editKey, (array)
-                                                            $permissionValue)) checked @endif>
-                                                    </div>
-                                                    @endif
-                                                </td>
-                                                <td>
-                                                    @if (in_array('Delete ' . $module, (array) $permissions))
-                                                    @php
-                                                    $deleteKey = array_search('Delete ' . $module, $permissions);
-                                                    @endphp
-                                                    <div class="form-check form-check-inline">
-                                                        <input
-                                                            class="form-check-input permission-checkbox isscheck_{{ str_replace(' ', '', $module) }}"
-                                                            type="checkbox" name="permissions[]"
-                                                            value="{{ $deleteKey }}" id="permission{{ $deleteKey }}"
-                                                            @if(in_array($deleteKey, (array) $permissionValue)) checked
-                                                            @endif>
-                                                    </div>
-                                                    @endif
-                                                </td>
-                                            </tr>
+                                             @foreach ($modules as $module)
+                                             @php
+                                                 $managePerm = $module === 'Payroll' ? 'Manage Payroll' : 'Manage ' . $module;
+                                                 $createPerm = $module === 'Payroll' ? 'Create Payroll' : 'Create ' . $module;
+                                                 $editPerm   = $module === 'Payroll' ? 'Approve Payroll' : 'Edit ' . $module;
+                                                 $deletePerm = $module === 'Payroll' ? 'Pay Payroll' : 'Delete ' . $module;
+                                             @endphp
+                                             <tr>
+                                                 <td>
+                                                     <div class="form-check form-check-inline">
+                                                         <input class="form-check-input module-checkbox" type="checkbox"
+                                                             data-module="{{ str_replace(' ', '', $module) }}">
+                                                     </div>
+                                                 </td>
+                                                 <td>{{ ucfirst($module) }}</td>
+                                                 <td>
+                                                     @if (in_array($managePerm, (array) $permissions))
+                                                     @php
+                                                     $manageKey = array_search($managePerm, $permissions);
+                                                     @endphp
+                                                     <div class="form-check form-check-inline">
+                                                         <input
+                                                             class="form-check-input permission-checkbox isscheck_{{ str_replace(' ', '', $module) }}"
+                                                             type="checkbox" name="permissions[]"
+                                                             value="{{ $manageKey }}" id="permission{{ $manageKey }}"
+                                                             @if(in_array($manageKey, (array) $permissionValue)) checked
+                                                             @endif>
+                                                     </div>
+                                                     @endif
+                                                 </td>
+                                                 <td>
+                                                     @if (in_array($createPerm, (array) $permissions))
+                                                     @php
+                                                     $createKey = array_search($createPerm, $permissions);
+                                                     @endphp
+                                                     <div class="form-check form-check-inline">
+                                                         <input
+                                                             class="form-check-input permission-checkbox isscheck_{{ str_replace(' ', '', $module) }}"
+                                                             type="checkbox" name="permissions[]"
+                                                             value="{{ $createKey }}" id="permission{{ $createKey }}"
+                                                             @if(in_array($createKey, (array) $permissionValue)) checked
+                                                             @endif>
+                                                     </div>
+                                                 @endif
+                                                 </td>
+                                                 <td>
+                                                     @if (in_array($editPerm, (array) $permissions))
+                                                     @php
+                                                     $editKey = array_search($editPerm, $permissions);
+                                                     @endphp
+                                                     <div class="form-check form-check-inline">
+                                                         <input
+                                                             class="form-check-input permission-checkbox isscheck_{{ str_replace(' ', '', $module) }}"
+                                                             type="checkbox" name="permissions[]" value="{{ $editKey }}"
+                                                             id="permission{{ $editKey }}" @if(in_array($editKey, (array)
+                                                             $permissionValue)) checked @endif>
+                                                     </div>
+                                                     @endif
+                                                 </td>
+                                                 <td>
+                                                     @if (in_array($deletePerm, (array) $permissions))
+                                                     @php
+                                                     $deleteKey = array_search($deletePerm, $permissions);
+                                                     @endphp
+                                                     <div class="form-check form-check-inline">
+                                                         <input
+                                                             class="form-check-input permission-checkbox isscheck_{{ str_replace(' ', '', $module) }}"
+                                                             type="checkbox" name="permissions[]"
+                                                             value="{{ $deleteKey }}" id="permission{{ $deleteKey }}"
+                                                             @if(in_array($deleteKey, (array) $permissionValue)) checked
+                                                             @endif>
+                                                     </div>
+                                                     @endif
+                                                 </td>
+                                             </tr>
                                             @endforeach
                                         </tbody>
                                     </table>
