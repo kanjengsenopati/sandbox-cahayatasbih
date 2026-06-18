@@ -43,8 +43,20 @@ class RoleController extends Controller
                         return "<span class='badge bg-success m-1'>{$permission->name}</span>";
                     })->implode('');
 
-                    $admins = \App\Models\Admin::role($query->name)->get();
-                    $walis = \App\Models\User::role($query->name)->get();
+                    $admins = collect();
+                    if ($query->guard_name === 'web' || $query->guard_name === 'api') {
+                        try {
+                            $admins = \App\Models\Admin::role($query->name)->get();
+                        } catch (\Throwable $e) {}
+                    }
+
+                    $walis = collect();
+                    if ($query->guard_name === 'wali') {
+                        try {
+                            $walis = \App\Models\User::role($query->name)->get();
+                        } catch (\Throwable $e) {}
+                    }
+
                     $users = $admins->concat($walis);
 
                     $usersHtml = '';
