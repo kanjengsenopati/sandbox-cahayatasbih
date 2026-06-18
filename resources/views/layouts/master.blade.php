@@ -14,6 +14,17 @@
 	class="header-fixed header-tablet-and-mobile-fixed toolbar-enabled toolbar-fixed aside-enabled aside-fixed"
 	style="--kt-toolbar-height:55px;--kt-toolbar-height-tablet-and-mobile:55px"
 	data-kt-aside-minimize="{{ @$sidebar ?? 'off' }}">
+	@if(session()->has('impersonator_backoffice_id'))
+		<div style="background-color: #DC2626; color: white; text-align: center; padding: 10px; font-weight: bold; position: sticky; top: 0; z-index: 9999; width: 100%; display: flex; align-items: center; justify-content: center; gap: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+			<span>🔑 Anda sedang masuk sebagai <strong>{{ auth()->user()->name }}</strong> (Impersonate)</span>
+			<form action="{{ route('admin.stop-impersonating') }}" method="POST" style="margin: 0;">
+				@csrf
+				<button type="submit" class="btn btn-sm btn-light" style="padding: 4px 12px; font-size: 11px; font-weight: bold; color: #DC2626; border: none; border-radius: 4px; cursor: pointer; transition: background-color 0.2s;">
+					Kembali ke Admin Asli
+				</button>
+			</form>
+		</div>
+	@endif
 	<!--begin::Main-->
 	<!--begin::Root-->
 	<div class="d-flex flex-column flex-root">

@@ -213,6 +213,8 @@ Route::group(['middleware' => ['auth']], function () {
     Route::get('select2', [Select2Controller::class, 'index'])->name('select2');
     Route::resource('permission', PermissionController::class, ['except' => ['show']]);
     Route::resource('role', RoleController::class);
+    Route::post('admin/{admin}/impersonate', [AdminController::class, 'impersonate'])->name('admin.impersonate');
+    Route::post('admin/stop-impersonating', [AdminController::class, 'stopImpersonating'])->name('admin.stop-impersonating');
     Route::resource('admin', AdminController::class);
     Route::post('user/import', [UserController::class, 'import'])->name('user.import');
     Route::post('user/bulk-update-status', [UserController::class, 'bulkUpdateStatus'])->name('user.bulk-update-status');

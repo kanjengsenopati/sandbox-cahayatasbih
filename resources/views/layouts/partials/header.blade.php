@@ -45,11 +45,15 @@
                     <!--begin::User-->
                     <div class="d-flex align-items-center ms-1 ms-lg-3" id="kt_header_user_menu_toggle">
                         <!--begin::Menu wrapper-->
-                        <div class="cursor-pointer symbol symbol-30px symbol-md-40px" data-kt-menu-trigger="click"
+                        <div class="cursor-pointer symbol symbol-30px symbol-md-40px position-relative" data-kt-menu-trigger="click"
                             data-kt-menu-attach="parent" data-kt-menu-placement="bottom-end">
                             <img src="{{ auth()->user()->avatar_url ?? asset('assets/media/avatars/150-26.jpg') }}"
                                 onerror="this.src='{{ asset('assets/media/avatars/150-26.jpg') }}'"
-                                alt="user" />
+                                alt="user" 
+                                @if(session()->has('impersonator_backoffice_id')) style="border: 2px solid #DC2626;" @endif />
+                            @if(session()->has('impersonator_backoffice_id'))
+                                <span class="position-absolute top-0 start-100 translate-middle badge rounded-circle bg-danger p-1" style="width: 10px; height: 10px;" title="Sedang Impersonate"></span>
+                            @endif
                         </div>
                         <!--begin::Menu-->
                         <div class="menu menu-sub menu-sub-dropdown menu-column menu-rounded menu-gray-800 menu-state-bg menu-state-primary fw-bold py-4 fs-6 w-275px"
@@ -68,8 +72,11 @@
                                     <div class="d-flex flex-column">
                                         <div class="fw-bolder d-flex align-items-center fs-5">
                                             {{ auth()->user()->name ?? 'User' }}
-                                            <span
-                                                class="badge badge-light-success fw-bolder fs-8 px-2 py-1 ms-2"></span>
+                                            @if(session()->has('impersonator_backoffice_id'))
+                                                <span class="badge badge-light-danger fw-bolder fs-8 px-2 py-1 ms-2">Impersonate</span>
+                                            @else
+                                                <span class="badge badge-light-success fw-bolder fs-8 px-2 py-1 ms-2"></span>
+                                            @endif
                                         </div>
                                         <a href="#" class="fw-bold text-muted text-hover-primary fs-7">{{
                                             auth()->user()?->roles?->first()?->name ?? 'Admin' }}</a>
@@ -81,6 +88,22 @@
                             <!--begin::Menu separator-->
                             <div class="separator my-2"></div>
                             <!--end::Menu separator-->
+                            @if(session()->has('impersonator_backoffice_id'))
+                            <!--begin::Menu item (Stop Impersonating)-->
+                            <div class="menu-item px-5">
+                                <form method="POST" action="{{ route('admin.stop-impersonating') }}">
+                                    @csrf
+                                    <a href="{{ route('admin.stop-impersonating') }}" class="menu-link px-5 text-danger"
+                                        onclick="event.preventDefault(); this.closest('form').submit();">
+                                        <i class="fas fa-user-shield me-2 text-danger"></i> Login as Real User
+                                    </a>
+                                </form>
+                            </div>
+                            <!--end::Menu item-->
+                            <!--begin::Menu separator-->
+                            <div class="separator my-2"></div>
+                            <!--end::Menu separator-->
+                            @endif
                             <!--begin::Menu item-->
                             <div class="menu-item px-5">
                                 <form method="POST" action="{{ route('logout') }}">

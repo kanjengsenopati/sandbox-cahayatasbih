@@ -58,7 +58,23 @@ class AdminController extends Controller
                 ->addColumn('action', function ($data) {
                     $actionEdit = route('admin.edit', $data->id);
                     $actionDelete = route('admin.destroy', $data->id);
-                    return "<div class='d-flex gap-2 flex-nowrap justify-content-center'>" .
+                    
+                    $impersonateBtn = '';
+                    if ($data->id !== Auth::id()) {
+                        $actionImpersonate = route('admin.impersonate', $data->id);
+                        $csrf = csrf_field();
+                        $impersonateBtn = "
+                            <form action='{$actionImpersonate}' method='POST' class='d-inline' style='display:inline;'>
+                                {$csrf}
+                                <button type='submit' class='btn btn-icon btn-active-light-success w-30px h-30px' title='Login As (Impersonate)' style='border: none; background: transparent;'>
+                                    <i class='fas fa-user-secret text-success fs-5'></i>
+                                </button>
+                            </form>
+                        ";
+                    }
+                    
+                    return "<div class='d-flex gap-2 flex-nowrap justify-content-center align-items-center'>" .
+                        $impersonateBtn .
                         view('components.action.edit', ['action' => $actionEdit, 'name' => 'Admin']) . '&nbsp;' .
                         view('components.action.delete', ['action' => $actionDelete, 'id' => $data->id, 'name' => 'Admin']) .
                         "</div>";
@@ -262,4 +278,40 @@ class AdminController extends Controller
         $admin->delete();
         return redirect()->route('admin.index')->with('success', 'Berhasil menghapus admin');
     }
+
+    public function impersonate(Admin $admin)
+    {
+        if (!Auth::user()->can('Manage Admin')) {
+            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk tindakan ini');
+        }
+
+        if ($admin->id === Auth::id()) {
+            return redirect()->back()->with('error', 'Anda tidak dapat meng-impersonate diri sendiri');
+        }
+
+        $impersonatorId = Auth::id();
+        session(['impersonator_backoffice_id' => $impersonatorId]);
+
+        Auth::login($admin);
+
+        return redirect('/dashboard')->with('success', 'Berhasil masuk sebagai ' . $admin->name);
+    }
+
+    public function stopImpersonating()
+    {
+        $impersonatorId = session('impersonator_backoffice_id');
+        if (!$impersonatorId) {
+            return redirect('/');
+        }
+
+        $originalAdmin = Admin::find($impersonatorId);
+        if ($originalAdmin) {
+            Auth::login($originalAdmin);
+            session()->forget('impersonator_backoffice_id');
+            return redirect()->route('admin.index')->with('success', 'Kembali ke sesi Admin Asli.');
+        }
+
+        return redirect('/');
+    }
 }
+
