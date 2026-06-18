@@ -301,10 +301,10 @@
 
                 @canany(['Manage Saldo Santri', 'Manage Tabungan Santri','Manage Jadwal', 'Manage Tahfidz',
                 'Manage Pos Kasir', 'Manage Tagihan', 'Manage Perilaku Santri', 'Manage Nilai Pelajaran',
-                'Manage Prestasi Santri', 'Manage Nilai Santri', 'Manage Arus Kas', 'Manage Perizinan'])
+                'Manage Prestasi Santri', 'Manage Nilai Santri', 'Manage Arus Kas', 'Manage Perizinan', 'Manage Payroll'])
                 <div data-kt-menu-trigger="click" class="menu-item menu-accordion {{ request()->routeIs(['bill.*', 'saldo-history.*', 'saving-history.*', 'order-item.*', 'study-grade.*',
                     'tahfidz.*', 'student-counseling-score.*', 'schedule.*','saldo-bank.*', 'saving-bank.*', 'student-achievement.*',
-                    'study-grade.*', 'cashflow.*', 'student-permit.*']) ? 'show' : '' }}">
+                    'study-grade.*', 'cashflow.*', 'student-permit.*', 'payroll.*']) ? 'show' : '' }}">
                     <span class=" menu-link ">
                         <span class=" menu-icon">
                             <i class="fa-solid fa-edit" style="color: #ffffff;"></i>
@@ -376,6 +376,18 @@
                                     <i class="fa-solid fa-file-signature text-white/80 fs-7"></i>
                                 </span>
                                 <span class="menu-title">Perizinan Santri</span>
+                            </a>
+                        </div>
+                        @endcan
+
+                        @can('Manage Payroll')
+                        <div class="menu-item">
+                            <a class="menu-link {{ request()->routeIs('payroll.*') ? ' active' : '' }}"
+                                href="{{ route('payroll.index') }}">
+                                <span class="menu-bullet">
+                                    <i class="fa-solid fa-calculator text-white/80 fs-7"></i>
+                                </span>
+                                <span class="menu-title">Penggajian (Payroll)</span>
                             </a>
                         </div>
                         @endcan
