@@ -1,10 +1,10 @@
 {
   "F:/Antigravity/Projects/cahayatasbih/portalwalisantri/src/styles.css": {
-    "file": "assets/styles-C4x2zjtO.css",
+    "file": "assets/styles-BQvWLAVN.css",
     "src": "F:/Antigravity/Projects/cahayatasbih/portalwalisantri/src/styles.css"
   },
   "index.html": {
-    "file": "assets/index-D9As2jJ6.js",
+    "file": "assets/index-Dez6mwBw.js",
     "name": "index",
     "src": "index.html",
     "isEntry": true,
@@ -12,10 +12,10 @@
       "node_modules/workbox-window/build/workbox-window.prod.es5.mjs"
     ],
     "css": [
-      "assets/styles-C4x2zjtO.css"
+      "assets/styles-BQvWLAVN.css"
     ],
     "assets": [
-      "assets/styles-C4x2zjtO.css"
+      "assets/styles-BQvWLAVN.css"
     ]
   },
   "node_modules/workbox-window/build/workbox-window.prod.es5.mjs": {

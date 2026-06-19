@@ -31,6 +31,7 @@ import { SantriSwitcherTrigger } from "@/components/SantriSwitcher";
 import { useQuery } from "@tanstack/react-query";
 import { fetchDashboard, fetchInformations } from "@/lib/api";
 import { resolveImageUrl } from "@/lib/utils";
+import { Text } from "@/components/Text";
 
 export const Route = createFileRoute("/dashboard")({
   component: Dashboard,

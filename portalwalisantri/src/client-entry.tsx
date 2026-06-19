@@ -6,7 +6,7 @@ import "./styles.css";
 import { registerSW } from "virtual:pwa-register";
 
 // === FORCE PURGE CACHE ON VERSION UPDATE ===
-const CURRENT_VERSION = "2026-06-19_v2";
+const CURRENT_VERSION = "2026-06-19_v3";
 if (typeof window !== "undefined") {
   const savedVersion = localStorage.getItem("pwa_version");
   if (savedVersion !== CURRENT_VERSION) {
