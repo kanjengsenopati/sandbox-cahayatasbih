@@ -73,4 +73,9 @@ class School extends Model
         $schoolIds = $admin?->adminSchool?->pluck('school_id');
         $query->whereIn('id', $schoolIds);
     }
+
+    public function adminSchool()
+    {
+        return $this->hasMany(AdminSchool::class, 'school_id');
+    }
 }

@@ -18,4 +18,9 @@ class Outlet extends Model
         'address',
         'is_active'
     ];
+
+    public function adminOutlet()
+    {
+        return $this->hasMany(AdminOutlet::class, 'outlet_id');
+    }
 }
