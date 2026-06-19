@@ -88,126 +88,114 @@
                                 </div>
 
                                 <div class="fv-row mb-7">
-                                    <label class="fs-6 fw-bold form-label" for="permissions">
-                                        <span class="required">Pilih Permission Yang Akan Diberikan</span>
-                                        <i class="fas fa-exclamation-circle ms-1 fs-7" data-bs-toggle="tooltip"
-                                            title="Select the permissions for this role"></i>
-                                    </label>
+                                    <div class="d-flex justify-content-between align-items-center mb-5">
+                                        <label class="fs-6 fw-bold form-label mb-0" for="permissions">
+                                            <span class="required">Pilih Permission Yang Akan Diberikan</span>
+                                            <i class="fas fa-exclamation-circle ms-1 fs-7" data-bs-toggle="tooltip"
+                                                title="Select the permissions for this role"></i>
+                                        </label>
+                                        <div class="form-check form-check-custom form-check-solid">
+                                            <input class="form-check-input module-checkbox" type="checkbox"
+                                                data-module="all" id="select_all_permissions">
+                                            <label class="form-check-label fw-bold text-gray-700 fs-7" for="select_all_permissions">Pilih Semua</label>
+                                        </div>
+                                    </div>
 
-                                    <table class="table table-striped border rounded gy-5 gs-7">
-                                        <thead>
-                                            <tr class="fw-bolder fs-6 text-gray-800 px-7">
-                                                <th>
-                                                    <div class="form-check form-check-inline">
-                                                        <input class="form-check-input module-checkbox" type="checkbox"
-                                                            data-module="all">
+                                    <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-4">
+                                        @php
+                                        $modules = ['Role', 'Admin', 'Santri', 'Wali Santri',
+                                        'Sekolah', 'Bank', 'Outlet',
+                                        'Informasi', 'Metode Pembayaran', 'Menu Aplikasi', 'Kontak Bantuan',
+                                        'Barang','Saldo Santri', 'Tabungan Santri', 'Jadwal', 'Tahfidz',
+                                        'Pos Kasir', 'Tagihan', 'Status Tagihan', 'Perilaku Santri',
+                                        'Prestasi Santri', 'Nilai Santri', 'Perizinan', 'Asrama',
+                                        'PPDB', 'Mata Pelajaran', 'Tahun Ajaran', 'Semester', 'Kenaikan Kelas',
+                                        'Pengaturan Aplikasi', 'Item Bayar', 'Jenis Bayar', 'Payroll', 'Laporan Presensi', 'Shift', 'Laporan Pos Kasir',
+                                        'Laporan Pos Multi Outlet',
+                                        'Laporan Rugi Laba',
+                                        'Laporan Tagihan',
+                                        'Laporan Santri', 'Laporan Tahfidz', 'Laporan Perilaku Siswa',
+                                        'Laporan Saldo Santri', 'Laporan Fee Aplikasi', 'Laporan Transaksi',
+                                        'Kelulusan Santri', 'Kategori Arus Kas', 'Arus Kas', 'Laporan Arus Kas',
+                                        'Gelombang PPDB', 'Kartu Santri', 'Kartu Ujian', 'Petugas', 'Biometric'
+                                        ];
+                                        @endphp
+
+                                        @foreach ($modules as $module)
+                                        @php
+                                            $moduleKey = str_replace(' ', '', $module);
+                                            $managePerm = $module === 'Payroll' ? 'Manage Payroll' : 'Manage ' . $module;
+                                            $createPerm = $module === 'Payroll' ? 'Create Payroll' : 'Create ' . $module;
+                                            $editPerm   = $module === 'Payroll' ? 'Approve Payroll' : 'Edit ' . $module;
+                                            $deletePerm = $module === 'Payroll' ? 'Pay Payroll' : 'Delete ' . $module;
+                                        @endphp
+                                        <div class="col">
+                                            <div class="card h-100 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border-0" style="border-radius: 24px; border: 1px solid #f1f1f4; background: #ffffff;">
+                                                <div class="card-body p-5">
+                                                    <!-- Header Card: Module Name + Card Select All -->
+                                                    <div class="d-flex justify-content-between align-items-center mb-4">
+                                                        <span class="fs-6 fw-bolder text-gray-800">{{ ucfirst($module) }}</span>
+                                                        <div class="form-check form-check-custom form-check-solid">
+                                                            <input class="form-check-input module-checkbox" type="checkbox"
+                                                                data-module="{{ $moduleKey }}" id="select_module_{{ $moduleKey }}">
+                                                        </div>
                                                     </div>
-                                                </th>
-                                                <th>Module</th>
-                                                <th>Read</th>
-                                                <th>Create</th>
-                                                <th>Edit</th>
-                                                <th>Delete</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                             @php
-                                             $modules = ['Role', 'Admin', 'Santri', 'Wali Santri',
-                                             'Sekolah', 'Bank', 'Outlet',
-                                             'Informasi', 'Metode Pembayaran', 'Menu Aplikasi', 'Kontak Bantuan',
-                                             'Barang','Saldo Santri', 'Tabungan Santri', 'Jadwal', 'Tahfidz',
-                                             'Pos Kasir', 'Tagihan', 'Status Tagihan', 'Perilaku Santri',
-                                             'Prestasi Santri', 'Nilai Santri', 'Perizinan', 'Asrama',
-                                             'PPDB', 'Mata Pelajaran', 'Tahun Ajaran', 'Semester', 'Kenaikan Kelas',
-                                             'Pengaturan Aplikasi', 'Item Bayar', 'Jenis Bayar', 'Payroll', 'Laporan Presensi', 'Shift', 'Laporan Pos Kasir',
-                                             'Laporan Pos Multi Outlet',
-                                             'Laporan Rugi Laba',
-                                             'Laporan Tagihan',
-                                             'Laporan Santri', 'Laporan Tahfidz', 'Laporan Perilaku Siswa',
-                                             'Laporan Saldo Santri', 'Laporan Fee Aplikasi', 'Laporan Transaksi',
-                                             'Kelulusan Santri', 'Kategori Arus Kas', 'Arus Kas', 'Laporan Arus Kas',
-                                             'Gelombang PPDB', 'Kartu Santri', 'Kartu Ujian', 'Petugas', 'Biometric'
-                                             ];
-                                             @endphp
+                                                    
+                                                    <!-- CRUD Checkboxes stacked vertically -->
+                                                    <div class="d-flex flex-column gap-2 mt-3">
+                                                        <!-- Read Checkbox -->
+                                                        @if (in_array($managePerm, (array) $permissions))
+                                                            @php $manageKey = array_search($managePerm, $permissions); @endphp
+                                                            <div class="form-check form-check-custom form-check-solid form-check-sm">
+                                                                <input class="form-check-input permission-checkbox isscheck_{{ $moduleKey }}"
+                                                                    type="checkbox" name="permissions[]" data-module="{{ $moduleKey }}"
+                                                                    value="{{ $manageKey }}" id="permission{{ $manageKey }}"
+                                                                    @if(in_array($manageKey, (array) $permissionValue)) checked @endif>
+                                                                <label class="form-check-label text-gray-600 fs-7" for="permission{{ $manageKey }}">Read</label>
+                                                            </div>
+                                                        @endif
 
-                                             @foreach ($modules as $module)
-                                             @php
-                                                 $managePerm = $module === 'Payroll' ? 'Manage Payroll' : 'Manage ' . $module;
-                                                 $createPerm = $module === 'Payroll' ? 'Create Payroll' : 'Create ' . $module;
-                                                 $editPerm   = $module === 'Payroll' ? 'Approve Payroll' : 'Edit ' . $module;
-                                                 $deletePerm = $module === 'Payroll' ? 'Pay Payroll' : 'Delete ' . $module;
-                                             @endphp
-                                             <tr>
-                                                 <td>
-                                                     <div class="form-check form-check-inline">
-                                                         <input class="form-check-input module-checkbox" type="checkbox"
-                                                             data-module="{{ str_replace(' ', '', $module) }}">
-                                                     </div>
-                                                 </td>
-                                                 <td>{{ ucfirst($module) }}</td>
-                                                 <td>
-                                                     @if (in_array($managePerm, (array) $permissions))
-                                                     @php
-                                                     $manageKey = array_search($managePerm, $permissions);
-                                                     @endphp
-                                                     <div class="form-check form-check-inline">
-                                                         <input
-                                                             class="form-check-input permission-checkbox isscheck_{{ str_replace(' ', '', $module) }}"
-                                                             type="checkbox" name="permissions[]"
-                                                             value="{{ $manageKey }}" id="permission{{ $manageKey }}"
-                                                             @if(in_array($manageKey, (array) $permissionValue)) checked
-                                                             @endif>
-                                                     </div>
-                                                     @endif
-                                                 </td>
-                                                 <td>
-                                                     @if (in_array($createPerm, (array) $permissions))
-                                                     @php
-                                                     $createKey = array_search($createPerm, $permissions);
-                                                     @endphp
-                                                     <div class="form-check form-check-inline">
-                                                         <input
-                                                             class="form-check-input permission-checkbox isscheck_{{ str_replace(' ', '', $module) }}"
-                                                             type="checkbox" name="permissions[]"
-                                                             value="{{ $createKey }}" id="permission{{ $createKey }}"
-                                                             @if(in_array($createKey, (array) $permissionValue)) checked
-                                                             @endif>
-                                                     </div>
-                                                 @endif
-                                                 </td>
-                                                 <td>
-                                                     @if (in_array($editPerm, (array) $permissions))
-                                                     @php
-                                                     $editKey = array_search($editPerm, $permissions);
-                                                     @endphp
-                                                     <div class="form-check form-check-inline">
-                                                         <input
-                                                             class="form-check-input permission-checkbox isscheck_{{ str_replace(' ', '', $module) }}"
-                                                             type="checkbox" name="permissions[]" value="{{ $editKey }}"
-                                                             id="permission{{ $editKey }}" @if(in_array($editKey, (array)
-                                                             $permissionValue)) checked @endif>
-                                                     </div>
-                                                     @endif
-                                                 </td>
-                                                 <td>
-                                                     @if (in_array($deletePerm, (array) $permissions))
-                                                     @php
-                                                     $deleteKey = array_search($deletePerm, $permissions);
-                                                     @endphp
-                                                     <div class="form-check form-check-inline">
-                                                         <input
-                                                             class="form-check-input permission-checkbox isscheck_{{ str_replace(' ', '', $module) }}"
-                                                             type="checkbox" name="permissions[]"
-                                                             value="{{ $deleteKey }}" id="permission{{ $deleteKey }}"
-                                                             @if(in_array($deleteKey, (array) $permissionValue)) checked
-                                                             @endif>
-                                                     </div>
-                                                     @endif
-                                                 </td>
-                                             </tr>
-                                            @endforeach
-                                        </tbody>
-                                    </table>
+                                                        <!-- Create Checkbox -->
+                                                        @if (in_array($createPerm, (array) $permissions))
+                                                            @php $createKey = array_search($createPerm, $permissions); @endphp
+                                                            <div class="form-check form-check-custom form-check-solid form-check-sm">
+                                                                <input class="form-check-input permission-checkbox isscheck_{{ $moduleKey }}"
+                                                                    type="checkbox" name="permissions[]" data-module="{{ $moduleKey }}"
+                                                                    value="{{ $createKey }}" id="permission{{ $createKey }}"
+                                                                    @if(in_array($createKey, (array) $permissionValue)) checked @endif>
+                                                                <label class="form-check-label text-gray-600 fs-7" for="permission{{ $createKey }}">Create</label>
+                                                            </div>
+                                                        @endif
+
+                                                        <!-- Edit Checkbox -->
+                                                        @if (in_array($editPerm, (array) $permissions))
+                                                            @php $editKey = array_search($editPerm, $permissions); @endphp
+                                                            <div class="form-check form-check-custom form-check-solid form-check-sm">
+                                                                <input class="form-check-input permission-checkbox isscheck_{{ $moduleKey }}"
+                                                                    type="checkbox" name="permissions[]" data-module="{{ $moduleKey }}"
+                                                                    value="{{ $editKey }}" id="permission{{ $editKey }}"
+                                                                    @if(in_array($editKey, (array) $permissionValue)) checked @endif>
+                                                                <label class="form-check-label text-gray-600 fs-7" for="permission{{ $editKey }}">Edit</label>
+                                                            </div>
+                                                        @endif
+
+                                                        <!-- Delete Checkbox -->
+                                                        @if (in_array($deletePerm, (array) $permissions))
+                                                            @php $deleteKey = array_search($deletePerm, $permissions); @endphp
+                                                            <div class="form-check form-check-custom form-check-solid form-check-sm">
+                                                                <input class="form-check-input permission-checkbox isscheck_{{ $moduleKey }}"
+                                                                    type="checkbox" name="permissions[]" data-module="{{ $moduleKey }}"
+                                                                    value="{{ $deleteKey }}" id="permission{{ $deleteKey }}"
+                                                                    @if(in_array($deleteKey, (array) $permissionValue)) checked @endif>
+                                                                <label class="form-check-label text-gray-600 fs-7" for="permission{{ $deleteKey }}">Delete</label>
+                                                            </div>
+                                                        @endif
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        @endforeach
+                                    </div>
                                 </div>
 
                                 <!--begin::Actions-->
@@ -250,21 +238,57 @@
 @push('js')
 <script>
     $(document).ready(function() {
+        // Function to update local module-checkbox based on its permission checkboxes
+        function updateModuleCheckbox(module) {
+            var total = $('.permission-checkbox.isscheck_' + module).length;
+            var checked = $('.permission-checkbox.isscheck_' + module + ':checked').length;
+            var moduleCheckbox = $('.module-checkbox[data-module="' + module + '"]');
+            if (total > 0 && total === checked) {
+                moduleCheckbox.prop('checked', true);
+            } else {
+                moduleCheckbox.prop('checked', false);
+            }
+        }
+
+        // Initialize individual module checkboxes on page load
+        $('.module-checkbox').each(function() {
+            var module = $(this).data('module');
+            if (module !== 'all') {
+                updateModuleCheckbox(module);
+            }
+        });
+
+        // Initialize master "all" checkbox on page load
+        var totalAll = $('.permission-checkbox').length;
+        var checkedAll = $('.permission-checkbox:checked').length;
+        if (totalAll > 0 && totalAll === checkedAll) {
+            $('.module-checkbox[data-module="all"]').prop('checked', true);
+        }
+
+        // Event handler for module/select-all checkboxes
         $('.module-checkbox').on('change', function() {
             var module = $(this).data('module');
             if (module === 'all') {
                 $('.permission-checkbox').prop('checked', this.checked);
+                $('.module-checkbox').not('[data-module="all"]').prop('checked', this.checked);
             } else {
                 $('.permission-checkbox.isscheck_' + module).prop('checked', this.checked);
-                var allChecked = $('.permission-checkbox.isscheck_' + module).length === $('.permission-checkbox.isscheck_' + module + ':checked').length;
-                $('.module-checkbox[data-module="' + module + '"]').prop('checked', allChecked);
+                updateModuleCheckbox(module);
+                
+                // Update master "all" checkbox state
+                var allChecked = $('.permission-checkbox').length === $('.permission-checkbox:checked').length;
+                $('.module-checkbox[data-module="all"]').prop('checked', allChecked);
             }
         });
 
+        // Event handler for individual permission checkboxes
         $('.permission-checkbox').on('change', function() {
             var module = $(this).data('module');
-            var allChecked = $('.permission-checkbox.isscheck_' + module).length === $('.permission-checkbox.isscheck_' + module + ':checked').length;
-            $('.module-checkbox[data-module="' + module + '"]').prop('checked', allChecked);
+            updateModuleCheckbox(module);
+            
+            // Update master "all" checkbox state
+            var allChecked = $('.permission-checkbox').length === $('.permission-checkbox:checked').length;
+            $('.module-checkbox[data-module="all"]').prop('checked', allChecked);
         });
     });
 </script>
