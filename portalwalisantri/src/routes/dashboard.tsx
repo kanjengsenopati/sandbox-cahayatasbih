@@ -290,7 +290,7 @@ function Dashboard() {
       <section className="px-6 mt-7 mb-10">
         <div className="flex items-center justify-between mb-1">
           <h3 className="text-base font-bold text-foreground">Transaksi Hari Ini</h3>
-          <button onClick={() => navigate({ to: "/riwayat" })} className="text-xs font-semibold text-primary">Lihat Semua</button>
+          <button onClick={() => navigate({ to: "/riwayat" })} className="text-xs font-semibold text-primary bg-transparent shadow-none">Lihat Semua</button>
         </div>
         <p className="text-[11px] text-muted-foreground mb-3">
           {new Date().toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}

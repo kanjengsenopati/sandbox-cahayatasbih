@@ -118,7 +118,7 @@ function LoginPage() {
                 <label className="text-[11px] font-bold text-slate-400 mb-2 uppercase tracking-widest block">
                   Nomor WhatsApp
                 </label>
-                <div className="flex items-center gap-3 bg-slate-50 rounded-2xl px-4 py-3.5 focus-within:ring-2 focus-within:ring-[#9b1de8]/20 focus-within:bg-white transition-all border border-slate-100 focus-within:border-[#9b1de8]/30">
+                <div className="flex items-center gap-3 bg-secondary rounded-2xl px-4 py-3.5 focus-within:ring-2 focus-within:ring-[#9b1de8]/20 focus-within:bg-white transition-all border border-slate-100 focus-within:border-[#9b1de8]/30">
                   <input
                     type="tel"
                     value={phone}
@@ -133,7 +133,7 @@ function LoginPage() {
                 <label className="text-[11px] font-bold text-slate-400 mb-2 uppercase tracking-widest block">
                   Kata Sandi
                 </label>
-                <div className="flex items-center gap-3 bg-slate-50 rounded-2xl px-4 py-3.5 focus-within:ring-2 focus-within:ring-[#9b1de8]/20 focus-within:bg-white transition-all border border-slate-100 focus-within:border-[#9b1de8]/30">
+                <div className="flex items-center gap-3 bg-secondary rounded-2xl px-4 py-3.5 focus-within:ring-2 focus-within:ring-[#9b1de8]/20 focus-within:bg-white transition-all border border-slate-100 focus-within:border-[#9b1de8]/30">
                   <input
                     type={show ? "text" : "password"}
                     value={password}

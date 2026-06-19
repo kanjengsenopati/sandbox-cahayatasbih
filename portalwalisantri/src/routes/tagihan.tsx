@@ -135,7 +135,7 @@ function Tagihan() {
               <button
                 key={t.id}
                 onClick={() => setTab(t.id)}
-                className={`flex-1 pb-3 pt-2 text-sm font-bold relative transition ${
+                className={`flex-1 pb-3 pt-2 text-sm font-bold relative transition bg-transparent ${
                   active ? "text-primary" : "text-muted-foreground"
                 }`}
               >

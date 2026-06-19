@@ -1,6 +1,6 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 @import "tailwindcss";
 @import "tw-animate-css";
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 
 @custom-variant dark (&:is(.dark *));
 
@@ -237,14 +237,14 @@
   }
 
   /* Secondary, Outline, and Row Buttons - Highly surgical to avoid targeting hero headers or active navigation links */
-  button:not(.bg-primary):not(.bg-transparent):not(.text-white):not([class*="text-white"]):not(.inline-flex):not([class*="bg-white/"]):not([class*="bg-transparent"]):not([class*="bg-primary/"]):not([class*="text-primary"]):not(.shrink-0) {
+  button:not(.bg-primary):not(.bg-transparent):not(.text-white):not([class*="text-white"]):not(.inline-flex):not([class*="bg-white/"]):not([class*="bg-transparent"]):not([class*="bg-primary/"]):not([class*="text-primary"]):not(.shrink-0):not(.text-destructive):not([class*="text-destructive"]) {
     background-color: var(--card) !important;
     box-shadow: var(--shadow-soft) !important;
     border: none !important;
     border-color: transparent !important;
     transition: all 0.2s ease !important;
   }
-  button:not(.bg-primary):not(.bg-transparent):not(.text-white):not([class*="text-white"]):not(.inline-flex):not([class*="bg-white/"]):not([class*="bg-transparent"]):not([class*="bg-primary/"]):not([class*="text-primary"]):not(.shrink-0):active {
+  button:not(.bg-primary):not(.bg-transparent):not(.text-white):not([class*="text-white"]):not(.inline-flex):not([class*="bg-white/"]):not([class*="bg-transparent"]):not([class*="bg-primary/"]):not([class*="text-primary"]):not(.shrink-0):not(.text-destructive):not([class*="text-destructive"]):active {
     box-shadow: var(--shadow-inset) !important;
     transform: scale(0.97) !important;
   }
@@ -262,8 +262,9 @@
   }
 
   /* Reset Back Button inside Gradient Heros */
+  .bg-gradient-hero button,
   [style*="gradient-hero"] button,
-  [class*="bg-gradient-"] button,
+  [class*="bg-gradient-"]:not(.mobile-shell-root) button,
   .bg-primary button {
     background-color: rgba(255, 255, 255, 0.15) !important;
     box-shadow: none !important;
@@ -271,7 +272,16 @@
     color: white !important;
   }
 
+  /* Force white icon stroke for back buttons in gradient heros */
+  .bg-gradient-hero button svg,
+  [style*="gradient-hero"] button svg,
+  [class*="bg-gradient-"]:not(.mobile-shell-root) button svg {
+    stroke: white !important;
+  }
+
   /* Reset Switcher Trigger (Ganti Santri) text color and background inside Hero */
+  .bg-gradient-hero button.text-white\/90,
+  .bg-gradient-hero button.inline-flex,
   [style*="gradient-hero"] button.text-white\/90,
   [style*="gradient-hero"] button.inline-flex,
   .bg-primary button.text-white\/90,
@@ -280,6 +290,13 @@
     box-shadow: none !important;
     border: none !important;
     color: rgba(255, 255, 255, 0.9) !important;
+  }
+
+  /* Remove top/outer shadow and add clear border for cards overlapping gradient heroes */
+  .bg-gradient-hero + div .bg-card,
+  [style*="gradient-hero"] + div .bg-card {
+    box-shadow: 4px 4px 10px rgba(0, 0, 0, 0.03) !important;
+    border: 1px solid rgba(128, 128, 128, 0.15) !important;
   }
 
   /* Selected Payment Method row inset look */

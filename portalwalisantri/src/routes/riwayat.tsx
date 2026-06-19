@@ -197,7 +197,7 @@ function RiwayatPage() {
       <div className="relative w-full max-w-md min-h-screen bg-background pb-24">
         {/* Hero */}
         <div
-          className="relative px-6 pt-12 pb-20 rounded-b-[2rem] overflow-hidden"
+          className="relative px-6 pt-12 pb-20 rounded-b-[2rem] overflow-hidden bg-gradient-hero"
           style={{ background: "var(--gradient-hero)" }}
         >
           <div className="absolute -top-16 -right-12 w-56 h-56 rounded-full bg-primary-glow/30 blur-3xl" />
@@ -276,7 +276,7 @@ function RiwayatPage() {
                     className={`flex-1 py-2 rounded-xl text-xs font-bold transition ${
                       active
                         ? "bg-card text-primary shadow-[var(--shadow-soft)]"
-                        : "text-muted-foreground"
+                        : "bg-transparent text-muted-foreground"
                     }`}
                   >
                     {t.label}

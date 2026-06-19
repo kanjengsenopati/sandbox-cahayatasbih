@@ -28,7 +28,7 @@ function Prestasi() {
       <div className="relative w-full max-w-md min-h-screen bg-background pb-32">
         {/* Hero */}
         <div
-          className="relative px-6 pt-12 pb-24 rounded-b-[2rem] overflow-hidden"
+          className="relative px-6 pt-12 pb-24 rounded-b-[2rem] overflow-hidden bg-gradient-hero"
           style={{ background: "var(--gradient-hero)" }}
         >
           <div className="absolute -top-20 -right-10 w-56 h-56 rounded-full bg-primary-glow/30 blur-3xl" />
