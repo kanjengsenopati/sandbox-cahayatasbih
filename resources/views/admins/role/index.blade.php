@@ -4,7 +4,7 @@
     <!--begin::Toolbar-->
     <div class="toolbar" id="kt_toolbar">
         <!--begin::Container-->
-        <div id="kt_toolbar_container" class="container-fluid d-flex flex-stack">
+        <div id="kt_toolbar_container" class="container-fluid d-flex flex-stack px-5">
             <!--begin::Page title-->
             <div data-kt-swapper="true" data-kt-swapper-mode="prepend"
                 data-kt-swapper-parent="{default: '#kt_content_container', 'lg': '#kt_toolbar_container'}"
@@ -28,22 +28,9 @@
                         List Peran
                     </li>
                     <!--end::Item-->
-                    <!--begin::Item-->
-                    {{-- <li class="breadcrumb-item text-muted"></li> --}}
-                    <!--end::Item-->
-                    <!--begin::Item-->
-                    <!--end::Item-->
-
                 </ul>
                 <!--end::Breadcrumb-->
             </div>
-            <!--end::Page title-->
-            <!--begin::Actions-->
-            <div class="d-flex align-items-center gap-2 gap-lg-3">
-                <!--begin::Filter menu-->
-                <!--end::Primary button-->
-            </div>
-            <!--end::Actions-->
         </div>
         <!--end::Container-->
     </div>
@@ -51,10 +38,10 @@
     <!--begin::Post-->
     <div class="post d-flex flex-column-fluid" id="kt_post">
         <!--begin::Container-->
-        <div id="kt_content_container" class="container-xxl">
+        <div id="kt_content_container" class="container-xxl px-5">
             @include('admins.partials.tabs-akses')
             <!--begin::Card-->
-            <div class="card">
+            <div class="card shadow-[0_8px_30px_rgb(0,0,0,0.04)] rounded-[24px]" style="border-radius: 24px; border: none;">
                 <!--begin::Card header-->
                 <div class="card-header d-flex align-items-center justify-content-between border-0 pt-6">
                     <!--begin::Card title-->
@@ -86,15 +73,50 @@
                 <!--end::Card body-->
             </div>
             <!--end::Card-->
-            <!--begin::Modals-->
-
         </div>
         <!--end::Container-->
     </div>
     <!--end::Post-->
 </div>
-<!--end::Wrapper-->
+
+<!-- Modal Assign User -->
+<div class="modal fade" id="modal_assign_role" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered mw-650px">
+        <div class="modal-content rounded-[24px]" style="border-radius: 24px;">
+            <form action="" method="POST" id="form_assign_role">
+                @csrf
+                <div class="modal-header">
+                    <h2 class="fw-bolder" id="modal_title">Assign User</h2>
+                    <div class="btn btn-icon btn-sm btn-active-icon-primary" data-bs-dismiss="modal">
+                        <span class="svg-icon svg-icon-1">
+                            <i class="fa-solid fa-xmark fs-4"></i>
+                        </span>
+                    </div>
+                </div>
+                <div class="modal-body scroll-y mx-5 mx-xl-15 my-7">
+                    <div class="d-flex flex-column mb-8 fv-row">
+                        <label class="d-flex align-items-center fs-6 fw-bold mb-2">
+                            <span class="required">Pilih Pengguna</span>
+                        </label>
+                        <select name="admin_ids[]" class="form-select form-select-solid" id="admin_select" data-control="select2" data-dropdown-parent="#modal_assign_role" data-placeholder="Pilih pengguna..." data-allow-clear="true" multiple="multiple">
+                            @foreach($allAdmins as $admin)
+                                <option value="{{ $admin->id }}">{{ $admin->name }} ({{ $admin->email }})</option>
+                            @endforeach
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer text-center justify-content-center">
+                    <button type="reset" class="btn btn-light me-3" data-bs-dismiss="modal">Batal</button>
+                    <button type="submit" class="btn btn-primary" id="btn_submit">
+                        <span class="indicator-label">Simpan</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
 @endsection
+
 @push('js')
 <script>
     $(document).ready(() => {
@@ -138,6 +160,21 @@
                         responsivePriority: 1
                     },
                 ]
+            });
+
+            // Assign User action
+            $(document).on('click', '.btn-assign-user', function() {
+                const roleId = $(this).data('id');
+                const roleName = $(this).data('name');
+                const users = $(this).data('users'); // Array of IDs
+
+                $('#modal_title').text('Tugaskan Pengguna ke Peran: ' + roleName);
+                $('#form_assign_role').attr('action', `/role/${roleId}/assign`);
+
+                // Clear and set values in select2
+                $('#admin_select').val(users).trigger('change');
+
+                $('#modal_assign_role').modal('show');
             });
         })
 </script>

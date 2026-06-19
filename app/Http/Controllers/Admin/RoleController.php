@@ -33,7 +33,20 @@ class RoleController extends Controller
                 ->addColumn('action', function ($data) {
                     $actionEdit = route('role.edit', $data->id);
                     $actionDelete = route('role.destroy', $data->id);
-                    return "<div class='d-flex gap-2 flex-nowrap justify-content-center'>" .
+
+                    $admins = collect();
+                    if ($data->guard_name === 'web' || $data->guard_name === 'api') {
+                        try {
+                            $admins = \App\Models\Admin::role($data->name)->pluck('id')->toArray();
+                        } catch (\Throwable $e) {}
+                    }
+
+                    $assignBtn = "<button type='button' class='btn btn-icon btn-active-light-primary w-30px h-30px me-1 btn-assign-user' data-id='{$data->id}' data-name='{$data->name}' data-users='".json_encode($admins)."'>
+                        <i class='fa-solid fa-user-gear text-primary fs-5'></i>
+                    </button>";
+
+                    return "<div class='d-flex gap-2 flex-nowrap justify-content-center align-items-center'>" .
+                        $assignBtn .
                         view('components.action.edit', ['action' => $actionEdit, 'name' => 'Role']) . '&nbsp;' .
                         view('components.action.delete', ['action' => $actionDelete, 'id' => $data->id, 'name' => 'Role']) .
                         "</div>";
@@ -62,9 +75,9 @@ class RoleController extends Controller
                     $usersHtml = '';
                     if ($users->count() > 0) {
                         $usersBadges = $users->map(function ($user) {
-                            return "<span class='badge m-1' style='background-color: #8b5cf6; color: white;'>{$user->name}</span>";
+                            return "<span class='badge' style='background-color: #8b5cf6; color: white;'>{$user->name}</span>";
                         })->implode('');
-                        $usersHtml = "<div class='mt-2 border-top pt-2 d-flex flex-wrap align-items-center gap-1'><span class='text-muted me-1' style='font-size: 11px; font-weight: 600;'>User:</span>{$usersBadges}</div>";
+                        $usersHtml = "<div class='mt-2 border-top pt-2 d-flex flex-wrap align-items-center gap-1'><span class='text-muted me-1' style='font-size: 11px; font-weight: 600;'>User:</span><div class='d-flex flex-wrap gap-1'>{$usersBadges}</div></div>";
                     } else {
                         $usersHtml = "<div class='mt-2 border-top pt-2'><span class='text-muted italic' style='font-size: 11px;'>Belum ada user yang ditugaskan</span></div>";
                     }
@@ -78,7 +91,8 @@ class RoleController extends Controller
                 ->make(true);
         }
 
-        return view('admins.role.index');
+        $allAdmins = \App\Models\Admin::orderBy('name')->get();
+        return view('admins.role.index', compact('allAdmins'));
     }
 
     /**
@@ -191,5 +205,41 @@ class RoleController extends Controller
 
         $role->delete();
         return back()->with('success', 'Data berhasil dihapus');
+    }
+
+    public function assignUsers(Request $request, $id)
+    {
+        if (!Auth::user()->can('Manage Role')) {
+            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk tindakan ini');
+        }
+
+        $role = Role::findOrFail($id);
+        $request->validate([
+            'admin_ids' => 'array',
+        ]);
+
+        $selectedAdminIds = $request->admin_ids ?? [];
+
+        // Get all admins who currently have this role
+        $currentAdmins = \App\Models\Admin::role($role->name)->get();
+
+        // For admins who currently have it but are not in the new list, remove it
+        foreach ($currentAdmins as $admin) {
+            if (!in_array($admin->id, $selectedAdminIds)) {
+                $admin->removeRole($role->name);
+            }
+        }
+
+        // For selected admins who do not have it, assign it
+        if (!empty($selectedAdminIds)) {
+            $selectedAdmins = \App\Models\Admin::whereIn('id', $selectedAdminIds)->get();
+            foreach ($selectedAdmins as $admin) {
+                if (!$admin->hasRole($role->name)) {
+                    $admin->assignRole($role->name);
+                }
+            }
+        }
+
+        return back()->with('success', 'User berhasil ditugaskan ke Peran ' . $role->name);
     }
 }
