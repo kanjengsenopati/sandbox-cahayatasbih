@@ -27,7 +27,7 @@ export const Text = {
   ),
   Label: ({ children, className = "", style }: { children: React.ReactNode; className?: string; style?: React.CSSProperties }) => (
     <span 
-      className={`text-[0.6875rem] font-semibold tracking-tight text-slate-400 leading-none ${className}`}
+      className={`text-[0.6875rem] font-bold uppercase tracking-widest text-slate-400 leading-none ${className}`}
       style={style}
     >
       {children}
@@ -43,7 +43,7 @@ export const Text = {
   ),
   Caption: ({ children, className = "", style }: { children: React.ReactNode; className?: string; style?: React.CSSProperties }) => (
     <span 
-      className={`text-[0.75rem] font-regular italic text-slate-400 leading-normal ${className}`}
+      className={`text-[0.75rem] font-normal italic text-slate-400 leading-normal ${className}`}
       style={style}
     >
       {children}

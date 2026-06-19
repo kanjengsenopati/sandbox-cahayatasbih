@@ -466,19 +466,19 @@ function PerizinanPage() {
               <ArrowLeft size={18} />
             </button>
             <div>
-              <p className="text-[10px] text-white/70 font-extrabold uppercase tracking-wide">Layanan Perizinan</p>
-              <h1 className="text-sm font-bold text-white leading-tight">Izin Keluar Santri</h1>
+              <Text.Label className="text-white/85">Layanan Perizinan</Text.Label>
+              <Text.H1 className="text-white mt-0.5">Izin Keluar Santri</Text.H1>
             </div>
           </div>
 
           <div className="relative mt-5 text-white">
-            <p className="text-[10px] text-white/80 uppercase tracking-wide font-extrabold">Santri Aktif</p>
-            <h2 className="text-xl font-extrabold mt-0.5 tracking-tight leading-tight">
+            <Text.Label className="text-white/85">Santri Aktif</Text.Label>
+            <Text.H2 className="text-white font-bold mt-0.5 leading-tight">
               {isLoadingStudent ? "Memuat..." : activeStudent?.name ?? "Tanpa Nama"}
-            </h2>
-            <p className="text-[11px] text-white/75 mt-1 leading-snug">
+            </Text.H2>
+            <Text.Caption className="text-white/90 mt-1 leading-snug not-italic block">
               Gunakan fitur ini untuk mengajukan perizinan keluar pondok pesantren secara mandiri.
-            </p>
+            </Text.Caption>
           </div>
         </div>
 
@@ -602,29 +602,29 @@ function PerizinanPage() {
                             </Text.Body>
                             
                             {/* Rencana */}
-                            <div className="flex items-center gap-1.5 text-[9px] text-slate-400 font-semibold flex-wrap">
-                              <span className="bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded text-[8px] font-semibold !normal-case tracking-tight leading-none">Rencana</span>
-                              <span className="text-slate-600 font-extrabold">{exitText}</span>
-                              <span className="text-slate-300">➔</span>
-                              <span className="text-slate-600 font-extrabold">{returnText}</span>
+                            <div className="flex items-center gap-1.5 text-[11px] text-slate-500 font-semibold flex-wrap">
+                              <span className="bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded text-[10px] font-extrabold uppercase tracking-wider leading-none">Rencana</span>
+                              <span className="text-slate-700 font-extrabold">{exitText}</span>
+                              <span className="text-slate-400">➔</span>
+                              <span className="text-slate-700 font-extrabold">{returnText}</span>
                             </div>
 
                             {/* Realisasi */}
                             {(permit.status === "out" || permit.status === "returned" || permit.status === "pending_return" || !!permit.actual_exit_date || !!permit.actual_return_date) && (
-                              <div className="flex items-center gap-1.5 text-[9px] text-slate-400 font-semibold flex-wrap">
-                                <span className={`px-1.5 py-0.5 rounded text-[8px] font-semibold !normal-case tracking-tight leading-none ${
-                                  permit.status === "returned" ? "bg-emerald-50 text-emerald-600" : "bg-blue-50 text-blue-600"
+                              <div className="flex items-center gap-1.5 text-[11px] text-slate-500 font-semibold flex-wrap">
+                                <span className={`px-1.5 py-0.5 rounded text-[10px] font-extrabold uppercase tracking-wider leading-none ${
+                                  permit.status === "returned" ? "bg-emerald-50 text-emerald-700 border border-emerald-100/30" : "bg-blue-50 text-blue-700 border border-blue-100/30"
                                 }`}>
                                   Realisasi
                                 </span>
-                                <span className="text-slate-600 font-extrabold">{actualExitText || "-"}</span>
-                                <span className="text-slate-300">➔</span>
+                                <span className="text-slate-700 font-extrabold">{actualExitText || "-"}</span>
+                                <span className="text-slate-400">➔</span>
                                 {actualReturnText ? (
-                                  <span className="text-slate-600 font-extrabold">{actualReturnText}</span>
+                                  <span className="text-slate-700 font-extrabold">{actualReturnText}</span>
                                 ) : permit.status === "returned" ? (
-                                  <span className="text-slate-600 font-extrabold">-</span>
+                                  <span className="text-slate-700 font-extrabold">-</span>
                                 ) : (
-                                  <span className="text-blue-600 font-extrabold animate-pulse">Sedang Diluar</span>
+                                  <span className="text-blue-700 font-extrabold animate-pulse">Sedang Diluar</span>
                                 )}
                               </div>
                             )}
@@ -632,19 +632,19 @@ function PerizinanPage() {
                             {/* Return Status Badge */}
                             {returnStatus && (
                               <div className="pt-0.5 flex">
-                                <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[8px] font-semibold !normal-case tracking-tight border ${
+                                <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider border ${
                                   returnStatus === "TEPAT WAKTU" 
-                                    ? "bg-emerald-50 text-emerald-600 border-emerald-100 bg-opacity-80" 
-                                    : "bg-red-50 text-red-600 border-red-100 bg-opacity-80"
+                                    ? "bg-emerald-50 text-emerald-700 border-emerald-100 bg-opacity-80" 
+                                    : "bg-red-50 text-red-700 border-red-100 bg-opacity-80"
                                 }`}>
                                   {returnStatus === "TEPAT WAKTU" ? (
                                     <>
-                                      <span className="w-1 h-1 rounded-full bg-emerald-500 animate-pulse" />
+                                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
                                       Tepat Waktu
                                     </>
                                   ) : (
                                     <>
-                                      <span className="w-1 h-1 rounded-full bg-red-500 animate-pulse" />
+                                      <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
                                       Terlambat
                                     </>
                                   )}
@@ -655,9 +655,9 @@ function PerizinanPage() {
 
                           {/* Status & Chevron */}
                           <div className="flex items-center gap-2 shrink-0">
-                            <span className={`inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${badgeColor}`}>
+                            <Text.Label className={`px-2.5 py-0.5 rounded-full border ${badgeColor}`}>
                               {badgeText}
-                            </span>
+                            </Text.Label>
                             <span className="text-slate-400">
                               {isExpanded ? (
                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-3.5 h-3.5">
@@ -721,13 +721,13 @@ function PerizinanPage() {
                             )}
 
                             {permit.actual_exit_date && (
-                              <div className="text-[11px] text-slate-400 flex flex-col gap-1 border-t border-slate-100 pt-3">
-                                <Text.Caption>
-                                  Keluar: {new Date(permit.actual_exit_date).toLocaleString("id-ID")}
+                              <div className="flex flex-col gap-1 border-t border-slate-100 pt-3">
+                                <Text.Caption className="text-slate-500 font-semibold not-italic">
+                                  Keluar: {new Date(permit.actual_exit_date).toLocaleString("id-ID", { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })} WIB
                                 </Text.Caption>
                                 {permit.actual_return_date && (
-                                  <Text.Caption>
-                                    Kembali: {new Date(permit.actual_return_date).toLocaleString("id-ID")}
+                                  <Text.Caption className="text-slate-500 font-semibold not-italic">
+                                    Kembali: {new Date(permit.actual_return_date).toLocaleString("id-ID", { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })} WIB
                                   </Text.Caption>
                                 )}
                               </div>
@@ -902,9 +902,9 @@ function PerizinanPage() {
                   <div className="space-y-5 animate-in fade-in duration-300">
                     {/* Student Selection Checklist */}
                     <div className="space-y-2">
-                      <span className="text-[11px] font-semibold text-slate-400/90 mb-1.5 block !normal-case tracking-tight">
+                      <Text.Label className="mb-1.5 block text-slate-500">
                         Pilih Santri yang Diajukan
-                      </span>
+                      </Text.Label>
                       <div className="grid grid-cols-1 gap-2">
                         {allStudents.map((s) => {
                           const isChecked = selectedStudentIds.includes(s.id);
@@ -924,8 +924,8 @@ function PerizinanPage() {
                                   {s.initials}
                                 </div>
                                 <div>
-                                  <p className="text-xs font-extrabold text-slate-800 leading-tight">{s.name}</p>
-                                  <p className="text-[10px] text-slate-400 font-medium">Kelas: {s.className}</p>
+                                  <Text.Body className="font-extrabold text-slate-800 leading-tight">{s.name}</Text.Body>
+                                  <Text.Caption className="text-slate-500 font-semibold not-italic block mt-0.5">Kelas: {s.className}</Text.Caption>
                                 </div>
                               </div>
                               <div className={`w-4 h-4 rounded-full border flex items-center justify-center transition-all ${
@@ -960,7 +960,7 @@ function PerizinanPage() {
                               <div className="w-6 h-6 rounded-lg bg-[#9b1de8]/15 text-[#9b1de8] flex items-center justify-center font-bold text-[10px]">
                                 {s.initials}
                               </div>
-                              <span className="text-xs font-extrabold text-slate-800 leading-none">{s.name}</span>
+                              <Text.Body className="font-extrabold text-slate-800 leading-none">{s.name}</Text.Body>
                             </div>
 
                             <div>
@@ -1049,7 +1049,7 @@ function PerizinanPage() {
                       {/* Capture with Camera Button */}
                       <label className="flex flex-col items-center justify-center p-4 border border-dashed border-slate-200 bg-slate-50 rounded-2xl hover:bg-slate-100/70 transition cursor-pointer text-center group active:scale-95">
                         <Camera className="text-slate-400 group-hover:text-[#9b1de8] transition mb-1" size={20} />
-                        <span className="text-[10px] font-extrabold text-slate-500 uppercase tracking-wide">Ambil Foto</span>
+                        <Text.Label className="text-slate-600 font-extrabold">Ambil Foto</Text.Label>
                         <input
                           type="file"
                           accept="image/*"
@@ -1062,7 +1062,7 @@ function PerizinanPage() {
                       {/* Upload File Button */}
                       <label className="flex flex-col items-center justify-center p-4 border border-dashed border-slate-200 bg-slate-50 rounded-2xl hover:bg-slate-100/70 transition cursor-pointer text-center group active:scale-95">
                         <Upload className="text-slate-400 group-hover:text-[#9b1de8] transition mb-1" size={20} />
-                        <span className="text-[10px] font-extrabold text-slate-500 uppercase tracking-wide">Pilih File</span>
+                        <Text.Label className="text-slate-600 font-extrabold">Pilih File</Text.Label>
                         <input
                           type="file"
                           accept="image/*"
@@ -1072,9 +1072,9 @@ function PerizinanPage() {
                       </label>
                     </div>
                   )}
-                  <p className="text-[10px] text-slate-400 italic">
+                  <Text.Caption className="text-slate-500 font-semibold block mt-1.5 not-italic">
                     *Foto surat keterangan dokter, undangan keluarga, dll. (Auto-kompresi 70% kualitas JPEG)
-                  </p>
+                  </Text.Caption>
                 </div>
 
                 <button
@@ -1099,8 +1099,8 @@ function PerizinanPage() {
             <div className="bg-card w-full max-w-md rounded-t-[2.5rem] p-6 shadow-2xl space-y-6 animate-slide-up pb-10">
               <div className="flex justify-between items-center">
                 <div>
-                  <p className="text-[11px] text-slate-400 font-semibold !normal-case tracking-tight">Pindai di Gerbang</p>
-                  <p className="text-base font-bold text-slate-800">{activeBarcodeName}</p>
+                  <Text.Label className="text-slate-500">Pindai di Gerbang</Text.Label>
+                  <Text.H2 className="text-slate-850 font-bold mt-0.5">{activeBarcodeName}</Text.H2>
                 </div>
                 <button
                   onClick={() => setActiveBarcode(null)}
@@ -1120,9 +1120,9 @@ function PerizinanPage() {
                 
                 <div className="mt-4 text-center">
                   <p className="text-xs font-mono font-bold text-[#9b1de8] tracking-widest">{activeBarcode}</p>
-                  <p className="text-[10px] text-slate-400 mt-1 font-semibold leading-relaxed">
+                  <Text.Caption className="text-slate-600 not-italic font-semibold mt-1.5 leading-relaxed block">
                     Tunjukkan QR code ini kepada Penanggung Jawab atau Satpam di pos gerbang luar pondok pesantren.
-                  </p>
+                  </Text.Caption>
                 </div>
               </div>
             </div>
@@ -1137,8 +1137,8 @@ function PerizinanPage() {
               {/* Header */}
               <div className="flex justify-between items-center border-b border-slate-100/80 pb-3">
                 <div>
-                  <p className="text-[11px] text-slate-400 font-semibold !normal-case tracking-tight">Pengaturan Jadwal</p>
-                  <p className="text-sm font-bold text-slate-800">Setel Tanggal & Waktu</p>
+                  <Text.Label className="text-slate-500">Pengaturan Jadwal</Text.Label>
+                  <Text.H2 className="text-slate-850 font-bold mt-0.5">Setel Tanggal & Waktu</Text.H2>
                 </div>
                 <button
                   type="button"
@@ -1153,9 +1153,8 @@ function PerizinanPage() {
               <div className="relative overflow-hidden rounded-[24px] bg-gradient-to-br from-[#9b1de8] to-[#5a0c91] text-white p-5 shadow-[0_12px_30px_rgba(155,29,232,0.22)] flex flex-col justify-between min-h-[110px]">
                 <div className="absolute top-0 right-0 w-28 h-28 bg-white/5 rounded-full blur-3xl -mr-4 -mt-4"></div>
                 <div className="absolute bottom-0 left-0 w-36 h-36 bg-white/5 rounded-full blur-3xl -ml-10 -mb-10"></div>
-                
-                <div className="relative z-10">
-                  <span className="text-[9px] font-semibold !normal-case tracking-tight text-purple-200 block">Jadwal Terpilih</span>
+                         <div className="relative z-10">
+                  <Text.Label className="text-purple-200">Jadwal Terpilih</Text.Label>
                   <span className="text-sm font-extrabold mt-1 block">
                     {pickerDate.toLocaleDateString("id-ID", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}
                   </span>
@@ -1165,9 +1164,9 @@ function PerizinanPage() {
                   <span className="text-3xl font-extrabold font-mono tracking-tight text-white drop-shadow-[0_2px_8px_rgba(255,255,255,0.15)]">
                     {pickerHour.toString().padStart(2, '0')}:{pickerMinute.toString().padStart(2, '0')}
                   </span>
-                  <span className="text-xs font-bold px-2 py-0.5 rounded-lg bg-white/15 text-purple-100 font-sans tracking-wide">
+                  <Text.Caption className="not-italic font-bold px-2 py-0.5 rounded-lg bg-white/15 text-purple-100">
                     {pickerAmPm} WIB
-                  </span>
+                  </Text.Caption>
                 </div>
               </div>
 
@@ -1210,9 +1209,9 @@ function PerizinanPage() {
                       >
                         &larr;
                       </button>
-                      <span className="text-xs font-semibold !normal-case tracking-tight text-slate-700">
+                      <Text.H2 className="text-slate-800 font-bold">
                         {pickerMonthView.toLocaleDateString("id-ID", { month: "long", year: "numeric" })}
-                      </span>
+                      </Text.H2>
                       <button
                         type="button"
                         onClick={() => setPickerMonthView(new Date(pickerMonthView.getFullYear(), pickerMonthView.getMonth() + 1, 1))}
@@ -1224,9 +1223,9 @@ function PerizinanPage() {
 
                     <div className="grid grid-cols-7 gap-1 text-center">
                       {["Min", "Sen", "Sel", "Rab", "Kam", "Jum", "Sab"].map((dayName) => (
-                        <span key={dayName} className="text-[10px] font-semibold text-slate-400 !normal-case tracking-tight py-1">
+                        <Text.Label key={dayName} className="text-slate-500 py-1 block">
                           {dayName}
-                        </span>
+                        </Text.Label>
                       ))}
                       
                       {getDaysInMonth(pickerMonthView).map((day, idx) => {
@@ -1258,7 +1257,7 @@ function PerizinanPage() {
                     {/* Glowing Digital Time Banner */}
                     <div className="bg-gradient-to-r from-[#9b1de8]/10 to-[#5a0c91]/10 border border-[#9b1de8]/20 rounded-2xl p-4 flex items-center justify-between shadow-sm">
                       <div className="flex flex-col">
-                        <span className="text-[10px] !normal-case font-semibold text-[#9b1de8]/80 tracking-tight">Waktu Terpilih</span>
+                        <Text.Label className="text-[#9b1de8]/90">Waktu Terpilih</Text.Label>
                         <div className="flex items-baseline gap-1 mt-1">
                           <span className="text-2xl font-black text-slate-800 tracking-tight font-mono">
                             {pickerHour.toString().padStart(2, '0')}:{pickerMinute.toString().padStart(2, '0')}
@@ -1371,7 +1370,7 @@ function PerizinanPage() {
                           
                           {/* Precise Minute Fine-Tuning controls (+ / -) */}
                           <div className="flex items-center justify-between px-2 pt-2 border-t border-slate-100">
-                            <span className="text-[10px] font-semibold text-slate-400 !normal-case tracking-tight">Sesuaikan Presisi:</span>
+                            <Text.Label className="text-slate-500">Sesuaikan Presisi:</Text.Label>
                             <div className="flex items-center gap-2">
                               <button
                                 type="button"
@@ -1430,7 +1429,7 @@ function PerizinanPage() {
               {/* Header */}
               <div className="flex justify-between items-center pb-2 border-b border-slate-100">
                 <div>
-                  <p className="text-[10px] text-slate-400 font-semibold !normal-case tracking-tight">Lampiran</p>
+                  <Text.Label className="text-slate-500">Lampiran</Text.Label>
                   <p className="text-sm font-bold text-slate-800">Dokumen Pendukung</p>
                 </div>
                 <button
@@ -1513,7 +1512,7 @@ function PerizinanPage() {
                     <label className="flex flex-col items-center justify-center border-2 border-dashed border-slate-200 rounded-[20px] p-6 hover:bg-slate-50 cursor-pointer transition select-none">
                       <Camera className="text-slate-400 mb-2" size={24} />
                       <span className="text-xs font-semibold text-slate-600">Ambil / Unggah Foto Santri</span>
-                      <span className="text-[10px] text-slate-400 mt-1">Gunakan kamera HP atau pilih file</span>
+                      <Text.Caption className="text-slate-500 font-semibold block mt-1 not-italic">Gunakan kamera HP atau pilih file</Text.Caption>
                       <input
                         type="file"
                         accept="image/*"
@@ -1546,7 +1545,7 @@ function PerizinanPage() {
                     <label className="flex flex-col items-center justify-center border-2 border-dashed border-slate-200 rounded-[20px] p-6 hover:bg-slate-50 cursor-pointer transition select-none">
                       <Upload className="text-slate-400 mb-2" size={24} />
                       <span className="text-xs font-semibold text-slate-600">Ambil / Unggah Foto Pengantar</span>
-                      <span className="text-[10px] text-slate-400 mt-1">Gunakan kamera HP atau pilih file</span>
+                      <Text.Caption className="text-slate-500 font-semibold block mt-1 not-italic">Gunakan kamera HP atau pilih file</Text.Caption>
                       <input
                         type="file"
                         accept="image/*"

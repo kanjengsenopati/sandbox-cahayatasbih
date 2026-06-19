@@ -154,10 +154,10 @@ function Dashboard() {
               )}
             </div>
             <div>
-              <p className="text-[11px] font-bold text-slate-400 tracking-wide uppercase">Assalamualaikum,</p>
-              <p className="text-[15px] font-extrabold text-slate-800 tracking-tight leading-tight mt-0.5">
+              <Text.Label>Assalamualaikum,</Text.Label>
+              <Text.H2 className="mt-0.5 leading-tight">
                 {dashboard?.user?.name || "Wali Santri"}
-              </p>
+              </Text.H2>
             </div>
           </div>
           <button className="relative w-11 h-11 rounded-[16px] bg-slate-50 flex items-center justify-center hover:bg-slate-100 transition">
@@ -180,18 +180,18 @@ function Dashboard() {
             <div className="flex items-center justify-between">
               <div className="min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <p className="text-xs uppercase tracking-widest text-white/70 font-bold">
+                  <Text.Label className="text-white/90">
                     Saldo Santri
-                  </p>
+                  </Text.Label>
                   {(active as any).nisn && (
-                    <span className="px-1.5 py-0.5 rounded-md bg-white/15 text-[9px] font-extrabold tracking-wide uppercase text-white/90 border border-white/10 shrink-0">
+                    <span className="px-1.5 py-0.5 rounded-md bg-white/15 text-[10px] font-extrabold tracking-wide uppercase text-white/95 border border-white/10 shrink-0">
                       {(active as any).nisn}
                     </span>
                   )}
                 </div>
-                <p className="text-[13px] font-bold text-white mt-1 truncate">
-                  {active.name} <span className="text-white/70 font-semibold">· {active.classroom?.name || "Tanpa Kelas"}</span>
-                </p>
+                <Text.Body className="text-white font-bold mt-1 truncate">
+                  {active.name} <span className="text-white/85 font-semibold">· {active.classroom?.name || "Tanpa Kelas"}</span>
+                </Text.Body>
               </div>
               <SantriSwitcherTrigger>
                 <span className="px-2.5 py-1 rounded-full bg-white/15 border border-white/20 text-[10px] font-semibold backdrop-blur flex items-center gap-1 cursor-pointer shrink-0">
@@ -210,19 +210,19 @@ function Dashboard() {
                 </button>
               </div>
               <div className="text-right bg-white/10 px-3 py-1.5 rounded-2xl border border-white/10 shrink-0">
-                <p className="text-white/60 text-[9px] uppercase font-bold tracking-wider">Limit Harian</p>
-                <p className="font-bold text-[11px] mt-0.5">{fmt(active.daily_limit)}</p>
+                <Text.Label className="text-white/85 block text-[10px]">Limit Harian</Text.Label>
+                <Text.Caption className="text-white not-italic font-bold mt-0.5 block leading-none">{fmt(active.daily_limit)}</Text.Caption>
               </div>
             </div>
 
             <div className="mt-6 flex items-center justify-between text-xs gap-3">
               <div className="min-w-0" style={{ width: "30%" }}>
-                <p className="text-white/60 text-[10px] uppercase font-bold tracking-wider">Asrama</p>
-                <p className="font-bold text-[12px] truncate mt-0.5">{(active as any).asrama_name || "-"}</p>
+                <Text.Label className="text-white/85 block text-[10px]">Asrama</Text.Label>
+                <Text.Caption className="text-white not-italic font-bold truncate mt-0.5 block">{(active as any).asrama_name || "-"}</Text.Caption>
               </div>
               <div className="h-8 w-px bg-white/20 shrink-0" />
               <div className="min-w-0" style={{ width: "70%" }}>
-                <p className="text-white/60 text-[10px] uppercase font-bold tracking-wider">Penanggung Jawab</p>
+                <Text.Label className="text-white/85 block text-[10px]">Penanggung Jawab</Text.Label>
                 {((active as any).asrama_host || (active as any).asramaHost) ? (
                   <div className="flex flex-col">
                     <a
@@ -234,12 +234,12 @@ function Dashboard() {
                       <span className="truncate max-w-[170px]">{((active as any).asrama_host || (active as any).asramaHost).name}</span>
                       <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse shrink-0" />
                     </a>
-                    <span className="text-[9px] text-white/50 italic mt-0.5 leading-none">
+                    <Text.Caption className="text-white/70 italic mt-0.5 leading-none block">
                       Klik nama untuk chat WA langsung
-                    </span>
+                    </Text.Caption>
                   </div>
                 ) : (
-                  <p className="font-bold text-white/50 text-[12px] mt-0.5">-</p>
+                  <Text.Caption className="text-white/50 not-italic font-bold mt-0.5 block">-</Text.Caption>
                 )}
               </div>
             </div>

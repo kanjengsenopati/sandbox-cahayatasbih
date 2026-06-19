@@ -65,7 +65,7 @@ function Profil() {
   return (
     <MobileShell>
       <header className="px-6 pt-12 pb-6">
-        <h1 className="text-2xl font-bold text-foreground">Profil</h1>
+        <Text.H1>Profil</Text.H1>
       </header>
 
       <section className="px-6">
@@ -79,17 +79,17 @@ function Profil() {
             ) : initials}
           </div>
           <div className="flex-1">
-            <p className="font-bold text-lg">{user?.name}</p>
-            <p className="text-xs text-white/70">{user?.phone}</p>
+            <Text.H2 className="text-white font-bold">{user?.name}</Text.H2>
+            <Text.Caption className="text-white/80 not-italic block">{user?.phone}</Text.Caption>
             {profileData?.role === 'wali' && students.length > 0 && (
-              <p className="text-[11px] text-white/60 mt-1">
+              <Text.Caption className="text-white/75 mt-1 not-italic block">
                 Wali dari {students.map((s: any) => s.name).join(', ')}
-              </p>
+              </Text.Caption>
             )}
             {profileData?.role === 'penanggung_jawab' && (
-              <p className="text-[11px] text-white/60 mt-1">
+              <Text.Caption className="text-white/75 mt-1 not-italic block">
                 Penanggung Jawab Pembimbing
-              </p>
+              </Text.Caption>
             )}
           </div>
         </div>
