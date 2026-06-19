@@ -5,6 +5,30 @@ import "./styles.css";
 
 import { registerSW } from "virtual:pwa-register";
 
+// === FORCE PURGE CACHE ON VERSION UPDATE ===
+const CURRENT_VERSION = "2026-06-19_v1";
+if (typeof window !== "undefined") {
+  const savedVersion = localStorage.getItem("pwa_version");
+  if (savedVersion !== CURRENT_VERSION) {
+    console.log(`Wali Santri PWA: Version mismatch (${savedVersion} vs ${CURRENT_VERSION}). Purging caches...`);
+    if ("caches" in window) {
+      caches.keys().then((keys) => {
+        return Promise.all(keys.map((key) => caches.delete(key)));
+      }).then(() => {
+        localStorage.setItem("pwa_version", CURRENT_VERSION);
+        console.log("Wali Santri PWA: Cache purged, restarting...");
+        window.location.reload();
+      }).catch((err) => {
+        console.error("Wali Santri PWA: Purge error", err);
+        localStorage.setItem("pwa_version", CURRENT_VERSION);
+      });
+    } else {
+      localStorage.setItem("pwa_version", CURRENT_VERSION);
+    }
+  }
+}
+// === END FORCE PURGE CACHE ===
+
 // === PWA Service Worker Registration & Auto-Update/Force-Refresh Logic ===
 if (typeof window !== "undefined" && "serviceWorker" in navigator) {
   let refreshing = false;
