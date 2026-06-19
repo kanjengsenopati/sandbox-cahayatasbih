@@ -62,13 +62,9 @@
                             <thead>
                                 <tr class="text-start text-gray-400 fw-bolder fs-7 text-uppercase gs-0">
                                     <th style="width: 5%">No</th>
-                                    <th>Wilayah UPT</th>
+                                    <th style="width: 20%">Wilayah UPT</th>
                                     <th>Pengguna Terpilih</th>
-                                    <th>Tipe</th>
-                                    <th>Keterangan</th>
-                                    <th>Keunggulan</th>
-                                    <th>Alamat</th>
-                                    <th class="text-center min-w-100px" style="width: 25%">Aksi</th>
+                                    <th class="text-center min-w-100px" style="width: 15%">Aksi</th>
                                 </tr>
                             </thead>
                             <tbody class="text-gray-600 fw-bold"></tbody>
@@ -144,11 +140,7 @@
                     { responsivePriority: 1, targets: 0 }, // No
                     { responsivePriority: 2, targets: 1 }, // Nama UPT
                     { responsivePriority: 3, targets: 2 }, // Pengguna Terpilih
-                    { responsivePriority: 4, targets: 3 }, // Tipe
-                    { responsivePriority: 5, targets: 6 }, // Alamat
-                    { responsivePriority: 6, targets: 7 }, // Aksi
-                    { responsivePriority: 7, targets: 4 }, // Keterangan
-                    { responsivePriority: 8, targets: 5 }, // Fitur
+                    { responsivePriority: 4, targets: 3 }, // Aksi
                 ],
                 columns: [{
                         "data": null,
@@ -167,22 +159,6 @@
                         name: 'users',
                         searchable: false,
                         orderable: false
-                    },
-                    {
-                        data: 'type',
-                        name: 'type'
-                    },
-                    {
-                        data: 'description',
-                        name: 'description'
-                    },
-                    {
-                        data: 'features_display',
-                        name: 'features_display'
-                    },
-                    {
-                        data: 'address',
-                        name: 'address'
                     },
                     {
                         data: 'action',

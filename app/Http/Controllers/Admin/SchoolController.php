@@ -48,9 +48,10 @@ class SchoolController extends Controller
                 ->addColumn('users', function ($school) {
                     $admins = $school->adminSchool->map(fn($as) => $as->admin)->filter();
                     if ($admins->count() > 0) {
-                        return $admins->map(function ($admin) {
-                            return "<span class='badge m-1' style='background-color: #8b5cf6; color: white;'>{$admin->name}</span>";
+                        $badges = $admins->map(function ($admin) {
+                            return "<span class='badge' style='background-color: #8b5cf6; color: white;'>{$admin->name}</span>";
                         })->implode('');
+                        return '<div class="d-flex flex-wrap gap-1">' . $badges . '</div>';
                     }
                     return "<span class='text-muted italic' style='font-size: 11px;'>Belum ada user yang ditugaskan</span>";
                 })
