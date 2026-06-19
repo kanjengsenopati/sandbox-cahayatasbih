@@ -241,7 +241,7 @@ class AdminController extends Controller
         }
 
         if ($request->admin_schools) {
-            $admin->adminSchool()->delete();
+            $admin->adminSchool()->forceDelete();
             foreach ($request->admin_schools as $school) {
                 AdminSchool::create([
                     'admin_id' => $admin->id,
@@ -251,7 +251,7 @@ class AdminController extends Controller
         }
 
         // Sync multi-outlet pivot
-        $admin->adminOutlet()->delete();
+        $admin->adminOutlet()->forceDelete();
         if ($request->admin_outlets && is_array($request->admin_outlets)) {
             foreach ($request->admin_outlets as $outletId) {
                 AdminOutlet::create([
@@ -273,8 +273,8 @@ class AdminController extends Controller
             return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
         }
         file_exists($admin->avatar) ? unlink($admin->avatar) : '';
-        $admin->adminSchool()->delete();
-        $admin->adminOutlet()->delete();
+        $admin->adminSchool()->forceDelete();
+        $admin->adminOutlet()->forceDelete();
         $admin->delete();
         return redirect()->route('admin.index')->with('success', 'Berhasil menghapus admin');
     }

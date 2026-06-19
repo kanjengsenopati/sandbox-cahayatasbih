@@ -109,7 +109,7 @@ class OutletController extends Controller
             'admin_ids' => 'array',
         ]);
 
-        \App\Models\AdminOutlet::where('outlet_id', $id)->delete();
+        \App\Models\AdminOutlet::where('outlet_id', $id)->forceDelete();
         if ($request->admin_ids) {
             foreach ($request->admin_ids as $adminId) {
                 \App\Models\AdminOutlet::create([

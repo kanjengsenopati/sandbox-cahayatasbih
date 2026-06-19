@@ -179,7 +179,7 @@ class SchoolController extends Controller
             'admin_ids' => 'array',
         ]);
 
-        \App\Models\AdminSchool::where('school_id', $id)->delete();
+        \App\Models\AdminSchool::where('school_id', $id)->forceDelete();
         if ($request->admin_ids) {
             foreach ($request->admin_ids as $adminId) {
                 \App\Models\AdminSchool::create([
