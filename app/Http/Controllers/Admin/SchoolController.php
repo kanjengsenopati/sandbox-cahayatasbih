@@ -26,26 +26,43 @@ class SchoolController extends Controller
             return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
         }
         if (request()->ajax()) {
-            $data = School::latest()->get();
+            $data = School::with('adminSchool.admin')->latest()->get();
             return DataTables::of($data)
                 ->addColumn('action', function ($data) {
                     $actionEdit = route('school.edit', $data->id);
                     $actionDelete = route('school.destroy', $data->id);
                     $actionShow = route('school.show', $data->id);
+
+                    $assignedAdminIds = $data->adminSchool->pluck('admin_id')->toArray();
+                    $assignBtn = "<button type='button' class='btn btn-icon btn-active-light-primary w-30px h-30px me-1 btn-assign-user' data-id='{$data->id}' data-name='{$data->name}' data-users='".json_encode($assignedAdminIds)."'>
+                        <i class='fa-solid fa-user-gear text-primary fs-5'></i>
+                    </button>";
+
                     return "<div class='d-flex justify-content-center'>" .
                         view('components.action.show', ['action' => $actionShow, 'label' => 'Kelas']) .
+                        $assignBtn .
                         view('components.action.edit', ['action' => $actionEdit, 'name' => 'Sekolah']) .
                         view('components.action.delete', ['action' => $actionDelete, 'id' => $data->id, 'name' => 'Sekolah']) .
                         "</div>";
+                })
+                ->addColumn('users', function ($school) {
+                    $admins = $school->adminSchool->map(fn($as) => $as->admin)->filter();
+                    if ($admins->count() > 0) {
+                        return $admins->map(function ($admin) {
+                            return "<span class='badge m-1' style='background-color: #8b5cf6; color: white;'>{$admin->name}</span>";
+                        })->implode('');
+                    }
+                    return "<span class='text-muted italic' style='font-size: 11px;'>Belum ada user yang ditugaskan</span>";
                 })
                 ->addColumn('features_display', function ($school) {
                     $features = json_decode($school->features, true) ?? [];
                     return implode(', ', $features);
                 })
-                ->rawColumns(['action'])
+                ->rawColumns(['action', 'users'])
                 ->make(true);
         }
-        return view('admins.school.index');
+        $allAdmins = \App\Models\Admin::orderBy('name')->get();
+        return view('admins.school.index', compact('allAdmins'));
     }
 
     /**
@@ -149,5 +166,28 @@ class SchoolController extends Controller
         }
         $school->delete();
         return redirect()->route('school.index')->with('success', 'Sekolah berhasil dihapus');
+    }
+
+    public function assignUsers(Request $request, $id)
+    {
+        if (!Auth::user()->can('Manage Sekolah')) {
+            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk tindakan ini');
+        }
+
+        $school = School::findOrFail($id);
+        $request->validate([
+            'admin_ids' => 'array',
+        ]);
+
+        \App\Models\AdminSchool::where('school_id', $id)->delete();
+        if ($request->admin_ids) {
+            foreach ($request->admin_ids as $adminId) {
+                \App\Models\AdminSchool::create([
+                    'admin_id' => $adminId,
+                    'school_id' => $id
+                ]);
+            }
+        }
+        return back()->with('success', 'User berhasil ditugaskan ke UPT ' . $school->name);
     }
 }

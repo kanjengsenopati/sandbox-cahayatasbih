@@ -1,4 +1,4 @@
-@extends('layouts.master', ['title' => 'Data Sekolah'])
+@extends('layouts.master', ['title' => 'Data Wilayah UPT'])
 @section('content')
 <!--begin::Content-->
 <div class="content d-flex flex-column flex-column-fluid" id="kt_content">
@@ -11,7 +11,7 @@
                 data-kt-swapper-parent="{default: '#kt_content_container', 'lg': '#kt_toolbar_container'}"
                 class="page-title d-flex align-items-center flex-wrap me-3 mb-5 mb-lg-0">
                 <!--begin::Title-->
-                <h1 class="d-flex text-dark fw-bolder fs-3 align-items-center my-1">Data Sekolah</h1>
+                <h1 class="d-flex text-dark fw-bolder fs-3 align-items-center my-1">Scope Wilayah UPT</h1>
                 <!--end::Title-->
                 <!--begin::Separator-->
                 <span class="h-20px border-gray-300 border-start mx-4"></span>
@@ -24,7 +24,7 @@
                     <!--begin::Item-->
                     <a class="breadcrumb-item" href="{{ route('school.index') }}">
                         <li class="text-muted">
-                            Sekolah
+                            Wilayah UPT
                         </li>
                     </a>
                     <!--end::Item-->
@@ -35,7 +35,7 @@
                     <!--end::Item-->
                     <!--begin::Item-->
                     <li class="breadcrumb-item text-dark">
-                        {{ request()->routeIs('school.create') ? 'Tambah Sekolah' : 'Edit Sekolah' }}</li>
+                        {{ request()->routeIs('school.create') ? 'Tambah Wilayah UPT' : 'Edit Wilayah UPT' }}</li>
                     <!--end::Item-->
                 </ul>
                 <!--end::Breadcrumb-->
@@ -63,7 +63,7 @@
                             <!--begin::Card title-->
                             <div class="card-title">
                                 <h1 class="d-flex text-dark fw-bolder fs-3 align-items-center">{{
-                                    request()->routeIs('school.create') ? 'Tambah Sekolah' : 'Edit Sekolah' }}
+                                    request()->routeIs('school.create') ? 'Tambah Wilayah UPT' : 'Edit Wilayah UPT' }}
                                 </h1>
                             </div>
                             <!--end::Card title-->
@@ -86,14 +86,14 @@
                                 <div class="col-md-6 mb-7">
                                     <!--begin::Label-->
                                     <label class="fs-6 fw-bold form-label mt-3" for="name">
-                                        <span class="required">Nama Sekolah</span>
+                                        <span class="required">Nama Wilayah UPT</span>
                                         <i class="fas fa-exclamation-circle ms-1 fs-7" data-bs-toggle="tooltip"
-                                            title="Nama Sekolah"></i>
+                                            title="Nama Wilayah UPT"></i>
                                     </label>
                                     <!--end::Label-->
                                     <!--begin::Input-->
                                     <input type="text" class="form-control form-control-solid" name="name" id="name"
-                                        placeholder="Masukkan Nama Sekolah" value="{{ @$school->name ?? old('name') }}"
+                                        placeholder="Masukkan Nama Wilayah UPT" value="{{ @$school->name ?? old('name') }}"
                                         required />
                                     <!--end::Input-->
                                 </div>

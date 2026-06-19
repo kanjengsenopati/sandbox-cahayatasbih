@@ -1,4 +1,4 @@
-@extends('layouts.master', ['title' => 'Data Role'])
+@extends('layouts.master', ['title' => 'Data Peran'])
 @section('content')
 <div class="content d-flex flex-column flex-column-fluid" id="kt_content">
     <!--begin::Toolbar-->
@@ -10,7 +10,7 @@
                 data-kt-swapper-parent="{default: '#kt_content_container', 'lg': '#kt_toolbar_container'}"
                 class="page-title d-flex align-items-center flex-wrap me-3 mb-5 mb-lg-0">
                 <!--begin::Title-->
-                <h1 class="d-flex text-dark fw-bolder fs-3 align-items-center my-1"> Daftar Role</h1>
+                <h1 class="d-flex text-dark fw-bolder fs-3 align-items-center my-1"> Daftar Peran</h1>
                 <!--end::Title-->
                 <!--begin::Separator-->
                 <span class="h-20px border-gray-300 border-start mx-4"></span>
@@ -19,13 +19,13 @@
                 <ul class="breadcrumb breadcrumb-separatorless fw-bold fs-7 my-1">
                     <!--begin::Item-->
                     <li class="breadcrumb-item text-muted">
-                        <a href="{{ route('role.index') }}" class="text-muted text-hover-primary">Role</a>
+                        <a href="{{ route('role.index') }}" class="text-muted text-hover-primary">Peran</a>
                     </li>
                     <li class="breadcrumb-item">
                         <span class="bullet bg-gray-300 w-5px h-2px"></span>
                     </li>
                     <li class="breadcrumb-item text-dark">
-                        List Role
+                        List Peran
                     </li>
                     <!--end::Item-->
                     <!--begin::Item-->
@@ -59,9 +59,9 @@
                 <div class="card-header d-flex align-items-center justify-content-between border-0 pt-6">
                     <!--begin::Card title-->
                     <div class="card-title">
-                        <h3 class="text-dark">Role</h3>
+                        <h3 class="text-dark">Peran</h3>
                     </div>
-                    <x-action.create name="Role" action="{{ route('role.create') }}" />
+                    <x-action.create name="Role" label="Peran" action="{{ route('role.create') }}" />
                     <!--end::Card title-->
                 </div>
                 <!--end::Card header-->
@@ -73,7 +73,7 @@
                             <thead>
                                 <tr class="fw-bolder fs-6 text-gray-800 px-7">
                                     <th width="3%">No</th>
-                                    <th>Role</th>
+                                    <th>Peran</th>
                                     <th>Permission</th>
                                     <th class="text-center min-w-100px">Aksi</th>
                                 </tr>

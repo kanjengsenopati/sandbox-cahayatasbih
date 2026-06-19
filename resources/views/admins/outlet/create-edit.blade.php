@@ -1,4 +1,4 @@
-@extends('layouts.master', ['title' => 'Data Outlet'])
+@extends('layouts.master', ['title' => 'Data Pondok Mart'])
 @section('content')
 <div class="content d-flex flex-column flex-column-fluid" id="kt_content">
     <div class="toolbar" id="kt_toolbar">
@@ -6,17 +6,17 @@
             <div data-kt-swapper="true" data-kt-swapper-mode="prepend"
                 data-kt-swapper-parent="{default: '#kt_content_container', 'lg': '#kt_toolbar_container'}"
                 class="page-title d-flex align-items-center flex-wrap me-3 mb-5 mb-lg-0">
-                <h1 class="d-flex text-dark fw-bolder fs-3 align-items-center my-1">Data Outlet</h1>
+                <h1 class="d-flex text-dark fw-bolder fs-3 align-items-center my-1">Scope Pondok Mart</h1>
                 <span class="h-20px border-gray-300 border-start mx-4"></span>
                 <ul class="breadcrumb breadcrumb-separatorless fw-bold fs-7 my-1">
                     <li class="breadcrumb-item text-muted">
-                        <a href="{{ route('outlet.index') }}" class="text-muted text-hover-primary">Data Outlet</a>
+                        <a href="{{ route('outlet.index') }}" class="text-muted text-hover-primary">Scope Pondok Mart</a>
                     </li>
                     <li class="breadcrumb-item">
                         <span class="bullet bg-gray-300 w-5px h-2px"></span>
                     </li>
                     <li class="breadcrumb-item text-dark">
-                        {{ request()->routeIs('outlet.create') ? 'Tambah Outlet' : 'Edit Outlet' }}
+                        {{ request()->routeIs('outlet.create') ? 'Tambah Pondok Mart' : 'Edit Pondok Mart' }}
                     </li>
                 </ul>
             </div>
@@ -30,7 +30,7 @@
                         <div class="card-header pt-7" id="kt_chat_contacts_header">
                             <div class="card-title">
                                 <h1 class="d-flex text-dark fw-bolder fs-3 align-items-center">
-                                    {{ request()->routeIs('outlet.create') ? 'Tambah Outlet' : 'Edit Outlet' }}
+                                    {{ request()->routeIs('outlet.create') ? 'Tambah Pondok Mart' : 'Edit Pondok Mart' }}
                                 </h1>
                             </div>
                         </div>
@@ -44,7 +44,7 @@
 
                                 <div class="fv-row mb-7">
                                     <label class="fs-6 fw-bold form-label mt-3">
-                                        <span class="required">Nama Outlet</span>
+                                        <span class="required">Nama Pondok Mart</span>
                                         <i class="fas fa-exclamation-circle ms-1 fs-7" data-bs-toggle="tooltip" title="Masukkan nama outlet"></i>
                                     </label>
                                     <input type="text" class="form-control form-control-solid" name="name"
@@ -53,7 +53,7 @@
 
                                 <div class="fv-row mb-7">
                                     <label class="fs-6 fw-bold form-label mt-3">
-                                        <span class="required">Kode Outlet</span>
+                                        <span class="required">Kode Pondok Mart</span>
                                         <i class="fas fa-exclamation-circle ms-1 fs-7" data-bs-toggle="tooltip" title="Kode unik untuk nota (Maks. 10 karakter)"></i>
                                     </label>
                                     <input type="text" class="form-control form-control-solid" name="code"

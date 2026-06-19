@@ -50,7 +50,7 @@
                     <div class="card-title">
                         <h3 class="text-dark">Data Pengguna</h3>
                     </div>
-                    <x-action.create name="Admin" action="{{ route('admin.create') }}" />
+                    <x-action.create name="Admin" label="Pengguna" action="{{ route('admin.create') }}" />
                     <!--end::Card title-->
                 </div>
                 <!--end::Card header-->
@@ -65,7 +65,7 @@
                                     <th>Avatar</th>
                                     <th>Nama</th>
                                     <th>Email</th>
-                                    <th>Role</th>
+                                    <th>Peran</th>
                                     <th>No. HP</th>
                                     <th>Scope Akses</th>
                                     <th>UPT</th>

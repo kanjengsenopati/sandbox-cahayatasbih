@@ -313,5 +313,59 @@ class AdminController extends Controller
 
         return redirect('/');
     }
+
+    public function scopeAkses()
+    {
+        if (!Auth::user()->can('Manage Admin')) {
+            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
+        }
+
+        $allAdmins = Admin::orderBy('name')->get();
+        
+        $scopes = [
+            [
+                'id' => 'backoffice',
+                'name' => 'Backoffice (Panel Web Saja)',
+                'users' => Admin::where('access_scope', 'backoffice')->get()
+            ],
+            [
+                'id' => 'pwa',
+                'name' => 'PWA Mobile (Aplikasi HP Saja)',
+                'users' => Admin::where('access_scope', 'pwa')->get()
+            ],
+            [
+                'id' => 'both',
+                'name' => 'Keduanya (Backoffice & PWA)',
+                'users' => Admin::where('access_scope', 'both')->get()
+            ]
+        ];
+
+        return view('admins.admin.scope-akses', compact('allAdmins', 'scopes'));
+    }
+
+    public function assignScopeUsers(\Illuminate\Http\Request $request, $scope)
+    {
+        if (!Auth::user()->can('Manage Admin')) {
+            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk tindakan ini');
+        }
+
+        $request->validate([
+            'admin_ids' => 'array',
+        ]);
+
+        $selectedIds = $request->admin_ids ?? [];
+
+        // Set all admins currently with this scope to 'both' if not in selectedIds
+        Admin::where('access_scope', $scope)
+            ->whereNotIn('id', $selectedIds)
+            ->update(['access_scope' => 'both']);
+
+        // Set selected admins to this scope
+        if (!empty($selectedIds)) {
+            Admin::whereIn('id', $selectedIds)->update(['access_scope' => $scope]);
+        }
+
+        return back()->with('success', 'User berhasil ditugaskan ke Scope Akses.');
+    }
 }
 

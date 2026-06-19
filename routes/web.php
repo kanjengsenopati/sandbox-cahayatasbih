@@ -215,12 +215,16 @@ Route::group(['middleware' => ['auth']], function () {
     Route::resource('role', RoleController::class);
     Route::post('admin/{admin}/impersonate', [AdminController::class, 'impersonate'])->name('admin.impersonate');
     Route::post('admin/stop-impersonating', [AdminController::class, 'stopImpersonating'])->name('admin.stop-impersonating');
+    Route::get('admin/scope-akses', [AdminController::class, 'scopeAkses'])->name('admin.scope-akses');
+    Route::post('admin/scope-akses/{scope}/assign', [AdminController::class, 'assignScopeUsers'])->name('admin.scope-akses.assign');
     Route::resource('admin', AdminController::class);
     Route::post('user/import', [UserController::class, 'import'])->name('user.import');
     Route::post('user/bulk-update-status', [UserController::class, 'bulkUpdateStatus'])->name('user.bulk-update-status');
     Route::post('user/check-duplicate', [UserController::class, 'checkDuplicate'])->name('user.check-duplicate');
     Route::resource('user', UserController::class);
+    Route::post('school/{school}/assign', [SchoolController::class, 'assignUsers'])->name('school.assign');
     Route::resource('school', SchoolController::class);
+    Route::post('outlet/{outlet}/assign', [OutletController::class, 'assignUsers'])->name('outlet.assign');
     Route::resource('classroom', ClassroomController::class, ['except' => ['index', 'show']]);
     Route::resource('academic-year', AcademicYearController::class, ['except' => ['show']]);
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');

@@ -120,43 +120,46 @@
                                          <div class="fv-row mb-6">
                                              <!--begin::Label-->
                                              <label class="fs-6 fw-bold form-label" for="school">
-                                                 <span class="required">Divisi Admin (Jika Bukan Super Admin)</span>
-                                                 <i class="fas fa-exclamation-circle ms-1 fs-7" data-bs-toggle="tooltip"
-                                                     title="Masukkan Unit Pendidikan Admin"></i>
-                                             </label>
-                                             <!--end::Label-->
-                                             <!--begin::Input-->
-                                             <select name="admin_schools[]" class="form-select form-select-solid mb-3"
-                                                 id="select2" data-control="select2" data-allow-clear="true" multiple="multiple"
-                                                 required>
-                                                 @foreach ($schools as $school)
-                                                 <option value="{{ $school->id }}" @if (in_array(@$school->id,
-                                                     @$adminSchools)) selected @endif>
-                                                     {{ $school->name }}</option>
-                                                 @endforeach
-                                             </select>
-                                             <!--end::Input-->
-                                         </div>
+                                          <div class="fv-row mb-6">
+                                              <!--begin::Label-->
+                                              <label class="fs-6 fw-bold form-label" for="school">
+                                                  <span class="required">Scope Wilayah UPT</span>
+                                                  <i class="fas fa-exclamation-circle ms-1 fs-7" data-bs-toggle="tooltip"
+                                                      title="Masukkan Unit Pendidikan Admin"></i>
+                                              </label>
+                                              <!--end::Label-->
+                                              <!--begin::Input-->
+                                              <select name="admin_schools[]" class="form-select form-select-solid mb-3"
+                                                  id="select2" data-control="select2" data-allow-clear="true" multiple="multiple"
+                                                  required>
+                                                  @foreach ($schools as $school)
+                                                  <option value="{{ $school->id }}" @if (in_array(@$school->id,
+                                                      @$adminSchools)) selected @endif>
+                                                      {{ $school->name }}</option>
+                                                  @endforeach
+                                              </select>
+                                              <!--end::Input-->
+                                          </div>
 
-                                         <div class="fv-row mb-6">
-                                             <!--begin::Label-->
-                                             <label class="fs-6 fw-bold form-label" for="admin_outlets">
-                                                 <span>Outlet PoS (Multi-Select — Pilih semua outlet yang bisa diakses)</span>
-                                                 <i class="fas fa-exclamation-circle ms-1 fs-7" data-bs-toggle="tooltip"
-                                                     title="Pilih satu atau lebih outlet. Outlet pertama akan menjadi outlet utama/default untuk kasir."></i>
-                                             </label>
-                                             <!--end::Label-->
-                                             <!--begin::Input-->
-                                             <select name="admin_outlets[]" class="form-select form-select-solid mb-3"
-                                                 id="admin_outlets" data-control="select2" data-placeholder="-- Pilih Outlet --" data-allow-clear="true" multiple="multiple">
-                                                 @foreach ($outlets as $outlet)
-                                                 <option value="{{ $outlet->id }}" @if (in_array($outlet->id, old('admin_outlets', @$adminOutlets ?? []))) selected @endif>
-                                                     {{ $outlet->name }}</option>
-                                                 @endforeach
-                                             </select>
-                                             <span class="text-muted fs-8">Outlet pertama yang dipilih akan menjadi outlet utama (default) untuk transaksi kasir.</span>
-                                             <!--end::Input-->
-                                         </div>
+                                          <div class="fv-row mb-6">
+                                              <!--begin::Label-->
+                                              <label class="fs-6 fw-bold form-label" for="admin_outlets">
+                                                  <span>Scope Pondok Mart (Multi-Select — Pilih semua outlet yang bisa diakses)</span>
+                                                  <i class="fas fa-exclamation-circle ms-1 fs-7" data-bs-toggle="tooltip"
+                                                      title="Pilih satu atau lebih outlet. Outlet pertama akan menjadi outlet utama/default untuk kasir."></i>
+                                              </label>
+                                              <!--end::Label-->
+                                              <!--begin::Input-->
+                                              <select name="admin_outlets[]" class="form-select form-select-solid mb-3"
+                                                  id="admin_outlets" data-control="select2" data-placeholder="-- Pilih Outlet --" data-allow-clear="true" multiple="multiple">
+                                                  @foreach ($outlets as $outlet)
+                                                  <option value="{{ $outlet->id }}" @if (in_array($outlet->id, old('admin_outlets', @$adminOutlets ?? []))) selected @endif>
+                                                      {{ $outlet->name }}</option>
+                                                  @endforeach
+                                              </select>
+                                              <span class="text-muted fs-8">Outlet pertama yang dipilih akan menjadi outlet utama (default) untuk transaksi kasir.</span>
+                                              <!--end::Input-->
+                                          </div>
                                      </div>
 
                                      <div class="col-md-6">
@@ -209,17 +212,16 @@
                                          <div class="fv-row mb-6">
                                              <!--begin::Label-->
                                              <label class="fs-6 fw-bold form-label" for="role_id">
-                                          <div class="fv-row mb-6">
                                               <!--begin::Label-->
                                               <label class="fs-6 fw-bold form-label" for="role_ids">
-                                                  <span class="required">Role</span>
+                                                  <span class="required">Peran</span>
                                                   <i class="fas fa-exclamation-circle ms-1 fs-7" data-bs-toggle="tooltip"
                                                       title="Role Akses yang dimiliki admin (bisa lebih dari satu)"></i>
                                               </label>
                                               <!--end::Label-->
                                               <!--begin::Input-->
                                               <select name="role_ids[]" class="form-select form-select-solid mb-3"
-                                                  id="role_ids" data-control="select2" data-placeholder="--Pilih Role--" data-allow-clear="true" multiple="multiple"
+                                                  id="role_ids" data-control="select2" data-placeholder="--Pilih Peran--" data-allow-clear="true" multiple="multiple"
                                                   required>
                                                   @foreach ($roles as $role)
                                                   <option value="{{ $role->id }}" @if (in_array($role->id, old('role_ids', @$adminRoles ?? []))) selected @endif>
