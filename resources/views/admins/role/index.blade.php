@@ -86,7 +86,7 @@
             <form action="" method="POST" id="form_assign_role">
                 @csrf
                 <div class="modal-header">
-                    <h2 class="fw-bolder" id="modal_title">Assign User</h2>
+                    <h2 class="fw-bolder" id="modal_title">Tugaskan Pengguna</h2>
                     <div class="btn btn-icon btn-sm btn-active-icon-primary" data-bs-dismiss="modal">
                         <span class="svg-icon svg-icon-1">
                             <i class="fa-solid fa-xmark fs-4"></i>

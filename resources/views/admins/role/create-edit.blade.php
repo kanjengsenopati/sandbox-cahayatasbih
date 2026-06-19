@@ -1,4 +1,4 @@
-@extends('layouts.master', ['title' => 'Data Role'])
+@extends('layouts.master', ['title' => 'Data Peran'])
 @section('content')
 <!--begin::Content-->
 <div class="content d-flex flex-column flex-column-fluid" id="kt_content">
@@ -11,7 +11,7 @@
                 data-kt-swapper-parent="{default: '#kt_content_container', 'lg': '#kt_toolbar_container'}"
                 class="page-title d-flex align-items-center flex-wrap me-3 mb-5 mb-lg-0">
                 <!--begin::Title-->
-                <h1 class="d-flex text-dark fw-bolder fs-3 align-items-center my-1">Data Role</h1>
+                <h1 class="d-flex text-dark fw-bolder fs-3 align-items-center my-1">Data Peran</h1>
                 <!--end::Title-->
                 <!--begin::Separator-->
                 <span class="h-20px border-gray-300 border-start mx-4"></span>
@@ -20,7 +20,7 @@
                 <ul class="breadcrumb breadcrumb-separatorless fw-bold fs-7 my-1">
                     <!--begin::Item-->
                     <li class="breadcrumb-item text-muted">
-                        <a href="{{ route('role.index') }}" class="text-muted text-hover-primary">Role</a>
+                        <a href="{{ route('role.index') }}" class="text-muted text-hover-primary">Peran</a>
                     </li>
                     <!--end::Item-->
                     <!--begin::Item-->
@@ -30,7 +30,7 @@
                     <!--end::Item-->
                     <!--begin::Item-->
                     <li class="breadcrumb-item text-dark">
-                        {{ request()->routeIs('role.create') ? 'Tambah Role' : 'Edit Role' }}
+                        {{ request()->routeIs('role.create') ? 'Tambah Peran' : 'Edit Peran' }}
                     </li>
                     <!--end::Item-->
                 </ul>
@@ -56,7 +56,7 @@
                             <!--begin::Card title-->
                             <div class="card-title">
                                 <h1 class="d-flex text-dark fw-bolder fs-3 align-items-center">
-                                    {{ request()->routeIs('role.create') ? 'Tambah Role' : 'Edit Role' }}
+                                    {{ request()->routeIs('role.create') ? 'Tambah Peran' : 'Edit Peran' }}
                                 </h1>
                             </div>
                             <!--end::Card title-->
@@ -76,9 +76,9 @@
                                 <div class="fv-row mb-6">
                                     <!--begin::Label-->
                                     <label class="fs-6 fw-bold form-label" for="name">
-                                        <span class="required">Nama Role</span>
+                                        <span class="required">Nama Peran</span>
                                         <i class="fas fa-exclamation-circle ms-1 fs-7" data-bs-toggle="tooltip"
-                                            title="Nama Role Yang akan digunakan"></i>
+                                            title="Nama Peran yang akan digunakan"></i>
                                     </label>
                                     <!--end::Label-->
                                     <!--begin::Input-->
@@ -88,22 +88,32 @@
                                 </div>
 
                                 <div class="fv-row mb-7">
-                                    <div class="d-flex justify-content-between align-items-center mb-5">
+                                    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-5">
                                         <label class="fs-6 fw-bold form-label mb-0" for="permissions">
                                             <span class="required">Pilih Permission Yang Akan Diberikan</span>
                                             <i class="fas fa-exclamation-circle ms-1 fs-7" data-bs-toggle="tooltip"
                                                 title="Select the permissions for this role"></i>
                                         </label>
-                                        <div class="form-check form-check-custom form-check-solid">
-                                            <input class="form-check-input module-checkbox" type="checkbox"
-                                                data-module="all" id="select_all_permissions">
-                                            <label class="form-check-label fw-bold text-gray-700 fs-7" for="select_all_permissions">Pilih Semua</label>
+                                        <div class="d-flex align-items-center gap-4">
+                                            <!-- Search input -->
+                                            <div class="position-relative w-md-250px w-100">
+                                                <span class="svg-icon svg-icon-3 position-absolute top-50 translate-middle-y ms-4">
+                                                    <i class="fa-solid fa-magnifying-glass text-gray-500 fs-5"></i>
+                                                </span>
+                                                <input type="text" id="search_module" class="form-control form-control-solid ps-12 form-control-sm" style="border-radius: 24px;" placeholder="Cari modul...">
+                                            </div>
+                                            <!-- Select All -->
+                                            <div class="form-check form-check-custom form-check-solid">
+                                                <input class="form-check-input module-checkbox" type="checkbox"
+                                                    data-module="all" id="select_all_permissions">
+                                                <label class="form-check-label fw-bold text-gray-700 fs-7" for="select_all_permissions">Pilih Semua</label>
+                                            </div>
                                         </div>
                                     </div>
 
-                                    <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-4">
+                                    <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-4" id="modules_container">
                                         @php
-                                        $modules = ['Role', 'Admin', 'Santri', 'Wali Santri',
+                                        $modulesRaw = ['Role', 'Admin', 'Santri', 'Wali Santri',
                                         'Sekolah', 'Bank', 'Outlet',
                                         'Informasi', 'Metode Pembayaran', 'Menu Aplikasi', 'Kontak Bantuan',
                                         'Barang','Saldo Santri', 'Tabungan Santri', 'Jadwal', 'Tahfidz',
@@ -119,22 +129,42 @@
                                         'Kelulusan Santri', 'Kategori Arus Kas', 'Arus Kas', 'Laporan Arus Kas',
                                         'Gelombang PPDB', 'Kartu Santri', 'Kartu Ujian', 'Petugas', 'Biometric'
                                         ];
+
+                                        // Map each module to internal and display names
+                                        $modulesMapped = array_map(function($module) {
+                                            $displayName = $module;
+                                            if ($module === 'Role') {
+                                                $displayName = 'Peran';
+                                            } elseif ($module === 'Admin') {
+                                                $displayName = 'Pengguna';
+                                            }
+                                            return [
+                                                'internal' => $module,
+                                                'display' => $displayName
+                                            ];
+                                        }, $modulesRaw);
+
+                                        // Sort the array alphabetically by display name (case-insensitive)
+                                        usort($modulesMapped, function($a, $b) {
+                                            return strcasecmp($a['display'], $b['display']);
+                                        });
                                         @endphp
 
-                                        @foreach ($modules as $module)
+                                        @foreach ($modulesMapped as $mod)
                                         @php
+                                            $module = $mod['internal'];
                                             $moduleKey = str_replace(' ', '', $module);
                                             $managePerm = $module === 'Payroll' ? 'Manage Payroll' : 'Manage ' . $module;
                                             $createPerm = $module === 'Payroll' ? 'Create Payroll' : 'Create ' . $module;
                                             $editPerm   = $module === 'Payroll' ? 'Approve Payroll' : 'Edit ' . $module;
                                             $deletePerm = $module === 'Payroll' ? 'Pay Payroll' : 'Delete ' . $module;
                                         @endphp
-                                        <div class="col">
+                                        <div class="col module-col">
                                             <div class="card h-100 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border-0" style="border-radius: 24px; border: 1px solid #f1f1f4; background: #ffffff;">
                                                 <div class="card-body p-5">
                                                     <!-- Header Card: Module Name + Card Select All -->
                                                     <div class="d-flex justify-content-between align-items-center mb-4">
-                                                        <span class="fs-6 fw-bolder text-gray-800">{{ ucfirst($module) }}</span>
+                                                        <span class="fs-6 fw-bolder text-gray-800 module-title">{{ $mod['display'] }}</span>
                                                         <div class="form-check form-check-custom form-check-solid">
                                                             <input class="form-check-input module-checkbox" type="checkbox"
                                                                 data-module="{{ $moduleKey }}" id="select_module_{{ $moduleKey }}">
@@ -238,6 +268,15 @@
 @push('js')
 <script>
     $(document).ready(function() {
+        // Real-time search filter for module cards
+        $('#search_module').on('keyup', function() {
+            var value = $(this).val().toLowerCase();
+            $('.module-col').filter(function() {
+                var moduleName = $(this).find('.module-title').text().toLowerCase();
+                $(this).toggle(moduleName.indexOf(value) > -1);
+            });
+        });
+
         // Function to update local module-checkbox based on its permission checkboxes
         function updateModuleCheckbox(module) {
             var total = $('.permission-checkbox.isscheck_' + module).length;
