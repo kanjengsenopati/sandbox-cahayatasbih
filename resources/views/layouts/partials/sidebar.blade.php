@@ -105,24 +105,12 @@
 
                         @can('Manage Barang')
                         <div class="menu-item">
-                            <a class="menu-link {{ (request()->routeIs(['item.*', 'category-item.*']) && request('mode') === 'outlet') ? ' active' : '' }}"
+                            <a class="menu-link {{ (request()->routeIs(['item.*', 'category-item.*', 'stock-history.*']) && request('mode') === 'outlet') ? ' active' : '' }}"
                                 href="{{ route('item.index', ['mode' => 'outlet']) }}">
                                 <span class="menu-bullet">
                                     <i class="fa-solid fa-boxes-stacked text-white/80 fs-7"></i>
                                 </span>
-                                <span class="menu-title">Barang</span>
-                            </a>
-                        </div>
-                        @endcan
-
-                        @can('Manage Barang')
-                        <div class="menu-item">
-                            <a class="menu-link {{ (request()->routeIs('stock-history.*') && request('mode') === 'outlet') ? ' active' : '' }}"
-                                href="{{ route('stock-history.index', ['mode' => 'outlet']) }}">
-                                <span class="menu-bullet">
-                                    <i class="fa-solid fa-warehouse text-white/80 fs-7"></i>
-                                </span>
-                                <span class="menu-title">Inventory</span>
+                                <span class="menu-title">Barang & Inventory</span>
                             </a>
                         </div>
                         @endcan
@@ -151,17 +139,17 @@
                         </div>
                         @endcanany
 
-                        @can('Manage Shift')
+                        @canany(['Manage Karyawan', 'Manage Shift', 'Manage Payroll'])
                         <div class="menu-item">
-                            <a class="menu-link {{ (request()->routeIs('working-shift.*') && request('mode') === 'outlet') ? ' active' : '' }}"
-                                href="{{ route('working-shift.index', ['mode' => 'outlet']) }}">
+                            <a class="menu-link {{ (request()->routeIs(['karyawan.*', 'working-shift.*', 'payroll.*']) && request('mode') === 'outlet') ? ' active' : '' }}"
+                                href="{{ route('karyawan.index', ['mode' => 'outlet']) }}">
                                 <span class="menu-bullet">
-                                    <i class="fa-solid fa-clock text-white/80 fs-7"></i>
+                                    <i class="fa-solid fa-user-group text-white/80 fs-7"></i>
                                 </span>
-                                <span class="menu-title">Pengaturan Shift</span>
+                                <span class="menu-title">Data Karyawan & Payroll</span>
                             </a>
                         </div>
-                        @endcan
+                        @endcanany
 
                         @can('Manage Laporan Presensi')
                         <div class="menu-item">
@@ -171,30 +159,6 @@
                                     <i class="fa-solid fa-clipboard-user text-white/80 fs-7"></i>
                                 </span>
                                 <span class="menu-title">Presensi Karyawan</span>
-                            </a>
-                        </div>
-                        @endcan
-
-                        @can('Manage Payroll')
-                        <div class="menu-item">
-                            <a class="menu-link {{ (request()->routeIs('payroll.*') && request('mode') === 'outlet') ? ' active' : '' }}"
-                                href="{{ route('payroll.index', ['mode' => 'outlet']) }}">
-                                <span class="menu-bullet">
-                                    <i class="fa-solid fa-file-invoice-dollar text-white/80 fs-7"></i>
-                                </span>
-                                <span class="menu-title">Payroll Karyawan</span>
-                            </a>
-                        </div>
-                        @endcan
-
-                        @can('Manage Karyawan')
-                        <div class="menu-item">
-                            <a class="menu-link {{ request()->routeIs('karyawan.*') ? ' active' : '' }}"
-                                href="{{ route('karyawan.index', ['mode' => 'outlet']) }}">
-                                <span class="menu-bullet">
-                                    <i class="fa-solid fa-user-group text-white/80 fs-7"></i>
-                                </span>
-                                <span class="menu-title">Data Karyawan</span>
                             </a>
                         </div>
                         @endcan
