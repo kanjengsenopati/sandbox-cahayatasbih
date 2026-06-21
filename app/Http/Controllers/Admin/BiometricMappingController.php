@@ -211,9 +211,10 @@ class BiometricMappingController extends Controller
             $user = $shift->presensiable;
             if (!$user) return null;
 
-            // Cek apakah user adalah Kasir / Super Admin (yang berhak scan wajah)
-            if ($user instanceof \App\Models\Admin || $user instanceof \App\Models\User) {
-                if ($user->hasRole('Kasir') || $user->hasRole('Super Admin') || $user->can('Manage Pos Kasir') || $user->can('Create Pos Kasir')) {
+            // Pastikan user (Admin) terdaftar di tabel karyawans
+            if ($user instanceof \App\Models\Admin) {
+                $isKaryawan = \App\Models\Karyawan::where('admin_id', $user->id)->exists();
+                if (!$isKaryawan) {
                     return null;
                 }
             } else {

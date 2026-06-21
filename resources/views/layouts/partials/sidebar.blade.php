@@ -82,7 +82,7 @@
                 @endcan -->
 
                 @canany(['Manage Outlet', 'Manage Barang', 'Manage Pos Kasir', 'Manage Laporan Pos Kasir', 'Manage Laporan Pos Multi Outlet', 'Manage Laporan Rugi Laba', 'Manage Arus Kas', 'Manage Shift', 'Manage Laporan Presensi', 'Manage Payroll'])
-                <div data-kt-menu-trigger="click" class="menu-item menu-accordion {{ (request()->routeIs(['outlet.*', 'item.*', 'category-item.*', 'stock-history.*', 'order-item.*', 'pos-transaction.*', 'report-pos.*', 'report-profit-loss.*', 'working-shift.*', 'report-attendance.*', 'payroll.*']) && request('mode') === 'outlet') ? 'show' : '' }}">
+                <div data-kt-menu-trigger="click" class="menu-item menu-accordion {{ (request()->routeIs(['outlet.*', 'item.*', 'category-item.*', 'stock-history.*', 'order-item.*', 'pos-transaction.*', 'report-pos.*', 'report-profit-loss.*', 'working-shift.*', 'report-attendance.*', 'payroll.*', 'karyawan.*']) && request('mode') === 'outlet') ? 'show' : '' }}">
                     <span class="menu-link">
                         <span class="menu-icon">
                             <i class="fa-solid fa-store" style="color: #ffffff;"></i>
@@ -183,6 +183,18 @@
                                     <i class="fa-solid fa-file-invoice-dollar text-white/80 fs-7"></i>
                                 </span>
                                 <span class="menu-title">Payroll Karyawan</span>
+                            </a>
+                        </div>
+                        @endcan
+
+                        @can('Manage Karyawan')
+                        <div class="menu-item">
+                            <a class="menu-link {{ request()->routeIs('karyawan.*') ? ' active' : '' }}"
+                                href="{{ route('karyawan.index', ['mode' => 'outlet']) }}">
+                                <span class="menu-bullet">
+                                    <i class="fa-solid fa-user-group text-white/80 fs-7"></i>
+                                </span>
+                                <span class="menu-title">Data Karyawan</span>
                             </a>
                         </div>
                         @endcan

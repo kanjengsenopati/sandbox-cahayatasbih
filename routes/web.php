@@ -14,6 +14,7 @@ use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\AdminController;
 use App\Http\Controllers\Admin\StudyController;
 use App\Http\Controllers\Admin\OutletController;
+use App\Http\Controllers\Admin\KaryawanController;
 use App\Http\Controllers\Admin\SchoolController;
 use App\Http\Controllers\Admin\ContactController;
 use App\Http\Controllers\Admin\Select2Controller;
@@ -237,6 +238,7 @@ Route::group(['middleware' => ['auth']], function () {
     Route::post('item/import', [ItemController::class, 'import'])->name('item.import');
     Route::resource('item', ItemController::class);
     Route::resource('outlet', OutletController::class);
+    Route::resource('karyawan', KaryawanController::class);
     Route::resource('stock-history', StockHistoryController::class);
     Route::resource('contact', ContactController::class);
 
