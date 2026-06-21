@@ -441,4 +441,121 @@ class AttendancePayrollTest extends TestCase
             'approved_by' => $employee->id
         ]);
     }
+
+    public function test_employee_attendance_needs_approval_for_payroll()
+    {
+        $shift = WorkingShift::create([
+            'name' => 'Shift Pagi',
+            'start_time' => '08:00:00',
+            'end_time' => '16:00:00',
+            'grace_period' => 15
+        ]);
+
+        $employee = Admin::create([
+            'id' => (string) Str::uuid(),
+            'name' => 'Ujang Dapur',
+            'email' => 'ujang@example.com',
+            'password' => bcrypt('password'),
+            'is_active' => true,
+            'avatar' => '',
+            'role_id' => 1,
+        ]);
+
+        EmployeeSalary::create([
+            'presensiable_type' => Admin::class,
+            'presensiable_id' => $employee->id,
+            'base_salary' => 3000000.00,
+            'attendance_allowance' => 50000.00,
+            'transport_allowance' => 20000.00,
+            'lateness_penalty_per_minute' => 1000.00,
+            'absence_penalty' => 100000.00,
+        ]);
+
+        // Shift tanggal 18
+        EmployeeMonthlyShift::create([
+            'presensiable_type' => Admin::class,
+            'presensiable_id' => $employee->id,
+            'working_shift_id' => $shift->id,
+            'date' => '2026-06-18',
+            'is_holiday' => false,
+        ]);
+
+        // Buat biometric device dan mapping
+        $device = BiometricDevice::create([
+            'device_name' => 'Kiosk POS',
+            'location' => 'Kantin',
+            'auth_token' => 'secure-kiosk-token',
+        ]);
+
+        BiometricMapping::create([
+            'presensiable_type' => Admin::class,
+            'presensiable_id' => $employee->id,
+            'biometric_type' => 'face',
+            'device_pin' => 'F-' . $employee->id,
+        ]);
+
+        // 1. Simulasikan presensi masuk via webhook / biometric API (harusnya status = pending)
+        $this->withHeaders([
+            'Authorization' => 'secure-kiosk-token'
+        ])->postJson('/api/ct-mobile/biometric/log', [
+            'logs' => [
+                [
+                    'pin' => 'F-' . $employee->id,
+                    'timestamp' => '2026-06-18 08:05:00',
+                    'type' => 'in'
+                ]
+            ]
+        ]);
+
+        // Pastikan record attendance berstatus pending
+        $this->assertDatabaseHas('attendances', [
+            'presensiable_id' => $employee->id,
+            'activity_type' => 'work',
+            'approval_status' => 'pending'
+        ]);
+
+        // 2. Jalankan Payroll. Karena status pending, presensi ini TIDAK BOLEH dihitung (dianggap absen)
+        $payrollController = new \App\Http\Controllers\Admin\PayrollController();
+        $request = new Request([
+            'start_date' => '2026-06-18',
+            'end_date' => '2026-06-18',
+        ]);
+
+        $this->actingAs($employee);
+        $payrollController->process($request);
+
+        // Ujang harusnya dihitung absen 1 hari (karena kehadirannya pending)
+        // Gaji Ujang dipotong denda absen Rp100.000,00 dan tidak dapat tunjangan kehadiran/transport
+        $this->assertDatabaseHas('salary_slips', [
+            'presensiable_id' => $employee->id,
+            'total_present_days' => 0, // Kehadiran pending tidak dihitung!
+            'total_absent_days' => 1,
+            'net_salary' => 2900000.00 // 3.000.000 - 100.000 denda mangkir
+        ]);
+
+        // 3. Setujui presensi Ujang melalui ReportAttendanceController
+        $attendance = Attendance::where('presensiable_id', $employee->id)->first();
+        $reportController = new \App\Http\Controllers\Admin\ReportAttendanceController();
+        
+        $approveResponse = $reportController->approve($attendance->id);
+        $this->assertTrue(json_decode($approveResponse->getContent(), true)['success']);
+
+        // Pastikan status presensi berubah menjadi approved
+        $this->assertDatabaseHas('attendances', [
+            'id' => $attendance->id,
+            'approval_status' => 'approved',
+            'approved_by' => $employee->id
+        ]);
+
+        // 4. Proses ulang Payroll. Sekarang kehadiran Ujang harusnya sudah dihitung!
+        $payrollController->process($request);
+
+        // Ujang sekarang dihitung hadir 1 hari, dapat tunjangan kehadiran (50.000) dan transport (20.000)
+        $this->assertDatabaseHas('salary_slips', [
+            'presensiable_id' => $employee->id,
+            'total_present_days' => 1,
+            'total_absent_days' => 0,
+            'net_salary' => 3070000.00 // 3.000.000 + 50.000 + 20.000
+        ]);
+    }
 }

@@ -319,6 +319,7 @@ Route::group(['middleware' => ['auth']], function () {
     Route::get('biometric-mapping/descriptors', [\App\Http\Controllers\Admin\BiometricMappingController::class, 'descriptors'])->name('biometric-mapping.descriptors');
     Route::post('biometric-mapping/scan', [\App\Http\Controllers\Admin\BiometricMappingController::class, 'scan'])->name('biometric-mapping.scan');
     Route::get('biometric-mapping/search-users', [\App\Http\Controllers\Admin\BiometricMappingController::class, 'searchUsers'])->name('biometric-mapping.search-users');
+    Route::post('biometric-mapping/manual-capture', [\App\Http\Controllers\Admin\BiometricMappingController::class, 'manualCapture'])->name('biometric-mapping.manual-capture');
     Route::resource('biometric-mapping', \App\Http\Controllers\Admin\BiometricMappingController::class)->only(['index', 'store', 'destroy']);
 
     // asrama backoffice
@@ -414,6 +415,8 @@ Route::group(['middleware' => ['auth']], function () {
 
     // start report attendance
     Route::get('report-attendance', [\App\Http\Controllers\Admin\ReportAttendanceController::class, 'index'])->name('report-attendance.index');
+    Route::post('report-attendance/{id}/approve', [\App\Http\Controllers\Admin\ReportAttendanceController::class, 'approve'])->name('report-attendance.approve');
+    Route::post('report-attendance/{id}/reject', [\App\Http\Controllers\Admin\ReportAttendanceController::class, 'reject'])->name('report-attendance.reject');
     // Route::get('report-student/search-student', [ReportStudentController::class, 'searchStudent'])
     //     ->name('report-student.search-student');
 

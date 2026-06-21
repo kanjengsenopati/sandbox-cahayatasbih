@@ -163,12 +163,76 @@ class ReportAttendanceController extends Controller
                     ->addColumn('late_label', function ($row) {
                         return $row->late_minutes > 0 ? $row->late_minutes . ' Menit' : '-';
                     })
-                    ->rawColumns(['employee_type', 'status_badge'])
+                    ->addColumn('photo_url_html', function ($row) {
+                        if ($row->photo_path) {
+                            return '<a href="' . asset($row->photo_path) . '" target="_blank">' .
+                                   '<img src="' . asset($row->photo_path) . '" class="w-50px h-50px rounded object-cover shadow-sm" alt="Foto Bukti">' .
+                                   '</a>';
+                        }
+                        return '<span class="text-muted italic">Tidak ada foto</span>';
+                    })
+                    ->addColumn('approval_badge', function ($row) {
+                        $badges = [
+                            'pending' => '<span class="badge badge-light-warning">Pending</span>',
+                            'approved' => '<span class="badge badge-light-success">Disetujui</span>',
+                            'rejected' => '<span class="badge badge-light-danger">Ditolak</span>',
+                        ];
+                        return $badges[$row->approval_status] ?? '<span class="badge badge-light-secondary">' . $row->approval_status . '</span>';
+                    })
+                    ->addColumn('action', function ($row) {
+                        if ($row->approval_status === 'pending') {
+                            return '<div class="d-flex gap-2 justify-content-center">' .
+                                   '<button class="btn btn-sm btn-icon btn-light-success btn-approve-attendance" data-id="' . $row->id . '"><i class="fa fa-check p-0"></i></button>' .
+                                   '<button class="btn btn-sm btn-icon btn-light-danger btn-reject-attendance" data-id="' . $row->id . '"><i class="fa fa-times p-0"></i></button>' .
+                                   '</div>';
+                        }
+                        
+                        $approver = $row->approvedBy ? $row->approvedBy->name : 'System';
+                        return '<span class="text-muted fs-8">Diproses oleh: ' . $approver . '</span>';
+                    })
+                    ->rawColumns(['employee_type', 'status_badge', 'photo_url_html', 'approval_badge', 'action'])
                     ->make(true);
             }
         }
 
         $schools = School::orderBy('name')->get();
         return view('admins.report-attendance.index', compact('schools'));
+    }
+
+    public function approve($id)
+    {
+        if (!Auth::user()->can('Manage Laporan Presensi')) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
+        }
+
+        $attendance = Attendance::findOrFail($id);
+        $attendance->update([
+            'approval_status' => 'approved',
+            'approved_by' => Auth::id(),
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Presensi berhasil disetujui.',
+        ]);
+    }
+
+    public function reject($id, Request $request)
+    {
+        if (!Auth::user()->can('Manage Laporan Presensi')) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
+        }
+
+        $attendance = Attendance::findOrFail($id);
+        $attendance->update([
+            'approval_status' => 'rejected',
+            'approved_by' => Auth::id(),
+            'notes' => $request->input('notes') ? 'Rejected: ' . $request->input('notes') : 'Rejected by Admin',
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Presensi berhasil ditolak.',
+        ]);
     }
 }

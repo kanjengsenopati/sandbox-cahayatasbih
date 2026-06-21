@@ -126,6 +126,10 @@ class BiometricAttendanceController extends Controller
         $activityNameOverride = null,
         $scheduleId = null
     ) {
+        if ($method === 'face') {
+            $method = 'face_recognition';
+        }
+
         $dateStr = $timestamp->toDateString();
         $timeStr = $timestamp->toTimeString();
 
@@ -228,7 +232,6 @@ class BiometricAttendanceController extends Controller
                     $status = 'late';
                     $lateMinutes = $checkInTime->diffInMinutes($shiftStartTime);
                 }
-
                 return Attendance::create([
                     'presensiable_type' => get_class($user),
                     'presensiable_id' => $user->id,
@@ -242,6 +245,7 @@ class BiometricAttendanceController extends Controller
                     'latitude' => $lat,
                     'longitude' => $lng,
                     'photo_path' => $photoPath,
+                    'approval_status' => 'pending',
                 ]);
             } 
             

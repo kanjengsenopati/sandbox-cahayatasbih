@@ -158,6 +158,7 @@ class PayrollController extends Controller
                 $attendances = Attendance::where('presensiable_type', get_class($employee))
                     ->where('presensiable_id', $employee->id)
                     ->where('activity_type', 'work')
+                    ->where('approval_status', 'approved')
                     ->whereBetween('check_in', [$startDate->copy()->startOfDay(), $endDate->copy()->endOfDay()])
                     ->get();
 

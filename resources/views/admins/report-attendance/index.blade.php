@@ -159,6 +159,9 @@
                                             <th>Check-out</th>
                                             <th class="text-center">Status</th>
                                             <th>Keterlambatan</th>
+                                            <th class="text-center">Bukti Foto</th>
+                                            <th class="text-center">Persetujuan</th>
+                                            <th class="text-center" width="10%">Aksi</th>
                                         </tr>
                                     </thead>
                                     <tbody></tbody>
@@ -261,7 +264,10 @@
                         { data: 'check_in_formatted', class: 'text-center' },
                         { data: 'check_out_formatted', class: 'text-center' },
                         { data: 'status_badge', class: 'text-center' },
-                        { data: 'late_label', class: 'text-center' }
+                        { data: 'late_label', class: 'text-center' },
+                        { data: 'photo_url_html', class: 'text-center' },
+                        { data: 'approval_badge', class: 'text-center' },
+                        { data: 'action', class: 'text-center' }
                     ]
                 });
             } else {
@@ -282,6 +288,87 @@
             if (tableKaryawan) {
                 tableKaryawan.ajax.reload();
             }
+        });
+
+        // Handler click untuk approve presensi
+        $(document).on('click', '.btn-approve-attendance', function() {
+            const id = $(this).data('id');
+            Swal.fire({
+                title: 'Apakah Anda yakin?',
+                text: "Menyetujui kehadiran karyawan ini.",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#10B981', // Emerald Success
+                cancelButtonColor: '#6C757D',
+                confirmButtonText: 'Ya, Setujui!',
+                cancelButtonText: 'Batal'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    $.ajax({
+                        url: `/report-attendance/${id}/approve`,
+                        type: 'POST',
+                        data: {
+                            _token: "{{ csrf_token() }}"
+                        },
+                        success: (res) => {
+                            if (res.success) {
+                                Swal.fire('Berhasil!', res.message, 'success');
+                                tableKaryawan.ajax.reload(null, false);
+                            } else {
+                                Swal.fire('Gagal!', res.message, 'error');
+                            }
+                        },
+                        error: (xhr) => {
+                            Swal.fire('Gagal!', xhr.responseJSON?.message || 'Terjadi kesalahan sistem.', 'error');
+                        }
+                    });
+                }
+            });
+        });
+
+        // Handler click untuk reject presensi
+        $(document).on('click', '.btn-reject-attendance', function() {
+            const id = $(this).data('id');
+            Swal.fire({
+                title: 'Tolak Presensi?',
+                text: "Silakan masukkan alasan penolakan presensi:",
+                input: 'text',
+                inputPlaceholder: 'Alasan penolakan...',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#DC2626', // Red Error
+                cancelButtonColor: '#6C757D',
+                confirmButtonText: 'Ya, Tolak!',
+                cancelButtonText: 'Batal',
+                inputValidator: (value) => {
+                    if (!value) {
+                        return 'Alasan penolakan wajib diisi!'
+                    }
+                }
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    const notes = result.value;
+                    $.ajax({
+                        url: `/report-attendance/${id}/reject`,
+                        type: 'POST',
+                        data: {
+                            _token: "{{ csrf_token() }}",
+                            notes: notes
+                        },
+                        success: (res) => {
+                            if (res.success) {
+                                Swal.fire('Ditolak!', res.message, 'success');
+                                tableKaryawan.ajax.reload(null, false);
+                            } else {
+                                Swal.fire('Gagal!', res.message, 'error');
+                            }
+                        },
+                        error: (xhr) => {
+                            Swal.fire('Gagal!', xhr.responseJSON?.message || 'Terjadi kesalahan sistem.', 'error');
+                        }
+                    });
+                }
+            });
         });
     });
 </script>

@@ -25,6 +25,8 @@ class Attendance extends Model
         'longitude',
         'photo_path',
         'notes',
+        'approval_status',
+        'approved_by',
     ];
 
     protected $casts = [
@@ -46,5 +48,10 @@ class Attendance extends Model
     public function schedule()
     {
         return $this->belongsTo(Schedule::class, 'schedule_id');
+    }
+
+    public function approvedBy()
+    {
+        return $this->belongsTo(Admin::class, 'approved_by');
     }
 }

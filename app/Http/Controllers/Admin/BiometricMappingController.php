@@ -198,7 +198,48 @@ class BiometricMappingController extends Controller
         if (!Auth::user()->can('Manage Biometric')) {
             return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
         }
-        return view('admins.attendance.kiosk');
+
+        $today = \Carbon\Carbon::today()->format('Y-m-d');
+        
+        $shiftsToday = \App\Models\EmployeeMonthlyShift::with(['presensiable', 'workingShift'])
+            ->where('date', $today)
+            ->whereNotNull('working_shift_id')
+            ->where('is_holiday', false)
+            ->get();
+
+        $staffList = $shiftsToday->map(function ($shift) {
+            $user = $shift->presensiable;
+            if (!$user) return null;
+
+            // Cek apakah user adalah Kasir / Super Admin (yang berhak scan wajah)
+            if ($user instanceof \App\Models\Admin || $user instanceof \App\Models\User) {
+                if ($user->hasRole('Kasir') || $user->hasRole('Super Admin') || $user->can('Manage Pos Kasir') || $user->can('Create Pos Kasir')) {
+                    return null;
+                }
+            } else {
+                return null;
+            }
+
+            // Tentukan status presensi hari ini
+            $attendance = \App\Models\Attendance::where('presensiable_type', get_class($user))
+                ->where('presensiable_id', $user->id)
+                ->where('activity_type', 'work')
+                ->whereDate('check_in', \Carbon\Carbon::today())
+                ->first();
+
+            return [
+                'id' => $user->id,
+                'name' => $user->name,
+                'type' => $user instanceof \App\Models\Admin ? 'Admin/Staff' : 'User/Officer',
+                'user_type' => $user instanceof \App\Models\Admin ? 'admin' : 'user',
+                'shift_name' => $shift->workingShift->name,
+                'shift_time' => \Carbon\Carbon::parse($shift->workingShift->start_time)->format('H:i') . ' - ' . \Carbon\Carbon::parse($shift->workingShift->end_time)->format('H:i'),
+                'attendance_status' => $attendance ? ($attendance->check_out ? 'done' : 'checked_in') : 'not_started',
+                'attendance_id' => $attendance ? $attendance->id : null,
+            ];
+        })->filter()->values();
+
+        return view('admins.attendance.kiosk', compact('staffList'));
     }
 
     public function descriptors()
@@ -213,6 +254,13 @@ class BiometricMappingController extends Controller
             ->map(function($mapping) {
                 $user = $mapping->presensiable;
                 if (!$user) return null;
+
+                // Saring agar Karyawan (Admin atau User) yang boleh scan wajah HANYA Kasir, Super Admin, atau yang punya hak POS
+                if ($user instanceof \App\Models\Admin || $user instanceof \App\Models\User) {
+                    if (!$user->hasRole('Kasir') && !$user->hasRole('Super Admin') && !$user->can('Manage Pos Kasir') && !$user->can('Create Pos Kasir')) {
+                        return null;
+                    }
+                }
                 
                 $photo = asset('assets/media/avatars/blank.png');
                 if (isset($user->avatar) && $user->avatar) {
@@ -291,6 +339,63 @@ class BiometricMappingController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Presensi berhasil dicatat untuk ' . $user->name . ' (' . ($request->type === 'in' ? 'Masuk' : 'Keluar') . ').',
+            'data' => [
+                'name' => $user->name,
+                'time' => \Carbon\Carbon::now()->format('H:i:s'),
+                'status' => $attendance->status,
+                'late_minutes' => $attendance->late_minutes
+            ]
+        ]);
+    }
+
+    public function manualCapture(Request $request)
+    {
+        if (!Auth::user()->can('Manage Biometric')) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
+        }
+
+        $request->validate([
+            'user_id' => 'required|string',
+            'user_type' => 'required|in:admin,user',
+            'type' => 'required|in:in,out',
+            'photo' => 'required|string',
+        ]);
+
+        $modelClass = $request->user_type === 'admin' ? Admin::class : User::class;
+        $user = $modelClass::find($request->user_id);
+
+        if (!$user) {
+            return response()->json(['success' => false, 'message' => 'Karyawan tidak ditemukan.'], 404);
+        }
+
+        $photoData = base64_decode(preg_replace('#^data:image/\w+;base64,#i', '', $request->photo));
+        $fileName = 'attendances/' . \Illuminate\Support\Str::uuid() . '.jpg';
+        \Illuminate\Support\Facades\Storage::disk('public')->put($fileName, $photoData);
+        $photoPath = \Illuminate\Support\Facades\Storage::url($fileName);
+
+        $apiController = new \App\Http\Controllers\Api\BiometricAttendanceController();
+        $attendance = $apiController->processAttendance(
+            $user,
+            \Carbon\Carbon::now(),
+            $request->type,
+            'face_recognition',
+            null,
+            null,
+            null,
+            $photoPath,
+            'work'
+        );
+
+        if (!$attendance) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal mencatat presensi. Pastikan jadwal shift kerja aktif hari ini.'
+            ], 400);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Presensi berhasil dicatat untuk ' . $user->name . ' (' . ($request->type === 'in' ? 'Masuk' : 'Keluar') . '). Menunggu persetujuan admin.',
             'data' => [
                 'name' => $user->name,
                 'time' => \Carbon\Carbon::now()->format('H:i:s'),
