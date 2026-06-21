@@ -1,4 +1,4 @@
-@extends('layouts.master', ['title' => 'Admin'])
+@extends('layouts.master', ['title' => 'Pengguna'])
 @section('content')
 <!--begin::Content-->
 <div class="content d-flex flex-column flex-column-fluid" id="kt_content">
@@ -11,7 +11,7 @@
                 data-kt-swapper-parent="{default: '#kt_content_container', 'lg': '#kt_toolbar_container'}"
                 class="page-title d-flex align-items-center flex-wrap me-3 mb-5 mb-lg-0">
                 <!--begin::Title-->
-                <h1 class="d-flex text-dark fw-bolder fs-3 align-items-center my-1">Data Admin</h1>
+                <h1 class="d-flex text-dark fw-bolder fs-3 align-items-center my-1">Data Pengguna</h1>
                 <!--end::Title-->
                 <!--begin::Separator-->
                 <span class="h-20px border-gray-300 border-start mx-4"></span>
@@ -19,11 +19,8 @@
                 <!--begin::Breadcrumb-->
                 <ul class="breadcrumb breadcrumb-separatorless fw-bold fs-7 my-1">
                     <!--begin::Item-->
-
-                    <!--end::Item-->
-                    <!--begin::Item-->
                     <a class="breadcrumb-item" href="{{ route('admin.index') }}">
-                        <li class="breadcrumb-item text-muted">Data Admin</li>
+                        <li class="breadcrumb-item text-muted">Data Pengguna</li>
                     </a>
                     <!--end::Item-->
                     <!--begin::Item-->
@@ -33,7 +30,7 @@
                     <!--end::Item-->
                     <!--begin::Item-->
                     <li class="breadcrumb-item text-dark">
-                        {{ request()->routeIs('admin.create') ? 'Tambah Admin' : 'Edit Admin' }}</li>
+                        {{ request()->routeIs('admin.create') ? 'Tambah Pengguna' : 'Edit Pengguna' }}</li>
                     <!--end::Item-->
                 </ul>
                 <!--end::Breadcrumb-->
@@ -57,7 +54,7 @@
                             <!--begin::Card title-->
                             <div class="card-title">
                                 <h1 class="d-flex text-dark fw-bolder fs-3 align-items-center">
-                                    {{ request()->routeIs('admin.create') ? 'Tambah Admin' : 'Edit Admin' }}</h1>
+                                    {{ request()->routeIs('admin.create') ? 'Tambah Pengguna' : 'Edit Pengguna' }}</h1>
                             </div>
                             <!--end::Card title-->
                         </div>
@@ -72,6 +69,21 @@
                                 <x-form.put-method />
                                  <div class="row">
                                      <div class="col-md-6">
+                                         <div class="fv-row mb-7">
+                                             <!--begin::Label-->
+                                             <label class="fs-6 fw-bold form-label mt-3">
+                                                 <span class="required">Nama </span>
+                                                 <i class="fas fa-exclamation-circle ms-1 fs-7" data-bs-toggle="tooltip"
+                                                     title="Masukkan nama pengguna"></i>
+                                             </label>
+                                             <!--end::Label-->
+                                             <!--begin::Input-->
+                                             <input type="text" class="form-control form-control-solid" name="name"
+                                                 placeholder="Contoh: Pengguna" value="{{ @$admin->name ?? old('name') }}"
+                                                 required />
+                                             <!--end::Input-->
+                                         </div>
+
                                          <div class="fv-row mb-6">
                                              <!--begin::Label-->
                                              <label class="fs-6 fw-bold form-label" for="email">
@@ -82,23 +94,8 @@
                                              <!--end::Label-->
                                              <!--begin::Input-->
                                              <input type="email" class="form-control form-control-solid" id="email"
-                                                 placeholder="Contoh: admin@gmail.com" name="email"
+                                                 placeholder="Contoh: pengguna@gmail.com" name="email"
                                                  value="{{ @$admin->email ?? old('email') }}" required />
-                                             <!--end::Input-->
-                                         </div>
-
-                                         <div class="fv-row mb-7">
-                                             <!--begin::Label-->
-                                             <label class="fs-6 fw-bold form-label mt-3">
-                                                 <span class="required">Nama </span>
-                                                 <i class="fas fa-exclamation-circle ms-1 fs-7" data-bs-toggle="tooltip"
-                                                     title="masukkan nama"></i>
-                                             </label>
-                                             <!--end::Label-->
-                                             <!--begin::Input-->
-                                             <input type="text" class="form-control form-control-solid" name="name"
-                                                 placeholder="Contoh: Admin" value="{{ @$admin->name ?? old('name') }}"
-                                                 required />
                                              <!--end::Input-->
                                          </div>
 
@@ -120,49 +117,85 @@
                                          <div class="fv-row mb-6">
                                              <!--begin::Label-->
                                              <label class="fs-6 fw-bold form-label" for="school">
-                                          <div class="fv-row mb-6">
-                                              <!--begin::Label-->
-                                              <label class="fs-6 fw-bold form-label" for="school">
-                                                  <span class="required">Scope Wilayah UPT</span>
-                                                  <i class="fas fa-exclamation-circle ms-1 fs-7" data-bs-toggle="tooltip"
-                                                      title="Masukkan Unit Pendidikan Admin"></i>
-                                              </label>
-                                              <!--end::Label-->
-                                              <!--begin::Input-->
-                                              <select name="admin_schools[]" class="form-select form-select-solid mb-3"
-                                                  id="select2" data-control="select2" data-allow-clear="true" multiple="multiple"
-                                                  required>
-                                                  @foreach ($schools as $school)
-                                                  <option value="{{ $school->id }}" @if (in_array(@$school->id,
-                                                      @$adminSchools)) selected @endif>
-                                                      {{ $school->name }}</option>
-                                                  @endforeach
-                                              </select>
-                                              <!--end::Input-->
-                                          </div>
+                                                 <span class="required">Scope Wilayah UPT</span>
+                                                 <i class="fas fa-exclamation-circle ms-1 fs-7" data-bs-toggle="tooltip"
+                                                     title="Masukkan Unit Pendidikan Pengguna"></i>
+                                             </label>
+                                             <!--end::Label-->
+                                             <!--begin::Input-->
+                                             <select name="admin_schools[]" class="form-select form-select-solid mb-3"
+                                                 id="select2" data-control="select2" data-allow-clear="true" multiple="multiple"
+                                                 required>
+                                                 @foreach ($schools as $school)
+                                                 <option value="{{ $school->id }}" @if (in_array(@$school->id,
+                                                     @$adminSchools)) selected @endif>
+                                                     {{ $school->name }}</option>
+                                                 @endforeach
+                                             </select>
+                                             <!--end::Input-->
+                                         </div>
 
-                                          <div class="fv-row mb-6">
-                                              <!--begin::Label-->
-                                              <label class="fs-6 fw-bold form-label" for="admin_outlets">
-                                                  <span>Scope Pondok Mart (Multi-Select — Pilih semua outlet yang bisa diakses)</span>
-                                                  <i class="fas fa-exclamation-circle ms-1 fs-7" data-bs-toggle="tooltip"
-                                                      title="Pilih satu atau lebih outlet. Outlet pertama akan menjadi outlet utama/default untuk kasir."></i>
-                                              </label>
-                                              <!--end::Label-->
-                                              <!--begin::Input-->
-                                              <select name="admin_outlets[]" class="form-select form-select-solid mb-3"
-                                                  id="admin_outlets" data-control="select2" data-placeholder="-- Pilih Outlet --" data-allow-clear="true" multiple="multiple">
-                                                  @foreach ($outlets as $outlet)
-                                                  <option value="{{ $outlet->id }}" @if (in_array($outlet->id, old('admin_outlets', @$adminOutlets ?? []))) selected @endif>
-                                                      {{ $outlet->name }}</option>
-                                                  @endforeach
-                                              </select>
-                                              <span class="text-muted fs-8">Outlet pertama yang dipilih akan menjadi outlet utama (default) untuk transaksi kasir.</span>
-                                              <!--end::Input-->
-                                          </div>
+                                         <div class="fv-row mb-6">
+                                             <!--begin::Label-->
+                                             <label class="fs-6 fw-bold form-label" for="admin_outlets">
+                                                 <span>Scope Pondok Mart (Multi-Select — Pilih semua outlet yang bisa diakses)</span>
+                                                 <i class="fas fa-exclamation-circle ms-1 fs-7" data-bs-toggle="tooltip"
+                                                     title="Pilih satu atau lebih outlet. Outlet pertama akan menjadi outlet utama/default untuk kasir."></i>
+                                             </label>
+                                             <!--end::Label-->
+                                             <!--begin::Input-->
+                                             <select name="admin_outlets[]" class="form-select form-select-solid mb-3"
+                                                 id="admin_outlets" data-control="select2" data-placeholder="-- Pilih Outlet --" data-allow-clear="true" multiple="multiple">
+                                                 @foreach ($outlets as $outlet)
+                                                 <option value="{{ $outlet->id }}" @if (in_array($outlet->id, old('admin_outlets', @$adminOutlets ?? []))) selected @endif>
+                                                     {{ $outlet->name }}</option>
+                                                 @endforeach
+                                             </select>
+                                             <span class="text-muted fs-8">Outlet pertama yang dipilih akan menjadi outlet utama (default) untuk transaksi kasir.</span>
+                                             <!--end::Input-->
+                                         </div>
                                      </div>
 
                                      <div class="col-md-6">
+                                         <div class="fv-row mb-6">
+                                             <!--begin::Label-->
+                                             <label class="fs-6 fw-bold form-label" for="role_ids">
+                                                 <span class="required">Peran</span>
+                                                 <i class="fas fa-exclamation-circle ms-1 fs-7" data-bs-toggle="tooltip"
+                                                     title="Role Akses yang dimiliki pengguna (bisa lebih dari satu)"></i>
+                                             </label>
+                                             <!--end::Label-->
+                                             <!--begin::Input-->
+                                             <select name="role_ids[]" class="form-select form-select-solid mb-3"
+                                                 id="role_ids" data-control="select2" data-placeholder="--Pilih Peran--" data-allow-clear="true" multiple="multiple"
+                                                 required>
+                                                 @foreach ($roles as $role)
+                                                 <option value="{{ $role->id }}" @if (in_array($role->id, old('role_ids', @$adminRoles ?? []))) selected @endif>
+                                                     {{ $role->name }}</option>
+                                                 @endforeach
+                                             </select>
+                                             <!--end::Input-->
+                                         </div>
+
+                                         <div class="fv-row mb-6">
+                                             <!--begin::Label-->
+                                             <label class="fs-6 fw-bold form-label" for="access_scope">
+                                                 <span class="required">Scope Akses</span>
+                                                 <i class="fas fa-exclamation-circle ms-1 fs-7" data-bs-toggle="tooltip"
+                                                     title="Tentukan ruang lingkup login akun ini"></i>
+                                             </label>
+                                             <!--end::Label-->
+                                             <!--begin::Input-->
+                                             <select name="access_scope" class="form-select form-select-solid" id="access_scope"
+                                                 data-control="select2" data-placeholder="Select option" data-allow-clear="true"
+                                                 data-hide-search="true" required>
+                                                 <option value="backoffice" {{ (old('access_scope') ?? @$admin->access_scope ?? 'backoffice') == 'backoffice' ? 'selected' : '' }}>Backoffice (Panel Web Saja)</option>
+                                                 <option value="pwa" {{ (old('access_scope') ?? @$admin->access_scope) == 'pwa' ? 'selected' : '' }}>PWA Mobile (Aplikasi HP Saja)</option>
+                                                 <option value="both" {{ (old('access_scope') ?? @$admin->access_scope) == 'both' ? 'selected' : '' }}>Keduanya (Backoffice & PWA)</option>
+                                             </select>
+                                             <!--end::Input-->
+                                         </div>
+
                                          <div class="fv-row mb-7">
                                              <!--begin::Label-->
                                              <label class="fs-6 fw-bold form-label" for="password">
@@ -174,7 +207,7 @@
                                              <!--begin::Input-->
                                              <div class="position-relative">
                                                  <input type="password" class="form-control form-control-solid" id="password"
-                                                     placeholder="{{ route('admin.create') ? 'Contoh: CahayaTasbih123' : 'Kosongkan jika tidak ingin mengubah password'  }}"
+                                                     placeholder="{{ request()->routeIs('admin.create') ? 'Contoh: CahayaTasbih123' : 'Kosongkan jika tidak ingin mengubah password'  }}"
                                                      name="password" value="{{ old('password') }}" />
                                                  <span
                                                      class="btn btn-sm btn-icon position-absolute translate-middle top-50 end-0 me-n2"
@@ -210,51 +243,10 @@
                                          </div>
 
                                          <div class="fv-row mb-6">
-                                             <!--begin::Label-->
-                                             <label class="fs-6 fw-bold form-label" for="role_id">
-                                              <!--begin::Label-->
-                                              <label class="fs-6 fw-bold form-label" for="role_ids">
-                                                  <span class="required">Peran</span>
-                                                  <i class="fas fa-exclamation-circle ms-1 fs-7" data-bs-toggle="tooltip"
-                                                      title="Role Akses yang dimiliki admin (bisa lebih dari satu)"></i>
-                                              </label>
-                                              <!--end::Label-->
-                                              <!--begin::Input-->
-                                              <select name="role_ids[]" class="form-select form-select-solid mb-3"
-                                                  id="role_ids" data-control="select2" data-placeholder="--Pilih Peran--" data-allow-clear="true" multiple="multiple"
-                                                  required>
-                                                  @foreach ($roles as $role)
-                                                  <option value="{{ $role->id }}" @if (in_array($role->id, old('role_ids', @$adminRoles ?? []))) selected @endif>
-                                                      {{ $role->name }}</option>
-                                                  @endforeach
-                                              </select>
-                                              <!--end::Input-->
-                                          </div>
-
-                                         <div class="fv-row mb-6">
-                                             <!--begin::Label-->
-                                             <label class="fs-6 fw-bold form-label" for="access_scope">
-                                                 <span class="required">Scope Akses</span>
-                                                 <i class="fas fa-exclamation-circle ms-1 fs-7" data-bs-toggle="tooltip"
-                                                     title="Tentukan ruang lingkup login akun ini"></i>
-                                             </label>
-                                             <!--end::Label-->
-                                             <!--begin::Input-->
-                                             <select name="access_scope" class="form-select form-select-solid" id="access_scope"
-                                                 data-control="select2" data-placeholder="Select option" data-allow-clear="true"
-                                                 data-hide-search="true" required>
-                                                 <option value="backoffice" {{ (old('access_scope') ?? @$admin->access_scope ?? 'backoffice') == 'backoffice' ? 'selected' : '' }}>Backoffice (Panel Web Saja)</option>
-                                                 <option value="pwa" {{ (old('access_scope') ?? @$admin->access_scope) == 'pwa' ? 'selected' : '' }}>PWA Mobile (Aplikasi HP Saja)</option>
-                                                 <option value="both" {{ (old('access_scope') ?? @$admin->access_scope) == 'both' ? 'selected' : '' }}>Keduanya (Backoffice & PWA)</option>
-                                             </select>
-                                             <!--end::Input-->
+                                             <x-form.image-upload label="Avatar" maxSize="2MB" name="avatar"
+                                                 :value="@$admin->avatar ?? null" nullable='1' />
                                          </div>
                                      </div>
-                                 </div>
-
-                                 <div class="fv-row mb-6">
-                                     <x-form.image-upload label="Avatar" maxSize="2MB" name="avatar"
-                                         :value="@$admin->avatar ?? null" nullable='1' />
                                  </div>
                                 <!--end::Input group-->
                                 <!--begin::Separator-->
