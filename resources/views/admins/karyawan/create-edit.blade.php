@@ -145,9 +145,9 @@
 
                                         <div class="fv-row mb-7">
                                             <label class="fs-6 fw-bold form-label required" for="gaji_hari">
-                                                <span>Gaji Per-Day</span>
+                                                <span>Gaji Per-Day (Dihitung Otomatis)</span>
                                             </label>
-                                            <input type="text" class="form-control form-control-solid format-rupiah" id="gaji_hari" name="gaji_hari" placeholder="Contoh: 70.800" value="{{ old('gaji_hari', isset($karyawan) ? (int)$karyawan->gaji_hari : 0) }}" required />
+                                            <input type="text" class="form-control form-control-solid format-rupiah" id="gaji_hari" name="gaji_hari" placeholder="Contoh: 26.600" value="{{ old('gaji_hari', isset($karyawan) ? (int)$karyawan->gaji_hari : 0) }}" readonly style="background-color: #f5f8fa; color: #5e6278;" required />
                                         </div>
 
                                         <div class="fv-row mb-7">
@@ -159,16 +159,16 @@
 
                                         <div class="fv-row mb-7">
                                             <label class="fs-6 fw-bold form-label" for="potongan_terlambat">
-                                                <span>Potongan Terlambat (Per Shift)</span>
+                                                <span>Potongan Terlambat (Per Shift - Dihitung Dinamis)</span>
                                             </label>
-                                            <input type="text" class="form-control form-control-solid format-rupiah" id="potongan_terlambat" name="potongan_terlambat" placeholder="Contoh: 10.000" value="{{ old('potongan_terlambat', isset($karyawan) ? (int)$karyawan->potongan_terlambat : 0) }}" />
+                                            <input type="text" class="form-control form-control-solid format-rupiah" id="potongan_terlambat" name="potongan_terlambat" value="{{ old('potongan_terlambat', isset($karyawan) ? (int)$karyawan->potongan_terlambat : 0) }}" readonly style="background-color: #f5f8fa; color: #5e6278;" />
                                         </div>
 
                                         <div class="fv-row mb-7">
                                             <label class="fs-6 fw-bold form-label" for="potongan_absen">
-                                                <span>Potongan Absen (Per Hari)</span>
+                                                <span>Potongan Absen (Per Hari - Dihitung Otomatis)</span>
                                             </label>
-                                            <input type="text" class="form-control form-control-solid format-rupiah" id="potongan_absen" name="potongan_absen" placeholder="Contoh: 50.000" value="{{ old('potongan_absen', isset($karyawan) ? (int)$karyawan->potongan_absen : 0) }}" />
+                                            <input type="text" class="form-control form-control-solid format-rupiah" id="potongan_absen" name="potongan_absen" value="{{ old('potongan_absen', isset($karyawan) ? (int)$karyawan->potongan_absen : 0) }}" readonly style="background-color: #f5f8fa; color: #5e6278;" />
                                         </div>
                                     </div>
                                 </div>
@@ -226,6 +226,16 @@
             if (val !== '') {
                 $(this).val(formatRupiah(val));
             }
+        });
+
+        // Hitung otomatis Gaji Harian, Potongan Absen, Potongan Terlambat ketika Gaji Bulanan berubah
+        $('#gaji_bulan').on('input', function() {
+            let gajiBulan = parseInt($(this).val().replace(/\./g, '')) || 0;
+            let gajiHari = Math.floor((gajiBulan / 30) / 100) * 100;
+            
+            $('#gaji_hari').val(formatRupiah(gajiHari));
+            $('#potongan_absen').val(formatRupiah(gajiHari));
+            $('#potongan_terlambat').val('0'); // Set default 0 karena dihitung dinamis di backend
         });
 
         // Format nilai awal saat halaman pertama kali dimuat (untuk edit / old input)

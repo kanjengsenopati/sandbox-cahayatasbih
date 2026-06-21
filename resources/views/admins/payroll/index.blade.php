@@ -174,7 +174,7 @@
                         </div>
                     </div>
 
-                    <div class="row g-9 mb-5">
+                    <div class="row g-9 mb-5 row-allowance">
                         <div class="col-md-6 fv-row">
                             <label class="required fs-6 fw-bold mb-2">Tunjangan Kehadiran (Rp/Hari)</label>
                             <input type="text" class="form-control form-control-solid format-rupiah" name="attendance_allowance" id="edit-attendance-allowance" required />
@@ -185,30 +185,32 @@
                         </div>
                     </div>
 
-                    <div class="separator separator-dashed my-5"></div>
+                    <div class="row-lateness">
+                        <div class="separator separator-dashed my-5"></div>
 
-                    <div class="d-flex flex-stack mb-5">
-                        <div class="me-5">
-                            <label class="fs-6 fw-bold">Potongan Keterlambatan</label>
-                            <div class="fs-7 text-muted">Aktifkan atau nonaktifkan denda keterlambatan per menit</div>
+                        <div class="d-flex flex-stack mb-5">
+                            <div class="me-5">
+                                <label class="fs-6 fw-bold">Potongan Keterlambatan</label>
+                                <div class="fs-7 text-muted">Aktifkan atau nonaktifkan denda keterlambatan per menit</div>
+                            </div>
+                            <label class="form-check form-switch form-check-custom form-check-solid">
+                                <input class="form-check-input" type="checkbox" id="toggle-lateness" checked />
+                                <span class="form-check-label fw-bold text-muted" id="label-toggle-lateness">Aktif</span>
+                            </label>
                         </div>
-                        <label class="form-check form-switch form-check-custom form-check-solid">
-                            <input class="form-check-input" type="checkbox" id="toggle-lateness" checked />
-                            <span class="form-check-label fw-bold text-muted" id="label-toggle-lateness">Aktif</span>
-                        </label>
-                    </div>
 
-                    <div id="section-lateness-settings" class="row g-9 mb-5">
-                        <div class="col-md-6 fv-row">
-                            <label class="required fs-6 fw-bold mb-2">Tipe Potongan</label>
-                            <select class="form-select form-select-solid" name="lateness_penalty_type" id="edit-lateness-penalty-type" required>
-                                <option value="fixed">Nominal Tetap (Rp/Menit)</option>
-                                <option value="percentage">Persentase (% Gaji Pokok/Menit)</option>
-                            </select>
-                        </div>
-                        <div class="col-md-6 fv-row">
-                            <label class="required fs-6 fw-bold mb-2">Nilai Potongan (per Menit)</label>
-                            <input type="text" class="form-control form-control-solid" name="lateness_penalty_value" id="edit-lateness-penalty-value" required />
+                        <div id="section-lateness-settings" class="row g-9 mb-5">
+                            <div class="col-md-6 fv-row">
+                                <label class="required fs-6 fw-bold mb-2">Tipe Potongan</label>
+                                <select class="form-select form-select-solid" name="lateness_penalty_type" id="edit-lateness-penalty-type" required>
+                                    <option value="fixed">Nominal Tetap (Rp/Menit)</option>
+                                    <option value="percentage">Persentase (% Gaji Pokok/Menit)</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6 fv-row">
+                                <label class="required fs-6 fw-bold mb-2">Nilai Potongan (per Menit)</label>
+                                <input type="text" class="form-control form-control-solid" name="lateness_penalty_value" id="edit-lateness-penalty-value" required />
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -366,12 +368,13 @@
             $('#edit-employee-id').val(data.id);
             $('#edit-employee-type').val(data.type);
             $('#edit-employee-name').val(data.name);
+            $('#form-edit-salary').data('is_karyawan', data.is_karyawan);
 
             // Format nominal rupiah
             $('#edit-base-salary').val(formatRupiah(data.base_salary));
+            $('#edit-absence-penalty').val(formatRupiah(data.absence_penalty));
             $('#edit-attendance-allowance').val(formatRupiah(data.attendance_allowance));
             $('#edit-transport-allowance').val(formatRupiah(data.transport_allowance));
-            $('#edit-absence-penalty').val(formatRupiah(data.absence_penalty));
 
             $('#edit-lateness-penalty-type').val(data.lateness_penalty_type);
 
@@ -393,7 +396,47 @@
                 $('#label-toggle-lateness').text('Aktif');
             }
 
+            // Toggles berdasarkan tipe karyawan (is_karyawan)
+            if (parseInt(data.is_karyawan) === 1) {
+                $('.row-allowance').hide();
+                $('.row-lateness').hide();
+                $('#edit-attendance-allowance').prop('required', false);
+                $('#edit-transport-allowance').prop('required', false);
+                $('#edit-lateness-penalty-value').prop('required', false);
+                
+                $('#edit-absence-penalty').prop('readonly', true).css({
+                    'background-color': '#f5f8fa',
+                    'color': '#5e6278'
+                });
+                
+                // Hitung otomatis denda absen dari base salary
+                let baseSalary = parseInt(data.base_salary) || 0;
+                let absencePenalty = Math.floor((baseSalary / 30) / 100) * 100;
+                $('#edit-absence-penalty').val(formatRupiah(absencePenalty));
+            } else {
+                $('.row-allowance').show();
+                $('.row-lateness').show();
+                $('#edit-attendance-allowance').prop('required', true);
+                $('#edit-transport-allowance').prop('required', true);
+                $('#edit-lateness-penalty-value').prop('required', true);
+
+                $('#edit-absence-penalty').prop('readonly', false).css({
+                    'background-color': '',
+                    'color': ''
+                });
+            }
+
             $('#modal-edit-salary').modal('show');
+        });
+
+        // Hitung otomatis denda mangkir/absen ketika Gaji Pokok diubah (khusus Karyawan Outlet)
+        $('#edit-base-salary').on('input', function() {
+            let isKaryawan = $('#form-edit-salary').data('is_karyawan');
+            if (parseInt(isKaryawan) === 1) {
+                let baseSalary = parseInt($(this).val().replace(/\./g, '')) || 0;
+                let absencePenalty = Math.floor((baseSalary / 30) / 100) * 100;
+                $('#edit-absence-penalty').val(formatRupiah(absencePenalty));
+            }
         });
 
         // Listener perubahan tipe potongan keterlambatan (fixed vs percentage)

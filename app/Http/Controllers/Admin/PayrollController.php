@@ -475,11 +475,19 @@ class PayrollController extends Controller
                     return $config ? 'Rp ' . number_format($config->base_salary, 0, ',', '.') : '-';
                 })
                 ->addColumn('allowance_label', function ($row) {
+                    $isKaryawanOutlet = \App\Models\Karyawan::where('admin_id', $row->id)->exists();
+                    if ($isKaryawanOutlet) {
+                        return '-';
+                    }
                     $config = $row->employeeSalary;
                     if (!$config) return '-';
                     return 'Hadir: Rp ' . number_format($config->attendance_allowance, 0, ',', '.') . '<br>Trans: Rp ' . number_format($config->transport_allowance, 0, ',', '.');
                 })
                 ->addColumn('lateness_penalty_label', function ($row) {
+                    $isKaryawanOutlet = \App\Models\Karyawan::where('admin_id', $row->id)->exists();
+                    if ($isKaryawanOutlet) {
+                        return 'Potongan Full per Shift';
+                    }
                     $config = $row->employeeSalary;
                     if (!$config) return '-';
                     if ($config->lateness_penalty_type === 'percentage') {
@@ -488,10 +496,12 @@ class PayrollController extends Controller
                     return 'Rp ' . number_format($config->lateness_penalty_value, 0, ',', '.') . ' (Fixed)';
                 })
                 ->addColumn('btnAction', function ($row) {
+                    $isKaryawan = \App\Models\Karyawan::where('admin_id', $row->id)->exists();
                     $config = $row->employeeSalary;
                     $dataAttr = 'data-id="' . $row->id . '" ' .
                         'data-type="' . urlencode($row->type_class) . '" ' .
                         'data-name="' . htmlspecialchars($row->name) . '" ' .
+                        'data-is_karyawan="' . ($isKaryawan ? 1 : 0) . '" ' .
                         'data-base_salary="' . ($config ? (int)$config->base_salary : 0) . '" ' .
                         'data-attendance_allowance="' . ($config ? (int)$config->attendance_allowance : 0) . '" ' .
                         'data-transport_allowance="' . ($config ? (int)$config->transport_allowance : 0) . '" ' .
@@ -532,6 +542,24 @@ class PayrollController extends Controller
             $request->merge($merge);
         }
 
+        $employeeType = urldecode($request->employee_type);
+        $isKaryawanOutlet = false;
+        if (in_array($employeeType, [Admin::class, User::class])) {
+            $isKaryawanOutlet = ($employeeType === Admin::class) && \App\Models\Karyawan::where('admin_id', $request->employee_id)->exists();
+        }
+
+        if ($isKaryawanOutlet) {
+            $baseSalary = (int) $request->input('base_salary', 0);
+            $gajiHari = floor(($baseSalary / 30) / 100) * 100;
+            $request->merge([
+                'attendance_allowance' => 0,
+                'transport_allowance' => 0,
+                'lateness_penalty_type' => 'fixed',
+                'lateness_penalty_value' => 0,
+                'absence_penalty' => $gajiHari
+            ]);
+        }
+
         $request->validate([
             'employee_id' => 'required|string',
             'employee_type' => 'required|string',
@@ -543,12 +571,23 @@ class PayrollController extends Controller
             'absence_penalty' => 'required|numeric|min:0',
         ]);
 
-        $employeeType = urldecode($request->employee_type);
         if (!in_array($employeeType, [Admin::class, User::class])) {
             return response()->json(['success' => false, 'message' => 'Tipe Karyawan tidak valid.'], 400);
         }
 
         $employee = $employeeType::findOrFail($request->employee_id);
+
+        if ($isKaryawanOutlet) {
+            $karyawan = \App\Models\Karyawan::where('admin_id', $employee->id)->first();
+            if ($karyawan) {
+                $karyawan->update([
+                    'gaji_bulan' => $request->base_salary,
+                    'gaji_hari' => $request->absence_penalty,
+                    'potongan_absen' => $request->absence_penalty,
+                    'potongan_terlambat' => 0
+                ]);
+            }
+        }
 
         EmployeeSalary::updateOrCreate(
             [

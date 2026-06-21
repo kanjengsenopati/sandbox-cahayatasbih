@@ -151,9 +151,17 @@ class KaryawanController extends Controller
         }
 
         \Illuminate\Support\Facades\DB::transaction(function() use ($request) {
-            Karyawan::create($request->validated());
+            $gajiBulan = (int) str_replace('.', '', $request->gaji_bulan);
+            $gajiHari = floor(($gajiBulan / 30) / 100) * 100;
 
-            // Cari Karyawan yang baru dibuat dan hubungkan ke konfigurasi gaji di payroll (jika diperlukan)
+            $data = $request->validated();
+            $data['gaji_hari'] = $gajiHari;
+            $data['potongan_absen'] = $gajiHari;
+            $data['potongan_terlambat'] = 0;
+
+            Karyawan::create($data);
+
+            // Cari Karyawan yang baru dibuat dan hubungkan ke konfigurasi gaji di payroll
             $employee = Admin::find($request->admin_id);
             if ($employee) {
                 \App\Models\EmployeeSalary::updateOrCreate(
@@ -162,12 +170,12 @@ class KaryawanController extends Controller
                         'presensiable_id' => $employee->id,
                     ],
                     [
-                        'base_salary' => $request->gaji_bulan,
-                        'attendance_allowance' => $request->gaji_hari,
+                        'base_salary' => $gajiBulan,
+                        'attendance_allowance' => 0, // Karyawan Kategori Outlet tidak ada tunjangan
                         'transport_allowance' => 0,
                         'lateness_penalty_type' => 'fixed',
-                        'lateness_penalty_value' => $request->potongan_terlambat ?? 0,
-                        'absence_penalty' => $request->potongan_absen ?? 0,
+                        'lateness_penalty_value' => 0, // Potongan per shift dihitung dinamis
+                        'absence_penalty' => $gajiHari, // Denda mangkir/absen disamakan dengan Gaji Harian
                         'lateness_penalty_per_minute' => 0,
                     ]
                 );
@@ -234,7 +242,15 @@ class KaryawanController extends Controller
         }
 
         \Illuminate\Support\Facades\DB::transaction(function() use ($request, $karyawan) {
-            $karyawan->update($request->validated());
+            $gajiBulan = (int) str_replace('.', '', $request->gaji_bulan);
+            $gajiHari = floor(($gajiBulan / 30) / 100) * 100;
+
+            $data = $request->validated();
+            $data['gaji_hari'] = $gajiHari;
+            $data['potongan_absen'] = $gajiHari;
+            $data['potongan_terlambat'] = 0;
+
+            $karyawan->update($data);
 
             // Update konfigurasi gaji di payroll
             $employee = Admin::find($request->admin_id);
@@ -245,10 +261,13 @@ class KaryawanController extends Controller
                         'presensiable_id' => $employee->id,
                     ],
                     [
-                        'base_salary' => $request->gaji_bulan,
-                        'attendance_allowance' => $request->gaji_hari,
-                        'lateness_penalty_value' => $request->potongan_terlambat ?? 0,
-                        'absence_penalty' => $request->potongan_absen ?? 0,
+                        'base_salary' => $gajiBulan,
+                        'attendance_allowance' => 0, // Karyawan Kategori Outlet tidak ada tunjangan
+                        'transport_allowance' => 0,
+                        'lateness_penalty_type' => 'fixed',
+                        'lateness_penalty_value' => 0, // Potongan per shift dihitung dinamis
+                        'absence_penalty' => $gajiHari, // Denda mangkir/absen disamakan dengan Gaji Harian
+                        'lateness_penalty_per_minute' => 0,
                     ]
                 );
             }
