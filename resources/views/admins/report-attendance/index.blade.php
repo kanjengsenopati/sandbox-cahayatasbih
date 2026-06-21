@@ -22,6 +22,7 @@
                     <li class="breadcrumb-item text-dark">Laporan Presensi</li>
                 </ul>
             </div>
+            @include('layouts.partials.outlet_switcher')
         </div>
     </div>
     <!--end::Toolbar-->
@@ -29,6 +30,17 @@
     <div class="post d-flex flex-column-fluid" id="kt_post">
         <div id="kt_content_container" class="container-xxl">
             
+            @if(request('mode') === 'outlet')
+            <!--begin::Tabs-->
+            <ul class="nav nav-tabs nav-line-tabs nav-line-tabs-2x mb-5 fs-6">
+                <li class="nav-item">
+                    <a class="nav-link active fw-bolder text-active-primary" data-bs-toggle="tab" href="#tab_karyawan" id="btn-tab-karyawan">
+                        <i class="fa-solid fa-user-tie me-2"></i>Karyawan & Staff
+                    </a>
+                </li>
+            </ul>
+            <!--end::Tabs-->
+            @else
             <!--begin::Tabs-->
             <ul class="nav nav-tabs nav-line-tabs nav-line-tabs-2x mb-5 fs-6">
                 <li class="nav-item">
@@ -43,9 +55,11 @@
                 </li>
             </ul>
             <!--end::Tabs-->
+            @endif
 
             <!--begin::Tab Content-->
             <div class="tab-content" id="reportAttendanceTabContent">
+                @if(request('mode') !== 'outlet')
                 <!--begin::Tab Siswa dan Santri-->
                 <div class="tab-pane fade show active" id="tab_siswa_santri" role="tabpanel">
                     <!--begin::Filter-->
@@ -109,9 +123,10 @@
                     <!--end::Card Tabel-->
                 </div>
                 <!--end::Tab Siswa dan Santri-->
+                @endif
 
                 <!--begin::Tab Karyawan-->
-                <div class="tab-pane fade" id="tab_karyawan" role="tabpanel">
+                <div class="tab-pane fade {{ request('mode') === 'outlet' ? 'show active' : '' }}" id="tab_karyawan" role="tabpanel">
                     <!--begin::Filter-->
                     <div class="card mb-8">
                         <div class="card-body">
@@ -212,7 +227,7 @@
         // Tab Karyawan: DataTable (Lazy Loaded)
         let tableKaryawan = null;
 
-        $('#btn-tab-karyawan').on('shown.bs.tab', function() {
+        const initTableKaryawan = () => {
             if (!tableKaryawan) {
                 tableKaryawan = $('#table-report-karyawan').DataTable({
                     ordering: false,
@@ -224,6 +239,8 @@
                             d.type = 'karyawan';
                             d.start_date = $('#filter-karyawan-start-date').val();
                             d.end_date = $('#filter-karyawan-end-date').val();
+                            d.mode = "{{ request('mode') }}";
+                            d.outlet_id = "{{ request('outlet_id') }}";
                         }
                     },
                     language: {
@@ -250,7 +267,15 @@
             } else {
                 tableKaryawan.ajax.reload();
             }
-        });
+        };
+
+        @if(request('mode') === 'outlet')
+            initTableKaryawan();
+        @else
+            $('#btn-tab-karyawan').on('shown.bs.tab', function() {
+                initTableKaryawan();
+            });
+        @endif
 
         // Trigger reload for Karyawan when date filters change
         $('#filter-karyawan-start-date, #filter-karyawan-end-date').on('change', function() {

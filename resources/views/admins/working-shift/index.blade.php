@@ -22,15 +22,18 @@
                     <li class="breadcrumb-item text-dark">Shift Presensi</li>
                 </ul>
             </div>
+            @include('layouts.partials.outlet_switcher')
         </div>
     </div>
     <div class="post d-flex flex-column-fluid">
         <div id="kt_content_container" class="container-xxl">
-            @include('admins.partials.tabs-aplikasi')
+            @if(request('mode') !== 'outlet')
+                @include('admins.partials.tabs-aplikasi')
+            @endif
             <div class="card">
                 <div class="card-header d-flex align-items-center justify-content-between border-0 pt-6">
                     <div class="card-title"></div>
-                    <x-action.create name="Shift" action="{{ route('working-shift.create') }}" />
+                    <x-action.create name="Shift" action="{{ route('working-shift.create', request()->only(['mode', 'outlet_id'])) }}" />
                 </div>
                 <div class="card-body pt-0">
                     <div class="table-responsive">
@@ -64,7 +67,13 @@
             ordering: false,
             processing: true,
             serverSide: true,
-            ajax: "{{ route('working-shift.index') }}",
+            ajax: {
+                url: "{{ route('working-shift.index') }}",
+                data: function(d) {
+                    d.mode = "{{ request('mode') }}";
+                    d.outlet_id = "{{ request('outlet_id') }}";
+                }
+            },
             language: {
                 "paginate": {
                     "next": "<i class='fa fa-angle-right'>",

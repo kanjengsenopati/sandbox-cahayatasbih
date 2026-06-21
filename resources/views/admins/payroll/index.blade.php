@@ -18,6 +18,7 @@
                     <li class="breadcrumb-item text-dark">Daftar Slip Gaji</li>
                 </ul>
             </div>
+            @include('layouts.partials.outlet_switcher')
         </div>
     </div>
     <!--end::Toolbar-->
@@ -234,7 +235,13 @@
             ordering: false,
             processing: true,
             serverSide: true,
-            ajax: "{{ route('payroll.index') }}",
+            ajax: {
+                url: "{{ route('payroll.index') }}",
+                data: function(d) {
+                    d.mode = "{{ request('mode') }}";
+                    d.outlet_id = "{{ request('outlet_id') }}";
+                }
+            },
             language: {
                 paginate: {
                     next: "<i class='fa fa-angle-right'></i>",
@@ -264,7 +271,13 @@
                     ordering: false,
                     processing: true,
                     serverSide: true,
-                    ajax: "{{ route('payroll.settings') }}",
+                    ajax: {
+                        url: "{{ route('payroll.settings') }}",
+                        data: function(d) {
+                            d.mode = "{{ request('mode') }}";
+                            d.outlet_id = "{{ request('outlet_id') }}";
+                        }
+                    },
                     language: {
                         paginate: {
                             next: "<i class='fa fa-angle-right'></i>",
@@ -297,10 +310,14 @@
             const btn = $('#btn-process');
             btn.prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i> Memproses...');
 
+            let formData = $(this).serializeArray();
+            formData.push({ name: 'mode', value: "{{ request('mode') }}" });
+            formData.push({ name: 'outlet_id', value: "{{ request('outlet_id') }}" });
+
             $.ajax({
                 url: "{{ route('payroll.process') }}",
                 type: "POST",
-                data: $(this).serialize(),
+                data: formData,
                 success: (res) => {
                     btn.prop('disabled', false).html('<i class="fa fa-cogs"></i> Kalkulasi Gaji Karyawan');
                     if (res.success) {

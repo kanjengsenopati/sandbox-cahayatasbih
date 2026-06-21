@@ -36,9 +36,9 @@ class WorkingShiftController extends Controller
                         : '<span class="badge badge-danger">Tidak Aktif</span>';
                 })
                 ->addColumn('action', function ($row) {
-                    $actionStatus = route('working-shift.status', $row->id);
-                    $actionEdit = route('working-shift.edit', $row->id);
-                    $actionDelete = route('working-shift.destroy', $row->id);
+                    $actionStatus = route('working-shift.status', array_merge([$row->id], request()->only(['mode', 'outlet_id'])));
+                    $actionEdit = route('working-shift.edit', array_merge([$row->id], request()->only(['mode', 'outlet_id'])));
+                    $actionDelete = route('working-shift.destroy', array_merge([$row->id], request()->only(['mode', 'outlet_id'])));
                     return "<div class='d-flex justify-content-center'>" .
                         view('components.action.status', ['action' => $actionStatus, 'status' => $row->is_active, 'id' => $row->id, 'name' => 'Shift']) .
                         view('components.action.edit', ['action' => $actionEdit, 'name' => 'Shift']) .
@@ -86,7 +86,7 @@ class WorkingShiftController extends Controller
             'is_active' => true,
         ]);
 
-        return redirect()->route('working-shift.index')->with('success', 'Shift Presensi berhasil ditambahkan');
+        return redirect()->route('working-shift.index', $request->only(['mode', 'outlet_id']))->with('success', 'Shift Presensi berhasil ditambahkan');
     }
 
     public function edit(WorkingShift $workingShift)
@@ -122,7 +122,7 @@ class WorkingShiftController extends Controller
             'days' => $request->days,
         ]);
 
-        return redirect()->route('working-shift.index')->with('success', 'Shift Presensi berhasil diperbarui');
+        return redirect()->route('working-shift.index', $request->only(['mode', 'outlet_id']))->with('success', 'Shift Presensi berhasil diperbarui');
     }
 
     public function destroy(WorkingShift $workingShift)
@@ -131,7 +131,7 @@ class WorkingShiftController extends Controller
             return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
         }
         $workingShift->delete();
-        return redirect()->route('working-shift.index')->with('success', 'Shift Presensi berhasil dihapus');
+        return redirect()->route('working-shift.index', request()->only(['mode', 'outlet_id']))->with('success', 'Shift Presensi berhasil dihapus');
     }
 
     public function status(string $id)
@@ -141,6 +141,6 @@ class WorkingShiftController extends Controller
         }
         $shift = WorkingShift::findOrFail($id);
         $shift->update(['is_active' => !$shift->is_active]);
-        return redirect()->route('working-shift.index')->with('success', 'Status shift presensi berhasil diperbarui');
+        return redirect()->route('working-shift.index', request()->only(['mode', 'outlet_id']))->with('success', 'Status shift presensi berhasil diperbarui');
     }
 }

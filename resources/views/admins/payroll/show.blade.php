@@ -8,7 +8,7 @@
                 <span class="h-20px border-gray-300 border-start mx-4"></span>
                 <ul class="breadcrumb breadcrumb-separatorless fw-bold fs-7 my-1">
                     <li class="breadcrumb-item text-muted">
-                        <a href="{{ route('payroll.index') }}" class="text-muted text-hover-primary">Payroll</a>
+                        <a href="{{ route('payroll.index', request()->only(['mode', 'outlet_id'])) }}" class="text-muted text-hover-primary">Payroll</a>
                     </li>
                     <li class="breadcrumb-item">
                         <span class="bullet bg-gray-300 w-5px h-2px"></span>
@@ -36,12 +36,12 @@
                     </div>
                     <div class="card-toolbar">
                         @if($slip->status === 'draft')
-                            <form action="{{ route('payroll.approve', $slip->id) }}" method="POST" class="me-2">
+                            <form action="{{ route('payroll.approve', array_merge([$slip->id], request()->only(['mode', 'outlet_id']))) }}" method="POST" class="me-2">
                                 @csrf
                                 <button type="submit" class="btn btn-success"><i class="fa fa-check"></i> Setujui (Approve)</button>
                             </form>
                         @elseif($slip->status === 'approved')
-                            <form action="{{ route('payroll.pay', $slip->id) }}" method="POST">
+                            <form action="{{ route('payroll.pay', array_merge([$slip->id], request()->only(['mode', 'outlet_id']))) }}" method="POST">
                                 @csrf
                                 <button type="submit" class="btn btn-primary"><i class="fa fa-credit-card"></i> Tandai Dibayar (Pay)</button>
                             </form>

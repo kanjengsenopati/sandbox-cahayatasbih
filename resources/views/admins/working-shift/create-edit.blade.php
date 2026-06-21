@@ -16,7 +16,7 @@
                         <span class="bullet bg-gray-300 w-5px h-2px"></span>
                     </li>
                     <li class="breadcrumb-item text-muted">
-                        <a href="{{ route('working-shift.index') }}" class="text-muted text-hover-primary">Shift Presensi</a>
+                        <a href="{{ route('working-shift.index', request()->only(['mode', 'outlet_id'])) }}" class="text-muted text-hover-primary">Shift Presensi</a>
                     </li>
                     <li class="breadcrumb-item">
                         <span class="bullet bg-gray-300 w-5px h-2px"></span>
@@ -36,7 +36,7 @@
                         <div class="card-body pt-5">
                             <x-alert.alert-validation />
                             <form id="working-shift-form"
-                                action="{{ request()->routeIs('working-shift.create') ? route('working-shift.store') : route('working-shift.update', @$workingShift->id) }}"
+                                action="{{ request()->routeIs('working-shift.create') ? route('working-shift.store', request()->only(['mode', 'outlet_id'])) : route('working-shift.update', array_merge([@$workingShift->id], request()->only(['mode', 'outlet_id']))) }}"
                                 method="POST">
                                 @csrf
                                 <x-form.put-method />
@@ -117,7 +117,7 @@
 
                                 <div class="separator mb-6"></div>
                                 <div class="d-flex justify-content-end">
-                                    <a href="{{ route('working-shift.index') }}" class="btn btn-sm btn-secondary me-3">Batal</a>
+                                    <a href="{{ route('working-shift.index', request()->only(['mode', 'outlet_id'])) }}" class="btn btn-sm btn-secondary me-3">Batal</a>
                                     <button type="submit" class="btn btn-sm btn-primary">
                                         <span class="indicator-label">Simpan</span>
                                     </button>

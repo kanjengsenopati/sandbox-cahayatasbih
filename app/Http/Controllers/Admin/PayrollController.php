@@ -20,14 +20,43 @@ class PayrollController extends Controller
     /**
      * Tampilkan Halaman Utama Laporan Slip Gaji
      */
-    public function index()
+    public function index(Request $request)
     {
         if (!Auth::user()->can('Manage Payroll')) {
             return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
         }
 
-        if (request()->ajax()) {
-            $data = SalarySlip::latest();
+        if ($request->ajax()) {
+            if ($request->input('mode') === 'outlet') {
+                $koperasi = \App\Models\Outlet::where('name', 'Koperasi')->orWhere('code', 'KPR')->first();
+                $koperasiId = $koperasi ? $koperasi->id : '6bc5b484-07f9-49cc-aefa-00a8cf47e8d7';
+
+                $outletId = $request->input('outlet_id');
+                $authOutletIds = auth()->user()->getOutletIds();
+                $hasOutletRestriction = count($authOutletIds) > 0;
+
+                if ($hasOutletRestriction) {
+                    $outletId = $outletId && in_array($outletId, $authOutletIds) ? $outletId : ($authOutletIds[0] ?? null);
+                } else {
+                    // Super Admin
+                    if (!$outletId) {
+                        $firstOutlet = \App\Models\Outlet::where('is_active', 1)
+                            ->where('id', '!=', $koperasiId)
+                            ->orderBy('name')
+                            ->first();
+                        $outletId = $firstOutlet ? $firstOutlet->id : null;
+                    }
+                }
+
+                $data = SalarySlip::whereHasMorph('presensiable', [\App\Models\Admin::class], function($q) use ($outletId) {
+                    if ($outletId) {
+                        $q->where('outlet_id', $outletId);
+                    }
+                })->latest();
+            } else {
+                $data = SalarySlip::latest();
+            }
+
             return DataTables::of($data)
                 ->addColumn('employee_name', function ($row) {
                     return $row->presensiable ? $row->presensiable->name : '-';
@@ -47,7 +76,7 @@ class PayrollController extends Controller
                     return $badges[$row->status] ?? $row->status;
                 })
                 ->addColumn('btnAction', function ($row) {
-                    $actionShow = route('payroll.show', $row->id);
+                    $actionShow = route('payroll.show', array_merge([$row->id], request()->only(['mode', 'outlet_id'])));
                     $btn = "<a href='{$actionShow}' class='btn btn-sm btn-outline-primary mr-1' title='Detail'><i class='fa fa-eye'></i> Detail</a>";
                     return "<div class='d-flex justify-content-center'>{$btn}</div>";
                 })
@@ -76,8 +105,35 @@ class PayrollController extends Controller
         $endDate = Carbon::parse($request->end_date);
 
         // Cari semua karyawan (baik di tabel admins maupun users yang memiliki relasi employeeSalary)
-        $admins = Admin::has('employeeSalary')->get();
-        $users = User::has('employeeSalary')->get();
+        if ($request->input('mode') === 'outlet') {
+            $koperasi = \App\Models\Outlet::where('name', 'Koperasi')->orWhere('code', 'KPR')->first();
+            $koperasiId = $koperasi ? $koperasi->id : '6bc5b484-07f9-49cc-aefa-00a8cf47e8d7';
+
+            $outletId = $request->input('outlet_id');
+            $authOutletIds = auth()->user()->getOutletIds();
+            $hasOutletRestriction = count($authOutletIds) > 0;
+
+            if ($hasOutletRestriction) {
+                $outletId = $outletId && in_array($outletId, $authOutletIds) ? $outletId : ($authOutletIds[0] ?? null);
+            } else {
+                // Super Admin
+                if (!$outletId) {
+                    $firstOutlet = \App\Models\Outlet::where('is_active', 1)
+                        ->where('id', '!=', $koperasiId)
+                        ->orderBy('name')
+                        ->first();
+                    $outletId = $firstOutlet ? $firstOutlet->id : null;
+                }
+            }
+
+            $admins = Admin::has('employeeSalary')
+                ->where('outlet_id', $outletId)
+                ->get();
+            $users = collect();
+        } else {
+            $admins = Admin::has('employeeSalary')->get();
+            $users = User::has('employeeSalary')->get();
+        }
         $employees = $admins->merge($users);
 
         $processedCount = 0;
@@ -205,7 +261,7 @@ class PayrollController extends Controller
             'approved_at' => now(),
         ]);
 
-        return redirect()->route('payroll.show', $id)->with('success', 'Slip gaji berhasil disetujui (Approved).');
+        return redirect()->route('payroll.show', array_merge([$id], request()->only(['mode', 'outlet_id'])))->with('success', 'Slip gaji berhasil disetujui (Approved).');
     }
 
     /**
@@ -263,7 +319,7 @@ class PayrollController extends Controller
             }
         }
 
-        return redirect()->route('payroll.show', $id)->with('success', 'Slip gaji berhasil ditandai sebagai dibayarkan (Paid) dan dicatat sebagai Pengeluaran - Honor Kasir pada CashFlow Outlet.');
+        return redirect()->route('payroll.show', array_merge([$id], request()->only(['mode', 'outlet_id'])))->with('success', 'Slip gaji berhasil ditandai sebagai dibayarkan (Paid) dan dicatat sebagai Pengeluaran - Honor Kasir pada CashFlow Outlet.');
     }
 
     /**
@@ -276,18 +332,48 @@ class PayrollController extends Controller
         }
 
         if ($request->ajax()) {
-            // Kita ingin memuat semua Admins dan Users (Karyawan)
-            $admins = Admin::all()->map(function ($item) {
-                $item->type_class = Admin::class;
-                $item->role_name = $item->roles->first()->name ?? 'Admin';
-                return $item;
-            });
-            
-            $users = User::where('jamaah_status', '!=', 'JAMAAH')->get()->map(function ($item) {
-                $item->type_class = User::class;
-                $item->role_name = 'User / Officer';
-                return $item;
-            });
+            if ($request->input('mode') === 'outlet') {
+                $koperasi = \App\Models\Outlet::where('name', 'Koperasi')->orWhere('code', 'KPR')->first();
+                $koperasiId = $koperasi ? $koperasi->id : '6bc5b484-07f9-49cc-aefa-00a8cf47e8d7';
+
+                $outletId = $request->input('outlet_id');
+                $authOutletIds = auth()->user()->getOutletIds();
+                $hasOutletRestriction = count($authOutletIds) > 0;
+
+                if ($hasOutletRestriction) {
+                    $outletId = $outletId && in_array($outletId, $authOutletIds) ? $outletId : ($authOutletIds[0] ?? null);
+                } else {
+                    // Super Admin
+                    if (!$outletId) {
+                        $firstOutlet = \App\Models\Outlet::where('is_active', 1)
+                            ->where('id', '!=', $koperasiId)
+                            ->orderBy('name')
+                            ->first();
+                        $outletId = $firstOutlet ? $firstOutlet->id : null;
+                    }
+                }
+
+                $admins = Admin::where('outlet_id', $outletId)->get()->map(function ($item) {
+                    $item->type_class = Admin::class;
+                    $item->role_name = $item->roles->first()->name ?? 'Admin';
+                    return $item;
+                });
+                
+                $users = collect();
+            } else {
+                // Kita ingin memuat semua Admins dan Users (Karyawan)
+                $admins = Admin::all()->map(function ($item) {
+                    $item->type_class = Admin::class;
+                    $item->role_name = $item->roles->first()->name ?? 'Admin';
+                    return $item;
+                });
+                
+                $users = User::where('jamaah_status', '!=', 'JAMAAH')->get()->map(function ($item) {
+                    $item->type_class = User::class;
+                    $item->role_name = 'User / Officer';
+                    return $item;
+                });
+            }
 
             $employees = $admins->concat($users);
 

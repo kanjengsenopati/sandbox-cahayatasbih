@@ -100,6 +100,34 @@ class ReportAttendanceController extends Controller
                     ->whereIn('presensiable_type', [Admin::class, User::class])
                     ->where('activity_type', 'work');
 
+                if ($request->input('mode') === 'outlet') {
+                    $koperasi = \App\Models\Outlet::where('name', 'Koperasi')->orWhere('code', 'KPR')->first();
+                    $koperasiId = $koperasi ? $koperasi->id : '6bc5b484-07f9-49cc-aefa-00a8cf47e8d7';
+
+                    $outletId = $request->input('outlet_id');
+                    $authOutletIds = auth()->user()->getOutletIds();
+                    $hasOutletRestriction = count($authOutletIds) > 0;
+
+                    if ($hasOutletRestriction) {
+                        $outletId = $outletId && in_array($outletId, $authOutletIds) ? $outletId : ($authOutletIds[0] ?? null);
+                    } else {
+                        // Super Admin
+                        if (!$outletId) {
+                            $firstOutlet = \App\Models\Outlet::where('is_active', 1)
+                                ->where('id', '!=', $koperasiId)
+                                ->orderBy('name')
+                                ->first();
+                            $outletId = $firstOutlet ? $firstOutlet->id : null;
+                        }
+                    }
+
+                    if ($outletId) {
+                        $query->whereHasMorph('presensiable', [\App\Models\Admin::class], function($q) use ($outletId) {
+                            $q->where('outlet_id', $outletId);
+                        });
+                    }
+                }
+
                 if ($startDate) {
                     $query->whereDate('check_in', '>=', $startDate);
                 }
