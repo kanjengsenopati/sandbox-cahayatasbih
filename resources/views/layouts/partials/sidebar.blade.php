@@ -81,6 +81,91 @@
                 </div>
                 @endcan -->
 
+                @canany(['Manage Outlet', 'Manage Barang', 'Manage Pos Kasir', 'Manage Laporan Pos Kasir', 'Manage Laporan Pos Multi Outlet', 'Manage Laporan Rugi Laba', 'Manage Arus Kas'])
+                <div data-kt-menu-trigger="click" class="menu-item menu-accordion {{ (request()->routeIs(['outlet.*', 'item.*', 'category-item.*', 'stock-history.*', 'order-item.*', 'pos-transaction.*', 'report-pos.*', 'report-profit-loss.*']) && request('mode') === 'outlet') ? 'show' : '' }}">
+                    <span class="menu-link">
+                        <span class="menu-icon">
+                            <i class="fa-solid fa-store" style="color: #ffffff;"></i>
+                        </span>
+                        <span class="menu-title">Pondok Mart (Outlet)</span>
+                        <span class="menu-arrow"></span>
+                    </span>
+                    <div class="menu-sub menu-sub-accordion menu-active-bg">
+                        @can('Manage Pos Kasir')
+                        <div class="menu-item">
+                            <a class="menu-link {{ (request()->routeIs('order-item.*') && request('mode') === 'outlet') ? ' active' : '' }}"
+                                href="{{ route('order-item.index', ['mode' => 'outlet']) }}">
+                                <span class="menu-bullet">
+                                    <i class="fa-solid fa-cash-register text-white/80 fs-7"></i>
+                                </span>
+                                <span class="menu-title">POS Kasir</span>
+                            </a>
+                        </div>
+                        @endcan
+
+                        @can('Manage Barang')
+                        <div class="menu-item">
+                            <a class="menu-link {{ (request()->routeIs(['item.*', 'category-item.*']) && request('mode') === 'outlet') ? ' active' : '' }}"
+                                href="{{ route('item.index', ['mode' => 'outlet']) }}">
+                                <span class="menu-bullet">
+                                    <i class="fa-solid fa-boxes-stacked text-white/80 fs-7"></i>
+                                </span>
+                                <span class="menu-title">Barang</span>
+                            </a>
+                        </div>
+                        @endcan
+
+                        @can('Manage Barang')
+                        <div class="menu-item">
+                            <a class="menu-link {{ (request()->routeIs('stock-history.*') && request('mode') === 'outlet') ? ' active' : '' }}"
+                                href="{{ route('stock-history.index', ['mode' => 'outlet']) }}">
+                                <span class="menu-bullet">
+                                    <i class="fa-solid fa-warehouse text-white/80 fs-7"></i>
+                                </span>
+                                <span class="menu-title">Inventory</span>
+                            </a>
+                        </div>
+                        @endcan
+
+                        @canany(['Manage Laporan Pos Kasir', 'Manage Laporan Pos Multi Outlet'])
+                        <div class="menu-item">
+                            <a class="menu-link {{ (request()->routeIs(['pos-transaction.*', 'report-pos.*']) && request('mode') === 'outlet') ? ' active' : '' }}"
+                                href="{{ route('pos-transaction.index', ['mode' => 'outlet']) }}">
+                                <span class="menu-bullet">
+                                    <i class="fa-solid fa-chart-line text-white/80 fs-7"></i>
+                                </span>
+                                <span class="menu-title">Laporan POS</span>
+                            </a>
+                        </div>
+                        @endcanany
+
+                        @canany(['Manage Arus Kas', 'Manage Laporan Pos Multi Outlet', 'Manage Laporan Rugi Laba'])
+                        <div class="menu-item">
+                            <a class="menu-link {{ (request()->routeIs('report-profit-loss.*') && request('mode') === 'outlet') ? ' active' : '' }}"
+                                href="{{ route('report-profit-loss.index', ['mode' => 'outlet']) }}">
+                                <span class="menu-bullet">
+                                    <i class="fa-solid fa-scale-balanced text-white/80 fs-7"></i>
+                                </span>
+                                <span class="menu-title">Rugi Laba</span>
+                            </a>
+                        </div>
+                        @endcanany
+
+                        @can('Manage Outlet')
+                        <div class="menu-item">
+                            <a class="menu-link {{ request()->routeIs('outlet.*') ? ' active' : '' }}"
+                                href="{{ route('outlet.index') }}">
+                                <span class="menu-bullet">
+                                    <i class="fa-solid fa-store text-white/80 fs-7"></i>
+                                </span>
+                                <span class="menu-title">Data Outlet</span>
+                            </a>
+                        </div>
+                        @endcan
+                    </div>
+                </div>
+                @endcanany
+
                 @canany(['permission', 'Manage Role', 'Manage Admin', 'Manage Informasi', 'Manage Metode Pembayaran', 'Manage Menu Aplikasi', 'Manage Kontak Bantuan', 'Manage Bank', 'Manage Pengaturan Aplikasi', 'Item Bayar', 'Manage Item Bayar', 'Manage Jenis Bayar', 'Manage Petugas', 'app-information', 'Manage Kartu Santri', 'Manage Kartu Ujian'])
                 <div data-kt-menu-trigger="click" class="menu-item menu-accordion {{ request()->routeIs(['permission.*', 'role.*', 'information-category.*',
                     'information.*', 'payment-method.*', 'application-setting.*', 'student-card-setting.*', 'application-menu.*', 'help.*',
@@ -227,10 +312,10 @@
                 @endcanany
 
                 @canany(['Manage Wali Santri', 'Manage Santri', 'Manage PPDB', 'Manage Kategori Arus Kas'])
-                <div data-kt-menu-trigger="click" class="menu-item menu-accordion {{ request()->routeIs([
-                    'user.*', 'student.*', 'outlet.*',
-                      'category-item.*', 'item.*', 'stock-history.*', 'ppdb.*', 'ppdb-registration.*',
-                      'cashflow-category.*']) ? 'show' : '' }}">
+                <div data-kt-menu-trigger="click" class="menu-item menu-accordion {{ (
+                    request()->routeIs(['user.*', 'student.*', 'outlet.*', 'ppdb.*', 'ppdb-registration.*', 'cashflow-category.*']) ||
+                    (request()->routeIs(['item.*', 'category-item.*', 'stock-history.*']) && request('mode') !== 'outlet')
+                ) ? 'show' : '' }}">
                     <span class="menu-link">
                         <span class="menu-icon">
                             <i class="fa-solid fa-school" style="color: #ffffff;"></i>
@@ -276,8 +361,8 @@
                         @endcan
                         @can('Manage Barang')
                         <div class="menu-item">
-                            <a class="menu-link {{ request()->routeIs('item.*', 'category-item.*', 'stock-history.*') ? ' active' : '' }}"
-                                href="{{ route('item.index') }}">
+                            <a class="menu-link {{ (request()->routeIs(['item.*', 'category-item.*']) && request('mode') !== 'outlet') ? ' active' : '' }}"
+                                href="{{ route('item.index', ['mode' => 'kantin']) }}">
                                 <span class="menu-bullet">
                                     <i class="fa-solid fa-boxes-stacked text-white/80 fs-7"></i>
                                 </span>
@@ -315,9 +400,12 @@
                 @canany(['Manage Saldo Santri', 'Manage Tabungan Santri','Manage Jadwal', 'Manage Tahfidz',
                 'Manage Pos Kasir', 'Manage Tagihan', 'Manage Perilaku Santri', 'Manage Nilai Pelajaran',
                 'Manage Prestasi Santri', 'Manage Nilai Santri', 'Manage Arus Kas', 'Manage Perizinan', 'Manage Payroll'])
-                <div data-kt-menu-trigger="click" class="menu-item menu-accordion {{ request()->routeIs(['bill.*', 'saldo-history.*', 'saving-history.*', 'order-item.*', 'study-grade.*',
+                <div data-kt-menu-trigger="click" class="menu-item menu-accordion {{ (
+                    request()->routeIs(['bill.*', 'saldo-history.*', 'saving-history.*', 'study-grade.*',
                     'tahfidz.*', 'student-counseling-score.*', 'schedule.*','saldo-bank.*', 'saving-bank.*', 'student-achievement.*',
-                    'study-grade.*', 'cashflow.*', 'student-permit.*', 'payroll.*']) ? 'show' : '' }}">
+                    'study-grade.*', 'cashflow.*', 'student-permit.*', 'payroll.*']) ||
+                    (request()->routeIs('order-item.*') && request('mode') !== 'outlet')
+                ) ? 'show' : '' }}">
                     <span class=" menu-link ">
                         <span class=" menu-icon">
                             <i class="fa-solid fa-edit" style="color: #ffffff;"></i>
@@ -361,8 +449,8 @@
                         @endcan
                         @can('Manage Pos Kasir')
                         <div class="menu-item ">
-                            <a class="menu-link {{ request()->routeIs('order-item.*') ? ' active' : '' }}"
-                                href="{{ route('order-item.index') }}">
+                            <a class="menu-link {{ (request()->routeIs('order-item.*') && request('mode') !== 'outlet') ? ' active' : '' }}"
+                                href="{{ route('order-item.index', ['mode' => 'kantin']) }}">
                                 <span class="menu-bullet">
                                     <i class="fa-solid fa-boxes-stacked text-white/80 fs-7"></i>
                                 </span>
@@ -480,10 +568,12 @@
                 Nilai Akademik', 'Manage Laporan Tahfidz',
                 'Manage Laporan Perilaku Siswa', 'Manage Laporan Saldo Santri', 'Manage Laporan Fee Aplikasi',
                 'Manage Laporan Transaksi', 'Manage Laporan Rugi Laba', 'Manage Laporan Audit Log', 'Manage Laporan Presensi'])
-                <div data-kt-menu-trigger="click" class="menu-item menu-accordion {{ request()->routeIs(['report-bill.*', 'report-student.*','report-tahfidz.*',
+                <div data-kt-menu-trigger="click" class="menu-item menu-accordion {{ (
+                    request()->routeIs(['report-bill.*', 'report-student.*','report-tahfidz.*',
                     'report-student-counseling-score.*', 'report-app-fee.*',
-                    'report-saldo.*', 'report-study-grade.*', 'order-item-history.*', 'report-transaction.*', 'report-bill-student.*', 'pos-transaction.*', 'report-profit-loss.*', 'report-audit.*', 'report-attendance.*'
-                    ]) ? 'show' : '' }}">
+                    'report-saldo.*', 'report-study-grade.*', 'order-item-history.*', 'report-transaction.*', 'report-bill-student.*', 'report-audit.*', 'report-attendance.*']) ||
+                    (request()->routeIs(['pos-transaction.*', 'report-pos.*', 'report-profit-loss.*']) && request('mode') !== 'outlet')
+                ) ? 'show' : '' }}">
                     <span class="menu-link ">
                         <span class="menu-icon">
                             <i class="fa-solid fa-file" style="color: #ffffff;"></i>
@@ -495,8 +585,8 @@
                     <div class="menu-sub menu-sub-accordion menu-active-bg">
                         @canany(['Manage Laporan Pos Kasir', 'Manage Laporan Pos Multi Outlet'])
                         <div class="menu-item ">
-                            <a class="menu-link {{ request()->routeIs('pos-transaction.*') ? ' active' : '' }}"
-                                href="{{ route('pos-transaction.index') }}">
+                            <a class="menu-link {{ (request()->routeIs(['pos-transaction.*', 'report-pos.*']) && request('mode') !== 'outlet') ? ' active' : '' }}"
+                                href="{{ route('pos-transaction.index', ['mode' => 'kantin']) }}">
                                 <span class="menu-bullet">
                                     <i class="fa-solid fa-chart-line text-white/80 fs-7"></i>
                                 </span>
@@ -506,8 +596,8 @@
                         @endcanany
                         @canany(['Manage Arus Kas', 'Manage Laporan Pos Multi Outlet', 'Manage Laporan Rugi Laba'])
                         <div class="menu-item ">
-                            <a class="menu-link {{ request()->routeIs('report-profit-loss.*') ? ' active' : '' }}"
-                                href="{{ route('report-profit-loss.index') }}">
+                            <a class="menu-link {{ (request()->routeIs('report-profit-loss.*') && request('mode') !== 'outlet') ? ' active' : '' }}"
+                                href="{{ route('report-profit-loss.index', ['mode' => 'kantin']) }}">
                                 <span class="menu-bullet">
                                     <i class="fa-solid fa-scale-balanced text-white/80 fs-7"></i>
                                 </span>

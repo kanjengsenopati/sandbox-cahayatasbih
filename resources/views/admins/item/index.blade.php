@@ -19,6 +19,9 @@
                     <li class="breadcrumb-item text-dark">Manajemen Barang & Stok</li>
                 </ul>
             </div>
+            <div class="d-flex align-items-center gap-2 gap-lg-3">
+                @include('layouts.partials.outlet_switcher')
+            </div>
         </div>
     </div>
     <!--end::Toolbar-->
@@ -62,7 +65,7 @@
                                 </div>
                                 <div class="gap-2 d-flex align-items-end">
                                     @can('Create Barang')
-                                    <x-action.create name="Barang" action="{{ route('item.create') }}" />
+                                    <x-action.create name="Barang" action="{{ route('item.create', ['mode' => request('mode')]) }}" />
                                     @endcan
                                 </div>
                             </div>
@@ -91,7 +94,7 @@
                                 <div></div>
                                 <div class="gap-2 d-flex align-items-end">
                                     @can('Create Barang')
-                                    <x-action.create name="Barang" label="Kategori" action="{{ route('category-item.create') }}" />
+                                    <x-action.create name="Barang" label="Kategori" action="{{ route('category-item.create', ['mode' => request('mode')]) }}" />
                                     @endcan
                                 </div>
                             </div>
@@ -118,7 +121,7 @@
                                 <div></div>
                                 <div class="gap-2 d-flex align-items-end">
                                     @can('Create Barang')
-                                    <x-action.create name="Barang" label="Stok" action="{{ route('stock-history.create') }}" />
+                                    <x-action.create name="Barang" label="Stok" action="{{ route('stock-history.create', ['mode' => request('mode')]) }}" />
                                     @endcan
                                 </div>
                             </div>
@@ -190,7 +193,7 @@
             ordering: true,
             processing: true,
             serverSide: true,
-            ajax: "{{ route('item.index') }}",
+            ajax: "{{ route('item.index', ['mode' => request('mode'), 'outlet_id' => request('outlet_id')]) }}",
             language: {
                 "paginate": {
                     "next": "<i class='fa fa-angle-right'>",
@@ -270,7 +273,7 @@
             ordering: false,
             processing: true,
             serverSide: true,
-            ajax: "{{ route('category-item.index') }}",
+            ajax: "{{ route('category-item.index', ['mode' => request('mode'), 'outlet_id' => request('outlet_id')]) }}",
             language: {
                 "paginate": {
                     "next": "<i class='fa fa-angle-right'>",
@@ -317,7 +320,7 @@
             ordering: false,
             processing: true,
             serverSide: true,
-            ajax: "{{ route('stock-history.index') }}",
+            ajax: "{{ route('stock-history.index', ['mode' => request('mode'), 'outlet_id' => request('outlet_id')]) }}",
             language: {
                 "paginate": {
                     "next": "<i class='fa fa-angle-right'>",

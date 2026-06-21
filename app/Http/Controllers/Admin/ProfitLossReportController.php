@@ -43,10 +43,22 @@ class ProfitLossReportController extends Controller
         $hasOutletRestriction = count($authOutletIds) > 0;
         $outletId = $request->input('outlet_id');
 
-        if ($hasOutletRestriction) {
-            $queryOutletId = $outletId && in_array($outletId, $authOutletIds) ? $outletId : $authOutletIds;
+        $koperasi = Outlet::where('name', 'Koperasi')->orWhere('code', 'KPR')->first();
+        $koperasiId = $koperasi ? $koperasi->id : '6bc5b484-07f9-49cc-aefa-00a8cf47e8d7';
+
+        if (!$outletId && !$hasOutletRestriction) {
+            if ($request->input('mode') === 'outlet') {
+                $queryOutletId = Outlet::where('id', '!=', $koperasiId)->pluck('id')->toArray();
+            } else {
+                $queryOutletId = $koperasiId;
+                $outletId = $koperasiId;
+            }
         } else {
-            $queryOutletId = $outletId;
+            if ($hasOutletRestriction) {
+                $queryOutletId = $outletId && in_array($outletId, $authOutletIds) ? $outletId : $authOutletIds;
+            } else {
+                $queryOutletId = $outletId;
+            }
         }
 
         // Tentukan rentang tanggal filter (default: awal bulan ini s.d hari ini)
@@ -154,9 +166,23 @@ class ProfitLossReportController extends Controller
 
         // Fetch outlets for dropdown filter
         if ($hasOutletRestriction) {
-            $outlets = Outlet::whereIn('id', $authOutletIds)->orderBy('name')->get();
+            $outlets = Outlet::whereIn('id', $authOutletIds)
+                ->when(request('mode') === 'outlet', function($q) use ($koperasiId) {
+                    $q->where('id', '!=', $koperasiId);
+                })
+                ->when(request('mode') !== 'outlet', function($q) use ($koperasiId) {
+                    $q->where('id', $koperasiId);
+                })
+                ->orderBy('name')->get();
         } else {
-            $outlets = Outlet::orderBy('name')->get();
+            $outlets = Outlet::query()
+                ->when(request('mode') === 'outlet', function($q) use ($koperasiId) {
+                    $q->where('id', '!=', $koperasiId);
+                })
+                ->when(request('mode') !== 'outlet', function($q) use ($koperasiId) {
+                    $q->where('id', $koperasiId);
+                })
+                ->orderBy('name')->get();
         }
 
         // Current selected outlet details

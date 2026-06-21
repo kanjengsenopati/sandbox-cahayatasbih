@@ -196,7 +196,7 @@
                                             <select name="outlet_id" class="form-select form-select-solid rounded-3 fs-7" id="filter_outlet_id" style="width: 200px; border: 1px solid #cbd5e1; height: 38px;">
                                                 <option value="">Semua Outlet</option>
                                                 @foreach ($outlets as $outlet)
-                                                <option value="{{ $outlet->id }}">{{ $outlet->name }}</option>
+                                                <option value="{{ $outlet->id }}" {{ request('outlet_id') == $outlet->id ? 'selected' : '' }}>{{ $outlet->name }}</option>
                                                 @endforeach
                                             </select>
                                         </div>
@@ -407,7 +407,7 @@
                                         <select class="form-select form-select-solid rounded-3 fs-7" id="handover_filter_outlet_id" style="width: 180px; border: 1px solid #cbd5e1; height: 34px;">
                                             <option value="">Semua Outlet</option>
                                             @foreach ($outlets as $outlet)
-                                            <option value="{{ $outlet->id }}">{{ $outlet->name }}</option>
+                                            <option value="{{ $outlet->id }}" {{ request('outlet_id') == $outlet->id ? 'selected' : '' }}>{{ $outlet->name }}</option>
                                             @endforeach
                                         </select>
                                         @endif
@@ -725,7 +725,9 @@
         $('#filter_status, #filter_outlet_id').on('change', function() {
             reloadTransactions();
             if ($('#stats-pane').hasClass('show') || $('#stats-pane').hasClass('active')) {
-                window.location.search = '?outlet_id=' + $('#filter_outlet_id').val();
+                const url = new URL(window.location.href);
+                url.searchParams.set('outlet_id', $('#filter_outlet_id').val());
+                window.location.href = url.toString();
             }
         });
 

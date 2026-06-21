@@ -27,16 +27,28 @@ class PosTransactionController extends Controller
         $hasOutletRestriction = count($authOutletIds) > 0;
         $outletId = $request->input('outlet_id');
 
+        $koperasi = Outlet::where('name', 'Koperasi')->orWhere('code', 'KPR')->first();
+        $koperasiId = $koperasi ? $koperasi->id : '6bc5b484-07f9-49cc-aefa-00a8cf47e8d7';
+
+        if (!$outletId && !$hasOutletRestriction) {
+            if ($request->input('mode') === 'outlet') {
+                $queryOutletId = Outlet::where('id', '!=', $koperasiId)->pluck('id')->toArray();
+            } else {
+                $queryOutletId = $koperasiId;
+                $outletId = $koperasiId;
+            }
+        } else {
+            if ($hasOutletRestriction) {
+                $queryOutletId = $outletId && in_array($outletId, $authOutletIds) ? $outletId : $authOutletIds;
+            } else {
+                $queryOutletId = $outletId;
+            }
+        }
+
         if ($request->ajax()) {
             if ($request->type == 'top-items') {
                 $startDate = $request->input('start_date');
                 $endDate = $request->input('end_date');
-                
-                if ($hasOutletRestriction) {
-                    $queryOutletId = $outletId && in_array($outletId, $authOutletIds) ? $outletId : $authOutletIds;
-                } else {
-                    $queryOutletId = $outletId;
-                }
 
                 $data = \App\Models\PointOfSaleTransactionDetail::query()
                     ->join('point_of_sale_transactions', 'point_of_sale_transaction_details.point_of_sale_transaction_id', '=', 'point_of_sale_transactions.id')
@@ -270,9 +282,23 @@ class PosTransactionController extends Controller
         // Tampilkan halaman pertama
         // Jika admin multi-outlet, tampilkan hanya outlet yang diassign
         if ($hasOutletRestriction) {
-            $outlets = Outlet::whereIn('id', $authOutletIds)->orderBy('name')->get();
+            $outlets = Outlet::whereIn('id', $authOutletIds)
+                ->when(request('mode') === 'outlet', function($q) use ($koperasiId) {
+                    $q->where('id', '!=', $koperasiId);
+                })
+                ->when(request('mode') !== 'outlet', function($q) use ($koperasiId) {
+                    $q->where('id', $koperasiId);
+                })
+                ->orderBy('name')->get();
         } else {
-            $outlets = Outlet::orderBy('name')->get();
+            $outlets = Outlet::query()
+                ->when(request('mode') === 'outlet', function($q) use ($koperasiId) {
+                    $q->where('id', '!=', $koperasiId);
+                })
+                ->when(request('mode') !== 'outlet', function($q) use ($koperasiId) {
+                    $q->where('id', $koperasiId);
+                })
+                ->orderBy('name')->get();
         }
 
         // Hitung rekap waktu dinamis untuk inisiasi awal

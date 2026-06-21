@@ -139,6 +139,7 @@
             </div>
             
             <div class="d-flex align-items-center gap-2">
+                @include('layouts.partials.outlet_switcher')
                 <button onclick="window.print()" class="btn btn-sm btn-light-primary btn-print-action d-flex align-items-center gap-2" style="border-radius: 12px;">
                     <i class="bi bi-printer fs-6"></i> Cetak Laporan
                 </button>
@@ -153,6 +154,7 @@
             <!--begin::Filters-->
             <div class="premium-card p-6 mb-6 filter-section">
                 <form action="{{ route('report-profit-loss.index') }}" method="GET" class="row g-4 align-items-end">
+                    <input type="hidden" name="mode" value="{{ request('mode') }}">
                     <!-- Outlet Filter -->
                     <div class="col-md-4">
                         <label class="form-label mb-1 fw-bold text-gray-700 fs-7">Pilih Outlet</label>
@@ -385,7 +387,7 @@
                                 <x-text.h2 class="mb-4">Catat Pengeluaran Baru</x-text.h2>
                                 <hr class="text-slate-200 mb-4" />
                                 
-                                <form action="{{ route('report-profit-loss.store-expense') }}" method="POST" enctype="multipart/form-data">
+                                <form action="{{ route('report-profit-loss.store-expense', ['mode' => request('mode'), 'outlet_id' => request('outlet_id')]) }}" method="POST" enctype="multipart/form-data">
                                     @csrf
                                     
                                     <!-- Outlet Selector -->
@@ -507,7 +509,7 @@
                                                             @endif
                                                         </td>
                                                         <td class="text-center">
-                                                            <form action="{{ route('report-profit-loss.destroy-expense', $expense->id) }}" method="POST" onsubmit="return confirm('Apakah Anda yakin ingin menghapus transaksi pengeluaran ini?')">
+                                                            <form action="{{ route('report-profit-loss.destroy-expense', [$expense->id, 'mode' => request('mode'), 'outlet_id' => request('outlet_id')]) }}" method="POST" onsubmit="return confirm('Apakah Anda yakin ingin menghapus transaksi pengeluaran ini?')">
                                                                 @csrf
                                                                 @method('DELETE')
                                                                 <button type="submit" class="btn btn-icon btn-light-danger btn-sm rounded-circle" title="Hapus Transaksi">

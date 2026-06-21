@@ -90,6 +90,8 @@ class OutletHandoverController extends Controller
         ]);
 
         try {
+            \Illuminate\Support\Facades\DB::beginTransaction();
+
             $adminRecipient = \App\Models\Admin::findOrFail($request->recipient_id);
 
             $data = $request->only(['outlet_id', 'recipient_outlet_id', 'recipient_id', 'amount', 'handover_date', 'notes']);
@@ -102,10 +104,39 @@ class OutletHandoverController extends Controller
                 $data['evidence_path'] = 'storage/' . $path;
             }
 
-            OutletHandover::create($data);
+            $handover = OutletHandover::create($data);
+
+            // Buat kategori Cashflow secara otomatis jika belum ada
+            $category = \App\Models\CashFlowCategory::firstOrCreate(
+                ['name' => 'Serah Terima Dana'],
+                ['description' => 'Kategori Pemasukan dari Serah Terima Dana/Penarikan Koperasi']
+            );
+
+            // Generate payment code for CashFlow
+            $cashflowCount = \App\Models\CashFlow::whereDate('created_at', now())->count();
+            $paymentCode = 'INC-HDV-' . now()->format('Ymd') . str_pad($cashflowCount + 1, 3, '0', STR_PAD_LEFT);
+
+            // Catat Pemasukan Arus Kas secara otomatis untuk Outlet Penerima
+            \App\Models\CashFlow::create([
+                'sender_id' => auth()->user()->id,
+                'receiver_id' => $request->recipient_id,
+                'outlet_id' => $request->recipient_outlet_id,
+                'cash_flow_category_id' => $category->id,
+                'payment_code' => $paymentCode,
+                'type' => \App\Models\CashFlow::TYPE_INCOME,
+                'amount' => $request->amount,
+                'date' => $request->handover_date,
+                'description' => "Penerimaan Serah Terima Dana dari Koperasi/Kantin. Catatan: " . ($request->notes ?? '-') . " [Handover ID: {$handover->id}]",
+                'status' => \App\Models\CashFlow::STATUS_APPROVED,
+                'proof_of_payment' => $handover->evidence_path,
+                'payment_method' => 'Transfer',
+            ]);
+
+            \Illuminate\Support\Facades\DB::commit();
 
             return redirect()->back()->with('success', 'Berhasil mencatat serah terima dana outlet.');
         } catch (\Exception $e) {
+            \Illuminate\Support\Facades\DB::rollBack();
             return redirect()->back()->with('error', 'Gagal mencatat serah terima dana: ' . $e->getMessage());
         }
     }
@@ -117,6 +148,8 @@ class OutletHandoverController extends Controller
         }
 
         try {
+            \Illuminate\Support\Facades\DB::beginTransaction();
+
             $handover = OutletHandover::findOrFail($id);
             
             // Hapus berkas fisik bukti pembayaran jika ada
@@ -125,9 +158,19 @@ class OutletHandoverController extends Controller
                 Storage::disk('public')->delete($cleanPath);
             }
 
+            // Hapus otomatis pencatatan arus kas terkait
+            $cashFlow = \App\Models\CashFlow::where('description', 'like', '%[Handover ID: ' . $id . ']%')->first();
+            if ($cashFlow) {
+                $cashFlow->delete();
+            }
+
             $handover->delete();
+
+            \Illuminate\Support\Facades\DB::commit();
+
             return redirect()->back()->with('success', 'Berhasil menghapus riwayat serah terima dana.');
         } catch (\Exception $e) {
+            \Illuminate\Support\Facades\DB::rollBack();
             return redirect()->back()->with('error', 'Gagal menghapus riwayat serah terima dana: ' . $e->getMessage());
         }
     }

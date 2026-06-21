@@ -181,9 +181,16 @@ class OrderItemController extends Controller
             $admin = auth()->user();
             $outletId = $admin->outlet_id;
             if (!$outletId) {
-                $outletIds = $admin->getOutletIds();
-                if (!empty($outletIds)) {
-                    $outletId = $outletIds[0];
+                if (request('mode') === 'outlet') {
+                    $outletId = request('outlet_id');
+                    if (!$outletId) {
+                        $firstOutlet = \App\Models\Outlet::where('is_active', 1)
+                            ->where('code', '!=', 'KPR')
+                            ->where('name', '!=', 'Koperasi')
+                            ->orderBy('name')
+                            ->first();
+                        $outletId = $firstOutlet ? $firstOutlet->id : null;
+                    }
                 } else {
                     $koperasi = \App\Models\Outlet::where('name', 'Koperasi')->orWhere('code', 'KPR')->first();
                     $outletId = $koperasi ? $koperasi->id : '6bc5b484-07f9-49cc-aefa-00a8cf47e8d7';
@@ -473,7 +480,30 @@ class OrderItemController extends Controller
 
     public function getCartData()
     {
-        $carts = PointOfSaleCart::with('item')->where('admin_id', auth()->user()->id)->latest()->get();
+        $admin = auth()->user();
+        $outletId = $admin->outlet_id;
+        if (!$outletId) {
+            if (request('mode') === 'outlet') {
+                $outletId = request('outlet_id');
+                if (!$outletId) {
+                    $firstOutlet = \App\Models\Outlet::where('is_active', 1)
+                        ->where('code', '!=', 'KPR')
+                        ->where('name', '!=', 'Koperasi')
+                        ->orderBy('name')
+                        ->first();
+                    $outletId = $firstOutlet ? $firstOutlet->id : null;
+                }
+            } else {
+                $koperasi = \App\Models\Outlet::where('name', 'Koperasi')->orWhere('code', 'KPR')->first();
+                $outletId = $koperasi ? $koperasi->id : '6bc5b484-07f9-49cc-aefa-00a8cf47e8d7';
+            }
+        }
+
+        $carts = PointOfSaleCart::with('item')
+            ->where('admin_id', auth()->user()->id)
+            ->where('outlet_id', $outletId)
+            ->latest()
+            ->get();
 
         // Sinkronkan harga keranjang dengan harga terbaru dari database item
         foreach ($carts as $cart) {
@@ -496,9 +526,16 @@ class OrderItemController extends Controller
             $admin = auth()->user();
             $outletId = $admin->outlet_id;
             if (!$outletId) {
-                $outletIds = $admin->getOutletIds();
-                if (!empty($outletIds)) {
-                    $outletId = $outletIds[0];
+                if (request('mode') === 'outlet') {
+                    $outletId = request('outlet_id');
+                    if (!$outletId) {
+                        $firstOutlet = \App\Models\Outlet::where('is_active', 1)
+                            ->where('code', '!=', 'KPR')
+                            ->where('name', '!=', 'Koperasi')
+                            ->orderBy('name')
+                            ->first();
+                        $outletId = $firstOutlet ? $firstOutlet->id : null;
+                    }
                 } else {
                     $koperasi = \App\Models\Outlet::where('name', 'Koperasi')->orWhere('code', 'KPR')->first();
                     $outletId = $koperasi ? $koperasi->id : '6bc5b484-07f9-49cc-aefa-00a8cf47e8d7';
@@ -661,7 +698,25 @@ class OrderItemController extends Controller
 
     public function getTotalPrice()
     {
-        $total = PointOfSaleCart::where('admin_id', auth()->user()->id)->sum('total');
+        $admin = auth()->user();
+        $outletId = $admin->outlet_id;
+        if (!$outletId) {
+            if (request('mode') === 'outlet') {
+                $outletId = request('outlet_id');
+                if (!$outletId) {
+                    $firstOutlet = \App\Models\Outlet::where('is_active', 1)
+                        ->where('code', '!=', 'KPR')
+                        ->where('name', '!=', 'Koperasi')
+                        ->orderBy('name')
+                        ->first();
+                    $outletId = $firstOutlet ? $firstOutlet->id : null;
+                }
+            } else {
+                $koperasi = \App\Models\Outlet::where('name', 'Koperasi')->orWhere('code', 'KPR')->first();
+                $outletId = $koperasi ? $koperasi->id : '6bc5b484-07f9-49cc-aefa-00a8cf47e8d7';
+            }
+        }
+        $total = PointOfSaleCart::where('admin_id', auth()->user()->id)->where('outlet_id', $outletId)->sum('total');
         return $this->getSuccessResponse($total);
     }
 
@@ -671,8 +726,27 @@ class OrderItemController extends Controller
         DB::beginTransaction();
 
         try {
-            // Retrieve all carts belonging to the authenticated user
-            $carts = PointOfSaleCart::where('admin_id', auth()->user()->id)->get();
+            $admin = auth()->user();
+            $outletId = $admin->outlet_id;
+            if (!$outletId) {
+                if (request('mode') === 'outlet') {
+                    $outletId = request('outlet_id');
+                    if (!$outletId) {
+                        $firstOutlet = \App\Models\Outlet::where('is_active', 1)
+                            ->where('code', '!=', 'KPR')
+                            ->where('name', '!=', 'Koperasi')
+                            ->orderBy('name')
+                            ->first();
+                        $outletId = $firstOutlet ? $firstOutlet->id : null;
+                    }
+                } else {
+                    $koperasi = \App\Models\Outlet::where('name', 'Koperasi')->orWhere('code', 'KPR')->first();
+                    $outletId = $koperasi ? $koperasi->id : '6bc5b484-07f9-49cc-aefa-00a8cf47e8d7';
+                }
+            }
+
+            // Retrieve all carts belonging to the authenticated user and specific outlet
+            $carts = PointOfSaleCart::where('admin_id', auth()->user()->id)->where('outlet_id', $outletId)->get();
 
             // Update stock on items and delete carts
             foreach ($carts as $cart) {
@@ -684,7 +758,7 @@ class OrderItemController extends Controller
             }
 
             // Delete all carts
-            PointOfSaleCart::where('admin_id', auth()->user()->id)->delete();
+            PointOfSaleCart::where('admin_id', auth()->user()->id)->where('outlet_id', $outletId)->delete();
 
             // Commit transaction
             DB::commit();
@@ -704,9 +778,29 @@ class OrderItemController extends Controller
 
     public function getDailyTransaction()
     {
-        // Ambil transaksi yang sesuai dengan admin dan tanggal hari ini
+        $admin = auth()->user();
+        $outletId = $admin->outlet_id;
+        if (!$outletId) {
+            if (request('mode') === 'outlet') {
+                $outletId = request('outlet_id');
+                if (!$outletId) {
+                    $firstOutlet = \App\Models\Outlet::where('is_active', 1)
+                        ->where('code', '!=', 'KPR')
+                        ->where('name', '!=', 'Koperasi')
+                        ->orderBy('name')
+                        ->first();
+                    $outletId = $firstOutlet ? $firstOutlet->id : null;
+                }
+            } else {
+                $koperasi = \App\Models\Outlet::where('name', 'Koperasi')->orWhere('code', 'KPR')->first();
+                $outletId = $koperasi ? $koperasi->id : '6bc5b484-07f9-49cc-aefa-00a8cf47e8d7';
+            }
+        }
+
+        // Ambil transaksi yang sesuai dengan admin, outlet, dan tanggal hari ini
         $transactions = PointOfSaleTransaction::whereDate('paid_at', now())
             ->where('admin_id', auth()->user()->id)
+            ->where('outlet_id', $outletId)
             ->latest()
             ->get();
 

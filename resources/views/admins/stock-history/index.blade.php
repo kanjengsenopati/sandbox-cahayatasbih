@@ -35,7 +35,9 @@
             </div>
             <!--end::Page title-->
             <!--begin::Actions-->
-
+            <div class="d-flex align-items-center gap-2 gap-lg-3">
+                @include('layouts.partials.outlet_switcher')
+            </div>
             <!--end::Actions-->
         </div>
         <!--end::Container-->
@@ -53,7 +55,7 @@
                     <div class="card-title">
                         {{-- <h3 class="text-dark">Sekolah</h3> --}}
                     </div>
-                    <x-action.create name="Barang" label="Stok" action="{{ route('stock-history.create') }}" />
+                    <x-action.create name="Barang" label="Stok" action="{{ route('stock-history.create', ['mode' => request('mode')]) }}" />
                     <!--end::Card title-->
                 </div>
                 <!--end::Card header-->
@@ -96,7 +98,7 @@
                 ordering: false,
                 processing: true,
                 serverSide: true,
-                ajax: "{{ route('stock-history.index') }}",
+                ajax: "{{ route('stock-history.index', ['mode' => request('mode'), 'outlet_id' => request('outlet_id')]) }}",
                 language: {
                     "paginate": {
                         "next": "<i class='fa fa-angle-right'>",

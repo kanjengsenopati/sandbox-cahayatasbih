@@ -21,7 +21,25 @@ class CategoryItemController extends Controller
             return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
         }
         if (request()->ajax()) {
-            $data = CategoryItem::with('outlet')->latest();
+            $koperasi = Outlet::where('name', 'Koperasi')->orWhere('code', 'KPR')->first();
+            $koperasiId = $koperasi ? $koperasi->id : '6bc5b484-07f9-49cc-aefa-00a8cf47e8d7';
+
+            $data = CategoryItem::with('outlet')
+                ->when(auth()->user()->outlet_id, function($q) {
+                    $q->where('outlet_id', auth()->user()->outlet_id);
+                })
+                ->when(!auth()->user()->outlet_id, function($q) use ($koperasiId) {
+                    if (request('mode') === 'outlet') {
+                        if (request()->filled('outlet_id')) {
+                            $q->where('outlet_id', request('outlet_id'));
+                        } else {
+                            $q->where('outlet_id', '!=', $koperasiId);
+                        }
+                    } else {
+                        $q->where('outlet_id', $koperasiId);
+                    }
+                })
+                ->latest();
             return DataTables::of($data)
                 ->addColumn('outlet', function ($data) {
                     return $data->outlet->name ?? 'N/A';
@@ -48,7 +66,14 @@ class CategoryItemController extends Controller
         if (!Auth::user()->can('Create Barang')) {
             return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
         }
-        $outlets = Outlet::where('is_active', 1)->get();
+        $koperasi = Outlet::where('name', 'Koperasi')->orWhere('code', 'KPR')->first();
+        $koperasiId = $koperasi ? $koperasi->id : '6bc5b484-07f9-49cc-aefa-00a8cf47e8d7';
+
+        if (request('mode') === 'outlet') {
+            $outlets = Outlet::where('is_active', 1)->where('id', '!=', $koperasiId)->get();
+        } else {
+            $outlets = Outlet::where('is_active', 1)->where('id', $koperasiId)->get();
+        }
         return view('admins.category-item.create-edit', compact('outlets'));
     }
 
@@ -63,9 +88,12 @@ class CategoryItemController extends Controller
         $data = $request->validated();
         if (auth()->user()->outlet_id) {
             $data['outlet_id'] = auth()->user()->outlet_id;
+        } elseif (request('mode') !== 'outlet') {
+            $koperasi = Outlet::where('name', 'Koperasi')->orWhere('code', 'KPR')->first();
+            $data['outlet_id'] = $koperasi ? $koperasi->id : '6bc5b484-07f9-49cc-aefa-00a8cf47e8d7';
         }
         CategoryItem::create($data);
-        return redirect()->route('item.index')->with('success', 'Kategori berhasil ditambahkan');
+        return redirect()->route('item.index', ['mode' => request('mode')])->with('success', 'Kategori berhasil ditambahkan');
     }
 
     /**
@@ -87,7 +115,14 @@ class CategoryItemController extends Controller
         if (auth()->user()->outlet_id && $categoryItem->outlet_id !== auth()->user()->outlet_id) {
             return redirect()->back()->with('error', 'Anda tidak memiliki akses ke kategori outlet lain');
         }
-        $outlets = Outlet::where('is_active', 1)->get();
+        $koperasi = Outlet::where('name', 'Koperasi')->orWhere('code', 'KPR')->first();
+        $koperasiId = $koperasi ? $koperasi->id : '6bc5b484-07f9-49cc-aefa-00a8cf47e8d7';
+
+        if (request('mode') === 'outlet') {
+            $outlets = Outlet::where('is_active', 1)->where('id', '!=', $koperasiId)->get();
+        } else {
+            $outlets = Outlet::where('is_active', 1)->where('id', $koperasiId)->get();
+        }
         return view('admins.category-item.create-edit', compact('categoryItem', 'outlets'));
     }
 
@@ -105,9 +140,12 @@ class CategoryItemController extends Controller
         $data = $request->validated();
         if (auth()->user()->outlet_id) {
             $data['outlet_id'] = auth()->user()->outlet_id;
+        } elseif (request('mode') !== 'outlet') {
+            $koperasi = Outlet::where('name', 'Koperasi')->orWhere('code', 'KPR')->first();
+            $data['outlet_id'] = $koperasi ? $koperasi->id : '6bc5b484-07f9-49cc-aefa-00a8cf47e8d7';
         }
         $categoryItem->update($data);
-        return redirect()->route('item.index')->with('success', 'Kategori berhasil diubah');
+        return redirect()->route('item.index', ['mode' => request('mode')])->with('success', 'Kategori berhasil diubah');
     }
 
     /**
@@ -119,6 +157,6 @@ class CategoryItemController extends Controller
             return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
         }
         $categoryItem->delete();
-        return redirect()->route('category-item.index')->with('success', 'Kategori berhasil dihapus');
+        return redirect()->route('item.index', ['mode' => request('mode')])->with('success', 'Kategori berhasil dihapus');
     }
 }

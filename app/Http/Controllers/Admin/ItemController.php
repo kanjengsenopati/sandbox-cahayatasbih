@@ -27,9 +27,23 @@ class ItemController extends Controller
             return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
         }
         if (request()->ajax()) {
+            $koperasi = Outlet::where('name', 'Koperasi')->orWhere('code', 'KPR')->first();
+            $koperasiId = $koperasi ? $koperasi->id : '6bc5b484-07f9-49cc-aefa-00a8cf47e8d7';
+
             $data = Item::with(['categoryItem', 'outlet'])
                 ->when(auth()->user()->outlet_id, function($q) {
                     $q->where('outlet_id', auth()->user()->outlet_id);
+                })
+                ->when(!auth()->user()->outlet_id, function($q) use ($koperasiId) {
+                    if (request('mode') === 'outlet') {
+                        if (request()->filled('outlet_id')) {
+                            $q->where('outlet_id', request('outlet_id'));
+                        } else {
+                            $q->where('outlet_id', '!=', $koperasiId);
+                        }
+                    } else {
+                        $q->where('outlet_id', $koperasiId);
+                    }
                 })
                 ->latest();
             return DataTables::of($data)
@@ -61,7 +75,14 @@ class ItemController extends Controller
         if (!Auth::user()->can('Create Barang')) {
             return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
         }
-        $outlets = Outlet::where('is_active', 1)->get();
+        $koperasi = Outlet::where('name', 'Koperasi')->orWhere('code', 'KPR')->first();
+        $koperasiId = $koperasi ? $koperasi->id : '6bc5b484-07f9-49cc-aefa-00a8cf47e8d7';
+
+        if (request('mode') === 'outlet') {
+            $outlets = Outlet::where('is_active', 1)->where('id', '!=', $koperasiId)->get();
+        } else {
+            $outlets = Outlet::where('is_active', 1)->where('id', $koperasiId)->get();
+        }
         return view('admins.item.create-edit', compact('outlets'));
     }
 
@@ -79,9 +100,12 @@ class ItemController extends Controller
         }
         if (auth()->user()->outlet_id) {
             $data['outlet_id'] = auth()->user()->outlet_id;
+        } elseif (request('mode') !== 'outlet') {
+            $koperasi = Outlet::where('name', 'Koperasi')->orWhere('code', 'KPR')->first();
+            $data['outlet_id'] = $koperasi ? $koperasi->id : '6bc5b484-07f9-49cc-aefa-00a8cf47e8d7';
         }
         Item::create($data);
-        return redirect()->route('item.index')->with('success', 'Barang berhasil ditambahkan');
+        return redirect()->route('item.index', ['mode' => request('mode')])->with('success', 'Barang berhasil ditambahkan');
     }
 
     /**
@@ -103,7 +127,14 @@ class ItemController extends Controller
         if (auth()->user()->outlet_id && $item->outlet_id !== auth()->user()->outlet_id) {
             return redirect()->back()->with('error', 'Anda tidak memiliki akses ke barang outlet lain');
         }
-        $outlets = Outlet::where('is_active', 1)->get();
+        $koperasi = Outlet::where('name', 'Koperasi')->orWhere('code', 'KPR')->first();
+        $koperasiId = $koperasi ? $koperasi->id : '6bc5b484-07f9-49cc-aefa-00a8cf47e8d7';
+
+        if (request('mode') === 'outlet') {
+            $outlets = Outlet::where('is_active', 1)->where('id', '!=', $koperasiId)->get();
+        } else {
+            $outlets = Outlet::where('is_active', 1)->where('id', $koperasiId)->get();
+        }
         return view('admins.item.create-edit', compact('item', 'outlets'));
     }
 
@@ -125,11 +156,14 @@ class ItemController extends Controller
         }
         if (auth()->user()->outlet_id) {
             $data['outlet_id'] = auth()->user()->outlet_id;
+        } elseif (request('mode') !== 'outlet') {
+            $koperasi = Outlet::where('name', 'Koperasi')->orWhere('code', 'KPR')->first();
+            $data['outlet_id'] = $koperasi ? $koperasi->id : '6bc5b484-07f9-49cc-aefa-00a8cf47e8d7';
         }
         $item->update($data);
         // Invalidate the cache for the top 10 items
         Cache::forget('top_10_items_last_month');
-        return redirect()->route('item.index')->with('success', 'Barang berhasil diubah');
+        return redirect()->route('item.index', ['mode' => request('mode')])->with('success', 'Barang berhasil diubah');
     }
 
     /**
@@ -148,12 +182,29 @@ class ItemController extends Controller
 
         // Invalidate the cache for the top 10 items
         Cache::forget('top_10_items_last_month');
-        return redirect()->route('item.index')->with('success', 'Barang berhasil dihapus');
+        return redirect()->route('item.index', ['mode' => request('mode')])->with('success', 'Barang berhasil dihapus');
     }
 
     public function searchItem(Request $request)
     {
         $outletId = auth()->user()->outlet_id;
+        if (!$outletId) {
+            if ($request->mode === 'outlet') {
+                $outletId = $request->outlet_id;
+                if (!$outletId) {
+                    $firstOutlet = \App\Models\Outlet::where('is_active', 1)
+                        ->where('code', '!=', 'KPR')
+                        ->where('name', '!=', 'Koperasi')
+                        ->orderBy('name')
+                        ->first();
+                    $outletId = $firstOutlet ? $firstOutlet->id : null;
+                }
+            } else {
+                $koperasi = \App\Models\Outlet::where('name', 'Koperasi')->orWhere('code', 'KPR')->first();
+                $outletId = $koperasi ? $koperasi->id : '6bc5b484-07f9-49cc-aefa-00a8cf47e8d7';
+            }
+        }
+
         if (!$request->search) {
             $items = Item::with('categoryItem')->where('stock', '>', 0)
                 ->when($outletId, function($q) use ($outletId) {
@@ -177,6 +228,23 @@ class ItemController extends Controller
     public function searchItemCode(Request $request)
     {
         $outletId = auth()->user()->outlet_id;
+        if (!$outletId) {
+            if ($request->mode === 'outlet') {
+                $outletId = $request->outlet_id;
+                if (!$outletId) {
+                    $firstOutlet = \App\Models\Outlet::where('is_active', 1)
+                        ->where('code', '!=', 'KPR')
+                        ->where('name', '!=', 'Koperasi')
+                        ->orderBy('name')
+                        ->first();
+                    $outletId = $firstOutlet ? $firstOutlet->id : null;
+                }
+            } else {
+                $koperasi = \App\Models\Outlet::where('name', 'Koperasi')->orWhere('code', 'KPR')->first();
+                $outletId = $koperasi ? $koperasi->id : '6bc5b484-07f9-49cc-aefa-00a8cf47e8d7';
+            }
+        }
+
         $item = Item::whereCode($request->search)
             ->whereIsActive(true)
             ->when($outletId, function($q) use ($outletId) {
@@ -193,6 +261,22 @@ class ItemController extends Controller
     {
         $searchTerm = strtolower($request->search);
         $outletId = auth()->user()->outlet_id;
+        if (!$outletId) {
+            if ($request->mode === 'outlet') {
+                $outletId = $request->outlet_id;
+                if (!$outletId) {
+                    $firstOutlet = \App\Models\Outlet::where('is_active', 1)
+                        ->where('code', '!=', 'KPR')
+                        ->where('name', '!=', 'Koperasi')
+                        ->orderBy('name')
+                        ->first();
+                    $outletId = $firstOutlet ? $firstOutlet->id : null;
+                }
+            } else {
+                $koperasi = \App\Models\Outlet::where('name', 'Koperasi')->orWhere('code', 'KPR')->first();
+                $outletId = $koperasi ? $koperasi->id : '6bc5b484-07f9-49cc-aefa-00a8cf47e8d7';
+            }
+        }
 
         // Limit the number of items returned to 15
         $items = Item::with('categoryItem')->whereIsActive(true)

@@ -117,7 +117,9 @@
             </div>
             <!--end::Page title-->
             <!--begin::Actions-->
-
+            <div class="d-flex align-items-center gap-2 gap-lg-3">
+                @include('layouts.partials.outlet_switcher')
+            </div>
             <!--end::Actions-->
         </div>
         <!--end::Container-->
@@ -130,7 +132,7 @@
         <div id="kt_content_container" class="container-xxl">
             <!--begin::Form-->
             <form id="form-payment" class="form d-flex flex-column flex-lg-row" method="post"
-                action="{{ route('order-item.store') }}">
+                action="{{ route('order-item.store', ['mode' => request('mode'), 'outlet_id' => request('outlet_id')]) }}">
                 @csrf
                 <!--begin::Aside column-->
                 <div class="w-100 flex-lg-row-auto w-lg-300px mb-7 me-7 me-lg-10">
@@ -584,6 +586,8 @@
     var defaultImageUrl = "{{ asset('assets/media/logos/logo.png') }}";
     var number = 1;
     var totalPrice = 0;
+    var requestMode = "{{ request('mode') }}";
+    var requestOutletId = "{{ request('outlet_id') }}";
 
     window.addEventListener('DOMContentLoaded', function () {
         focusOnFirstInput();
@@ -625,6 +629,8 @@
 
     function getListProduct() {
         axios.post("{{ route('item.search-item') }}", {
+            mode: requestMode,
+            outlet_id: requestOutletId
         }).then(handleListProductResponse)
         .catch(handleError);
     }
@@ -681,7 +687,9 @@
 
         axios.post("{{ route('item.search-item') }}", {
             search: search,
-            type: 'CODE'
+            type: 'CODE',
+            mode: requestMode,
+            outlet_id: requestOutletId
         }).then(handleProductResponse)
           .catch(handleError);
     }
@@ -705,7 +713,9 @@
     function addProductToCart(product) {
         axios.post("{{ route('order-item.add-to-cart') }}", {
             code: product.code,
-            quantity: 1
+            quantity: 1,
+            mode: requestMode,
+            outlet_id: requestOutletId
         }).then(function (response) {
             // if success, refresh table product #list-product
             refreshProductList();
@@ -726,7 +736,9 @@
 
         axios.post("{{ route('item.search-item') }}", {
             search: search,
-            type: 'NAME'
+            type: 'NAME',
+            mode: requestMode,
+            outlet_id: requestOutletId
         }).then(function (response) {
             if (gridLoader) gridLoader.style.display = 'none';
             if (gridContainer) {
@@ -791,7 +803,12 @@
     // Show loader
     document.getElementById('product-loader').style.display = 'block';
     
-    axios.get("{{ route('order-item.get-cart') }}")
+    axios.get("{{ route('order-item.get-cart') }}", {
+        params: {
+            mode: requestMode,
+            outlet_id: requestOutletId
+        }
+    })
     .then(function (response) {
     var products = response.data.data;
     var listProduct = document.getElementById('list-product');
@@ -861,7 +878,9 @@
 
     function deleteProductFromCart(productId) {
         axios.post("{{ route('order-item.delete-from-cart') }}", {
-            id: productId
+            id: productId,
+            mode: requestMode,
+            outlet_id: requestOutletId
         }).then(function (response) {
             refreshProductList();
             var searchInput = document.getElementById('grid-search-product');
@@ -874,7 +893,9 @@
     function updateCartQuantity(productId, quantity) {
         axios.post("{{ route('order-item.update-cart-quantity') }}", {
             id: productId,
-            quantity: quantity
+            quantity: quantity,
+            mode: requestMode,
+            outlet_id: requestOutletId
         }).then(function (response) {
             refreshProductList();
             var searchInput = document.getElementById('grid-search-product');
@@ -903,7 +924,12 @@
     }
 
     function updateTotalPrice() {
-        axios.get("{{ route('order-item.get-total-price') }}")
+        axios.get("{{ route('order-item.get-total-price') }}", {
+            params: {
+                mode: requestMode,
+                outlet_id: requestOutletId
+            }
+        })
         .then(function (response) {
         var totalPrice = response.data.data;
         // Ensure totalPrice is a number
@@ -952,7 +978,10 @@
         // Jika pengguna menekan tombol "Ya"
         if (result.isConfirmed) {
         // Mengirim permintaan AJAX untuk menghapus semua barang dari keranjang
-        axios.post("{{ route('order-item.delete-all-cart') }}")
+        axios.post("{{ route('order-item.delete-all-cart') }}", {
+            mode: requestMode,
+            outlet_id: requestOutletId
+        })
         .then(function (response) {
         // Menjalankan fungsi refreshProductList() setelah penghapusan berhasil
         refreshProductList();
@@ -1067,7 +1096,9 @@
     var search = e.target.value;
     axios.post("{{ route('item.search-item') }}", {
     search: search,
-    type: 'NAME'
+    type: 'NAME',
+    mode: requestMode,
+    outlet_id: requestOutletId
     }).then(function (response) {
     updateProductList(response.data.data, 'list-product-name');
     // clear input
@@ -1086,7 +1117,9 @@
             e.preventDefault();
             var barcode = e.target.value;
             axios.post("{{ route('order-item.search-student') }}", {
-                barcode: barcode
+                barcode: barcode,
+                mode: requestMode,
+                outlet_id: requestOutletId
             }).then(function (response) {
                 var student = response.data.data;
                 if (student) {
@@ -1159,7 +1192,12 @@
 
         try {
         // Panggil API untuk mendapatkan data transaksi
-        const response = await axios.get("{{ route('order-item.get-daily-transaction') }}");
+        const response = await axios.get("{{ route('order-item.get-daily-transaction') }}", {
+            params: {
+                mode: requestMode,
+                outlet_id: requestOutletId
+            }
+        });
         const data = response.data.data;
         
         // Log data ke konsol untuk debug
