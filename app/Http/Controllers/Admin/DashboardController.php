@@ -18,6 +18,7 @@ use Illuminate\Support\Facades\Log;
 
 class DashboardController extends Controller
 {
+    // Force deployment trigger comment
     /**
      * Display a listing of the resource.
      */
