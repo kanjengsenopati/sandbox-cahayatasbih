@@ -89,7 +89,7 @@ class KaryawanController extends Controller
      */
     public function create(Request $request)
     {
-        if (!Auth::user()->can('Manage Karyawan')) {
+        if (!Auth::user()->can('Create Karyawan')) {
             return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
         }
 
@@ -146,7 +146,7 @@ class KaryawanController extends Controller
      */
     public function store(KaryawanRequest $request)
     {
-        if (!Auth::user()->can('Manage Karyawan')) {
+        if (!Auth::user()->can('Create Karyawan')) {
             return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
         }
 
@@ -182,7 +182,7 @@ class KaryawanController extends Controller
      */
     public function edit(Request $request, Karyawan $karyawan)
     {
-        if (!Auth::user()->can('Manage Karyawan')) {
+        if (!Auth::user()->can('Edit Karyawan')) {
             return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
         }
 
@@ -229,7 +229,7 @@ class KaryawanController extends Controller
      */
     public function update(KaryawanRequest $request, Karyawan $karyawan)
     {
-        if (!Auth::user()->can('Manage Karyawan')) {
+        if (!Auth::user()->can('Edit Karyawan')) {
             return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
         }
 
@@ -262,7 +262,7 @@ class KaryawanController extends Controller
      */
     public function destroy(Request $request, Karyawan $karyawan)
     {
-        if (!Auth::user()->can('Manage Karyawan')) {
+        if (!Auth::user()->can('Delete Karyawan')) {
             return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
         }
 

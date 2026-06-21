@@ -49,9 +49,11 @@
                         <h3 class="text-dark">Data Karyawan</h3>
                     </div>
                     <div class="card-toolbar">
+                        @can('Create Karyawan')
                         <a href="{{ route('karyawan.create', request()->only(['mode', 'outlet_id'])) }}" class="btn btn-sm btn-primary">
                             <i class="fa-solid fa-plus me-1"></i> Tambah Karyawan
                         </a>
+                        @endcan
                     </div>
                     <!--end::Card title-->
                 </div>
