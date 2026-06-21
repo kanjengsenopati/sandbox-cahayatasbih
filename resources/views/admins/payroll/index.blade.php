@@ -166,22 +166,22 @@
                     <div class="row g-9 mb-5">
                         <div class="col-md-6 fv-row">
                             <label class="required fs-6 fw-bold mb-2">Gaji Pokok (Rp)</label>
-                            <input type="number" class="form-control form-control-solid" name="base_salary" id="edit-base-salary" min="0" required />
+                            <input type="text" class="form-control form-control-solid format-rupiah" name="base_salary" id="edit-base-salary" required />
                         </div>
                         <div class="col-md-6 fv-row">
                             <label class="required fs-6 fw-bold mb-2">Denda Mangkir / Absen (Rp/Hari)</label>
-                            <input type="number" class="form-control form-control-solid" name="absence_penalty" id="edit-absence-penalty" min="0" required />
+                            <input type="text" class="form-control form-control-solid format-rupiah" name="absence_penalty" id="edit-absence-penalty" required />
                         </div>
                     </div>
 
                     <div class="row g-9 mb-5">
                         <div class="col-md-6 fv-row">
                             <label class="required fs-6 fw-bold mb-2">Tunjangan Kehadiran (Rp/Hari)</label>
-                            <input type="number" class="form-control form-control-solid" name="attendance_allowance" id="edit-attendance-allowance" min="0" required />
+                            <input type="text" class="form-control form-control-solid format-rupiah" name="attendance_allowance" id="edit-attendance-allowance" required />
                         </div>
                         <div class="col-md-6 fv-row">
                             <label class="required fs-6 fw-bold mb-2">Tunjangan Transport (Rp/Hari)</label>
-                            <input type="number" class="form-control form-control-solid" name="transport_allowance" id="edit-transport-allowance" min="0" required />
+                            <input type="text" class="form-control form-control-solid format-rupiah" name="transport_allowance" id="edit-transport-allowance" required />
                         </div>
                     </div>
 
@@ -208,7 +208,7 @@
                         </div>
                         <div class="col-md-6 fv-row">
                             <label class="required fs-6 fw-bold mb-2">Nilai Potongan (per Menit)</label>
-                            <input type="number" step="any" class="form-control form-control-solid" name="lateness_penalty_value" id="edit-lateness-penalty-value" min="0" required />
+                            <input type="text" class="form-control form-control-solid" name="lateness_penalty_value" id="edit-lateness-penalty-value" required />
                         </div>
                     </div>
                 </div>
@@ -334,20 +334,55 @@
             });
         });
 
+        // Fungsi memformat angka menjadi format rupiah (pemisah ribuan titik)
+        function formatRupiah(angka) {
+            if (!angka && angka !== 0) return '';
+            let number_string = angka.toString().replace(/[^,\d]/g, ''),
+                split = number_string.split(','),
+                sisa = split[0].length % 3,
+                rupiah = split[0].substr(0, sisa),
+                ribuan = split[0].substr(sisa).match(/\d{3}/gi);
+
+            if (ribuan) {
+                let separator = sisa ? '.' : '';
+                rupiah += separator + ribuan.join('.');
+            }
+
+            rupiah = split[1] != undefined ? rupiah + ',' + split[1] : rupiah;
+            return rupiah;
+        }
+
+        // Format otomatis ketika pengguna mengetik data
+        $(document).on('input', '.format-rupiah', function() {
+            let val = $(this).val().replace(/\./g, ''); // Hapus semua titik dulu
+            if (val !== '') {
+                $(this).val(formatRupiah(val));
+            }
+        });
+
         // Edit Gaji Karyawan (Tampilkan Modal)
         $(document).on('click', '.btn-edit-salary', function() {
             const data = $(this).data();
             $('#edit-employee-id').val(data.id);
             $('#edit-employee-type').val(data.type);
             $('#edit-employee-name').val(data.name);
-            $('#edit-base-salary').val(data.base_salary);
-            $('#edit-attendance-allowance').val(data.attendance_allowance);
-            $('#edit-transport-allowance').val(data.transport_allowance);
-            $('#edit-lateness-penalty-type').val(data.lateness_penalty_type);
-            $('#edit-lateness-penalty-value').val(data.lateness_penalty_value);
-            $('#edit-absence-penalty').val(data.absence_penalty);
 
-            // Handle toggle potongan keterlambatan
+            // Format nominal rupiah
+            $('#edit-base-salary').val(formatRupiah(data.base_salary));
+            $('#edit-attendance-allowance').val(formatRupiah(data.attendance_allowance));
+            $('#edit-transport-allowance').val(formatRupiah(data.transport_allowance));
+            $('#edit-absence-penalty').val(formatRupiah(data.absence_penalty));
+
+            $('#edit-lateness-penalty-type').val(data.lateness_penalty_type);
+
+            // Sesuaikan format potongan keterlambatan
+            if (data.lateness_penalty_type === 'fixed') {
+                $('#edit-lateness-penalty-value').addClass('format-rupiah').val(formatRupiah(data.lateness_penalty_value));
+            } else {
+                $('#edit-lateness-penalty-value').removeClass('format-rupiah').val(data.lateness_penalty_value);
+            }
+
+            // Handle toggle denda keterlambatan
             if (parseInt(data.lateness_penalty_value) === 0) {
                 $('#toggle-lateness').prop('checked', false);
                 $('#section-lateness-settings').hide();
@@ -361,13 +396,34 @@
             $('#modal-edit-salary').modal('show');
         });
 
+        // Listener perubahan tipe potongan keterlambatan (fixed vs percentage)
+        $('#edit-lateness-penalty-type').on('change', function() {
+            let type = $(this).val();
+            let input = $('#edit-lateness-penalty-value');
+            let currentVal = input.val().replace(/\./g, '');
+            if (type === 'fixed') {
+                input.addClass('format-rupiah');
+                if (currentVal !== '') {
+                    input.val(formatRupiah(currentVal));
+                }
+            } else {
+                input.removeClass('format-rupiah');
+                input.val(currentVal);
+            }
+        });
+
         // Toggle Potongan Keterlambatan Change Listener
         $('#toggle-lateness').on('change', function() {
             if ($(this).is(':checked')) {
                 $('#section-lateness-settings').slideDown();
                 $('#label-toggle-lateness').text('Aktif');
-                if ($('#edit-lateness-penalty-value').val() == 0) {
-                    $('#edit-lateness-penalty-value').val(1000); // Default placeholder
+                let input = $('#edit-lateness-penalty-value');
+                if (input.val() == 0 || input.val() == '') {
+                    if ($('#edit-lateness-penalty-type').val() === 'fixed') {
+                        input.addClass('format-rupiah').val(formatRupiah(1000));
+                    } else {
+                        input.removeClass('format-rupiah').val(1000);
+                    }
                 }
             } else {
                 $('#section-lateness-settings').slideUp();
@@ -382,10 +438,27 @@
             const btn = $('#btn-save-salary');
             btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-1"></span> Menyimpan...');
 
+            // Bersihkan titik sementara untuk serialize agar backend menerima numeric murni
+            let originalValues = [];
+            $('.format-rupiah').each(function() {
+                originalValues.push({
+                    el: $(this),
+                    val: $(this).val()
+                });
+                $(this).val($(this).val().replace(/\./g, ''));
+            });
+
+            let formData = $(this).serialize();
+
+            // Kembalikan nilai dengan titik segera setelah serialize selesai
+            originalValues.forEach(function(item) {
+                item.el.val(item.val);
+            });
+
             $.ajax({
                 url: "{{ route('payroll.settings.save') }}",
                 type: "POST",
-                data: $(this).serialize(),
+                data: formData,
                 success: (res) => {
                     btn.prop('disabled', false).text('Simpan');
                     if (res.success) {

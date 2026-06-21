@@ -140,14 +140,14 @@
                                             <label class="fs-6 fw-bold form-label required" for="gaji_bulan">
                                                 <span>Jumlah Gaji (Bulan)</span>
                                             </label>
-                                            <input type="number" class="form-control form-control-solid" id="gaji_bulan" name="gaji_bulan" placeholder="Contoh: 850000" value="{{ old('gaji_bulan', isset($karyawan) ? (int)$karyawan->gaji_bulan : 0) }}" required min="0" />
+                                            <input type="text" class="form-control form-control-solid format-rupiah" id="gaji_bulan" name="gaji_bulan" placeholder="Contoh: 850.000" value="{{ old('gaji_bulan', isset($karyawan) ? (int)$karyawan->gaji_bulan : 0) }}" required />
                                         </div>
 
                                         <div class="fv-row mb-7">
                                             <label class="fs-6 fw-bold form-label required" for="gaji_hari">
                                                 <span>Gaji Per-Day</span>
                                             </label>
-                                            <input type="number" class="form-control form-control-solid" id="gaji_hari" name="gaji_hari" placeholder="Contoh: 70800" value="{{ old('gaji_hari', isset($karyawan) ? (int)$karyawan->gaji_hari : 0) }}" required min="0" />
+                                            <input type="text" class="form-control form-control-solid format-rupiah" id="gaji_hari" name="gaji_hari" placeholder="Contoh: 70.800" value="{{ old('gaji_hari', isset($karyawan) ? (int)$karyawan->gaji_hari : 0) }}" required />
                                         </div>
 
                                         <div class="fv-row mb-7">
@@ -161,14 +161,14 @@
                                             <label class="fs-6 fw-bold form-label" for="potongan_terlambat">
                                                 <span>Potongan Terlambat (Per Shift)</span>
                                             </label>
-                                            <input type="number" class="form-control form-control-solid" id="potongan_terlambat" name="potongan_terlambat" placeholder="Contoh: 10000" value="{{ old('potongan_terlambat', isset($karyawan) ? (int)$karyawan->potongan_terlambat : 0) }}" min="0" />
+                                            <input type="text" class="form-control form-control-solid format-rupiah" id="potongan_terlambat" name="potongan_terlambat" placeholder="Contoh: 10.000" value="{{ old('potongan_terlambat', isset($karyawan) ? (int)$karyawan->potongan_terlambat : 0) }}" />
                                         </div>
 
                                         <div class="fv-row mb-7">
                                             <label class="fs-6 fw-bold form-label" for="potongan_absen">
                                                 <span>Potongan Absen (Per Hari)</span>
                                             </label>
-                                            <input type="number" class="form-control form-control-solid" id="potongan_absen" name="potongan_absen" placeholder="Contoh: 50000" value="{{ old('potongan_absen', isset($karyawan) ? (int)$karyawan->potongan_absen : 0) }}" min="0" />
+                                            <input type="text" class="form-control form-control-solid format-rupiah" id="potongan_absen" name="potongan_absen" placeholder="Contoh: 50.000" value="{{ old('potongan_absen', isset($karyawan) ? (int)$karyawan->potongan_absen : 0) }}" />
                                         </div>
                                     </div>
                                 </div>
@@ -198,3 +198,51 @@
     <!--end::Post-->
 </div>
 @endsection
+
+@push('js')
+<script>
+    $(document).ready(function() {
+        // Fungsi memformat angka menjadi format rupiah (pemisah ribuan titik)
+        function formatRupiah(angka) {
+            if (!angka && angka !== 0) return '';
+            let number_string = angka.toString().replace(/[^,\d]/g, ''),
+                split = number_string.split(','),
+                sisa = split[0].length % 3,
+                rupiah = split[0].substr(0, sisa),
+                ribuan = split[0].substr(sisa).match(/\d{3}/gi);
+
+            if (ribuan) {
+                let separator = sisa ? '.' : '';
+                rupiah += separator + ribuan.join('.');
+            }
+
+            rupiah = split[1] != undefined ? rupiah + ',' + split[1] : rupiah;
+            return rupiah;
+        }
+
+        // Format otomatis ketika pengguna mengetik data
+        $(document).on('input', '.format-rupiah', function() {
+            let val = $(this).val().replace(/\./g, ''); // Hapus semua titik dulu
+            if (val !== '') {
+                $(this).val(formatRupiah(val));
+            }
+        });
+
+        // Format nilai awal saat halaman pertama kali dimuat (untuk edit / old input)
+        $('.format-rupiah').each(function() {
+            let val = $(this).val().replace(/\./g, '');
+            if (val !== '' && !isNaN(val)) {
+                $(this).val(formatRupiah(val));
+            }
+        });
+
+        // Hapus pemisah ribuan titik sebelum form disubmit ke server
+        $('#form-karyawan').on('submit', function() {
+            $('.format-rupiah').each(function() {
+                let val = $(this).val().replace(/\./g, '');
+                $(this).val(val);
+            });
+        });
+    });
+</script>
+@endpush

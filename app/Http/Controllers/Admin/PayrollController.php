@@ -517,6 +517,21 @@ class PayrollController extends Controller
             return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
         }
 
+        // Sanitasi input nominal dengan membuang pemisah ribuan titik
+        $fields = ['base_salary', 'attendance_allowance', 'transport_allowance', 'absence_penalty'];
+        $merge = [];
+        foreach ($fields as $field) {
+            if ($request->has($field) && $request->input($field) !== null) {
+                $merge[$field] = str_replace('.', '', $request->input($field));
+            }
+        }
+        if ($request->input('lateness_penalty_type') === 'fixed' && $request->has('lateness_penalty_value') && $request->input('lateness_penalty_value') !== null) {
+            $merge['lateness_penalty_value'] = str_replace('.', '', $request->input('lateness_penalty_value'));
+        }
+        if (!empty($merge)) {
+            $request->merge($merge);
+        }
+
         $request->validate([
             'employee_id' => 'required|string',
             'employee_type' => 'required|string',
