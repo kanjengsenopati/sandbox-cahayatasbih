@@ -156,6 +156,20 @@
                                             </label>
                                             <input type="number" class="form-control form-control-solid" id="hari_kerja" name="hari_kerja" placeholder="Contoh: 12" value="{{ old('hari_kerja', @$karyawan->hari_kerja ?? 12) }}" required min="0" />
                                         </div>
+
+                                        <div class="fv-row mb-7">
+                                            <label class="fs-6 fw-bold form-label" for="potongan_terlambat">
+                                                <span>Potongan Terlambat (Per Shift)</span>
+                                            </label>
+                                            <input type="number" class="form-control form-control-solid" id="potongan_terlambat" name="potongan_terlambat" placeholder="Contoh: 10000" value="{{ old('potongan_terlambat', isset($karyawan) ? (int)$karyawan->potongan_terlambat : 0) }}" min="0" />
+                                        </div>
+
+                                        <div class="fv-row mb-7">
+                                            <label class="fs-6 fw-bold form-label" for="potongan_absen">
+                                                <span>Potongan Absen (Per Hari)</span>
+                                            </label>
+                                            <input type="number" class="form-control form-control-solid" id="potongan_absen" name="potongan_absen" placeholder="Contoh: 50000" value="{{ old('potongan_absen', isset($karyawan) ? (int)$karyawan->potongan_absen : 0) }}" min="0" />
+                                        </div>
                                     </div>
                                 </div>
 

@@ -100,12 +100,11 @@ class KaryawanController extends Controller
             $outlets = Outlet::orderBy('name')->get();
         }
 
-        // Ambil Pengguna (Admin) yang memiliki role 'Karyawan Outlet ( Non Kasir )'
+        // Ambil Pengguna (Admin) yang berada di Scope Pondok Mart (Outlet)
         // dan belum terdaftar sebagai Karyawan di tabel karyawans
         $registeredAdminIds = Karyawan::pluck('admin_id')->toArray();
         
-        $adminsQuery = Admin::role('Karyawan Outlet ( Non Kasir )')
-            ->whereNotIn('id', $registeredAdminIds);
+        $adminsQuery = Admin::whereNotIn('id', $registeredAdminIds);
 
         if ($outletId) {
             $adminsQuery->where(function($q) use ($outletId) {
@@ -130,27 +129,29 @@ class KaryawanController extends Controller
             return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
         }
 
-        Karyawan::create($request->validated());
+        \Illuminate\Support\Facades\DB::transaction(function() use ($request) {
+            Karyawan::create($request->validated());
 
-        // Cari Karyawan yang baru dibuat dan hubungkan ke konfigurasi gaji di payroll (jika diperlukan)
-        $employee = Admin::find($request->admin_id);
-        if ($employee) {
-            \App\Models\EmployeeSalary::updateOrCreate(
-                [
-                    'presensiable_type' => Admin::class,
-                    'presensiable_id' => $employee->id,
-                ],
-                [
-                    'base_salary' => $request->gaji_bulan,
-                    'attendance_allowance' => $request->gaji_hari,
-                    'transport_allowance' => 0,
-                    'lateness_penalty_type' => 'fixed',
-                    'lateness_penalty_value' => 0,
-                    'absence_penalty' => 0,
-                    'lateness_penalty_per_minute' => 0,
-                ]
-            );
-        }
+            // Cari Karyawan yang baru dibuat dan hubungkan ke konfigurasi gaji di payroll (jika diperlukan)
+            $employee = Admin::find($request->admin_id);
+            if ($employee) {
+                \App\Models\EmployeeSalary::updateOrCreate(
+                    [
+                        'presensiable_type' => Admin::class,
+                        'presensiable_id' => $employee->id,
+                    ],
+                    [
+                        'base_salary' => $request->gaji_bulan,
+                        'attendance_allowance' => $request->gaji_hari,
+                        'transport_allowance' => 0,
+                        'lateness_penalty_type' => 'fixed',
+                        'lateness_penalty_value' => $request->potongan_terlambat ?? 0,
+                        'absence_penalty' => $request->potongan_absen ?? 0,
+                        'lateness_penalty_per_minute' => 0,
+                    ]
+                );
+            }
+        });
 
         return redirect()->route('karyawan.index', $request->only(['mode', 'outlet_id']))->with('success', 'Karyawan berhasil ditambahkan');
     }
@@ -174,12 +175,11 @@ class KaryawanController extends Controller
             $outlets = Outlet::orderBy('name')->get();
         }
 
-        // Ambil Pengguna (Admin) yang memiliki role 'Karyawan Outlet ( Non Kasir )'
+        // Ambil Pengguna (Admin) yang berada di Scope Pondok Mart (Outlet)
         // dan belum terdaftar (kecuali karyawan yang sedang di-edit ini sendiri)
         $registeredAdminIds = Karyawan::where('id', '!=', $karyawan->id)->pluck('admin_id')->toArray();
         
-        $adminsQuery = Admin::role('Karyawan Outlet ( Non Kasir )')
-            ->whereNotIn('id', $registeredAdminIds);
+        $adminsQuery = Admin::whereNotIn('id', $registeredAdminIds);
 
         if ($outletId) {
             $adminsQuery->where(function($q) use ($outletId) {
@@ -204,22 +204,26 @@ class KaryawanController extends Controller
             return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
         }
 
-        $karyawan->update($request->validated());
+        \Illuminate\Support\Facades\DB::transaction(function() use ($request, $karyawan) {
+            $karyawan->update($request->validated());
 
-        // Update konfigurasi gaji di payroll
-        $employee = Admin::find($request->admin_id);
-        if ($employee) {
-            \App\Models\EmployeeSalary::updateOrCreate(
-                [
-                    'presensiable_type' => Admin::class,
-                    'presensiable_id' => $employee->id,
-                ],
-                [
-                    'base_salary' => $request->gaji_bulan,
-                    'attendance_allowance' => $request->gaji_hari,
-                ]
-            );
-        }
+            // Update konfigurasi gaji di payroll
+            $employee = Admin::find($request->admin_id);
+            if ($employee) {
+                \App\Models\EmployeeSalary::updateOrCreate(
+                    [
+                        'presensiable_type' => Admin::class,
+                        'presensiable_id' => $employee->id,
+                    ],
+                    [
+                        'base_salary' => $request->gaji_bulan,
+                        'attendance_allowance' => $request->gaji_hari,
+                        'lateness_penalty_value' => $request->potongan_terlambat ?? 0,
+                        'absence_penalty' => $request->potongan_absen ?? 0,
+                    ]
+                );
+            }
+        });
 
         return redirect()->route('karyawan.index', $request->only(['mode', 'outlet_id']))->with('success', 'Karyawan berhasil diperbarui');
     }

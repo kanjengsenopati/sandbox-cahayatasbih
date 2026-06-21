@@ -228,7 +228,7 @@ class BiometricAttendanceController extends Controller
                 $shiftStartTime = Carbon::createFromTimeString($shift->start_time);
                 $checkInTime = Carbon::createFromTimeString($timeStr);
 
-                if ($checkInTime->gt($shiftStartTime->addMinutes($shift->grace_period))) {
+                if ($checkInTime->gt($shiftStartTime->copy()->addMinutes($shift->grace_period))) {
                     $status = 'late';
                     $lateMinutes = $checkInTime->diffInMinutes($shiftStartTime);
                 }

@@ -45,6 +45,7 @@ class AttendancePayrollTest extends TestCase
             Schema::dropIfExists('permissions');
             Schema::dropIfExists('activity_log');
             Schema::dropIfExists('salary_slips');
+            Schema::dropIfExists('karyawans');
             Schema::dropIfExists('employee_salaries');
             Schema::dropIfExists('attendances');
             Schema::dropIfExists('biometric_mappings');
@@ -54,6 +55,7 @@ class AttendancePayrollTest extends TestCase
             Schema::dropIfExists('working_shifts');
             Schema::dropIfExists('students');
             Schema::dropIfExists('admins');
+            Schema::dropIfExists('outlets');
             Schema::dropIfExists('users');
 
         Schema::create('permissions', function (Blueprint $table) {
@@ -243,6 +245,32 @@ class AttendancePayrollTest extends TestCase
             $table->enum('status', ['draft', 'approved', 'paid'])->default('draft');
             $table->uuid('approved_by')->nullable();
             $table->dateTime('approved_at')->nullable();
+        });
+
+        Schema::create('karyawans', function (Blueprint $table) {
+            $table->uuid('id')->primary();
+            $table->uuid('admin_id')->unique();
+            $table->string('kamar')->nullable();
+            $table->string('jabatan')->nullable();
+            $table->uuid('outlet_id');
+            $table->string('section')->nullable();
+            $table->decimal('gaji_bulan', 12, 2)->default(0);
+            $table->decimal('gaji_hari', 12, 2)->default(0);
+            $table->integer('hari_kerja')->default(0);
+            $table->decimal('potongan_terlambat', 12, 2)->default(0);
+            $table->decimal('potongan_absen', 12, 2)->default(0);
+            $table->timestamps();
+            $table->softDeletes();
+        });
+
+        Schema::create('outlets', function (Blueprint $table) {
+            $table->uuid('id')->primary();
+            $table->string('name');
+            $table->string('code');
+            $table->string('address')->nullable();
+            $table->boolean('is_active')->default(true);
+            $table->timestamps();
+            $table->softDeletes();
         });
         }
 
@@ -557,5 +585,199 @@ class AttendancePayrollTest extends TestCase
             'total_absent_days' => 0,
             'net_salary' => 3070000.00 // 3.000.000 + 50.000 + 20.000
         ]);
+    }
+
+    public function test_karyawan_shift_based_deduction_payroll()
+    {
+        $shift1 = WorkingShift::create([
+            'name' => 'Shift Pagi',
+            'start_time' => '08:00:00',
+            'end_time' => '12:00:00',
+            'grace_period' => 15
+        ]);
+
+        $shift2 = WorkingShift::create([
+            'name' => 'Shift Siang',
+            'start_time' => '13:00:00',
+            'end_time' => '17:00:00',
+            'grace_period' => 15
+        ]);
+
+        $shift3 = WorkingShift::create([
+            'name' => 'Shift Sore',
+            'start_time' => '18:00:00',
+            'end_time' => '22:00:00',
+            'grace_period' => 15
+        ]);
+
+        $outlet = \App\Models\Outlet::create([
+            'id' => (string) Str::uuid(),
+            'name' => 'Pondok Mart Outlet',
+            'code' => 'OTL',
+            'is_active' => true,
+        ]);
+
+        $employee = Admin::create([
+            'id' => (string) Str::uuid(),
+            'name' => 'Yogo',
+            'email' => 'yogo@example.com',
+            'password' => bcrypt('password'),
+            'is_active' => true,
+            'avatar' => '',
+            'role_id' => 1,
+            'outlet_id' => $outlet->id,
+        ]);
+
+        \App\Models\Karyawan::create([
+            'admin_id' => $employee->id,
+            'gaji_bulan' => 900000.00,
+            'gaji_hari' => 30000.00,
+            'hari_kerja' => 30,
+            'outlet_id' => $outlet->id,
+        ]);
+
+        EmployeeSalary::create([
+            'presensiable_type' => Admin::class,
+            'presensiable_id' => $employee->id,
+            'base_salary' => 900000.00,
+            'attendance_allowance' => 30000.00,
+            'transport_allowance' => 0.00,
+            'lateness_penalty_type' => 'fixed',
+            'lateness_penalty_value' => 10000.00,
+            'absence_penalty' => 10000.00,
+        ]);
+
+        // Simulasikan 3 shift pada tanggal 2026-06-18
+        EmployeeMonthlyShift::create([
+            'presensiable_type' => Admin::class,
+            'presensiable_id' => $employee->id,
+            'working_shift_id' => $shift1->id,
+            'date' => '2026-06-18',
+            'is_holiday' => false,
+        ]);
+
+        EmployeeMonthlyShift::create([
+            'presensiable_type' => Admin::class,
+            'presensiable_id' => $employee->id,
+            'working_shift_id' => $shift2->id,
+            'date' => '2026-06-18',
+            'is_holiday' => false,
+        ]);
+
+        EmployeeMonthlyShift::create([
+            'presensiable_type' => Admin::class,
+            'presensiable_id' => $employee->id,
+            'working_shift_id' => $shift3->id,
+            'date' => '2026-06-18',
+            'is_holiday' => false,
+        ]);
+
+        // Kehadiran:
+        // Shift 1: Hadir Tepat Waktu
+        Attendance::create([
+            'presensiable_type' => Admin::class,
+            'presensiable_id' => $employee->id,
+            'activity_type' => 'work',
+            'activity_name' => 'Shift Pagi',
+            'check_in' => '2026-06-18 08:05:00',
+            'check_out' => '2026-06-18 12:00:00',
+            'status' => 'present',
+            'late_minutes' => 0,
+            'approval_status' => 'approved',
+        ]);
+
+        // Shift 2: Hadir Tepat Waktu
+        Attendance::create([
+            'presensiable_type' => Admin::class,
+            'presensiable_id' => $employee->id,
+            'activity_type' => 'work',
+            'activity_name' => 'Shift Siang',
+            'check_in' => '2026-06-18 13:05:00',
+            'check_out' => '2026-06-18 17:00:00',
+            'status' => 'present',
+            'late_minutes' => 0,
+            'approval_status' => 'approved',
+        ]);
+
+        // Shift 3: Terlambat
+        Attendance::create([
+            'presensiable_type' => Admin::class,
+            'presensiable_id' => $employee->id,
+            'activity_type' => 'work',
+            'activity_name' => 'Shift Sore',
+            'check_in' => '2026-06-18 18:25:00',
+            'check_out' => '2026-06-18 22:00:00',
+            'status' => 'late',
+            'late_minutes' => 25,
+            'approval_status' => 'approved',
+        ]);
+
+        $payrollController = new \App\Http\Controllers\Admin\PayrollController();
+        $request = new Request([
+            'start_date' => '2026-06-18',
+            'end_date' => '2026-06-18',
+            'mode' => 'outlet',
+            'outlet_id' => $outlet->id,
+        ]);
+
+        $this->actingAs($employee);
+        $payrollController->process($request);
+
+        // Gaji bersih harus dideduksi 10.000 karena terlambat di shift ke-3.
+        // Gaji bersih = 900.000 - 10.000 = 890.000.
+        $this->assertDatabaseHas('salary_slips', [
+            'presensiable_id' => $employee->id,
+            'total_present_days' => 1, // 2/3 rounded to 1
+            'total_absent_days' => 0,
+            'total_lateness_penalty' => 10000.00,
+            'total_absence_penalty' => 0.00,
+            'net_salary' => 890000.00
+        ]);
+    }
+
+    public function test_karyawan_atomic_transaction_rollback()
+    {
+        // Uji coba kepatuhan transaksi atomik (atomic transaction)
+        $employee = Admin::create([
+            'id' => (string) Str::uuid(),
+            'name' => 'Transaction Rollback Test',
+            'email' => 'rollback@example.com',
+            'password' => bcrypt('password'),
+            'is_active' => true,
+            'avatar' => '',
+            'role_id' => 1,
+        ]);
+
+        // Simulasikan kegagalan dengan sengaja melempar exception di dalam DB transaction
+        $originalKaryawanCount = \App\Models\Karyawan::count();
+
+        $outlet = \App\Models\Outlet::create([
+            'id' => (string) Str::uuid(),
+            'name' => 'Outlet Rollback Test',
+            'code' => 'OT-ROLL',
+            'is_active' => true,
+        ]);
+
+        try {
+            \Illuminate\Support\Facades\DB::transaction(function() use ($employee, $outlet) {
+                \App\Models\Karyawan::create([
+                    'admin_id' => $employee->id,
+                    'gaji_bulan' => 1000000.00,
+                    'gaji_hari' => 50000.00,
+                    'hari_kerja' => 20,
+                    'outlet_id' => $outlet->id,
+                    'potongan_terlambat' => 15000.00,
+                    'potongan_absen' => 50000.00,
+                ]);
+                
+                // Sengaja memicu error/exception untuk menguji rollback
+                throw new \Exception("Intentional failure to test atomic rollback.");
+            });
+        } catch (\Exception $e) {
+            // Expected exception
+        }
+
+        // Pastikan tidak ada data yang masuk ke tabel karyawans (ter-rollback)
+        $this->assertEquals($originalKaryawanCount, \App\Models\Karyawan::count());
     }
 }

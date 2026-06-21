@@ -32,6 +32,8 @@ class KaryawanRequest extends FormRequest
             'gaji_bulan' => 'required|numeric|min:0',
             'gaji_hari' => 'required|numeric|min:0',
             'hari_kerja' => 'required|integer|min:0',
+            'potongan_terlambat' => 'nullable|numeric|min:0',
+            'potongan_absen' => 'nullable|numeric|min:0',
         ];
     }
 

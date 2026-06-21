@@ -241,9 +241,9 @@ class WorkingShiftController extends Controller
                                 'presensiable_type' => $type,
                                 'presensiable_id' => $id,
                                 'date' => $date->toDateString(),
+                                'working_shift_id' => $workingShift->id,
                             ],
                             [
-                                'working_shift_id' => $workingShift->id,
                                 'is_holiday' => $isHoliday,
                             ]
                         );

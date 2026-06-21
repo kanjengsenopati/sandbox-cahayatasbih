@@ -19,13 +19,17 @@ class Karyawan extends Model
         'section',
         'gaji_bulan',
         'gaji_hari',
-        'hari_kerja'
+        'hari_kerja',
+        'potongan_terlambat',
+        'potongan_absen'
     ];
 
     protected $casts = [
         'gaji_bulan' => 'decimal:2',
         'gaji_hari' => 'decimal:2',
-        'hari_kerja' => 'integer'
+        'hari_kerja' => 'integer',
+        'potongan_terlambat' => 'decimal:2',
+        'potongan_absen' => 'decimal:2'
     ];
 
     public function admin()

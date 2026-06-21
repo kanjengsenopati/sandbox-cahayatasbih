@@ -143,55 +143,137 @@ class PayrollController extends Controller
                 $salaryConfig = $employee->employeeSalary;
                 if (!$salaryConfig) continue;
 
-                // 1. Hitung hari kerja terjadwal dari EmployeeMonthlyShift
-                $scheduledShifts = EmployeeMonthlyShift::where('presensiable_type', get_class($employee))
-                    ->where('presensiable_id', $employee->id)
-                    ->whereBetween('date', [$startDate->copy()->startOfDay(), $endDate->copy()->endOfDay()])
-                    ->where('is_holiday', false)
-                    ->whereNotNull('working_shift_id')
-                    ->get();
+                $karyawan = \App\Models\Karyawan::where('admin_id', $employee->id)->first();
 
-                $totalScheduledDays = $scheduledShifts->count();
-                if ($totalScheduledDays === 0) continue;
+                if ($karyawan) {
+                    $gajiBulan = $karyawan->gaji_bulan;
+                    $gajiHari = $karyawan->gaji_hari;
 
-                // 2. Hitung kehadiran aktual
-                $attendances = Attendance::where('presensiable_type', get_class($employee))
-                    ->where('presensiable_id', $employee->id)
-                    ->where('activity_type', 'work')
-                    ->where('approval_status', 'approved')
-                    ->whereBetween('check_in', [$startDate->copy()->startOfDay(), $endDate->copy()->endOfDay()])
-                    ->get();
+                    // 1. Ambil semua shift kerja terjadwal dari EmployeeMonthlyShift
+                    $scheduledShifts = EmployeeMonthlyShift::with('workingShift')
+                        ->where('presensiable_type', get_class($employee))
+                        ->where('presensiable_id', $employee->id)
+                        ->whereBetween('date', [$startDate->copy()->startOfDay(), $endDate->copy()->endOfDay()])
+                        ->where('is_holiday', false)
+                        ->whereNotNull('working_shift_id')
+                        ->get();
 
-                $totalPresentDays = 0;
-                $totalLateMinutes = 0;
+                    $totalScheduledDays = $scheduledShifts->count();
+                    if ($totalScheduledDays === 0) continue;
 
-                foreach ($scheduledShifts as $shift) {
-                    $attendanceToday = $attendances->first(function ($att) use ($shift) {
-                        return Carbon::parse($att->check_in)->toDateString() === $shift->date->toDateString();
+                    // Ambil kehadiran aktual
+                    $attendances = Attendance::where('presensiable_type', get_class($employee))
+                        ->where('presensiable_id', $employee->id)
+                        ->where('activity_type', 'work')
+                        ->where('approval_status', 'approved')
+                        ->whereBetween('check_in', [$startDate->copy()->startOfDay(), $endDate->copy()->endOfDay()])
+                        ->get();
+
+                    $totalPresentDays = 0;
+                    $totalLateMinutes = 0;
+                    $totalLatenessPenalty = 0;
+                    $totalAbsencePenalty = 0;
+
+                    // Kelompokkan scheduledShifts berdasarkan tanggal
+                    $shiftsByDate = $scheduledShifts->groupBy(function($item) {
+                        return Carbon::parse($item->date)->toDateString();
                     });
 
-                    if ($attendanceToday) {
-                        $totalPresentDays++;
-                        $totalLateMinutes += $attendanceToday->late_minutes;
+                    $presentDaysProportion = 0;
+                    $absentDaysProportion = 0;
+
+                    foreach ($shiftsByDate as $dateStr => $shiftsOnDate) {
+                        $numShiftsToday = $shiftsOnDate->count();
+                        if ($numShiftsToday === 0) continue;
+
+                        $salaryPerShift = $gajiHari / $numShiftsToday;
+                        $presentShiftsToday = 0;
+                        $absentShiftsToday = 0;
+
+                        foreach ($shiftsOnDate as $monthlyShift) {
+                            $shift = $monthlyShift->workingShift;
+                            if (!$shift) continue;
+
+                            $att = $attendances->first(function($a) use ($dateStr, $shift) {
+                                return Carbon::parse($a->check_in)->toDateString() === $dateStr && $a->activity_name === $shift->name;
+                            });
+
+                            if ($att) {
+                                if ($att->status === 'late') {
+                                    $totalLatenessPenalty += $salaryPerShift;
+                                    $totalLateMinutes += $att->late_minutes;
+                                } else {
+                                    $presentShiftsToday++;
+                                }
+                            } else {
+                                $totalAbsencePenalty += $salaryPerShift;
+                                $absentShiftsToday++;
+                            }
+                        }
+
+                        $presentDaysProportion += ($presentShiftsToday / $numShiftsToday);
+                        $absentDaysProportion += ($absentShiftsToday / $numShiftsToday);
                     }
+
+                    $totalPresentDays = $presentDaysProportion;
+                    $totalAbsentDays = $absentDaysProportion;
+
+                    $baseSalary = $gajiBulan;
+                    $totalAttendanceAllowance = 0;
+                    $totalTransportAllowance = 0;
+
+                    $netSalary = $baseSalary - ($totalLatenessPenalty + $totalAbsencePenalty);
+                } else {
+                    // 1. Hitung hari kerja terjadwal dari EmployeeMonthlyShift
+                    $scheduledShifts = EmployeeMonthlyShift::where('presensiable_type', get_class($employee))
+                        ->where('presensiable_id', $employee->id)
+                        ->whereBetween('date', [$startDate->copy()->startOfDay(), $endDate->copy()->endOfDay()])
+                        ->where('is_holiday', false)
+                        ->whereNotNull('working_shift_id')
+                        ->get();
+
+                    $totalScheduledDays = $scheduledShifts->count();
+                    if ($totalScheduledDays === 0) continue;
+
+                    // 2. Hitung kehadiran aktual
+                    $attendances = Attendance::where('presensiable_type', get_class($employee))
+                        ->where('presensiable_id', $employee->id)
+                        ->where('activity_type', 'work')
+                        ->where('approval_status', 'approved')
+                        ->whereBetween('check_in', [$startDate->copy()->startOfDay(), $endDate->copy()->endOfDay()])
+                        ->get();
+
+                    $totalPresentDays = 0;
+                    $totalLateMinutes = 0;
+
+                    foreach ($scheduledShifts as $shift) {
+                        $attendanceToday = $attendances->first(function ($att) use ($shift) {
+                            return Carbon::parse($att->check_in)->toDateString() === $shift->date->toDateString();
+                        });
+
+                        if ($attendanceToday) {
+                            $totalPresentDays++;
+                            $totalLateMinutes += $attendanceToday->late_minutes;
+                        }
+                    }
+
+                    $totalAbsentDays = $totalScheduledDays - $totalPresentDays;
+
+                    // 3. Kalkulasi Gaji, Tunjangan, dan Potongan
+                    $baseSalary = $salaryConfig->base_salary;
+                    $totalAttendanceAllowance = $totalPresentDays * $salaryConfig->attendance_allowance;
+                    $totalTransportAllowance = $totalPresentDays * $salaryConfig->transport_allowance;
+
+                    $latenessPenaltyRate = $salaryConfig->lateness_penalty_type === 'percentage'
+                        ? ($salaryConfig->lateness_penalty_value / 100) * $baseSalary
+                        : ($salaryConfig->lateness_penalty_value > 0 ? $salaryConfig->lateness_penalty_value : $salaryConfig->lateness_penalty_per_minute);
+
+                    $totalLatenessPenalty = $totalLateMinutes * $latenessPenaltyRate;
+                    $totalAbsencePenalty = $totalAbsentDays * $salaryConfig->absence_penalty;
+
+                    $netSalary = ($baseSalary + $totalAttendanceAllowance + $totalTransportAllowance) - ($totalLatenessPenalty + $totalAbsencePenalty);
                 }
 
-                $totalAbsentDays = $totalScheduledDays - $totalPresentDays;
-
-                // 3. Kalkulasi Gaji, Tunjangan, dan Potongan
-                $baseSalary = $salaryConfig->base_salary;
-                $totalAttendanceAllowance = $totalPresentDays * $salaryConfig->attendance_allowance;
-                $totalTransportAllowance = $totalPresentDays * $salaryConfig->transport_allowance;
-
-                $latenessPenaltyRate = $salaryConfig->lateness_penalty_type === 'percentage'
-                    ? ($salaryConfig->lateness_penalty_value / 100) * $baseSalary
-                    : ($salaryConfig->lateness_penalty_value > 0 ? $salaryConfig->lateness_penalty_value : $salaryConfig->lateness_penalty_per_minute);
-
-                $totalLatenessPenalty = $totalLateMinutes * $latenessPenaltyRate;
-                $totalAbsencePenalty = $totalAbsentDays * $salaryConfig->absence_penalty;
-
-                $netSalary = ($baseSalary + $totalAttendanceAllowance + $totalTransportAllowance) - ($totalLatenessPenalty + $totalAbsencePenalty);
-                
                 // Pastikan gaji bersih tidak bernilai negatif
                 if ($netSalary < 0) {
                     $netSalary = 0;
@@ -206,9 +288,9 @@ class PayrollController extends Controller
                         'period_end' => $endDate->toDateString(),
                     ],
                     [
-                        'total_present_days' => $totalPresentDays,
+                        'total_present_days' => (int) round($totalPresentDays),
                         'total_late_minutes' => $totalLateMinutes,
-                        'total_absent_days' => $totalAbsentDays,
+                        'total_absent_days' => (int) round($totalAbsentDays),
                         'base_salary' => $baseSalary,
                         'total_attendance_allowance' => $totalAttendanceAllowance,
                         'total_transport_allowance' => $totalTransportAllowance,
