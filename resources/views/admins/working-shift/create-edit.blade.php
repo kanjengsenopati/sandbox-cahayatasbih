@@ -41,26 +41,31 @@
                                 @csrf
                                 <x-form.put-method />
 
-                                <div class="fv-row mb-7">
-                                    <label class="fs-6 fw-bold form-label mt-3" for="name">
-                                        <span class="required">Nama Shift</span>
-                                        <i class="fas fa-exclamation-circle ms-1 fs-7" data-bs-toggle="tooltip" title="Contoh: Shift Pagi Karyawan, Presensi Harian Santri"></i>
-                                    </label>
-                                    <input type="text" class="form-control form-control-solid" name="name" id="name"
-                                        placeholder="Masukkan Nama Shift" value="{{ @$workingShift->name ?? old('name') }}" required />
-                                </div>
-
-                                <div class="fv-row mb-7">
-                                    <label class="fs-6 fw-bold form-label mt-3" for="target_type">
-                                        <span class="required">Target Presensi Untuk Siapa</span>
-                                        <i class="fas fa-exclamation-circle ms-1 fs-7" data-bs-toggle="tooltip" title="Pilih target kelompok pengguna untuk shift ini"></i>
-                                    </label>
-                                    <select class="form-select form-select-solid" name="target_type" id="target_type" required>
-                                        <option value="">Pilih Target Kelompok</option>
-                                        <option value="siswa_santri" {{ (@$workingShift->target_type ?? old('target_type')) == 'siswa_santri' ? 'selected' : '' }}>Siswa dan Santri</option>
-                                        <option value="karyawan" {{ (@$workingShift->target_type ?? old('target_type')) == 'karyawan' ? 'selected' : '' }}>Karyawan</option>
-                                        <option value="user" {{ (@$workingShift->target_type ?? old('target_type')) == 'user' ? 'selected' : '' }}>User / Wali</option>
-                                    </select>
+                                <div class="row row-cols-1 row-cols-sm-2 mb-7">
+                                    <div class="col">
+                                        <div class="fv-row">
+                                            <label class="fs-6 fw-bold form-label mt-3" for="name">
+                                                <span class="required">Nama Shift</span>
+                                                <i class="fas fa-exclamation-circle ms-1 fs-7" data-bs-toggle="tooltip" title="Contoh: Shift Pagi Karyawan, Presensi Harian Santri"></i>
+                                            </label>
+                                            <input type="text" class="form-control form-control-solid" name="name" id="name"
+                                                placeholder="Masukkan Nama Shift" value="{{ @$workingShift->name ?? old('name') }}" required />
+                                        </div>
+                                    </div>
+                                    <div class="col">
+                                        <div class="fv-row">
+                                            <label class="fs-6 fw-bold form-label mt-3" for="target_type">
+                                                <span class="required">Target Presensi Untuk Siapa</span>
+                                                <i class="fas fa-exclamation-circle ms-1 fs-7" data-bs-toggle="tooltip" title="Pilih target kelompok pengguna untuk shift ini"></i>
+                                            </label>
+                                            <select class="form-select form-select-solid" name="target_type" id="target_type" required>
+                                                <option value="">Pilih Target Kelompok</option>
+                                                <option value="siswa_santri" {{ (@$workingShift->target_type ?? old('target_type')) == 'siswa_santri' ? 'selected' : '' }}>Siswa dan Santri</option>
+                                                <option value="karyawan" {{ (@$workingShift->target_type ?? old('target_type')) == 'karyawan' ? 'selected' : '' }}>Karyawan</option>
+                                                <option value="user" {{ (@$workingShift->target_type ?? old('target_type')) == 'user' ? 'selected' : '' }}>User / Wali</option>
+                                            </select>
+                                        </div>
+                                    </div>
                                 </div>
 
                                 <div class="fv-row mb-7" id="assigned_users_container" style="display: none;">
@@ -77,23 +82,37 @@
                                     </select>
                                 </div>
 
-                                <div class="fv-row mb-7">
-                                    <label class="fs-6 fw-bold form-label mt-3">
-                                        <span class="required">Hari Aktif (Pilih Hari)</span>
-                                        <i class="fas fa-exclamation-circle ms-1 fs-7" data-bs-toggle="tooltip" title="Pilih hari-hari aktif berlakunya shift presensi ini"></i>
-                                    </label>
-                                    <div class="d-flex flex-wrap gap-5 mt-2">
-                                        @php
-                                            $daysList = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'];
-                                            $selectedDays = @$workingShift->days ?? old('days') ?? [];
-                                        @endphp
-                                        @foreach($daysList as $day)
-                                            <label class="form-check form-check-sm form-check-custom form-check-solid">
-                                                <input class="form-check-input" type="checkbox" name="days[]" value="{{ $day }}" 
-                                                    {{ in_array($day, $selectedDays) ? 'checked' : '' }} />
-                                                <span class="form-check-label text-gray-700 fw-bold">{{ $day }}</span>
+                                <div class="row row-cols-1 row-cols-sm-2 mb-7">
+                                    <div class="col">
+                                        <div class="fv-row">
+                                            <label class="fs-6 fw-bold form-label mt-3">
+                                                <span class="required">Hari Aktif (Pilih Hari)</span>
+                                                <i class="fas fa-exclamation-circle ms-1 fs-7" data-bs-toggle="tooltip" title="Pilih hari-hari aktif berlakunya shift presensi ini"></i>
                                             </label>
-                                        @endforeach
+                                            <div class="d-flex flex-wrap gap-5 mt-2">
+                                                @php
+                                                    $daysList = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'];
+                                                    $selectedDays = @$workingShift->days ?? old('days') ?? [];
+                                                @endphp
+                                                @foreach($daysList as $day)
+                                                    <label class="form-check form-check-sm form-check-custom form-check-solid">
+                                                        <input class="form-check-input" type="checkbox" name="days[]" value="{{ $day }}" 
+                                                            {{ in_array($day, $selectedDays) ? 'checked' : '' }} />
+                                                        <span class="form-check-label text-gray-700 fw-bold">{{ $day }}</span>
+                                                    </label>
+                                                @endforeach
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col">
+                                        <div class="fv-row">
+                                            <label class="fs-6 fw-bold form-label mt-3" for="grace_period">
+                                                <span class="required">Toleransi Keterlambatan (Menit)</span>
+                                                <i class="fas fa-exclamation-circle ms-1 fs-7" data-bs-toggle="tooltip" title="Jumlah menit keterlambatan yang ditoleransi sebelum dianggap terlambat"></i>
+                                            </label>
+                                            <input type="number" class="form-control form-control-solid" name="grace_period" id="grace_period"
+                                                placeholder="Contoh: 15" value="{{ @$workingShift->grace_period ?? old('grace_period', 15) }}" min="0" required />
+                                        </div>
                                     </div>
                                 </div>
 
@@ -118,15 +137,6 @@
                                                 value="{{ isset($workingShift) ? \Carbon\Carbon::parse($workingShift->end_time)->format('H:i') : old('end_time') }}" required />
                                         </div>
                                     </div>
-                                </div>
-
-                                <div class="fv-row mb-7">
-                                    <label class="fs-6 fw-bold form-label mt-3" for="grace_period">
-                                        <span class="required">Toleransi Keterlambatan (Menit)</span>
-                                        <i class="fas fa-exclamation-circle ms-1 fs-7" data-bs-toggle="tooltip" title="Jumlah menit keterlambatan yang ditoleransi sebelum dianggap terlambat"></i>
-                                    </label>
-                                    <input type="number" class="form-control form-control-solid" name="grace_period" id="grace_period"
-                                        placeholder="Contoh: 15" value="{{ @$workingShift->grace_period ?? old('grace_period', 15) }}" min="0" required />
                                 </div>
 
                                 <div class="separator mb-6"></div>
