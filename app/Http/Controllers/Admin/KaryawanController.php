@@ -31,11 +31,19 @@ class KaryawanController extends Controller
                 $authOutletIds = auth()->user()->getOutletIds();
                 $hasOutletRestriction = count($authOutletIds) > 0;
 
+                $koperasi = Outlet::where('name', 'Koperasi')->orWhere('code', 'KPR')->first();
+                $koperasiId = $koperasi ? $koperasi->id : null;
+
                 if ($hasOutletRestriction) {
                     $outletId = $outletId && in_array($outletId, $authOutletIds) ? $outletId : ($authOutletIds[0] ?? null);
                 } else {
                     if (!$outletId) {
-                        $firstOutlet = Outlet::where('is_active', 1)->orderBy('name')->first();
+                        $firstOutlet = Outlet::where('is_active', 1)
+                            ->when($koperasiId, function($q) use ($koperasiId) {
+                                $q->where('id', '!=', $koperasiId);
+                            })
+                            ->orderBy('name')
+                            ->first();
                         $outletId = $firstOutlet ? $firstOutlet->id : null;
                     }
                 }
@@ -89,15 +97,28 @@ class KaryawanController extends Controller
         $authOutletIds = auth()->user()->getOutletIds();
         $hasOutletRestriction = count($authOutletIds) > 0;
 
+        $koperasi = Outlet::where('name', 'Koperasi')->orWhere('code', 'KPR')->first();
+        $koperasiId = $koperasi ? $koperasi->id : null;
+
         if ($hasOutletRestriction) {
             $outletId = $outletId && in_array($outletId, $authOutletIds) ? $outletId : ($authOutletIds[0] ?? null);
             $outlets = Outlet::whereIn('id', $authOutletIds)->orderBy('name')->get();
         } else {
             if (!$outletId) {
-                $firstOutlet = Outlet::where('is_active', 1)->orderBy('name')->first();
+                $firstOutlet = Outlet::where('is_active', 1)
+                    ->when($koperasiId, function($q) use ($koperasiId) {
+                        $q->where('id', '!=', $koperasiId);
+                    })
+                    ->orderBy('name')
+                    ->first();
                 $outletId = $firstOutlet ? $firstOutlet->id : null;
             }
-            $outlets = Outlet::orderBy('name')->get();
+            $outlets = Outlet::where('is_active', 1)
+                ->when($koperasiId, function($q) use ($koperasiId) {
+                    $q->where('id', '!=', $koperasiId);
+                })
+                ->orderBy('name')
+                ->get();
         }
 
         // Ambil Pengguna (Admin) yang berada di Scope Pondok Mart (Outlet)
@@ -169,10 +190,18 @@ class KaryawanController extends Controller
         $authOutletIds = auth()->user()->getOutletIds();
         $hasOutletRestriction = count($authOutletIds) > 0;
 
+        $koperasi = Outlet::where('name', 'Koperasi')->orWhere('code', 'KPR')->first();
+        $koperasiId = $koperasi ? $koperasi->id : null;
+
         if ($hasOutletRestriction) {
             $outlets = Outlet::whereIn('id', $authOutletIds)->orderBy('name')->get();
         } else {
-            $outlets = Outlet::orderBy('name')->get();
+            $outlets = Outlet::where('is_active', 1)
+                ->when($koperasiId, function($q) use ($koperasiId) {
+                    $q->where('id', '!=', $koperasiId);
+                })
+                ->orderBy('name')
+                ->get();
         }
 
         // Ambil Pengguna (Admin) yang berada di Scope Pondok Mart (Outlet)
