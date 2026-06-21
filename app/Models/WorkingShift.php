@@ -18,12 +18,14 @@ class WorkingShift extends Model
         'is_active',
         'target_type',
         'days',
+        'assigned_users',
     ];
 
     protected $casts = [
         'is_active' => 'boolean',
         'grace_period' => 'integer',
         'days' => 'array',
+        'assigned_users' => 'array',
     ];
 
     public function monthlyShifts()

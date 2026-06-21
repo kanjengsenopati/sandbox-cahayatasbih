@@ -58,8 +58,22 @@
                                     <select class="form-select form-select-solid" name="target_type" id="target_type" required>
                                         <option value="">Pilih Target Kelompok</option>
                                         <option value="siswa_santri" {{ (@$workingShift->target_type ?? old('target_type')) == 'siswa_santri' ? 'selected' : '' }}>Siswa dan Santri</option>
-                                        <option value="karyawan" {{ (@$workingShift->target_type ?? old('target_type')) == 'karyawan' ? 'selected' : '' }}>Karyawan / Guru / Kasir</option>
-                                        <option value="user" {{ (@$workingShift->target_type ?? old('target_type')) == 'user' ? 'selected' : '' }}>User / Wali Santri</option>
+                                        <option value="karyawan" {{ (@$workingShift->target_type ?? old('target_type')) == 'karyawan' ? 'selected' : '' }}>Karyawan</option>
+                                        <option value="user" {{ (@$workingShift->target_type ?? old('target_type')) == 'user' ? 'selected' : '' }}>User / Wali</option>
+                                    </select>
+                                </div>
+
+                                <div class="fv-row mb-7" id="assigned_users_container" style="display: none;">
+                                    <label class="fs-6 fw-bold form-label mt-3" for="assigned_users">
+                                        <span>Pilih Karyawan / Guru / Kasir</span>
+                                        <i class="fas fa-exclamation-circle ms-1 fs-7" data-bs-toggle="tooltip" title="Pilih karyawan/guru/kasir yang terikat pada shift ini"></i>
+                                    </label>
+                                    <select class="form-select form-select-solid" name="assigned_users[]" id="assigned_users" data-control="select2" data-placeholder="Pilih Karyawan / Guru / Kasir..." data-allow-clear="true" multiple="multiple">
+                                        @foreach($employees as $emp)
+                                            <option value="{{ $emp['value'] }}" {{ in_array($emp['value'], @$workingShift->assigned_users ?? []) ? 'selected' : '' }}>
+                                                {{ $emp['name'] }}
+                                            </option>
+                                        @endforeach
                                     </select>
                                 </div>
 
@@ -131,3 +145,22 @@
     </div>
 </div>
 @endsection
+
+@push('js')
+<script>
+    $(document).ready(function() {
+        function toggleAssignedUsers() {
+            const targetType = $('#target_type').val();
+            if (targetType === 'karyawan') {
+                $('#assigned_users_container').slideDown();
+            } else {
+                $('#assigned_users_container').slideUp();
+                $('#assigned_users').val([]).trigger('change');
+            }
+        }
+
+        $('#target_type').on('change', toggleAssignedUsers);
+        toggleAssignedUsers(); // Trigger on load
+    });
+</script>
+@endpush

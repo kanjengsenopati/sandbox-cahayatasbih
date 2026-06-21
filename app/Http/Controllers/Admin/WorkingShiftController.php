@@ -57,7 +57,25 @@ class WorkingShiftController extends Controller
         if (!Auth::user()->can('Create Shift')) {
             return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
         }
-        return view('admins.working-shift.create-edit');
+
+        $admins = \App\Models\Admin::orderBy('name')->get();
+        $users = \App\Models\User::where('jamaah_status', '!=', 'JAMAAH')->orderBy('name')->get();
+        
+        $employees = collect();
+        foreach ($admins as $admin) {
+            $employees->push([
+                'value' => 'App\\Models\\Admin:' . $admin->id,
+                'name' => $admin->name . ' (Admin/Staff)',
+            ]);
+        }
+        foreach ($users as $user) {
+            $employees->push([
+                'value' => 'App\\Models\\User:' . $user->id,
+                'name' => $user->name . ' (User/Officer)',
+            ]);
+        }
+
+        return view('admins.working-shift.create-edit', compact('employees'));
     }
 
     public function store(Request $request)
@@ -74,17 +92,21 @@ class WorkingShiftController extends Controller
             'target_type' => 'required|string|in:siswa_santri,karyawan,user',
             'days' => 'required|array',
             'days.*' => 'string|in:Senin,Selasa,Rabu,Kamis,Jumat,Sabtu,Minggu',
+            'assigned_users' => 'nullable|array',
         ]);
 
-        WorkingShift::create([
+        $workingShift = WorkingShift::create([
             'name' => $request->name,
             'start_time' => $request->start_time,
             'end_time' => $request->end_time,
             'grace_period' => $request->grace_period,
             'target_type' => $request->target_type,
             'days' => $request->days,
+            'assigned_users' => $request->assigned_users,
             'is_active' => true,
         ]);
+
+        $this->syncEmployeeMonthlyShifts($workingShift);
 
         return redirect()->route('working-shift.index', $request->only(['mode', 'outlet_id']))->with('success', 'Shift Presensi berhasil ditambahkan');
     }
@@ -94,7 +116,25 @@ class WorkingShiftController extends Controller
         if (!Auth::user()->can('Edit Shift')) {
             return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
         }
-        return view('admins.working-shift.create-edit', compact('workingShift'));
+
+        $admins = \App\Models\Admin::orderBy('name')->get();
+        $users = \App\Models\User::where('jamaah_status', '!=', 'JAMAAH')->orderBy('name')->get();
+        
+        $employees = collect();
+        foreach ($admins as $admin) {
+            $employees->push([
+                'value' => 'App\\Models\\Admin:' . $admin->id,
+                'name' => $admin->name . ' (Admin/Staff)',
+            ]);
+        }
+        foreach ($users as $user) {
+            $employees->push([
+                'value' => 'App\\Models\\User:' . $user->id,
+                'name' => $user->name . ' (User/Officer)',
+            ]);
+        }
+
+        return view('admins.working-shift.create-edit', compact('workingShift', 'employees'));
     }
 
     public function update(Request $request, WorkingShift $workingShift)
@@ -111,6 +151,7 @@ class WorkingShiftController extends Controller
             'target_type' => 'required|string|in:siswa_santri,karyawan,user',
             'days' => 'required|array',
             'days.*' => 'string|in:Senin,Selasa,Rabu,Kamis,Jumat,Sabtu,Minggu',
+            'assigned_users' => 'nullable|array',
         ]);
 
         $workingShift->update([
@@ -120,7 +161,10 @@ class WorkingShiftController extends Controller
             'grace_period' => $request->grace_period,
             'target_type' => $request->target_type,
             'days' => $request->days,
+            'assigned_users' => $request->assigned_users,
         ]);
+
+        $this->syncEmployeeMonthlyShifts($workingShift);
 
         return redirect()->route('working-shift.index', $request->only(['mode', 'outlet_id']))->with('success', 'Shift Presensi berhasil diperbarui');
     }
@@ -142,5 +186,70 @@ class WorkingShiftController extends Controller
         $shift = WorkingShift::findOrFail($id);
         $shift->update(['is_active' => !$shift->is_active]);
         return redirect()->route('working-shift.index', request()->only(['mode', 'outlet_id']))->with('success', 'Status shift presensi berhasil diperbarui');
+    }
+
+    private function syncEmployeeMonthlyShifts(WorkingShift $workingShift)
+    {
+        $activeDays = $workingShift->days ?? [];
+        if (empty($activeDays)) {
+            return;
+        }
+
+        $dayMap = [
+            'Senin' => 1,
+            'Selasa' => 2,
+            'Rabu' => 3,
+            'Kamis' => 4,
+            'Jumat' => 5,
+            'Sabtu' => 6,
+            'Minggu' => 7,
+        ];
+
+        $activeDayNumbers = array_map(function($day) use ($dayMap) {
+            return $dayMap[$day] ?? null;
+        }, $activeDays);
+        $activeDayNumbers = array_filter($activeDayNumbers);
+
+        $startDate = now()->startOfMonth();
+        $endDate = now()->addMonth()->endOfMonth();
+
+        // Hapus monthly shift lama untuk shift ini agar bisa di-sync ulang
+        \App\Models\EmployeeMonthlyShift::where('working_shift_id', $workingShift->id)
+            ->whereBetween('date', [$startDate->toDateString(), $endDate->toDateString()])
+            ->delete();
+
+        if ($workingShift->target_type !== 'karyawan') {
+            return;
+        }
+
+        $assignedUsers = $workingShift->assigned_users ?? [];
+
+        for ($date = $startDate->copy(); $date->lte($endDate); $date->addDay()) {
+            $dayOfWeek = $date->dayOfWeekIso;
+            
+            if (in_array($dayOfWeek, $activeDayNumbers)) {
+                $isHoliday = \App\Models\Holiday::where('date', $date->toDateString())->exists();
+
+                foreach ($assignedUsers as $userStr) {
+                    $parts = explode(':', $userStr);
+                    if (count($parts) === 2) {
+                        $type = $parts[0];
+                        $id = $parts[1];
+
+                        \App\Models\EmployeeMonthlyShift::updateOrCreate(
+                            [
+                                'presensiable_type' => $type,
+                                'presensiable_id' => $id,
+                                'date' => $date->toDateString(),
+                            ],
+                            [
+                                'working_shift_id' => $workingShift->id,
+                                'is_holiday' => $isHoliday,
+                            ]
+                        );
+                    }
+                }
+            }
+        }
     }
 }
