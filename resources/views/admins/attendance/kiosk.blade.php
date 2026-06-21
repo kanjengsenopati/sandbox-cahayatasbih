@@ -19,8 +19,9 @@
                 </ul>
             </div>
             
-            <!-- Tombol Mode Kiosk Fullscreen -->
+            <!-- Tombol Mode Kiosk Fullscreen & Outlet Switcher -->
             <div class="d-flex align-items-center gap-2">
+                @include('layouts.partials.outlet_switcher')
                 <button type="button" class="btn btn-sm btn-light-primary" onclick="toggleFullscreen()">
                     <i class="fa-solid fa-expand me-1"></i> Fullscreen Kiosk
                 </button>
@@ -52,6 +53,9 @@
                                 <video id="kiosk-webcam" width="480" height="360" autoplay muted playsinline class="position-absolute" style="top: 0; left: 0; transform: scaleX(-1); object-fit: cover;"></video>
                                 <canvas id="kiosk-canvas" width="480" height="360" class="position-absolute" style="top: 0; left: 0; z-index: 10; transform: scaleX(-1);"></canvas>
                                 
+                                <!-- Camera Flash Overlay -->
+                                <div id="kiosk-flash" class="position-absolute w-100 h-100 bg-white" style="top: 0; left: 0; z-index: 20; display: none; opacity: 1;"></div>
+
                                 <!-- Loading overlay -->
                                 <div id="kiosk-overlay" class="position-absolute w-100 h-100 bg-black bg-opacity-75 d-flex flex-column align-items-center justify-content-center text-white" style="top: 0; left: 0; z-index: 15;">
                                     <span class="spinner-border text-primary spinner-border-lg mb-3"></span>
@@ -228,11 +232,14 @@
             isProcessing = true;
             $('#scanner-indicator').text('MENGAMBIL FOTO UNTUK ' + staffName.toUpperCase() + '...');
 
+            // Trigger camera flash effect
+            $('#kiosk-flash').show().fadeOut(300);
+
             // Ambil snapshot dari video stream
             try {
                 const tempCanvas = document.createElement('canvas');
-                tempCanvas.width = video.videoWidth || 480;
-                tempCanvas.height = video.videoHeight || 360;
+                tempCanvas.width = video.videoWidth > 0 ? video.videoWidth : 480;
+                tempCanvas.height = video.videoHeight > 0 ? video.videoHeight : 360;
                 const tempCtx = tempCanvas.getContext('2d');
 
                 // Mirror canvas horizontal agar foto yang dihasilkan menghadap depan dengan benar (karena video di-mirror)

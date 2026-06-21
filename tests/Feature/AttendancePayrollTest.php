@@ -780,4 +780,200 @@ class AttendancePayrollTest extends TestCase
         // Pastikan tidak ada data yang masuk ke tabel karyawans (ter-rollback)
         $this->assertEquals($originalKaryawanCount, \App\Models\Karyawan::count());
     }
+
+    public function test_kiosk_page_displays_employees_by_outlet()
+    {
+        $admin = Admin::create([
+            'id' => (string) Str::uuid(),
+            'name' => 'Kiosk Admin Test',
+            'email' => 'kioskadmin@example.com',
+            'password' => bcrypt('password'),
+            'is_active' => true,
+            'avatar' => '',
+            'role_id' => 1,
+        ]);
+
+        $outlet1 = \App\Models\Outlet::create([
+            'id' => (string) Str::uuid(),
+            'name' => 'Outlet Satu',
+            'code' => 'OUT1',
+            'is_active' => true,
+        ]);
+
+        $outlet2 = \App\Models\Outlet::create([
+            'id' => (string) Str::uuid(),
+            'name' => 'Outlet Dua',
+            'code' => 'OUT2',
+            'is_active' => true,
+        ]);
+
+        // Karyawan 1 (Outlet 1)
+        $karyawan1 = Admin::create([
+            'id' => (string) Str::uuid(),
+            'name' => 'Karyawan Outlet Satu',
+            'email' => 'karyawan1@example.com',
+            'password' => bcrypt('password'),
+            'is_active' => true,
+            'outlet_id' => $outlet1->id,
+            'avatar' => '',
+            'role_id' => 1,
+        ]);
+        \App\Models\Karyawan::create([
+            'admin_id' => $karyawan1->id,
+            'gaji_bulan' => 800000,
+            'gaji_hari' => 26600,
+            'potongan_terlambat' => 0,
+            'potongan_absen' => 26600,
+            'hari_kerja' => 30,
+            'outlet_id' => $outlet1->id,
+        ]);
+
+        // Karyawan 2 (Outlet 2)
+        $karyawan2 = Admin::create([
+            'id' => (string) Str::uuid(),
+            'name' => 'Karyawan Outlet Dua',
+            'email' => 'karyawan2@example.com',
+            'password' => bcrypt('password'),
+            'is_active' => true,
+            'outlet_id' => $outlet2->id,
+            'avatar' => '',
+            'role_id' => 1,
+        ]);
+        \App\Models\Karyawan::create([
+            'admin_id' => $karyawan2->id,
+            'gaji_bulan' => 900000,
+            'gaji_hari' => 30000,
+            'potongan_terlambat' => 0,
+            'potongan_absen' => 30000,
+            'hari_kerja' => 30,
+            'outlet_id' => $outlet2->id,
+        ]);
+
+        // Buat working shift
+        $shift = WorkingShift::create([
+            'id' => (string) Str::uuid(),
+            'name' => 'Shift Pagi',
+            'start_time' => '08:00:00',
+            'end_time' => '16:00:00',
+            'grace_period' => 15,
+            'days' => ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'],
+            'target_type' => 'karyawan',
+        ]);
+
+        // Hubungkan shift bulanan hari ini ke kedua karyawan
+        $today = \Carbon\Carbon::today()->toDateString();
+        EmployeeMonthlyShift::create([
+            'id' => (string) Str::uuid(),
+            'presensiable_type' => Admin::class,
+            'presensiable_id' => $karyawan1->id,
+            'working_shift_id' => $shift->id,
+            'date' => $today,
+            'is_holiday' => false,
+        ]);
+
+        EmployeeMonthlyShift::create([
+            'id' => (string) Str::uuid(),
+            'presensiable_type' => Admin::class,
+            'presensiable_id' => $karyawan2->id,
+            'working_shift_id' => $shift->id,
+            'date' => $today,
+            'is_holiday' => false,
+        ]);
+
+        // Test request Kiosk page for Outlet 1
+        $this->actingAs($admin);
+        $response = $this->get(route('biometric-mapping.kiosk', ['mode' => 'outlet', 'outlet_id' => $outlet1->id]));
+        $response->assertStatus(200);
+        $response->assertSee('Karyawan Outlet Satu');
+        $response->assertDontSee('Karyawan Outlet Dua');
+
+        // Test request Kiosk page for Outlet 2
+        $response2 = $this->get(route('biometric-mapping.kiosk', ['mode' => 'outlet', 'outlet_id' => $outlet2->id]));
+        $response2->assertStatus(200);
+        $response2->assertSee('Karyawan Outlet Dua');
+        $response2->assertDontSee('Karyawan Outlet Satu');
+    }
+
+    public function test_kiosk_manual_capture_submits_attendance_successfully()
+    {
+        $admin = Admin::create([
+            'id' => (string) Str::uuid(),
+            'name' => 'Kiosk Admin Test',
+            'email' => 'kioskadmin@example.com',
+            'password' => bcrypt('password'),
+            'is_active' => true,
+            'avatar' => '',
+            'role_id' => 1,
+        ]);
+
+        $outlet = \App\Models\Outlet::create([
+            'id' => (string) Str::uuid(),
+            'name' => 'Outlet Manual Test',
+            'code' => 'OUTMAN',
+            'is_active' => true,
+        ]);
+
+        $karyawan = Admin::create([
+            'id' => (string) Str::uuid(),
+            'name' => 'Staff Dapur Test',
+            'email' => 'staffdapur@example.com',
+            'password' => bcrypt('password'),
+            'is_active' => true,
+            'avatar' => '',
+            'role_id' => 1,
+            'outlet_id' => $outlet->id,
+        ]);
+        \App\Models\Karyawan::create([
+            'admin_id' => $karyawan->id,
+            'gaji_bulan' => 800000,
+            'gaji_hari' => 26600,
+            'potongan_terlambat' => 0,
+            'potongan_absen' => 26600,
+            'hari_kerja' => 30,
+            'outlet_id' => $outlet->id,
+        ]);
+
+        $shift = WorkingShift::create([
+            'id' => (string) Str::uuid(),
+            'name' => 'Shift Pagi',
+            'start_time' => '08:00:00',
+            'end_time' => '16:00:00',
+            'grace_period' => 15,
+            'days' => ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'],
+            'target_type' => 'karyawan',
+        ]);
+
+        $today = \Carbon\Carbon::today()->toDateString();
+        EmployeeMonthlyShift::create([
+            'id' => (string) Str::uuid(),
+            'presensiable_type' => Admin::class,
+            'presensiable_id' => $karyawan->id,
+            'working_shift_id' => $shift->id,
+            'date' => $today,
+            'is_holiday' => false,
+        ]);
+
+        $this->actingAs($admin);
+
+        // Dummy base64 encoded transparent 1x1 image
+        $dummyBase64 = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
+
+        $response = $this->postJson(route('biometric-mapping.manual-capture'), [
+            'user_id' => $karyawan->id,
+            'user_type' => 'admin',
+            'type' => 'in',
+            'photo' => $dummyBase64,
+        ]);
+
+        $response->assertStatus(200);
+        $response->assertJson([
+            'success' => true
+        ]);
+
+        // Verifikasi bahwa data absensi masuk ke database
+        $this->assertDatabaseHas('attendances', [
+            'presensiable_id' => $karyawan->id,
+            'activity_type' => 'work',
+        ]);
+    }
 }

@@ -81,8 +81,8 @@
                 </div>
                 @endcan -->
 
-                @canany(['Manage Outlet', 'Manage Barang', 'Manage Pos Kasir', 'Manage Laporan Pos Kasir', 'Manage Laporan Pos Multi Outlet', 'Manage Laporan Rugi Laba', 'Manage Arus Kas', 'Manage Shift', 'Manage Laporan Presensi', 'Manage Payroll'])
-                <div data-kt-menu-trigger="click" class="menu-item menu-accordion {{ (request()->routeIs(['outlet.*', 'item.*', 'category-item.*', 'stock-history.*', 'order-item.*', 'pos-transaction.*', 'report-pos.*', 'report-profit-loss.*', 'working-shift.*', 'report-attendance.*', 'payroll.*', 'karyawan.*']) && request('mode') === 'outlet') ? 'show' : '' }}">
+                @canany(['Manage Outlet', 'Manage Barang', 'Manage Pos Kasir', 'Manage Laporan Pos Kasir', 'Manage Laporan Pos Multi Outlet', 'Manage Laporan Rugi Laba', 'Manage Arus Kas', 'Manage Shift', 'Manage Laporan Presensi', 'Manage Payroll', 'Manage Biometric'])
+                <div data-kt-menu-trigger="click" class="menu-item menu-accordion {{ ((request()->routeIs(['outlet.*', 'item.*', 'category-item.*', 'stock-history.*', 'order-item.*', 'pos-transaction.*', 'report-pos.*', 'report-profit-loss.*', 'working-shift.*', 'report-attendance.*', 'payroll.*', 'karyawan.*']) && request('mode') === 'outlet') || request()->routeIs('biometric-mapping.kiosk')) ? 'show' : '' }}">
                     <span class="menu-link">
                         <span class="menu-icon">
                             <i class="fa-solid fa-store" style="color: #ffffff;"></i>
@@ -102,7 +102,7 @@
                             </a>
                         </div>
                         @endcan
-
+ 
                         @can('Manage Barang')
                         <div class="menu-item">
                             <a class="menu-link {{ (request()->routeIs(['item.*', 'category-item.*', 'stock-history.*']) && request('mode') === 'outlet') ? ' active' : '' }}"
@@ -114,7 +114,7 @@
                             </a>
                         </div>
                         @endcan
-
+ 
                         @canany(['Manage Laporan Pos Kasir', 'Manage Laporan Pos Multi Outlet'])
                         <div class="menu-item">
                             <a class="menu-link {{ (request()->routeIs(['pos-transaction.*', 'report-pos.*']) && request('mode') === 'outlet') ? ' active' : '' }}"
@@ -126,7 +126,7 @@
                             </a>
                         </div>
                         @endcanany
-
+ 
                         @canany(['Manage Arus Kas', 'Manage Laporan Pos Multi Outlet', 'Manage Laporan Rugi Laba'])
                         <div class="menu-item">
                             <a class="menu-link {{ (request()->routeIs('report-profit-loss.*') && request('mode') === 'outlet') ? ' active' : '' }}"
@@ -138,7 +138,7 @@
                             </a>
                         </div>
                         @endcanany
-
+ 
                         @canany(['Manage Karyawan', 'Manage Shift', 'Manage Payroll'])
                         <div class="menu-item">
                             <a class="menu-link {{ (request()->routeIs(['karyawan.*', 'working-shift.*', 'payroll.*']) && request('mode') === 'outlet') ? ' active' : '' }}"
@@ -150,7 +150,7 @@
                             </a>
                         </div>
                         @endcanany
-
+ 
                         @can('Manage Laporan Presensi')
                         <div class="menu-item">
                             <a class="menu-link {{ (request()->routeIs('report-attendance.*') && request('mode') === 'outlet') ? ' active' : '' }}"
@@ -163,6 +163,18 @@
                         </div>
                         @endcan
 
+                        @can('Manage Biometric')
+                        <div class="menu-item">
+                            <a class="menu-link {{ request()->routeIs('biometric-mapping.kiosk') ? ' active' : '' }}"
+                                href="{{ route('biometric-mapping.kiosk') }}">
+                                <span class="menu-bullet">
+                                    <i class="fa-solid fa-camera text-white/80 fs-7"></i>
+                                </span>
+                                <span class="menu-title">Kiosk Presensi Wajah</span>
+                            </a>
+                        </div>
+                        @endcan
+ 
                         @can('Manage Outlet')
                         <div class="menu-item">
                             <a class="menu-link {{ request()->routeIs('outlet.*') ? ' active' : '' }}"
@@ -229,18 +241,7 @@
                         </div>
                         @endcanany
 
-                        {{-- Kiosk Presensi Wajah --}}
-                        @can('Manage Biometric')
-                        <div class="menu-item ">
-                            <a class="menu-link {{ request()->routeIs('biometric-mapping.kiosk') ? ' active' : '' }}"
-                                href="{{ route('biometric-mapping.kiosk') }}">
-                                <span class="menu-bullet">
-                                    <i class="fa-solid fa-camera text-white/80 fs-7"></i>
-                                </span>
-                                <span class="menu-title">Kiosk Presensi Wajah</span>
-                            </a>
-                        </div>
-                        @endcan
+
 
                         {{-- Submenu: Kartu --}}
                         @canany(['Manage Kartu Santri', 'Manage Kartu Ujian'])

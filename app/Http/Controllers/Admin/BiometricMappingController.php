@@ -201,18 +201,38 @@ class BiometricMappingController extends Controller
 
         $today = \Carbon\Carbon::today()->format('Y-m-d');
         
+        $outletId = request('outlet_id');
+        if (!$outletId) {
+            $koperasiId = \App\Models\Outlet::where('name', 'like', '%koperasi%')->value('id');
+            $firstOutlet = \App\Models\Outlet::where('is_active', 1)
+                ->where('id', '!=', $koperasiId)
+                ->orderBy('name')
+                ->first();
+            $outletId = $firstOutlet ? $firstOutlet->id : null;
+        }
+
+        // If the logged in user is tied to a specific outlet, enforce it
+        if (Auth::user()->outlet_id) {
+            $outletId = Auth::user()->outlet_id;
+        }
+
         $shiftsToday = \App\Models\EmployeeMonthlyShift::with(['presensiable', 'workingShift'])
             ->where('date', $today)
             ->whereNotNull('working_shift_id')
             ->where('is_holiday', false)
             ->get();
 
-        $staffList = $shiftsToday->map(function ($shift) {
+        $staffList = $shiftsToday->map(function ($shift) use ($outletId) {
             $user = $shift->presensiable;
             if (!$user) return null;
 
             // Pastikan user (Admin) terdaftar di tabel karyawans
             if ($user instanceof \App\Models\Admin) {
+                // Filter by outlet
+                if ($outletId && $user->outlet_id !== $outletId) {
+                    return null;
+                }
+
                 $isKaryawan = \App\Models\Karyawan::where('admin_id', $user->id)->exists();
                 if (!$isKaryawan) {
                     return null;
