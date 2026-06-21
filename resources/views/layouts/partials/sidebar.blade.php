@@ -448,6 +448,7 @@
                 @canany(['Manage Saldo Santri', 'Manage Tabungan Santri','Manage Jadwal', 'Manage Tahfidz',
                 'Manage Pos Kasir', 'Manage Tagihan', 'Manage Perilaku Santri', 'Manage Nilai Pelajaran',
                 'Manage Prestasi Santri', 'Manage Nilai Santri', 'Manage Arus Kas', 'Manage Perizinan', 'Manage Payroll'])
+                @if(!Auth::user()->hasRole('Kasir'))
                 <div data-kt-menu-trigger="click" class="menu-item menu-accordion {{ (
                     request()->routeIs(['bill.*', 'saldo-history.*', 'saving-history.*', 'study-grade.*',
                     'tahfidz.*', 'student-counseling-score.*', 'schedule.*','saldo-bank.*', 'saving-bank.*', 'student-achievement.*',
@@ -613,12 +614,14 @@
                         @endcan
                     </div>
                 </div>
+                @endif
                 @endcanany
 
                 @canany(['Manage Laporan Pos Kasir', 'Manage Laporan Pos Multi Outlet', 'Manage Laporan Tagihan', 'Manage Laporan Santri', 'Manage Laporan
                 Nilai Akademik', 'Manage Laporan Tahfidz',
                 'Manage Laporan Perilaku Siswa', 'Manage Laporan Saldo Santri', 'Manage Laporan Fee Aplikasi',
                 'Manage Laporan Transaksi', 'Manage Laporan Rugi Laba', 'Manage Laporan Audit Log', 'Manage Laporan Presensi'])
+                @if(!Auth::user()->hasRole('Kasir'))
                 <div data-kt-menu-trigger="click" class="menu-item menu-accordion {{ (
                     request()->routeIs(['report-bill.*', 'report-student.*','report-tahfidz.*',
                     'report-student-counseling-score.*', 'report-app-fee.*',
@@ -780,6 +783,7 @@
                         @endif
                     </div>
                 </div>
+                @endif
                 @endcanany
             </div>
             <!--end::Menu-->
