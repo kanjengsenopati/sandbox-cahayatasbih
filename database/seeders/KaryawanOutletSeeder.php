@@ -22,26 +22,7 @@ class KaryawanOutletSeeder extends Seeder
      */
     public function run(): void
     {
-        // 1. Ensure outlets exist
-        $borealis = Outlet::firstOrCreate(
-            ['name' => 'Borealis Eatery'],
-            [
-                'code' => 'BE',
-                'address' => 'Borealis Eatery',
-                'is_active' => true,
-            ]
-        );
-
-        $angkringan = Outlet::firstOrCreate(
-            ['name' => 'Angkringan'],
-            [
-                'code' => 'AK',
-                'address' => 'Angkringan',
-                'is_active' => true,
-            ]
-        );
-
-        // 2. Ensure roles exist and permissions are assigned
+        // 1. Ensure roles exist and permissions are assigned
         $nonKasirRole = Role::firstOrCreate([
             'name' => 'Karyawan Outlet ( Non Kasir )',
             'guard_name' => 'web'
@@ -67,13 +48,105 @@ class KaryawanOutletSeeder extends Seeder
         $nonKasirRole->syncPermissions([$manageBiometric, $manageLaporanPresensi]);
         $kasirRole->givePermissionTo($manageBiometric);
 
-        // 3. Define employee data
+        // 2. Check Yogo to identify outlet and other default settings
+        // Look up case-insensitively for YOGO
+        $yogoAdmin = Admin::where('name', 'like', '%yogo%')->first();
+        
+        if ($yogoAdmin) {
+            $this->command->info("YOGO ditemukan di database: {$yogoAdmin->name}");
+            $outletId = $yogoAdmin->outlet_id;
+            
+            // Get Kamar & Scope from YOGO
+            $yogoKaryawan = Karyawan::where('admin_id', $yogoAdmin->id)->first();
+            $putraKamar = ($yogoKaryawan && $yogoKaryawan->kamar) ? $yogoKaryawan->kamar : 'B1';
+            $accessScope = $yogoAdmin->access_scope ?? 'both';
+            
+            // Ensure YOGO is updated to uppercase and correct role
+            $yogoAdmin->update([
+                'name' => 'YOGO',
+                'role_id' => $kasirRole->id
+            ]);
+            $yogoAdmin->syncRoles(['Kasir']);
+
+            // Update YOGO Karyawan details to match production style
+            if ($yogoKaryawan) {
+                $yogoKaryawan->update([
+                    'kamar' => $putraKamar,
+                    'jabatan' => 'KASIR',
+                    'section' => 'ANGKRINGAN',
+                ]);
+            }
+        } else {
+            // Local dev fallback: Create OUTLET and Yogo
+            $this->command->info("YOGO tidak ditemukan. Membuat data OUTLET dan YOGO default.");
+            
+            $outlet = Outlet::firstOrCreate(
+                ['name' => 'OUTLET'],
+                [
+                    'code' => 'OUT',
+                    'address' => 'Pusat Outlet',
+                    'is_active' => true,
+                ]
+            );
+            $outletId = $outlet->id;
+            $putraKamar = 'B1';
+            $accessScope = 'both';
+
+            // Create YOGO Admin
+            $yogoAdmin = Admin::create([
+                'id' => (string) Str::uuid(),
+                'name' => 'YOGO',
+                'email' => 'yogo@gmail.com',
+                'password' => bcrypt('1234qwer'),
+                'avatar' => '',
+                'is_active' => true,
+                'role_id' => $kasirRole->id,
+                'outlet_id' => $outletId,
+                'access_scope' => $accessScope,
+            ]);
+
+            $yogoAdmin->syncRoles(['Kasir']);
+
+            \App\Models\AdminOutlet::create([
+                'admin_id' => $yogoAdmin->id,
+                'outlet_id' => $outletId,
+            ]);
+
+            // Create YOGO Karyawan
+            Karyawan::create([
+                'admin_id' => $yogoAdmin->id,
+                'kamar' => 'B1',
+                'jabatan' => 'KASIR',
+                'outlet_id' => $outletId,
+                'section' => 'ANGKRINGAN',
+                'gaji_bulan' => 800000,
+                'gaji_hari' => 26600,
+                'hari_kerja' => 30,
+                'potongan_terlambat' => 0,
+                'potongan_absen' => 26600,
+            ]);
+
+            // Create YOGO EmployeeSalary
+            EmployeeSalary::create([
+                'presensiable_type' => Admin::class,
+                'presensiable_id' => $yogoAdmin->id,
+                'base_salary' => 800000,
+                'attendance_allowance' => 0,
+                'transport_allowance' => 0,
+                'lateness_penalty_type' => 'fixed',
+                'lateness_penalty_value' => 0,
+                'lateness_penalty_per_minute' => 0,
+                'absence_penalty' => 26600,
+            ]);
+        }
+
+        // 3. Define employee data to seed
         $employeesData = [
             // Putri (Borealis Eatery) - Kamar C4
             [
                 'name' => 'Yuka Azzahra',
-                'jabatan' => 'Supervisor',
-                'outlet' => 'Borealis Eatery',
+                'jabatan' => 'SUPERVISOR',
+                'establishment' => 'BOREALIS EATERY',
                 'section' => 'Weekend & Event',
                 'gaji_bulan' => 850000,
                 'gaji_hari' => 70800,
@@ -83,8 +156,8 @@ class KaryawanOutletSeeder extends Seeder
             ],
             [
                 'name' => 'Selfi Makhlihati',
-                'jabatan' => 'Head Inventory',
-                'outlet' => 'Borealis Eatery',
+                'jabatan' => 'HEAD INVENTORY',
+                'establishment' => 'BOREALIS EATERY',
                 'section' => 'Weekend & Event',
                 'gaji_bulan' => 850000,
                 'gaji_hari' => 70800,
@@ -94,8 +167,8 @@ class KaryawanOutletSeeder extends Seeder
             ],
             [
                 'name' => 'Khurotu Aini',
-                'jabatan' => 'Cashier',
-                'outlet' => 'Borealis Eatery',
+                'jabatan' => 'KASIR',
+                'establishment' => 'BOREALIS EATERY',
                 'section' => 'Weekend & Event',
                 'gaji_bulan' => 400000,
                 'gaji_hari' => 41500,
@@ -105,8 +178,8 @@ class KaryawanOutletSeeder extends Seeder
             ],
             [
                 'name' => 'Rini',
-                'jabatan' => 'Helper',
-                'outlet' => 'Borealis Eatery',
+                'jabatan' => 'HELPER',
+                'establishment' => 'BOREALIS EATERY',
                 'section' => 'Weekend & Event',
                 'gaji_bulan' => 200000,
                 'gaji_hari' => 16500,
@@ -116,8 +189,8 @@ class KaryawanOutletSeeder extends Seeder
             ],
             [
                 'name' => 'Yusro',
-                'jabatan' => 'Helper',
-                'outlet' => 'Borealis Eatery',
+                'jabatan' => 'HELPER',
+                'establishment' => 'BOREALIS EATERY',
                 'section' => 'Weekend & Event',
                 'gaji_bulan' => 200000,
                 'gaji_hari' => 16500,
@@ -127,8 +200,8 @@ class KaryawanOutletSeeder extends Seeder
             ],
             [
                 'name' => 'Isfi',
-                'jabatan' => 'Helper',
-                'outlet' => 'Borealis Eatery',
+                'jabatan' => 'HELPER',
+                'establishment' => 'BOREALIS EATERY',
                 'section' => 'Weekend & Event',
                 'gaji_bulan' => 200000,
                 'gaji_hari' => 16500,
@@ -138,8 +211,8 @@ class KaryawanOutletSeeder extends Seeder
             ],
             [
                 'name' => 'Anis',
-                'jabatan' => 'Helper',
-                'outlet' => 'Borealis Eatery',
+                'jabatan' => 'HELPER',
+                'establishment' => 'BOREALIS EATERY',
                 'section' => 'Weekend & Event',
                 'gaji_bulan' => 200000,
                 'gaji_hari' => 16500,
@@ -149,8 +222,8 @@ class KaryawanOutletSeeder extends Seeder
             ],
             [
                 'name' => 'Indah',
-                'jabatan' => 'Helper',
-                'outlet' => 'Borealis Eatery',
+                'jabatan' => 'HELPER',
+                'establishment' => 'BOREALIS EATERY',
                 'section' => 'Weekend & Event',
                 'gaji_bulan' => 200000,
                 'gaji_hari' => 16500,
@@ -160,8 +233,8 @@ class KaryawanOutletSeeder extends Seeder
             ],
             [
                 'name' => 'Wawa',
-                'jabatan' => 'Cashier',
-                'outlet' => 'Borealis Eatery',
+                'jabatan' => 'KASIR',
+                'establishment' => 'BOREALIS EATERY',
                 'section' => 'Weekdays',
                 'gaji_bulan' => 800000,
                 'gaji_hari' => 26600,
@@ -171,8 +244,8 @@ class KaryawanOutletSeeder extends Seeder
             ],
             [
                 'name' => 'Salsa',
-                'jabatan' => 'Helper',
-                'outlet' => 'Borealis Eatery',
+                'jabatan' => 'HELPER',
+                'establishment' => 'BOREALIS EATERY',
                 'section' => 'Weekdays',
                 'gaji_bulan' => 800000,
                 'gaji_hari' => 26600,
@@ -181,67 +254,45 @@ class KaryawanOutletSeeder extends Seeder
                 'role' => 'Karyawan Outlet ( Non Kasir )',
             ],
 
-            // Putra (Angkringan) - No Kamar
+            // Putra (Angkringan) - Kamar mengikuti YOGO (B1)
             [
                 'name' => 'Alam',
-                'jabatan' => 'Helper',
-                'outlet' => 'Angkringan',
+                'jabatan' => 'HELPER',
+                'establishment' => 'ANGKRINGAN',
                 'section' => 'Weekdays',
                 'gaji_bulan' => 800000,
                 'gaji_hari' => 26600,
                 'hari_kerja' => 30,
-                'kamar' => null,
+                'kamar' => $putraKamar,
                 'role' => 'Karyawan Outlet ( Non Kasir )',
             ],
             [
                 'name' => 'Fathkul',
-                'jabatan' => 'Helper',
-                'outlet' => 'Angkringan',
+                'jabatan' => 'HELPER',
+                'establishment' => 'ANGKRINGAN',
                 'section' => 'Weekend & Event',
                 'gaji_bulan' => 350000,
                 'gaji_hari' => 29160,
                 'hari_kerja' => 12,
-                'kamar' => null,
+                'kamar' => $putraKamar,
                 'role' => 'Karyawan Outlet ( Non Kasir )',
             ],
             [
                 'name' => 'Safik',
-                'jabatan' => 'Helper',
-                'outlet' => 'Angkringan',
+                'jabatan' => 'HELPER',
+                'establishment' => 'ANGKRINGAN',
                 'section' => 'Weekend & Event',
                 'gaji_bulan' => 350000,
                 'gaji_hari' => 29160,
                 'hari_kerja' => 12,
-                'kamar' => null,
+                'kamar' => $putraKamar,
                 'role' => 'Karyawan Outlet ( Non Kasir )',
             ],
         ];
 
-        // 4. Handle YOGO/Yogo checks
-        $yogoQuery = Admin::where('name', 'like', '%Yogo%');
-        if ($yogoQuery->exists()) {
-            $yogoAdmin = $yogoQuery->first();
-            $this->command->info("Yogo sudah ada di database. Dilewati.");
-        } else {
-            // Yogo does not exist, seed Yogo as well (primarily for testing locally)
-            $yogoAdmin = $this->createEmployee([
-                'name' => 'Yogo',
-                'jabatan' => 'Cashier',
-                'outlet' => 'Angkringan',
-                'section' => 'Weekdays',
-                'gaji_bulan' => 800000,
-                'gaji_hari' => 26600,
-                'hari_kerja' => 30,
-                'kamar' => null,
-                'role' => 'Kasir',
-            ], $angkringan->id, $kasirRole);
-            $this->command->info("Yogo tidak ditemukan. Membuat Yogo sebagai data awal.");
-        }
-
         // Seed the other employees
         $createdAdmins = [];
         foreach ($employeesData as $empData) {
-            $outletId = $empData['outlet'] === 'Borealis Eatery' ? $borealis->id : $angkringan->id;
             $roleObj = $empData['role'] === 'Kasir' ? $kasirRole : $nonKasirRole;
 
             // Check if admin already exists by email
@@ -249,18 +300,88 @@ class KaryawanOutletSeeder extends Seeder
             $admin = Admin::where('email', $email)->first();
 
             if (!$admin) {
-                $admin = $this->createEmployee($empData, $outletId, $roleObj);
+                // Ensure name is capitalized/uppercase
+                $admin = Admin::create([
+                    'id' => (string) Str::uuid(),
+                    'name' => strtoupper($empData['name']),
+                    'email' => $email,
+                    'password' => bcrypt('1234qwer'),
+                    'avatar' => '',
+                    'is_active' => true,
+                    'role_id' => $roleObj->id,
+                    'outlet_id' => $outletId,
+                    'access_scope' => $accessScope,
+                ]);
+
+                // Sync Spatie role
+                $admin->syncRoles([$roleObj->name]);
+
+                // Add to admin_outlets pivot
+                \App\Models\AdminOutlet::create([
+                    'admin_id' => $admin->id,
+                    'outlet_id' => $outletId,
+                ]);
+
+                // Create Karyawan (uppercase fields to match live data style)
+                Karyawan::create([
+                    'admin_id' => $admin->id,
+                    'kamar' => strtoupper($empData['kamar']),
+                    'jabatan' => strtoupper($empData['jabatan']),
+                    'outlet_id' => $outletId,
+                    'section' => strtoupper($empData['establishment']),
+                    'gaji_bulan' => $empData['gaji_bulan'],
+                    'gaji_hari' => $empData['gaji_hari'],
+                    'hari_kerja' => $empData['hari_kerja'],
+                    'potongan_terlambat' => 0,
+                    'potongan_absen' => $empData['gaji_hari'],
+                ]);
+
+                // Create EmployeeSalary for payroll
+                EmployeeSalary::create([
+                    'presensiable_type' => Admin::class,
+                    'presensiable_id' => $admin->id,
+                    'base_salary' => $empData['gaji_bulan'],
+                    'attendance_allowance' => 0,
+                    'transport_allowance' => 0,
+                    'lateness_penalty_type' => 'fixed',
+                    'lateness_penalty_value' => 0,
+                    'lateness_penalty_per_minute' => 0,
+                    'absence_penalty' => $empData['gaji_hari'],
+                ]);
+
                 $this->command->info("Karyawan {$empData['name']} berhasil ditambahkan.");
             } else {
-                $this->command->info("Karyawan {$empData['name']} (Email: {$email}) sudah ada. Dilewati.");
+                // If it already exists, make sure to uppercase its fields to match!
+                $admin->update([
+                    'name' => strtoupper($admin->name),
+                    'outlet_id' => $outletId,
+                    'role_id' => $roleObj->id
+                ]);
+                $admin->syncRoles([$roleObj->name]);
+
+                $karyawan = Karyawan::where('admin_id', $admin->id)->first();
+                if ($karyawan) {
+                    $karyawan->update([
+                        'kamar' => strtoupper($empData['kamar']),
+                        'jabatan' => strtoupper($empData['jabatan']),
+                        'section' => strtoupper($empData['establishment']),
+                        'outlet_id' => $outletId,
+                        'gaji_bulan' => $empData['gaji_bulan'],
+                        'gaji_hari' => $empData['gaji_hari'],
+                        'hari_kerja' => $empData['hari_kerja'],
+                    ]);
+                }
+                
+                $this->command->info("Karyawan {$empData['name']} (Email: {$email}) sudah ada. Melakukan update data.");
             }
+
             $createdAdmins[] = [
                 'admin' => $admin,
                 'section' => $empData['section']
             ];
         }
 
-        // 5. Create Default Working Shifts if not exists
+        // 4. Create Default Working Shifts if not exists
         $weekdaysShift = WorkingShift::firstOrCreate(
             ['name' => 'Weekdays'],
             [
@@ -286,11 +407,10 @@ class KaryawanOutletSeeder extends Seeder
         );
 
         // Assign users to shifts
-        // Format of assigned_users: Array of strings "App\Models\Admin:{uuid}"
         $weekdaysAssigned = [];
         $weekendAssigned = [];
 
-        // Include Yogo in Weekdays
+        // Include YOGO in Weekdays
         if ($yogoAdmin) {
             $weekdaysAssigned[] = "App\\Models\\Admin:" . $yogoAdmin->id;
         }
@@ -310,69 +430,11 @@ class KaryawanOutletSeeder extends Seeder
 
         $this->command->info("Working shifts assigned users updated.");
 
-        // 6. Sync Employee Monthly Shifts for current and next month
+        // 5. Sync Employee Monthly Shifts for current and next month
         $this->syncMonthlyShifts($weekdaysShift);
         $this->syncMonthlyShifts($weekendShift);
 
         $this->command->info("Monthly shifts synced successfully.");
-    }
-
-    /**
-     * Create an Admin, Karyawan and EmployeeSalary record.
-     */
-    private function createEmployee(array $empData, string $outletId, Role $role): Admin
-    {
-        $email = str_replace(' ', '', strtolower($empData['name'])) . '@gmail.com';
-        
-        $admin = Admin::create([
-            'id' => (string) Str::uuid(),
-            'name' => $empData['name'],
-            'email' => $email,
-            'password' => bcrypt('1234qwer'),
-            'avatar' => '',
-            'is_active' => true,
-            'role_id' => $role->id,
-            'outlet_id' => $outletId,
-            'access_scope' => 'both',
-        ]);
-
-        // Sync Spatie role
-        $admin->syncRoles([$role->name]);
-
-        // Add to admin_outlets pivot
-        \App\Models\AdminOutlet::create([
-            'admin_id' => $admin->id,
-            'outlet_id' => $outletId,
-        ]);
-
-        // Create Karyawan
-        Karyawan::create([
-            'admin_id' => $admin->id,
-            'kamar' => $empData['kamar'],
-            'jabatan' => $empData['jabatan'],
-            'outlet_id' => $outletId,
-            'section' => $empData['section'],
-            'gaji_bulan' => $empData['gaji_bulan'],
-            'gaji_hari' => $empData['gaji_hari'],
-            'hari_kerja' => $empData['hari_kerja'],
-            'potongan_terlambat' => 0,
-            'potongan_absen' => $empData['gaji_hari'],
-        ]);
-
-        // Create EmployeeSalary for payroll integration
-        EmployeeSalary::create([
-            'presensiable_type' => Admin::class,
-            'presensiable_id' => $admin->id,
-            'base_salary' => $empData['gaji_bulan'],
-            'attendance_allowance' => 0,
-            'transport_allowance' => 0,
-            'lateness_penalty_type' => 'fixed',
-            'lateness_penalty_value' => 0,
-            'lateness_penalty_per_minute' => 0,
-            'absence_penalty' => $empData['gaji_hari'],
-        ]);
-
-        return $admin;
     }
 
     /**
