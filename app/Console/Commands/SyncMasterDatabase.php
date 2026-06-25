@@ -70,6 +70,47 @@ class SyncMasterDatabase extends Command
             $this->warn('Could not create database log: ' . $e->getMessage());
         }
 
+        // Build classroom ID mapping to map old formats (e.g. 10-D, X-D) to local standardized names
+        $classroomMapping = [];
+        try {
+            $masterClassrooms = DB::connection('mysql_master')->table('classrooms')->get();
+            $localClassrooms = DB::connection('mysql')->table('classrooms')->get();
+            
+            // Group local classrooms by school_id and normalized name
+            $localGroups = [];
+            foreach ($localClassrooms as $lc) {
+                $norm = $this->normalizeClassroomName($lc->name);
+                $localGroups[$lc->school_id][$norm] = $lc->id;
+            }
+            
+            foreach ($masterClassrooms as $mc) {
+                $norm = $this->normalizeClassroomName($mc->name);
+                
+                // Check if we already mapped or have a local classroom for this school_id & normalized name
+                if (isset($localGroups[$mc->school_id][$norm])) {
+                    $localId = $localGroups[$mc->school_id][$norm];
+                } else {
+                    // Create new local classroom
+                    $localId = (string) \Illuminate\Support\Str::uuid();
+                    DB::connection('mysql')->table('classrooms')->insert([
+                        'id' => $localId,
+                        'school_id' => $mc->school_id,
+                        'name' => $norm,
+                        'created_at' => $mc->created_at ?? now(),
+                        'updated_at' => $mc->updated_at ?? now(),
+                        'deleted_at' => $mc->deleted_at ?? null,
+                    ]);
+                    // Update local groups cache
+                    $localGroups[$mc->school_id][$norm] = $localId;
+                }
+                
+                $classroomMapping[$mc->id] = $localId;
+            }
+            $this->info("Built classroom mapping for " . count($classroomMapping) . " classrooms.");
+        } catch (\Throwable $e) {
+            $this->warn("Could not build classroom mapping: " . $e->getMessage());
+        }
+
         try {
             foreach ($tables as $table) {
                 $this->info("Syncing table: {$table}");
@@ -125,13 +166,22 @@ class SyncMasterDatabase extends Command
                 $minTimestamp = null;
                 $maxTimestamp = null;
 
-                $processChunk = function ($rows) use ($table, $commonColumns, &$inserted, &$minTimestamp, &$maxTimestamp) {
+                $processChunk = function ($rows) use ($table, $commonColumns, &$inserted, &$minTimestamp, &$maxTimestamp, $classroomMapping) {
                     $data = $rows->map(fn($row) => (array) $row)->toArray();
                     if (!empty($data)) {
                         $columnsToUpdate = array_filter($commonColumns, fn($col) => $col !== 'id');
                         
-                        // Identify date range
-                        foreach ($data as $row) {
+                        // Identify date range and map classroom IDs
+                        foreach ($data as &$row) {
+                            // Map classroom_id
+                            if (isset($row['classroom_id']) && isset($classroomMapping[$row['classroom_id']])) {
+                                $row['classroom_id'] = $classroomMapping[$row['classroom_id']];
+                            }
+                            // Map to_classroom_id
+                            if (isset($row['to_classroom_id']) && isset($classroomMapping[$row['to_classroom_id']])) {
+                                $row['to_classroom_id'] = $classroomMapping[$row['to_classroom_id']];
+                            }
+
                             $dateStr = $row['created_at'] ?? $row['updated_at'] ?? null;
                             if ($dateStr) {
                                 $ts = strtotime($dateStr);
@@ -145,6 +195,7 @@ class SyncMasterDatabase extends Command
                                 }
                             }
                         }
+                        unset($row);
 
                         // Run upsert operation
                         DB::connection('mysql')
@@ -199,5 +250,49 @@ class SyncMasterDatabase extends Command
         }
 
         $this->info('Database sync completed.');
+    }
+
+    /**
+     * Helper to normalize classroom names.
+     */
+    private function normalizeClassroomName(?string $name): string
+    {
+        if (is_null($name)) {
+            return '';
+        }
+
+        // 1. Remove all spaces and hyphens
+        $cleaned = str_replace([' ', '-'], '', $name);
+        
+        // 2. Extract grade part and letter part.
+        // Grade part can be Roman numerals (XII, XI, X, IX, VIII, VII, VI, V, IV, III, II, I) or digits.
+        if (preg_match('/^(XII|XI|X|IX|VIII|VII|VI|V|IV|III|II|I|12|11|10|[789])([A-Za-z]+)$/i', $cleaned, $matches)) {
+            $grade = strtoupper($matches[1]);
+            $letter = strtoupper($matches[2]);
+            
+            // Map Roman numerals to Arabic numbers
+            $romanMap = [
+                'XII' => '12',
+                'XI' => '11',
+                'X' => '10',
+                'IX' => '9',
+                'VIII' => '8',
+                'VII' => '7',
+                'VI' => '6',
+                'V' => '5',
+                'IV' => '4',
+                'III' => '3',
+                'II' => '2',
+                'I' => '1',
+            ];
+            
+            if (isset($romanMap[$grade])) {
+                $grade = $romanMap[$grade];
+            }
+            
+            return $grade . $letter;
+        }
+        
+        return strtoupper($cleaned);
     }
 }
