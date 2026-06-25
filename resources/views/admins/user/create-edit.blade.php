@@ -63,131 +63,137 @@
                                 method="POST" enctype="multipart/form-data">
                                 @csrf
                                 <x-form.put-method />
-                                <div class="fv-row mb-6">
-                                    <!--begin::Label-->
-                                    <label class="fs-6 fw-bold form-label" for="name">
-                                        <span class="required">Nama</span>
-                                        <i class="fas fa-exclamation-circle ms-1 fs-7" data-bs-toggle="tooltip"
-                                            title="Masukkan Nama"></i>
-                                    </label>
-                                    <!--end::Label-->
-                                    <!--begin::Input-->
-                                    <input type="text" class="form-control form-control-solid" id="name" name="name"
-                                        placeholder="Masukkan Nama Wali Santri"
-                                        value="{{ @$user->name ?? old('name') }}" />
-                                    <!--end::Input-->
-                                </div>
-                                <div class="fv-row mb-6">
-                                    <!--begin::Label-->
-                                    <label class="fs-6 fw-bold form-label" for="email">
-                                        <span class="required">Email</span>
-                                        <i class="fas fa-exclamation-circle ms-1 fs-7" data-bs-toggle="tooltip"
-                                            title="masukkan email anda"></i>
-                                    </label>
-                                    <!--end::Label-->
-                                    <!--begin::Input-->
-                                    <input type="email" class="form-control form-control-solid" id="email" name="email"
-                                        placeholder="Masukkan Email Wali Santri"
-                                        value="{{ @$user->email ?? old('email') }}" />
-                                    <!--end::Input-->
-                                </div>
-                                <div class="fv-row mb-7">
-                                    <!--begin::Label-->
-                                    <label class="fs-6 fw-bold form-label" for="password">
-                                        <span class="required">Password</span>
-                                        <i class="fas fa-exclamation-circle ms-1 fs-7" data-bs-toggle="tooltip"
-                                            title="Masukkan Password"></i>
-                                    </label>
-                                    <!--end::Label-->
-                                    <!--begin::Input-->
-                                    <div class="position-relative">
-                                        <input type="password" class="form-control form-control-solid" id="password"
-                                            placeholder="{{ route('user.create') ? 'Contoh: User123' : 'Kosongkan jika tidak ingin mengubah password'  }}"
-                                            name="password" value="{{ old('password') }}" />
-                                        <span
-                                            class="btn btn-sm btn-icon position-absolute translate-middle top-50 end-0 me-n2"
-                                            data-kt-password-meter-control="visibility">
-                                            <i class="bi bi-eye-slash fs-2"></i>
-                                            <i class="bi bi-eye fs-2 d-none"></i>
-                                        </span>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="fv-row mb-6">
+                                            <!--begin::Label-->
+                                            <label class="fs-6 fw-bold form-label" for="name">
+                                                <span class="required">Nama</span>
+                                                <i class="fas fa-exclamation-circle ms-1 fs-7" data-bs-toggle="tooltip"
+                                                    title="Masukkan Nama"></i>
+                                            </label>
+                                            <!--end::Label-->
+                                            <!--begin::Input-->
+                                            <input type="text" class="form-control form-control-solid" id="name" name="name"
+                                                placeholder="Masukkan Nama Wali Santri"
+                                                value="{{ @$user->name ?? old('name') }}" />
+                                            <!--end::Input-->
+                                        </div>
+                                        <div class="fv-row mb-6">
+                                            <!--begin::Label-->
+                                            <label class="fs-6 fw-bold form-label" for="email">
+                                                <span class="required">Email</span>
+                                                <i class="fas fa-exclamation-circle ms-1 fs-7" data-bs-toggle="tooltip"
+                                                    title="masukkan email anda"></i>
+                                            </label>
+                                            <!--end::Label-->
+                                            <!--begin::Input-->
+                                            <input type="email" class="form-control form-control-solid" id="email" name="email"
+                                                placeholder="Masukkan Email Wali Santri"
+                                                value="{{ @$user->email ?? old('email') }}" />
+                                            <!--end::Input-->
+                                        </div>
+                                        <div class="fv-row mb-7">
+                                            <!--begin::Label-->
+                                            <label class="fs-6 fw-bold form-label" for="password">
+                                                <span class="required">Password</span>
+                                                <i class="fas fa-exclamation-circle ms-1 fs-7" data-bs-toggle="tooltip"
+                                                    title="Masukkan Password"></i>
+                                            </label>
+                                            <!--end::Label-->
+                                            <!--begin::Input-->
+                                            <div class="position-relative">
+                                                <input type="password" class="form-control form-control-solid" id="password"
+                                                    placeholder="{{ route('user.create') ? 'Contoh: User123' : 'Kosongkan jika tidak ingin mengubah password'  }}"
+                                                    name="password" value="{{ old('password') }}" />
+                                                <span
+                                                    class="btn btn-sm btn-icon position-absolute translate-middle top-50 end-0 me-n2"
+                                                    data-kt-password-meter-control="visibility">
+                                                    <i class="bi bi-eye-slash fs-2"></i>
+                                                    <i class="bi bi-eye fs-2 d-none"></i>
+                                                </span>
+                                            </div>
+                                            <!--end::Input-->
+                                        </div>
+                                        <div class="fv-row mb-6">
+                                            <!--begin::Label-->
+                                            <label class="fs-6 fw-bold form-label" for="password_confirmation">
+                                                <span class="required">Konfirmasi Password</span>
+                                                <i class="fas fa-exclamation-circle ms-1 fs-7" data-bs-toggle="tooltip"
+                                                    title="Masukkan Konfirmasi Password"></i>
+                                            </label>
+                                            <!--end::Label-->
+                                            <!--begin::Input-->
+                                            <div class="position-relative">
+                                                <input type="password" class="form-control form-control-solid"
+                                                    id="password_confirmation" name="password_confirmation"
+                                                    placeholder="Konfirmasi Password Harus Sama Dengan Password"
+                                                    value="{{ old('password_confirmation') }}" />
+                                                <span
+                                                    class="btn btn-sm btn-icon position-absolute translate-middle top-50 end-0 me-n2"
+                                                    data-kt-password-meter-control="visibility">
+                                                    <i class="bi bi-eye-slash fs-2"></i>
+                                                    <i class="bi bi-eye fs-2 d-none"></i>
+                                                </span>
+                                            </div>
+                                        </div>
                                     </div>
-                                    <!--end::Input-->
-                                </div>
-                                <div class="fv-row mb-6">
-                                    <!--begin::Label-->
-                                    <label class="fs-6 fw-bold form-label" for="password_confirmation">
-                                        <span class="required">Konfirmasi Password</span>
-                                        <i class="fas fa-exclamation-circle ms-1 fs-7" data-bs-toggle="tooltip"
-                                            title="Masukkan Konfirmasi Password"></i>
-                                    </label>
-                                    <!--end::Label-->
-                                    <!--begin::Input-->
-                                    <div class="position-relative">
-                                        <input type="password" class="form-control form-control-solid"
-                                            id="password_confirmation" name="password_confirmation"
-                                            placeholder="Konfirmasi Password Harus Sama Dengan Password"
-                                            value="{{ old('password_confirmation') }}" />
-                                        <span
-                                            class="btn btn-sm btn-icon position-absolute translate-middle top-50 end-0 me-n2"
-                                            data-kt-password-meter-control="visibility">
-                                            <i class="bi bi-eye-slash fs-2"></i>
-                                            <i class="bi bi-eye fs-2 d-none"></i>
-                                        </span>
+                                    <div class="col-md-6">
+                                        <div class="fv-row mb-6">
+                                            <!--begin::Label-->
+                                            <label class="fs-6 fw-bold form-label" for="gender">
+                                                <span class="required">Jenis Kelamin</span>
+                                                <i class="fas fa-exclamation-circle ms-1 fs-7" data-bs-toggle="tooltip"
+                                                    title="Jenis Kelamin User"></i>
+                                            </label>
+                                            <!--end::Label-->
+                                            <!--begin::Input-->
+                                            <select name="gender" class="form-select form-select-solid" id="gender"
+                                                data-control="select2" data-placeholder="Pilih Jenis Kelamin"
+                                                data-allow-clear="true" data-hide-search="true">
+                                                <option value="L" {{ @$user->gender == 'L' ? 'selected' : '' }}> Laki-Laki
+                                                </option>
+                                                <option value="P" {{ @$user->gender == 'P' ? 'selected' : '' }}> Perempuan
+                                                </option>
+                                            </select>
+                                            <!--end::Input-->
+                                        </div>
+                                        <div class="fv-row mb-6">
+                                            <!--begin::Label-->
+                                            <label class="fs-6 fw-bold form-label" for="phone">
+                                                <span class="required">No Handphone (Format: 08xxxx)</span>
+                                                <i class="fas fa-exclamation-circle ms-1 fs-7" data-bs-toggle="tooltip"
+                                                    title="Masukkan No Handphone"></i>
+                                            </label>
+                                            <!--end::Label-->
+                                            <!--begin::Input-->
+                                            <input type="number" class="form-control form-control-solid" id="phone" name="phone"
+                                                placeholder="Format: 08xxxx" value="{{ @$user->phone ?? old('phone') }}" />
+                                            <!--end::Input-->
+                                        </div>
+                                        <div class="fv-row mb-6">
+                                            <!--begin::Label-->
+                                            <label class="fs-6 fw-bold form-label" for="jamaah_status">
+                                                <span class="required">Status Jamaah</span>
+                                                <i class="fas fa-exclamation-circle ms-1 fs-7" data-bs-toggle="tooltip"
+                                                    title="Status Keanggotaan Jamaah Wali Santri"></i>
+                                            </label>
+                                            <!--end::Label-->
+                                            <!--begin::Input-->
+                                            <select name="jamaah_status" class="form-select form-select-solid" id="jamaah_status"
+                                                data-control="select2" data-placeholder="Pilih Status Jamaah"
+                                                data-hide-search="true" required>
+                                                <option value="UNKNOWN" {{ (old('jamaah_status') ?? @$user->jamaah_status) == 'UNKNOWN' ? 'selected' : '' }}>Belum Jelas (Default)</option>
+                                                <option value="JAMAAH" {{ (old('jamaah_status') ?? @$user->jamaah_status) == 'JAMAAH' ? 'selected' : '' }}>Jamaah</option>
+                                                <option value="NON_JAMAAH" {{ (old('jamaah_status') ?? @$user->jamaah_status) == 'NON_JAMAAH' ? 'selected' : '' }}>Non Jamaah</option>
+                                                <option value="MUKIMIN" {{ (old('jamaah_status') ?? @$user->jamaah_status) == 'MUKIMIN' ? 'selected' : '' }}>Mukimin</option>
+                                            </select>
+                                            <!--end::Input-->
+                                        </div>
+                                        <div class="fv-row mb-6">
+                                            <x-form.image-upload label="Avatar" name="avatar" :value="@$user->avatar ?? null" />
+                                        </div>
                                     </div>
-                                </div>
-                                <div class="fv-row mb-6">
-                                    <!--begin::Label-->
-                                    <label class="fs-6 fw-bold form-label" for="gender">
-                                        <span class="required">Jenis Kelamin</span>
-                                        <i class="fas fa-exclamation-circle ms-1 fs-7" data-bs-toggle="tooltip"
-                                            title="Jenis Kelamin User"></i>
-                                    </label>
-                                    <!--end::Label-->
-                                    <!--begin::Input-->
-                                    <select name="gender" class="form-select form-select-solid" id="gender"
-                                        data-control="select2" data-placeholder="Pilih Jenis Kelamin"
-                                        data-allow-clear="true" data-hide-search="true">
-                                        <option value="L" {{ @$user->gender == 'L' ? 'selected' : '' }}> Laki-Laki
-                                        </option>
-                                        <option value="P" {{ @$user->gender == 'P' ? 'selected' : '' }}> Perempuan
-                                        </option>
-                                    </select>
-                                    <!--end::Input-->
-                                </div>
-                                <div class="fv-row mb-6">
-                                    <!--begin::Label-->
-                                    <label class="fs-6 fw-bold form-label" for="phone">
-                                        <span class="required">No Handphone (Format: 08xxxx)</span>
-                                        <i class="fas fa-exclamation-circle ms-1 fs-7" data-bs-toggle="tooltip"
-                                            title="Masukkan No Handphone"></i>
-                                    </label>
-                                    <!--end::Label-->
-                                    <!--begin::Input-->
-                                    <input type="number" class="form-control form-control-solid" id="phone" name="phone"
-                                        placeholder="Format: 08xxxx" value="{{ @$user->phone ?? old('phone') }}" />
-                                    <!--end::Input-->
-                                </div>
-                                <div class="fv-row mb-6">
-                                    <!--begin::Label-->
-                                    <label class="fs-6 fw-bold form-label" for="jamaah_status">
-                                        <span class="required">Status Jamaah</span>
-                                        <i class="fas fa-exclamation-circle ms-1 fs-7" data-bs-toggle="tooltip"
-                                            title="Status Keanggotaan Jamaah Wali Santri"></i>
-                                    </label>
-                                    <!--end::Label-->
-                                    <!--begin::Input-->
-                                    <select name="jamaah_status" class="form-select form-select-solid" id="jamaah_status"
-                                        data-control="select2" data-placeholder="Pilih Status Jamaah"
-                                        data-hide-search="true" required>
-                                        <option value="UNKNOWN" {{ (old('jamaah_status') ?? @$user->jamaah_status) == 'UNKNOWN' ? 'selected' : '' }}>Belum Jelas (Default)</option>
-                                        <option value="JAMAAH" {{ (old('jamaah_status') ?? @$user->jamaah_status) == 'JAMAAH' ? 'selected' : '' }}>Jamaah</option>
-                                        <option value="NON_JAMAAH" {{ (old('jamaah_status') ?? @$user->jamaah_status) == 'NON_JAMAAH' ? 'selected' : '' }}>Non Jamaah</option>
-                                        <option value="MUKIMIN" {{ (old('jamaah_status') ?? @$user->jamaah_status) == 'MUKIMIN' ? 'selected' : '' }}>Mukimin</option>
-                                    </select>
-                                    <!--end::Input-->
-                                </div>
-                                <div class="fv-row mb-6">
-                                    <x-form.image-upload label="Avatar" name="avatar" :value="@$user->avatar ?? null" />
                                 </div>
 
                                 <!--end::Input group-->
