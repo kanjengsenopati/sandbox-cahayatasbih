@@ -400,7 +400,7 @@ class StudentController extends Controller
 
     public function getClassrooms($id)
     {
-        $classrooms = Classroom::where('school_id', $id)->orderBy('name')->get();
+        $classrooms = Classroom::where('school_id', $id)->orderByRaw("CAST(name AS UNSIGNED) ASC, name ASC")->get();
         return response()->json($classrooms);
     }
 

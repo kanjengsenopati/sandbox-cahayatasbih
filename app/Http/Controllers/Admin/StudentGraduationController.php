@@ -134,7 +134,7 @@ class StudentGraduationController extends Controller
             }
         }
         
-        $classrooms = $query->orderBy('name', 'asc')->get();
+        $classrooms = $query->orderByRaw("CAST(name AS UNSIGNED) ASC, name ASC")->get();
         return response()->json([
             'code' => '200',
             'message' => 'Success',

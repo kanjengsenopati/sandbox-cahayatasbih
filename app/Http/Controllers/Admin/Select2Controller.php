@@ -91,7 +91,7 @@ class Select2Controller extends Controller
 
     public function classroomBySchool($request)
     {
-        return Classroom::where('school_id', $request->school_id)->orderBy('name')->get();
+        return Classroom::where('school_id', $request->school_id)->orderByRaw("CAST(name AS UNSIGNED) ASC, name ASC")->get();
     }
 
     public function academicYear($request)

@@ -379,7 +379,7 @@ class PaymentRateController extends Controller
     {
         $schools = School::orderBy('name')->get();
         $billType = $paymentRate->billType;
-        $classrooms = Classroom::orderBy('name')->get();
+        $classrooms = Classroom::orderByRaw("CAST(name AS UNSIGNED) ASC, name ASC")->get();
         return view('admins.payment-rate.create-edit', compact('paymentRate', 'schools', 'billType', 'classrooms'));
     }
 
@@ -747,7 +747,7 @@ class PaymentRateController extends Controller
     public function getClassroom(Request $request)
     {
         $school = School::findOrFail($request->school_id);
-        $classrooms = Classroom::where('school_id', $school->id)->orderBy('name')->get();
+        $classrooms = Classroom::where('school_id', $school->id)->orderByRaw("CAST(name AS UNSIGNED) ASC, name ASC")->get();
         return response()->json($classrooms);
     }
 

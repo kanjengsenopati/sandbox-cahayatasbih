@@ -840,7 +840,7 @@ class ReportBillController extends Controller
     public function getClassroom(Request $request)
     {
         $schoolId = $request->school_id;
-        $classrooms = Classroom::where('school_id', $schoolId)->orderBy('name', 'asc')->get();
+        $classrooms = Classroom::where('school_id', $schoolId)->orderByRaw("CAST(name AS UNSIGNED) ASC, name ASC")->get();
         return $this->getSuccessResponse($classrooms);
     }
 

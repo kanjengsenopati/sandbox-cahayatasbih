@@ -110,7 +110,7 @@ class StudentAchievementController extends Controller
 
     public function getClassroom(Request $request)
     {
-        $classrooms = Classroom::where('school_id', $request->school_id)->get();
+        $classrooms = Classroom::where('school_id', $request->school_id)->orderByRaw("CAST(name AS UNSIGNED) ASC, name ASC")->get();
         return $this->postSuccessResponse("berhasil Mengambil data kelas", $classrooms);
     }
 }
