@@ -28,8 +28,10 @@ class AcademicController extends Controller
             
         $academicYears = AcademicYear::orderBy('name', 'asc')->get();
         
+        $allAdmins = \App\Models\Admin::orderBy('name')->get();
+        
         $activeTab = $request->input('tab', 'school');
 
-        return view('admins.academic.index', compact('schools', 'schoolsGraduation', 'academicYears', 'activeTab'));
+        return view('admins.academic.index', compact('schools', 'schoolsGraduation', 'academicYears', 'allAdmins', 'activeTab'));
     }
 }

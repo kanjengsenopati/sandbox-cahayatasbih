@@ -39,7 +39,7 @@ class ClassroomController extends Controller
         }
         $data = $request->validated();
         Classroom::create($data);
-        return redirect()->route('school.show', $data['school_id'])->with('success', 'Kelas berhasil ditambahkan');
+        return redirect()->route('academic.index', ['tab' => 'school', 'school_id' => $data['school_id']])->with('success', 'Kelas berhasil ditambahkan');
     }
 
     /**
@@ -71,7 +71,7 @@ class ClassroomController extends Controller
         }
         $data = $request->validated();
         $classroom->update($data);
-        return redirect()->route('school.show', $classroom->school_id)->with('success', 'Kelas berhasil diperbarui');
+        return redirect()->route('academic.index', ['tab' => 'school', 'school_id' => $classroom->school_id])->with('success', 'Kelas berhasil diperbarui');
     }
 
     /**
@@ -83,6 +83,6 @@ class ClassroomController extends Controller
             return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
         }
         $classroom->delete();
-        return redirect()->route('school.show', $classroom->school_id)->with('success', 'Kelas berhasil dihapus');
+        return redirect()->route('academic.index', ['tab' => 'school', 'school_id' => $classroom->school_id])->with('success', 'Kelas berhasil dihapus');
     }
 }

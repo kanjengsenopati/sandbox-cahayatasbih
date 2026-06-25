@@ -103,7 +103,7 @@
                                 <div class="d-flex justify-content-end">
                                     <!--begin::Button-->
                                     <a
-                                        href="{{ route('school.show', request()->routeIs('classroom.create') ? request()->get('school') : @$classroom->school_id) }}">
+                                        href="{{ route('academic.index', ['tab' => 'school', 'school_id' => request()->routeIs('classroom.create') ? request()->get('school') : @$classroom->school_id]) }}">
                                         <button type="button" class="btn btn-sm btn-secondary me-3">Batal</button>
                                     </a>
                                     <!--end::Button-->

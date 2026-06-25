@@ -138,22 +138,108 @@
                                     <x-text.h2>Data UPT / Sekolah</x-text.h2>
                                     <x-action.create name="Sekolah" action="{{ route('school.create') }}" />
                                 </div>
-                                <div class="table-responsive">
-                                    <table id="table-school" class="table align-middle table-row-dashed w-100">
-                                        <thead>
-                                            <tr class="text-start text-gray-400 fw-bolder fs-7 text-uppercase gs-0">
-                                                <th style="width: 5%">No</th>
-                                                <th>Nama</th>
-                                                <th>Tipe</th>
-                                                <th>Keterangan</th>
-                                                <th>Keunggulan</th>
-                                                <th>Alamat</th>
-                                                <th class="text-center min-w-100px" style="width: 22%">Aksi</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody class="text-gray-600 fw-bold"></tbody>
-                                    </table>
-                                </div>
+                                 <!-- 4-Column Card Grid -->
+                                 <div class="row row-cols-1 row-cols-md-4 g-6 mb-8" id="school-grid">
+                                     @foreach ($schools as $school)
+                                         <div class="col">
+                                             <div class="card h-100 shadow-[0_8px_30px_rgb(0,0,0,0.04)] rounded-[24px] border-0 position-relative" style="background-color: #ffffff; border-radius: 24px; border: none;">
+                                                 <div class="card-body p-6 d-flex flex-column">
+                                                     <!-- Action Buttons Cluster (Top Right) -->
+                                                     <div class="position-absolute top-0 end-0 mt-4 me-4 d-flex align-items-center gap-2">
+                                                         <!-- Toggle Classrooms (Info) -->
+                                                         <button type="button" class="btn btn-icon btn-light-primary btn-sm rounded-circle w-30px h-30px btn-toggle-classrooms" data-school-id="{{ $school->id }}" data-school-name="{{ $school->name }}" title="Daftar Kelas">
+                                                             <i class="fa-solid fa-circle-info text-primary fs-6"></i>
+                                                         </button>
+                                                         
+                                                         <!-- Assign Users -->
+                                                         <button type="button" class="btn btn-icon btn-light-info btn-sm rounded-circle w-30px h-30px btn-assign-user" data-id="{{ $school->id }}" data-name="{{ $school->name }}" data-users="{{ json_encode($school->adminSchool->pluck('admin_id')->toArray()) }}" title="Tugaskan User">
+                                                             <i class="fa-solid fa-user-gear text-info fs-6"></i>
+                                                         </button>
+
+                                                         <!-- Edit -->
+                                                         @can('Edit Sekolah')
+                                                         <a href="{{ route('school.edit', $school->id) }}" class="btn btn-icon btn-light-warning btn-sm rounded-circle w-30px h-30px" title="Edit">
+                                                             <i class="fa-solid fa-pencil text-warning fs-6"></i>
+                                                         </a>
+                                                         @endcan
+
+                                                         <!-- Delete -->
+                                                         @can('Delete Sekolah')
+                                                         <div>
+                                                             <a data-id="form-school-{{ $school->id }}" type="button" class="btn-delete btn btn-icon btn-light-danger btn-sm rounded-circle w-30px h-30px" title="Hapus">
+                                                                 <i class="fa-solid fa-trash text-danger fs-6" data-id="form-school-{{ $school->id }}"></i>
+                                                             </a>
+                                                             <form id="form-school-{{ $school->id }}" action="{{ route('school.destroy', $school->id) }}" method="post" style="display: none;">
+                                                                 @csrf
+                                                                 @method('delete')
+                                                             </form>
+                                                         </div>
+                                                         @endcan
+                                                     </div>
+
+                                                     <!-- Card Content -->
+                                                     <div class="pe-20 mb-4">
+                                                         <span class="badge bg-light-primary text-primary px-3 py-1 rounded-pill fs-9 fw-bolder mb-2">{{ $school->type }}</span>
+                                                         <h3 class="fw-bolder text-dark mb-1 fs-5">{{ $school->name }}</h3>
+                                                     </div>
+
+                                                     <!-- Card Footer Info (Density Optimized) -->
+                                                     <div class="mt-auto pt-4 border-top border-gray-100">
+                                                         <div class="d-flex align-items-center mb-1 text-truncate">
+                                                             <i class="fa-solid fa-location-dot text-slate-400 me-2 fs-7 w-15px"></i>
+                                                             <span class="text-gray-600 fs-7 text-truncate" title="{{ $school->address }}">{{ $school->address ?? '-' }}</span>
+                                                         </div>
+                                                         <div class="d-flex align-items-center text-truncate">
+                                                             <i class="fa-solid fa-users-gear text-slate-400 me-2 fs-7 w-15px"></i>
+                                                             <span class="text-gray-600 fs-7 text-truncate">
+                                                                 @php
+                                                                     $admins = $school->adminSchool->map(fn($as) => $as->admin)->filter();
+                                                                 @endphp
+                                                                 @if ($admins->count() > 0)
+                                                                     {{ $admins->pluck('name')->implode(', ') }}
+                                                                 @else
+                                                                     <span class="text-muted italic fs-8">Belum ada user ditugaskan</span>
+                                                                 @endif
+                                                             </span>
+                                                         </div>
+                                                     </div>
+                                                 </div>
+                                             </div>
+                                         </div>
+                                     @endforeach
+                                 </div>
+
+                                 <!-- Expandable Classrooms Panel -->
+                                 <div id="classrooms-detail-panel" class="collapse shadow-[0_8px_30px_rgb(0,0,0,0.04)] rounded-[24px] bg-white p-6 border-0 mb-8" style="background-color: #ffffff; border-radius: 24px; border: none;">
+                                     <div class="d-flex align-items-center justify-content-between mb-5">
+                                         <h3 class="fw-bolder text-dark mb-0 fs-4">Daftar Kelas - <span id="panel-school-name" class="text-primary">Nama Sekolah</span></h3>
+                                         <div class="d-flex align-items-center gap-2">
+                                             @can('Manage Sekolah')
+                                             <a href="" id="btn-add-classroom" class="btn btn-primary btn-sm rounded-pill">
+                                                 <i class="fa-solid fa-plus me-1 fs-7"></i>Tambah Kelas
+                                             </a>
+                                             @endcan
+                                             <button type="button" class="btn btn-icon btn-light btn-sm rounded-circle w-30px h-30px" onclick="closeClassroomsPanel()">
+                                                 <i class="fa-solid fa-xmark text-gray-500 fs-6"></i>
+                                             </button>
+                                         </div>
+                                     </div>
+
+                                     <div id="classrooms-loading" class="text-center py-5 d-none">
+                                         <div class="spinner-border text-primary" role="status">
+                                             <span class="visually-hidden">Memuat...</span>
+                                         </div>
+                                     </div>
+
+                                     <div id="classrooms-empty" class="text-center py-5 d-none text-muted">
+                                         Belum ada kelas yang terdaftar untuk sekolah ini.
+                                     </div>
+
+                                     <!-- Grid for Classrooms Inside Panel -->
+                                     <div id="classrooms-list-container" class="row row-cols-2 row-cols-md-6 g-4">
+                                         <!-- Loaded dynamically -->
+                                     </div>
+                                 </div>
                             </div>
                             @endcan
                             <!--end::Tab School-->
@@ -376,6 +462,43 @@
         </div>
         <!--end::Post-->
     </div>
+
+    <!-- Modal Assign User -->
+    <div class="modal fade" id="modal_assign_school" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered mw-650px">
+            <div class="modal-content rounded-[24px]" style="border-radius: 24px;">
+                <form action="" method="POST" id="form_assign_school">
+                    @csrf
+                    <div class="modal-header">
+                        <h2 class="fw-bolder" id="modal_title">Assign User</h2>
+                        <div class="btn btn-icon btn-sm btn-active-icon-primary" data-bs-dismiss="modal">
+                            <span class="svg-icon svg-icon-1">
+                                <i class="fa-solid fa-xmark fs-4"></i>
+                            </span>
+                        </div>
+                    </div>
+                    <div class="modal-body scroll-y mx-5 mx-xl-15 my-7">
+                        <div class="d-flex flex-column mb-8 fv-row">
+                            <label class="d-flex align-items-center fs-6 fw-bold mb-2">
+                                <span class="required">Pilih Pengguna</span>
+                            </label>
+                            <select name="admin_ids[]" class="form-select form-select-solid" id="admin_select" data-control="select2" data-dropdown-parent="#modal_assign_school" data-placeholder="Pilih pengguna..." data-allow-clear="true" multiple="multiple">
+                                @foreach($allAdmins as $admin)
+                                    <option value="{{ $admin->id }}">{{ $admin->name }} ({{ $admin->email }})</option>
+                                @endforeach
+                            </select>
+                        </div>
+                    </div>
+                    <div class="modal-footer text-center justify-content-center">
+                        <button type="reset" class="btn btn-light me-3" data-bs-dismiss="modal">Batal</button>
+                        <button type="submit" class="btn btn-primary" id="btn_submit">
+                            <span class="indicator-label">Simpan</span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
 @endsection
 
 @push('js')
@@ -423,40 +546,131 @@
         }
 
         $(document).ready(function() {
-            // -------------------- Tab 1: School --------------------
-            @can('Manage Sekolah')
-            $('#table-school').DataTable({
-                ordering: false,
-                processing: true,
-                serverSide: true,
-                responsive: true,
-                ajax: "{{ route('school.index') }}",
-                language: {
-                    paginate: {
-                        next: "<i class='fa fa-angle-right'></i>",
-                        previous: "<i class='fa fa-angle-left'></i>"
-                    },
-                    loadingRecords: "Memuat...",
-                    processing: "Memproses...",
-                },
-                columns: [
-                    {
-                        data: null,
-                        sortable: false,
-                        searchable: false,
-                        render: function(data, type, row, meta) {
-                            return meta.row + meta.settings._iDisplayStart + 1;
+            // -------------------- Tab 1: School Cards Grid & Classrooms Panel --------------------
+            var currentOpenSchoolId = null;
+
+            function loadClassrooms(schoolId, schoolName) {
+                $('#panel-school-name').text(schoolName);
+                $('#btn-add-classroom').attr('href', `/classroom/create?school=${schoolId}`);
+                
+                $('#classrooms-loading').removeClass('d-none');
+                $('#classrooms-empty').addClass('d-none');
+                $('#classrooms-list-container').empty();
+                
+                $.ajax({
+                    url: `/school/${schoolId}`,
+                    type: 'GET',
+                    dataType: 'json',
+                    success: function(response) {
+                        $('#classrooms-loading').addClass('d-none');
+                        
+                        var classrooms = response.data;
+                        if (classrooms.length > 0) {
+                            $.each(classrooms, function(index, classroom) {
+                                var editUrl = `/classroom/${classroom.id}/edit`;
+                                var deleteFormId = `form-classroom-${classroom.id}`;
+                                var deleteUrl = `/classroom/${classroom.id}`;
+                                
+                                var cardHtml = `
+                                    <div class="col">
+                                        <div class="card h-100 shadow-[0_8px_30px_rgb(0,0,0,0.02)] rounded-[16px] border border-gray-100 position-relative" style="background-color: #fcfcfc; border-radius: 16px;">
+                                            <div class="card-body p-4 d-flex align-items-center justify-content-between">
+                                                <span class="fw-bolder text-gray-800 fs-6">${classroom.name}</span>
+                                                <div class="d-flex align-items-center gap-1">
+                                                    @can('Edit Sekolah')
+                                                    <a href="${editUrl}" class="btn btn-icon btn-light-warning btn-sm rounded-circle w-24px h-24px" title="Edit">
+                                                        <i class="fa-solid fa-pencil text-warning" style="font-size: 10px;"></i>
+                                                    </a>
+                                                    @endcan
+                                                    @can('Delete Sekolah')
+                                                    <div>
+                                                        <a data-id="${deleteFormId}" type="button" class="btn-delete btn btn-icon btn-light-danger btn-sm rounded-circle w-24px h-24px" title="Hapus">
+                                                            <i class="fa-solid fa-trash text-danger" data-id="${deleteFormId}" style="font-size: 10px;"></i>
+                                                        </a>
+                                                        <form id="${deleteFormId}" action="${deleteUrl}" method="post" style="display: none;">
+                                                            <input type="hidden" name="_token" value="{{ csrf_token() }}">
+                                                            <input type="hidden" name="_method" value="DELETE">
+                                                        </form>
+                                                    </div>
+                                                    @endcan
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                `;
+                                $('#classrooms-list-container').append(cardHtml);
+                            });
+                        } else {
+                            $('#classrooms-empty').removeClass('d-none');
                         }
                     },
-                    { data: 'name', name: 'name' },
-                    { data: 'type', name: 'type' },
-                    { data: 'description', name: 'description' },
-                    { data: 'features_display', name: 'features_display' },
-                    { data: 'address', name: 'address' },
-                    { data: 'action', name: 'action' }
-                ]
+                    error: function() {
+                        $('#classrooms-loading').addClass('d-none');
+                        toastr.error('Gagal memuat data kelas');
+                    }
+                });
+            }
+
+            window.closeClassroomsPanel = function() {
+                $('#classrooms-detail-panel').collapse('hide');
+                currentOpenSchoolId = null;
+            }
+
+            $(document).on('click', '.btn-toggle-classrooms', function() {
+                var schoolId = $(this).data('school-id');
+                var schoolName = $(this).data('school-name');
+                
+                if (currentOpenSchoolId === schoolId) {
+                    closeClassroomsPanel();
+                } else {
+                    currentOpenSchoolId = schoolId;
+                    loadClassrooms(schoolId, schoolName);
+                    $('#classrooms-detail-panel').collapse('show');
+                    
+                    // Smooth scroll to panel
+                    $('html, body').animate({
+                        scrollTop: $("#classrooms-detail-panel").offset().top - 150
+                    }, 300);
+                }
             });
-            @endcan
+
+            // Assign User action
+            $(document).on('click', '.btn-assign-user', function() {
+                const schoolId = $(this).data('id');
+                const schoolName = $(this).data('name');
+                const users = $(this).data('users'); // Array of IDs
+
+                $('#modal_title').text('Tugaskan Pengguna ke Wilayah UPT: ' + schoolName);
+                $('#form_assign_school').attr('action', `/school/${schoolId}/assign`);
+
+                // Clear and set values in select2
+                $('#admin_select').val(users).trigger('change');
+
+                $('#modal_assign_school').modal('show');
+            });
+
+            // Auto-expand panel on load if school_id parameter is present in URL
+            const urlParams = new URLSearchParams(window.location.search);
+            const schoolIdParam = urlParams.get('school_id');
+            if (schoolIdParam) {
+                // Find the toggle button for this school
+                var $btn = $(`.btn-toggle-classrooms[data-school-id="${schoolIdParam}"]`);
+                if ($btn.length > 0) {
+                    // Activate school tab if not active
+                    $('a[href="#tab-school"]').tab('show');
+                    
+                    var schoolName = $btn.data('school-name');
+                    currentOpenSchoolId = schoolIdParam;
+                    loadClassrooms(schoolIdParam, schoolName);
+                    $('#classrooms-detail-panel').collapse('show');
+                    
+                    setTimeout(function() {
+                        $('html, body').animate({
+                            scrollTop: $("#classrooms-detail-panel").offset().top - 150
+                        }, 300);
+                    }, 500);
+                }
+            }
 
             // -------------------- Tab 2: Academic Year --------------------
             @can('Manage Tahun Ajaran')
