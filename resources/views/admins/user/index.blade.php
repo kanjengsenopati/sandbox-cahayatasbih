@@ -227,10 +227,11 @@
                                 <div>
                                     <label class="form-label text-slate-600 fw-bold">Filter Status Asal</label>
                                     <select name="migration_origin_status" class="form-select form-select-sm" id="filter_migration_origin_status">
-                                        <option value="UNKNOWN" selected>Tidak Tahu (Default)</option>
+                                        <option value="UNKNOWN" selected>Belum Jelas (Default)</option>
                                         <option value="">Semua</option>
                                         <option value="JAMAAH">Jamaah</option>
                                         <option value="NON_JAMAAH">Non Jamaah</option>
+                                        <option value="MUKIMIN">Mukimin</option>
                                     </select>
                                 </div>
                             </div>
@@ -242,7 +243,8 @@
                                     <select name="migration_target_status" class="form-select form-select-sm w-150px" id="migration_target_status">
                                         <option value="JAMAAH" selected>Jamaah</option>
                                         <option value="NON_JAMAAH">Non Jamaah</option>
-                                        <option value="UNKNOWN">Tidak Tahu</option>
+                                        <option value="MUKIMIN">Mukimin</option>
+                                        <option value="UNKNOWN">Belum Jelas</option>
                                     </select>
                                     <button type="button" class="btn btn-primary btn-sm" id="btn-apply-bulk-migration">
                                         <i class="fas fa-check me-1"></i> Terapkan Semua

@@ -131,7 +131,15 @@
                                             @endif
                                             @if($rate->jamaah_status)
                                                 <span class="badge badge-light-info fw-bolder m-1">
-                                                    {{ $rate->jamaah_status == 'JAMAAH' ? 'Jamaah' : 'Non-Jamaah' }}
+                                                    {{ collect(explode(',', $rate->jamaah_status))->map(function($status) {
+                                                        return match($status) {
+                                                            'JAMAAH' => 'Jamaah',
+                                                            'NON_JAMAAH' => 'Non Jamaah',
+                                                            'MUKIMIN' => 'Mukimin',
+                                                            'UNKNOWN' => 'Belum Jelas',
+                                                            default => $status
+                                                        };
+                                                    })->implode(', ') }}
                                                 </span>
                                             @endif
                                         </td>
@@ -204,7 +212,15 @@
                                                     @endif
                                                     @if($rate->jamaah_status)
                                                         <span class="badge badge-light-info fw-bolder">
-                                                            {{ $rate->jamaah_status == 'JAMAAH' ? 'Jamaah' : 'Non-Jamaah' }}
+                                                            {{ collect(explode(',', $rate->jamaah_status))->map(function($status) {
+                                                                return match($status) {
+                                                                    'JAMAAH' => 'Jamaah',
+                                                                    'NON_JAMAAH' => 'Non Jamaah',
+                                                                    'MUKIMIN' => 'Mukimin',
+                                                                    'UNKNOWN' => 'Belum Jelas',
+                                                                    default => $status
+                                                                };
+                                                            })->implode(', ') }}
                                                         </span>
                                                     @endif
                                                 </div>

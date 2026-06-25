@@ -66,8 +66,10 @@ class UserController extends Controller
                     return '<span class="badge badge-light-success fw-bolder px-2 py-1">Jamaah</span>';
                 } elseif ($data->jamaah_status === 'NON_JAMAAH') {
                     return '<span class="badge badge-light-danger fw-bolder px-2 py-1">Non Jamaah</span>';
+                } elseif ($data->jamaah_status === 'MUKIMIN') {
+                    return '<span class="badge badge-light-primary fw-bolder px-2 py-1">Mukimin</span>';
                 }
-                return '<span class="badge badge-light-warning fw-bolder px-2 py-1">Tidak Tahu</span>';
+                return '<span class="badge badge-light-warning fw-bolder px-2 py-1">Belum Jelas</span>';
             })
             ->editColumn('last_login', function ($data) {
                 return $data->last_login
@@ -276,7 +278,7 @@ class UserController extends Controller
         $request->validate([
             'ids' => 'required|array',
             'ids.*' => 'required|exists:users,id',
-            'jamaah_status' => 'required|in:JAMAAH,NON_JAMAAH,UNKNOWN',
+            'jamaah_status' => 'required|in:JAMAAH,NON_JAMAAH,UNKNOWN,MUKIMIN',
         ]);
 
         try {

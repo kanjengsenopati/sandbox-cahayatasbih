@@ -29,7 +29,7 @@ class UserRequest extends FormRequest
                 'gender' => 'required',
                 'phone' => 'required',
                 'avatar' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg',
-                'jamaah_status' => 'required|in:JAMAAH,NON_JAMAAH,UNKNOWN',
+                'jamaah_status' => 'required|in:JAMAAH,NON_JAMAAH,UNKNOWN,MUKIMIN',
             ],
             'PUT' => [
                 'name' => 'required',
@@ -38,7 +38,7 @@ class UserRequest extends FormRequest
                 'gender' => 'required',
                 'phone' => 'required',
                 'avatar' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg',
-                'jamaah_status' => 'required|in:JAMAAH,NON_JAMAAH,UNKNOWN',
+                'jamaah_status' => 'required|in:JAMAAH,NON_JAMAAH,UNKNOWN,MUKIMIN',
             ],
             default => [],
         };

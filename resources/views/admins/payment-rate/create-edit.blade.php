@@ -338,6 +338,7 @@
                                     @endphp
                                     <option value="JAMAAH" {{ in_array('JAMAAH', $jamaahValues) ? 'selected' : '' }}>Jamaah</option>
                                     <option value="NON_JAMAAH" {{ in_array('NON_JAMAAH', $jamaahValues) ? 'selected' : '' }}>Non Jamaah</option>
+                                    <option value="MUKIMIN" {{ in_array('MUKIMIN', $jamaahValues) ? 'selected' : '' }}>Mukimin</option>
                                 </select>
                                 @if(isset($paymentRate))
                                     <input type="hidden" name="jamaah_status" value="{{ $paymentRate->jamaah_status }}">
@@ -439,8 +440,11 @@
                                         <button type="button" class="btn btn-sm btn-light-danger py-1 px-2 fs-8" id="btn-select-all-non-jamaah">
                                             Pilih Semua Non Jamaah
                                         </button>
+                                        <button type="button" class="btn btn-sm btn-light-primary py-1 px-2 fs-8" id="btn-select-all-mukimin">
+                                            Pilih Semua Mukimin
+                                        </button>
                                         <button type="button" class="btn btn-sm btn-light-warning py-1 px-2 fs-8" id="btn-select-all-tidak-tahu">
-                                            Pilih Semua Tidak Tahu
+                                            Pilih Semua Belum Jelas
                                         </button>
                                     </div>
                                     <select name="students[]" class="form-select form-select-solid"
@@ -504,13 +508,15 @@
                     })
                     .then(function(response) {
                          if (response.data.length > 0) {
-                            $.each(response.data, function(key, value) {
-                                var statusText = 'TIDAK TAHU';
-                                if (value.jamaah_status === 'JAMAAH') {
-                                    statusText = 'JAMAAH';
-                                } else if (value.jamaah_status === 'NON_JAMAAH') {
-                                    statusText = 'NON JAMAAH';
-                                }
+                             $.each(response.data, function(key, value) {
+                                 var statusText = 'BELUM JELAS';
+                                 if (value.jamaah_status === 'JAMAAH') {
+                                     statusText = 'JAMAAH';
+                                 } else if (value.jamaah_status === 'NON_JAMAAH') {
+                                     statusText = 'NON JAMAAH';
+                                 } else if (value.jamaah_status === 'MUKIMIN') {
+                                     statusText = 'MUKIMIN';
+                                 }
                                 var genderText = value.gender === 'L' ? 'Putra' : 'Putri';
                                 var text = value.name + ' - ' + (value.nis ?? '-') + ' [' + genderText + '] [' + statusText + ']';
                                 var newOption = new Option(text, value.id, false, false);
@@ -726,6 +732,10 @@
 
         $('#btn-select-all-non-jamaah').click(function() {
             toggleStudentsByStatus('NON_JAMAAH');
+        });
+
+        $('#btn-select-all-mukimin').click(function() {
+            toggleStudentsByStatus('MUKIMIN');
         });
 
         $('#btn-select-all-tidak-tahu').click(function() {

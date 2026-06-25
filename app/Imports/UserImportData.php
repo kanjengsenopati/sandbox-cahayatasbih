@@ -78,13 +78,15 @@ class UserImportData implements ToCollection, WithHeadingRow
                     $status = 'INACTIVE';
                 }
 
-                // Map Jamaah Status (JAMAAH / NON_JAMAAH / UNKNOWN)
+                // Map Jamaah Status (JAMAAH / NON_JAMAAH / UNKNOWN / MUKIMIN)
                 $jamaahStatusInput = strtolower(trim($row['status_jamaah'] ?? ''));
                 $jamaahStatus = 'UNKNOWN'; // default
                 if ($jamaahStatusInput === 'jamaah') {
                     $jamaahStatus = 'JAMAAH';
                 } elseif ($jamaahStatusInput === 'non jamaah' || $jamaahStatusInput === 'non_jamaah') {
                     $jamaahStatus = 'NON_JAMAAH';
+                } elseif ($jamaahStatusInput === 'mukimin') {
+                    $jamaahStatus = 'MUKIMIN';
                 }
 
                 User::create([
