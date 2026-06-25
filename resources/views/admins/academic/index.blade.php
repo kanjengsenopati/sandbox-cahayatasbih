@@ -60,6 +60,12 @@
             color: #2563eb !important; /* Accent Primary */
             border-bottom: 3px solid #2563eb;
         }
+        .btn-accordion-chevron i {
+            transition: transform 0.2s ease-in-out !important;
+        }
+        .transition-all {
+            transition: all 0.2s ease-in-out !important;
+        }
     </style>
 @endpush
 
@@ -138,19 +144,36 @@
                                     <x-text.h2>Data UPT / Sekolah</x-text.h2>
                                     <x-action.create name="Sekolah" action="{{ route('school.create') }}" />
                                 </div>
-                                 <!-- 4-Column Card Grid -->
-                                 <div class="row row-cols-1 row-cols-md-4 g-6 mb-8" id="school-grid">
+                                 <!-- Accordion Menu for UPT / Sekolah -->
+                                 <div class="accordion mb-8" id="school-accordion">
                                      @foreach ($schools as $school)
-                                         <div class="col">
-                                             <div class="card h-100 shadow-[0_8px_30px_rgb(0,0,0,0.04)] rounded-[24px] border-0 position-relative" style="background-color: #ffffff; border-radius: 24px; border: none;">
-                                                 <div class="card-body p-6 d-flex flex-column">
-                                                     <!-- Action Buttons Cluster (Top Right) -->
-                                                     <div class="position-absolute top-0 end-0 mt-4 me-4 d-flex align-items-center gap-2">
-                                                         <!-- Toggle Classrooms (Info) -->
-                                                         <button type="button" class="btn btn-icon btn-light-primary btn-sm rounded-circle w-30px h-30px btn-toggle-classrooms" data-school-id="{{ $school->id }}" data-school-name="{{ $school->name }}" title="Daftar Kelas">
-                                                             <i class="fa-solid fa-circle-info text-primary fs-6"></i>
-                                                         </button>
-                                                         
+                                         <div class="accordion-item mb-5 border-0 shadow-[0_8px_30px_rgb(0,0,0,0.04)] rounded-[24px]" style="border-radius: 24px; border: none; background: transparent;">
+                                             <!-- Accordion Header Card -->
+                                             <div class="card border-0 rounded-[24px]" style="background-color: #ffffff; border-radius: 24px; border: none;">
+                                                 <div class="card-body p-6 d-flex align-items-center justify-content-between position-relative cursor-pointer btn-toggle-accordion collapsed" data-bs-toggle="collapse" data-bs-target="#school-collapse-{{ $school->id }}" aria-expanded="false" data-school-id="{{ $school->id }}" data-school-name="{{ $school->name }}">
+                                                     <!-- Left Info -->
+                                                     <div class="d-flex align-items-center gap-4 pe-20 text-truncate">
+                                                         <span class="badge bg-light-primary text-primary px-3 py-1 rounded-pill fs-8 fw-bolder">{{ $school->type }}</span>
+                                                         <div class="text-truncate">
+                                                             <h3 class="fw-bolder text-dark mb-1 fs-5 text-truncate">{{ $school->name }}</h3>
+                                                             <div class="d-flex align-items-center gap-4 text-gray-500 fs-7 text-truncate">
+                                                                 <span class="text-truncate"><i class="fa-solid fa-location-dot text-slate-400 me-1"></i>{{ $school->address ?? '-' }}</span>
+                                                                 <span class="text-truncate"><i class="fa-solid fa-users-gear text-slate-400 me-1"></i>
+                                                                     @php
+                                                                         $admins = $school->adminSchool->map(fn($as) => $as->admin)->filter();
+                                                                     @endphp
+                                                                     @if ($admins->count() > 0)
+                                                                         {{ $admins->pluck('name')->implode(', ') }}
+                                                                     @else
+                                                                         <span class="text-muted italic fs-8">Belum ada user ditugaskan</span>
+                                                                     @endif
+                                                                 </span>
+                                                             </div>
+                                                         </div>
+                                                     </div>
+                                                     
+                                                     <!-- Right Action Cluster & Toggle Chevron -->
+                                                     <div class="d-flex align-items-center gap-3" onclick="event.stopPropagation();">
                                                          <!-- Assign Users -->
                                                          <button type="button" class="btn btn-icon btn-light-info btn-sm rounded-circle w-30px h-30px btn-assign-user" data-id="{{ $school->id }}" data-name="{{ $school->name }}" data-users="{{ json_encode($school->adminSchool->pluck('admin_id')->toArray()) }}" title="Tugaskan User">
                                                              <i class="fa-solid fa-user-gear text-info fs-6"></i>
@@ -175,70 +198,47 @@
                                                              </form>
                                                          </div>
                                                          @endcan
+                                                         
+                                                         <!-- Chevron Toggle Icon -->
+                                                         <button type="button" class="btn btn-icon btn-light btn-sm rounded-circle w-30px h-30px btn-accordion-chevron ms-2" data-bs-toggle="collapse" data-bs-target="#school-collapse-{{ $school->id }}">
+                                                             <i class="fa-solid fa-chevron-down text-gray-500 fs-6 transition-all duration-200"></i>
+                                                         </button>
+                                                     </div>
+                                                 </div>
+                                             </div>
+                                             
+                                             <!-- Accordion Body -->
+                                             <div id="school-collapse-{{ $school->id }}" class="accordion-collapse collapse" data-bs-parent="#school-accordion">
+                                                 <div class="accordion-body p-6 border-top border-gray-100" style="background-color: #fafafa; border-bottom-left-radius: 24px; border-bottom-right-radius: 24px;">
+                                                     <div class="d-flex align-items-center justify-content-between mb-6">
+                                                         <h4 class="fw-bolder text-dark mb-0 fs-6">Daftar Kelas UPT</h4>
+                                                         @can('Manage Sekolah')
+                                                         <a href="{{ route('classroom.create', ['school' => $school->id]) }}" class="btn btn-primary btn-sm rounded-pill px-4">
+                                                             <i class="fa-solid fa-plus me-1 fs-7"></i> Tambah Kelas
+                                                         </a>
+                                                         @endcan
+                                                     </div>
+                                                     
+                                                     <!-- Loading Indicator -->
+                                                     <div class="classrooms-loading text-center py-5 d-none">
+                                                         <div class="spinner-border text-primary" role="status">
+                                                             <span class="visually-hidden">Memuat...</span>
+                                                         </div>
                                                      </div>
 
-                                                     <!-- Card Content -->
-                                                     <div class="pe-20 mb-4">
-                                                         <span class="badge bg-light-primary text-primary px-3 py-1 rounded-pill fs-9 fw-bolder mb-2">{{ $school->type }}</span>
-                                                         <h3 class="fw-bolder text-dark mb-1 fs-5">{{ $school->name }}</h3>
+                                                     <!-- Empty State -->
+                                                     <div class="classrooms-empty text-center py-5 d-none text-muted">
+                                                         Belum ada kelas yang terdaftar untuk sekolah ini.
                                                      </div>
 
-                                                     <!-- Card Footer Info (Density Optimized) -->
-                                                     <div class="mt-auto pt-4 border-top border-gray-100">
-                                                         <div class="d-flex align-items-center mb-1 text-truncate">
-                                                             <i class="fa-solid fa-location-dot text-slate-400 me-2 fs-7 w-15px"></i>
-                                                             <span class="text-gray-600 fs-7 text-truncate" title="{{ $school->address }}">{{ $school->address ?? '-' }}</span>
-                                                         </div>
-                                                         <div class="d-flex align-items-center text-truncate">
-                                                             <i class="fa-solid fa-users-gear text-slate-400 me-2 fs-7 w-15px"></i>
-                                                             <span class="text-gray-600 fs-7 text-truncate">
-                                                                 @php
-                                                                     $admins = $school->adminSchool->map(fn($as) => $as->admin)->filter();
-                                                                 @endphp
-                                                                 @if ($admins->count() > 0)
-                                                                     {{ $admins->pluck('name')->implode(', ') }}
-                                                                 @else
-                                                                     <span class="text-muted italic fs-8">Belum ada user ditugaskan</span>
-                                                                 @endif
-                                                             </span>
-                                                         </div>
+                                                     <!-- Prominent Classroom Cards Grid -->
+                                                     <div class="classrooms-list-container row row-cols-2 row-cols-md-6 g-5">
+                                                         <!-- Loaded dynamically -->
                                                      </div>
                                                  </div>
                                              </div>
                                          </div>
                                      @endforeach
-                                 </div>
-
-                                 <!-- Expandable Classrooms Panel -->
-                                 <div id="classrooms-detail-panel" class="collapse shadow-[0_8px_30px_rgb(0,0,0,0.04)] rounded-[24px] bg-white p-6 border-0 mb-8" style="background-color: #ffffff; border-radius: 24px; border: none;">
-                                     <div class="d-flex align-items-center justify-content-between mb-5">
-                                         <h3 class="fw-bolder text-dark mb-0 fs-4">Daftar Kelas - <span id="panel-school-name" class="text-primary">Nama Sekolah</span></h3>
-                                         <div class="d-flex align-items-center gap-2">
-                                             @can('Manage Sekolah')
-                                             <a href="" id="btn-add-classroom" class="btn btn-primary btn-sm rounded-pill">
-                                                 <i class="fa-solid fa-plus me-1 fs-7"></i>Tambah Kelas
-                                             </a>
-                                             @endcan
-                                             <button type="button" class="btn btn-icon btn-light btn-sm rounded-circle w-30px h-30px" onclick="closeClassroomsPanel()">
-                                                 <i class="fa-solid fa-xmark text-gray-500 fs-6"></i>
-                                             </button>
-                                         </div>
-                                     </div>
-
-                                     <div id="classrooms-loading" class="text-center py-5 d-none">
-                                         <div class="spinner-border text-primary" role="status">
-                                             <span class="visually-hidden">Memuat...</span>
-                                         </div>
-                                     </div>
-
-                                     <div id="classrooms-empty" class="text-center py-5 d-none text-muted">
-                                         Belum ada kelas yang terdaftar untuk sekolah ini.
-                                     </div>
-
-                                     <!-- Grid for Classrooms Inside Panel -->
-                                     <div id="classrooms-list-container" class="row row-cols-2 row-cols-md-6 g-4">
-                                         <!-- Loaded dynamically -->
-                                     </div>
                                  </div>
                             </div>
                             @endcan
@@ -546,23 +546,23 @@
         }
 
         $(document).ready(function() {
-            // -------------------- Tab 1: School Cards Grid & Classrooms Panel --------------------
-            var currentOpenSchoolId = null;
-
+            // -------------------- Tab 1: School Accordion & Classrooms --------------------
             function loadClassrooms(schoolId, schoolName) {
-                $('#panel-school-name').text(schoolName);
-                $('#btn-add-classroom').attr('href', `/classroom/create?school=${schoolId}`);
-                
-                $('#classrooms-loading').removeClass('d-none');
-                $('#classrooms-empty').addClass('d-none');
-                $('#classrooms-list-container').empty();
+                var $panel = $('#school-collapse-' + schoolId);
+                var $loading = $panel.find('.classrooms-loading');
+                var $empty = $panel.find('.classrooms-empty');
+                var $container = $panel.find('.classrooms-list-container');
+
+                $loading.removeClass('d-none');
+                $empty.addClass('d-none');
+                $container.empty();
                 
                 $.ajax({
                     url: `/school/${schoolId}`,
                     type: 'GET',
                     dataType: 'json',
                     success: function(response) {
-                        $('#classrooms-loading').addClass('d-none');
+                        $loading.addClass('d-none');
                         
                         var classrooms = response.data;
                         if (classrooms.length > 0) {
@@ -570,72 +570,94 @@
                                 var editUrl = `/classroom/${classroom.id}/edit`;
                                 var deleteFormId = `form-classroom-${classroom.id}`;
                                 var deleteUrl = `/classroom/${classroom.id}`;
+                                var studentsCount = classroom.students_count || 0;
                                 
                                 var cardHtml = `
                                     <div class="col">
-                                        <div class="card h-100 shadow-[0_8px_30px_rgb(0,0,0,0.02)] rounded-[16px] border border-gray-100 position-relative" style="background-color: #fcfcfc; border-radius: 16px;">
-                                            <div class="card-body p-4 d-flex align-items-center justify-content-between">
-                                                <span class="fw-bolder text-gray-800 fs-6">${classroom.name}</span>
-                                                <div class="d-flex align-items-center gap-1">
-                                                    @can('Edit Sekolah')
-                                                    <a href="${editUrl}" class="btn btn-icon btn-light-warning btn-sm rounded-circle w-24px h-24px" title="Edit">
-                                                        <i class="fa-solid fa-pencil text-warning" style="font-size: 10px;"></i>
+                                        <div class="card h-100 border-0 position-relative shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover-elevate-up" style="background-color: #ffffff; border-radius: 24px; box-shadow: 0 8px 30px rgba(0, 0, 0, 0.04) !important; border: none; min-height: 140px; transition: all 0.3s ease;">
+                                            <!-- Top-Right Action Cluster -->
+                                            <div class="position-absolute top-0 end-0 p-3 d-flex align-items-center gap-2" style="z-index: 10;" onclick="event.stopPropagation();">
+                                                @can('Edit Sekolah')
+                                                <a href="${editUrl}" class="btn btn-icon btn-light-warning btn-sm rounded-circle w-28px h-28px d-flex align-items-center justify-content-center transition-all" title="Edit" style="background-color: rgba(245, 158, 11, 0.1); color: #f59e0b; border: none; border-radius: 50%;">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-pencil"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+                                                </a>
+                                                @endcan
+                                                @can('Delete Sekolah')
+                                                <div>
+                                                    <a data-id="${deleteFormId}" type="button" class="btn-delete btn btn-icon btn-light-danger btn-sm rounded-circle w-28px h-28px d-flex align-items-center justify-content-center transition-all" title="Hapus" style="background-color: rgba(239, 68, 68, 0.1); color: #ef4444; border: none; border-radius: 50%;">
+                                                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-trash-2"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg>
                                                     </a>
-                                                    @endcan
-                                                    @can('Delete Sekolah')
-                                                    <div>
-                                                        <a data-id="${deleteFormId}" type="button" class="btn-delete btn btn-icon btn-light-danger btn-sm rounded-circle w-24px h-24px" title="Hapus">
-                                                            <i class="fa-solid fa-trash text-danger" data-id="${deleteFormId}" style="font-size: 10px;"></i>
-                                                        </a>
-                                                        <form id="${deleteFormId}" action="${deleteUrl}" method="post" style="display: none;">
-                                                            <input type="hidden" name="_token" value="{{ csrf_token() }}">
-                                                            <input type="hidden" name="_method" value="DELETE">
-                                                        </form>
-                                                    </div>
-                                                    @endcan
+                                                    <form id="${deleteFormId}" action="${deleteUrl}" method="post" style="display: none;">
+                                                        <input type="hidden" name="_token" value="{{ csrf_token() }}">
+                                                        <input type="hidden" name="_method" value="DELETE">
+                                                    </form>
+                                                </div>
+                                                @endcan
+                                            </div>
+                                            
+                                            <!-- Card Body -->
+                                            <div class="card-body p-5 d-flex flex-column justify-content-between h-100">
+                                                <!-- Overline Label -->
+                                                <div>
+                                                    <span class="typography-label d-block text-slate-400" style="font-size: 10px; font-weight: bold; letter-spacing: 0.05em;">KELAS</span>
+                                                </div>
+                                                
+                                                <!-- Prominent Class Name -->
+                                                <div class="my-3 text-center">
+                                                    <span style="font-family: 'Outfit', sans-serif; font-size: 2.2rem; font-weight: 700; color: #0f172a; line-height: 1;">${classroom.name}</span>
+                                                </div>
+                                                
+                                                <!-- Bottom Section: Badge & Count -->
+                                                <div class="d-flex align-items-center justify-content-between pt-2 border-top border-gray-100" style="margin-top: auto;">
+                                                    <span class="badge d-inline-flex align-items-center gap-1 px-2 py-1 rounded-pill" style="font-size: 10px; font-weight: bold; background-color: rgba(16, 185, 129, 0.1); color: #10b981;">
+                                                        <i class="fa-solid fa-circle-check" style="font-size: 8px; color: #10b981;"></i> Aktif
+                                                    </span>
+                                                    <span class="text-slate-500 fw-semibold" style="font-size: 11px;">
+                                                        <i class="fa-solid fa-users text-slate-400 me-1" style="font-size: 11px;"></i> ${studentsCount} Siswa
+                                                    </span>
                                                 </div>
                                             </div>
                                         </div>
                                     </div>
                                 `;
-                                $('#classrooms-list-container').append(cardHtml);
+                                $container.append(cardHtml);
                             });
                         } else {
-                            $('#classrooms-empty').removeClass('d-none');
+                            $empty.removeClass('d-none');
                         }
                     },
                     error: function() {
-                        $('#classrooms-loading').addClass('d-none');
+                        $loading.addClass('d-none');
                         toastr.error('Gagal memuat data kelas');
                     }
                 });
             }
 
-            window.closeClassroomsPanel = function() {
-                $('#classrooms-detail-panel').collapse('hide');
-                currentOpenSchoolId = null;
-            }
-
-            $(document).on('click', '.btn-toggle-classrooms', function() {
-                var schoolId = $(this).data('school-id');
-                var schoolName = $(this).data('school-name');
+            // Bind Bootstrap Collapse Events
+            $(document).on('show.bs.collapse', '.accordion-collapse', function () {
+                var $collapse = $(this);
+                var schoolId = $collapse.attr('id').replace('school-collapse-', '');
+                var $header = $(`.btn-toggle-accordion[data-school-id="${schoolId}"]`);
+                var schoolName = $header.data('school-name');
                 
-                if (currentOpenSchoolId === schoolId) {
-                    closeClassroomsPanel();
-                } else {
-                    currentOpenSchoolId = schoolId;
-                    loadClassrooms(schoolId, schoolName);
-                    $('#classrooms-detail-panel').collapse('show');
-                    
-                    // Smooth scroll to panel
-                    $('html, body').animate({
-                        scrollTop: $("#classrooms-detail-panel").offset().top - 150
-                    }, 300);
-                }
+                loadClassrooms(schoolId, schoolName);
+                
+                // Animate chevron
+                $header.find('.btn-accordion-chevron i').css('transform', 'rotate(180deg)');
+            });
+
+            $(document).on('hide.bs.collapse', '.accordion-collapse', function () {
+                var $collapse = $(this);
+                var schoolId = $collapse.attr('id').replace('school-collapse-', '');
+                var $header = $(`.btn-toggle-accordion[data-school-id="${schoolId}"]`);
+                
+                // Animate chevron back
+                $header.find('.btn-accordion-chevron i').css('transform', 'rotate(0deg)');
             });
 
             // Assign User action
-            $(document).on('click', '.btn-assign-user', function() {
+            $(document).on('click', '.btn-assign-user', function(e) {
+                e.stopPropagation(); // Prevent accordion collapse trigger
                 const schoolId = $(this).data('id');
                 const schoolName = $(this).data('name');
                 const users = $(this).data('users'); // Array of IDs
@@ -653,20 +675,17 @@
             const urlParams = new URLSearchParams(window.location.search);
             const schoolIdParam = urlParams.get('school_id');
             if (schoolIdParam) {
-                // Find the toggle button for this school
-                var $btn = $(`.btn-toggle-classrooms[data-school-id="${schoolIdParam}"]`);
-                if ($btn.length > 0) {
-                    // Activate school tab if not active
-                    $('a[href="#tab-school"]').tab('show');
+                // Activate school tab if not active
+                $('a[href="#tab-school"]').tab('show');
+                
+                var $collapse = $('#school-collapse-' + schoolIdParam);
+                if ($collapse.length > 0) {
+                    $collapse.collapse('show');
                     
-                    var schoolName = $btn.data('school-name');
-                    currentOpenSchoolId = schoolIdParam;
-                    loadClassrooms(schoolIdParam, schoolName);
-                    $('#classrooms-detail-panel').collapse('show');
-                    
+                    // Smooth scroll to UPT panel
                     setTimeout(function() {
                         $('html, body').animate({
-                            scrollTop: $("#classrooms-detail-panel").offset().top - 150
+                            scrollTop: $collapse.parent().offset().top - 150
                         }, 300);
                     }, 500);
                 }

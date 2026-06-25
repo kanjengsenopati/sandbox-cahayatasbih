@@ -109,7 +109,7 @@ class SchoolController extends Controller
         }
         $school = School::findOrFail($id);
         if (request()->ajax()) {
-            $data = $school->classroom()->latest();
+            $data = $school->classroom()->withCount('students')->latest();
             return DataTables::of($data)
                 ->addColumn('action', function ($data) {
                     $actionEdit = route('classroom.edit', $data->id);
