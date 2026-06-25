@@ -14,14 +14,14 @@ class SyncMasterDatabase extends Command
      *
      * @var string
      */
-    protected $signature = 'db:sync-master';
+    protected $signature = 'db:sync-master {--all : Sync all records instead of only last 30 days}';
 
     /**
      * The console command description.
      *
      * @var string
      */
-    protected $description = 'Incremental sync of the last 30 days of transactions from cahayatasbihdb (master) to aplikasidb';
+    protected $description = 'Incremental sync of the last 30 days of transactions and students data from master to local database';
 
     /**
      * Execute the console command.
@@ -31,6 +31,7 @@ class SyncMasterDatabase extends Command
         $this->info('Starting database synchronization from master...');
         $startTime = now();
         $oneMonthAgo = now()->subDays(30)->toDateTimeString();
+        $syncAll = $this->option('all');
 
         $tables = [
             'banks',
@@ -43,7 +44,9 @@ class SyncMasterDatabase extends Command
             'bills',
             'point_of_sale_transaction_details',
             'transaction_details',
-            'saldo_histories'
+            'saldo_histories',
+            'students',
+            'student_classroom_histories'
         ];
 
         $report = [];
@@ -104,7 +107,7 @@ class SyncMasterDatabase extends Command
                 $hasUpdatedAt = in_array('updated_at', $commonColumns);
                 // Configuration/reference tables should be synced fully to avoid missing references
                 $isConfigTable = in_array($table, ['banks', 'bill_type_banks', 'topup_banks']);
-                if (($hasCreatedAt || $hasUpdatedAt) && !$isConfigTable) {
+                if (($hasCreatedAt || $hasUpdatedAt) && !$isConfigTable && !$syncAll) {
                     $query->where(function ($q) use ($oneMonthAgo, $hasCreatedAt, $hasUpdatedAt) {
                         if ($hasCreatedAt) {
                             $q->orWhere('created_at', '>=', $oneMonthAgo);
