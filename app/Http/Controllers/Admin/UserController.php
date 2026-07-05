@@ -46,9 +46,11 @@ class UserController extends Controller
     protected function handleDataTableRequest()
     {
         $data = User::when(request()->query('status') === 'ACTIVE', function ($query) {
-            return $query->whereNotNull('last_login');
+            return $query->where('status', 'ACTIVE')->whereNotNull('last_login');
         })->when(request()->query('status') === 'INACTIVE', function ($query) {
-            return $query->whereNull('last_login');
+            return $query->where('status', 'ACTIVE')->whereNull('last_login');
+        })->when(request()->query('status') === 'VERIFICATION', function ($query) {
+            return $query->where('status', 'VERIFICATION');
         })->when(request()->query('jamaah_status'), function ($query) {
             return $query->where('jamaah_status', request()->query('jamaah_status'));
         })->latest();
@@ -57,6 +59,9 @@ class UserController extends Controller
                 return $this->generateUserCard($data);
             })
             ->addColumn('status', function ($data) {
+                if ($data->status === 'VERIFICATION') {
+                    return '<span class="badge badge-warning">Butuh Verifikasi</span>';
+                }
                 return $data->last_login
                     ? '<span class="badge badge-success">Aktif</span>'
                     : '<span class="badge badge-danger">Tidak Aktif</span>';
@@ -89,13 +94,15 @@ class UserController extends Controller
     protected function handleStatisticRequest()
     {
         $total = User::count();
-        $active = User::whereNotNull('last_login')->count();
-        $inactive = User::whereNull('last_login')->count();
+        $active = User::where('status', 'ACTIVE')->whereNotNull('last_login')->count();
+        $inactive = User::where('status', 'ACTIVE')->whereNull('last_login')->count();
+        $verification = User::where('status', 'VERIFICATION')->count();
 
         return response()->json([
             'total' => $total,
             'active' => $active,
             'inactive' => $inactive,
+            'verification' => $verification,
         ]);
     }
 
@@ -142,10 +149,18 @@ class UserController extends Controller
         $actionEdit = route('user.edit', $data->id);
         $actionDelete = route('user.destroy', $data->id);
 
-        return "<div class='d-flex justify-content-center'>" .
-            view('components.action.edit', ['action' => $actionEdit, 'name' => 'Wali Santri']) . '&nbsp;' .
+        $buttons = "<div class='d-flex justify-content-center align-items-center gap-1'>";
+
+        if ($data->status === 'VERIFICATION') {
+            $actionVerify = route('user.verify', $data->id);
+            $buttons .= "<button type='button' class='btn btn-icon btn-sm btn-light-success btn-verify me-1' data-url='{$actionVerify}' title='Verifikasi Wali Santri'><i class='fa fa-check fs-6'></i></button>";
+        }
+
+        $buttons .= view('components.action.edit', ['action' => $actionEdit, 'name' => 'Wali Santri']) . '&nbsp;' .
             view('components.action.delete', ['action' => $actionDelete, 'id' => $data->id, 'name' => 'Wali Santri']) .
             "</div>";
+
+        return $buttons;
     }
 
     /**
@@ -172,6 +187,15 @@ class UserController extends Controller
         if ($request->hasFile('avatar')) {
             $data['avatar'] = 'storage/' . $request->file('avatar')->store('images/avatar', ['disk' => 'public']);
         }
+
+        // Check for double entry using name similarity and phone number
+        $duplicate = User::checkDoubleEntry($data['name'], $data['phone']);
+        if ($duplicate) {
+            $data['status'] = 'VERIFICATION';
+            User::create($data);
+            return redirect()->route('user.index')->with('warning', 'Data Wali Santri terdeteksi ganda dengan data sebelumnya. Status diatur ke "Butuh Verifikasi".');
+        }
+
         User::create($data);
         return redirect()->route('user.index')->with('success', 'Berhasil menambahkan data user');
     }
@@ -210,6 +234,15 @@ class UserController extends Controller
         if ($request->hasFile('avatar')) {
             $data['avatar'] = 'storage/' . $request->file('avatar')->store('images/avatar', ['disk' => 'public']);
         }
+
+        // Check for double entry (excluding the current user being updated)
+        $duplicate = User::checkDoubleEntry($data['name'], $data['phone']);
+        if ($duplicate && $duplicate->id !== $user->id) {
+            $data['status'] = 'VERIFICATION';
+            $user->update($data);
+            return redirect()->route('user.index')->with('warning', 'Data Wali Santri terdeteksi ganda dengan data sebelumnya. Status diatur ke "Butuh Verifikasi".');
+        }
+
         $user->update($data);
         return redirect()->route('user.index')->with('success', 'Berhasil mengubah data user');
     }
@@ -348,5 +381,32 @@ class UserController extends Controller
         }
 
         return response()->json(['duplicate' => false]);
+    }
+
+    /**
+     * Verify / Approve a Wali Santri who is in VERIFICATION status.
+     */
+    public function verify(User $user)
+    {
+        if (!Auth::user()->can('Edit Wali Santri')) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Maaf, Anda tidak memiliki akses untuk memverifikasi Wali Santri.'
+            ], 403);
+        }
+
+        try {
+            $user->update(['status' => 'ACTIVE']);
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Berhasil memverifikasi Wali Santri.'
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Verification failed: ' . $e->getMessage());
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Terjadi kesalahan saat memverifikasi data.'
+            ], 500);
+        }
     }
 }

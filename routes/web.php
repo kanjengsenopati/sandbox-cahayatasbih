@@ -223,6 +223,7 @@ Route::group(['middleware' => ['auth']], function () {
     Route::post('user/import', [UserController::class, 'import'])->name('user.import');
     Route::post('user/bulk-update-status', [UserController::class, 'bulkUpdateStatus'])->name('user.bulk-update-status');
     Route::post('user/check-duplicate', [UserController::class, 'checkDuplicate'])->name('user.check-duplicate');
+    Route::post('user/{user}/verify', [UserController::class, 'verify'])->name('user.verify');
     Route::resource('user', UserController::class);
     Route::post('school/{school}/assign', [SchoolController::class, 'assignUsers'])->name('school.assign');
     Route::resource('school', SchoolController::class);

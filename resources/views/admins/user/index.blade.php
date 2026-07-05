@@ -144,8 +144,9 @@
                                             <label class="form-label">Status</label>
                                             <select name="status" class="form-select form-select-sm" id="filter_status">
                                                 <option value="">Semua</option>
-                                                <option value="ACTIVE">Aktif</option> <!-- Opsi untuk Aktif -->
-                                                <option value="INACTIVE">Tidak Aktif</option> <!-- Opsi untuk Tidak Aktif -->
+                                                <option value="ACTIVE">Aktif</option>
+                                                <option value="INACTIVE">Tidak Aktif</option>
+                                                <option value="VERIFICATION">Butuh Verifikasi</option>
                                             </select>
                                         </div>
                                     </div>
@@ -182,6 +183,19 @@
                                         <div>
                                             <div class="fw-bolder fs-5 text-gray-800">Wali Santri Tidak Aktif</div>
                                             <div class="text-danger fs-3 fw-bolder" id="inactive-parents">0</div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Card for "Wali Santri Butuh Verifikasi" -->
+                                <div class="card bg-light-warning flex-grow-1">
+                                    <div class="card-body d-flex align-items-center">
+                                        <div class="me-3">
+                                            <i class="fas fa-user-shield text-warning fs-2"></i>
+                                        </div>
+                                        <div>
+                                            <div class="fw-bolder fs-5 text-gray-800">Wali Santri Butuh Verifikasi</div>
+                                            <div class="text-warning fs-3 fw-bolder" id="verification-parents">0</div>
                                         </div>
                                     </div>
                                 </div>
@@ -604,20 +618,87 @@
             });
         });
 
-        // Function to refresh statistic counters
-        function refreshCounters() {
-            $.ajax({
-                url: '{{ route('user.index') }}',
-                type: 'GET',
-                data: {
-                    type: 'statistic'
-                },
-                success: function(response) {
-                    $('#active-parents').text(response.active);
-                    $('#inactive-parents').text(response.inactive);
-                }
-            });
-        }
+         // Handler for Verifikasi button click
+         $(document).on('click', '.btn-verify', function() {
+             var url = $(this).data('url');
+             Swal.fire({
+                 title: 'Verifikasi Wali Santri?',
+                 text: "Apakah Anda yakin ingin menyetujui data Wali Santri ini?",
+                 icon: 'question',
+                 showCancelButton: true,
+                 confirmButtonColor: '#10B981',
+                 cancelButtonColor: '#3085d6',
+                 confirmButtonText: 'Ya, Verifikasi!',
+                 cancelButtonText: 'Batal',
+                 customClass: {
+                     confirmButton: 'btn btn-success',
+                     cancelButton: 'btn btn-secondary'
+                 }
+             }).then((result) => {
+                 if (result.isConfirmed) {
+                     $.ajax({
+                         url: url,
+                         type: 'POST',
+                         data: {
+                             _token: '{{ csrf_token() }}'
+                         },
+                         success: function(response) {
+                             if (response.status === 'success') {
+                                 Swal.fire({
+                                     icon: 'success',
+                                     title: 'Berhasil',
+                                     text: response.message,
+                                     customClass: {
+                                         confirmButton: 'btn btn-success'
+                                     }
+                                 });
+                                 table.ajax.reload();
+                                 refreshCounters();
+                             } else {
+                                 Swal.fire({
+                                     icon: 'error',
+                                     title: 'Gagal',
+                                     text: response.message,
+                                     customClass: {
+                                         confirmButton: 'btn btn-danger'
+                                     }
+                                 });
+                             }
+                         },
+                         error: function(xhr) {
+                             var errMsg = 'Terjadi kesalahan saat memproses verifikasi.';
+                             if (xhr.responseJSON && xhr.responseJSON.message) {
+                                 errMsg = xhr.responseJSON.message;
+                             }
+                             Swal.fire({
+                                 icon: 'error',
+                                 title: 'Gagal',
+                                 text: errMsg,
+                                 customClass: {
+                                     confirmButton: 'btn btn-danger'
+                                 }
+                             });
+                         }
+                     });
+                 }
+             });
+         });
+
+         // Function to refresh statistic counters
+         function refreshCounters() {
+             $.ajax({
+                 url: '{{ route('user.index') }}',
+                 type: 'GET',
+                 data: {
+                     type: 'statistic'
+                 },
+                 success: function(response) {
+                     $('#active-parents').text(response.active);
+                     $('#inactive-parents').text(response.inactive);
+                     $('#verification-parents').text(response.verification);
+                 }
+             });
+         }
 
         // Initial fetch of counters
         refreshCounters();

@@ -49,16 +49,22 @@ class UserImportData implements ToCollection, WithHeadingRow
                     }
                     $seenPhonesInSheet[$phone] = $rowNum;
 
-                    // Check if duplicate in database
-                    $exists = User::where('phone', $phone)->exists();
-                    if ($exists) {
-                        $this->skipped[] = [
-                            'row' => $rowNum,
-                            'name' => $row['nama'],
-                            'phone' => $phone,
-                            'reason' => 'Nomor WA sudah terdaftar di database'
-                        ];
-                        continue;
+                    // Check if duplicate in database using the 2 indicators (name similarity & phone match)
+                    $duplicate = User::checkDoubleEntry($row['nama'], $phone);
+                    if ($duplicate) {
+                        $status = 'VERIFICATION';
+                    } else {
+                        // If phone exists but name is not similar, skip to avoid duplicate phone conflicts
+                        $exists = User::where('phone', $phone)->exists();
+                        if ($exists) {
+                            $this->skipped[] = [
+                                'row' => $rowNum,
+                                'name' => $row['nama'],
+                                'phone' => $phone,
+                                'reason' => 'Nomor WA sudah terdaftar di database dengan nama berbeda'
+                            ];
+                            continue;
+                        }
                     }
                 }
 

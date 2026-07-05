@@ -41,17 +41,40 @@ class StudentImportData implements ToCollection, WithHeadingRow
                     dd('Kelas ' . $row['kelas'] . ' tidak ditemukan');
                 }
 
+                $birthDate = null;
+                if (!empty($row['tanggal_lahir'])) {
+                    try {
+                        if (is_numeric($row['tanggal_lahir'])) {
+                            $birthDate = Date::excelToDateTimeObject($row['tanggal_lahir'])->format('Y-m-d');
+                        } else {
+                            $birthDate = \Carbon\Carbon::parse($row['tanggal_lahir'])->format('Y-m-d');
+                        }
+                    } catch (\Exception $e) {
+                        Log::warning("Gagal parsing tanggal lahir untuk siswa {$row['nama']}: " . $e->getMessage());
+                    }
+                }
+
+                // Map nickname: if empty, default to first word of name
+                $nickname = trim($row['nama_panggilan'] ?? '');
+                if (empty($nickname)) {
+                    $nickname = explode(' ', trim($row['nama']))[0];
+                }
+
                 if ($row['nama'] !== null) {
                     Student::create([
                         'name' => $row['nama'],
+                        'nickname' => $nickname,
                         'nis' => $row['nis'],
                         'nisn' => $row['nisn'] ?? null,
-                        'birth_place' => $row['tempat_lahir'] ?? null,
-                        'birth_date' => Date::excelToDateTimeObject($row['tanggal_lahir'])->format('Y-m-d') ?? null,
+                        'born_place' => $row['tempat_lahir'] ?? null,
+                        'birth_date' => $birthDate,
                         'address' => $row['alamat'] ?? null,
+                        'city' => $row['kota'] ?? null,
+                        'province' => $row['provinsi'] ?? null,
                         'user_id' => $user->id ?? null,
-                        'gender' => strtoupper($row['jenis_kelamin']) ?? null,
+                        'gender' => strtoupper($row['jenis_kelamin'] ?? '') ?: null,
                         'classroom_id' => $classroom->id,
+                        'status' => Student::STATUS_ACTIVE,
                     ]);
                 }
             }
