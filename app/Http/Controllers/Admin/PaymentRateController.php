@@ -567,8 +567,10 @@ class PaymentRateController extends Controller
                             ]);
 
                         // CASE A: CREATE NEW BILLS FOR MISSING STUDENTS (New Targets OR New Months)
-                        // 1. Get IDs of students who ALREADY have a bill for this Item
-                        $existingBillStudentIds = Bill::where('payment_rate_item_id', $item->id)
+                        // 1. Get IDs of students who ALREADY have a bill for this month/year and bill type
+                        $existingBillStudentIds = Bill::where('bill_type_id', $billType->id)
+                            ->where('month', $month)
+                            ->where('year', $year)
                             ->pluck('student_id')
                             ->toArray();
                         
@@ -644,7 +646,11 @@ class PaymentRateController extends Controller
                                 ->update(['amount' => $cleanPrice, 'year' => $year]);
                             
                             // Create Missing
-                            $existingBillStudentIds = Bill::where('payment_rate_item_id', $item->id)->pluck('student_id')->toArray();
+                            $existingBillStudentIds = Bill::where('bill_type_id', $billType->id)
+                                ->where('month', $month)
+                                ->where('year', $year)
+                                ->pluck('student_id')
+                                ->toArray();
                             $studentsToCreate = $students->whereNotIn('id', $existingBillStudentIds);
                             
                             $billsToInsert = [];
@@ -958,7 +964,8 @@ class PaymentRateController extends Controller
         foreach ($months as $month) {
             // Tentukan Tahun & Nominal
             $targetYear = ($billType->type == BillType::TYPE_MONTHLY) ? $request->{"tahun_$month"} : $request->year;
-            $targetAmount = ($billType->type == BillType::TYPE_MONTHLY) ? $request->{"bulan_$month"} : $request->price;
+            $targetAmountRaw = ($billType->type == BillType::TYPE_MONTHLY) ? $request->{"bulan_$month"} : $request->price;
+            $targetAmount = $targetAmountRaw ? (int) str_replace('.', '', $targetAmountRaw) : 0;
 
             // Skip jika nominal 0
             if ($targetAmount == 0) continue;
