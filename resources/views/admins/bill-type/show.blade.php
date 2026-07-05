@@ -547,31 +547,31 @@
                             ? 'bg-light-success border-success' 
                             : 'bg-white border-gray-200';
                         
-                        // Using d-flex flex-column h-100 to ensure alignment of buttons at the bottom
-                        html += '<div class="card h-100 border ' + cardStyle + ' shadow-sm rounded-4 position-relative p-4 d-flex flex-column" style="min-height: 220px; transition: transform 0.2s, box-shadow 0.2s;">';
+                        // Refined to p-3, min-height 145px, d-flex flex-column to be compact and eliminate blank gaps
+                        html += '<div class="card h-100 border ' + cardStyle + ' shadow-sm rounded-4 position-relative p-3 d-flex flex-column" style="min-height: 145px; transition: transform 0.2s, box-shadow 0.2s;">';
                         
-                        // Checkbox for selection (Only for UNPAID bills)
+                        // Checkbox for selection (Only for UNPAID bills, positioned at top-left with m-2)
                         if (b.status === 'UNPAID') {
-                            html += '<div class="position-absolute top-0 start-0 m-3">';
+                            html += '<div class="position-absolute top-0 start-0 m-2">';
                             html += '<div class="form-check form-check-custom form-check-solid form-check-sm">';
                             html += '<input class="form-check-input select-bill-checkbox" type="checkbox" value="' + b.id + '" data-rate-id="' + rateId + '" data-student-id="' + studentId + '" />';
                             html += '</div>';
                             html += '</div>';
                         }
 
-                        // Prominent Month & Year Badge (Centered mt-3 to avoid checkbox overlap)
-                        html += '<div class="badge badge-light-primary fw-bolder text-uppercase fs-7 py-2 px-3 w-100 mb-2 text-center mt-3">' + (b.translated_month || '-') + ' ' + b.year + '</div>';
+                        // Prominent Month & Year Badge (Centered mt-2 to avoid checkbox overlap)
+                        html += '<div class="badge badge-light-primary fw-bolder text-uppercase fs-8 py-1.5 px-3 w-100 mb-1.5 text-center mt-2">' + (b.translated_month || '-') + ' ' + b.year + '</div>';
                         
-                        // Prominent Status Badge
-                        var statusBadgeClass = b.status === 'PAID' 
-                            ? 'badge-light-success text-success' 
-                            : 'badge-light-danger text-danger';
+                        // Solid Status Badge (Red for Unpaid, Emerald for Paid)
+                        var statusStyle = b.status === 'PAID' 
+                            ? 'background-color: #10b981 !important; color: #ffffff !important;' 
+                            : 'background-color: #dc2626 !important; color: #ffffff !important;';
                         var statusLabel = b.status === 'PAID' ? 'LUNAS' : 'BELUM LUNAS';
-                        html += '<div class="badge ' + statusBadgeClass + ' fw-bold fs-8 py-2 px-3 w-100 mb-3 text-center">' + statusLabel + '</div>';
+                        html += '<div class="badge fw-bold fs-8 py-1.5 px-3 w-100 mb-2 text-center" style="' + statusStyle + '">' + statusLabel + '</div>';
                         
                         // Nominal
                         var amountColor = b.status === 'PAID' ? 'text-success' : 'text-primary';
-                        html += '<div class="fs-5 fw-bolder ' + amountColor + ' text-center mb-3">Rp. ' + new Intl.NumberFormat('id-ID').format(b.amount) + '</div>';
+                        html += '<div class="fs-5 fw-bolder ' + amountColor + ' text-center mb-2">Rp. ' + new Intl.NumberFormat('id-ID').format(b.amount) + '</div>';
                         
                         // Aligned Bottom Buttons / Status
                         html += '<div class="mt-auto">';
