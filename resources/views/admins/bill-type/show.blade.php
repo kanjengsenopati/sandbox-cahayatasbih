@@ -363,7 +363,7 @@
             var countEl = detailRow.find('.detail-count');
 
             $.ajax({
-                url: '/admin/payment-rate/' + rateId,
+                url: "{{ route('payment-rate.show', '') }}/" + rateId,
                 type: 'GET',
                 data: { type: 'bill' },
                 dataType: 'json',
