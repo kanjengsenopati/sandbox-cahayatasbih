@@ -97,10 +97,11 @@
                     <!--begin::Tab Pane Regular-->
                     <div class="tab-pane fade show active" id="tab_regular" role="tabpanel">
                         <div class="table-responsive">
-                            <table class="table table-hover align-middle gs-0 gy-4">
+                            <table class="table table-hover align-middle gs-0 gy-4" id="table_regular">
                                 <thead class="bg-light">
                                     <tr class="fw-bolder text-muted fs-7 text-uppercase">
-                                        <th class="ps-4 min-w-50px rounded-start">No</th>
+                                        <th style="width: 3%"></th>
+                                        <th class="ps-4 min-w-50px">No</th>
                                         <th class="min-w-150px">Sekolah</th>
                                         <th class="min-w-200px">Kelas</th>
                                         <th class="min-w-125px">Total Tagihan</th>
@@ -109,7 +110,10 @@
                                 </thead>
                                 <tbody>
                                     @forelse($regularRates as $rate)
-                                    <tr>
+                                    <tr class="rate-row" data-rate-id="{{ $rate->id }}" style="cursor: pointer;">
+                                        <td class="text-center toggle-detail">
+                                            <i class="fas fa-chevron-right text-primary fs-7 transition-transform" style="transition: transform 0.2s;"></i>
+                                        </td>
                                         <td class="ps-4">
                                             <span class="text-dark fw-bolder">{{ $loop->iteration }}</span>
                                         </td>
@@ -149,14 +153,35 @@
                                         <td class="text-center">
                                             <div class="d-flex justify-content-center gap-2">
                                                 @include('components.action.edit', ['action' => route('payment-rate.edit', $rate->id), 'name' => 'Jenis Bayar'])
-                                                @include('components.action.show', ['action' => route('payment-rate.show', $rate->id)])
                                                 @include('components.action.delete', ['action' => route('payment-rate.destroy', $rate->id), 'id' => $rate->id, 'name' => 'Jenis Bayar'])
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {{-- Expandable Detail Row --}}
+                                    <tr class="detail-row" id="detail-{{ $rate->id }}" style="display: none;">
+                                        <td colspan="6" class="p-0 border-0">
+                                            <div class="bg-light-primary rounded mx-4 my-3 p-4" style="background-color: #f1f3f9;">
+                                                <div class="d-flex justify-content-between align-items-center mb-3">
+                                                    <h6 class="mb-0 text-primary fw-bold">
+                                                        <i class="fas fa-list-ul me-2"></i>Daftar Santri & Tagihan
+                                                    </h6>
+                                                    <span class="badge badge-light-primary fs-8">
+                                                        <i class="fas fa-spinner fa-spin me-1 detail-spinner"></i>
+                                                        <span class="detail-count"></span>
+                                                    </span>
+                                                </div>
+                                                <div class="detail-content">
+                                                    <div class="text-center py-5">
+                                                        <div class="spinner-border text-primary spinner-border-sm" role="status"></div>
+                                                        <span class="text-muted ms-2 fs-7">Memuat data...</span>
+                                                    </div>
+                                                </div>
                                             </div>
                                         </td>
                                     </tr>
                                     @empty
                                     <tr>
-                                        <td colspan="5" class="text-center py-10">
+                                        <td colspan="6" class="text-center py-10">
                                             <div class="d-flex flex-column align-items-center">
                                                 <i class="fas fa-search fs-1 text-gray-300 mb-4"></i>
                                                 <span class="text-muted fw-bold fs-6">Belum ada data tarif reguler.</span>
@@ -173,10 +198,11 @@
                     <!--begin::Tab Pane Transfer-->
                     <div class="tab-pane fade" id="tab_transfer" role="tabpanel">
                         <div class="table-responsive">
-                            <table class="table table-hover align-middle gs-0 gy-4">
+                            <table class="table table-hover align-middle gs-0 gy-4" id="table_transfer">
                                 <thead class="bg-light">
                                     <tr class="fw-bolder text-muted fs-7 text-uppercase">
-                                        <th class="ps-4 min-w-50px rounded-start">No</th>
+                                        <th style="width: 3%"></th>
+                                        <th class="ps-4 min-w-50px">No</th>
                                         <th class="min-w-150px">Sekolah</th>
                                         <th class="min-w-200px">Nama Siswa</th>
                                         <th class="min-w-125px">Total Tagihan</th>
@@ -185,7 +211,10 @@
                                 </thead>
                                 <tbody>
                                     @forelse($transferRates as $rate)
-                                    <tr>
+                                    <tr class="rate-row" data-rate-id="{{ $rate->id }}" style="cursor: pointer;">
+                                        <td class="text-center toggle-detail">
+                                            <i class="fas fa-chevron-right text-primary fs-7" style="transition: transform 0.2s;"></i>
+                                        </td>
                                         <td class="ps-4">
                                             <span class="text-dark fw-bolder">{{ $loop->iteration }}</span>
                                         </td>
@@ -232,14 +261,35 @@
                                         <td class="text-center">
                                             <div class="d-flex justify-content-center gap-2">
                                                 @include('components.action.edit', ['action' => route('payment-rate.edit', $rate->id), 'name' => 'Jenis Bayar'])
-                                                @include('components.action.show', ['action' => route('payment-rate.show', $rate->id)])
                                                 @include('components.action.delete', ['action' => route('payment-rate.destroy', $rate->id), 'id' => $rate->id, 'name' => 'Jenis Bayar'])
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {{-- Expandable Detail Row --}}
+                                    <tr class="detail-row" id="detail-{{ $rate->id }}" style="display: none;">
+                                        <td colspan="6" class="p-0 border-0">
+                                            <div class="bg-light-primary rounded mx-4 my-3 p-4" style="background-color: #f1f3f9;">
+                                                <div class="d-flex justify-content-between align-items-center mb-3">
+                                                    <h6 class="mb-0 text-primary fw-bold">
+                                                        <i class="fas fa-list-ul me-2"></i>Daftar Santri & Tagihan
+                                                    </h6>
+                                                    <span class="badge badge-light-primary fs-8">
+                                                        <i class="fas fa-spinner fa-spin me-1 detail-spinner"></i>
+                                                        <span class="detail-count"></span>
+                                                    </span>
+                                                </div>
+                                                <div class="detail-content">
+                                                    <div class="text-center py-5">
+                                                        <div class="spinner-border text-primary spinner-border-sm" role="status"></div>
+                                                        <span class="text-muted ms-2 fs-7">Memuat data...</span>
+                                                    </div>
+                                                </div>
                                             </div>
                                         </td>
                                     </tr>
                                     @empty
                                     <tr>
-                                        <td colspan="5" class="text-center py-10">
+                                        <td colspan="6" class="text-center py-10">
                                             <div class="d-flex flex-column align-items-center">
                                                 <i class="fas fa-user-slash fs-1 text-gray-300 mb-4"></i>
                                                 <span class="text-muted fw-bold fs-6">Belum ada data tarif susulan/pindahan.</span>
@@ -279,7 +329,89 @@
             window.location.href = url.toString();
         });
 
-        // Initialize tooltips/other components if needed (Metronic usually handles this globally)
+        // Expandable Panel Toggle
+        var loadedPanels = {};
+
+        $('.rate-row').on('click', function(e) {
+            // Jangan toggle jika klik pada tombol aksi (edit, delete)
+            if ($(e.target).closest('.d-flex.justify-content-center').length > 0) return;
+
+            var rateId = $(this).data('rate-id');
+            var detailRow = $('#detail-' + rateId);
+            var icon = $(this).find('.toggle-detail i');
+
+            if (detailRow.is(':visible')) {
+                // Tutup panel
+                detailRow.slideUp(200);
+                icon.css('transform', 'rotate(0deg)');
+            } else {
+                // Buka panel
+                detailRow.slideDown(200);
+                icon.css('transform', 'rotate(90deg)');
+
+                // Muat data jika belum pernah dimuat
+                if (!loadedPanels[rateId]) {
+                    loadDetailData(rateId);
+                }
+            }
+        });
+
+        function loadDetailData(rateId) {
+            var detailRow = $('#detail-' + rateId);
+            var contentDiv = detailRow.find('.detail-content');
+            var spinnerEl = detailRow.find('.detail-spinner');
+            var countEl = detailRow.find('.detail-count');
+
+            $.ajax({
+                url: '/admin/payment-rate/' + rateId,
+                type: 'GET',
+                data: { type: 'bill' },
+                dataType: 'json',
+                success: function(response) {
+                    var students = response.data || [];
+                    spinnerEl.hide();
+                    countEl.text(students.length + ' Santri');
+
+                    if (students.length === 0) {
+                        contentDiv.html('<div class="text-center py-4 text-muted"><i class="fas fa-inbox fs-2 mb-2 d-block"></i>Tidak ada data santri</div>');
+                        loadedPanels[rateId] = true;
+                        return;
+                    }
+
+                    var html = '<div class="table-responsive">';
+                    html += '<table class="table table-row-bordered table-row-gray-200 align-middle gs-0 gy-2 bg-white rounded">';
+                    html += '<thead><tr class="fw-bolder text-muted fs-8 text-uppercase">';
+                    html += '<th class="ps-4" style="width: 5%">No</th>';
+                    html += '<th>Nama Santri</th>';
+                    html += '<th>Kelas</th>';
+                    html += '<th>Total Tagihan</th>';
+                    html += '<th>Dibayar</th>';
+                    html += '<th>Sisa</th>';
+                    html += '<th class="text-center">Status</th>';
+                    html += '</tr></thead><tbody>';
+
+                    students.forEach(function(s, idx) {
+                        html += '<tr>';
+                        html += '<td class="ps-4 text-gray-700">' + (idx + 1) + '</td>';
+                        html += '<td class="fw-bold text-gray-800">' + (s.name || '-') + '</td>';
+                        html += '<td class="text-gray-600">' + (s.classroom || '-') + '</td>';
+                        html += '<td class="text-gray-700">' + (s.total || 'Rp. 0') + '</td>';
+                        html += '<td class="text-success fw-bold">' + (s.total_paid || 'Rp. 0') + '</td>';
+                        html += '<td class="text-danger fw-bold">' + (s.total_unpaid || 'Rp. 0') + '</td>';
+                        html += '<td class="text-center">' + (s.status || '-') + '</td>';
+                        html += '</tr>';
+                    });
+
+                    html += '</tbody></table></div>';
+                    contentDiv.html(html);
+                    loadedPanels[rateId] = true;
+                },
+                error: function() {
+                    spinnerEl.hide();
+                    contentDiv.html('<div class="alert alert-danger py-3 mb-0"><i class="fas fa-exclamation-triangle me-2"></i>Gagal memuat data santri</div>');
+                }
+            });
+        }
     });
 </script>
 @endpush
