@@ -718,6 +718,7 @@
                         }
                     });
                 }
+            });
         });
 
         // Check All Checkbox
