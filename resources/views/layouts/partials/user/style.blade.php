@@ -264,16 +264,34 @@
     }
 
     /* Warna link pada sidebar gelap (abu-abu) */
-    .aside-dark .menu .menu-item .menu-link,
-    .aside-dark .menu .menu-item .menu-link.active {
-        color: #9899ac;
+    .aside-dark .menu .menu-item .menu-link {
+        color: #9899ac !important;
     }
 
     /* Warna background link pada sidebar gelap saat hover (ungu) */
     .aside-dark .menu .menu-item .menu-link:hover:not(.disabled):not(.active),
-    .aside-dark .menu .menu-item.hover>.menu-link:not(.disabled):not(.active),
+    .aside-dark .menu .menu-item.hover>.menu-link:not(.disabled):not(.active) {
+        background-color: rgba(255, 255, 255, 0.06) !important;
+        color: #ffffff !important;
+    }
+
+    /* Active menu item styling */
     .aside-dark .menu .menu-item .menu-link.active {
-        background-color: #8a63d2 !important;
+        background-color: rgba(255, 255, 255, 0.12) !important;
+        color: #ffffff !important;
+        font-weight: 700 !important;
+    }
+
+    /* Sub-menu active link styling (with left border alignment) */
+    .aside-dark .menu .menu-sub .menu-item .menu-link.active {
+        border-left: 4px solid #10B981 !important; /* Emerald success left accent border */
+        padding-left: 32px !important; /* 36px normal - 4px border = 32px to keep text aligned */
+    }
+
+    /* Top-level active link styling (with left border alignment) */
+    .aside-dark .menu > .menu-item > .menu-link.active {
+        border-left: 4px solid #10B981 !important; /* Emerald success left accent border */
+        padding-left: 20px !important; /* 24px normal - 4px border = 20px to keep text aligned */
     }
 
     /* Scrollbar pada sidebar gelap (ungu) */
