@@ -212,7 +212,6 @@ class ItemController extends Controller
                 })
                 ->where('is_active', true)
                 ->orderBy('stock', 'asc') // Order by stock in ascending order
-                ->limit(10)
                 ->get();
 
             return $this->postSuccessResponse("Berhasil mengambil data", $items);
@@ -278,13 +277,11 @@ class ItemController extends Controller
             }
         }
 
-        // Limit the number of items returned to 15
         $items = Item::with('categoryItem')->whereIsActive(true)
             ->when($outletId, function($q) use ($outletId) {
                 $q->where('outlet_id', $outletId);
             })
             ->whereRaw('LOWER(name) LIKE ?', ['%' . $searchTerm . '%'])
-            ->limit(15) // Add this line to limit the results
             ->get();
 
         if ($items->isEmpty()) {
