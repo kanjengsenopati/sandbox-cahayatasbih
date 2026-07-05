@@ -115,13 +115,13 @@
                                         </td>
                                         <td>
                                             <span class="text-gray-800 fw-bold d-block fs-6">
-                                                {{ $rate->paymentRateClassrooms->first()->classroom->school->name ?? '-' }}
+                                                {{ $rate->paymentRateClassrooms->first()?->classroom?->school?->name ?? '-' }}
                                             </span>
                                         </td>
                                         <td>
                                             @foreach($rate->paymentRateClassrooms as $prClassroom)
                                                 <span class="badge badge-light-success fw-bolder m-1">
-                                                    {{ $prClassroom->classroom->name }}
+                                                    {{ $prClassroom->classroom?->name ?? 'Kelas Dihapus' }}
                                                 </span>
                                             @endforeach
                                             @if($rate->gender)
@@ -191,16 +191,16 @@
                                         </td>
                                         <td>
                                             <span class="text-gray-800 fw-bold d-block fs-6">
-                                                {{ $rate->paymentRateStudents->first()->student->classroom->school->name ?? '-' }}
+                                                {{ $rate->paymentRateStudents->first()?->student?->classroom?->school?->name ?? '-' }}
                                             </span>
                                         </td>
                                         <td>
                                             @foreach($rate->paymentRateStudents as $prStudent)
                                                 <div class="d-flex align-items-center mb-1">
                                                     <span class="badge badge-light-warning fw-bolder me-2">
-                                                        {{ $prStudent->student->name }}
+                                                        {{ $prStudent->student?->name ?? 'Siswa Dihapus' }}
                                                     </span>
-                                                    <span class="text-muted fs-8">({{ $prStudent->student->nis ?? '-' }})</span>
+                                                    <span class="text-muted fs-8">({{ $prStudent->student?->nis ?? '-' }})</span>
                                                 </div>
                                             @endforeach
                                             @if($rate->gender || $rate->jamaah_status)

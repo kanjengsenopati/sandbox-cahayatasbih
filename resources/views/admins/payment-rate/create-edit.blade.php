@@ -372,7 +372,7 @@
                                     @if($paymentRate->type == 'REGULAR')
                                         <div class="d-flex flex-wrap gap-2">
                                             @foreach($paymentRate->paymentRateClassrooms as $prClass)
-                                                <span class="badge badge-primary fs-7">{{ $prClass->classroom->name }}</span>
+                                                <span class="badge badge-primary fs-7">{{ $prClass->classroom?->name ?? 'Kelas Dihapus' }}</span>
                                             @endforeach
                                         </div>
                                     @else
@@ -381,12 +381,12 @@
                                                 <div class="d-flex align-items-center bg-white p-2 rounded border">
                                                     <div class="symbol symbol-30px me-3">
                                                         <div class="symbol-label fs-6 fw-bold bg-light-warning text-warning">
-                                                            {{ substr($prStudent->student->name, 0, 1) }}
+                                                            {{ substr($prStudent->student?->name ?? 'S', 0, 1) }}
                                                         </div>
                                                     </div>
                                                     <div class="d-flex flex-column">
-                                                        <span class="fw-bold text-gray-800 fs-7">{{ $prStudent->student->name }}</span>
-                                                        <span class="text-muted fs-8">{{ $prStudent->student->nis ?? '-' }}</span>
+                                                        <span class="fw-bold text-gray-800 fs-7">{{ $prStudent->student?->name ?? 'Siswa Dihapus' }}</span>
+                                                        <span class="text-muted fs-8">{{ $prStudent->student?->nis ?? '-' }}</span>
                                                     </div>
                                                 </div>
                                             @endforeach
