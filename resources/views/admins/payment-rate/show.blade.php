@@ -1,5 +1,40 @@
 @extends('layouts.master', ['title' => 'Detail Tarif Pembayaran'])
 @section('content')
+@php
+    // Auto-detect Sekolah & Kelas dari relasi PaymentRate
+    $selectedSchoolId = null;
+    $selectedClassroomId = null;
+    $preloadedClassrooms = collect();
+
+    if ($paymentRate->type == 'REGULAR') {
+        // Ambil kelas-kelas dari relasi paymentRateClassrooms
+        $rateClassrooms = $paymentRate->paymentRateClassrooms->map(fn($prc) => $prc->classroom)->filter();
+        $schoolIds = $rateClassrooms->pluck('school_id')->unique();
+        $classroomIds = $rateClassrooms->pluck('id')->unique();
+
+        if ($schoolIds->count() === 1) {
+            $selectedSchoolId = $schoolIds->first();
+            $preloadedClassrooms = \App\Models\Classroom::where('school_id', $selectedSchoolId)->orderBy('name')->get();
+        }
+        if ($classroomIds->count() === 1) {
+            $selectedClassroomId = $classroomIds->first();
+        }
+    } else {
+        // Tipe TRANSFER: ambil kelas dari siswa
+        $rateStudents = $paymentRate->paymentRateStudents->map(fn($prs) => $prs->student)->filter();
+        $classroomIds = $rateStudents->pluck('classroom_id')->unique();
+        $classrooms = $rateStudents->map(fn($s) => $s->classroom)->filter();
+        $schoolIds = $classrooms->pluck('school_id')->unique();
+
+        if ($schoolIds->count() === 1) {
+            $selectedSchoolId = $schoolIds->first();
+            $preloadedClassrooms = \App\Models\Classroom::where('school_id', $selectedSchoolId)->orderBy('name')->get();
+        }
+        if ($classroomIds->count() === 1) {
+            $selectedClassroomId = $classroomIds->first();
+        }
+    }
+@endphp
 <div class="content d-flex flex-column flex-column-fluid" id="kt_content">
     <!--begin::Toolbar-->
     <div class="toolbar" id="kt_toolbar">
@@ -75,7 +110,7 @@
                             <select class="form-select form-select-solid" id="filter_school_id" data-control="select2" data-placeholder="Pilih Sekolah">
                                 <option value="">Semua Sekolah</option>
                                 @foreach (\App\Models\School::all() as $school)
-                                <option value="{{ $school->id }}">{{ $school->name }}</option>
+                                <option value="{{ $school->id }}" {{ $selectedSchoolId == $school->id ? 'selected' : '' }}>{{ $school->name }}</option>
                                 @endforeach
                             </select>
                         </div>
@@ -83,6 +118,9 @@
                             <label class="form-label fs-6 fw-bold">Kelas:</label>
                             <select class="form-select form-select-solid" id="filter_classroom_id" data-control="select2" data-placeholder="Pilih Kelas">
                                 <option value="">Semua Kelas</option>
+                                @foreach ($preloadedClassrooms as $classroom)
+                                <option value="{{ $classroom->id }}" {{ $selectedClassroomId == $classroom->id ? 'selected' : '' }}>{{ $classroom->name }}</option>
+                                @endforeach
                             </select>
                         </div>
 
