@@ -506,44 +506,57 @@
                 success: function(response) {
                     var bills = response.bills || [];
                     if (bills.length === 0) {
-                        contentDiv.html('<div class="text-center py-2 text-muted fs-8">Tidak ada data tagihan</div>');
+                        contentDiv.html('<div class="text-center py-4 text-muted"><i class="fas fa-inbox fs-2 mb-2 d-block"></i>Tidak ada data tagihan</div>');
                         return;
                     }
 
-                    var html = '<div class="table-responsive">';
-                    html += '<table class="table table-row-bordered table-row-gray-200 align-middle gs-0 gy-1 bg-white rounded fs-8">';
-                    html += '<thead><tr class="fw-bolder text-muted text-uppercase">';
-                    html += '<th class="ps-3" style="width: 5%">No</th>';
-                    html += '<th>Bulan</th>';
-                    html += '<th>Tahun</th>';
-                    html += '<th>Nominal</th>';
-                    html += '<th>Status</th>';
-                    html += '<th class="text-center" style="width: 15%">Aksi</th>';
-                    html += '</tr></thead><tbody>';
+                    var html = '<div class="row g-3 row-cols-2 row-cols-md-3 row-cols-lg-6">';
 
                     bills.forEach(function(b, idx) {
-                        html += '<tr>';
-                        html += '<td class="ps-3 text-gray-700">' + (idx + 1) + '</td>';
-                        html += '<td class="fw-bold text-gray-800">' + (b.translated_month || '-') + '</td>';
-                        html += '<td class="text-gray-600">' + b.year + '</td>';
-                        html += '<td class="text-gray-700 fw-bold">Rp. ' + new Intl.NumberFormat('id-ID').format(b.amount) + '</td>';
-                        html += '<td>' + b.status_badge + '</td>';
-                        html += '<td class="text-center">';
+                        html += '<div class="col">';
+                        
+                        // Card wrapper with status-based border & soft background
+                        var cardStyle = b.status === 'PAID' 
+                            ? 'bg-light-success border-success' 
+                            : 'bg-white border-gray-200';
+                        
+                        html += '<div class="card h-100 border ' + cardStyle + ' shadow-sm rounded-4 position-relative p-4" style="transition: transform 0.2s, box-shadow 0.2s; min-height: 120px;">';
+                        
+                        // Top-right action cluster (Absolute Positioned)
+                        html += '<div class="position-absolute top-0 end-0 m-3 d-flex gap-1">';
                         if (b.status === 'UNPAID') {
-                            html += '<button type="button" class="btn btn-icon btn-bg-light btn-active-color-primary btn-sm me-1 edit-bill-btn" data-bill-id="' + b.id + '" data-amount="' + b.amount + '" data-rate-id="' + rateId + '" data-student-id="' + studentId + '" title="Edit Tagihan" style="padding: 2px; width: 24px; height: 24px;">';
-                            html += '<i class="bi bi-pencil-square fs-6"></i>';
+                            html += '<button type="button" class="btn btn-icon btn-light-primary btn-sm w-24px h-24px edit-bill-btn" data-bill-id="' + b.id + '" data-amount="' + b.amount + '" data-rate-id="' + rateId + '" data-student-id="' + studentId + '" title="Edit Tagihan">';
+                            html += '<i class="bi bi-pencil-square fs-7"></i>';
                             html += '</button>';
-                            html += '<button type="button" class="btn btn-icon btn-bg-light btn-active-color-danger btn-sm delete-bill-btn" data-bill-id="' + b.id + '" data-rate-id="' + rateId + '" data-student-id="' + studentId + '" title="Hapus Tagihan" style="padding: 2px; width: 24px; height: 24px;">';
-                            html += '<i class="bi bi-trash fs-6"></i>';
+                            html += '<button type="button" class="btn btn-icon btn-light-danger btn-sm w-24px h-24px delete-bill-btn" data-bill-id="' + b.id + '" data-rate-id="' + rateId + '" data-student-id="' + studentId + '" title="Hapus Tagihan">';
+                            html += '<i class="bi bi-trash fs-7"></i>';
                             html += '</button>';
                         } else {
-                            html += '<i class="bi bi-check-circle-fill text-success fs-5"></i>';
+                            html += '<span class="badge badge-circle badge-light-success p-1"><i class="bi bi-check-circle-fill text-success fs-6"></i></span>';
                         }
-                        html += '</td>';
-                        html += '</tr>';
+                        html += '</div>';
+
+                        // Month Name (Label)
+                        html += '<div class="text-uppercase fw-bolder text-muted fs-8 tracking-widest mb-1">' + (b.translated_month || '-') + '</div>';
+                        
+                        // Year
+                        html += '<div class="text-gray-400 fs-9 fw-semibold mb-3">' + b.year + '</div>';
+                        
+                        // Amount
+                        var amountColor = b.status === 'PAID' ? 'text-success' : 'text-primary';
+                        html += '<div class="fs-6 fw-bold ' + amountColor + ' mb-2">Rp. ' + new Intl.NumberFormat('id-ID').format(b.amount) + '</div>';
+                        
+                        // Status Badge
+                        var statusBadge = b.status === 'PAID' 
+                            ? '<span class="badge badge-light-success fs-9 px-2 py-1">Lunas</span>' 
+                            : '<span class="badge badge-light-danger fs-9 px-2 py-1">Belum Lunas</span>';
+                        html += '<div>' + statusBadge + '</div>';
+
+                        html += '</div>'; // End Card
+                        html += '</div>'; // End Col
                     });
 
-                    html += '</tbody></table></div>';
+                    html += '</div>'; // End Row
                     contentDiv.html(html);
                 },
                 error: function() {
