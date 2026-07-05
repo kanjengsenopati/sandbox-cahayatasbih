@@ -312,6 +312,33 @@
     </div>
     <!--end::Container-->
 </div>
+
+<!-- Edit Bill Modal -->
+<div class="modal fade" id="editBillModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Edit Tagihan</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="editBillForm">
+                    <input type="hidden" id="edit_bill_id">
+                    <input type="hidden" id="edit_rate_id">
+                    <input type="hidden" id="edit_student_id">
+                    <div class="mb-3">
+                        <label for="edit_amount" class="form-label">Nominal Tagihan</label>
+                        <input type="number" class="form-control" id="edit_amount" required min="0">
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                <button type="button" class="btn btn-primary" id="saveBillBtn">Simpan</button>
+            </div>
+        </div>
+    </div>
+</div>
 @endsection
 
 @push('js')
@@ -356,7 +383,7 @@
             }
         });
 
-        function loadDetailData(rateId) {
+        function loadDetailData(rateId, callback) {
             var detailRow = $('#detail-' + rateId);
             var contentDiv = detailRow.find('.detail-content');
             var spinnerEl = detailRow.find('.detail-spinner');
@@ -375,12 +402,16 @@
                     if (students.length === 0) {
                         contentDiv.html('<div class="text-center py-4 text-muted"><i class="fas fa-inbox fs-2 mb-2 d-block"></i>Tidak ada data santri</div>');
                         loadedPanels[rateId] = true;
+                        if (typeof callback === 'function') {
+                            callback();
+                        }
                         return;
                     }
 
                     var html = '<div class="table-responsive">';
                     html += '<table class="table table-row-bordered table-row-gray-200 align-middle gs-0 gy-2 bg-white rounded">';
                     html += '<thead><tr class="fw-bolder text-muted fs-8 text-uppercase">';
+                    html += '<th style="width: 3%"></th>';
                     html += '<th class="ps-4" style="width: 5%">No</th>';
                     html += '<th>Nama Santri</th>';
                     html += '<th>Kelas</th>';
@@ -391,7 +422,10 @@
                     html += '</tr></thead><tbody>';
 
                     students.forEach(function(s, idx) {
-                        html += '<tr>';
+                        html += '<tr class="student-row" data-student-id="' + s.id + '" data-rate-id="' + rateId + '" style="cursor: pointer;">';
+                        html += '<td class="text-center toggle-student-detail">';
+                        html += '<i class="fas fa-chevron-right text-success fs-8 transition-transform" style="transition: transform 0.15s;"></i>';
+                        html += '</td>';
                         html += '<td class="ps-4 text-gray-700">' + (idx + 1) + '</td>';
                         html += '<td class="fw-bold text-gray-800">' + (s.name || '-') + '</td>';
                         html += '<td class="text-gray-600">' + (s.classroom || '-') + '</td>';
@@ -400,11 +434,33 @@
                         html += '<td class="text-danger fw-bold">' + (s.total_unpaid || 'Rp. 0') + '</td>';
                         html += '<td class="text-center">' + (s.status || '-') + '</td>';
                         html += '</tr>';
+
+                        // Detail row for student
+                        html += '<tr class="student-detail-row" id="student-detail-' + s.id + '-' + rateId + '" style="display: none;">';
+                        html += '<td colspan="8" class="p-0 border-0">';
+                        html += '<div class="bg-light rounded mx-4 my-2 p-3" style="background-color: #f8f9fa; border: 1px dashed #e4e6ef;">';
+                        html += '<div class="d-flex justify-content-between align-items-center mb-2">';
+                        html += '<h6 class="mb-0 text-success fw-bold fs-7">';
+                        html += '<i class="fas fa-receipt me-2"></i>Rincian Tagihan Bulanan';
+                        html += '</h6>';
+                        html += '</div>';
+                        html += '<div class="student-bill-content">';
+                        html += '<div class="text-center py-3">';
+                        html += '<div class="spinner-border text-success spinner-border-sm" role="status"></div>';
+                        html += '</div>';
+                        html += '</div>';
+                        html += '</div>';
+                        html += '</td>';
+                        html += '</tr>';
                     });
 
                     html += '</tbody></table></div>';
                     contentDiv.html(html);
                     loadedPanels[rateId] = true;
+
+                    if (typeof callback === 'function') {
+                        callback();
+                    }
                 },
                 error: function() {
                     spinnerEl.hide();
@@ -412,6 +468,206 @@
                 }
             });
         }
+
+        // Expandable Student Panel Toggle
+        $(document).on('click', '.student-row', function(e) {
+            // Jangan toggle jika klik pada tombol aksi (edit, delete)
+            if ($(e.target).closest('button').length > 0 || $(e.target).closest('.btn').length > 0) return;
+
+            var studentId = $(this).data('student-id');
+            var rateId = $(this).data('rate-id');
+            var detailRow = $('#student-detail-' + studentId + '-' + rateId);
+            var icon = $(this).find('.toggle-student-detail i');
+
+            if (detailRow.is(':visible')) {
+                detailRow.slideUp(150);
+                icon.css('transform', 'rotate(0deg)');
+            } else {
+                detailRow.slideDown(150);
+                icon.css('transform', 'rotate(90deg)');
+                loadStudentBills(studentId, rateId);
+            }
+        });
+
+        function loadStudentBills(studentId, rateId) {
+            var detailRow = $('#student-detail-' + studentId + '-' + rateId);
+            var contentDiv = detailRow.find('.student-bill-content');
+            var billTypeId = '{{ $billType->id }}';
+
+            $.ajax({
+                url: "{{ route('payment-rate.get-bill-details') }}",
+                type: 'GET',
+                data: {
+                    student_id: studentId,
+                    bill_type_id: billTypeId,
+                    payment_rate_id: rateId
+                },
+                dataType: 'json',
+                success: function(response) {
+                    var bills = response.bills || [];
+                    if (bills.length === 0) {
+                        contentDiv.html('<div class="text-center py-2 text-muted fs-8">Tidak ada data tagihan</div>');
+                        return;
+                    }
+
+                    var html = '<div class="table-responsive">';
+                    html += '<table class="table table-row-bordered table-row-gray-200 align-middle gs-0 gy-1 bg-white rounded fs-8">';
+                    html += '<thead><tr class="fw-bolder text-muted text-uppercase">';
+                    html += '<th class="ps-3" style="width: 5%">No</th>';
+                    html += '<th>Bulan</th>';
+                    html += '<th>Tahun</th>';
+                    html += '<th>Nominal</th>';
+                    html += '<th>Status</th>';
+                    html += '<th class="text-center" style="width: 15%">Aksi</th>';
+                    html += '</tr></thead><tbody>';
+
+                    bills.forEach(function(b, idx) {
+                        html += '<tr>';
+                        html += '<td class="ps-3 text-gray-700">' + (idx + 1) + '</td>';
+                        html += '<td class="fw-bold text-gray-800">' + (b.translated_month || '-') + '</td>';
+                        html += '<td class="text-gray-600">' + b.year + '</td>';
+                        html += '<td class="text-gray-700 fw-bold">Rp. ' + new Intl.NumberFormat('id-ID').format(b.amount) + '</td>';
+                        html += '<td>' + b.status_badge + '</td>';
+                        html += '<td class="text-center">';
+                        if (b.status === 'UNPAID') {
+                            html += '<button type="button" class="btn btn-icon btn-bg-light btn-active-color-primary btn-sm me-1 edit-bill-btn" data-bill-id="' + b.id + '" data-amount="' + b.amount + '" data-rate-id="' + rateId + '" data-student-id="' + studentId + '" title="Edit Tagihan" style="padding: 2px; width: 24px; height: 24px;">';
+                            html += '<i class="bi bi-pencil-square fs-6"></i>';
+                            html += '</button>';
+                            html += '<button type="button" class="btn btn-icon btn-bg-light btn-active-color-danger btn-sm delete-bill-btn" data-bill-id="' + b.id + '" data-rate-id="' + rateId + '" data-student-id="' + studentId + '" title="Hapus Tagihan" style="padding: 2px; width: 24px; height: 24px;">';
+                            html += '<i class="bi bi-trash fs-6"></i>';
+                            html += '</button>';
+                        } else {
+                            html += '<i class="bi bi-check-circle-fill text-success fs-5"></i>';
+                        }
+                        html += '</td>';
+                        html += '</tr>';
+                    });
+
+                    html += '</tbody></table></div>';
+                    contentDiv.html(html);
+                },
+                error: function() {
+                    contentDiv.html('<div class="alert alert-danger py-2 mb-0 fs-8"><i class="fas fa-exclamation-triangle me-1"></i>Gagal memuat tagihan</div>');
+                }
+            });
+        }
+
+        // Edit Bill Button click
+        $(document).on('click', '.edit-bill-btn', function(e) {
+            e.stopPropagation();
+            var billId = $(this).data('bill-id');
+            var amount = $(this).data('amount');
+            var rateId = $(this).data('rate-id');
+            var studentId = $(this).data('student-id');
+
+            $('#edit_bill_id').val(billId);
+            $('#edit_amount').val(amount);
+            $('#edit_rate_id').val(rateId);
+            $('#edit_student_id').val(studentId);
+            $('#editBillModal').modal('show');
+        });
+
+        // Save Bill Button click
+        $('#saveBillBtn').click(function() {
+            var billId = $('#edit_bill_id').val();
+            var amount = $('#edit_amount').val();
+            var rateId = $('#edit_rate_id').val();
+            var studentId = $('#edit_student_id').val();
+
+            if (!amount) {
+                Swal.fire('Error', 'Nominal tidak boleh kosong', 'error');
+                return;
+            }
+
+            $.ajax({
+                url: "{{ route('payment-rate.update-bill') }}",
+                type: 'POST',
+                data: {
+                    _token: '{{ csrf_token() }}',
+                    bill_id: billId,
+                    amount: amount
+                },
+                beforeSend: function() {
+                    $('#saveBillBtn').attr('disabled', true).text('Menyimpan...');
+                },
+                success: function(response) {
+                    $('#editBillModal').modal('hide');
+                    Swal.fire('Berhasil', response.message, 'success');
+                    
+                    // Refresh student list and expand the edited student again
+                    loadDetailData(rateId, function() {
+                        var studentRow = $('.student-row[data-student-id="' + studentId + '"]');
+                        studentRow.trigger('click');
+                    });
+                },
+                error: function(xhr) {
+                    Swal.fire('Error', xhr.responseJSON?.message || 'Terjadi kesalahan', 'error');
+                },
+                complete: function() {
+                    $('#saveBillBtn').attr('disabled', false).text('Simpan');
+                }
+            });
+        });
+
+        // Delete Bill Button click
+        $(document).on('click', '.delete-bill-btn', function(e) {
+            e.stopPropagation();
+            var billId = $(this).data('bill-id');
+            var rateId = $(this).data('rate-id');
+            var studentId = $(this).data('student-id');
+
+            Swal.fire({
+                title: 'Konfirmasi Hapus',
+                text: 'Apakah Anda yakin ingin menghapus tagihan ini?',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#3085d6',
+                confirmButtonText: 'Ya, Hapus!',
+                cancelButtonText: 'Batal'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    $.ajax({
+                        url: "{{ route('payment-rate.delete-bill') }}",
+                        type: 'POST',
+                        data: {
+                            _token: '{{ csrf_token() }}',
+                            bill_id: billId
+                        },
+                        beforeSend: function() {
+                            Swal.fire({
+                                title: 'Menghapus...',
+                                allowOutsideClick: false,
+                                didOpen: () => {
+                                    Swal.showLoading();
+                                }
+                            });
+                        },
+                        success: function(response) {
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Berhasil!',
+                                text: response.message || 'Tagihan berhasil dihapus',
+                                timer: 2000
+                            });
+                            
+                            // Refresh student list and expand the edited student again
+                            loadDetailData(rateId, function() {
+                                var studentRow = $('.student-row[data-student-id="' + studentId + '"]');
+                                studentRow.trigger('click');
+                            });
+                        },
+                        error: function(xhr) {
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Gagal!',
+                                text: xhr.responseJSON?.message || 'Terjadi kesalahan'
+                            });
+                        }
+                    });
+                }
+            });
+        });
     });
 </script>
 @endpush
