@@ -328,7 +328,7 @@
                     <input type="hidden" id="edit_student_id">
                     <div class="mb-3">
                         <label for="edit_amount" class="form-label">Nominal Tagihan</label>
-                        <input type="number" class="form-control" id="edit_amount" required min="0">
+                        <input type="text" class="form-control" id="edit_amount" required>
                     </div>
                 </form>
             </div>
@@ -604,6 +604,14 @@
             });
         }
 
+        function formatNumber(num) {
+            return num.toString().replace(/[^0-9]/g, '').replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+        }
+
+        $('#edit_amount').on('input', function() {
+            this.value = formatNumber(this.value);
+        });
+
         // Edit Bill Button click
         $(document).on('click', '.edit-bill-btn', function(e) {
             e.stopPropagation();
@@ -613,7 +621,7 @@
             var studentId = $(this).data('student-id');
 
             $('#edit_bill_id').val(billId);
-            $('#edit_amount').val(amount);
+            $('#edit_amount').val(formatNumber(amount));
             $('#edit_rate_id').val(rateId);
             $('#edit_student_id').val(studentId);
             $('#editBillModal').modal('show');
@@ -622,7 +630,7 @@
         // Save Bill Button click
         $('#saveBillBtn').click(function() {
             var billId = $('#edit_bill_id').val();
-            var amount = $('#edit_amount').val();
+            var amount = $('#edit_amount').val().replace(/\./g, '');
             var rateId = $('#edit_rate_id').val();
             var studentId = $('#edit_student_id').val();
 
