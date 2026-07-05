@@ -439,11 +439,25 @@
                         html += '<tr class="student-detail-row" id="student-detail-' + s.id + '-' + rateId + '" style="display: none;">';
                         html += '<td colspan="8" class="p-0 border-0">';
                         html += '<div class="bg-light rounded mx-4 my-2 p-3" style="background-color: #f8f9fa; border: 1px dashed #e4e6ef;">';
-                        html += '<div class="d-flex justify-content-between align-items-center mb-2">';
+                        
+                        // Redesigned Header with multi-select actions
+                        html += '<div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">';
                         html += '<h6 class="mb-0 text-success fw-bold fs-7">';
                         html += '<i class="fas fa-receipt me-2"></i>Rincian Tagihan Bulanan';
                         html += '</h6>';
+                        html += '<div class="d-flex align-items-center gap-3 select-actions-container-' + s.id + '-' + rateId + '" style="display: none !important;">';
+                        html += '<div class="form-check form-check-custom form-check-solid form-check-sm">';
+                        html += '<input class="form-check-input select-all-bills" type="checkbox" data-student-id="' + s.id + '" data-rate-id="' + rateId + '" id="check-all-' + s.id + '-' + rateId + '" />';
+                        html += '<label class="form-check-label fs-8 text-gray-700 cursor-pointer" for="check-all-' + s.id + '-' + rateId + '">';
+                        html += 'Pilih Semua';
+                        html += '</label>';
                         html += '</div>';
+                        html += '<button type="button" class="btn btn-sm btn-light-danger px-3 py-1 fs-9 mass-delete-btn" data-student-id="' + s.id + '" data-rate-id="' + rateId + '">';
+                        html += '<i class="bi bi-trash fs-9 me-1"></i>Hapus Terpilih (<span class="selected-count">0</span>)';
+                        html += '</button>';
+                        html += '</div>';
+                        html += '</div>';
+                        
                         html += '<div class="student-bill-content">';
                         html += '<div class="text-center py-3">';
                         html += '<div class="spinner-border text-success spinner-border-sm" role="status"></div>';
@@ -492,6 +506,7 @@
         function loadStudentBills(studentId, rateId) {
             var detailRow = $('#student-detail-' + studentId + '-' + rateId);
             var contentDiv = detailRow.find('.student-bill-content');
+            var selectActionsContainer = $('.select-actions-container-' + studentId + '-' + rateId);
             var billTypeId = '{{ $billType->id }}';
 
             $.ajax({
@@ -507,7 +522,20 @@
                     var bills = response.bills || [];
                     if (bills.length === 0) {
                         contentDiv.html('<div class="text-center py-4 text-muted"><i class="fas fa-inbox fs-2 mb-2 d-block"></i>Tidak ada data tagihan</div>');
+                        selectActionsContainer.hide();
                         return;
+                    }
+
+                    // Count unpaid bills to decide if we show select actions
+                    var unpaidBills = bills.filter(function(b) { return b.status === 'UNPAID'; });
+                    if (unpaidBills.length > 0) {
+                        selectActionsContainer.css('display', 'flex');
+                        // Reset "Pilih Semua" checkbox & count
+                        var checkAll = $('#check-all-' + studentId + '-' + rateId);
+                        checkAll.prop('checked', false);
+                        selectActionsContainer.find('.selected-count').text(0);
+                    } else {
+                        selectActionsContainer.hide();
                     }
 
                     var html = '<div class="row g-3 row-cols-2 row-cols-md-3 row-cols-lg-6">';
@@ -515,42 +543,53 @@
                     bills.forEach(function(b, idx) {
                         html += '<div class="col">';
                         
-                        // Card wrapper with status-based border & soft background
                         var cardStyle = b.status === 'PAID' 
                             ? 'bg-light-success border-success' 
                             : 'bg-white border-gray-200';
                         
-                        html += '<div class="card h-100 border ' + cardStyle + ' shadow-sm rounded-4 position-relative p-4" style="transition: transform 0.2s, box-shadow 0.2s; min-height: 120px;">';
+                        // Using d-flex flex-column h-100 to ensure alignment of buttons at the bottom
+                        html += '<div class="card h-100 border ' + cardStyle + ' shadow-sm rounded-4 position-relative p-4 d-flex flex-column" style="min-height: 220px; transition: transform 0.2s, box-shadow 0.2s;">';
                         
-                        // Top-right action cluster (Absolute Positioned)
-                        html += '<div class="position-absolute top-0 end-0 m-3 d-flex gap-1">';
+                        // Checkbox for selection (Only for UNPAID bills)
                         if (b.status === 'UNPAID') {
-                            html += '<button type="button" class="btn btn-icon btn-light-primary btn-sm w-24px h-24px edit-bill-btn" data-bill-id="' + b.id + '" data-amount="' + b.amount + '" data-rate-id="' + rateId + '" data-student-id="' + studentId + '" title="Edit Tagihan">';
-                            html += '<i class="bi bi-pencil-square fs-7"></i>';
-                            html += '</button>';
-                            html += '<button type="button" class="btn btn-icon btn-light-danger btn-sm w-24px h-24px delete-bill-btn" data-bill-id="' + b.id + '" data-rate-id="' + rateId + '" data-student-id="' + studentId + '" title="Hapus Tagihan">';
-                            html += '<i class="bi bi-trash fs-7"></i>';
-                            html += '</button>';
-                        } else {
-                            html += '<span class="badge badge-circle badge-light-success p-1"><i class="bi bi-check-circle-fill text-success fs-6"></i></span>';
+                            html += '<div class="position-absolute top-0 start-0 m-3">';
+                            html += '<div class="form-check form-check-custom form-check-solid form-check-sm">';
+                            html += '<input class="form-check-input select-bill-checkbox" type="checkbox" value="' + b.id + '" data-rate-id="' + rateId + '" data-student-id="' + studentId + '" />';
+                            html += '</div>';
+                            html += '</div>';
                         }
-                        html += '</div>';
 
-                        // Month Name (Label)
-                        html += '<div class="text-uppercase fw-bolder text-muted fs-8 tracking-widest mb-1">' + (b.translated_month || '-') + '</div>';
+                        // Prominent Month & Year Badge (Centered mt-3 to avoid checkbox overlap)
+                        html += '<div class="badge badge-light-primary fw-bolder text-uppercase fs-7 py-2 px-3 w-100 mb-2 text-center mt-3">' + (b.translated_month || '-') + ' ' + b.year + '</div>';
                         
-                        // Year
-                        html += '<div class="text-gray-400 fs-9 fw-semibold mb-3">' + b.year + '</div>';
+                        // Prominent Status Badge
+                        var statusBadgeClass = b.status === 'PAID' 
+                            ? 'badge-light-success text-success' 
+                            : 'badge-light-danger text-danger';
+                        var statusLabel = b.status === 'PAID' ? 'LUNAS' : 'BELUM LUNAS';
+                        html += '<div class="badge ' + statusBadgeClass + ' fw-bold fs-8 py-2 px-3 w-100 mb-3 text-center">' + statusLabel + '</div>';
                         
-                        // Amount
+                        // Nominal
                         var amountColor = b.status === 'PAID' ? 'text-success' : 'text-primary';
-                        html += '<div class="fs-6 fw-bold ' + amountColor + ' mb-2">Rp. ' + new Intl.NumberFormat('id-ID').format(b.amount) + '</div>';
+                        html += '<div class="fs-5 fw-bolder ' + amountColor + ' text-center mb-3">Rp. ' + new Intl.NumberFormat('id-ID').format(b.amount) + '</div>';
                         
-                        // Status Badge
-                        var statusBadge = b.status === 'PAID' 
-                            ? '<span class="badge badge-light-success fs-9 px-2 py-1">Lunas</span>' 
-                            : '<span class="badge badge-light-danger fs-9 px-2 py-1">Belum Lunas</span>';
-                        html += '<div>' + statusBadge + '</div>';
+                        // Aligned Bottom Buttons / Status
+                        html += '<div class="mt-auto">';
+                        if (b.status === 'UNPAID') {
+                            html += '<div class="d-flex gap-2 w-100">';
+                            html += '<button type="button" class="btn btn-sm btn-light-primary w-50 edit-bill-btn py-1 fs-8 d-flex align-items-center justify-content-center" data-bill-id="' + b.id + '" data-amount="' + b.amount + '" data-rate-id="' + rateId + '" data-student-id="' + studentId + '" title="Edit">';
+                            html += '<i class="bi bi-pencil-square me-1 fs-8"></i>Edit';
+                            html += '</button>';
+                            html += '<button type="button" class="btn btn-sm btn-light-danger w-50 delete-bill-btn py-1 fs-8 d-flex align-items-center justify-content-center" data-bill-id="' + b.id + '" data-rate-id="' + rateId + '" data-student-id="' + studentId + '" title="Hapus">';
+                            html += '<i class="bi bi-trash me-1 fs-8"></i>Hapus';
+                            html += '</button>';
+                            html += '</div>';
+                        } else {
+                            html += '<div class="d-flex justify-content-center align-items-center text-success py-1 fw-bold fs-7">';
+                            html += '<i class="bi bi-check-circle-fill text-success fs-5 me-2"></i>Lunas';
+                            html += '</div>';
+                        }
+                        html += '</div>'; // End Bottom aligned section
 
                         html += '</div>'; // End Card
                         html += '</div>'; // End Col
@@ -675,6 +714,108 @@
                                 icon: 'error',
                                 title: 'Gagal!',
                                 text: xhr.responseJSON?.message || 'Terjadi kesalahan'
+                            });
+                        }
+                    });
+                }
+        });
+
+        // Check All Checkbox
+        $(document).on('change', '.select-all-bills', function() {
+            var studentId = $(this).data('student-id');
+            var rateId = $(this).data('rate-id');
+            var isChecked = $(this).is(':checked');
+            var container = $('.select-actions-container-' + studentId + '-' + rateId);
+            
+            // Find all unpaid checkboxes in the student's detail panel
+            var checkboxes = $('#student-detail-' + studentId + '-' + rateId + ' .select-bill-checkbox');
+            checkboxes.prop('checked', isChecked);
+            
+            // Update selected count
+            var count = isChecked ? checkboxes.length : 0;
+            container.find('.selected-count').text(count);
+        });
+
+        // Individual Checkbox Change
+        $(document).on('change', '.select-bill-checkbox', function() {
+            var studentId = $(this).data('student-id');
+            var rateId = $(this).data('rate-id');
+            var container = $('.select-actions-container-' + studentId + '-' + rateId);
+            
+            var checkboxes = $('#student-detail-' + studentId + '-' + rateId + ' .select-bill-checkbox');
+            var checkedCount = checkboxes.filter(':checked').length;
+            
+            // Update Hapus Terpilih count
+            container.find('.selected-count').text(checkedCount);
+            
+            // Update "Pilih Semua" checkbox status
+            var checkAll = $('#check-all-' + studentId + '-' + rateId);
+            checkAll.prop('checked', checkedCount === checkboxes.length);
+        });
+
+        // Mass Delete Button Click
+        $(document).on('click', '.mass-delete-btn', function() {
+            var studentId = $(this).data('student-id');
+            var rateId = $(this).data('rate-id');
+            
+            // Gather all selected bill IDs
+            var checkedCheckbox = $('#student-detail-' + studentId + '-' + rateId + ' .select-bill-checkbox:checked');
+            var billIds = [];
+            checkedCheckbox.each(function() {
+                billIds.push($(this).val());
+            });
+
+            if (billIds.length === 0) {
+                Swal.fire('Peringatan', 'Silakan pilih setidaknya satu tagihan untuk dihapus', 'warning');
+                return;
+            }
+
+            Swal.fire({
+                title: 'Konfirmasi Hapus Massal',
+                text: 'Apakah Anda yakin ingin menghapus ' + billIds.length + ' tagihan terpilih?',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#3085d6',
+                confirmButtonText: 'Ya, Hapus Semua!',
+                cancelButtonText: 'Batal'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    $.ajax({
+                        url: "{{ route('payment-rate.delete-bills-mass') }}",
+                        type: 'POST',
+                        data: {
+                            _token: '{{ csrf_token() }}',
+                            bill_ids: billIds
+                        },
+                        beforeSend: function() {
+                            Swal.fire({
+                                title: 'Menghapus tagihan...',
+                                allowOutsideClick: false,
+                                didOpen: () => {
+                                    Swal.showLoading();
+                                }
+                            });
+                        },
+                        success: function(response) {
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Berhasil!',
+                                text: response.message || 'Tagihan terpilih berhasil dihapus',
+                                timer: 2000
+                            });
+                            
+                            // Refresh student list and expand the edited student again
+                            loadDetailData(rateId, function() {
+                                var studentRow = $('.student-row[data-student-id="' + studentId + '"]');
+                                studentRow.trigger('click');
+                            });
+                        },
+                        error: function(xhr) {
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Gagal!',
+                                text: xhr.responseJSON?.message || 'Terjadi kesalahan saat menghapus tagihan'
                             });
                         }
                     });
