@@ -39,6 +39,8 @@ jobs:
         run: npm run build
       - name: Copy .env
         run: php -r "file_exists('.env') || copy('.env.example', '.env');"
+      - name: Create storage directories
+        run: mkdir -p storage/framework/cache storage/framework/sessions storage/framework/views storage/app/public
       - name: Generate key
         run: php artisan key:generate
       - name: Run composer post-install tasks
