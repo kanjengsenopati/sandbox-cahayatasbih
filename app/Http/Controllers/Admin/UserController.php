@@ -260,41 +260,6 @@ class UserController extends Controller
         return redirect()->route('user.index')->with('success', 'Berhasil menghapus data user');
     }
 
-    /**
-     * Remove the specified resource from storage.
-     */
-
-    public function import(Request $request)
-    {
-        if (!Auth::user()->can('Create Wali Santri')) {
-            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
-        }
-        try {
-            $request->validate([
-                'file' => 'required|mimes:xls,xlsx'
-            ]);
-
-            $import = new UserImportData;
-
-            DB::transaction(function () use ($request, $import) {
-                Excel::import($import, $request->file('file'));
-            });
-
-            if (count($import->skipped) > 0) {
-                return redirect()->route('user.index')
-                    ->with('success', "Impor selesai: {$import->successCount} data berhasil ditambahkan.")
-                    ->with('import_skipped', $import->skipped);
-            }
-
-            return redirect()->route('user.index')->with('success', "Berhasil mengimpor {$import->successCount} data user.");
-        } catch (\Exception $e) {
-            // Log the exception
-            Log::error('Import failed: ' . $e->getMessage());
-
-            // Return with an error message or handle the exception as needed
-            return redirect()->back()->with('error', 'Data gagal diimport. Detail: ' . $e->getMessage());
-        }
-    }
 
     /**
      * Update multiple Wali Santri status in bulk.

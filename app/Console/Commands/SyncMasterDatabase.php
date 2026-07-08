@@ -182,6 +182,29 @@ class SyncMasterDatabase extends Command
                                 $row['to_classroom_id'] = $classroomMapping[$row['to_classroom_id']];
                             }
 
+                            // Check student balance difference and log adjustment
+                            if ($table === 'students' && isset($row['id']) && isset($row['saldo'])) {
+                                $localStudent = DB::connection('mysql')->table('students')->where('id', $row['id'])->first();
+                                if ($localStudent && isset($localStudent->saldo)) {
+                                    $diff = $row['saldo'] - $localStudent->saldo;
+                                    if ($diff != 0) {
+                                        DB::connection('mysql')->table('saldo_histories')->insert([
+                                            'id' => (string) \Illuminate\Support\Str::uuid(),
+                                            'student_id' => $row['id'],
+                                            'type' => $diff > 0 ? 'IN' : 'OUT',
+                                            'amount' => abs($diff),
+                                            'description' => 'Adjustment sinkronisasi master (selisih saldo)',
+                                            'status' => 'SUCCESS',
+                                            'usage' => $diff > 0 ? 'TOPUP' : 'BILL',
+                                            'balance_before' => $localStudent->saldo,
+                                            'balance_after' => $row['saldo'],
+                                            'created_at' => now(),
+                                            'updated_at' => now(),
+                                        ]);
+                                    }
+                                }
+                            }
+
                             $dateStr = $row['created_at'] ?? $row['updated_at'] ?? null;
                             if ($dateStr) {
                                 $ts = strtotime($dateStr);

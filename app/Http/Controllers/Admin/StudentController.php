@@ -23,6 +23,8 @@ use App\Http\Requests\Admin\StudentRequest;
 use App\Models\Tahfidz;
 use App\Models\Admin;
 use SimpleSoftwareIO\QrCode\Facades\QrCode;
+use App\Models\User;
+use Illuminate\Support\Facades\Storage;
 
 class StudentController extends Controller
 {
@@ -404,23 +406,261 @@ class StudentController extends Controller
         return response()->json($classrooms);
     }
 
-    public function import(Request $request)
+    public function importPreview(Request $request)
     {
         try {
             $request->validate([
                 'file' => 'required|mimes:xls,xlsx'
             ]);
 
-            return DB::transaction(function () use ($request) {
-                Excel::import(new StudentImportData, $request->file('file'));
-                return redirect()->route('student.index')->with('success', 'Data berhasil diimpor');
-            });
-        } catch (\Exception $e) {
-            // Log the exception
-            Log::error('Import failed: ' . $e->getMessage());
+            // Save file temporarily
+            $file = $request->file('file');
+            $fileName = 'student_import_' . time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
+            $tempPath = $file->storeAs('temp_imports', $fileName, 'local');
 
-            // Return with an error message or handle the exception as needed
-            return redirect()->route('student.index')->with('error', 'Terjadi kesalahan dalam mengimpor data');
+            $filePath = storage_path('app/' . $tempPath);
+            $rows = Excel::toArray(new StudentImportData, $filePath)[0] ?? [];
+
+            if (empty($rows)) {
+                Storage::delete($tempPath);
+                return redirect()->route('student.index')->with('error', 'File Excel kosong atau tidak terbaca');
+            }
+
+            $previewData = [];
+            $summary = [
+                'total' => 0,
+                'valid' => 0,
+                'new_wali' => 0,
+                'existing_wali' => 0,
+                'errors' => 0
+            ];
+
+            foreach ($rows as $index => $row) {
+                // skip if nis and nama both null (usually empty rows at end of excel)
+                if (empty($row['nis']) && empty($row['nama'])) {
+                    continue;
+                }
+
+                $summary['total']++;
+                $rowErrors = [];
+                $rowWarnings = [];
+                $waliStatus = 'N/A';
+                $waliName = $row['nama_wali'] ?? $row['nama_orang_tua'] ?? $row['wali_nama'] ?? null;
+
+                // 1. Validate NIS & Name
+                if (empty($row['nis'])) {
+                    $rowErrors[] = 'NIS wajib diisi';
+                }
+                if (empty($row['nama'])) {
+                    $rowErrors[] = 'Nama Siswa wajib diisi';
+                }
+
+                // 2. Validate Classroom
+                $className = trim($row['kelas'] ?? '');
+                $classroom = null;
+                if (empty($className)) {
+                    $rowErrors[] = 'Kelas wajib diisi';
+                } else {
+                    $classroom = Classroom::where('name', $className)->first();
+                    if (!$classroom) {
+                        $rowErrors[] = "Kelas '{$className}' tidak ditemukan di database";
+                    }
+                }
+
+                // 3. Process Phone WA / Wali Status
+                $phone = $row['no_wali'] ?? null;
+                if (!empty($phone) && $phone !== '-') {
+                    // Format phone number
+                    $phone = preg_replace('/[^0-9]/', '', $phone);
+                    if (substr($phone, 0, 1) !== '0' && strlen($phone) > 1) {
+                        $phone = '0' . $phone;
+                    }
+                    if (substr($phone, 0, 2) == '62') {
+                        $phone = '0' . substr($phone, 2);
+                    }
+
+                    $existingUser = User::where('phone', $phone)->first();
+                    if ($existingUser) {
+                        $waliStatus = 'Terdaftar';
+                        $row['no_wali_formatted'] = $phone;
+                        $row['resolved_wali_name'] = $existingUser->name;
+                        $summary['existing_wali']++;
+                    } else {
+                        $waliStatus = 'Baru';
+                        $row['no_wali_formatted'] = $phone;
+                        $row['resolved_wali_name'] = $waliName ?: 'Wali ' . ($row['nama'] ?? 'Siswa');
+                        $summary['new_wali']++;
+                    }
+                } else {
+                    $rowWarnings[] = 'Tidak ada nomor wali (Siswa tidak akan terhubung ke wali)';
+                }
+
+                if (count($rowErrors) > 0) {
+                    $summary['errors']++;
+                    $status = 'ERROR';
+                } else {
+                    $summary['valid']++;
+                    $status = 'READY';
+                }
+
+                $previewData[] = [
+                    'row_number' => $index + 2, // 1-based + 1 for header
+                    'nis' => $row['nis'] ?? '-',
+                    'name' => $row['nama'] ?? '-',
+                    'class' => $className ?: '-',
+                    'gender' => $row['jenis_kelamin'] ?? '-',
+                    'wali_name' => $waliName ?: ($row['nama'] ? 'Wali ' . $row['nama'] : '-'),
+                    'wali_phone' => $phone ?: '-',
+                    'wali_status' => $waliStatus,
+                    'status' => $status,
+                    'errors' => $rowErrors,
+                    'warnings' => $rowWarnings
+                ];
+            }
+
+            return view('admins.student.import-preview', [
+                'previewData' => $previewData,
+                'summary' => $summary,
+                'tempFile' => $fileName
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Import preview failed: ' . $e->getMessage());
+            return redirect()->route('student.index')->with('error', 'Gagal memproses file import: ' . $e->getMessage());
+        }
+    }
+
+    public function importConfirm(Request $request)
+    {
+        try {
+            $tempFile = $request->input('temp_file');
+            if (empty($tempFile)) {
+                return redirect()->route('student.index')->with('error', 'File import tidak valid');
+            }
+
+            $tempPath = 'temp_imports/' . $tempFile;
+            if (!Storage::disk('local')->exists($tempPath)) {
+                return redirect()->route('student.index')->with('error', 'File pratinjau import telah kedaluwarsa atau hilang');
+            }
+
+            $filePath = storage_path('app/' . $tempPath);
+            $rows = Excel::toArray(new StudentImportData, $filePath)[0] ?? [];
+
+            DB::transaction(function () use ($rows) {
+                foreach ($rows as $row) {
+                    if (empty($row['nis']) && empty($row['nama'])) {
+                        continue;
+                    }
+
+                    // 1. Normalisasi phone
+                    $phone = $row['no_wali'] ?? null;
+                    $user = null;
+                    if (!empty($phone) && $phone !== '-') {
+                        $phone = preg_replace('/[^0-9]/', '', $phone);
+                        if (substr($phone, 0, 1) !== '0' && strlen($phone) > 1) {
+                            $phone = '0' . $phone;
+                        }
+                        if (substr($phone, 0, 2) == '62') {
+                            $phone = '0' . substr($phone, 2);
+                        }
+
+                        // Cek user wali
+                        $user = User::where('phone', $phone)->first();
+                        if (!$user) {
+                            // Map Nama Wali
+                            $waliName = $row['nama_wali'] ?? $row['nama_orang_tua'] ?? $row['wali_nama'] ?? null;
+                            if (empty($waliName)) {
+                                $waliName = 'Wali ' . $row['nama'];
+                            }
+
+                            // Map gender wali jika ada
+                            $genderWaliInput = strtolower(trim($row['jenis_kelamin_wali'] ?? ''));
+                            $genderWali = null;
+                            if ($genderWaliInput === 'l' || $genderWaliInput === 'laki-laki' || $genderWaliInput === 'laki laki') {
+                                $genderWali = 'L';
+                            } elseif ($genderWaliInput === 'p' || $genderWaliInput === 'perempuan') {
+                                $genderWali = 'P';
+                            }
+
+                            // Map status jamaah wali jika ada
+                            $statusJamaahInput = strtoupper(trim($row['status_jamaah_wali'] ?? ''));
+                            $statusJamaah = 'UNKNOWN';
+                            if (in_array($statusJamaahInput, ['JAMAAH', 'NON_JAMAAH', 'MUKIMIN'])) {
+                                $statusJamaah = $statusJamaahInput;
+                            }
+
+                            $user = User::create([
+                                'name' => $waliName,
+                                'email' => null, // Email is optional and hidden
+                                'phone' => $phone,
+                                'gender' => $genderWali,
+                                'status' => 'ACTIVE',
+                                'jamaah_status' => $statusJamaah,
+                                'password' => bcrypt('Wali123') // Default password
+                            ]);
+                        }
+                    }
+
+                    // 2. Cek kelas
+                    $classroom = Classroom::where('name', $row['kelas'])->first();
+                    if (!$classroom) {
+                        // Skip if classroom not found (should have been filtered in preview, but safety first)
+                        continue;
+                    }
+
+                    // 3. Parsing tanggal lahir
+                    $birthDate = null;
+                    if (!empty($row['tanggal_lahir'])) {
+                        try {
+                            if (is_numeric($row['tanggal_lahir'])) {
+                                $birthDate = \PhpOffice\PhpSpreadsheet\Shared\Date::excelToDateTimeObject($row['tanggal_lahir'])->format('Y-m-d');
+                            } else {
+                                $birthDate = \Carbon\Carbon::parse($row['tanggal_lahir'])->format('Y-m-d');
+                            }
+                        } catch (\Exception $e) {
+                            Log::warning("Gagal parsing tanggal lahir untuk siswa {$row['nama']}: " . $e->getMessage());
+                        }
+                    }
+
+                    // 4. Nickname fallback
+                    $nickname = trim($row['nama_panggilan'] ?? '');
+                    if (empty($nickname)) {
+                        $nickname = explode(' ', trim($row['nama']))[0];
+                    }
+
+                    // 5. Cek apakah siswa terdaftar
+                    $student = Student::where('nis', $row['nis'])->first();
+                    $studentData = [
+                        'name' => $row['nama'],
+                        'nickname' => $nickname,
+                        'nisn' => $row['nisn'] ?? null,
+                        'born_place' => $row['tempat_lahir'] ?? null,
+                        'birth_date' => $birthDate,
+                        'address' => $row['alamat'] ?? null,
+                        'city' => $row['kota'] ?? null,
+                        'province' => $row['provinsi'] ?? null,
+                        'user_id' => $user ? $user->id : null,
+                        'gender' => strtoupper($row['jenis_kelamin'] ?? '') ?: null,
+                        'classroom_id' => $classroom->id,
+                        'status' => Student::STATUS_ACTIVE,
+                    ];
+
+                    if ($student) {
+                        $student->update($studentData);
+                    } else {
+                        Student::create($studentData);
+                    }
+                }
+            });
+
+            // Hapus file temp
+            Storage::disk('local')->delete($tempPath);
+
+            return redirect()->route('student.index')->with('success', 'Data berhasil diimpor dan disinkronkan dengan data Wali.');
+
+        } catch (\Exception $e) {
+            Log::error('Import confirm failed: ' . $e->getMessage());
+            return redirect()->route('student.index')->with('error', 'Terjadi kesalahan saat memproses final import data: ' . $e->getMessage());
         }
     }
 }

@@ -125,7 +125,7 @@
 <div class="modal fade" id="modalImport" tabindex="-1" aria-labelledby="modalImportLabel" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
-            <form action="{{ route('student.import') }}" method="POST" enctype="multipart/form-data">
+            <form action="{{ route('student.import-preview') }}" method="POST" enctype="multipart/form-data">
                 @csrf
                 <div class="modal-header">
                     <h5 class="modal-title" id="modalImportLabel">Import Data Santri</h5>

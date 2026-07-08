@@ -79,7 +79,7 @@
                                                 value="{{ @$user->name ?? old('name') }}" />
                                             <!--end::Input-->
                                         </div>
-                                        <div class="fv-row mb-6">
+                                        <div class="fv-row mb-6 d-none">
                                             <!--begin::Label-->
                                             <label class="fs-6 fw-bold form-label" for="email">
                                                 <span class="required">Email</span>
@@ -248,7 +248,7 @@
         maxlength: 255,
         },
         email: {
-        required: true,
+        required: false,
         maxlength: 255,
         email : true,
         },
@@ -269,7 +269,6 @@
         maxlength: "Nama maksimal 255 karakter",
         },
         email: {
-        required: "Email harus diisi",
         maxlength: "Email maksimal 255 karakter",
         email: "Email tidak valid",
         },

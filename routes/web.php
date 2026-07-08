@@ -220,7 +220,6 @@ Route::group(['middleware' => ['auth']], function () {
     Route::get('admin/scope-akses', [AdminController::class, 'scopeAkses'])->name('admin.scope-akses');
     Route::post('admin/scope-akses/{scope}/assign', [AdminController::class, 'assignScopeUsers'])->name('admin.scope-akses.assign');
     Route::resource('admin', AdminController::class);
-    Route::post('user/import', [UserController::class, 'import'])->name('user.import');
     Route::post('user/bulk-update-status', [UserController::class, 'bulkUpdateStatus'])->name('user.bulk-update-status');
     Route::post('user/check-duplicate', [UserController::class, 'checkDuplicate'])->name('user.check-duplicate');
     Route::post('user/{user}/verify', [UserController::class, 'verify'])->name('user.verify');
@@ -232,7 +231,8 @@ Route::group(['middleware' => ['auth']], function () {
     Route::resource('academic-year', AcademicYearController::class, ['except' => ['show']]);
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
     Route::get('student/school/{id}', [StudentController::class, 'getClassrooms'])->name('student.get-classroom');
-    Route::post('student/import', [StudentController::class, 'import'])->name('student.import');
+    Route::post('student/import-preview', [StudentController::class, 'importPreview'])->name('student.import-preview');
+    Route::post('student/import-confirm', [StudentController::class, 'importConfirm'])->name('student.import-confirm');
     Route::resource('student', StudentController::class);
     Route::resource('tahfidz', TahfidzController::class);
     Route::resource('category-item', CategoryItemController::class);

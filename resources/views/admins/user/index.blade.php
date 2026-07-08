@@ -155,7 +155,6 @@
 
                             <!-- Action Buttons -->
                             <div class="d-flex flex-wrap gap-4 align-items-end">
-                                <x-action.import target="#modalImport" name="Wali Santri" />
                                 <x-action.create name="Wali Santri" action="{{ route('user.create') }}" />
                             </div>
 
@@ -211,7 +210,7 @@
                                         <tr class="fw-bolder fs-6 text-gray-800 border-bottom border-gray-200">
                                             <th width="3%">No</th>
                                             <th>Nama</th>
-                                            <th>Email</th>
+                                            <th>Tanggal Masuk</th>
                                             <th>Jenis Kelamin</th>
                                             <th>Status</th>
                                             <th>Status Jamaah</th>
@@ -282,7 +281,7 @@
                                             </th>
                                             <th width="5%">No</th>
                                             <th>Nama</th>
-                                            <th>Email</th>
+                                            <th>Tanggal Masuk</th>
                                             <th>Status</th>
                                             <th>Status Jamaah</th>
                                             <th>Akses</th>
@@ -306,34 +305,6 @@
     <!--end::Post-->
 </div>
 <!--end::Content-->
-<div class="modal fade" id="modalImport" tabindex="-1" aria-labelledby="modalImportLabel" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <form action="{{ route('user.import') }}" method="POST" enctype="multipart/form-data">
-                @csrf
-                <div class="modal-header">
-                    <h5 class="modal-title" id="modalImportLabel">Import Data Wali Santri</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <div class="mb-3">
-                        <label for="file" class="form-label">File Excel</label>
-                        <input class="form-control" type="file" name="file" id="file">
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <div class="me-auto">
-                        <a href="assets\media\template\import\Template Import Data Wali Santri.xlsx"
-                            class="btn btn-light-primary"><i class="fa fa-download"></i> Template</a>
-                    </div>
-
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
-                    <button type="submit" class="btn btn-primary">Import</button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
 @endsection
 @push('js')
 <script>
@@ -376,10 +347,22 @@
                     }
                 },
                 {
-                    data: 'email',
-                    name: 'email',
+                    data: 'created_at',
+                    name: 'created_at',
                     render: function(data, type, row) {
-                        return data ? data : 'N/A'; // Null handler
+                        if (!data) return 'N/A';
+                        try {
+                            var date = new Date(data);
+                            return date.toLocaleDateString('id-ID', {
+                                year: 'numeric',
+                                month: '2-digit',
+                                day: '2-digit',
+                                hour: '2-digit',
+                                minute: '2-digit'
+                            });
+                        } catch (e) {
+                            return data;
+                        }
                     }
                 },
                 {
@@ -486,10 +469,22 @@
                     }
                 },
                 {
-                    data: 'email',
-                    name: 'email',
+                    data: 'created_at',
+                    name: 'created_at',
                     render: function(data, type, row) {
-                        return data ? data : 'N/A';
+                        if (!data) return 'N/A';
+                        try {
+                            var date = new Date(data);
+                            return date.toLocaleDateString('id-ID', {
+                                year: 'numeric',
+                                month: '2-digit',
+                                day: '2-digit',
+                                hour: '2-digit',
+                                minute: '2-digit'
+                            });
+                        } catch (e) {
+                            return data;
+                        }
                     }
                 },
                 {

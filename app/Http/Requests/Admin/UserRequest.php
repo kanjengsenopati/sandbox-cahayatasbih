@@ -24,7 +24,7 @@ class UserRequest extends FormRequest
         return match ($this->method()) {
             'POST' => [
                 'name' => 'required',
-                'email' => 'required|unique:users,email',
+                'email' => 'nullable|email|unique:users,email',
                 'password' => 'required|min:8|confirmed',
                 'gender' => 'required',
                 'phone' => 'required',
@@ -33,7 +33,7 @@ class UserRequest extends FormRequest
             ],
             'PUT' => [
                 'name' => 'required',
-                'email' => 'required|unique:users,email,' . $this->user->id,
+                'email' => 'nullable|email|unique:users,email,' . $this->user->id,
                 'password' => 'nullable|min:8|confirmed',
                 'gender' => 'required',
                 'phone' => 'required',
