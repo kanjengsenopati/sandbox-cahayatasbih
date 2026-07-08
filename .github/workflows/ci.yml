@@ -32,7 +32,7 @@ jobs:
         with:
           node-version: '20'
       - name: Install PHP dependencies
-        run: composer install --prefer-dist --no-progress --no-suggest --optimize-autoloader
+        run: composer install --prefer-dist --no-progress --no-suggest --optimize-autoloader --no-scripts
       - name: Install JS dependencies
         run: npm ci
       - name: Build assets
@@ -41,6 +41,10 @@ jobs:
         run: php -r "file_exists('.env') || copy('.env.example', '.env');"
       - name: Generate key
         run: php artisan key:generate
+      - name: Run composer post-install tasks
+        run: |
+          composer dump-autoload --optimize
+          php artisan package:discover --ansi
       - name: Run migrations
         env:
           DB_CONNECTION: mysql

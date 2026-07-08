@@ -29,11 +29,15 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-composer-
       - name: Install Composer dependencies
-        run: composer install --prefer-dist --no-progress --no-suggest --optimize-autoloader
+        run: composer install --prefer-dist --no-progress --no-suggest --optimize-autoloader --no-scripts
       - name: Copy .env example
         run: cp .env.example .env
       - name: Generate app key
         run: php artisan key:generate
+      - name: Run composer post-install tasks
+        run: |
+          composer dump-autoload --optimize
+          php artisan package:discover --ansi
       - name: Run migrations
         env:
           DB_CONNECTION: sqlite
