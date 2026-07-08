@@ -32,11 +32,9 @@ jobs:
 
             echo "=== Pulling latest changes ==="
             git config --global --add safe.directory $DEPLOY_PATH
-            ORIGINAL_URL=\$(git remote get-url origin)
-            git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/kanjengsenopati/sandbox-cahayatasbih.git
-            git fetch --all
-            git reset --hard origin/main
-            git remote set-url origin "\$ORIGINAL_URL"
+            git remote set-url origin https://github.com/kanjengsenopati/sandbox-cahayatasbih.git || true
+            git fetch https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/kanjengsenopati/sandbox-cahayatasbih.git main
+            git reset --hard FETCH_HEAD
 
             echo "=== Clearing Stale Cache ==="
             rm -f bootstrap/cache/config.php bootstrap/cache/routes.php bootstrap/cache/services.php bootstrap/cache/packages.php
