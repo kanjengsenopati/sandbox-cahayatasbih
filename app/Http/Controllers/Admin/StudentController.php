@@ -589,6 +589,9 @@ class StudentController extends Controller
                                 $statusJamaah = $statusJamaahInput;
                             }
 
+                            $passwordInput = trim($row['password_wali'] ?? $row['password'] ?? '');
+                            $password = $passwordInput ? bcrypt($passwordInput) : bcrypt('Wali123');
+
                             $user = User::create([
                                 'name' => $waliName,
                                 'email' => null, // Email is optional and hidden
@@ -596,7 +599,7 @@ class StudentController extends Controller
                                 'gender' => $genderWali,
                                 'status' => 'ACTIVE',
                                 'jamaah_status' => $statusJamaah,
-                                'password' => bcrypt('Wali123') // Default password
+                                'password' => $password
                             ]);
                         }
                     }
