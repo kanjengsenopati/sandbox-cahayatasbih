@@ -134,7 +134,7 @@ function LoginPage() {
 
             <div className="space-y-4">
               <div>
-                <label className="text-[11px] font-bold text-slate-400 mb-2 uppercase tracking-widest block">
+                <label className="text-[12px] font-bold text-slate-500 mb-1.5 block">
                   Nomor WhatsApp
                 </label>
                 <div className="flex items-center gap-3 bg-secondary rounded-2xl px-4 py-3.5 focus-within:ring-2 focus-within:ring-[#9b1de8]/20 focus-within:bg-white transition-all border border-slate-100 focus-within:border-[#9b1de8]/30">
@@ -149,7 +149,7 @@ function LoginPage() {
               </div>
 
               <div>
-                <label className="text-[11px] font-bold text-slate-400 mb-2 uppercase tracking-widest block">
+                <label className="text-[12px] font-bold text-slate-500 mb-1.5 block">
                   Kata Sandi
                 </label>
                 <div className="flex items-center gap-3 bg-secondary rounded-2xl px-4 py-3.5 focus-within:ring-2 focus-within:ring-[#9b1de8]/20 focus-within:bg-white transition-all border border-slate-100 focus-within:border-[#9b1de8]/30">
@@ -171,7 +171,7 @@ function LoginPage() {
               </div>
             </div>
 
-            <div className="flex justify-between items-center mt-4">
+            <div className="flex items-center mt-4">
               <label className="flex items-center gap-2 cursor-pointer">
                 <input
                   type="checkbox"
@@ -181,9 +181,6 @@ function LoginPage() {
                 />
                 <span className="text-[12px] font-bold text-slate-500">Ingat Saya</span>
               </label>
-              <button type="button" className="text-[12px] font-bold text-[#9b1de8]">
-                Lupa Kata Sandi?
-              </button>
             </div>
 
             {/* Submit Button */}
