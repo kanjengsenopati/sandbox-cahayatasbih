@@ -16,7 +16,18 @@ export const Route = createFileRoute("/login")({
 
 function LoginPage() {
   const [show, setShow] = useState(false);
-  const [phone, setPhone] = useState("");
+  const [rememberMe, setRememberMe] = useState(() => {
+    if (typeof window !== "undefined") {
+      return localStorage.getItem("remember_me") === "true";
+    }
+    return false;
+  });
+  const [phone, setPhone] = useState(() => {
+    if (typeof window !== "undefined" && localStorage.getItem("remember_me") === "true") {
+      return localStorage.getItem("remembered_phone") || "";
+    }
+    return "";
+  });
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [showRoleSelector, setShowRoleSelector] = useState(false);
@@ -29,6 +40,14 @@ function LoginPage() {
       return res.data;
     },
     onSuccess: (data: any) => {
+      if (rememberMe) {
+        localStorage.setItem("remember_me", "true");
+        localStorage.setItem("remembered_phone", phone);
+      } else {
+        localStorage.removeItem("remember_me");
+        localStorage.removeItem("remembered_phone");
+      }
+
       if (data.status === "requires_role_selection") {
         setShowRoleSelector(true);
         return;
@@ -152,7 +171,16 @@ function LoginPage() {
               </div>
             </div>
 
-            <div className="flex justify-end mt-3">
+            <div className="flex justify-between items-center mt-4">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={rememberMe}
+                  onChange={(e) => setRememberMe(e.target.checked)}
+                  className="rounded border-slate-300 text-[#9b1de8] focus:ring-[#9b1de8]/20 w-4 h-4"
+                />
+                <span className="text-[12px] font-bold text-slate-500">Ingat Saya</span>
+              </label>
               <button type="button" className="text-[12px] font-bold text-[#9b1de8]">
                 Lupa Kata Sandi?
               </button>
