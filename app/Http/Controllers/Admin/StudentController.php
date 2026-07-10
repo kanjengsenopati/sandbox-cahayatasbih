@@ -461,9 +461,17 @@ class StudentController extends Controller
                 if (empty($className)) {
                     $rowErrors[] = 'Kelas wajib diisi';
                 } else {
-                    $classroom = Classroom::where('name', $className)->first();
+                    $classroomQuery = Classroom::where('name', $className);
+                    
+                    $admin = Auth::user();
+                    if ($admin && !$admin->hasRole('Super Admin')) {
+                        $schoolIds = method_exists($admin, 'getSchoolIds') ? $admin->getSchoolIds() : ($admin->adminSchool ? $admin->adminSchool->pluck('school_id')->toArray() : []);
+                        $classroomQuery->whereIn('school_id', $schoolIds);
+                    }
+                    
+                    $classroom = $classroomQuery->first();
                     if (!$classroom) {
-                        $rowErrors[] = "Kelas '{$className}' tidak ditemukan di database";
+                        $rowErrors[] = "Kelas '{$className}' tidak ditemukan di database (atau Anda tidak memiliki akses ke sekolah kelas ini)";
                     }
                 }
 
@@ -605,9 +613,18 @@ class StudentController extends Controller
                     }
 
                     // 2. Cek kelas
-                    $classroom = Classroom::where('name', $row['kelas'])->first();
+                    $className = trim($row['kelas'] ?? '');
+                    $classroomQuery = Classroom::where('name', $className);
+                    
+                    $admin = Auth::user();
+                    if ($admin && !$admin->hasRole('Super Admin')) {
+                        $schoolIds = method_exists($admin, 'getSchoolIds') ? $admin->getSchoolIds() : ($admin->adminSchool ? $admin->adminSchool->pluck('school_id')->toArray() : []);
+                        $classroomQuery->whereIn('school_id', $schoolIds);
+                    }
+                    
+                    $classroom = $classroomQuery->first();
                     if (!$classroom) {
-                        // Skip if classroom not found (should have been filtered in preview, but safety first)
+                        Log::warning("Skipped importing student {$row['nama']} because classroom '{$className}' was not found or not accessible.");
                         continue;
                     }
 

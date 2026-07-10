@@ -142,9 +142,16 @@ class Bill extends Model
 
     public function scopeHasSchool($query)
     {
-        $query->whereHas('student', function ($query) {
-            $query->whereHas('classroom', function ($query) {
-                $query->where('school_id', request()->school_id ?? Auth::user()->adminSchool->school_id);
+        $admin = Auth::user();
+        if ($admin?->hasRole('Super Admin')) {
+            return;
+        }
+
+        $schoolIds = $admin ? (method_exists($admin, 'getSchoolIds') ? $admin->getSchoolIds() : ($admin->adminSchool ? $admin->adminSchool->pluck('school_id')->toArray() : [])) : [];
+
+        $query->whereHas('student', function ($query) use ($schoolIds) {
+            $query->whereHas('classroom', function ($query) use ($schoolIds) {
+                $query->whereIn('school_id', $schoolIds);
             });
         });
     }

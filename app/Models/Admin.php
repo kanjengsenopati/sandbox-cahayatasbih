@@ -91,6 +91,19 @@ class Admin extends Authenticatable
         return $this->hasMany(AdminSchool::class);
     }
 
+    /**
+     * Ambil semua school_id yang diassign ke admin ini
+     * (dari tabel pivot admin_schools + school_id utama)
+     */
+    public function getSchoolIds(): array
+    {
+        $schoolIds = $this->adminSchool->pluck('school_id')->toArray();
+        if ($this->school_id && !in_array($this->school_id, $schoolIds)) {
+            $schoolIds[] = $this->school_id;
+        }
+        return $schoolIds;
+    }
+
     public function adminOutlet(): HasMany
     {
         return $this->hasMany(AdminOutlet::class);

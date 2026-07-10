@@ -68,9 +68,13 @@ class School extends Model
 
     public function scopeHasSchool($query)
     {
-        // Assuming 'adminSchool' is a relationship returning the school IDs the admin can access
         $admin = Auth::user();
-        $schoolIds = $admin?->adminSchool?->pluck('school_id');
+        if ($admin?->hasRole('Super Admin')) {
+            return;
+        }
+
+        $schoolIds = $admin ? (method_exists($admin, 'getSchoolIds') ? $admin->getSchoolIds() : ($admin->adminSchool ? $admin->adminSchool->pluck('school_id')->toArray() : [])) : [];
+
         $query->whereIn('id', $schoolIds);
     }
 
