@@ -651,6 +651,7 @@ class StudentController extends Controller
                     // 5. Cek apakah siswa terdaftar
                     $student = Student::where('nis', $row['nis'])->first();
                     $studentData = [
+                        'nis' => $row['nis'],
                         'name' => $row['nama'],
                         'nickname' => $nickname,
                         'nisn' => $row['nisn'] ?? null,
