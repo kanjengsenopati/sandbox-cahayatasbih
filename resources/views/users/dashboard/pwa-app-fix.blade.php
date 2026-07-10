@@ -88,6 +88,48 @@
 <script>
     window.addEventListener('online', () => document.body.classList.remove('offline'));
     window.addEventListener('offline', () => document.body.classList.add('offline'));
+
+    // PWA Service Worker Registration & Caching Optimization
+    if ('serviceWorker' in navigator) {
+        let refreshing = false;
+
+        // Force reload when new service worker takes control
+        navigator.serviceWorker.addEventListener('controllerchange', function() {
+            if (refreshing) return;
+            refreshing = true;
+            console.log('Wali Santri PWA: New service worker active. Purging caches and reloading...');
+            if ('caches' in window) {
+                caches.keys().then(function(keys) {
+                    return Promise.all(keys.map(function(key) {
+                        return caches.delete(key);
+                    }));
+                }).then(function() {
+                    window.location.reload();
+                }).catch(function() {
+                    window.location.reload();
+                });
+            } else {
+                window.location.reload();
+            }
+        });
+
+        // Register sw.js via the bypass route with root scope
+        window.addEventListener('load', function() {
+            navigator.serviceWorker.register('/pwa-asset?f=sw.js', { scope: '/' })
+                .then(function(reg) {
+                    console.log('Wali Santri PWA: Service Worker registered successfully with scope:', reg.scope);
+                    
+                    // Periodically check for updates every 5 minutes
+                    setInterval(function() {
+                        console.log('Wali Santri PWA: Checking for service worker updates...');
+                        reg.update();
+                    }, 5 * 60 * 1000);
+                })
+                .catch(function(err) {
+                    console.error('Wali Santri PWA: Service Worker registration failed:', err);
+                });
+        });
+    }
 </script>
 <style>
     body.offline::before {

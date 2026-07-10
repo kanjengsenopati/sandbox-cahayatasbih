@@ -21,6 +21,10 @@ export default defineConfig({
         cleanupOutdatedCaches: true,
         skipWaiting: true,
         clientsClaim: true,
+        navigateFallback: '/pwa-asset?f=index.html',
+        modifyURLPrefix: {
+          '': '/pwa-asset?f='
+        }
       },
       manifest: {
         name: 'CT-Mobile',

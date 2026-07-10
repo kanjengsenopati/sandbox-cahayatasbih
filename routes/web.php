@@ -555,11 +555,19 @@ Route::get('pwa-asset', function (\Illuminate\Http\Request $request) {
             elseif (str_ends_with($path, '.png')) $mime = 'image/png';
             elseif (str_ends_with($path, '.svg')) $mime = 'image/svg+xml';
             elseif (str_ends_with($path, '.ico')) $mime = 'image/x-icon';
+            elseif (str_ends_with($path, '.html')) $mime = 'text/html';
+            elseif (str_ends_with($path, '.webmanifest')) $mime = 'application/manifest+json';
             
-            return response()->file($path, [
+            $headers = [
                 'Content-Type' => $mime,
                 'Cache-Control' => 'public, max-age=31536000'
-            ]);
+            ];
+            
+            if (str_ends_with($path, 'sw.js')) {
+                $headers['Service-Worker-Allowed'] = '/';
+            }
+            
+            return response()->file($path, $headers);
         }
     }
     abort(404);
