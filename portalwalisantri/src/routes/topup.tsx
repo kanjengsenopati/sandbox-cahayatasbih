@@ -33,6 +33,7 @@ import { useSantri } from "@/contexts/SantriContext";
 import { postTopup, uploadPaymentProof, fetchPaymentMethods, fetchBlockStatus, toggleBlock, updateLimit as updateLimitApi } from "@/lib/api";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { compressImage } from "@/lib/image-compress";
 
 export const Route = createFileRoute("/topup")({
   component: TopupPage,
@@ -981,7 +982,7 @@ function Step({ label, sub, done, active }: { label: string; sub: string; done?:
 
 /* ───────────── Proof Uploader ───────────── */
 
-const MAX_PROOF_BYTES = 5 * 1024 * 1024; // 5 MB
+const MAX_PROOF_BYTES = 20 * 1024 * 1024; // 20 MB
 const ACCEPTED_TYPES = ["image/jpeg", "image/jpg", "image/png", "image/webp"];
 
 function ProofUploader({
@@ -998,17 +999,18 @@ function ProofUploader({
   const [error, setError] = useState<string>("");
   const [progress, setProgress] = useState<number>(0);
   const [uploading, setUploading] = useState(false);
+  const [isCompressing, setIsCompressing] = useState(false);
   const [drag, setDrag] = useState(false);
   const [zoom, setZoom] = useState(false);
 
   const validate = (file: File): string => {
     if (!ACCEPTED_TYPES.includes(file.type)) return "Format harus JPG, PNG, atau WEBP.";
     if (file.size > MAX_PROOF_BYTES)
-      return `Ukuran maksimal 5 MB. File Anda ${(file.size / 1024 / 1024).toFixed(1)} MB.`;
+      return `Ukuran maksimal 20 MB. File Anda ${(file.size / 1024 / 1024).toFixed(1)} MB.`;
     return "";
   };
 
-  const handleFile = (file: File | undefined | null) => {
+  const handleFile = async (file: File | undefined | null) => {
     if (!file) return;
     const err = validate(file);
     if (err) {
@@ -1017,7 +1019,18 @@ function ProofUploader({
     }
     setError("");
     setUploading(true);
+    setIsCompressing(true);
     setProgress(0);
+
+    let finalFile = file;
+    try {
+      finalFile = await compressImage(file);
+    } catch (err) {
+      console.error("Compression error:", err);
+    } finally {
+      setIsCompressing(false);
+    }
+
     let p = 0;
     const interval = setInterval(() => {
       p += 18 + Math.random() * 14;
@@ -1027,7 +1040,7 @@ function ProofUploader({
         setProgress(100);
         setTimeout(() => {
           setUploading(false);
-          onSelectFile(file);
+          onSelectFile(finalFile);
         }, 180);
       } else {
         setProgress(p);
@@ -1097,7 +1110,7 @@ function ProofUploader({
               Tarik & lepas bukti di sini
             </p>
             <p className="text-[11px] text-muted-foreground mt-0.5">
-              atau pilih sumber di bawah · JPG / PNG / WEBP · maks 5 MB
+              atau pilih sumber di bawah · JPG / PNG / WEBP · maks 20 MB (Auto-compress s.d 300KB)
             </p>
           </div>
 
@@ -1142,8 +1155,12 @@ function ProofUploader({
               <Upload size={18} className="animate-pulse" />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-bold text-foreground">Mengunggah bukti…</p>
-              <p className="text-[11px] text-muted-foreground">Mohon tunggu sebentar</p>
+              <p className="text-sm font-bold text-foreground">
+                {isCompressing ? "Mengompres bukti…" : "Mengunggah bukti…"}
+              </p>
+              <p className="text-[11px] text-muted-foreground">
+                {isCompressing ? "Mengoptimalkan ukuran gambar..." : "Mohon tunggu sebentar"}
+              </p>
             </div>
             <span className="text-sm font-bold text-primary tabular-nums">
               {Math.round(progress)}%

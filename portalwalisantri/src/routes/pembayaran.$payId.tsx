@@ -15,6 +15,7 @@ import {
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { fetchPaymentDetail, uploadPaymentProof } from "@/lib/api";
 import { resolveImageUrl } from "@/lib/utils";
+import { compressImage } from "@/lib/image-compress";
 
 export const Route = createFileRoute("/pembayaran/$payId")({
   component: PembayaranPage,
@@ -359,6 +360,7 @@ function CopyButton({ value, label }: { value: string; label: string }) {
 
 function ProofUploader({ tx, onUpload, isUploading }: { tx: any; onUpload: (f: File) => void; isUploading: boolean }) {
   const inputRef = useRef<HTMLInputElement>(null);
+  const [isCompressing, setIsCompressing] = useState(false);
   const hasProof = !!tx.proofUrl;
   const locked = tx.status === "approved";
 
@@ -388,9 +390,20 @@ function ProofUploader({ tx, onUpload, isUploading }: { tx: any; onUpload: (f: F
         type="file"
         accept="image/*"
         className="hidden"
-        onChange={(e) => {
+        onChange={async (e) => {
           const f = e.target.files?.[0];
-          if (f) onUpload(f);
+          if (f) {
+            try {
+              setIsCompressing(true);
+              const compressed = await compressImage(f);
+              onUpload(compressed);
+            } catch (err) {
+              console.error("Compression error:", err);
+              onUpload(f);
+            } finally {
+              setIsCompressing(false);
+            }
+          }
           e.target.value = "";
         }}
       />
@@ -405,17 +418,17 @@ function ProofUploader({ tx, onUpload, isUploading }: { tx: any; onUpload: (f: F
         </div>
       ) : (
         <button
-          disabled={isUploading || locked}
+          disabled={isUploading || locked || isCompressing}
           onClick={() => inputRef.current?.click()}
           className="mt-3 w-full rounded-xl border-2 border-dashed border-border bg-secondary/50 px-4 py-6 flex flex-col items-center justify-center gap-2 text-muted-foreground active:scale-[0.99] transition disabled:opacity-50"
         >
           <div className="w-10 h-10 rounded-full bg-primary/10 text-primary flex items-center justify-center">
-            {isUploading ? <Loader2 className="animate-spin" size={18} /> : <Upload size={18} />}
+            {isUploading || isCompressing ? <Loader2 className="animate-spin" size={18} /> : <Upload size={18} />}
           </div>
           <p className="text-sm font-bold text-foreground">
-            {isUploading ? "Memproses…" : "Pilih Foto Bukti"}
+            {isCompressing ? "Mengompres Gambar…" : isUploading ? "Memproses…" : "Pilih Foto Bukti"}
           </p>
-          <p className="text-[11px]">JPG / PNG, maks. 5 MB</p>
+          <p className="text-[11px]">JPG / PNG, maks. 20 MB (Auto-compress s.d 300KB)</p>
         </button>
       )}
 

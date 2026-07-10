@@ -124,14 +124,14 @@
                 </div>
                 <div class="text-center">
                     <div class="text-sm font-black text-slate-800 uppercase tracking-tight">Pilih Foto Bukti</div>
-                    <div class="text-[10px] font-bold text-slate-400 mt-1">JPG, PNG atau JPEG (Max 2MB)</div>
+                    <div class="text-[10px] font-bold text-slate-400 mt-1">JPG, PNG atau JPEG (Maks. 20MB, Auto-compress s.d 300KB)</div>
                 </div>
             </div>
         @endif
 
         <form id="upload-form" action="{{ route('wali.upload-proof', $transaction->id) }}" method="POST" enctype="multipart/form-data" class="hidden">
             @csrf
-            <input type="file" name="proof" id="proof-input" onchange="document.getElementById('upload-form').submit()">
+            <input type="file" name="proof" id="proof-input" accept="image/*" onchange="handleProofUpload(this)">
         </form>
     </div>
 </div>
@@ -147,6 +147,144 @@
                 customClass: { popup: 'rounded-3xl' }
             });
         });
+    }
+
+    function compressImage(file, maxSizeBytes = 300 * 1024) {
+        if (file.size <= maxSizeBytes || !file.type.startsWith('image/')) {
+            return Promise.resolve(file);
+        }
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const img = new Image();
+                img.onload = function() {
+                    const attempts = [
+                        { maxDim: 1600, quality: 0.85 },
+                        { maxDim: 1200, quality: 0.70 },
+                        { maxDim: 950, quality: 0.60 },
+                        { maxDim: 800, quality: 0.45 },
+                        { maxDim: 640, quality: 0.35 }
+                    ];
+                    let currentAttemptIndex = 0;
+                    
+                    function tryCompress() {
+                        if (currentAttemptIndex >= attempts.length) {
+                            const finalAttempt = attempts[attempts.length - 1];
+                            performCompression(finalAttempt.maxDim, finalAttempt.quality);
+                            return;
+                        }
+                        const attempt = attempts[currentAttemptIndex];
+                        performCompression(attempt.maxDim, attempt.quality);
+                    }
+                    
+                    function performCompression(maxDim, quality) {
+                        const canvas = document.createElement('canvas');
+                        let width = img.width;
+                        let height = img.height;
+                        
+                        if (width > maxDim || height > maxDim) {
+                            if (width > height) {
+                                height = Math.round((height * maxDim) / width);
+                                width = maxDim;
+                            } else {
+                                width = Math.round((width * maxDim) / height);
+                                height = maxDim;
+                            }
+                        }
+                        
+                        canvas.width = width;
+                        canvas.height = height;
+                        const ctx = canvas.getContext('2d');
+                        if (!ctx) {
+                            reject(new Error('Canvas context not available'));
+                            return;
+                        }
+                        ctx.drawImage(img, 0, 0, width, height);
+                        
+                        canvas.toBlob(function(blob) {
+                            if (!blob) {
+                                reject(new Error('Canvas to blob failed'));
+                                return;
+                            }
+                            if (blob.size <= maxSizeBytes || currentAttemptIndex >= attempts.length - 1) {
+                                const compressedFile = new File([blob], file.name.replace(/\.[^/.]+$/, "") + ".jpg", {
+                                    type: 'image/jpeg',
+                                    lastModified: Date.now()
+                                });
+                                resolve(compressedFile);
+                            } else {
+                                currentAttemptIndex++;
+                                tryCompress();
+                            }
+                        }, 'image/jpeg', quality);
+                    }
+                    
+                    tryCompress();
+                };
+                img.onerror = () => reject(new Error('Gagal memuat file gambar'));
+                img.src = e.target.result;
+            };
+            reader.onerror = () => reject(new Error('Gagal membaca berkas'));
+            reader.readAsDataURL(file);
+        });
+    }
+
+    async function handleProofUpload(input) {
+        const file = input.files[0];
+        if (!file) return;
+
+        Swal.fire({
+            title: 'Memproses Gambar...',
+            text: 'Mengompres bukti pembayaran agar hemat kuota...',
+            allowOutsideClick: false,
+            didOpen: () => {
+                Swal.showLoading();
+            },
+            customClass: { popup: 'rounded-3xl' }
+        });
+
+        try {
+            const compressedFile = await compressImage(file);
+            
+            Swal.update({
+                text: 'Mengunggah bukti pembayaran...'
+            });
+
+            const formData = new FormData();
+            formData.append('_token', '{{ csrf_token() }}');
+            formData.append('proof', compressedFile);
+
+            const response = await fetch('{{ route("wali.upload-proof", $transaction->id) }}', {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            });
+
+            if (response.ok) {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Berhasil!',
+                    text: 'Bukti pembayaran berhasil diunggah.',
+                    confirmButtonColor: '#2563eb',
+                    customClass: { popup: 'rounded-3xl' }
+                }).then(() => {
+                    window.location.reload();
+                });
+            } else {
+                throw new Error('Gagal mengunggah file bukti transfer.');
+            }
+        } catch (error) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Gagal',
+                text: error.message || 'Terjadi kesalahan saat memproses gambar.',
+                confirmButtonColor: '#dc2626',
+                customClass: { popup: 'rounded-3xl' }
+            });
+            input.value = '';
+        }
     }
 </script>
 @endsection

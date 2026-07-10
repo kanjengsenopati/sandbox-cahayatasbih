@@ -55,9 +55,11 @@
             break;
         }
     }
+    
+    $manifestVersion = $manifestPath && file_exists($manifestPath) ? filemtime($manifestPath) : '1.0';
 @endphp
 
-<!-- DEPLOYMENT VERSION v14: {{ date('Y-m-d H:i:s') }} | manifest={{ $manifestPath ? 'YES' : 'NO' }} | bypass={{ $useBypass ? 'YES' : 'NO' }} -->
+<!-- DEPLOYMENT VERSION v14: {{ date('Y-m-d H:i:s') }} | manifest={{ $manifestPath ? 'YES' : 'NO' }} | bypass={{ $useBypass ? 'YES' : 'NO' }} | version={{ $manifestVersion }} -->
 
 @if($entry)
     @php
@@ -69,14 +71,14 @@
     
     @if($useBypass)
         @foreach($entry['css'] ?? [] as $css)
-            <link rel="stylesheet" href="/pwa-asset?f={{ urlencode($css) }}&v={{ time() }}">
+            <link rel="stylesheet" href="/pwa-asset?f={{ urlencode($css) }}&v={{ $manifestVersion }}">
         @endforeach
-        <script type="module" src="/pwa-asset?f={{ urlencode($entry['file']) }}&v={{ time() }}"></script>
+        <script type="module" src="/pwa-asset?f={{ urlencode($entry['file']) }}&v={{ $manifestVersion }}"></script>
     @else
         @foreach($entry['css'] ?? [] as $css)
-            <link rel="stylesheet" href="{{ $manifestUrlBase }}{{ $css }}?v={{ time() }}">
+            <link rel="stylesheet" href="{{ $manifestUrlBase }}{{ $css }}?v={{ $manifestVersion }}">
         @endforeach
-        <script type="module" src="{{ $manifestUrlBase }}{{ $entry['file'] }}?v={{ time() }}"></script>
+        <script type="module" src="{{ $manifestUrlBase }}{{ $entry['file'] }}?v={{ $manifestVersion }}"></script>
     @endif
 @else
     <!-- FALLBACK: Direct asset loading if manifest logic fails (ensure this points to a built asset if needed) -->
