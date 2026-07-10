@@ -75,13 +75,40 @@
 
             <!-- Table Card -->
             <div class="premium-card mb-5">
-                <div class="d-flex align-items-center justify-content-between mb-4">
-                    <x-text.h2>Detail Baris Data Excel</x-text.h2>
-                    <x-text.caption>Menampilkan data siswa dan relasi wali yang diproses</x-text.caption>
+                <div class="d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-4 mb-5 pb-5 border-bottom">
+                    <div>
+                        <x-text.h2>Detail Baris Data Excel</x-text.h2>
+                        <x-text.caption>Menampilkan data siswa dan relasi wali yang diproses</x-text.caption>
+                    </div>
+                    <div class="d-flex align-items-center gap-3">
+                        <a href="{{ route('student.index') }}" class="btn btn-secondary btn-sm rounded-[12px]">Batal</a>
+                        <form action="{{ route('student.import-confirm') }}" method="POST" class="m-0">
+                            @csrf
+                            <input type="hidden" name="temp_file" value="{{ $tempFile }}">
+                            <button type="submit" class="btn btn-primary btn-sm rounded-[12px]" {{ $summary['valid'] == 0 ? 'disabled' : '' }}>
+                                <i class="fas fa-cloud-upload-alt me-1"></i> Konfirmasi & Import
+                            </button>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Alert Status -->
+                <div class="mb-5">
+                    @if ($summary['errors'] > 0)
+                        <div class="alert alert-light-warning d-flex align-items-center p-3 rounded-[12px] mb-0" style="border: 1px solid rgba(245, 158, 11, 0.3);">
+                            <i class="fas fa-exclamation-triangle text-warning me-3"></i>
+                            <span class="fs-7 text-slate-700">Terdapat <strong>{{ $summary['errors'] }} baris bermasalah</strong>. Baris bermasalah akan dilewati secara otomatis saat import.</span>
+                        </div>
+                    @else
+                        <div class="alert alert-light-success d-flex align-items-center p-3 rounded-[12px] mb-0" style="background-color: rgba(16, 185, 129, 0.05); border: 1px solid rgba(16, 185, 129, 0.2);">
+                            <i class="fas fa-check-circle text-emerald-600 me-3"></i>
+                            <span class="fs-7 text-slate-700">Semua baris data valid dan siap di-import ke database.</span>
+                        </div>
+                    @endif
                 </div>
 
                 <div class="table-responsive">
-                    <table class="table table-striped align-middle border rounded gy-4 gs-7">
+                    <table id="table-import-preview" class="table table-striped align-middle border rounded gy-4 gs-7">
                         <thead>
                             <tr class="fw-bolder fs-6 text-gray-800 border-bottom border-gray-200">
                                 <th width="5%">Baris</th>
@@ -149,32 +176,7 @@
                     </table>
                 </div>
 
-                <!-- Action Footer -->
-                <div class="d-flex justify-content-between align-items-center mt-6 pt-6 border-top">
-                    <div>
-                        @if ($summary['errors'] > 0)
-                            <div class="alert alert-light-warning d-flex align-items-center p-3 rounded-[12px] mb-0" style="border: 1px solid rgba(245, 158, 11, 0.3);">
-                                <i class="fas fa-exclamation-triangle text-warning me-3"></i>
-                                <span class="fs-7 text-slate-700">Terdapat <strong>{{ $summary['errors'] }} baris bermasalah</strong>. Baris bermasalah akan dilewati secara otomatis saat import.</span>
-                            </div>
-                        @else
-                            <div class="alert alert-light-success d-flex align-items-center p-3 rounded-[12px] mb-0" style="background-color: rgba(16, 185, 129, 0.05); border: 1px solid rgba(16, 185, 129, 0.2);">
-                                <i class="fas fa-check-circle text-emerald-600 me-3"></i>
-                                <span class="fs-7 text-slate-700">Semua baris data valid dan siap di-import ke database.</span>
-                            </div>
-                        @endif
-                    </div>
-                    <div class="d-flex gap-3">
-                        <a href="{{ route('student.index') }}" class="btn btn-secondary btn-sm rounded-[12px]">Batal</a>
-                        <form action="{{ route('student.import-confirm') }}" method="POST">
-                            @csrf
-                            <input type="hidden" name="temp_file" value="{{ $tempFile }}">
-                            <button type="submit" class="btn btn-primary btn-sm rounded-[12px]" {{ $summary['valid'] == 0 ? 'disabled' : '' }}>
-                                <i class="fas fa-cloud-upload-alt me-1"></i> Konfirmasi & Import
-                            </button>
-                        </form>
-                    </div>
-                </div>
+
             </div>
         </div>
     </div>
@@ -182,3 +184,29 @@
 </div>
 <!--end::Content-->
 @endsection
+
+@push('js')
+<script>
+    $(document).ready(function() {
+        $('#table-import-preview').DataTable({
+            pageLength: 10,
+            ordering: false,
+            lengthMenu: [10, 25, 50, 100],
+            language: {
+                "paginate": {
+                    "next": "<i class='fa fa-angle-right'></i>",
+                    "previous": "<i class='fa fa-angle-left'></i>"
+                },
+                "loadingRecords": "Loading...",
+                "processing": "Processing...",
+                "search": "Cari:",
+                "lengthMenu": "Tampilkan _MENU_ baris",
+                "info": "Menampilkan _START_ sampai _END_ dari _TOTAL_ baris",
+                "infoEmpty": "Menampilkan 0 sampai 0 dari 0 baris",
+                "infoFiltered": "(disaring dari _MAX_ total baris)",
+                "zeroRecords": "Tidak ditemukan data yang sesuai"
+            }
+        });
+    });
+</script>
+@endpush
