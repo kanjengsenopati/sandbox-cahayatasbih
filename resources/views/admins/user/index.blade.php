@@ -372,13 +372,11 @@
                         if (!data) return 'N/A';
                         try {
                             var date = new Date(data);
-                            return date.toLocaleDateString('id-ID', {
-                                year: 'numeric',
-                                month: '2-digit',
-                                day: '2-digit',
-                                hour: '2-digit',
-                                minute: '2-digit'
-                            });
+                            var day = String(date.getDate()).padStart(2, '0');
+                            var months = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"];
+                            var month = months[date.getMonth()];
+                            var year = date.getFullYear();
+                            return day + '-' + month + '-' + year;
                         } catch (e) {
                             return data;
                         }
@@ -583,13 +581,11 @@
                         if (!data) return 'N/A';
                         try {
                             var date = new Date(data);
-                            return date.toLocaleDateString('id-ID', {
-                                year: 'numeric',
-                                month: '2-digit',
-                                day: '2-digit',
-                                hour: '2-digit',
-                                minute: '2-digit'
-                            });
+                            var day = String(date.getDate()).padStart(2, '0');
+                            var months = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"];
+                            var month = months[date.getMonth()];
+                            var year = date.getFullYear();
+                            return day + '-' + month + '-' + year;
                         } catch (e) {
                             return data;
                         }
