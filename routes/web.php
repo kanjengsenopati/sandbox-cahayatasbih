@@ -223,6 +223,7 @@ Route::group(['middleware' => ['auth']], function () {
     Route::post('user/bulk-update-status', [UserController::class, 'bulkUpdateStatus'])->name('user.bulk-update-status');
     Route::post('user/check-duplicate', [UserController::class, 'checkDuplicate'])->name('user.check-duplicate');
     Route::post('user/{user}/verify', [UserController::class, 'verify'])->name('user.verify');
+    Route::post('user/bulk-delete', [UserController::class, 'bulkDestroy'])->name('user.bulk-delete');
     Route::resource('user', UserController::class);
     Route::post('school/{school}/assign', [SchoolController::class, 'assignUsers'])->name('school.assign');
     Route::resource('school', SchoolController::class);
@@ -233,6 +234,7 @@ Route::group(['middleware' => ['auth']], function () {
     Route::get('student/school/{id}', [StudentController::class, 'getClassrooms'])->name('student.get-classroom');
     Route::post('student/import-preview', [StudentController::class, 'importPreview'])->name('student.import-preview');
     Route::post('student/import-confirm', [StudentController::class, 'importConfirm'])->name('student.import-confirm');
+    Route::post('student/bulk-delete', [StudentController::class, 'bulkDestroy'])->name('student.bulk-delete');
     Route::resource('student', StudentController::class);
     Route::resource('tahfidz', TahfidzController::class);
     Route::resource('category-item', CategoryItemController::class);

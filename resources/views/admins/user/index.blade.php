@@ -155,6 +155,9 @@
 
                             <!-- Action Buttons -->
                             <div class="d-flex flex-wrap gap-4 align-items-end">
+                                <button type="button" id="btn-bulk-delete-user" class="btn btn-danger btn-sm d-none">
+                                    <i class="fa fa-trash me-2"></i> Hapus Terpilih
+                                </button>
                                 <x-action.create name="Wali Santri" action="{{ route('user.create') }}" />
                             </div>
 
@@ -208,6 +211,11 @@
                                 <table id="table-user" class="table table-striped border rounded gy-5 gs-7">
                                     <thead>
                                         <tr class="fw-bolder fs-6 text-gray-800 border-bottom border-gray-200">
+                                            <th width="3%">
+                                                <div class="form-check form-check-sm form-check-custom form-check-solid">
+                                                    <input class="form-check-input" type="checkbox" id="check-all-user">
+                                                </div>
+                                            </th>
                                             <th width="3%">No</th>
                                             <th>Nama</th>
                                             <th>Tanggal Masuk</th>
@@ -331,6 +339,17 @@
             },
             columns: [
                 {
+                    data: 'id',
+                    name: 'id',
+                    sortable: false,
+                    searchable: false,
+                    render: function(data, type, row) {
+                        return '<div class="form-check form-check-sm form-check-custom form-check-solid">' +
+                            '<input class="form-check-input user-checkbox" type="checkbox" value="' + data + '">' +
+                            '</div>';
+                    }
+                },
+                {
                     "data": null,
                     "sortable": false,
                     "searchable": false,
@@ -413,6 +432,95 @@
 
         $('#filter_status').on('change', function() {
             table.ajax.reload();
+        });
+
+        // Select / Deselect All User Checkboxes
+        $('#check-all-user').on('click', function() {
+            var checked = this.checked;
+            $('.user-checkbox').each(function() {
+                this.checked = checked;
+            });
+            toggleUserBulkDeleteButton();
+        });
+
+        // Individual User Checkbox Click
+        $('#table-user').on('click', '.user-checkbox', function() {
+            var allChecked = $('.user-checkbox:checked').length === $('.user-checkbox').length;
+            $('#check-all-user').prop('checked', allChecked);
+            toggleUserBulkDeleteButton();
+        });
+
+        // Reset check all on DataTable draw/reload
+        table.on('draw', function() {
+            $('#check-all-user').prop('checked', false);
+            toggleUserBulkDeleteButton();
+        });
+
+        function toggleUserBulkDeleteButton() {
+            var checkedCount = $('.user-checkbox:checked').length;
+            if (checkedCount > 0) {
+                $('#btn-bulk-delete-user').removeClass('d-none');
+            } else {
+                $('#btn-bulk-delete-user').addClass('d-none');
+            }
+        }
+
+        // Bulk Delete User Button Click
+        $('#btn-bulk-delete-user').on('click', function() {
+            var selectedIds = [];
+            $('.user-checkbox:checked').each(function() {
+                selectedIds.push($(this).val());
+            });
+
+            if (selectedIds.length === 0) {
+                return;
+            }
+
+            Swal.fire({
+                title: 'Apakah Anda yakin?',
+                text: "Menghapus " + selectedIds.length + " data wali santri terpilih secara massal (soft delete)?",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#3085d6',
+                confirmButtonText: 'Ya, Hapus!',
+                cancelButtonText: 'Batal'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    $.ajax({
+                        url: '{{ route('user.bulk-delete') }}',
+                        type: 'POST',
+                        data: {
+                            _token: '{{ csrf_token() }}',
+                            ids: selectedIds
+                        },
+                        success: function(response) {
+                            if (response.success) {
+                                Swal.fire(
+                                    'Terhapus!',
+                                    response.message,
+                                    'success'
+                                );
+                                table.ajax.reload();
+                            } else {
+                                Swal.fire(
+                                    'Gagal!',
+                                    response.message || 'Terjadi kesalahan saat menghapus data.',
+                                    'error'
+                                );
+                            }
+                        },
+                        error: function(xhr) {
+                            var errMsg = xhr.responseJSON ? xhr.responseJSON.message : 'Terjadi kesalahan sistem.';
+                            Swal.fire(
+                                'Gagal!',
+                                errMsg,
+                                'error'
+                            );
+                        }
+                    });
+                }
+            });
         });
 
         // Initialize Migration Datatable

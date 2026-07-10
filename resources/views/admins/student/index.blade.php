@@ -78,6 +78,9 @@
                     <div class="d-flex flex-column flex-sm-row align-items-end">
                         {{-- <div class="me-sm-3 mb-3 mb-sm-0"> --}}
                             <div class="d-flex gap-2">
+                                <button type="button" id="btn-bulk-delete-student" class="btn btn-danger btn-sm d-none">
+                                    <i class="fa fa-trash me-2"></i> Hapus Terpilih
+                                </button>
                                 <a href="{{ route('student-barcode.index') }}" class="btn btn-primary btn-sm"><i
                                         class="fa fa-print me-2"></i>
                                     Barcode Santri</a>
@@ -96,6 +99,11 @@
                         <table id="table-student" class="table table-striped border rounded gy-5 gs-7">
                             <thead>
                                 <tr class="fw-bolder fs-6 text-gray-800 border-bottom border-gray-200">
+                                    <th width="3%">
+                                        <div class="form-check form-check-sm form-check-custom form-check-solid">
+                                            <input class="form-check-input" type="checkbox" id="check-all-student">
+                                        </div>
+                                    </th>
                                     <th style="width: 3%">No</th>
                                     <th>NIS</th>
                                     <th>Nama</th>
@@ -177,6 +185,17 @@
             },
             columns: [
                 {
+                    data: 'id',
+                    name: 'id',
+                    sortable: false,
+                    searchable: false,
+                    render: function(data, type, row) {
+                        return '<div class="form-check form-check-sm form-check-custom form-check-solid">' +
+                            '<input class="form-check-input student-checkbox" type="checkbox" value="' + data + '">' +
+                            '</div>';
+                    }
+                },
+                {
                     "data": null,
                     "sortable": false,
                     "searchable": false,
@@ -247,6 +266,95 @@
         // Reload DataTable on filter change
         $('#filter_school, #filter_class, #filter_status').on('change', function() {
             table.ajax.reload();
+        });
+
+        // Select / Deselect All Checkboxes
+        $('#check-all-student').on('click', function() {
+            var checked = this.checked;
+            $('.student-checkbox').each(function() {
+                this.checked = checked;
+            });
+            toggleBulkDeleteButton();
+        });
+
+        // Individual Checkbox Click
+        $('#table-student').on('click', '.student-checkbox', function() {
+            var allChecked = $('.student-checkbox:checked').length === $('.student-checkbox').length;
+            $('#check-all-student').prop('checked', allChecked);
+            toggleBulkDeleteButton();
+        });
+
+        // Reset check all on DataTable draw/reload
+        table.on('draw', function() {
+            $('#check-all-student').prop('checked', false);
+            toggleBulkDeleteButton();
+        });
+
+        function toggleBulkDeleteButton() {
+            var checkedCount = $('.student-checkbox:checked').length;
+            if (checkedCount > 0) {
+                $('#btn-bulk-delete-student').removeClass('d-none');
+            } else {
+                $('#btn-bulk-delete-student').addClass('d-none');
+            }
+        }
+
+        // Bulk Delete Button Click
+        $('#btn-bulk-delete-student').on('click', function() {
+            var selectedIds = [];
+            $('.student-checkbox:checked').each(function() {
+                selectedIds.push($(this).val());
+            });
+
+            if (selectedIds.length === 0) {
+                return;
+            }
+
+            Swal.fire({
+                title: 'Apakah Anda yakin?',
+                text: "Menghapus " + selectedIds.length + " data santri terpilih secara massal (soft delete)?",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#3085d6',
+                confirmButtonText: 'Ya, Hapus!',
+                cancelButtonText: 'Batal'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    $.ajax({
+                        url: '{{ route('student.bulk-delete') }}',
+                        type: 'POST',
+                        data: {
+                            _token: '{{ csrf_token() }}',
+                            ids: selectedIds
+                        },
+                        success: function(response) {
+                            if (response.success) {
+                                Swal.fire(
+                                    'Terhapus!',
+                                    response.message,
+                                    'success'
+                                );
+                                table.ajax.reload();
+                            } else {
+                                Swal.fire(
+                                    'Gagal!',
+                                    response.message || 'Terjadi kesalahan saat menghapus data.',
+                                    'error'
+                                );
+                            }
+                        },
+                        error: function(xhr) {
+                            var errMsg = xhr.responseJSON ? xhr.responseJSON.message : 'Terjadi kesalahan sistem.';
+                            Swal.fire(
+                                'Gagal!',
+                                errMsg,
+                                'error'
+                            );
+                        }
+                    });
+                }
+            });
         });
     });
 </script>

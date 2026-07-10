@@ -370,8 +370,37 @@ class UserController extends Controller
             Log::error('Verification failed: ' . $e->getMessage());
             return response()->json([
                 'status' => 'error',
-                'message' => 'Terjadi kesalahan saat memverifikasi data.'
+                'message' => 'Terjadi kesalahan saat memverify data.'
             ], 500);
+        }
+    }
+
+    public function bulkDestroy(Request $request)
+    {
+        if (!Auth::user()->can('Delete Wali Santri')) {
+            return response()->json(['success' => false, 'message' => 'Maaf, Anda tidak memiliki akses untuk menghapus data wali santri'], 403);
+        }
+
+        $ids = $request->input('ids');
+        if (empty($ids) || !is_array($ids)) {
+            return response()->json(['success' => false, 'message' => 'Tidak ada data wali santri yang dipilih'], 400);
+        }
+
+        try {
+            DB::transaction(function () use ($ids) {
+                $users = User::whereIn('id', $ids)->get();
+                foreach ($users as $user) {
+                    if ($user->avatar && file_exists($user->avatar)) {
+                        unlink($user->avatar);
+                    }
+                    $user->delete();
+                }
+            });
+
+            return response()->json(['success' => true, 'message' => 'Berhasil menghapus data wali santri terpilih']);
+        } catch (\Exception $e) {
+            Log::error('Bulk delete users failed: ' . $e->getMessage());
+            return response()->json(['success' => false, 'message' => 'Gagal menghapus data wali santri terpilih: ' . $e->getMessage()], 500);
         }
     }
 }

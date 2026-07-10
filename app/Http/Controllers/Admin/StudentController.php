@@ -684,4 +684,33 @@ class StudentController extends Controller
             return redirect()->route('student.index')->with('error', 'Terjadi kesalahan saat memproses final import data: ' . $e->getMessage());
         }
     }
+
+    public function bulkDestroy(Request $request)
+    {
+        if (!Auth::user()->can('Delete Santri')) {
+            return response()->json(['success' => false, 'message' => 'Maaf, Anda tidak memiliki akses untuk menghapus data santri'], 403);
+        }
+
+        $ids = $request->input('ids');
+        if (empty($ids) || !is_array($ids)) {
+            return response()->json(['success' => false, 'message' => 'Tidak ada data santri yang dipilih'], 400);
+        }
+
+        try {
+            DB::transaction(function () use ($ids) {
+                $students = Student::whereIn('id', $ids)->get();
+                foreach ($students as $student) {
+                    if ($student->avatar && file_exists($student->avatar)) {
+                        unlink($student->avatar);
+                    }
+                    $student->delete();
+                }
+            });
+
+            return response()->json(['success' => true, 'message' => 'Berhasil menghapus data santri terpilih']);
+        } catch (\Exception $e) {
+            Log::error('Bulk delete students failed: ' . $e->getMessage());
+            return response()->json(['success' => false, 'message' => 'Gagal menghapus data santri terpilih: ' . $e->getMessage()], 500);
+        }
+    }
 }
