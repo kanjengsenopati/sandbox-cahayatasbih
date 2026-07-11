@@ -139,12 +139,21 @@
         }
     }
 
+    .wrapper,
+    #kt_content,
+    #kt_post {
+        padding-right: 0 !important;
+        margin-right: 0 !important;
+    }
+
     #kt_content_container,
+    #kt_content_container .col-xl-12,
     .tab-content,
     .tab-pane,
     #kt_contacts_main {
         width: 100% !important;
         max-width: 100% !important;
+        flex: 1 1 100% !important;
     }
 </style>
 
