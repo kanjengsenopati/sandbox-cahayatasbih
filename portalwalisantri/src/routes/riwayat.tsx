@@ -400,6 +400,7 @@ function RiwayatPage() {
 }
 
 function TxRow({ tx, open, onToggle }: { tx: Tx; open: boolean; onToggle: () => void }) {
+  const { active } = useSantri();
   const meta = CAT_META[tx.category];
   const Icon = meta.icon;
   const isIn = tx.type === "in";
