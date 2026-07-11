@@ -121,6 +121,12 @@
         border-radius: 25px;
     }
 
+    .btn-custom-purple.btn-sm {
+        padding: 6px 16px !important;
+        font-size: 11px !important;
+        border-radius: 20px !important;
+    }
+
     .btn-custom-purple:hover {
         background-color: #7A3FEF;
         border-color: #7A3FEF;
@@ -470,7 +476,7 @@
                                                                     <th class="min-w-125px">Dibayar</th>
                                                                     <th class="min-w-125px">Sisa Tagihan</th>
                                                                     <th class="text-center" style="width: 22%">Status</th>
-                                                                    <th class="text-center min-w-100px" style="width: 22%">Aksi</th>
+                                                                    <th class="text-center min-w-150px">Aksi</th>
                                                                 </tr>
                                                             </thead>
                                                             <tbody class="text-slate-700 fw-bold">
@@ -527,7 +533,7 @@
                                                                     <th class="min-w-125px">Dibayar</th>
                                                                     <th class="min-w-125px">Sisa Tagihan</th>
                                                                     <th class="text-center min-w-70px" style="width: 22%">Status</th>
-                                                                    <th class="text-center min-w-100px" style="width: 22%">Aksi</th>
+                                                                    <th class="text-center min-w-150px">Aksi</th>
                                                                 </tr>
                                                             </thead>
                                                             <tbody class="text-slate-700 fw-bold">

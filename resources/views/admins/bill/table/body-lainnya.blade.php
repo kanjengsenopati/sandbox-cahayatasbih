@@ -45,7 +45,7 @@
             $paidAmount = $bill->bills->where('student_id', $student->id)->sum('paid_amount');
             $unpaidAmount = $bill->total_unpaid;
         @endphp
-        <div class="col-md-6">
+        <div class="col-12">
             <div class="accordion-item mb-5 border border-gray-300 shadow-sm rounded-3 overflow-hidden">
         <h2 class="accordion-header" id="headingLainnya{{ $bill->id }}">
             <button class="accordion-button fs-4 fw-bold collapsed bg-light text-dark d-block" type="button" 
