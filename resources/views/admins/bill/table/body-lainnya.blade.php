@@ -91,127 +91,282 @@
 
         <div id="collapseLainnya{{ $bill->id }}" class="accordion-collapse collapse" aria-labelledby="headingLainnya{{ $bill->id }}">
             <div class="accordion-body bg-white border-top p-4 p-md-5">
-                <div class="row g-3">
-                    @foreach (array_merge(range(7, 12), range(1, 6)) as $month)
-                    @php
-                        $billDetail = $bill->bills->where('month', $month)->where('student_id', $student->id)->first();
-                        $amount = $billDetail ? $billDetail->amount : 0;
-                        $remainingAmount = $billDetail ? ($billDetail->amount - $billDetail->paid_amount) : 0;
-                        $status = $billDetail ? $billDetail->status : 'UNPAID';
-                        $isPaid = $status == 'PAID' || ($billDetail && $remainingAmount <= 0 && $amount > 0);
-                        $detailPayment = $billDetail ? $billDetail->transactions?->first() : null;
-                        
-                        $modalId = "bayarLainnya{$bill->id}_{$month}";
-                        $showModal = $billDetail && !$isPaid && $remainingAmount > 0;
-                        
-                        // Define classes based on status
-                        $cardClass = $isPaid ? 'paid' : ($remainingAmount > 0 ? 'unpaid' : 'bg-secondary bg-opacity-10');
-                        $textColor = $isPaid ? 'text-success' : ($remainingAmount > 0 ? 'text-warning' : 'text-muted');
-                    @endphp
-
-                    @if($billDetail)
-                    <div class="col-12">
-                        <div class="month-card rounded-3 p-3 px-md-4 {{ $cardClass }} {{ $showModal ? 'cursor-pointer clickable-payment-card' : '' }}">
-                            <div class="d-flex flex-column flex-md-row align-items-start align-items-md-center justify-content-between gap-3">
-                                
-                                <!-- Left side: Month & Year -->
-                                <div class="d-flex align-items-center gap-2" style="min-width: 150px;">
-                                    <span class="fw-bold fs-6 text-slate-800">
-                                        {{ \Carbon\Carbon::create()->month($month)->translatedFormat('F') }}
-                                    </span>
-                                    <span class="badge badge-secondary fs-9 text-slate-600 fw-bold">
-                                        {{ $billDetail->year ?? ($month >= 7 ? 
-                                            ($bill->academicYear->start_year ?? '-') : 
-                                            ($bill->academicYear->end_year ?? '-')) 
-                                        }}
-                                    </span>
-                                </div>
-
-                                <!-- Middle side: Nominal -->
-                                <div class="d-flex align-items-center" style="min-width: 130px;">
-                                    @if($billDetail->paid_amount > 0 && !$isPaid)
-                                        <div class="d-flex flex-column">
-                                            <span class="fw-bolder fs-5 text-amber-600">
-                                                Rp {{ number_format($remainingAmount, 0, ',', '.') }}
-                                            </span>
-                                            <span class="fs-9 text-slate-400">Sisa dari Rp {{ number_format($billDetail->amount, 0, ',', '.') }}</span>
-                                        </div>
-                                    @else
-                                        <span class="fw-bolder fs-5 {{ $isPaid ? 'text-emerald-600' : ($remainingAmount > 0 ? 'text-amber-600' : 'text-slate-400') }}">
-                                            @if($amount > 0)
-                                                Rp {{ number_format($isPaid ? ($billDetail->paid_amount ?: $billDetail->amount) : $remainingAmount, 0, ',', '.') }}
-                                            @else
-                                                -
-                                            @endif
-                                        </span>
-                                    @endif
-                                </div>
-
-                                @if($isPaid)
-                                    <!-- Paid details: Transaksi Bayar, Metode Bayar, Nama Petugas -->
-                                    <div class="d-flex flex-wrap gap-2 align-items-center text-slate-500 fs-9 flex-grow-1">
-                                        <!-- Transaksi Bayar (Tanggal) -->
-                                        @if(!empty($billDetail->paid_date))
-                                            <span class="d-inline-flex align-items-center bg-white border border-gray-200 px-2.5 py-1 rounded text-slate-600 fw-bold">
-                                                <i class="fas fa-calendar-alt text-slate-400 me-1.5 fs-9"></i>
-                                                {{ date('d/m/y', strtotime($billDetail->paid_date)) }}
-                                            </span>
-                                        @endif
-                                        
-                                        <!-- Metode Bayar -->
-                                        <span class="d-inline-flex align-items-center bg-white border border-gray-200 px-2.5 py-1 rounded text-slate-700 fw-bolder text-uppercase">
-                                            {{ $billDetail->payment_method ?? '-' }}
-                                        </span>
-                                        
-                                        <!-- Nama Petugas -->
-                                        @if(strtoupper($billDetail->payment_method) == 'TUNAI' || strtoupper($billDetail->payment_method) == 'CASH')
-                                            <span class="d-inline-flex align-items-center bg-white border border-gray-200 px-2.5 py-1 rounded text-primary fw-bold">
-                                                <i class="fas fa-user-check text-primary me-1.5 fs-9"></i>
-                                                {{ $detailPayment->admin->name ?? $detailPayment->user->name ?? 'Admin' }}
-                                            </span>
-                                        @endif
-                                    </div>
-
-                                    <!-- Right side: Badge Lunas -->
-                                    <div class="d-flex align-items-center ms-md-auto">
-                                        <span class="badge badge-success fw-bolder px-3 py-1.5 text-white">
-                                            <i class="fas fa-check-circle me-1 text-white"></i> Lunas
-                                        </span>
-                                    </div>
-                                @else
-                                    <!-- Unpaid action: Klik Bayar -->
-                                    <div class="d-flex align-items-center ms-md-auto">
-                                        @if($showModal)
-                                            <div class="form-check form-check-custom form-check-solid form-check-sm">
-                                                <input type="checkbox" 
-                                                    name="bill_months[{{ $bill->id }}][]" 
-                                                    value="{{ $month }}"
-                                                    id="bill-other-{{ $bill->id }}-{{ $month }}"
-                                                    class="form-check-input bill-month-checkbox bill-{{ $bill->id }} cursor-pointer" 
-                                                    data-bill-id="{{ $billDetail->id }}"
-                                                    data-month="{{ $billDetail->translated_month }}" 
-                                                    data-year="{{ $billDetail->year }}"
-                                                    data-bill-name="{{ $bill->name }}" 
-                                                    data-amount="{{ $remainingAmount }}"
-                                                    data-payment-input-type="{{ $bill->payment_input_type ?? 'FIXED' }}"
-                                                    onclick="event.stopPropagation()">
-                                                <label class="form-check-label fw-bold text-slate-700 ms-2 fs-7 cursor-pointer" for="bill-other-{{ $bill->id }}-{{ $month }}" onclick="event.stopPropagation()">
-                                                    Bayar
-                                                </label>
+                @if(($bill->payment_input_type ?? 'FIXED') === 'FREE')
+                    <div class="row g-5">
+                        <!-- Kolom Kiri: Pilihan Pembayaran -->
+                        <div class="col-lg-5 col-12">
+                            <h4 class="fs-6 fw-boldest text-slate-800 mb-3">
+                                <i class="fas fa-file-invoice text-primary me-2"></i> Pilihan Pembayaran
+                            </h4>
+                            <div class="row g-3">
+                                @foreach (array_merge(range(7, 12), range(1, 6)) as $month)
+                                @php
+                                    $billDetail = $bill->bills->where('month', $month)->where('student_id', $student->id)->first();
+                                    $amount = $billDetail ? $billDetail->amount : 0;
+                                    $remainingAmount = $billDetail ? ($billDetail->amount - $billDetail->paid_amount) : 0;
+                                    $status = $billDetail ? $billDetail->status : 'UNPAID';
+                                    $isPaid = $status == 'PAID' || ($billDetail && $remainingAmount <= 0 && $amount > 0);
+                                    
+                                    $modalId = "bayarLainnya{$bill->id}_{$month}";
+                                    $showModal = $billDetail && !$isPaid && $remainingAmount > 0;
+                                    
+                                    $cardClass = $isPaid ? 'paid' : ($remainingAmount > 0 ? 'unpaid' : 'bg-secondary bg-opacity-10');
+                                @endphp
+                                @if($billDetail)
+                                <div class="col-12">
+                                    <div class="month-card rounded-3 p-3 px-md-4 {{ $cardClass }} {{ $showModal ? 'cursor-pointer clickable-payment-card' : '' }}">
+                                        <div class="d-flex align-items-center justify-content-between gap-3">
+                                            <!-- Left side: Month & Year -->
+                                            <div class="d-flex align-items-center gap-2">
+                                                <span class="fw-bold fs-6 text-slate-800">
+                                                    {{ \Carbon\Carbon::create()->month($month)->translatedFormat('F') }}
+                                                </span>
+                                                <span class="badge badge-secondary fs-9 text-slate-600 fw-bold">
+                                                    {{ $billDetail->year ?? ($month >= 7 ? 
+                                                        ($bill->academicYear->start_year ?? '-') : 
+                                                        ($bill->academicYear->end_year ?? '-')) 
+                                                    }}
+                                                </span>
                                             </div>
-                                        @else
-                                            <span class="badge badge-light text-slate-400 fs-8">-</span>
-                                        @endif
+            
+                                            <!-- Middle side: Nominal -->
+                                            <div class="d-flex align-items-center ms-auto me-3">
+                                                @if($billDetail->paid_amount > 0 && !$isPaid)
+                                                    <div class="d-flex flex-column text-end">
+                                                        <span class="fw-bolder fs-5 text-amber-600">
+                                                            Rp {{ number_format($remainingAmount, 0, ',', '.') }}
+                                                        </span>
+                                                        <span class="fs-9 text-slate-400">Sisa dari Rp {{ number_format($billDetail->amount, 0, ',', '.') }}</span>
+                                                    </div>
+                                                @else
+                                                    <span class="fw-bolder fs-5 {{ $isPaid ? 'text-emerald-600' : ($remainingAmount > 0 ? 'text-amber-600' : 'text-slate-400') }}">
+                                                        Rp {{ number_format($isPaid ? ($billDetail->paid_amount ?: $billDetail->amount) : $remainingAmount, 0, ',', '.') }}
+                                                    </span>
+                                                @endif
+                                            </div>
+            
+                                            <!-- Right side: Status / Checkbox -->
+                                            <div>
+                                                @if($isPaid)
+                                                    <span class="badge badge-success fw-bolder px-3 py-1.5 text-white">
+                                                        <i class="fas fa-check-circle me-1 text-white"></i> Lunas
+                                                    </span>
+                                                @elseif($showModal)
+                                                    <div class="form-check form-check-custom form-check-solid form-check-sm">
+                                                        <input type="checkbox" 
+                                                            name="bill_months[{{ $bill->id }}][]" 
+                                                            value="{{ $month }}"
+                                                            id="bill-other-{{ $bill->id }}-{{ $month }}"
+                                                            class="form-check-input bill-month-checkbox bill-{{ $bill->id }} cursor-pointer" 
+                                                            data-bill-id="{{ $billDetail->id }}"
+                                                            data-month="{{ $billDetail->translated_month }}" 
+                                                            data-year="{{ $billDetail->year }}"
+                                                            data-bill-name="{{ $bill->name }}" 
+                                                            data-amount="{{ $remainingAmount }}"
+                                                            data-payment-input-type="{{ $bill->payment_input_type ?? 'FIXED' }}"
+                                                            onclick="event.stopPropagation()">
+                                                        <label class="form-check-label fw-bold text-slate-700 ms-2 fs-7 cursor-pointer" for="bill-other-{{ $bill->id }}-{{ $month }}" onclick="event.stopPropagation()">
+                                                            Bayar
+                                                        </label>
+                                                    </div>
+                                                @else
+                                                    <span class="badge badge-light text-slate-400 fs-8">-</span>
+                                                @endif
+                                            </div>
+                                        </div>
                                     </div>
+                                </div>
                                 @endif
-
+                                @endforeach
                             </div>
                         </div>
+                        
+                        <!-- Kolom Kanan: Riwayat Pembayaran -->
+                        <div class="col-lg-7 col-12 border-start border-gray-200 ps-lg-5">
+                            <h4 class="fs-6 fw-boldest text-slate-800 mb-3">
+                                <i class="fas fa-history text-primary me-2"></i> Riwayat Pembayaran
+                            </h4>
+                            @php
+                                $firstBillDetail = $bill->bills->where('student_id', $student->id)->first();
+                                $historyDetails = [];
+                                if ($firstBillDetail) {
+                                    $historyDetails = \App\Models\TransactionDetail::where('bill_id', $firstBillDetail->id)
+                                        ->whereHas('transaction', fn($q) => $q->where('status', \App\Models\Transaction::STATUS_PAID))
+                                        ->with(['transaction.admin', 'transaction.paymentMethod'])
+                                        ->orderBy('created_at', 'asc')
+                                        ->get();
+                                }
+                            @endphp
+                            
+                            @if(count($historyDetails) > 0)
+                                <div class="table-responsive">
+                                    <table class="table table-striped table-hover align-middle table-rounded border gy-3 gs-4 fs-7 fw-bold">
+                                        <thead>
+                                            <tr class="fw-boldest text-slate-700 bg-light text-uppercase tracking-wider">
+                                                <th style="width: 5%">No</th>
+                                                <th>Tgl Transaksi</th>
+                                                <th>Nominal Bayar</th>
+                                                <th>Petugas</th>
+                                                <th>Sisa Tagihan</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @php
+                                                $runningRemaining = $firstBillDetail->amount;
+                                            @endphp
+                                            @foreach($historyDetails as $detail)
+                                                @php
+                                                    $paidAmt = $detail->amount ?? $firstBillDetail->amount;
+                                                    $runningRemaining -= $paidAmt;
+                                                @endphp
+                                                <tr class="text-slate-600">
+                                                    <td>{{ $loop->iteration }}</td>
+                                                    <td>{{ $detail->transaction->paid_at ? date('d/m/Y H:i', strtotime($detail->transaction->paid_at)) : '-' }}</td>
+                                                    <td class="text-emerald-600 fw-boldest">Rp {{ number_format($paidAmt, 0, ',', '.') }}</td>
+                                                    <td>
+                                                        @if($detail->transaction->paymentMethod?->type == \App\Models\PaymentMethod::TYPE_BALANCE || $detail->saldo_history_id)
+                                                            <span class="badge badge-light-primary fw-bolder px-2 py-0.5 fs-9">SALDO</span>
+                                                        @else
+                                                            {{ $detail->transaction->admin->name ?? $detail->transaction->user->name ?? 'Admin' }}
+                                                        @endif
+                                                    </td>
+                                                    <td class="text-danger fw-boldest">Rp {{ number_format(max(0, $runningRemaining), 0, ',', '.') }}</td>
+                                                </tr>
+                                            @endforeach
+                                        </tbody>
+                                    </table>
+                                </div>
+                            @else
+                                <div class="text-center py-5 bg-light rounded-3 text-slate-400 fs-7">
+                                    <i class="fas fa-info-circle me-1"></i> Belum ada riwayat pembayaran untuk tagihan ini.
+                                </div>
+                            @endif
+                        </div>
                     </div>
-                    @endif
-                    @endforeach
-                </div>
+                @else
+                    <div class="row g-3">
+                        @foreach (array_merge(range(7, 12), range(1, 6)) as $month)
+                        @php
+                            $billDetail = $bill->bills->where('month', $month)->where('student_id', $student->id)->first();
+                            $amount = $billDetail ? $billDetail->amount : 0;
+                            $remainingAmount = $billDetail ? ($billDetail->amount - $billDetail->paid_amount) : 0;
+                            $status = $billDetail ? $billDetail->status : 'UNPAID';
+                            $isPaid = $status == 'PAID' || ($billDetail && $remainingAmount <= 0 && $amount > 0);
+                            $detailPayment = $billDetail ? $billDetail->transactions?->first() : null;
+                            
+                            $modalId = "bayarLainnya{$bill->id}_{$month}";
+                            $showModal = $billDetail && !$isPaid && $remainingAmount > 0;
+                            
+                            // Define classes based on status
+                            $cardClass = $isPaid ? 'paid' : ($remainingAmount > 0 ? 'unpaid' : 'bg-secondary bg-opacity-10');
+                            $textColor = $isPaid ? 'text-success' : ($remainingAmount > 0 ? 'text-warning' : 'text-muted');
+                        @endphp
+    
+                        @if($billDetail)
+                        <div class="col-12">
+                            <div class="month-card rounded-3 p-3 px-md-4 {{ $cardClass }} {{ $showModal ? 'cursor-pointer clickable-payment-card' : '' }}">
+                                <div class="d-flex flex-column flex-md-row align-items-start align-items-md-center justify-content-between gap-3">
+                                    
+                                    <!-- Left side: Month & Year -->
+                                    <div class="d-flex align-items-center gap-2" style="min-width: 150px;">
+                                        <span class="fw-bold fs-6 text-slate-800">
+                                            {{ \Carbon\Carbon::create()->month($month)->translatedFormat('F') }}
+                                        </span>
+                                        <span class="badge badge-secondary fs-9 text-slate-600 fw-bold">
+                                            {{ $billDetail->year ?? ($month >= 7 ? 
+                                                ($bill->academicYear->start_year ?? '-') : 
+                                                ($bill->academicYear->end_year ?? '-')) 
+                                            }}
+                                        </span>
+                                    </div>
+    
+                                    <!-- Middle side: Nominal -->
+                                    <div class="d-flex align-items-center" style="min-width: 130px;">
+                                        @if($billDetail->paid_amount > 0 && !$isPaid)
+                                            <div class="d-flex flex-column">
+                                                <span class="fw-bolder fs-5 text-amber-600">
+                                                    Rp {{ number_format($remainingAmount, 0, ',', '.') }}
+                                                </span>
+                                                <span class="fs-9 text-slate-400">Sisa dari Rp {{ number_format($billDetail->amount, 0, ',', '.') }}</span>
+                                            </div>
+                                        @else
+                                            <span class="fw-bolder fs-5 {{ $isPaid ? 'text-emerald-600' : ($remainingAmount > 0 ? 'text-amber-600' : 'text-slate-400') }}">
+                                                @if($amount > 0)
+                                                    Rp {{ number_format($isPaid ? ($billDetail->paid_amount ?: $billDetail->amount) : $remainingAmount, 0, ',', '.') }}
+                                                @else
+                                                    -
+                                                @endif
+                                            </span>
+                                        @endif
+                                    </div>
+    
+                                    @if($isPaid)
+                                        <!-- Paid details: Transaksi Bayar, Metode Bayar, Nama Petugas -->
+                                        <div class="d-flex flex-wrap gap-2 align-items-center text-slate-500 fs-9 flex-grow-1">
+                                            <!-- Transaksi Bayar (Tanggal) -->
+                                            @if(!empty($billDetail->paid_date))
+                                                <span class="d-inline-flex align-items-center bg-white border border-gray-200 px-2.5 py-1 rounded text-slate-600 fw-bold">
+                                                    <i class="fas fa-calendar-alt text-slate-400 me-1.5 fs-9"></i>
+                                                    {{ date('d/m/y', strtotime($billDetail->paid_date)) }}
+                                                </span>
+                                            @endif
+                                            
+                                            <!-- Metode Bayar -->
+                                            <span class="d-inline-flex align-items-center bg-white border border-gray-200 px-2.5 py-1 rounded text-slate-700 fw-bolder text-uppercase">
+                                                {{ $billDetail->payment_method ?? '-' }}
+                                            </span>
+                                            
+                                            <!-- Nama Petugas -->
+                                            @if(strtoupper($billDetail->payment_method) == 'TUNAI' || strtoupper($billDetail->payment_method) == 'CASH')
+                                                <span class="d-inline-flex align-items-center bg-white border border-gray-200 px-2.5 py-1 rounded text-primary fw-bold">
+                                                    <i class="fas fa-user-check text-primary me-1.5 fs-9"></i>
+                                                    {{ $detailPayment->admin->name ?? $detailPayment->user->name ?? 'Admin' }}
+                                                </span>
+                                            @endif
+                                        </div>
+    
+                                        <!-- Right side: Badge Lunas -->
+                                        <div class="d-flex align-items-center ms-md-auto">
+                                            <span class="badge badge-success fw-bolder px-3 py-1.5 text-white">
+                                                <i class="fas fa-check-circle me-1 text-white"></i> Lunas
+                                            </span>
+                                        </div>
+                                    @else
+                                        <!-- Unpaid action: Klik Bayar -->
+                                        <div class="d-flex align-items-center ms-md-auto">
+                                            @if($showModal)
+                                                <div class="form-check form-check-custom form-check-solid form-check-sm">
+                                                    <input type="checkbox" 
+                                                        name="bill_months[{{ $bill->id }}][]" 
+                                                        value="{{ $month }}"
+                                                        id="bill-other-{{ $bill->id }}-{{ $month }}"
+                                                        class="form-check-input bill-month-checkbox bill-{{ $bill->id }} cursor-pointer" 
+                                                        data-bill-id="{{ $billDetail->id }}"
+                                                        data-month="{{ $billDetail->translated_month }}" 
+                                                        data-year="{{ $billDetail->year }}"
+                                                        data-bill-name="{{ $bill->name }}" 
+                                                        data-amount="{{ $remainingAmount }}"
+                                                        data-payment-input-type="{{ $bill->payment_input_type ?? 'FIXED' }}"
+                                                        onclick="event.stopPropagation()">
+                                                    <label class="form-check-label fw-bold text-slate-700 ms-2 fs-7 cursor-pointer" for="bill-other-{{ $bill->id }}-{{ $month }}" onclick="event.stopPropagation()">
+                                                        Bayar
+                                                    </label>
+                                                </div>
+                                            @else
+                                                <span class="badge badge-light text-slate-400 fs-8">-</span>
+                                            @endif
+                                        </div>
+                                    @endif
+    
+                                </div>
+                            </div>
+                        </div>
+                        @endif
+                        @endforeach
+                    </div>
+                @endif
             </div>
+        </div>
             </div>
         </div>
     </div>
