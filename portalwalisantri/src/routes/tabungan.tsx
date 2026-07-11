@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { fetchSavingHistories } from "@/lib/api";
 import { useSantri } from "@/contexts/SantriContext";
 import { useState } from "react";
+import { safeParseDate } from "@/lib/utils";
 
 export const Route = createFileRoute("/tabungan")({
   component: Tabungan,
@@ -161,7 +162,7 @@ function Tabungan() {
                           {log.description || (isIncome ? "Penyetoran Mandiri" : "Penarikan Jajan")}
                         </p>
                         <p className="text-[10px] text-muted-foreground mt-0.5">
-                          {new Date(log.created_at).toLocaleDateString("id-ID", {
+                          {safeParseDate(log.created_at).toLocaleDateString("id-ID", {
                             day: "numeric",
                             month: "short",
                             year: "numeric",

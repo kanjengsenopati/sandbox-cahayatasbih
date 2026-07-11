@@ -6,6 +6,26 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 /**
+ * Safe parser for dates, handling ISO 8601 strings and Indonesian/European DD-MM-YYYY format
+ */
+export function safeParseDate(dateStr: any): Date {
+  if (!dateStr) return new Date();
+  if (dateStr instanceof Date) return dateStr;
+  
+  const str = String(dateStr).trim();
+  
+  // Match DD-MM-YYYY HH:mm:ss or DD-MM-YYYY HH:mm
+  const dmyMatch = str.match(/^(\d{2})-(\d{2})-(\d{4})(?:\s+(\d{2}):(\d{2})(?::(\d{2}))?)?/);
+  if (dmyMatch) {
+    const [_, day, month, year, hour = "00", minute = "00", second = "00"] = dmyMatch;
+    return new Date(Number(year), Number(month) - 1, Number(day), Number(hour), Number(minute), Number(second));
+  }
+  
+  return new Date(str);
+}
+
+
+/**
  * Resolves an image URL to bypass Nginx static file 404s on VPS environments
  * without a proper public/storage symlink.
  */

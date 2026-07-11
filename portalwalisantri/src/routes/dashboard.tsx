@@ -31,7 +31,7 @@ import { useSantri } from "@/contexts/SantriContext";
 import { SantriSwitcherTrigger } from "@/components/SantriSwitcher";
 import { useQuery } from "@tanstack/react-query";
 import { fetchDashboard, fetchInformations } from "@/lib/api";
-import { resolveImageUrl } from "@/lib/utils";
+import { resolveImageUrl, safeParseDate } from "@/lib/utils";
 import { Text } from "@/components/Text";
 
 export const Route = createFileRoute("/dashboard")({
@@ -372,7 +372,7 @@ function Dashboard() {
                           {STATUS_MAP[t.status] || t.status}
                         </span>
                       )}
-                      <span>{t.created_at ? new Date(t.created_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) : "-"}</span>
+                      <span>{t.created_at ? safeParseDate(t.created_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) : "-"}</span>
                       {t.merchant && (
                         <>
                           <span className="text-border">·</span>
@@ -470,7 +470,7 @@ function Dashboard() {
                         {info.information_category?.name || "INFORMASI"}
                       </span>
                       <span className="text-[12px] italic text-slate-400">
-                        {new Date(info.created_at).toLocaleDateString("id-ID", {
+                        {safeParseDate(info.created_at).toLocaleDateString("id-ID", {
                           day: "numeric",
                           month: "short",
                           year: "numeric",

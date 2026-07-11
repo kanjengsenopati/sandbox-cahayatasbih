@@ -4,7 +4,7 @@ import { fetchInformationDetail } from "@/lib/api";
 import { ArrowLeft, Calendar, Tag, Loader2, ImageOff } from "lucide-react";
 import { MobileShell } from "@/components/MobileShell";
 import { useState } from "react";
-import { resolveImageUrl } from "@/lib/utils";
+import { resolveImageUrl, safeParseDate } from "@/lib/utils";
 
 export const Route = createFileRoute("/berita/$newsId")({
   component: BeritaDetail,
@@ -50,7 +50,7 @@ function BeritaDetail() {
 
   const imageUrl = resolveImageUrl(data.image);
 
-  const formattedDate = new Date(data.created_at).toLocaleDateString("id-ID", {
+  const formattedDate = safeParseDate(data.created_at).toLocaleDateString("id-ID", {
     weekday: "long",
     day: "numeric",
     month: "long",

@@ -2,6 +2,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { Heart, ArrowLeft, Loader2, Sparkles, AlertTriangle, ShieldCheck, Calendar } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { fetchCounseling } from "@/lib/api";
+import { safeParseDate } from "@/lib/utils";
 
 export const Route = createFileRoute("/perilaku")({
   component: Perilaku,
@@ -147,7 +148,7 @@ function Perilaku() {
                 >
                   <div className="flex justify-between items-start gap-2 mb-2">
                     <span className="text-[10px] uppercase font-bold text-muted-foreground">
-                      {new Date(log.created_at).toLocaleDateString("id-ID", {
+                      {safeParseDate(log.created_at).toLocaleDateString("id-ID", {
                         day: "numeric",
                         month: "long",
                         year: "numeric"

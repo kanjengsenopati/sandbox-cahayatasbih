@@ -14,6 +14,7 @@ import { useSantri } from "@/contexts/SantriContext";
 import { SantriSwitcherTrigger } from "@/components/SantriSwitcher";
 import { useQuery } from "@tanstack/react-query";
 import { fetchBills } from "@/lib/api";
+import { safeParseDate } from "@/lib/utils";
 
 export const Route = createFileRoute("/tagihan")({
   component: Tagihan,
@@ -47,7 +48,7 @@ function Tagihan() {
       category: b.academic_year || "Lainnya",
       total: b.total,
       paid: b.paid,
-      due: b.due_date ? `Jatuh tempo: ${new Date(b.due_date).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}` : "",
+      due: b.due_date ? `Jatuh tempo: ${safeParseDate(b.due_date).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}` : "",
     }));
   }, [billsData]);
 

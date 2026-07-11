@@ -2,6 +2,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { BookOpen, ArrowLeft, Loader2, BookMarked, Calendar, MessageSquare } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { fetchTahfidz } from "@/lib/api";
+import { safeParseDate } from "@/lib/utils";
 
 export const Route = createFileRoute("/tahfidz")({
   component: Tahfidz,
@@ -123,7 +124,7 @@ function Tahfidz() {
                   <div className="bg-card rounded-3xl border border-border shadow-[var(--shadow-soft)] p-5">
                     <div className="flex justify-between items-start gap-2 mb-2">
                       <span className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">
-                        {new Date(log.deposit_date).toLocaleDateString("id-ID", {
+                        {safeParseDate(log.deposit_date).toLocaleDateString("id-ID", {
                           day: "numeric",
                           month: "long",
                           year: "numeric"

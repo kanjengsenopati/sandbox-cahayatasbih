@@ -24,6 +24,7 @@ import { useSantri } from "@/contexts/SantriContext";
 import { useQuery } from "@tanstack/react-query";
 import { fetchSaldoHistories, fetchPosTransactions, fetchBillTransactions } from "@/lib/api";
 import { Text } from "@/components/Text";
+import { safeParseDate } from "@/lib/utils";
 
 export const Route = createFileRoute("/riwayat")({
   component: RiwayatPage,
@@ -108,11 +109,11 @@ const fmt = (n: number) =>
   new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0 }).format(n);
 
 const fmtDate = (iso: string) => {
-  const d = new Date(iso);
+  const d = safeParseDate(iso);
   return d.toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" });
 };
 const fmtTime = (iso: string) =>
-  new Date(iso).toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" });
+  safeParseDate(iso).toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" });
 
 type DateRange = "all" | "today" | "7d" | "30d";
 
@@ -214,7 +215,7 @@ function RiwayatPage() {
       cashier: b.cashier,
     }));
 
-    return [...saldoMapped, ...posMapped, ...billMapped].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    return [...saldoMapped, ...posMapped, ...billMapped].sort((a, b) => safeParseDate(b.date).getTime() - safeParseDate(a.date).getTime());
   }, [saldoHistories, posTransactions, billTransactions]);
 
   const filtered = useMemo(() => {
