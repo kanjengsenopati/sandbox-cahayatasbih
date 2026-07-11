@@ -210,7 +210,7 @@ class PaymentRateController extends Controller
 
     private function getBillData(string $id, array $dateRange)
     {
-        $paymentRate = PaymentRate::with(['paymentRateItems'])->findOrFail($id);
+        $paymentRate = PaymentRate::with(['paymentRateItems', 'paymentRateClassrooms', 'paymentRateStudents'])->findOrFail($id);
 
         // Get all relevant payment rate item IDs once
         $paymentRateItemIds = $paymentRate->paymentRateItems->pluck('id')->toArray();
@@ -222,9 +222,43 @@ class PaymentRateController extends Controller
                 // Optimize loading classroom
                 $q->select('id', 'name');
             }])
-            // Optimization: Calculate aggregates in DB using withSum/withCount or raw selects
-            // We use withSum for readability and Laravel conventions
-            ->withSum(['bills as total' => function ($q) use ($paymentRate, $paymentRateItemIds, $dateRange) {
+            ->where('status', 'ACTIVE');
+
+        // Apply Payment Rate target filter (Classrooms or Students)
+        if ($paymentRate->type === PaymentRate::TYPE_REGULAR) {
+            $classroomIds = $paymentRate->paymentRateClassrooms->pluck('classroom_id')->toArray();
+            $query->whereIn('classroom_id', $classroomIds);
+        } else {
+            $studentIds = $paymentRate->paymentRateStudents->pluck('student_id')->toArray();
+            $query->whereIn('id', $studentIds);
+        }
+
+        // Apply Payment Rate Gender Filter
+        if ($paymentRate->gender) {
+            $query->whereIn('gender', explode(',', $paymentRate->gender));
+        }
+
+        // Apply Payment Rate Parent Jamaah Status Filter
+        if ($paymentRate->jamaah_status) {
+            $query->whereHas('user', function ($userQ) use ($paymentRate) {
+                $userQ->whereIn('jamaah_status', explode(',', $paymentRate->jamaah_status));
+            });
+        }
+
+        // Apply School Filter
+        if (request()->school_id && request()->school_id !== 'null') {
+            $query->whereHas('classroom', function ($q) {
+                $q->where('school_id', request()->school_id);
+            });
+        }
+
+        // Apply Classroom Filter
+        if (request()->classroom_id && request()->classroom_id !== 'null') {
+            $query->where('classroom_id', request()->classroom_id);
+        }
+
+        // Calculate aggregates in DB using withSum/withCount
+        $query->withSum(['bills as total' => function ($q) use ($paymentRate, $paymentRateItemIds, $dateRange) {
                 $q->where('bill_type_id', $paymentRate->bill_type_id)
                     ->whereIn('payment_rate_item_id', $paymentRateItemIds);
 
@@ -240,24 +274,7 @@ class PaymentRateController extends Controller
                 if ($dateRange['startYear'] && $dateRange['endYear']) {
                     ($this->dateRangeFilter($dateRange))($q);
                 }
-            }], 'amount')
-            // Only include students who ACTUALLY have bills for this payment rate
-            ->whereHas('bills', function ($q) use ($paymentRate, $paymentRateItemIds) {
-                $q->where('bill_type_id', $paymentRate->bill_type_id)
-                    ->whereIn('payment_rate_item_id', $paymentRateItemIds);
-            });
-
-        // Apply School Filter
-        if (request()->school_id && request()->school_id !== 'null') {
-            $query->whereHas('classroom', function ($q) {
-                $q->where('school_id', request()->school_id);
-            });
-        }
-
-        // Apply Classroom Filter
-        if (request()->classroom_id && request()->classroom_id !== 'null') {
-            $query->where('classroom_id', request()->classroom_id);
-        }
+            }], 'amount');
 
         return DataTables::of($query)
             ->addColumn('classroom', fn($student) => $student->classroom->name ?? '-')
