@@ -43,10 +43,10 @@ class BillTypeController extends Controller
                     return "<i class='fas fa-money-bill-wave'></i> <a href='$action'>Tarif Pembayaran</a>";
                 })
                 ->editColumn('type', function ($data) {
-                    if ($data->type == BillType::TYPE_MONTHLY) {
-                        return '<span class="badge badge-light-primary fw-bolder px-2 py-1">Bulanan</span>';
-                    }
-                    return '<span class="badge badge-light-success fw-bolder px-2 py-1">Bebas</span>';
+                    $typeStr = $data->type == BillType::TYPE_MONTHLY ? 'Bulanan' : 'Bebas';
+                    $badgeClass = $data->type == BillType::TYPE_MONTHLY ? 'primary' : 'success';
+                    $inputStr = $data->payment_input_type == 'FREE' ? ' (Cicilan)' : ' (Fix)';
+                    return '<span class="badge badge-light-' . $badgeClass . ' fw-bolder px-2 py-1">' . $typeStr . $inputStr . '</span>';
                 })
                 ->addColumn('bank', function ($data) {
                     $bank = "";

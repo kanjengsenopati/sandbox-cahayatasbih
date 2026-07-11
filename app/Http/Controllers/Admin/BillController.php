@@ -83,22 +83,15 @@ class BillController extends Controller
 
     private function calculateBillTotals($item, $studentId)
     {
-        $item->total_unpaid = $this->sumBillAmount($studentId, $item->id, Bill::STATUS_UNPAID);
-        $item->total_paid = $this->sumBillAmount($studentId, $item->id, Bill::STATUS_PAID);
-        $item->total_bill = $this->sumBillAmount($studentId, $item->id);
+        $bills = Bill::where('student_id', $studentId)
+            ->where('bill_type_id', $item->id)
+            ->get();
+
+        $item->total_bill = $bills->sum('amount');
+        $item->total_paid = $bills->sum('paid_amount');
+        $item->total_unpaid = max(0, $item->total_bill - $item->total_paid);
 
         return $item;
-    }
-
-    private function sumBillAmount($studentId, $billTypeId, $status = null)
-    {
-        $query = Bill::where('student_id', $studentId)
-            ->where('bill_type_id', $billTypeId);
-        if ($status) {
-            $query->where('status', $status);
-        }
-
-        return $query->sum('amount');
     }
 
     private function getTransactionData()

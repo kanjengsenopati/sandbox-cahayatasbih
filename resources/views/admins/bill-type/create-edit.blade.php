@@ -154,6 +154,21 @@
 
                                         <div class="fv-row mb-7">
                                             <!--begin::Label-->
+                                            <label class="fs-6 fw-bold form-label mt-3" for="payment_input_type">
+                                                <span class="required">Metode Input Nominal</span>
+                                                <i class="fas fa-exclamation-circle ms-1 fs-7" data-bs-toggle="tooltip"
+                                                    title="Pilih metode input nominal (Wajib)"></i>
+                                            </label>
+                                            <!--end::Label-->
+                                            <!--begin::Input-->
+                                            <select name="payment_input_type" id="payment_input_type" class="form-select form-select-solid" required>
+                                                <option value="FIXED" {{ (old('payment_input_type') ?? @$billType->payment_input_type) == 'FIXED' ? 'selected' : '' }}>Fix Amount</option>
+                                                <option value="FREE" {{ (old('payment_input_type') ?? @$billType->payment_input_type) == 'FREE' ? 'selected' : '' }}>Nominal Bebas (Cicilan)</option>
+                                            </select>
+                                        </div>
+
+                                        <div class="fv-row mb-7">
+                                            <!--begin::Label-->
                                             <label class="fs-6 fw-bold form-label mt-3" for="billTypeBank">
                                                 <span class="required">Bank Pembayaran</span>
                                                 <i class="fas fa-exclamation-circle ms-1 fs-7" data-bs-toggle="tooltip"

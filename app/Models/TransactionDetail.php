@@ -14,6 +14,7 @@ class TransactionDetail extends Model
     protected $fillable  = [
         'transaction_id',
         'bill_id',
+        'amount',
         'saldo_history_id',
         'saving_history_id',
         'ppdb_registration_id',

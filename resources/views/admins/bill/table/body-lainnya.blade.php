@@ -96,16 +96,17 @@
                     @php
                         $billDetail = $bill->bills->where('month', $month)->where('student_id', $student->id)->first();
                         $amount = $billDetail ? $billDetail->amount : 0;
+                        $remainingAmount = $billDetail ? ($billDetail->amount - $billDetail->paid_amount) : 0;
                         $status = $billDetail ? $billDetail->status : 'UNPAID';
-                        $isPaid = $status == 'PAID';
+                        $isPaid = $status == 'PAID' || ($billDetail && $remainingAmount <= 0 && $amount > 0);
                         $detailPayment = $billDetail ? $billDetail->transactions?->first() : null;
                         
                         $modalId = "bayarLainnya{$bill->id}_{$month}";
-                        $showModal = $billDetail && !$isPaid && $amount > 0;
+                        $showModal = $billDetail && !$isPaid && $remainingAmount > 0;
                         
                         // Define classes based on status
-                        $cardClass = $isPaid ? 'paid' : ($amount > 0 ? 'unpaid' : 'bg-secondary bg-opacity-10');
-                        $textColor = $isPaid ? 'text-success' : ($amount > 0 ? 'text-warning' : 'text-muted');
+                        $cardClass = $isPaid ? 'paid' : ($remainingAmount > 0 ? 'unpaid' : 'bg-secondary bg-opacity-10');
+                        $textColor = $isPaid ? 'text-success' : ($remainingAmount > 0 ? 'text-warning' : 'text-muted');
                     @endphp
 
                     @if($billDetail)
@@ -128,13 +129,22 @@
 
                                 <!-- Middle side: Nominal -->
                                 <div class="d-flex align-items-center" style="min-width: 130px;">
-                                    <span class="fw-bolder fs-5 {{ $isPaid ? 'text-emerald-600' : ($amount > 0 ? 'text-amber-600' : 'text-slate-400') }}">
-                                        @if($amount > 0)
-                                            Rp {{ number_format($amount, 0, ',', '.') }}
-                                        @else
-                                            -
-                                        @endif
-                                    </span>
+                                    @if($billDetail->paid_amount > 0 && !$isPaid)
+                                        <div class="d-flex flex-column">
+                                            <span class="fw-bolder fs-5 text-amber-600">
+                                                Rp {{ number_format($remainingAmount, 0, ',', '.') }}
+                                            </span>
+                                            <span class="fs-9 text-slate-400">Sisa dari Rp {{ number_format($billDetail->amount, 0, ',', '.') }}</span>
+                                        </div>
+                                    @else
+                                        <span class="fw-bolder fs-5 {{ $isPaid ? 'text-emerald-600' : ($remainingAmount > 0 ? 'text-amber-600' : 'text-slate-400') }}">
+                                            @if($amount > 0)
+                                                Rp {{ number_format($isPaid ? ($billDetail->paid_amount ?: $billDetail->amount) : $remainingAmount, 0, ',', '.') }}
+                                            @else
+                                                -
+                                            @endif
+                                        </span>
+                                    @endif
                                 </div>
 
                                 @if($isPaid)
@@ -182,7 +192,8 @@
                                                     data-month="{{ $billDetail->translated_month }}" 
                                                     data-year="{{ $billDetail->year }}"
                                                     data-bill-name="{{ $bill->name }}" 
-                                                    data-amount="{{ $amount }}"
+                                                    data-amount="{{ $remainingAmount }}"
+                                                    data-payment-input-type="{{ $bill->payment_input_type ?? 'FIXED' }}"
                                                     onclick="event.stopPropagation()">
                                                 <label class="form-check-label fw-bold text-slate-700 ms-2 fs-7 cursor-pointer" for="bill-other-{{ $bill->id }}-{{ $month }}" onclick="event.stopPropagation()">
                                                     Bayar

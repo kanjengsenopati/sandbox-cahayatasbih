@@ -23,6 +23,7 @@ class Bill extends Model
         'academic_year_id',
         'month',
         'amount',
+        'paid_amount',
         'status',
         'year',
         'payment_rate_item_id',
@@ -30,12 +31,14 @@ class Bill extends Model
 
     protected $casts = [
         'amount' => 'integer',
+        'paid_amount' => 'integer',
         'month' => 'integer',
     ];
 
     protected $appends = [
         'translated_month',
         'translated_status',
+        'remaining_amount',
         // 'paid_date',
         // 'payment_method',
     ];
@@ -159,5 +162,10 @@ class Bill extends Model
     public function paymentRateItems()
     {
         return $this->belongsTo(PaymentRateItem::class, 'payment_rate_item_id');
+    }
+
+    public function getRemainingAmountAttribute()
+    {
+        return max(0, $this->amount - $this->paid_amount);
     }
 }

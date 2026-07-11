@@ -18,6 +18,7 @@ class BillType extends Model
         'academic_year_id',
         'name',
         'type',
+        'payment_input_type',
         'use_wali_filter',
         'use_gender_filter',
     ];

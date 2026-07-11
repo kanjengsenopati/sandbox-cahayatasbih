@@ -24,6 +24,7 @@ class BillTypeRequest extends FormRequest
         return [
             'name' => 'required|string|max:255',
             'type' => 'required|string|in:MONTHLY,OTHER',
+            'payment_input_type' => 'nullable|string|in:FIXED,FREE',
             'bill_item_id' => 'required|exists:bill_items,id',
             'academic_year_id' => 'required|exists:academic_years,id',
             'use_wali_filter' => 'nullable|boolean',

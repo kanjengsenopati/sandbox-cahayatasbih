@@ -116,16 +116,17 @@
                     @php
                         $billDetail = $bill->bills->where('month', $month)->where('student_id', $student->id)->first();
                         $amount = $billDetail ? $billDetail->amount : 0;
+                        $remainingAmount = $billDetail ? ($billDetail->amount - $billDetail->paid_amount) : 0;
                         $status = $billDetail ? $billDetail->status : 'UNPAID';
-                        $isPaid = $status == 'PAID';
+                        $isPaid = $status == 'PAID' || ($billDetail && $remainingAmount <= 0 && $amount > 0);
                         $detailPayment = $billDetail ? $billDetail->transactions?->first() : null;
                         
                         $modalId = "bayarKilat{$bill->id}_{$month}";
-                        $showModal = $billDetail && !$isPaid && $amount > 0;
+                        $showModal = $billDetail && !$isPaid && $remainingAmount > 0;
                         
                         // Define classes based on status
-                        $cardClass = $isPaid ? 'paid' : ($amount > 0 ? 'unpaid' : 'bg-secondary bg-opacity-10');
-                        $textColor = $isPaid ? 'text-success' : ($amount > 0 ? 'text-warning' : 'text-muted');
+                        $cardClass = $isPaid ? 'paid' : ($remainingAmount > 0 ? 'unpaid' : 'bg-secondary bg-opacity-10');
+                        $textColor = $isPaid ? 'text-success' : ($remainingAmount > 0 ? 'text-warning' : 'text-muted');
                     @endphp
 
                     @if($billDetail)
@@ -146,9 +147,16 @@
 
                             <!-- Body: Amount -->
                             <div class="text-center my-2">
-                                <span class="fw-bolder fs-5 {{ $isPaid ? 'text-emerald-600' : ($amount > 0 ? 'text-amber-600' : 'text-slate-400') }}">
-                                    Rp {{ number_format($amount, 0, ',', '.') }}
-                                </span>
+                                @if($billDetail->paid_amount > 0 && !$isPaid)
+                                    <span class="fw-bolder fs-5 text-amber-600">
+                                        Rp {{ number_format($remainingAmount, 0, ',', '.') }}
+                                    </span>
+                                    <div class="fs-9 text-slate-400">Sisa dari Rp {{ number_format($billDetail->amount, 0, ',', '.') }}</div>
+                                @else
+                                    <span class="fw-bolder fs-5 {{ $isPaid ? 'text-emerald-600' : ($remainingAmount > 0 ? 'text-amber-600' : 'text-slate-400') }}">
+                                        Rp {{ number_format($isPaid ? ($billDetail->paid_amount ?: $billDetail->amount) : $remainingAmount, 0, ',', '.') }}
+                                    </span>
+                                @endif
                                 @if($isPaid && $detailPayment)
                                     <div class="fs-9 text-slate-500 mt-2 pt-2 border-top border-gray-200">
                                         <div class="d-flex justify-content-center align-items-center mb-1 fw-bold">
@@ -183,7 +191,8 @@
                                             data-month="{{ $billDetail->translated_month }}" 
                                             data-year="{{ $billDetail->year }}"
                                             data-bill-name="{{ $bill->name }}" 
-                                            data-amount="{{ $amount }}"
+                                            data-amount="{{ $remainingAmount }}"
+                                            data-payment-input-type="{{ $bill->payment_input_type ?? 'FIXED' }}"
                                             onclick="event.stopPropagation()">
                                         <label class="form-check-label fw-bold text-slate-700 ms-2 fs-7 cursor-pointer" for="bill-month-{{ $bill->id }}-{{ $month }}" onclick="event.stopPropagation()">
                                             Bayar
@@ -285,8 +294,6 @@
 
                 paymentDetails.innerHTML = ''; // Clear previous details
 
-                let totalAmount = 0;
-
                 // Remove any existing bill_ids hidden inputs
                 document.querySelectorAll('input[name="bill_ids[]"]').forEach(input => input.remove());
 
@@ -295,87 +302,142 @@
                     const billName = checkbox.getAttribute('data-bill-name');
                     const translatedMonth = checkbox.getAttribute('data-month');
                     const year = checkbox.getAttribute('data-year');
-                    const month = checkbox.value;
                     const amount = parseInt(checkbox.getAttribute('data-amount'));
+                    const inputType = checkbox.getAttribute('data-payment-input-type') || 'FIXED';
 
                     if (!isNaN(amount)) {
-                        totalAmount += amount;
-
-                        // Check if student's balance is enough, and toggle BALANCE option accordingly
-                        const studentBalance = parseInt('{{ $student->saldo }}');
-                        const paymentMethod = document.getElementById('payment-method');
-                        if (paymentMethod) {
-                            const balanceOption = paymentMethod.querySelector('option[value="BALANCE"]');
-                            if (balanceOption) {
-                                if (studentBalance < totalAmount) {
-                                    balanceOption.style.display = 'none';
-                                } else {
-                                    balanceOption.style.display = 'block';
-                                }
-                            }
-                        }
-
                         // Create a new hidden input for each selected bill ID
                         const hiddenInput = document.createElement('input');
                         hiddenInput.type = 'hidden';
                         hiddenInput.name = 'bill_ids[]';
                         hiddenInput.value = billId;
-                        // Append hidden input to form
                         document.getElementById('form-multi-payment').appendChild(hiddenInput);
 
                         // Create a new col-md-6 wrapper for 2 columns layout
                         const colDiv = document.createElement('div');
-                        colDiv.className = 'col-md-6';
+                        colDiv.className = 'col-md-6 mb-3';
 
-                        // Card element for selected bill details
-                        const itemCard = document.createElement('div');
-                        itemCard.className = 'card h-100 border border-gray-200 shadow-none';
-                        itemCard.style.borderRadius = '16px';
-                        itemCard.style.backgroundColor = '#f8fafc';
-
-                        const cardBodyDiv = document.createElement('div');
-                        cardBodyDiv.className = 'card-body p-3 d-flex justify-content-between align-items-center';
-
-                        // Left side: Item Name & Date info
-                        const leftDiv = document.createElement('div');
-                        leftDiv.className = 'd-flex flex-column';
-                        
-                        const nameSpan = document.createElement('span');
-                        nameSpan.className = 'fw-bold fs-6 text-slate-800';
-                        nameSpan.textContent = billName;
-                        
-                        const dateSpan = document.createElement('span');
-                        dateSpan.className = 'text-slate-500 fs-7 mt-1';
-                        dateSpan.textContent = `${translatedMonth} ${year}`;
-                        
-                        leftDiv.appendChild(nameSpan);
-                        leftDiv.appendChild(dateSpan);
-
-                        // Right side: Nominal value
-                        const rightDiv = document.createElement('div');
-                        rightDiv.className = 'text-end';
-                        
-                        const amountSpan = document.createElement('span');
-                        amountSpan.className = 'fw-boldest fs-6 text-slate-900';
-                        amountSpan.textContent = `Rp ${amount.toLocaleString('id-ID')}`;
-                        
-                        rightDiv.appendChild(amountSpan);
-
-                        cardBodyDiv.appendChild(leftDiv);
-                        cardBodyDiv.appendChild(rightDiv);
-                        itemCard.appendChild(cardBodyDiv);
-                        colDiv.appendChild(itemCard);
+                        if (inputType === 'FREE') {
+                            colDiv.innerHTML = `
+                                <div class="card h-100 border border-gray-200 shadow-none" style="border-radius: 16px; background-color: #f8fafc;">
+                                    <div class="card-body p-3">
+                                        <div class="d-flex justify-content-between align-items-center mb-2">
+                                            <div class="d-flex flex-column text-start">
+                                                <span class="fw-bold fs-6 text-slate-800">${billName}</span>
+                                                <span class="text-slate-500 fs-7 mt-1">${translatedMonth} ${year}</span>
+                                            </div>
+                                            <span class="badge badge-light-warning fw-bolder fs-9">Cicilan</span>
+                                        </div>
+                                        <div class="mt-2 text-start">
+                                            <label class="fs-9 text-slate-500 fw-bold text-uppercase">Jumlah Bayar (Sisa: Rp ${amount.toLocaleString('id-ID')})</label>
+                                            <div class="input-group input-group-sm mt-1">
+                                                <span class="input-group-text bg-white border-gray-300 text-slate-600">Rp</span>
+                                                <input type="number" class="form-control border-gray-300 custom-amount-input" 
+                                                    name="custom_amounts[${billId}]" 
+                                                    value="${amount}" 
+                                                    max="${amount}" 
+                                                    min="1" 
+                                                    data-bill-id="${billId}" 
+                                                    data-max-amount="${amount}">
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            `;
+                        } else {
+                            colDiv.innerHTML = `
+                                <div class="card h-100 border border-gray-200 shadow-none" style="border-radius: 16px; background-color: #f8fafc;">
+                                    <div class="card-body p-3 d-flex justify-content-between align-items-center">
+                                        <div class="d-flex flex-column text-start">
+                                            <span class="fw-bold fs-6 text-slate-800">${billName}</span>
+                                            <span class="text-slate-500 fs-7 mt-1">${translatedMonth} ${year}</span>
+                                        </div>
+                                        <div class="text-end">
+                                            <span class="fw-boldest fs-6 text-slate-900">Rp ${amount.toLocaleString('id-ID')}</span>
+                                            <input type="hidden" name="custom_amounts[${billId}]" value="${amount}">
+                                        </div>
+                                    </div>
+                                </div>
+                            `;
+                        }
 
                         paymentDetails.appendChild(colDiv);
                     }
                 });
 
-                // Update total amount
-                if (totalAmountElement) {
-                    totalAmountElement.textContent = `Rp ${totalAmount.toLocaleString('id-ID')}`;
-                }
+                calculateTotal();
             });
         }
+
+        // Recalculate and update interface
+        function calculateTotal() {
+            const selectedCheckboxes = document.querySelectorAll('.bill-month-checkbox:checked');
+            const totalAmountElement = document.getElementById('total-amount');
+            let total = 0;
+
+            selectedCheckboxes.forEach(checkbox => {
+                const billId = checkbox.getAttribute('data-bill-id');
+                const inputType = checkbox.getAttribute('data-payment-input-type') || 'FIXED';
+                const defaultAmount = parseInt(checkbox.getAttribute('data-amount'));
+
+                if (inputType === 'FREE') {
+                    const input = document.querySelector(`.custom-amount-input[data-bill-id="${billId}"]`);
+                    let amt = input ? parseInt(input.value) : defaultAmount;
+                    if (isNaN(amt) || amt < 1) amt = 0;
+                    total += amt;
+                } else {
+                    total += defaultAmount;
+                }
+            });
+
+            if (totalAmountElement) {
+                totalAmountElement.textContent = `Rp ${total.toLocaleString('id-ID')}`;
+            }
+
+            const studentBalance = parseInt('{{ $student->saldo }}');
+            const paymentMethod = document.getElementById('payment-method');
+            if (paymentMethod) {
+                const balanceOption = paymentMethod.querySelector('option[value="BALANCE"]');
+                if (balanceOption) {
+                    if (studentBalance < total) {
+                        balanceOption.style.display = 'none';
+                        if (paymentMethod.value === 'BALANCE') {
+                            paymentMethod.value = '';
+                        }
+                    } else {
+                        balanceOption.style.display = 'block';
+                    }
+                }
+            }
+        }
+
+        // Add real-time event listener for custom input changes
+        document.addEventListener('input', function(e) {
+            if (e.target && e.target.classList.contains('custom-amount-input')) {
+                const maxAmt = parseInt(e.target.getAttribute('data-max-amount'));
+                let val = parseInt(e.target.value);
+                if (isNaN(val) || val < 1) {
+                    // Let the user edit but clamp on blur or calculation
+                    val = 0;
+                } else if (val > maxAmt) {
+                    e.target.value = maxAmt;
+                }
+                calculateTotal();
+            }
+        });
+
+        document.addEventListener('blur', function(e) {
+            if (e.target && e.target.classList.contains('custom-amount-input')) {
+                const maxAmt = parseInt(e.target.getAttribute('data-max-amount'));
+                let val = parseInt(e.target.value);
+                if (isNaN(val) || val < 1) {
+                    e.target.value = 1;
+                } else if (val > maxAmt) {
+                    e.target.value = maxAmt;
+                }
+                calculateTotal();
+            }
+        }, true);
     });
 </script>
 @endpush

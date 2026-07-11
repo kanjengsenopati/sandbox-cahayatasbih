@@ -41,22 +41,34 @@ class TransactionService
             // check apakah transaction detail sudah ada
             if ($transaction->transactionDetails->count() > 0) {
                 foreach ($transaction->transactionDetails as $detail) {
-                    $detail->bill->update([
-                        'status' => Bill::STATUS_PAID
-                    ]);
+                    $bill = $detail->bill;
+                    if ($bill) {
+                        $paidVal = $detail->amount ?? $bill->remaining_amount;
+                        $bill->paid_amount = min($bill->amount, $bill->paid_amount + $paidVal);
+                        if ($bill->paid_amount >= $bill->amount) {
+                            $bill->status = Bill::STATUS_PAID;
+                        } else {
+                            $bill->status = Bill::STATUS_UNPAID;
+                        }
+                        $bill->save();
+                    }
                 }
             } else {
                 // Proses create bill on transaction detail hanya jika belum ada
-                foreach (request()->bill_ids as $billId) {
+                $customAmounts = request()->custom_amounts ?? [];
+                $billIds = request()->bill_ids ?? [];
+                foreach ($billIds as $billId) {
                     // Cek apakah detail dengan bill_id ini sudah ada
                     $exists = $transaction->transactionDetails()
                         ->where('bill_id', $billId)
                         ->exists();
 
                     if (!$exists) {
+                        $customAmount = isset($customAmounts[$billId]) ? intval($customAmounts[$billId]) : null;
                         TransactionDetail::create([
                             'transaction_id' => $transaction->id,
-                            'bill_id' => $billId
+                            'bill_id' => $billId,
+                            'amount' => $customAmount,
                         ]);
                     }
                 }
@@ -64,9 +76,17 @@ class TransactionService
 
                 // Update status bill setelah transaction details dibuat
                 foreach ($transaction->transactionDetails as $detail) {
-                    $detail->bill?->update([
-                        'status' => Bill::STATUS_PAID
-                    ]);
+                    $bill = $detail->bill;
+                    if ($bill) {
+                        $paidVal = $detail->amount ?? $bill->remaining_amount;
+                        $bill->paid_amount = min($bill->amount, $bill->paid_amount + $paidVal);
+                        if ($bill->paid_amount >= $bill->amount) {
+                            $bill->status = Bill::STATUS_PAID;
+                        } else {
+                            $bill->status = Bill::STATUS_UNPAID;
+                        }
+                        $bill->save();
+                    }
                 }
             }
 
@@ -143,6 +163,7 @@ class TransactionService
         ]);
 
         // Loop untuk menambahkan detail transaksi jika belum ada
+        $customAmounts = $request->custom_amounts ?? [];
         foreach ($request->bill_ids as $billId) {
             // Cek apakah transaction detail sudah ada
             $exists = $transaction->transactionDetails()
@@ -150,8 +171,10 @@ class TransactionService
                 ->exists();
 
             if (!$exists) {
+                $customAmount = isset($customAmounts[$billId]) ? intval($customAmounts[$billId]) : null;
                 $transaction->transactionDetails()->create([
                     'bill_id' => $billId,
+                    'amount' => $customAmount,
                     'saldo_history_id' => $saldoHistory->id,
                 ]);
             }
@@ -188,7 +211,11 @@ class TransactionService
                     // Menghitung jumlah transaksi yang ada
                     $transactionCount = Transaction::whereDate('created_at', now())->count();
                     $paymentCode = 'CHT-' . now()->format('Ymd') . str_pad($transactionCount + 1, 3, '0', STR_PAD_LEFT);
-                    $pay_amount = $request->bill_ids != null ? self::getTotalPayAmount($request->bill_ids) : $request->amount;
+                    if ($request->custom_amounts) {
+                        $pay_amount = array_sum($request->custom_amounts);
+                    } else {
+                        $pay_amount = $request->bill_ids != null ? self::getTotalPayAmount($request->bill_ids) : $request->amount;
+                    }
 
                     $transactionData = [
                         'pay_amount' => $pay_amount,
@@ -232,6 +259,18 @@ class TransactionService
                     }
 
                     $transaction = Transaction::create(array_merge($transactionData, $validatedData));
+
+                    if (($type ?? Transaction::TYPE_BILL) == Transaction::TYPE_BILL && $request->bill_ids) {
+                        $customAmounts = $request->custom_amounts ?? [];
+                        foreach ($request->bill_ids as $billId) {
+                            $customAmount = isset($customAmounts[$billId]) ? intval($customAmounts[$billId]) : null;
+                            TransactionDetail::create([
+                                'transaction_id' => $transaction->id,
+                                'bill_id' => $billId,
+                                'amount' => $customAmount,
+                            ]);
+                        }
+                    }
 
                     // Logika untuk jenis pembayaran
                     if ($paymentMethodType == PaymentMethod::TYPE_TRANSFER) {
@@ -300,7 +339,10 @@ class TransactionService
 
     public static function getTotalPayAmount($billIds)
     {
-        return Bill::whereIn('id', $billIds)->sum('amount');
+        $bills = Bill::whereIn('id', $billIds)->get();
+        return $bills->sum(function ($bill) {
+            return $bill->remaining_amount;
+        });
     }
 
     public static function dispatchNotifications($transaction)
@@ -400,7 +442,17 @@ class TransactionService
                 // change bill status to paid
                 if ($transaction->type == Transaction::TYPE_BILL) {
                     $transaction->transactionDetails->each(function ($detail) {
-                        $detail->bill->update(['status' => Bill::STATUS_PAID]);
+                        $bill = $detail->bill;
+                        if ($bill) {
+                            $paidVal = $detail->amount ?? $bill->remaining_amount;
+                            $bill->paid_amount = min($bill->amount, $bill->paid_amount + $paidVal);
+                            if ($bill->paid_amount >= $bill->amount) {
+                                $bill->status = Bill::STATUS_PAID;
+                            } else {
+                                $bill->status = Bill::STATUS_UNPAID;
+                            }
+                            $bill->save();
+                        }
                     });
 
                     // === UNIT TRANSFER HOOK ===
