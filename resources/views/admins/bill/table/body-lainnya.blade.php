@@ -94,7 +94,7 @@
                 @if(($bill->payment_input_type ?? 'FIXED') === 'FREE')
                     <div class="row g-5">
                         <!-- Kolom Kiri: Pilihan Pembayaran -->
-                        <div class="col-lg-5 col-12">
+                        <div class="col-md-5 col-12">
                             <h4 class="fs-6 fw-boldest text-slate-800 mb-3">
                                 <i class="fas fa-file-invoice text-primary me-2"></i> Pilihan Pembayaran
                             </h4>
@@ -175,13 +175,14 @@
                                             </div>
                                         </div>
                                     </div>
+                                </div>
                                 @endif
                                 @endforeach
                             </div>
                         </div>
                         
                         <!-- Kolom Kanan: Riwayat Pembayaran -->
-                        <div class="col-lg-7 col-12 border-start border-gray-200 ps-lg-5">
+                        <div class="col-md-7 col-12 border-start border-gray-200 ps-md-5">
                             <h4 class="fs-6 fw-boldest text-slate-800 mb-3">
                                 <i class="fas fa-history text-primary me-2"></i> Riwayat Pembayaran
                             </h4>
