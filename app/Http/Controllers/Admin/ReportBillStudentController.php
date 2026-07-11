@@ -141,8 +141,8 @@ class ReportBillStudentController extends Controller
     {
         $totals = $this->buildBillQuery()
             ->selectRaw("
-                SUM(CASE WHEN status = '" . Bill::STATUS_PAID . "' THEN amount ELSE 0 END) as total_paid,
-                SUM(CASE WHEN status = '" . Bill::STATUS_UNPAID . "' THEN amount ELSE 0 END) as total_unpaid,
+                SUM(paid_amount) as total_paid,
+                SUM(amount - paid_amount) as total_unpaid,
                 SUM(amount) as total
             ")->first();
 
@@ -225,12 +225,12 @@ class ReportBillStudentController extends Controller
                 'classrooms.name as classroom_name',
                 DB::raw('COUNT(bills.id) as bill_count'),
                 DB::raw('SUM(bills.amount) as total_bill'),
-                DB::raw('SUM(CASE WHEN bills.status = "PAID" THEN bills.amount ELSE 0 END) as total_paid'),
-                DB::raw('SUM(CASE WHEN bills.status = "UNPAID" THEN bills.amount ELSE 0 END) as total_unpaid'),
+                DB::raw('SUM(bills.paid_amount) as total_paid'),
+                DB::raw('SUM(bills.amount - bills.paid_amount) as total_unpaid'),
                 DB::raw('SUM(CASE
                     WHEN bills.status = "UNPAID" AND (
                         bills.year < ' . date('Y') . ' OR (bills.year = ' . date('Y') . ' AND bills.month <= ' . date('n') . ')
-                    ) THEN bills.amount
+                    ) THEN bills.amount - bills.paid_amount
                     ELSE 0
                 END) as current_due_amount'),
             ])
@@ -324,17 +324,15 @@ class ReportBillStudentController extends Controller
         $stats = $baseQuery->selectRaw('
             COUNT(DISTINCT bills.student_id) as total_students,
             SUM(bills.amount) as total_amount,
-            SUM(CASE WHEN bills.status = ? THEN bills.amount ELSE 0 END) as total_paid,
-            SUM(CASE WHEN bills.status = ? THEN bills.amount ELSE 0 END) as total_unpaid,
+            SUM(bills.paid_amount) as total_paid,
+            SUM(bills.amount - bills.paid_amount) as total_unpaid,
             SUM(CASE
                 WHEN bills.status = ? AND (
                     bills.year < ? OR (bills.year = ? AND bills.month <= ?)
-                ) THEN bills.amount
+                ) THEN bills.amount - bills.paid_amount
                 ELSE 0
             END) as total_current_due
         ', [
-            Bill::STATUS_PAID,
-            Bill::STATUS_UNPAID,
             Bill::STATUS_UNPAID,
             date('Y'), date('Y'), date('n'),
         ])->first();

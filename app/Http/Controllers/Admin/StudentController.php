@@ -251,11 +251,11 @@ class StudentController extends Controller
 
             return DataTables::of($data)
                 ->addColumn('total_unpaid', function ($data) use ($id) {
-                    $totalUnpaid = $data->bills->where('student_id', $id)->where('status', 'UNPAID')->sum('amount');
+                    $totalUnpaid = $data->bills->where('student_id', $id)->sum('remaining_amount');
                     return 'Rp. ' . number_format($totalUnpaid, 0, ',', '.');
                 })
                 ->addColumn('total_paid', function ($data) use ($id) {
-                    $totalPaid = $data->bills->where('student_id', $id)->where('status', 'PAID')->sum('amount');
+                    $totalPaid = $data->bills->where('student_id', $id)->sum('paid_amount');
                     return 'Rp. ' . number_format($totalPaid, 0, ',', '.');
                 })
                 ->addColumn('total', function ($data) use ($id) {
@@ -263,9 +263,9 @@ class StudentController extends Controller
                     return 'Rp. ' . number_format($total, 0, ',', '.');
                 })
                 ->addColumn('status', function ($data) use ($id) {
-                    $totalPaid = $data->bills->where('student_id', $id)->where('status', 'PAID')->sum('amount');
+                    $totalPaid = $data->bills->where('student_id', $id)->sum('paid_amount');
                     $total = $data->bills->where('student_id', $id)->sum('amount');
-                    if ($totalPaid === 0) {
+                    if ($totalPaid == 0) {
                         return '<span class="badge bg-danger">Belum Bayar</span>';
                     } elseif ($totalPaid < $total) {
                         return '<span class="badge bg-warning">Belum Lunas</span>';

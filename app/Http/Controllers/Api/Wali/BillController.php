@@ -24,8 +24,8 @@ class BillController extends BaseWaliApiController
                     'bill_type_name' => $first->billType->name ?? 'Tagihan',
                     'academic_year' => $first->billType->academicYear->name ?? '-',
                     'total' => $items->sum('amount'),
-                    'paid' => $items->where('status', 'PAID')->sum('amount'),
-                    'unpaid' => $items->where('status', 'UNPAID')->sum('amount'),
+                    'paid' => $items->sum('paid_amount'),
+                    'unpaid' => $items->sum('remaining_amount'),
                     'items_count' => $items->count(),
                     'unpaid_count' => $items->where('status', 'UNPAID')->count(),
                 ];
@@ -62,8 +62,8 @@ class BillController extends BaseWaliApiController
             'bills' => $bills,
             'summary' => [
                 'total' => $bills->sum('amount'),
-                'paid' => $bills->where('status', 'PAID')->sum('amount'),
-                'unpaid' => $bills->where('status', 'UNPAID')->sum('amount'),
+                'paid' => $bills->sum('paid_amount'),
+                'unpaid' => $bills->sum('remaining_amount'),
             ]
         ]);
     }

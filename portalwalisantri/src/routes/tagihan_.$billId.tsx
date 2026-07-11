@@ -48,7 +48,9 @@ function BillDetail() {
         label: d.translated_month ? `${d.translated_month} ${d.year}` : (d.name || ''),
         month: d.translated_month || '',
         year: d.year || '',
-        amount: Number(d.amount),
+        amount: Number(d.remaining_amount ?? d.amount),
+        originalAmount: Number(d.amount),
+        paidAmount: Number(d.paid_amount ?? 0),
         paid: d.status === "PAID",
       })),
     };
@@ -277,6 +279,9 @@ function BillDetail() {
                         <p className="text-[11px] font-bold text-primary uppercase tracking-widest mb-1">{it.label}</p>
                       )}
                       <p className="text-base font-bold text-foreground tabular-nums leading-tight">{fmt(it.amount)}</p>
+                      {it.paidAmount > 0 && !it.paid && (
+                        <p className="text-[10px] text-muted-foreground mt-0.5">Sisa dari {fmt(it.originalAmount)}</p>
+                      )}
                     </div>
 
                     {it.paid ? (

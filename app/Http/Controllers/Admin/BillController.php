@@ -453,13 +453,11 @@ class BillController extends Controller
             ->map(function ($item) use ($id) {
                 $item->total_unpaid = Bill::where('student_id', $id)
                     ->where('bill_type_id', $item->id)
-                    ->where('status', Bill::STATUS_UNPAID)
-                    ->sum('amount');
+                    ->sum(\DB::raw('amount - paid_amount'));
 
                 $item->total_paid = Bill::where('student_id', $id)
                     ->where('bill_type_id', $item->id)
-                    ->where('status', Bill::STATUS_PAID)
-                    ->sum('amount');
+                    ->sum('paid_amount');
 
                 return $item;
             });
@@ -474,12 +472,10 @@ class BillController extends Controller
             ->map(function ($item) use ($id) {
                 $item->total_unpaid = Bill::where('student_id', $id)
                     ->where('bill_type_id', $item->id)
-                    ->where('status', Bill::STATUS_UNPAID)
-                    ->sum('amount');
+                    ->sum(\DB::raw('amount - paid_amount'));
                 $item->total_paid = Bill::where('student_id', $id)
                     ->where('bill_type_id', $item->id)
-                    ->where('status', Bill::STATUS_PAID)
-                    ->sum('amount');
+                    ->sum('paid_amount');
 
                 return $item;
             });

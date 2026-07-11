@@ -275,13 +275,12 @@ class PaymentRateController extends Controller
             }], 'amount')
             ->withSum(['bills as total_paid' => function ($q) use ($paymentRate, $paymentRateItemIds, $dateRange) {
                 $q->where('bill_type_id', $paymentRate->bill_type_id)
-                    ->whereIn('payment_rate_item_id', $paymentRateItemIds)
-                    ->where('status', Bill::STATUS_PAID);
+                    ->whereIn('payment_rate_item_id', $paymentRateItemIds);
 
                 if ($dateRange['startYear'] && $dateRange['endYear']) {
                     ($this->dateRangeFilter($dateRange))($q);
                 }
-            }], 'amount');
+            }], 'paid_amount');
 
         return DataTables::of($query)
             ->addColumn('classroom', fn($student) => $student->classroom->name ?? '-')
@@ -320,8 +319,8 @@ class PaymentRateController extends Controller
             ->when($dateRange['startYear'] && $dateRange['endYear'], $this->dateRangeFilter($dateRange));
 
         $total = $billQuery->sum('amount');
-        $totalPaid = $billQuery->where('status', Bill::STATUS_PAID)->sum('amount');
-        $totalUnpaid = $total - $totalPaid;
+        $totalPaid = $billQuery->sum('paid_amount');
+        $totalUnpaid = $billQuery->sum(\DB::raw('amount - paid_amount'));
 
         return response()->json([
             'total' => number_format($total, 0, ',', '.'),
@@ -467,9 +466,9 @@ class PaymentRateController extends Controller
             // 4. PROCESS REMOVALS (Detaching)
             if (!empty($targetsToRemove)) {
                 
-                // A. Check for PAID bills on these targets
+                // A. Check for PAID or partially paid bills on these targets
                 $queryCheckPaid = Bill::where('bill_type_id', $billType->id)
-                                    ->where('status', Bill::STATUS_PAID);
+                                    ->where('paid_amount', '>', 0);
 
                 if ($paymentRate->type == PaymentRate::TYPE_REGULAR) {
                     $queryCheckPaid->whereIn('classroom_id', $targetsToRemove);
@@ -749,7 +748,7 @@ class PaymentRateController extends Controller
             // PERUBAHAN DI SINI: Gunakan 'paymentRateItems' (pakai 's') sesuai nama function di Model Bill Anda.
             $hasPaidBills = Bill::whereHas('paymentRateItems', function ($q) use ($id) {
                 $q->where('payment_rate_id', $id);
-            })->where('status', Bill::STATUS_PAID)->exists();
+            })->where('paid_amount', '>', 0)->exists();
 
             if ($hasPaidBills) {
                 $lock->release();
@@ -924,9 +923,9 @@ class PaymentRateController extends Controller
                 ], 400);
             }
 
-            // Check if any bills are already paid
+            // Check if any bills are already paid (partially or fully)
             $paidBills = Bill::whereIn('id', $billIds)
-                ->where('status', Bill::STATUS_PAID)
+                ->where('paid_amount', '>', 0)
                 ->count();
 
             if ($paidBills > 0) {

@@ -78,8 +78,7 @@ class ReportBillController extends Controller
                 // Calculate totals without loading entire collections
                 $total = Bill::whereIn('bill_type_id', $data->pluck('id')->toArray())->sum('amount');
                 $totalPaid = Bill::whereIn('bill_type_id', $data->pluck('id')->toArray())
-                    ->where('status', Bill::STATUS_PAID)
-                    ->sum('amount');
+                    ->sum('paid_amount');
 
                 return response()->json([
                     'total' => number_format($total, 0, ',', '.'),
@@ -181,11 +180,11 @@ class ReportBillController extends Controller
                 'classrooms.name as classroom_name',
                 // AGGREGATE FUNCTION: Database yang menghitung total
                 DB::raw('SUM(bills.amount) as total_bill_amount'),
-                DB::raw('SUM(CASE WHEN bills.status = "PAID" THEN bills.amount ELSE 0 END) as total_paid_amount'),
+                DB::raw('SUM(bills.paid_amount) as total_paid_amount'),
                 DB::raw('SUM(CASE 
                     WHEN bills.status = "UNPAID" AND (
                         bills.year < ' . date('Y') . ' OR (bills.year = ' . date('Y') . ' AND bills.month <= ' . date('n') . ')
-                    ) THEN bills.amount 
+                    ) THEN bills.amount - bills.paid_amount
                     ELSE 0 
                 END) as current_due_amount')
             ])
@@ -309,15 +308,14 @@ class ReportBillController extends Controller
         // Langsung hitung tanpa load model sama sekali. Tambahkan logic Current Due
         $stats = $query->selectRaw('
             SUM(bills.amount) as total_amount,
-            SUM(CASE WHEN bills.status = ? THEN bills.amount ELSE 0 END) as total_paid,
+            SUM(bills.paid_amount) as total_paid,
             SUM(CASE 
                 WHEN bills.status = ? AND (
                     bills.year < ? OR (bills.year = ? AND bills.month <= ?)
-                ) THEN bills.amount 
+                ) THEN bills.amount - bills.paid_amount
                 ELSE 0 
             END) as total_current_due
         ', [
-            Bill::STATUS_PAID, 
             Bill::STATUS_UNPAID, 
             date('Y'), 
             date('Y'), 
@@ -770,9 +768,9 @@ class ReportBillController extends Controller
             $bills = $student->bills->where('bill_type_id', $id);
 
             $total = $bills->sum('amount');
-            $studentTotalPaid = $bills->where('status', Bill::STATUS_PAID)->sum('amount');
+            $studentTotalPaid = $bills->sum('paid_amount');
             
-            $studentTotalUnpaid = $total - $studentTotalPaid;
+            $studentTotalUnpaid = $bills->sum('remaining_amount');
 
             // Hitung Tagihan Berjalan (Current Due)
             // Sisa tagihan yg bulan & tahunnya <= Saat ini
@@ -788,7 +786,7 @@ class ReportBillController extends Controller
                 if ($bill->year == $nowYear && $bill->month <= $nowMonth) return true;
                 
                 return false;
-            })->sum('amount');
+            })->sum('remaining_amount');
 
             $totalPaidSum += $studentTotalPaid;
             $totalUnpaidSum += $studentTotalUnpaid;
