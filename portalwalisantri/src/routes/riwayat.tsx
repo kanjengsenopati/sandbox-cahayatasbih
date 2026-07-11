@@ -423,7 +423,13 @@ function TxRow({ tx, open, onToggle }: { tx: Tx; open: boolean; onToggle: () => 
           <p className="text-sm font-bold text-foreground truncate">{tx.name}</p>
           <p className="text-[11px] text-muted-foreground flex items-center gap-1.5 flex-wrap">
             <span className="px-1.5 py-0.5 rounded bg-secondary text-[9px] font-bold uppercase tracking-wider">
-              {tx.category === "spp" ? (active?.school?.type || "Sekolah") : meta.label}
+              {tx.category === "spp" ? (
+                active?.school?.type || 
+                ((active?.school?.name || "").toUpperCase().includes("SMP") ? "SMP" : 
+                 (active?.school?.name || "").toUpperCase().includes("MA") ? "MA" : 
+                 (active?.school?.name || "").toUpperCase().includes("PONDOK") || (active?.school?.name || "").toUpperCase().includes("PESANTREN") ? "Pondok" : 
+                 active?.school?.name || "Sekolah")
+              ) : meta.label}
             </span>
             {tx.status && (
               <span
@@ -465,9 +471,9 @@ function TxRow({ tx, open, onToggle }: { tx: Tx; open: boolean; onToggle: () => 
           {/* Meta grid */}
           <div className="grid grid-cols-2 gap-3 mt-3 mb-3">
             {tx.merchant && <Mini icon={Store} k="Merchant" v={tx.merchant} />}
-            {tx.cashier && <Mini icon={Receipt} k="Kasir" v={tx.cashier} />}
+            {tx.cashier && <Mini icon={Receipt} k="Petugas" v={tx.cashier} />}
             {tx.ref && <Mini icon={Hash} k="Ref" v={tx.ref} />}
-            <Mini icon={Clock} k="Waktu" v={`${fmtDate(tx.date)} · ${fmtTime(tx.date)}${tx.cashier ? ` · ${tx.cashier}` : ""}`} />
+            <Mini icon={Clock} k="Waktu" v={`${fmtDate(tx.date)} · ${fmtTime(tx.date)}`} />
           </div>
 
           {tx.items && tx.items.length > 0 && (
