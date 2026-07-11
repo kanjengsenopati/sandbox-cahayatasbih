@@ -42,7 +42,7 @@
     <div class="row g-4">
         @foreach ($billOthers as $bill)
         @php
-            $paidAmount = $bill->bills->where('student_id', $student->id)->where('status', 'PAID')->sum('amount');
+            $paidAmount = $bill->bills->where('student_id', $student->id)->sum('paid_amount');
             $unpaidAmount = $bill->total_unpaid;
         @endphp
         <div class="col-md-6">

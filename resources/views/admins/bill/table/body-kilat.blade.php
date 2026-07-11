@@ -62,7 +62,7 @@
 <div class="accordion" id="accordionKilatParent">
     @foreach ($billMonth as $bill)
     @php
-        $paidAmount = $bill->bills->where('student_id', $student->id)->where('status', 'PAID')->sum('amount');
+        $paidAmount = $bill->bills->where('student_id', $student->id)->sum('paid_amount');
         $unpaidAmount = $bill->total_unpaid;
     @endphp
     

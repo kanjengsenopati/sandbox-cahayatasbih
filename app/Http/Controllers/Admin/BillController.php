@@ -563,18 +563,69 @@ class BillController extends Controller
 
         $requestData = request()->only(['bill_id', 'status']);
 
-        $bill = Bill::findOrFail($requestData['bill_id']);
-        $bill->status = $requestData['status'];
-        $bill->save();
+        DB::beginTransaction();
+        try {
+            $bill = Bill::findOrFail($requestData['bill_id']);
+            $oldStatus = $bill->status;
+            $newStatus = $requestData['status'];
 
-        // delete transaction if status is unpaid
-        if ($requestData['status'] == Bill::STATUS_UNPAID && $bill->transactionDetails()?->first()->transaction) {
-            // disini multiple transaction detail dan 1 transaction
-            $transaction = $bill->transactionDetails()->first()->transaction;
-            $transaction->delete();
+            if ($oldStatus != $newStatus) {
+                $bill->status = $newStatus;
+                if ($newStatus == Bill::STATUS_PAID) {
+                    $bill->paid_amount = $bill->amount;
+                    $bill->paid_date = now();
+                    $bill->payment_method = 'TUNAI';
+                } else {
+                    $bill->paid_amount = 0;
+                    $bill->paid_date = null;
+                    $bill->payment_method = null;
+                }
+                $bill->save();
+
+                // Hapus atau batalkan transaksi jika status dikembalikan ke UNPAID
+                if ($newStatus == Bill::STATUS_UNPAID) {
+                    $transactionDetails = $bill->transactionDetails;
+                    foreach ($transactionDetails as $detail) {
+                        $transaction = $detail->transaction;
+                        if ($transaction) {
+                            // Jika pembayaran menggunakan Saldo, kembalikan saldo siswa (Refund)
+                            if ($transaction->paymentMethod?->type == \App\Models\PaymentMethod::TYPE_BALANCE || $detail->saldo_history_id) {
+                                $student = $transaction->student;
+                                if ($student) {
+                                    $student->saldo += $detail->amount ?? $bill->amount;
+                                    $student->save();
+
+                                    // Catat riwayat refund saldo
+                                    \App\Models\SaldoHistory::create([
+                                        'student_id' => $student->id,
+                                        'amount' => $detail->amount ?? $bill->amount,
+                                        'type' => \App\Models\SaldoHistory::TYPE_IN,
+                                        'description' => 'Refund Pembatalan Tagihan Sebesar Rp.' . number_format($detail->amount ?? $bill->amount, 0, ',', '.'),
+                                        'status' => \App\Models\SaldoHistory::STATUS_SUCCESS,
+                                        'usage' => \App\Models\SaldoHistory::USAGE_TOPUP,
+                                        'balance_before' => $student->saldo - ($detail->amount ?? $bill->amount),
+                                        'balance_after' => $student->saldo,
+                                    ]);
+                                }
+                            }
+
+                            // Hapus detail transaksi, dan hapus transaksi induk jika tidak memiliki detail lain
+                            $detail->delete();
+                            if ($transaction->transactionDetails()->count() == 0) {
+                                $transaction->delete();
+                            }
+                        }
+                    }
+                }
+            }
+
+            DB::commit();
+            return redirect()->back()->with('success', 'Status tagihan berhasil diubah');
+        } catch (\Throwable $th) {
+            DB::rollBack();
+            Log::error($th);
+            return redirect()->back()->with('error', 'Gagal mengubah status tagihan: ' . $th->getMessage());
         }
-
-        return redirect()->back()->with('success', 'Status tagihan berhasil diubah');
     }
 
     public function deleteStudentBill(Request $request)
