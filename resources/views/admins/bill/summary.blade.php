@@ -62,7 +62,29 @@
                                             </tr>
                                             <tr>
                                                 <th scope="row">Wali Murid</th>
-                                                <td>{{ $student->user?->name ?? '' }}</td>
+                                                <td>
+                                                    {{ $student->user?->name ?? '-' }}
+                                                    @if($student->user?->jamaah_status)
+                                                        @php
+                                                            $status = $student->user->jamaah_status;
+                                                            $badgeClass = match($status) {
+                                                                'JAMAAH' => 'success',
+                                                                'NON_JAMAAH' => 'danger',
+                                                                'MUKIMIN' => 'primary',
+                                                                default => 'secondary'
+                                                            };
+                                                            $statusLabel = match($status) {
+                                                                'JAMAAH' => 'Jamaah',
+                                                                'NON_JAMAAH' => 'Non Jamaah',
+                                                                'MUKIMIN' => 'Mukimin',
+                                                                default => 'Belum Jelas'
+                                                            };
+                                                        @endphp
+                                                        <span class="badge badge-light-{{ $badgeClass }} fw-bolder ms-2 px-2 py-1">
+                                                            {{ $statusLabel }}
+                                                        </span>
+                                                    @endif
+                                                </td>
                                             </tr>
                                         </tbody>
                                     </table>
@@ -83,19 +105,29 @@
                                             </tr>
                                             <tr>
                                                 <th scope="row">Total Tagihan</th>
-                                                <td>Rp. {{ number_format($billType['total_bill'] ?? 0) }}</td>
+                                                <td>Rp. {{ number_format($summary['total_bill'] ?? 0, 0, ',', '.') }}</td>
                                             </tr>
                                             <tr>
                                                 <th scope="row">Total Dibayar</th>
-                                                <td>Rp. {{ number_format($billType['total_paid'] ?? 0) }}</td>
+                                                <td>Rp. {{ number_format($summary['total_paid'] ?? 0, 0, ',', '.') }}</td>
                                             </tr>
                                             <tr>
                                                 <th scope="row">Sisa Tagihan</th>
-                                                <td>Rp. {{ number_format($billType['total_unpaid'] ?? 0) }}</td>
+                                                <td>Rp. {{ number_format($summary['total_unpaid'] ?? 0, 0, ',', '.') }}</td>
                                             </tr>
                                             <tr>
                                                 <th scope="row">Status</th>
-                                                <td>{{ $billType['total_unpaid'] == 0 ? 'LUNAS' : 'BELUM LUNAS' }}</td>
+                                                <td>
+                                                    @if(($summary['total_bill'] ?? 0) > 0)
+                                                        @if(($summary['total_unpaid'] ?? 0) == 0)
+                                                            <span class="badge badge-light-success fw-bolder px-2 py-1">LUNAS</span>
+                                                        @else
+                                                            <span class="badge badge-light-danger fw-bolder px-2 py-1">BELUM LUNAS</span>
+                                                        @endif
+                                                    @else
+                                                        <span class="badge badge-light-secondary fw-bolder px-2 py-1">TIDAK ADA TAGIHAN</span>
+                                                    @endif
+                                                </td>
                                             </tr>
                                         </tbody>
                                     </table>

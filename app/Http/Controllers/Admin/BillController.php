@@ -495,7 +495,7 @@ class BillController extends Controller
             'bill_type_id' => 'required|exists:bill_types,id',
         ]);
 
-        $student = Student::findOrFail($requestData['student_id']);
+        $student = Student::with(['user', 'classroom.school'])->findOrFail($requestData['student_id']);
         $billType = BillType::findOrFail($requestData['bill_type_id']);
 
         $bills = Bill::with('transactions')
