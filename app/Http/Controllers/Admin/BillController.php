@@ -573,12 +573,8 @@ class BillController extends Controller
                 $bill->status = $newStatus;
                 if ($newStatus == Bill::STATUS_PAID) {
                     $bill->paid_amount = $bill->amount;
-                    $bill->paid_date = now();
-                    $bill->payment_method = 'TUNAI';
                 } else {
                     $bill->paid_amount = 0;
-                    $bill->paid_date = null;
-                    $bill->payment_method = null;
                 }
                 $bill->save();
 

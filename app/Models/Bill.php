@@ -129,12 +129,12 @@ class Bill extends Model
 
     public function getPaidDateAttribute()
     {
-        return $this->getPaidTransaction() ? $this->getPaidTransaction()?->paid_at : null;
+        return $this->getPaidTransaction() ? $this->getPaidTransaction()->paid_at : ($this->status == self::STATUS_PAID ? $this->updated_at : null);
     }
 
     public function getPaymentMethodAttribute()
     {
-        return $this->getPaidTransaction() ? $this->getPaidTransaction()?->paymentMethod?->name : null;
+        return $this->getPaidTransaction() ? $this->getPaidTransaction()->paymentMethod?->name : ($this->status == self::STATUS_PAID ? 'TUNAI (MANUAL)' : null);
     }
 
     // get list bank for bill from bill type
