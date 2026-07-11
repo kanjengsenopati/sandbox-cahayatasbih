@@ -57,8 +57,25 @@ const CAT_META: Record<Category, { label: string; icon: typeof Wallet; tone: str
   kantin: { label: "Kantin", icon: Utensils, tone: "bg-secondary text-primary" },
   minuman: { label: "Minuman", icon: Coffee, tone: "bg-secondary text-primary" },
   alat: { label: "Alat Tulis", icon: BookOpen, tone: "bg-secondary text-primary" },
-  spp: { label: "SPP", icon: Receipt, tone: "bg-secondary text-primary" },
+  spp: { label: "Sekolah", icon: Receipt, tone: "bg-secondary text-primary" },
   mart: { label: "Pondok Mart", icon: Store, tone: "bg-secondary text-primary" },
+};
+
+const STATUS_MAP: Record<string, string> = {
+  SUCCESS: "Sukses",
+  approved: "Sukses",
+  PAID: "Lunas",
+  PENDING: "Menunggu",
+  PENDING_PAYMENT: "Belum Bayar",
+  PENDING_CONFIRMATION: "Menunggu Konfirmasi",
+  CANCELLED: "Dibatalkan",
+  cancelled: "Dibatalkan",
+  rejected: "Ditolak",
+  REJECTED: "Ditolak",
+  EXPIRED: "Kedaluwarsa",
+  expired: "Kedaluwarsa",
+  FAILED: "Gagal",
+  failed: "Gagal",
 };
 
 const fmt = (n: number) =>
@@ -83,7 +100,7 @@ const CAT_FILTERS: { id: "all" | Category; label: string }[] = [
   { id: "all", label: "Semua" },
   { id: "minuman", label: "Minuman" },
   { id: "alat", label: "Alat Tulis" },
-  { id: "spp", label: "SPP" },
+  { id: "spp", label: "Sekolah" },
   { id: "topup", label: "Top Up" },
 ];
 
@@ -168,6 +185,7 @@ function RiwayatPage() {
       date: b.created_at,
       note: b.payment_method_name,
       status: b.status,
+      cashier: b.cashier,
     }));
 
     return [...saldoMapped, ...posMapped, ...billMapped].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
@@ -404,7 +422,7 @@ function TxRow({ tx, open, onToggle }: { tx: Tx; open: boolean; onToggle: () => 
           <p className="text-sm font-bold text-foreground truncate">{tx.name}</p>
           <p className="text-[11px] text-muted-foreground flex items-center gap-1.5 flex-wrap">
             <span className="px-1.5 py-0.5 rounded bg-secondary text-[9px] font-bold uppercase tracking-wider">
-              {meta.label}
+              {tx.category === "spp" ? (active?.school?.type || "Sekolah") : meta.label}
             </span>
             {tx.status && (
               <span
@@ -416,7 +434,7 @@ function TxRow({ tx, open, onToggle }: { tx: Tx; open: boolean; onToggle: () => 
                     : "bg-[oklch(0.78_0.16_75)] text-white"
                 }`}
               >
-                {tx.status === "SUCCESS" ? "Sukses" : tx.status === "FAILED" ? "Cek Ulang" : tx.status}
+                {STATUS_MAP[tx.status] || tx.status}
               </span>
             )}
             {fmtTime(tx.date)}
@@ -448,7 +466,7 @@ function TxRow({ tx, open, onToggle }: { tx: Tx; open: boolean; onToggle: () => 
             {tx.merchant && <Mini icon={Store} k="Merchant" v={tx.merchant} />}
             {tx.cashier && <Mini icon={Receipt} k="Kasir" v={tx.cashier} />}
             {tx.ref && <Mini icon={Hash} k="Ref" v={tx.ref} />}
-            <Mini icon={Clock} k="Waktu" v={`${fmtDate(tx.date)} · ${fmtTime(tx.date)}`} />
+            <Mini icon={Clock} k="Waktu" v={`${fmtDate(tx.date)} · ${fmtTime(tx.date)}${tx.cashier ? ` · ${tx.cashier}` : ""}`} />
           </div>
 
           {tx.items && tx.items.length > 0 && (

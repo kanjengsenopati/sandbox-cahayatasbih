@@ -12,7 +12,7 @@ class BillTransactionController extends BaseWaliApiController
         $student = $this->resolveActiveStudent();
         if (!$student) return response()->json(['data' => []]);
 
-        $query = Transaction::with(['paymentMethod', 'transactionDetails.bill.billType'])
+        $query = Transaction::with(['paymentMethod', 'transactionDetails.bill.billType', 'admin', 'user'])
             ->where('student_id', $student->id)
             ->where('type', Transaction::TYPE_BILL)
             ->latest();
@@ -45,7 +45,8 @@ class BillTransactionController extends BaseWaliApiController
                 'created_at' => $item->paid_at ?? $item->created_at,
                 'bill_names' => $billNames ?: 'Pembayaran Tagihan',
                 'payment_method_name' => $item->paymentMethod->name ?? 'Metode Lain',
-                'payment_method_type' => $item->paymentMethod->type ?? 'OTHER'
+                'payment_method_type' => $item->paymentMethod->type ?? 'OTHER',
+                'cashier' => $item->admin->name ?? ($item->user->name ?? ($item->paymentMethod->name ?? 'Sistem'))
             ];
         });
 
