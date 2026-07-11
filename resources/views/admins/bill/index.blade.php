@@ -138,6 +138,14 @@
             border-right: 1px solid #eff2f5 !important;
         }
     }
+
+    #kt_content_container,
+    .tab-content,
+    .tab-pane,
+    #kt_contacts_main {
+        width: 100% !important;
+        max-width: 100% !important;
+    }
 </style>
 
 @endpush
