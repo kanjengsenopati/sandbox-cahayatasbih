@@ -58,6 +58,23 @@ const menuMapping: Record<string, { label: string; icon: any; accent: string; to
   "perizinan": { label: "Izin Keluar", icon: Calendar, accent: "from-[#ec4899] to-[#db2777]", to: "/perizinan" as const },
 };
 
+const STATUS_MAP: Record<string, string> = {
+  SUCCESS: "Sukses",
+  approved: "Sukses",
+  PAID: "Lunas",
+  PENDING: "Menunggu",
+  PENDING_PAYMENT: "Belum Bayar",
+  PENDING_CONFIRMATION: "Menunggu Konfirmasi",
+  CANCELLED: "Dibatalkan",
+  cancelled: "Dibatalkan",
+  rejected: "Ditolak",
+  REJECTED: "Ditolak",
+  EXPIRED: "Kedaluwarsa",
+  expired: "Kedaluwarsa",
+  FAILED: "Gagal",
+  failed: "Gagal",
+};
+
 function Dashboard() {
   const navigate = useNavigate();
   const [hide, setHide] = useState(false);
@@ -344,15 +361,16 @@ function Dashboard() {
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-semibold text-foreground truncate">{t.note || (isIn ? "Saldo Masuk" : isBill ? "Pembayaran Tagihan" : "Belanja Kantin")}</p>
                     <p className="text-[11px] text-muted-foreground flex items-center gap-1.5 flex-wrap">
-                      {t.status && t.status !== 'SUCCESS' && (
+                      {t.status && (
                         <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider ${
-                          t.status === 'FAILED' ? 'bg-destructive text-white' : 'bg-[oklch(0.78_0.16_75)] text-white'
+                          t.status === "SUCCESS" || t.status === "approved" || t.status === "PAID"
+                            ? "bg-emerald-500/15 text-emerald-700"
+                            : t.status === "FAILED" || t.status === "rejected" || t.status === "REJECTED"
+                            ? "bg-destructive text-white"
+                            : "bg-[oklch(0.78_0.16_75)] text-white"
                         }`}>
-                          {t.status === 'FAILED' ? 'Cek Ulang' : t.status}
+                          {STATUS_MAP[t.status] || t.status}
                         </span>
-                      )}
-                      {t.status === 'SUCCESS' && (
-                        <span className="px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-700 text-[9px] font-bold uppercase tracking-wider">Sukses</span>
                       )}
                       <span>{t.created_at ? new Date(t.created_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) : "-"}</span>
                       {t.merchant && (

@@ -78,6 +78,32 @@ const STATUS_MAP: Record<string, string> = {
   failed: "Gagal",
 };
 
+const getUpt = (active: any) => {
+  if (!active) return "Sekolah";
+  
+  // 1. Tentukan dari nama kelas / rombel
+  const className = active.classroom?.name || active.className;
+  if (className && className !== "-") {
+    const upper = className.toUpperCase().trim();
+    if (/^(7|8|9|VII|VIII|IX)/.test(upper)) return "SMP";
+    if (/^(10|11|12|X|XI|XII)/.test(upper)) return "MA";
+  }
+  
+  // 2. Tentukan dari tipe sekolah
+  if (active.school?.type) {
+    return active.school.type;
+  }
+  
+  // 3. Tentukan dari nama sekolah
+  const schoolName = active.school?.name || "";
+  const upperSchool = schoolName.toUpperCase();
+  if (upperSchool.includes("SMP")) return "SMP";
+  if (upperSchool.includes("MA")) return "MA";
+  if (upperSchool.includes("PONDOK") || upperSchool.includes("PESANTREN")) return "Pondok";
+  
+  return "Sekolah";
+};
+
 const fmt = (n: number) =>
   new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0 }).format(n);
 
@@ -423,13 +449,7 @@ function TxRow({ tx, open, onToggle }: { tx: Tx; open: boolean; onToggle: () => 
           <p className="text-sm font-bold text-foreground truncate">{tx.name}</p>
           <p className="text-[11px] text-muted-foreground flex items-center gap-1.5 flex-wrap">
             <span className="px-1.5 py-0.5 rounded bg-secondary text-[9px] font-bold uppercase tracking-wider">
-              {tx.category === "spp" ? (
-                active?.school?.type || 
-                ((active?.school?.name || "").toUpperCase().includes("SMP") ? "SMP" : 
-                 (active?.school?.name || "").toUpperCase().includes("MA") ? "MA" : 
-                 (active?.school?.name || "").toUpperCase().includes("PONDOK") || (active?.school?.name || "").toUpperCase().includes("PESANTREN") ? "Pondok" : 
-                 active?.school?.name || "Sekolah")
-              ) : meta.label}
+              {tx.category === "spp" ? getUpt(active) : meta.label}
             </span>
             {tx.status && (
               <span
