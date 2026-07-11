@@ -44,6 +44,7 @@ export const fetchSavingHistories = (params?: any) => api.get('/saving-histories
 export const fetchBills = () => api.get('/bills');
 export const fetchBillDetail = (id: string | number) => api.get(`/bills/${id}`);
 export const fetchPosTransactions = (params?: any) => api.get('/pos-transactions', { params });
+export const fetchBillTransactions = (params?: any) => api.get('/bill-transactions', { params });
 export const postTopup = (data: any) => api.post('/topup', data);
 export const postCheckout = (data: any) => api.post('/checkout', data);
 export const fetchPaymentDetail = (id: string | number) => api.get(`/payment/${id}`);

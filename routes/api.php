@@ -148,6 +148,7 @@ Route::prefix('ct-mobile')->middleware(['web'])->group(function () {
     Route::get('bills', [App\Http\Controllers\Api\Wali\BillController::class, 'index']);
     Route::get('bills/{id}', [App\Http\Controllers\Api\Wali\BillController::class, 'show']);
     Route::get('pos-transactions', [App\Http\Controllers\Api\Wali\PosTransactionController::class, 'index']);
+    Route::get('bill-transactions', [App\Http\Controllers\Api\Wali\BillTransactionController::class, 'index']);
     Route::post('topup', [App\Http\Controllers\Api\Wali\TopupController::class, 'store']);
     Route::post('checkout', [App\Http\Controllers\Api\Wali\CheckoutController::class, 'store']);
     Route::get('payment/{id}', [App\Http\Controllers\Api\Wali\PaymentController::class, 'show']);

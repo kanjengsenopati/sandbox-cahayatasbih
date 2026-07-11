@@ -36,6 +36,7 @@ class DashboardController extends BaseWaliApiController
             $studyCount = StudyGrade::where('student_id', $activeStudent->id)->distinct('study_id')->count();
 
             $saldoHistories = \App\Models\SaldoHistory::where('student_id', $activeStudent->id)
+                ->whereNotIn('usage', [\App\Models\SaldoHistory::USAGE_POS, \App\Models\SaldoHistory::USAGE_BILL])
                 ->whereDate('created_at', now()->toDateString())
                 ->latest()
                 ->get()
@@ -45,7 +46,8 @@ class DashboardController extends BaseWaliApiController
                         'amount' => $item->amount,
                         'note' => $item->description ?? ($item->type === 'IN' ? 'Topup Saldo' : 'Pengeluaran Saldo'),
                         'status' => $item->status,
-                        'created_at' => $item->created_at
+                        'created_at' => $item->created_at,
+                        'category' => $item->type === 'IN' ? 'TOPUP' : 'SALDO'
                     ];
                 });
 
@@ -72,16 +74,43 @@ class DashboardController extends BaseWaliApiController
                         'note' => $itemNames ?: 'Belanja Kantin',
                         'merchant' => $item->admins->name ?? null,
                         'items_count' => $totalItems,
-                        'created_at' => $item->paid_at ?? $item->created_at
+                        'created_at' => $item->paid_at ?? $item->created_at,
+                        'category' => 'POS',
+                        'status' => 'SUCCESS'
                     ];
                 });
 
-            $recentTransactions = $saldoHistories->concat($posTransactions)->sortByDesc('created_at')->values();
+            $billTransactions = \App\Models\Transaction::with(['paymentMethod', 'transactionDetails.bill.billType'])
+                ->where('student_id', $activeStudent->id)
+                ->where('type', \App\Models\Transaction::TYPE_BILL)
+                ->whereDate('created_at', now()->toDateString())
+                ->latest()
+                ->get()
+                ->map(function($item) {
+                    $billNames = $item->transactionDetails
+                        ->map(fn($d) => $d->bill->billType->name ?? 'Tagihan')
+                        ->unique()
+                        ->join(', ');
+
+                    return [
+                        'type' => 'OUT',
+                        'amount' => $item->pay_amount,
+                        'note' => $billNames ?: 'Pembayaran Tagihan',
+                        'merchant' => $item->getTranslatedPaymentMethod(),
+                        'created_at' => $item->paid_at ?? $item->created_at,
+                        'category' => 'BILL',
+                        'status' => $item->status
+                    ];
+                });
+
+            $recentTransactions = $saldoHistories->concat($posTransactions)->concat($billTransactions)->sortByDesc('created_at')->values();
             
             $todaySummary = [
                 'count' => $recentTransactions->count(),
                 'in' => $saldoHistories->where('type', 'IN')->sum('amount'),
-                'out' => $saldoHistories->where('type', 'OUT')->sum('amount') + $posTransactions->sum('amount'),
+                'out' => $saldoHistories->where('type', 'OUT')->sum('amount') 
+                    + $posTransactions->sum('amount') 
+                    + $billTransactions->where('status', \App\Models\Transaction::STATUS_PAID)->sum('amount'),
             ];
         }
 

@@ -22,7 +22,7 @@ import {
 } from "lucide-react";
 import { useSantri } from "@/contexts/SantriContext";
 import { useQuery } from "@tanstack/react-query";
-import { fetchSaldoHistories, fetchPosTransactions } from "@/lib/api";
+import { fetchSaldoHistories, fetchPosTransactions, fetchBillTransactions } from "@/lib/api";
 import { Text } from "@/components/Text";
 
 export const Route = createFileRoute("/riwayat")({
@@ -121,6 +121,15 @@ function RiwayatPage() {
     enabled: !!active,
   });
 
+  const { data: billTransactions = [], isLoading: isLoadingBill } = useQuery({
+    queryKey: ["bill-transactions", active?.id, range],
+    queryFn: async () => {
+      const res = await fetchBillTransactions({ filter: range });
+      return res.data.data || [];
+    },
+    enabled: !!active,
+  });
+
   const allTxs: Tx[] = useMemo(() => {
     const saldoMapped: Tx[] = saldoHistories.map((s: any) => ({
       id: s.id,
@@ -150,8 +159,19 @@ function RiwayatPage() {
       })),
     }));
 
-    return [...saldoMapped, ...posMapped].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-  }, [saldoHistories, posTransactions]);
+    const billMapped: Tx[] = billTransactions.map((b: any) => ({
+      id: b.id,
+      name: b.bill_names || "Pembayaran Tagihan",
+      category: "spp",
+      type: "out",
+      amount: Number(b.pay_amount),
+      date: b.created_at,
+      note: b.payment_method_name,
+      status: b.status,
+    }));
+
+    return [...saldoMapped, ...posMapped, ...billMapped].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  }, [saldoHistories, posTransactions, billTransactions]);
 
   const filtered = useMemo(() => {
     return allTxs.filter((t) => {
@@ -184,7 +204,7 @@ function RiwayatPage() {
   const activeFilters =
     (type !== "all" ? 1 : 0) + (cat !== "all" ? 1 : 0) + (range !== "all" ? 1 : 0) + (q ? 1 : 0);
 
-  if (isLoadingSaldo || isLoadingPos) {
+  if (isLoadingSaldo || isLoadingPos || isLoadingBill) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <Loader2 className="animate-spin text-primary" size={40} />

@@ -23,6 +23,7 @@ import {
   Trophy,
   GraduationCap,
   Users,
+  Receipt,
 } from "lucide-react";
 import { useState } from "react";
 import { MobileShell } from "@/components/MobileShell";
@@ -320,17 +321,28 @@ function Dashboard() {
           {(dashboard?.recentTransactions && Array.isArray(dashboard.recentTransactions) && dashboard.recentTransactions.length > 0) ? (
             dashboard.recentTransactions.map((t: any, i: number) => {
               const isIn = t.type === "IN";
+              const isBill = t.category === "BILL";
               return (
                 <div key={i} className="flex items-center gap-3 p-4">
                   <div
                     className={`w-11 h-11 rounded-2xl flex items-center justify-center ${
-                      isIn ? "bg-emerald-50 text-emerald-600" : "bg-blue-50 text-blue-600"
+                      isIn 
+                        ? "bg-emerald-50 text-emerald-600" 
+                        : isBill 
+                        ? "bg-purple-50 text-purple-600" 
+                        : "bg-blue-50 text-blue-600"
                     }`}
                   >
-                    {isIn ? <ArrowDownLeft size={18} /> : <Utensils size={18} />}
+                    {isIn ? (
+                      <ArrowDownLeft size={18} />
+                    ) : isBill ? (
+                      <Receipt size={18} />
+                    ) : (
+                      <Utensils size={18} />
+                    )}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-foreground truncate">{t.note || (isIn ? "Saldo Masuk" : "Belanja Kantin")}</p>
+                    <p className="text-sm font-semibold text-foreground truncate">{t.note || (isIn ? "Saldo Masuk" : isBill ? "Pembayaran Tagihan" : "Belanja Kantin")}</p>
                     <p className="text-[11px] text-muted-foreground flex items-center gap-1.5 flex-wrap">
                       {t.status && t.status !== 'SUCCESS' && (
                         <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider ${
