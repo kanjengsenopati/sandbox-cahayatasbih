@@ -128,6 +128,7 @@
                 {
                     data: 'bill_item',
                     name: 'bill_item',
+                    orderable: false
                 },
                 {
                     data: 'name',
@@ -140,15 +141,18 @@
                 {
                     data: 'academic_year.name',
                     name: 'academic_year.name',
-                    searchable: false
+                    searchable: false,
+                    orderable: false
                 },
                 {
                     data: 'payment_rates',
-                    name: 'payment_rates'
+                    name: 'payment_rates',
+                    orderable: false
                 },
                 {
                     data: 'bank',
-                    name: 'bank'
+                    name: 'bank',
+                    orderable: false
                 },
                 {
                     data: 'action',
