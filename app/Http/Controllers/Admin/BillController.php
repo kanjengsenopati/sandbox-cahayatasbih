@@ -505,8 +505,8 @@ class BillController extends Controller
             ->get();
 
         $totalBill   = $bills->sum('amount');
-        $totalPaid   = $bills->where('status', Bill::STATUS_PAID)->sum('amount');
-        $totalUnpaid = $bills->where('status', Bill::STATUS_UNPAID)->sum('amount');
+        $totalPaid   = $bills->sum('paid_amount');
+        $totalUnpaid = max(0, $totalBill - $totalPaid);
 
         $summary = [
             'total_bill'   => $totalBill,
