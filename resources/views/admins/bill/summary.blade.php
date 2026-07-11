@@ -266,8 +266,8 @@
         $('.btn-bayar').on('click', function(e) {
             e.preventDefault();
             var button = $(this);
-            var form = button.closest('form');
-            var paymentMethodSelect = form.find('.payment-method-select');
+            var tr = button.closest('tr');
+            var paymentMethodSelect = tr.find('.payment-method-select');
             var paymentMethod = paymentMethodSelect.val();
             
             if (!paymentMethod) {
@@ -279,8 +279,8 @@
                 return;
             }
             
-            var amountText = form.find('td:nth-child(4)').text().trim();
-            var periodText = form.find('th').text().trim();
+            var amountText = tr.find('td').eq(1).text().trim();
+            var periodText = tr.find('th').text().trim();
             var methodLabel = paymentMethod === 'BALANCE' ? 'Saldo' : 'Tunai';
 
             Swal.fire({
@@ -296,7 +296,13 @@
                 if (result.isConfirmed) {
                     button.prop('disabled', true);
                     button.html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Loading...');
-                    form.submit();
+                    
+                    var nativeForm = button[0].form;
+                    if (nativeForm) {
+                        nativeForm.submit();
+                    } else {
+                        button.closest('form').submit();
+                    }
                 }
             });
         });
