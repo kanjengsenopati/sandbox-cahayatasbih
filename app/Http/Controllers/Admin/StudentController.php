@@ -95,6 +95,18 @@ class StudentController extends Controller
                 ->addColumn('parent', function ($data) {
                     $userName = $data->user ? $data->user?->name : '-';
                     $userPhone = $data->user ? $data->user?->phone : '-';
+                    $jamaahStatus = $data->user ? $data->user->jamaah_status : null;
+                    
+                    $badgeHtml = '';
+                    if ($jamaahStatus === 'JAMAAH') {
+                        $badgeHtml = '<div class="mt-1"><span class="badge badge-light-success fw-bolder px-2 py-1">Jamaah</span></div>';
+                    } elseif ($jamaahStatus === 'NON_JAMAAH') {
+                        $badgeHtml = '<div class="mt-1"><span class="badge badge-light-danger fw-bolder px-2 py-1">Non Jamaah</span></div>';
+                    } elseif ($jamaahStatus === 'MUKIMIN') {
+                        $badgeHtml = '<div class="mt-1"><span class="badge badge-light-primary fw-bolder px-2 py-1">Mukimin</span></div>';
+                    } elseif ($jamaahStatus === 'UNKNOWN') {
+                        $badgeHtml = '<div class="mt-1"><span class="badge badge-light-warning fw-bolder px-2 py-1">Belum Jelas</span></div>';
+                    }
 
                     // Use avatar_url accessor for proper absolute URL
                     $avatarUrl = $data->user?->avatar_url ?? asset('assets/media/avatars/default.png');
@@ -117,7 +129,7 @@ class StudentController extends Controller
                             ? '<a href="' . $whatsappLink . '" target="_blank" style="text-decoration: none; color: inherit;">' . $userPhone . '</a>'
                             : $userPhone
                         ) .
-                        '</div>
+                        '</div>' . $badgeHtml . '
                         </div>
                     </div>';
                 })
@@ -592,9 +604,15 @@ class StudentController extends Controller
 
                             // Map status jamaah wali jika ada
                             $statusJamaahInput = strtoupper(trim($row['status_jamaah_wali'] ?? ''));
+                            $statusJamaahNormalized = str_replace([' ', '-'], '_', $statusJamaahInput);
+                            
                             $statusJamaah = 'UNKNOWN';
-                            if (in_array($statusJamaahInput, ['JAMAAH', 'NON_JAMAAH', 'MUKIMIN'])) {
-                                $statusJamaah = $statusJamaahInput;
+                            if ($statusJamaahNormalized === 'JAMAAH') {
+                                $statusJamaah = 'JAMAAH';
+                            } elseif (in_array($statusJamaahNormalized, ['NON_JAMAAH', 'BUKAN_JAMAAH', 'NONJAMAAH'])) {
+                                $statusJamaah = 'NON_JAMAAH';
+                            } elseif ($statusJamaahNormalized === 'MUKIMIN') {
+                                $statusJamaah = 'MUKIMIN';
                             }
 
                             $passwordInput = trim($row['password_wali'] ?? $row['password'] ?? '');

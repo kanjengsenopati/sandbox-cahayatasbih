@@ -85,13 +85,15 @@ class UserImportData implements ToCollection, WithHeadingRow
                 }
 
                 // Map Jamaah Status (JAMAAH / NON_JAMAAH / UNKNOWN / MUKIMIN)
-                $jamaahStatusInput = strtolower(trim($row['status_jamaah'] ?? ''));
+                $jamaahStatusInput = strtoupper(trim($row['status_jamaah'] ?? ''));
+                $jamaahStatusNormalized = str_replace([' ', '-'], '_', $jamaahStatusInput);
+                
                 $jamaahStatus = 'UNKNOWN'; // default
-                if ($jamaahStatusInput === 'jamaah') {
+                if ($jamaahStatusNormalized === 'JAMAAH') {
                     $jamaahStatus = 'JAMAAH';
-                } elseif ($jamaahStatusInput === 'non jamaah' || $jamaahStatusInput === 'non_jamaah') {
+                } elseif (in_array($jamaahStatusNormalized, ['NON_JAMAAH', 'BUKAN_JAMAAH', 'NONJAMAAH'])) {
                     $jamaahStatus = 'NON_JAMAAH';
-                } elseif ($jamaahStatusInput === 'mukimin') {
+                } elseif ($jamaahStatusNormalized === 'MUKIMIN') {
                     $jamaahStatus = 'MUKIMIN';
                 }
 
