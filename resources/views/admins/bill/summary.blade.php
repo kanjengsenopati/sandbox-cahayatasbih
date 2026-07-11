@@ -242,8 +242,7 @@
                                                     <a href="{{ $paymentLink }}" class="btn btn-primary btn-sm">Ke
                                                         Halaman Pembayaran</a>
                                                     @elseif ($billForMonth)
-                                                    <button onclick="disableButton(this)"
-                                                        class="btn btn-primary btn-bayar btn-sm">Bayar</button>
+                                                    <button type="button" class="btn btn-primary btn-bayar btn-sm">Bayar</button>
                                                     @endif
                                                 </td>
                                             </form>
@@ -263,26 +262,75 @@
 
 @push('js')
 <script>
-    function disableButton(el) {
-        el.disabled = true;
-        el.innerHTML = 'Loading...';
-        el.form.submit();
-    }
+    $(document).ready(function() {
+        $('.btn-bayar').on('click', function(e) {
+            e.preventDefault();
+            var button = $(this);
+            var form = button.closest('form');
+            var paymentMethodSelect = form.find('.payment-method-select');
+            var paymentMethod = paymentMethodSelect.val();
+            
+            if (!paymentMethod) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Peringatan',
+                    text: 'Silakan pilih metode pembayaran terlebih dahulu.'
+                });
+                return;
+            }
+            
+            var amountText = form.find('td:nth-child(4)').text().trim();
+            var periodText = form.find('th').text().trim();
+            var methodLabel = paymentMethod === 'BALANCE' ? 'Saldo' : 'Tunai';
+
+            Swal.fire({
+                title: 'Konfirmasi Pembayaran',
+                text: 'Apakah Anda yakin ingin membayar tagihan sebesar ' + amountText + ' untuk periode ' + periodText + ' menggunakan metode ' + methodLabel + '?',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#3085d6',
+                cancelButtonColor: '#d33',
+                confirmButtonText: 'Ya, Bayar Sekarang!',
+                cancelButtonText: 'Batal'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    button.prop('disabled', true);
+                    button.html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Loading...');
+                    form.submit();
+                }
+            });
+        });
+    });
 
    function changeStatus(billId, status) {
-        const form = document.createElement('form');
-        form.action = "{{ route('bill.change-status') }}";
-        form.method = 'post';
-        form.enctype = 'multipart/form-data';
+        var statusLabel = status === 'PAID' ? 'LUNAS' : 'BELUM LUNAS';
+        
+        Swal.fire({
+            title: 'Ubah Status Tagihan',
+            text: 'Apakah Anda yakin ingin mengubah status tagihan ini menjadi ' + statusLabel + '?',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#3085d6',
+            cancelButtonColor: '#d33',
+            confirmButtonText: 'Ya, Ubah!',
+            cancelButtonText: 'Batal'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                const form = document.createElement('form');
+                form.action = "{{ route('bill.change-status') }}";
+                form.method = 'post';
+                form.enctype = 'multipart/form-data';
 
-        form.innerHTML = `
-        @csrf
-        <input type="hidden" name="status" value="${status}">
-        <input type="hidden" name="bill_id" value="${billId}">
-        `;
+                form.innerHTML = `
+                @csrf
+                <input type="hidden" name="status" value="${status}">
+                <input type="hidden" name="bill_id" value="${billId}">
+                `;
 
-        document.body.appendChild(form);
-        form.submit();
+                document.body.appendChild(form);
+                form.submit();
+            }
+        });
     }
 </script>
 @endpush
