@@ -31,9 +31,16 @@ class PaymentRateController extends Controller
      */
     public function create()
     {
-
-        $billType = BillType::findOrFail(request()->get('bill_type_id'));
-        $schools = School::orderBy('name')->get();
+        $billType = BillType::with('billItem')->findOrFail(request()->get('bill_type_id'));
+        
+        $posBayarName = $billType->billItem?->name;
+        $schoolsQuery = School::hasSchool();
+        
+        if ($posBayarName && School::where('type', $posBayarName)->exists()) {
+            $schoolsQuery->where('type', $posBayarName);
+        }
+        
+        $schools = $schoolsQuery->orderBy('name')->get();
         $classroomValue = [];
         return view('admins.payment-rate.create-edit', compact('billType', 'schools', 'classroomValue'));
     }
@@ -394,9 +401,18 @@ class PaymentRateController extends Controller
      */
     public function edit(PaymentRate $paymentRate)
     {
-        $schools = School::orderBy('name')->get();
-        $billType = $paymentRate->billType;
+        $billType = BillType::with('billItem')->findOrFail($paymentRate->bill_type_id);
+        
+        $posBayarName = $billType->billItem?->name;
+        $schoolsQuery = School::hasSchool();
+        
+        if ($posBayarName && School::where('type', $posBayarName)->exists()) {
+            $schoolsQuery->where('type', $posBayarName);
+        }
+        
+        $schools = $schoolsQuery->orderBy('name')->get();
         $classrooms = Classroom::orderByRaw("CAST(name AS UNSIGNED) ASC, name ASC")->get();
+        
         return view('admins.payment-rate.create-edit', compact('paymentRate', 'schools', 'billType', 'classrooms'));
     }
 

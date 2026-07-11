@@ -303,26 +303,40 @@
                             <!-- Sekolah -->
                             <div class="mb-5">
                                 <label class="form-label fw-bold fs-6 text-gray-700">Sekolah</label>
-                                <select name="school_id" class="form-select form-select-solid {{ isset($paymentRate) ? 'bg-light' : '' }}" id="school_id"
-                                    data-control="select2" data-placeholder="Pilih Sekolah" {{ isset($paymentRate) ? 'disabled' : '' }}>
-                                    <option></option>
-                                    @php
-                                        $selectedSchoolId = null;
-                                        if (isset($paymentRate)) {
-                                            if ($paymentRate->type == 'REGULAR' && $paymentRate->paymentRateClassrooms->isNotEmpty()) {
-                                                $selectedSchoolId = $paymentRate->paymentRateClassrooms->first()->classroom->school_id ?? null;
-                                            } elseif ($paymentRate->type == 'TRANSFER' && $paymentRate->paymentRateStudents->isNotEmpty()) {
-                                                $selectedSchoolId = $paymentRate->paymentRateStudents->first()->student->classroom->school_id ?? null;
-                                            }
+                                @php
+                                    $selectedSchoolId = null;
+                                    $isLocked = false;
+                                    if (isset($paymentRate)) {
+                                        if ($paymentRate->type == 'REGULAR' && $paymentRate->paymentRateClassrooms->isNotEmpty()) {
+                                            $selectedSchoolId = $paymentRate->paymentRateClassrooms->first()->classroom->school_id ?? null;
+                                        } elseif ($paymentRate->type == 'TRANSFER' && $paymentRate->paymentRateStudents->isNotEmpty()) {
+                                            $selectedSchoolId = $paymentRate->paymentRateStudents->first()->student->classroom->school_id ?? null;
                                         }
-                                    @endphp
+                                        $isLocked = true;
+                                    } else {
+                                        // CREATE Mode: Auto-select and lock based on UPT/POS filters
+                                        if (request()->has('school_id') && request()->get('school_id')) {
+                                            $selectedSchoolId = request()->get('school_id');
+                                            $isLocked = true;
+                                        } elseif (isset($schools) && $schools->count() === 1) {
+                                            $selectedSchoolId = $schools->first()->id;
+                                            $isLocked = true;
+                                        } elseif (auth()->user()->school_id) {
+                                            $selectedSchoolId = auth()->user()->school_id;
+                                            $isLocked = true;
+                                        }
+                                    }
+                                @endphp
+                                <select name="school_id" class="form-select form-select-solid {{ ($isLocked) ? 'bg-light' : '' }}" id="school_id"
+                                    data-control="select2" data-placeholder="Pilih Sekolah" {{ ($isLocked) ? 'disabled' : '' }}>
+                                    <option></option>
                                     @foreach ($schools as $school)
                                     <option value="{{ $school->id }}" {{ ($selectedSchoolId == $school->id) ? 'selected' : '' }}>
                                         {{ $school->name }}
                                     </option>
                                     @endforeach
                                 </select>
-                                @if(isset($paymentRate))
+                                @if($isLocked && $selectedSchoolId)
                                     <input type="hidden" name="school_id" value="{{ $selectedSchoolId }}">
                                 @endif
                             </div>
@@ -741,6 +755,11 @@
         $('#btn-select-all-tidak-tahu').click(function() {
             toggleStudentsByStatus('UNKNOWN');
         });
+
+        // Auto-trigger pemuatan kelas jika sekolah sudah terpilih saat halaman diload
+        if ($('#school_id').val()) {
+            $('#school_id').trigger('change');
+        }
     });
 </script>
 @endpush
