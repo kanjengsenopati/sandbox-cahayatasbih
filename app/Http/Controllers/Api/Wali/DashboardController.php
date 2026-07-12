@@ -88,11 +88,15 @@ class DashboardController extends BaseWaliApiController
                     \App\Models\Transaction::STATUS_REJECTED,
                     \App\Models\Transaction::STATUS_EXPIRED
                 ])
+                ->whereHas('transactionDetails', function ($q) {
+                    $q->whereNull('deleted_at');
+                })
                 ->whereDate('created_at', now()->toDateString())
                 ->latest()
                 ->get()
                 ->map(function($item) {
                     $billNames = $item->transactionDetails
+                        ->filter(fn($d) => is_null($d->deleted_at))
                         ->map(fn($d) => $d->bill->billType->name ?? 'Tagihan')
                         ->unique()
                         ->join(', ');

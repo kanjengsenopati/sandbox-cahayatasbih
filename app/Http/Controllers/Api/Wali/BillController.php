@@ -27,13 +27,16 @@ class BillController extends BaseWaliApiController
                     ->where('type', \App\Models\Transaction::TYPE_BILL)
                     ->whereIn('status', [\App\Models\Transaction::STATUS_PAID, 'approved', 'SUCCESS'])
                     ->whereHas('transactionDetails', function ($query) use ($billIds) {
-                        $query->whereIn('bill_id', $billIds);
+                        $query->whereIn('bill_id', $billIds)->whereNull('deleted_at');
                     })
                     ->latest()
                     ->get()
                     ->map(function ($tx) use ($billIds) {
                         $amount = 0;
                         foreach ($tx->transactionDetails as $detail) {
+                            if ($detail->deleted_at !== null) {
+                                continue;
+                            }
                             if (in_array($detail->bill_id, $billIds)) {
                                 $amount += $detail->amount ?? ($detail->bill->amount ?? 0);
                             }
@@ -46,7 +49,8 @@ class BillController extends BaseWaliApiController
                             'method' => $tx->paymentMethod->name ?? 'Metode Lain',
                             'cashier' => $tx->admin->name ?? ($tx->user->name ?? 'Sistem'),
                         ];
-                    });
+                    })
+                    ->filter(fn($p) => $p['amount'] > 0);
 
                 return [
                     'bill_type_id' => $first->bill_type_id,
