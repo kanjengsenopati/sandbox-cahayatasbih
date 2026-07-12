@@ -54,7 +54,8 @@ class SyncMasterDatabase extends Command
             'point_of_sale_transaction_details',
             'transactions',
             'transaction_details',
-            'saldo_histories'
+            'saldo_histories',
+            'saving_histories'
         ];
 
         $report = [];
@@ -248,6 +249,27 @@ class SyncMasterDatabase extends Command
                                 }
                             }
 
+                            // Check student saving difference and log adjustment
+                            if ($table === 'students' && isset($row['id']) && isset($row['saving'])) {
+                                $localStudent = DB::connection('mysql')->table('students')->where('id', $row['id'])->first();
+                                if ($localStudent && isset($localStudent->saving)) {
+                                    $diff = $row['saving'] - $localStudent->saving;
+                                    if ($diff != 0) {
+                                        DB::connection('mysql')->table('saving_histories')->insert([
+                                            'id' => (string) \Illuminate\Support\Str::uuid(),
+                                            'student_id' => $row['id'],
+                                            'type' => $diff > 0 ? 'IN' : 'OUT',
+                                            'amount' => abs($diff),
+                                            'description' => 'Adjustment sinkronisasi master (selisih tabungan)',
+                                            'status' => 'SUCCESS',
+                                            'date' => now(),
+                                            'created_at' => now(),
+                                            'updated_at' => now(),
+                                        ]);
+                                    }
+                                }
+                            }
+
                             $dateStr = $row['created_at'] ?? $row['updated_at'] ?? null;
                             if ($dateStr) {
                                 $ts = strtotime($dateStr);
@@ -286,6 +308,54 @@ class SyncMasterDatabase extends Command
                     'message' => "Successfully synced {$inserted} rows"
                 ];
             }
+
+            // Recalculate bill paid_amount and status to maintain consistency and integrity
+            $this->info("Recalculating paid_amount and status for all bills...");
+            
+            // 1. Reset paid_amount to 0 for all bills first
+            DB::connection('mysql')->table('bills')->update(['paid_amount' => 0]);
+            
+            // 2. Fetch and aggregate all successful transaction details
+            DB::connection('mysql')->table('transaction_details')
+                ->join('transactions', 'transaction_details.transaction_id', '=', 'transactions.id')
+                ->join('bills', 'transaction_details.bill_id', '=', 'bills.id')
+                ->whereIn('transactions.status', ['PAID', 'approved', 'SUCCESS'])
+                ->whereNull('transaction_details.deleted_at')
+                ->whereNull('transactions.deleted_at')
+                ->select(
+                    'transaction_details.bill_id',
+                    'transaction_details.amount as detail_amount',
+                    'bills.amount as bill_amount'
+                )
+                ->orderBy('transaction_details.id')
+                ->chunk(1000, function ($details) {
+                    $billPayments = [];
+                    foreach ($details as $detail) {
+                        $paid = is_null($detail->detail_amount) ? $detail->bill_amount : $detail->detail_amount;
+                        if (!isset($billPayments[$detail->bill_id])) {
+                            $billPayments[$detail->bill_id] = 0;
+                        }
+                        $billPayments[$detail->bill_id] += $paid;
+                    }
+                    
+                    foreach ($billPayments as $billId => $totalPaid) {
+                        DB::connection('mysql')->table('bills')
+                            ->where('id', $billId)
+                            ->increment('paid_amount', $totalPaid);
+                    }
+                });
+            
+            // 3. For any bill where paid_amount >= amount, status must be PAID
+            DB::connection('mysql')->table('bills')
+                ->whereRaw('paid_amount >= amount')
+                ->update(['status' => 'PAID']);
+                
+            // 4. For any bill where status is PAID but paid_amount is less than amount,
+            // we must set paid_amount = amount to ensure UI consistency.
+            DB::connection('mysql')->table('bills')
+                ->where('status', 'PAID')
+                ->whereRaw('paid_amount < amount')
+                ->update(['paid_amount' => DB::raw('amount')]);
 
             DB::connection('mysql')->statement('SET FOREIGN_KEY_CHECKS=1;');
             DB::connection('mysql')->commit();
