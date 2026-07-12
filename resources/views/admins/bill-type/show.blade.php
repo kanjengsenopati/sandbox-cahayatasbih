@@ -408,69 +408,56 @@
                         return;
                     }
 
-                    var html = '<div class="table-responsive">';
-                    html += '<table class="table table-row-bordered table-row-gray-200 align-middle gs-0 gy-2 bg-white rounded">';
-                    html += '<thead><tr class="fw-bolder text-muted fs-8 text-uppercase">';
-                    html += '<th style="width: 3%"></th>';
-                    html += '<th class="ps-4" style="width: 5%">No</th>';
-                    html += '<th>Nama Santri</th>';
-                    html += '<th>Kelas</th>';
-                    html += '<th>Total Tagihan</th>';
-                    html += '<th>Dibayar</th>';
-                    html += '<th>Sisa</th>';
-                    html += '<th class="text-center">Status</th>';
-                    html += '</tr></thead><tbody>';
+                    // Preserve state if it already exists
+                    var existingState = contentDiv.data('tbl-state');
+                    var state = {
+                        all: students,
+                        filtered: students,
+                        page: existingState ? existingState.page : 1,
+                        limit: existingState ? existingState.limit : 20,
+                        search: existingState ? existingState.search : ''
+                    };
+                    contentDiv.data('tbl-state', state);
 
-                    students.forEach(function(s, idx) {
-                        html += '<tr class="student-row" data-student-id="' + s.id + '" data-rate-id="' + rateId + '" style="cursor: pointer;">';
-                        html += '<td class="text-center toggle-student-detail">';
-                        html += '<i class="fas fa-chevron-right text-success fs-8 transition-transform" style="transition: transform 0.15s;"></i>';
-                        html += '</td>';
-                        html += '<td class="ps-4 text-gray-700">' + (idx + 1) + '</td>';
-                        html += '<td class="fw-bold text-gray-800">' + (s.name || '-') + '</td>';
-                        html += '<td class="text-gray-600">' + (s.classroom || '-') + '</td>';
-                        html += '<td class="text-gray-700">' + (s.total || 'Rp. 0') + '</td>';
-                        html += '<td class="text-success fw-bold">' + (s.total_paid || 'Rp. 0') + '</td>';
-                        html += '<td class="text-danger fw-bold">' + (s.total_unpaid || 'Rp. 0') + '</td>';
-                        html += '<td class="text-center">' + (s.status || '-') + '</td>';
-                        html += '</tr>';
+                    // Render table and search/limit shell
+                    var html = '<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">';
+                    html += '  <div class="d-flex align-items-center gap-2">';
+                    html += '    <span class="fs-8 fw-bold text-gray-600">Tampilkan:</span>';
+                    html += '    <select class="form-select form-select-solid form-select-sm w-100px limit-student" data-rate-id="' + rateId + '">';
+                    html += '      <option value="20" ' + (state.limit == 20 ? 'selected' : '') + '>20 Baris</option>';
+                    html += '      <option value="30" ' + (state.limit == 30 ? 'selected' : '') + '>30 Baris</option>';
+                    html += '      <option value="50" ' + (state.limit == 50 ? 'selected' : '') + '>50 Baris</option>';
+                    html += '      <option value="all" ' + (state.limit == 'all' ? 'selected' : '') + '>Semua</option>';
+                    html += '    </select>';
+                    html += '  </div>';
+                    html += '  <div class="d-flex align-items-center gap-2">';
+                    html += '    <input type="text" class="form-control form-control-solid form-control-sm w-200px search-student" placeholder="Cari Nama..." value="' + state.search + '" data-rate-id="' + rateId + '">';
+                    html += '  </div>';
+                    html += '</div>';
 
-                        // Detail row for student
-                        html += '<tr class="student-detail-row" id="student-detail-' + s.id + '-' + rateId + '" style="display: none;">';
-                        html += '<td colspan="8" class="p-0 border-0">';
-                        html += '<div class="bg-light rounded mx-4 my-2 p-3" style="background-color: #f8f9fa; border: 1px dashed #e4e6ef;">';
-                        
-                        // Redesigned Header with multi-select actions
-                        html += '<div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">';
-                        html += '<h6 class="mb-0 text-success fw-bold fs-7">';
-                        html += '<i class="fas fa-receipt me-2"></i>Rincian Tagihan Bulanan';
-                        html += '</h6>';
-                        html += '<div class="d-flex align-items-center gap-3 select-actions-container-' + s.id + '-' + rateId + '" style="display: none !important;">';
-                        html += '<div class="form-check form-check-custom form-check-solid form-check-sm">';
-                        html += '<input class="form-check-input select-all-bills" type="checkbox" data-student-id="' + s.id + '" data-rate-id="' + rateId + '" id="check-all-' + s.id + '-' + rateId + '" />';
-                        html += '<label class="form-check-label fs-8 text-gray-700 cursor-pointer" for="check-all-' + s.id + '-' + rateId + '">';
-                        html += 'Pilih Semua';
-                        html += '</label>';
-                        html += '</div>';
-                        html += '<button type="button" class="btn btn-sm btn-light-danger px-3 py-1 fs-9 mass-delete-btn" data-student-id="' + s.id + '" data-rate-id="' + rateId + '">';
-                        html += '<i class="bi bi-trash fs-9 me-1"></i>Hapus Terpilih (<span class="selected-count">0</span>)';
-                        html += '</button>';
-                        html += '</div>';
-                        html += '</div>';
-                        
-                        html += '<div class="student-bill-content">';
-                        html += '<div class="text-center py-3">';
-                        html += '<div class="spinner-border text-success spinner-border-sm" role="status"></div>';
-                        html += '</div>';
-                        html += '</div>';
-                        html += '</div>';
-                        html += '</td>';
-                        html += '</tr>';
-                    });
+                    html += '<div class="table-responsive">';
+                    html += '  <table class="table table-row-bordered table-row-gray-200 align-middle gs-0 gy-2 bg-white rounded">';
+                    html += '    <thead><tr class="fw-bolder text-muted fs-8 text-uppercase">';
+                    html += '      <th style="width: 3%"></th>';
+                    html += '      <th class="ps-4" style="width: 5%">No</th>';
+                    html += '      <th>Nama Santri</th>';
+                    html += '      <th>Kelas</th>';
+                    html += '      <th>Total Tagihan</th>';
+                    html += '      <th>Dibayar</th>';
+                    html += '      <th>Sisa</th>';
+                    html += '      <th class="text-center">Status</th>';
+                    html += '    </tr></thead>';
+                    html += '    <tbody class="student-table-body" data-rate-id="' + rateId + '"></tbody>';
+                    html += '  </table>';
+                    html += '</div>';
 
-                    html += '</tbody></table></div>';
+                    html += '<div class="d-flex justify-content-between align-items-center mt-4 flex-wrap gap-2 pagination-container" data-rate-id="' + rateId + '"></div>';
+
                     contentDiv.html(html);
                     loadedPanels[rateId] = true;
+
+                    // Initial render of student list
+                    renderStudentTable(rateId);
 
                     if (typeof callback === 'function') {
                         callback();
@@ -481,6 +468,129 @@
                     contentDiv.html('<div class="alert alert-danger py-3 mb-0"><i class="fas fa-exclamation-triangle me-2"></i>Gagal memuat data santri</div>');
                 }
             });
+        }
+
+        function renderStudentTable(rateId) {
+            var detailRow = $('#detail-' + rateId);
+            var contentDiv = detailRow.find('.detail-content');
+            var state = contentDiv.data('tbl-state');
+            if (!state) return;
+
+            // Filter by search string
+            state.filtered = state.all.filter(function(s) {
+                return (s.name || '').toLowerCase().indexOf(state.search.toLowerCase()) !== -1;
+            });
+
+            // Pagination calculation
+            var total = state.filtered.length;
+            var limit = state.limit === 'all' ? total : parseInt(state.limit);
+            var totalPages = limit > 0 ? Math.ceil(total / limit) : 1;
+
+            if (state.page > totalPages) {
+                state.page = totalPages || 1;
+            }
+            if (state.page < 1) {
+                state.page = 1;
+            }
+
+            var start = (state.page - 1) * limit;
+            var end = state.limit === 'all' ? total : Math.min(start + limit, total);
+            var slice = state.filtered.slice(start, end);
+
+            var tbody = contentDiv.find('.student-table-body');
+            var html = '';
+
+            if (slice.length === 0) {
+                html += '<tr><td colspan="8" class="text-center py-4 text-muted">Tidak ada data santri ditemukan</td></tr>';
+            } else {
+                slice.forEach(function(s, idx) {
+                    var displayIdx = start + idx + 1;
+                    html += '<tr class="student-row" data-student-id="' + s.id + '" data-rate-id="' + rateId + '" style="cursor: pointer;">';
+                    html += '<td class="text-center toggle-student-detail">';
+                    html += '<i class="fas fa-chevron-right text-success fs-8 transition-transform" style="transition: transform 0.15s;"></i>';
+                    html += '</td>';
+                    html += '<td class="ps-4 text-gray-700">' + displayIdx + '</td>';
+                    html += '<td class="fw-bold text-gray-800">' + (s.name || '-') + '</td>';
+                    html += '<td class="text-gray-600">' + (s.classroom || '-') + '</td>';
+                    html += '<td class="text-gray-700">' + (s.total || 'Rp. 0') + '</td>';
+                    html += '<td class="text-success fw-bold">' + (s.total_paid || 'Rp. 0') + '</td>';
+                    html += '<td class="text-danger fw-bold">' + (s.total_unpaid || 'Rp. 0') + '</td>';
+                    html += '<td class="text-center">' + (s.status || '-') + '</td>';
+                    html += '</tr>';
+
+                    // Detail row for student
+                    html += '<tr class="student-detail-row" id="student-detail-' + s.id + '-' + rateId + '" style="display: none;">';
+                    html += '<td colspan="8" class="p-0 border-0">';
+                    html += '<div class="bg-light rounded mx-4 my-2 p-3" style="background-color: #f8f9fa; border: 1px dashed #e4e6ef;">';
+                    
+                    // Redesigned Header with multi-select actions
+                    html += '<div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">';
+                    html += '<h6 class="mb-0 text-success fw-bold fs-7">';
+                    html += '<i class="fas fa-receipt me-2"></i>Rincian Tagihan Bulanan';
+                    html += '</h6>';
+                    html += '<div class="d-flex align-items-center gap-3 select-actions-container-' + s.id + '-' + rateId + '" style="display: none !important;">';
+                    html += '<div class="form-check form-check-custom form-check-solid form-check-sm">';
+                    html += '<input class="form-check-input select-all-bills" type="checkbox" data-student-id="' + s.id + '" data-rate-id="' + rateId + '" id="check-all-' + s.id + '-' + rateId + '" />';
+                    html += '<label class="form-check-label fs-8 text-gray-700 cursor-pointer" for="check-all-' + s.id + '-' + rateId + '">';
+                    html += 'Pilih Semua';
+                    html += '</label>';
+                    html += '</div>';
+                    html += '<button type="button" class="btn btn-sm btn-light-danger px-3 py-1 fs-9 mass-delete-btn" data-student-id="' + s.id + '" data-rate-id="' + rateId + '">';
+                    html += '<i class="bi bi-trash fs-9 me-1"></i>Hapus Terpilih (<span class="selected-count">0</span>)';
+                    html += '</button>';
+                    html += '</div>';
+                    html += '</div>';
+                    
+                    html += '<div class="student-bill-content">';
+                    html += '<div class="text-center py-3">';
+                    html += '<div class="spinner-border text-success spinner-border-sm" role="status"></div>';
+                    html += '</div>';
+                    html += '</div>';
+                    html += '</div>';
+                    html += '</td>';
+                    html += '</tr>';
+                });
+            }
+
+            tbody.html(html);
+
+            // Render pagination footer
+            var pagContainer = contentDiv.find('.pagination-container');
+            var pagHtml = '';
+            if (total > 0) {
+                pagHtml += '<div class="fs-8 text-gray-700 fw-bold">Menampilkan ' + (start + 1) + ' - ' + end + ' dari ' + total + ' santri</div>';
+            } else {
+                pagHtml += '<div class="fs-8 text-gray-700 fw-bold">Menampilkan 0 dari 0 santri</div>';
+            }
+
+            if (totalPages > 1) {
+                pagHtml += '<ul class="pagination pagination-outline mb-0">';
+                
+                // Previous button
+                pagHtml += '<li class="page-item previous ' + (state.page === 1 ? 'disabled' : '') + '">';
+                pagHtml += '<a href="#" class="page-link py-1 px-3 fs-8 btn-page" data-page="' + (state.page - 1) + '" data-rate-id="' + rateId + '">Sebelumnya</a>';
+                pagHtml += '</li>';
+                
+                // Page numbers
+                for (var p = 1; p <= totalPages; p++) {
+                    if (p === 1 || p === totalPages || Math.abs(p - state.page) <= 1) {
+                        pagHtml += '<li class="page-item ' + (state.page === p ? 'active' : '') + '">';
+                        pagHtml += '<a href="#" class="page-link py-1 px-3 fs-8 btn-page" data-page="' + p + '" data-rate-id="' + rateId + '">' + p + '</a>';
+                        pagHtml += '</li>';
+                    } else if (p === 2 || p === totalPages - 1) {
+                        pagHtml += '<li class="page-item disabled"><span class="page-link py-1 px-3 fs-8">...</span></li>';
+                    }
+                }
+                
+                // Next button
+                pagHtml += '<li class="page-item next ' + (state.page === totalPages ? 'disabled' : '') + '">';
+                pagHtml += '<a href="#" class="page-link py-1 px-3 fs-8 btn-page" data-page="' + (state.page + 1) + '" data-rate-id="' + rateId + '">Berikutnya</a>';
+                pagHtml += '</li>';
+                
+                pagHtml += '</ul>';
+            }
+
+            pagContainer.html(pagHtml);
         }
 
         // Expandable Student Panel Toggle
@@ -830,6 +940,44 @@
                     });
                 }
             });
+        // Client-side search student name input handler
+        $(document).on('input', '.search-student', function() {
+            var rateId = $(this).data('rate-id');
+            var detailRow = $('#detail-' + rateId);
+            var contentDiv = detailRow.find('.detail-content');
+            var state = contentDiv.data('tbl-state');
+            if (state) {
+                state.search = $(this).val();
+                state.page = 1; // Reset to first page
+                renderStudentTable(rateId);
+            }
+        });
+
+        // Client-side page limit selection change handler
+        $(document).on('change', '.limit-student', function() {
+            var rateId = $(this).data('rate-id');
+            var detailRow = $('#detail-' + rateId);
+            var contentDiv = detailRow.find('.detail-content');
+            var state = contentDiv.data('tbl-state');
+            if (state) {
+                state.limit = $(this).val();
+                state.page = 1; // Reset to first page
+                renderStudentTable(rateId);
+            }
+        });
+
+        // Client-side page navigation click handler
+        $(document).on('click', '.btn-page', function(e) {
+            e.preventDefault();
+            var rateId = $(this).data('rate-id');
+            var page = parseInt($(this).data('page'));
+            var detailRow = $('#detail-' + rateId);
+            var contentDiv = detailRow.find('.detail-content');
+            var state = contentDiv.data('tbl-state');
+            if (state && !isNaN(page)) {
+                state.page = page;
+                renderStudentTable(rateId);
+            }
         });
     });
 </script>
