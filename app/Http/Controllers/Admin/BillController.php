@@ -603,7 +603,7 @@ class BillController extends Controller
 
                             // Hapus detail transaksi, dan hapus transaksi induk jika tidak memiliki detail lain
                             $detail->delete();
-                            if ($transaction->transactionDetails()->count() == 0) {
+                            if ($transaction->transactionDetails()->whereNull('deleted_at')->count() == 0) {
                                 $transaction->delete();
                             }
                         }
