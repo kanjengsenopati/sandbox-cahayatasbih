@@ -77,7 +77,7 @@
                                                                 'JAMAAH' => 'Jamaah',
                                                                 'NON_JAMAAH' => 'Non Jamaah',
                                                                 'MUKIMIN' => 'Mukimin',
-                                                                default => 'Belum Jelas'
+                                                                default => 'Belum Tahu'
                                                             };
                                                         @endphp
                                                         <span class="badge badge-light-{{ $badgeClass }} fw-bolder ms-2 px-2 py-1">

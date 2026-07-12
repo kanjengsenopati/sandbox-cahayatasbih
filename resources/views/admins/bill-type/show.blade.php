@@ -140,7 +140,7 @@
                                                             'JAMAAH' => 'Jamaah',
                                                             'NON_JAMAAH' => 'Non Jamaah',
                                                             'MUKIMIN' => 'Mukimin',
-                                                            'UNKNOWN' => 'Belum Jelas',
+                                                            'UNKNOWN' => 'Belum Tahu',
                                                             default => $status
                                                         };
                                                     })->implode(', ') }}
@@ -246,7 +246,7 @@
                                                                     'JAMAAH' => 'Jamaah',
                                                                     'NON_JAMAAH' => 'Non Jamaah',
                                                                     'MUKIMIN' => 'Mukimin',
-                                                                    'UNKNOWN' => 'Belum Jelas',
+                                                                    'UNKNOWN' => 'Belum Tahu',
                                                                     default => $status
                                                                 };
                                                             })->implode(', ') }}

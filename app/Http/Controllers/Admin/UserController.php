@@ -74,7 +74,7 @@ class UserController extends Controller
                 } elseif ($data->jamaah_status === 'MUKIMIN') {
                     return '<span class="badge badge-light-primary fw-bolder px-2 py-1">Mukimin</span>';
                 }
-                return '<span class="badge badge-light-warning fw-bolder px-2 py-1">Belum Jelas</span>';
+                return '<span class="badge badge-light-warning fw-bolder px-2 py-1">Belum Tahu</span>';
             })
             ->editColumn('last_login', function ($data) {
                 return $data->last_login

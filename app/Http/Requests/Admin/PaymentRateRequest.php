@@ -28,7 +28,7 @@ class PaymentRateRequest extends FormRequest
             'gender' => 'nullable|array',
             'gender.*' => 'in:L,P',
             'jamaah_status' => 'nullable|array',
-            'jamaah_status.*' => 'in:JAMAAH,NON_JAMAAH,MUKIMIN',
+            'jamaah_status.*' => 'in:JAMAAH,NON_JAMAAH,MUKIMIN,UNKNOWN',
         ];
 
         // Validation for CREATE only
