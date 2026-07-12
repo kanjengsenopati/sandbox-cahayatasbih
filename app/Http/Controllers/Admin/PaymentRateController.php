@@ -248,7 +248,7 @@ class PaymentRateController extends Controller
         // Apply Payment Rate Parent Jamaah Status Filter
         if ($paymentRate->jamaah_status) {
             $query->whereHas('user', function ($userQ) use ($paymentRate) {
-                $userQ->whereIn('jamaah_status', explode(',', $paymentRate->jamaah_status));
+                $userQ->whereIn('jamaah_status', array_map('trim', explode(',', $paymentRate->jamaah_status)));
             });
         }
 
@@ -810,7 +810,7 @@ class PaymentRateController extends Controller
                 $q->whereIn('gender', $genderArray);
             })
             ->when($jamaahStatus, function($q) use ($jamaahStatus) {
-                $jamaahStatusArray = is_array($jamaahStatus) ? $jamaahStatus : explode(',', $jamaahStatus);
+                $jamaahStatusArray = array_map('trim', is_array($jamaahStatus) ? $jamaahStatus : explode(',', $jamaahStatus));
                 $q->whereHas('user', function($userQ) use ($jamaahStatusArray) {
                     $userQ->whereIn('jamaah_status', $jamaahStatusArray);
                 });
