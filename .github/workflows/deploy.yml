@@ -60,6 +60,9 @@ jobs:
             echo "=== Running Audit ==="
             php artisan app:audit || echo "Audit failed"
 
+            echo "=== Running Diagnostics ==="
+            php diagnose_perwalian.php || echo "Diagnostic failed"
+
             echo "=== Fixing Permissions ==="
             chown -R www:www $DEPLOY_PATH || echo "Failed to chown"
             find $DEPLOY_PATH -type d -exec chmod 775 {} \; || echo "Failed to chmod dirs"
