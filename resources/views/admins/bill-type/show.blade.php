@@ -940,6 +940,8 @@
                     });
                 }
             });
+        });
+
         // Client-side search student name input handler
         $(document).on('input', '.search-student', function() {
             var rateId = $(this).data('rate-id');
