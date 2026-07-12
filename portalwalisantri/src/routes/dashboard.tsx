@@ -336,8 +336,10 @@ function Dashboard() {
 
         <div className="bg-card rounded-3xl border border-border divide-y divide-border overflow-hidden shadow-[var(--shadow-soft)]">
           {(dashboard?.recentTransactions && Array.isArray(dashboard.recentTransactions) && dashboard.recentTransactions.length > 0) ? (
-            dashboard.recentTransactions.map((t: any, i: number) => {
-              const isIn = t.type === "IN";
+            dashboard.recentTransactions
+              .filter((t: any) => !(t.category === "BILL" && ["CANCELLED", "cancelled", "rejected", "REJECTED", "EXPIRED", "expired", "failed", "FAILED"].includes(t.status)))
+              .map((t: any, i: number) => {
+                const isIn = t.type === "IN";
               const isBill = t.category === "BILL";
               return (
                 <div key={i} className="flex items-center gap-3 p-4">

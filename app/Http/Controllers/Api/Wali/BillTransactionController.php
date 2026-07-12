@@ -15,6 +15,11 @@ class BillTransactionController extends BaseWaliApiController
         $query = Transaction::with(['paymentMethod', 'transactionDetails.bill.billType', 'admin', 'user'])
             ->where('student_id', $student->id)
             ->where('type', Transaction::TYPE_BILL)
+            ->whereNotIn('status', [
+                Transaction::STATUS_CANCELLED,
+                Transaction::STATUS_REJECTED,
+                Transaction::STATUS_EXPIRED
+            ])
             ->latest();
 
         if ($request->filter == 'today') {

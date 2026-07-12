@@ -203,17 +203,19 @@ function RiwayatPage() {
       })),
     }));
 
-    const billMapped: Tx[] = billTransactions.map((b: any) => ({
-      id: b.id,
-      name: b.bill_names || "Pembayaran Tagihan",
-      category: "spp",
-      type: "out",
-      amount: Number(b.pay_amount),
-      date: b.created_at,
-      note: b.payment_method_name,
-      status: b.status,
-      cashier: b.cashier,
-    }));
+    const billMapped: Tx[] = billTransactions
+      .filter((b: any) => !["CANCELLED", "cancelled", "rejected", "REJECTED", "EXPIRED", "expired", "failed", "FAILED"].includes(b.status))
+      .map((b: any) => ({
+        id: b.id,
+        name: b.bill_names || "Pembayaran Tagihan",
+        category: "spp",
+        type: "out",
+        amount: Number(b.pay_amount),
+        date: b.created_at,
+        note: b.payment_method_name,
+        status: b.status,
+        cashier: b.cashier,
+      }));
 
     return [...saldoMapped, ...posMapped, ...billMapped].sort((a, b) => safeParseDate(b.date).getTime() - safeParseDate(a.date).getTime());
   }, [saldoHistories, posTransactions, billTransactions]);

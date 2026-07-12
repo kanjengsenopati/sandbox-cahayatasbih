@@ -83,6 +83,11 @@ class DashboardController extends BaseWaliApiController
             $billTransactions = \App\Models\Transaction::with(['paymentMethod', 'transactionDetails.bill.billType'])
                 ->where('student_id', $activeStudent->id)
                 ->where('type', \App\Models\Transaction::TYPE_BILL)
+                ->whereNotIn('status', [
+                    \App\Models\Transaction::STATUS_CANCELLED,
+                    \App\Models\Transaction::STATUS_REJECTED,
+                    \App\Models\Transaction::STATUS_EXPIRED
+                ])
                 ->whereDate('created_at', now()->toDateString())
                 ->latest()
                 ->get()
