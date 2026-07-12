@@ -34,19 +34,27 @@ class SyncMasterDatabase extends Command
         $syncAll = $this->option('all');
 
         $tables = [
+            'schools',
+            'academic_years',
+            'bill_items',
+            'bill_types',
             'banks',
             'bill_type_banks',
             'topup_banks',
+            'payment_rates',
+            'payment_rate_classrooms',
+            'payment_rate_students',
+            'payment_rate_items',
+            'students',
+            'student_classroom_histories',
+            'bills',
             'transaction_proofs',
             'point_of_sale_carts',
             'point_of_sale_transactions',
-            'transactions',
-            'bills',
             'point_of_sale_transaction_details',
+            'transactions',
             'transaction_details',
-            'saldo_histories',
-            'students',
-            'student_classroom_histories'
+            'saldo_histories'
         ];
 
         $report = [];
@@ -112,6 +120,9 @@ class SyncMasterDatabase extends Command
         }
 
         try {
+            DB::connection('mysql')->beginTransaction();
+            DB::connection('mysql')->statement('SET FOREIGN_KEY_CHECKS=0;');
+
             foreach ($tables as $table) {
                 $this->info("Syncing table: {$table}");
                 
@@ -132,6 +143,26 @@ class SyncMasterDatabase extends Command
                 $masterColumns = Schema::connection('mysql_master')->getColumnListing($table);
                 $commonColumns = array_intersect($targetColumns, $masterColumns);
 
+                // Filter out generated columns since they cannot be written to
+                try {
+                    $generatedColumns = DB::connection('mysql')
+                        ->select("
+                            SELECT COLUMN_NAME 
+                            FROM INFORMATION_SCHEMA.COLUMNS 
+                            WHERE TABLE_SCHEMA = ? 
+                              AND TABLE_NAME = ? 
+                              AND EXTRA LIKE '%GENERATED%'
+                        ", [DB::connection('mysql')->getDatabaseName(), $table]);
+                    
+                    $generatedColumnNames = array_map(fn($col) => $col->COLUMN_NAME, $generatedColumns);
+                    $commonColumns = array_diff($commonColumns, $generatedColumnNames);
+                } catch (\Throwable $e) {
+                    // Fallback to manual exclusion if query fails
+                    if ($table === 'bills') {
+                        $commonColumns = array_diff($commonColumns, ['active_status']);
+                    }
+                }
+
                 if (empty($commonColumns)) {
                     $this->warn("No common columns found for table: {$table}");
                     $report[$table] = ['status' => 'skipped', 'message' => 'No common columns'];
@@ -147,7 +178,19 @@ class SyncMasterDatabase extends Command
                 $hasCreatedAt = in_array('created_at', $commonColumns);
                 $hasUpdatedAt = in_array('updated_at', $commonColumns);
                 // Configuration/reference tables should be synced fully to avoid missing references
-                $isConfigTable = in_array($table, ['banks', 'bill_type_banks', 'topup_banks']);
+                $isConfigTable = in_array($table, [
+                    'schools',
+                    'academic_years',
+                    'bill_items',
+                    'bill_types',
+                    'banks',
+                    'bill_type_banks',
+                    'topup_banks',
+                    'payment_rates',
+                    'payment_rate_classrooms',
+                    'payment_rate_students',
+                    'payment_rate_items'
+                ]);
                 if (($hasCreatedAt || $hasUpdatedAt) && !$isConfigTable && !$syncAll) {
                     $query->where(function ($q) use ($oneMonthAgo, $hasCreatedAt, $hasUpdatedAt) {
                         if ($hasCreatedAt) {
@@ -243,7 +286,12 @@ class SyncMasterDatabase extends Command
                     'message' => "Successfully synced {$inserted} rows"
                 ];
             }
+
+            DB::connection('mysql')->statement('SET FOREIGN_KEY_CHECKS=1;');
+            DB::connection('mysql')->commit();
         } catch (\Throwable $e) {
+            DB::connection('mysql')->statement('SET FOREIGN_KEY_CHECKS=1;');
+            DB::connection('mysql')->rollBack();
             $hasErrors = true;
             $errorMessage = $e->getMessage();
             $this->error("Sync failed: " . $errorMessage);
