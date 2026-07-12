@@ -7,6 +7,7 @@ import {
   ChevronRight,
   Receipt,
   Loader2,
+  ChevronDown,
 } from "lucide-react";
 import { useNavigate } from "@tanstack/react-router";
 import { MobileShell } from "@/components/MobileShell";
@@ -49,6 +50,7 @@ function Tagihan() {
       total: b.total,
       paid: b.paid,
       due: b.due_date ? `Jatuh tempo: ${safeParseDate(b.due_date).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}` : "",
+      payments: b.payments || [],
     }));
   }, [billsData]);
 
@@ -206,6 +208,7 @@ function BillCard({ bill }: { bill: any }) {
   const remaining = Math.max(0, bill.total - bill.paid);
   const isPaid = remaining === 0;
   const pct = Math.min(100, Math.round((bill.paid / bill.total) * 100));
+  const [expanded, setExpanded] = useState(false);
 
   return (
     <div className="relative rounded-2xl bg-card border border-border shadow-[var(--shadow-soft)] overflow-hidden">
@@ -281,6 +284,46 @@ function BillCard({ bill }: { bill: any }) {
                 style={{ width: `${pct}%` }}
               />
             </div>
+          </div>
+        )}
+
+        {/* Expandable Payments History Panel */}
+        {bill.payments && bill.payments.length > 0 && (
+          <div className="mt-4 border-t border-border pt-4">
+            <button
+              onClick={() => setExpanded(!expanded)}
+              className="w-full flex items-center justify-between text-xs font-bold text-primary active:opacity-70 transition bg-transparent border-0 outline-none p-0 cursor-pointer"
+            >
+              <span>Lihat Riwayat Angsuran ({bill.payments.length})</span>
+              <ChevronDown
+                size={14}
+                className={`transition-transform duration-200 ${expanded ? "rotate-180" : ""}`}
+              />
+            </button>
+            
+            {expanded && (
+              <div className="mt-3 space-y-2.5">
+                {bill.payments.map((p: any) => (
+                  <div key={p.id} className="flex items-center justify-between p-3 rounded-2xl bg-secondary/40 border border-border/50 text-[11px]">
+                    <div className="min-w-0">
+                      <p className="font-bold text-foreground truncate">
+                        {p.method}
+                      </p>
+                      <p className="text-[9px] text-muted-foreground mt-0.5">
+                        {safeParseDate(p.date).toLocaleDateString("id-ID", {
+                          day: "numeric",
+                          month: "short",
+                          year: "numeric",
+                        })} · Petugas: {p.cashier}
+                      </p>
+                    </div>
+                    <span className="font-bold text-emerald-600 shrink-0 ml-2">
+                      +{fmtIDR(p.amount)}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
       </div>

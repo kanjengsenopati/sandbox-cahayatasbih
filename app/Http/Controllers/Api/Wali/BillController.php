@@ -17,8 +17,37 @@ class BillController extends BaseWaliApiController
             ->where('student_id', $student->id)
             ->get()
             ->groupBy('bill_type_id')
-            ->map(function ($items) {
+            ->map(function ($items) use ($student) {
                 $first = $items->first();
+                
+                // Get paid/successful transactions for this bill type
+                $billIds = $items->pluck('id')->toArray();
+                $payments = \App\Models\Transaction::with(['paymentMethod', 'admin', 'user', 'transactionDetails.bill'])
+                    ->where('student_id', $student->id)
+                    ->where('type', \App\Models\Transaction::TYPE_BILL)
+                    ->whereIn('status', [\App\Models\Transaction::STATUS_PAID, 'approved', 'SUCCESS'])
+                    ->whereHas('transactionDetails', function ($query) use ($billIds) {
+                        $query->whereIn('bill_id', $billIds);
+                    })
+                    ->latest()
+                    ->get()
+                    ->map(function ($tx) use ($billIds) {
+                        $amount = 0;
+                        foreach ($tx->transactionDetails as $detail) {
+                            if (in_array($detail->bill_id, $billIds)) {
+                                $amount += $detail->amount ?? ($detail->bill->amount ?? 0);
+                            }
+                        }
+                        
+                        return [
+                            'id' => $tx->id,
+                            'amount' => $amount,
+                            'date' => $tx->paid_at ?? $tx->created_at,
+                            'method' => $tx->paymentMethod->name ?? 'Metode Lain',
+                            'cashier' => $tx->admin->name ?? ($tx->user->name ?? 'Sistem'),
+                        ];
+                    });
+
                 return [
                     'bill_type_id' => $first->bill_type_id,
                     'bill_type_name' => $first->billType->name ?? 'Tagihan',
@@ -28,6 +57,7 @@ class BillController extends BaseWaliApiController
                     'unpaid' => $items->sum('remaining_amount'),
                     'items_count' => $items->count(),
                     'unpaid_count' => $items->where('status', 'UNPAID')->count(),
+                    'payments' => $payments->values(),
                 ];
             });
 

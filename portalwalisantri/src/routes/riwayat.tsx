@@ -22,7 +22,7 @@ import {
 } from "lucide-react";
 import { useSantri } from "@/contexts/SantriContext";
 import { useQuery } from "@tanstack/react-query";
-import { fetchSaldoHistories, fetchPosTransactions, fetchBillTransactions } from "@/lib/api";
+import { fetchSaldoHistories, fetchPosTransactions } from "@/lib/api";
 import { Text } from "@/components/Text";
 import { safeParseDate } from "@/lib/utils";
 
@@ -127,7 +127,6 @@ const CAT_FILTERS: { id: "all" | Category; label: string }[] = [
   { id: "all", label: "Semua" },
   { id: "minuman", label: "Minuman" },
   { id: "alat", label: "Alat Tulis" },
-  { id: "spp", label: "Sekolah" },
   { id: "topup", label: "Top Up" },
 ];
 
@@ -165,15 +164,6 @@ function RiwayatPage() {
     enabled: !!active,
   });
 
-  const { data: billTransactions = [], isLoading: isLoadingBill } = useQuery({
-    queryKey: ["bill-transactions", active?.id, range],
-    queryFn: async () => {
-      const res = await fetchBillTransactions({ filter: range });
-      return res.data.data || [];
-    },
-    enabled: !!active,
-  });
-
   const allTxs: Tx[] = useMemo(() => {
     const saldoMapped: Tx[] = saldoHistories.map((s: any) => ({
       id: s.id,
@@ -203,22 +193,8 @@ function RiwayatPage() {
       })),
     }));
 
-    const billMapped: Tx[] = billTransactions
-      .filter((b: any) => !["CANCELLED", "cancelled", "rejected", "REJECTED", "EXPIRED", "expired", "failed", "FAILED"].includes(b.status))
-      .map((b: any) => ({
-        id: b.id,
-        name: b.bill_names || "Pembayaran Tagihan",
-        category: "spp",
-        type: "out",
-        amount: Number(b.pay_amount),
-        date: b.created_at,
-        note: b.payment_method_name,
-        status: b.status,
-        cashier: b.cashier,
-      }));
-
-    return [...saldoMapped, ...posMapped, ...billMapped].sort((a, b) => safeParseDate(b.date).getTime() - safeParseDate(a.date).getTime());
-  }, [saldoHistories, posTransactions, billTransactions]);
+    return [...saldoMapped, ...posMapped].sort((a, b) => safeParseDate(b.date).getTime() - safeParseDate(a.date).getTime());
+  }, [saldoHistories, posTransactions]);
 
   const filtered = useMemo(() => {
     return allTxs.filter((t) => {
@@ -251,7 +227,7 @@ function RiwayatPage() {
   const activeFilters =
     (type !== "all" ? 1 : 0) + (cat !== "all" ? 1 : 0) + (range !== "all" ? 1 : 0) + (q ? 1 : 0);
 
-  if (isLoadingSaldo || isLoadingPos || isLoadingBill) {
+  if (isLoadingSaldo || isLoadingPos) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <Loader2 className="animate-spin text-primary" size={40} />
