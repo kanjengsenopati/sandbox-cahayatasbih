@@ -340,66 +340,80 @@ function Dashboard() {
               .filter((t: any) => !(t.category === "BILL" && ["CANCELLED", "cancelled", "rejected", "REJECTED", "EXPIRED", "expired", "failed", "FAILED"].includes(t.status)))
               .map((t: any, i: number) => {
                 const isIn = t.type === "IN";
-              const isBill = t.category === "BILL";
-              return (
-                <div key={i} className="flex items-center gap-3 p-4">
+                const isBill = t.category === "BILL";
+                const isPending = t.id && ["PENDING", "PENDING_PAYMENT", "PENDING_CONFIRMATION"].includes(t.status);
+                return (
                   <div
-                    className={`w-11 h-11 rounded-2xl flex items-center justify-center ${
-                      isIn 
-                        ? "bg-emerald-50 text-emerald-600" 
-                        : isBill 
-                        ? "bg-purple-50 text-purple-600" 
-                        : "bg-blue-50 text-blue-600"
+                    key={i}
+                    onClick={isPending ? () => navigate({ to: "/pembayaran/$payId", params: { payId: String(t.id) } }) : undefined}
+                    className={`flex items-center gap-3 p-4 transition-all ${
+                      isPending 
+                        ? "cursor-pointer hover:bg-slate-50 active:bg-slate-100/80" 
+                        : ""
                     }`}
                   >
-                    {isIn ? (
-                      <ArrowDownLeft size={18} />
-                    ) : isBill ? (
-                      <Receipt size={18} />
-                    ) : (
-                      <Utensils size={18} />
-                    )}
+                    <div
+                      className={`w-11 h-11 rounded-2xl flex items-center justify-center shrink-0 ${
+                        isIn 
+                          ? "bg-emerald-50 text-emerald-600" 
+                          : isBill 
+                          ? "bg-purple-50 text-purple-600" 
+                          : "bg-blue-50 text-blue-600"
+                      }`}
+                    >
+                      {isIn ? (
+                        <ArrowDownLeft size={18} />
+                      ) : isBill ? (
+                        <Receipt size={18} />
+                      ) : (
+                        <Utensils size={18} />
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-foreground truncate">{t.note || (isIn ? "Saldo Masuk" : isBill ? "Pembayaran Tagihan" : "Belanja Kantin")}</p>
+                      <p className="text-[11px] text-muted-foreground flex items-center gap-1.5 flex-wrap">
+                        {t.status && (
+                          <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider ${
+                            t.status === "SUCCESS" || t.status === "approved" || t.status === "PAID"
+                              ? "bg-emerald-500/15 text-emerald-700"
+                              : t.status === "FAILED" || t.status === "rejected" || t.status === "REJECTED"
+                              ? "bg-destructive text-white"
+                              : "bg-[oklch(0.78_0.16_75)] text-white"
+                          }`}>
+                            {STATUS_MAP[t.status] || t.status}
+                          </span>
+                        )}
+                        <span>{t.created_at ? safeParseDate(t.created_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) : "-"}</span>
+                        {t.merchant && (
+                          <>
+                            <span className="text-border">·</span>
+                            <span className="truncate">{t.merchant}</span>
+                          </>
+                        )}
+                        {t.items_count > 0 && (
+                          <>
+                            <span className="text-border">·</span>
+                            <span>{t.items_count} item</span>
+                          </>
+                        )}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span
+                        className={`text-sm font-bold tabular-nums whitespace-nowrap ${
+                          isIn ? "text-emerald-600" : "text-foreground"
+                        }`}
+                      >
+                        {isIn ? "+" : "-"}
+                        {fmt(t.amount || 0)}
+                      </span>
+                      {isPending && (
+                        <ChevronRight size={14} className="text-slate-400 shrink-0" />
+                      )}
+                    </div>
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-foreground truncate">{t.note || (isIn ? "Saldo Masuk" : isBill ? "Pembayaran Tagihan" : "Belanja Kantin")}</p>
-                    <p className="text-[11px] text-muted-foreground flex items-center gap-1.5 flex-wrap">
-                      {t.status && (
-                        <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider ${
-                          t.status === "SUCCESS" || t.status === "approved" || t.status === "PAID"
-                            ? "bg-emerald-500/15 text-emerald-700"
-                            : t.status === "FAILED" || t.status === "rejected" || t.status === "REJECTED"
-                            ? "bg-destructive text-white"
-                            : "bg-[oklch(0.78_0.16_75)] text-white"
-                        }`}>
-                          {STATUS_MAP[t.status] || t.status}
-                        </span>
-                      )}
-                      <span>{t.created_at ? safeParseDate(t.created_at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) : "-"}</span>
-                      {t.merchant && (
-                        <>
-                          <span className="text-border">·</span>
-                          <span className="truncate">{t.merchant}</span>
-                        </>
-                      )}
-                      {t.items_count > 0 && (
-                        <>
-                          <span className="text-border">·</span>
-                          <span>{t.items_count} item</span>
-                        </>
-                      )}
-                    </p>
-                  </div>
-                  <span
-                    className={`text-sm font-bold tabular-nums whitespace-nowrap ${
-                      isIn ? "text-emerald-600" : "text-foreground"
-                    }`}
-                  >
-                    {isIn ? "+" : "-"}
-                    {fmt(t.amount || 0)}
-                  </span>
-                </div>
-              );
-            })
+                );
+              })
           ) : (
             <div className="py-10 text-center">
               <div className="w-12 h-12 rounded-2xl bg-secondary flex items-center justify-center mx-auto mb-3">

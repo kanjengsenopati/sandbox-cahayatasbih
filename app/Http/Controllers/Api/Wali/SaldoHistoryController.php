@@ -31,9 +31,12 @@ class SaldoHistoryController extends BaseWaliApiController
         // Lazy cleanup for ghost pending transactions
         $histories = $paginated->getCollection();
         foreach ($histories as $key => $history) {
+            $transactionDetail = $history->transaction_details()->first();
+            if ($transactionDetail) {
+                $history->transaction_id = $transactionDetail->transaction_id;
+            }
+
             if ($history->status === SaldoHistory::STATUS_PENDING || $history->status === SaldoHistory::STATUS_FAILED) {
-                $transactionDetail = $history->transaction_details()->first();
-                
                 // If orphaned (no link to transaction detail), it's a ghost record
                 if (!$transactionDetail) {
                     $history->delete();

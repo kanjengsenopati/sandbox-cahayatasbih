@@ -35,13 +35,14 @@ class DashboardController extends BaseWaliApiController
             $tahfidzCount = Tahfidz::where('student_id', $activeStudent->id)->sum('number_of_pages');
             $studyCount = StudyGrade::where('student_id', $activeStudent->id)->distinct('study_id')->count();
 
-            $saldoHistories = \App\Models\SaldoHistory::where('student_id', $activeStudent->id)
+            $saldoHistories = \App\Models\SaldoHistory::with('transaction_details')->where('student_id', $activeStudent->id)
                 ->whereNotIn('usage', [\App\Models\SaldoHistory::USAGE_POS, \App\Models\SaldoHistory::USAGE_BILL])
                 ->whereDate('created_at', now()->toDateString())
                 ->latest()
                 ->get()
                 ->map(function($item) {
                     return [
+                        'id' => $item->transaction_details->first()?->transaction_id,
                         'type' => $item->type === 'IN' ? 'IN' : 'OUT',
                         'amount' => $item->amount,
                         'note' => $item->description ?? ($item->type === 'IN' ? 'Topup Saldo' : 'Pengeluaran Saldo'),
@@ -66,7 +67,7 @@ class DashboardController extends BaseWaliApiController
                     $totalItems = $item->pointOfSaleTransactionDetails->count();
                     if ($totalItems > 2) {
                         $itemNames .= ' +' . ($totalItems - 2) . ' lainnya';
-                    }
+                      }
 
                     return [
                         'type' => 'OUT',
@@ -102,6 +103,7 @@ class DashboardController extends BaseWaliApiController
                         ->join(', ');
 
                     return [
+                        'id' => $item->id,
                         'type' => 'OUT',
                         'amount' => $item->pay_amount,
                         'note' => $billNames ?: 'Pembayaran Tagihan',

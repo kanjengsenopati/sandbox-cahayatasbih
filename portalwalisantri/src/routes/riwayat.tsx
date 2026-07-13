@@ -174,6 +174,7 @@ function RiwayatPage() {
       date: s.created_at,
       note: s.note,
       status: s.status,
+      payId: s.transaction_id || s.transactionId,
     }));
 
     const posMapped: Tx[] = posTransactions.map((p: any) => ({
@@ -405,23 +406,33 @@ function RiwayatPage() {
 }
 
 function TxRow({ tx, open, onToggle }: { tx: Tx; open: boolean; onToggle: () => void }) {
+  const navigate = useNavigate();
   const { active } = useSantri();
   const meta = CAT_META[tx.category];
   const Icon = meta.icon;
   const isIn = tx.type === "in";
   const itemTotal = tx.items?.reduce((a, b) => a + b.qty * b.price, 0) ?? 0;
   const isPengeluaranSaldo = tx.name === "Pengeluaran Saldo";
+  const isPending = tx.payId && ["PENDING", "PENDING_PAYMENT", "PENDING_CONFIRMATION"].includes(tx.status || "");
 
   return (
     <div>
       <button
-        onClick={isPengeluaranSaldo ? undefined : onToggle}
-        disabled={isPengeluaranSaldo}
+        onClick={
+          isPending 
+            ? () => navigate({ to: "/pembayaran/$payId", params: { payId: String(tx.payId) } }) 
+            : isPengeluaranSaldo 
+            ? undefined 
+            : onToggle
+        }
+        disabled={isPengeluaranSaldo && !isPending}
         className={`w-full flex items-center gap-3 p-4 transition text-left ${
-          isPengeluaranSaldo ? "cursor-default" : "active:bg-secondary cursor-pointer"
+          isPengeluaranSaldo && !isPending 
+            ? "cursor-default" 
+            : "active:bg-secondary cursor-pointer"
         }`}
       >
-        <div className={`w-11 h-11 rounded-2xl flex items-center justify-center ${meta.tone}`}>
+        <div className={`w-11 h-11 rounded-2xl flex items-center justify-center shrink-0 ${meta.tone}`}>
           <Icon size={18} />
         </div>
         <div className="flex-1 min-w-0">
@@ -456,12 +467,14 @@ function TxRow({ tx, open, onToggle }: { tx: Tx; open: boolean; onToggle: () => 
               {tx.items ? `${tx.items.length} item` : tx.method ?? ""}
             </p>
           </div>
-          {!isPengeluaranSaldo && (
+          {isPending ? (
+            <ChevronRight size={16} className="text-slate-400 shrink-0" />
+          ) : !isPengeluaranSaldo ? (
             <ChevronDown
               size={16}
               className={`text-muted-foreground transition-transform ${open ? "rotate-180" : ""}`}
             />
-          )}
+          ) : null}
         </div>
       </button>
 
