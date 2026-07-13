@@ -35,6 +35,11 @@ class SyncMasterDatabase extends Command
 
         $tables = [
             'schools',
+            'outlets',
+            'admin_outlets',
+            'category_items',
+            'items',
+            'stock_histories',
             'academic_years',
             'bill_items',
             'bill_types',
@@ -52,6 +57,8 @@ class SyncMasterDatabase extends Command
             'point_of_sale_carts',
             'point_of_sale_transactions',
             'point_of_sale_transaction_details',
+            'cash_flow_categories',
+            'cash_flows',
             'transactions',
             'transaction_details',
             'saldo_histories',
@@ -181,6 +188,10 @@ class SyncMasterDatabase extends Command
                 // Configuration/reference tables should be synced fully to avoid missing references
                 $isConfigTable = in_array($table, [
                     'schools',
+                    'outlets',
+                    'admin_outlets',
+                    'category_items',
+                    'items',
                     'academic_years',
                     'bill_items',
                     'bill_types',
@@ -190,7 +201,8 @@ class SyncMasterDatabase extends Command
                     'payment_rates',
                     'payment_rate_classrooms',
                     'payment_rate_students',
-                    'payment_rate_items'
+                    'payment_rate_items',
+                    'cash_flow_categories'
                 ]);
                 if (($hasCreatedAt || $hasUpdatedAt) && !$isConfigTable && !$syncAll) {
                     $query->where(function ($q) use ($oneMonthAgo, $hasCreatedAt, $hasUpdatedAt) {
