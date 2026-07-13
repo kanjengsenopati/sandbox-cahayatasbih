@@ -30,6 +30,7 @@ function Tagihan() {
   const { active, isLoading: isLoadingSantri } = useSantri();
   const [tab, setTab] = useState<"due" | "paid">("due");
   const [q, setQ] = useState("");
+  const [selectedYear, setSelectedYear] = useState("");
 
   const { data: billsData, isLoading: isLoadingBills } = useQuery({
     queryKey: ["bills", active?.id],
@@ -55,15 +56,21 @@ function Tagihan() {
     }));
   }, [billsData]);
 
+  const academicYears = useMemo(() => {
+    const years = bills.map((b: any) => b.category);
+    return Array.from(new Set(years)).filter(Boolean).sort().reverse();
+  }, [bills]);
+
   const filtered = useMemo(() => {
     return bills.filter((b: any) => {
       const isPaid = b.paid >= b.total;
       if (tab === "due" && isPaid) return false;
       if (tab === "paid" && !isPaid) return false;
       if (q && !b.name.toLowerCase().includes(q.toLowerCase())) return false;
+      if (selectedYear && b.category !== selectedYear) return false;
       return true;
     });
-  }, [bills, tab, q]);
+  }, [bills, tab, q, selectedYear]);
 
   const grouped = useMemo(() => {
     const map = new Map<string, any[]>();
@@ -153,15 +160,35 @@ function Tagihan() {
         </div>
       </div>
 
-      {/* Search */}
-      <div className="px-4 mt-4">
-        <div className="flex items-center gap-2 bg-secondary rounded-full px-4 py-3 border border-transparent focus-within:border-primary transition">
+      {/* Search & Filter */}
+      <div className="px-4 mt-4 flex items-center gap-2">
+        <div className="flex-1 flex items-center gap-2 bg-secondary rounded-full px-4 py-3 border border-transparent focus-within:border-primary transition">
           <Search size={16} className="text-muted-foreground" />
           <input
             value={q}
             onChange={(e) => setQ(e.target.value)}
             placeholder="Cari Data"
             className="bg-transparent flex-1 outline-none text-sm font-medium text-foreground placeholder:text-muted-foreground"
+          />
+        </div>
+        
+        {/* Academic Year Filter */}
+        <div className="relative shrink-0">
+          <select
+            value={selectedYear}
+            onChange={(e) => setSelectedYear(e.target.value)}
+            className="appearance-none bg-secondary text-foreground text-xs font-bold pl-4 pr-9 py-3.5 rounded-full border border-transparent focus:border-primary outline-none transition cursor-pointer"
+          >
+            <option value="">Semua TA</option>
+            {academicYears.map((yr) => (
+              <option key={yr} value={yr}>
+                {yr}
+              </option>
+            ))}
+          </select>
+          <ChevronDown
+            size={14}
+            className="absolute right-3.5 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none"
           />
         </div>
       </div>
@@ -184,11 +211,14 @@ function Tagihan() {
 
         {grouped.map(([cat, items]) => (
           <section key={cat}>
-            <div className="flex items-center justify-between mb-2 px-1">
-              <h3 className="text-[11px] font-bold text-muted-foreground uppercase tracking-widest">
-                {cat}
-              </h3>
-              <span className="text-[10px] font-semibold text-muted-foreground">
+            <div className="flex items-center justify-between mb-3 px-1 mt-2">
+              <div className="flex items-center gap-2">
+                <span className="w-1.5 h-4 rounded-full bg-primary" />
+                <span className="text-sm font-extrabold text-foreground tracking-tight">
+                  Tahun Ajaran {cat}
+                </span>
+              </div>
+              <span className="px-2.5 py-0.5 rounded-full bg-secondary text-[10px] font-bold text-muted-foreground">
                 {items.length} item
               </span>
             </div>
