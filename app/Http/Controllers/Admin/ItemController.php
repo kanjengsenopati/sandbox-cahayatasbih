@@ -31,8 +31,14 @@ class ItemController extends Controller
             $koperasiId = $koperasi ? $koperasi->id : '6bc5b484-07f9-49cc-aefa-00a8cf47e8d7';
 
             $data = Item::with(['categoryItem', 'outlet'])
-                ->when(auth()->user()->outlet_id, function($q) {
-                    $q->where('outlet_id', auth()->user()->outlet_id);
+                ->when(auth()->user()->outlet_id, function($q) use ($koperasiId) {
+                    $outletId = auth()->user()->outlet_id;
+                    $q->where(function($query) use ($outletId, $koperasiId) {
+                        $query->where('outlet_id', $outletId);
+                        if ($outletId === $koperasiId) {
+                            $query->orWhereNull('outlet_id');
+                        }
+                    });
                 })
                 ->when(!auth()->user()->outlet_id, function($q) use ($koperasiId) {
                     if (request('mode') === 'outlet') {
@@ -42,7 +48,10 @@ class ItemController extends Controller
                             $q->where('outlet_id', '!=', $koperasiId);
                         }
                     } else {
-                        $q->where('outlet_id', $koperasiId);
+                        $q->where(function($query) use ($koperasiId) {
+                            $query->where('outlet_id', $koperasiId)
+                                  ->orWhereNull('outlet_id');
+                        });
                     }
                 })
                 ->latest();
@@ -205,10 +214,18 @@ class ItemController extends Controller
             }
         }
 
+        $koperasi = \App\Models\Outlet::where('name', 'Koperasi')->orWhere('code', 'KPR')->first();
+        $koperasiId = $koperasi ? $koperasi->id : '6bc5b484-07f9-49cc-aefa-00a8cf47e8d7';
+
         if (!$request->search) {
             $items = Item::with('categoryItem')->where('stock', '>', 0)
-                ->when($outletId, function($q) use ($outletId) {
-                    $q->where('outlet_id', $outletId);
+                ->when($outletId, function($q) use ($outletId, $koperasiId) {
+                    $q->where(function($query) use ($outletId, $koperasiId) {
+                        $query->where('outlet_id', $outletId);
+                        if ($outletId === $koperasiId) {
+                            $query->orWhereNull('outlet_id');
+                        }
+                    });
                 })
                 ->where('is_active', true)
                 ->orderBy('stock', 'asc') // Order by stock in ascending order
@@ -244,10 +261,18 @@ class ItemController extends Controller
             }
         }
 
+        $koperasi = \App\Models\Outlet::where('name', 'Koperasi')->orWhere('code', 'KPR')->first();
+        $koperasiId = $koperasi ? $koperasi->id : '6bc5b484-07f9-49cc-aefa-00a8cf47e8d7';
+
         $item = Item::whereCode($request->search)
             ->whereIsActive(true)
-            ->when($outletId, function($q) use ($outletId) {
-                $q->where('outlet_id', $outletId);
+            ->when($outletId, function($q) use ($outletId, $koperasiId) {
+                $q->where(function($query) use ($outletId, $koperasiId) {
+                    $query->where('outlet_id', $outletId);
+                    if ($outletId === $koperasiId) {
+                        $query->orWhereNull('outlet_id');
+                    }
+                });
             })
             ->first();
         if (!$item) {
@@ -277,9 +302,17 @@ class ItemController extends Controller
             }
         }
 
+        $koperasi = \App\Models\Outlet::where('name', 'Koperasi')->orWhere('code', 'KPR')->first();
+        $koperasiId = $koperasi ? $koperasi->id : '6bc5b484-07f9-49cc-aefa-00a8cf47e8d7';
+
         $items = Item::with('categoryItem')->whereIsActive(true)
-            ->when($outletId, function($q) use ($outletId) {
-                $q->where('outlet_id', $outletId);
+            ->when($outletId, function($q) use ($outletId, $koperasiId) {
+                $q->where(function($query) use ($outletId, $koperasiId) {
+                    $query->where('outlet_id', $outletId);
+                    if ($outletId === $koperasiId) {
+                        $query->orWhereNull('outlet_id');
+                    }
+                });
             })
             ->whereRaw('LOWER(name) LIKE ?', ['%' . $searchTerm . '%'])
             ->get();

@@ -43,14 +43,27 @@ class OrderItemController extends Controller
                   });
         })->sum('quantity');
         
+        $koperasi = \App\Models\Outlet::where('name', 'Koperasi')->orWhere('code', 'KPR')->first();
+        $koperasiId = $koperasi ? $koperasi->id : '6bc5b484-07f9-49cc-aefa-00a8cf47e8d7';
+
         $totalItemAvailable = Item::where('stock', '>', 0)->where('is_active', true)
-            ->when(!empty($authOutletIds), function($q) use ($authOutletIds) {
-                $q->whereIn('outlet_id', $authOutletIds);
+            ->when(!empty($authOutletIds), function($q) use ($authOutletIds, $koperasiId) {
+                $q->where(function($query) use ($authOutletIds, $koperasiId) {
+                    $query->whereIn('outlet_id', $authOutletIds);
+                    if (in_array($koperasiId, $authOutletIds)) {
+                        $query->orWhereNull('outlet_id');
+                    }
+                });
             })->count();
             
         $totalItem = Item::where('is_active', true)
-            ->when(!empty($authOutletIds), function($q) use ($authOutletIds) {
-                $q->whereIn('outlet_id', $authOutletIds);
+            ->when(!empty($authOutletIds), function($q) use ($authOutletIds, $koperasiId) {
+                $q->where(function($query) use ($authOutletIds, $koperasiId) {
+                    $query->whereIn('outlet_id', $authOutletIds);
+                    if (in_array($koperasiId, $authOutletIds)) {
+                        $query->orWhereNull('outlet_id');
+                    }
+                });
             })->count();
             
         $totalStudent = Student::count();
@@ -75,9 +88,18 @@ class OrderItemController extends Controller
     {
         $admin = auth()->user();
         $authOutletIds = $admin->getOutletIds();
+
+        $koperasi = \App\Models\Outlet::where('name', 'Koperasi')->orWhere('code', 'KPR')->first();
+        $koperasiId = $koperasi ? $koperasi->id : '6bc5b484-07f9-49cc-aefa-00a8cf47e8d7';
+
         $data = Item::where('is_active', true)->with('categoryItem')
-            ->when(!empty($authOutletIds), function($q) use ($authOutletIds) {
-                $q->whereIn('outlet_id', $authOutletIds);
+            ->when(!empty($authOutletIds), function($q) use ($authOutletIds, $koperasiId) {
+                $q->where(function($query) use ($authOutletIds, $koperasiId) {
+                    $query->whereIn('outlet_id', $authOutletIds);
+                    if (in_array($koperasiId, $authOutletIds)) {
+                        $query->orWhereNull('outlet_id');
+                    }
+                });
             })
             ->get()->sortByDesc('total_selling');
 
@@ -542,9 +564,17 @@ class OrderItemController extends Controller
                 }
             }
 
+            $koperasi = \App\Models\Outlet::where('name', 'Koperasi')->orWhere('code', 'KPR')->first();
+            $koperasiId = $koperasi ? $koperasi->id : '6bc5b484-07f9-49cc-aefa-00a8cf47e8d7';
+
             $item = Item::where('code', $request->code)
-                ->when($outletId, function($q) use ($outletId) {
-                    $q->where('outlet_id', $outletId);
+                ->when($outletId, function($q) use ($outletId, $koperasiId) {
+                    $q->where(function($query) use ($outletId, $koperasiId) {
+                        $query->where('outlet_id', $outletId);
+                        if ($outletId === $koperasiId) {
+                            $query->orWhereNull('outlet_id');
+                        }
+                    });
                 })
                 ->lockForUpdate()->first();
             if (!$item) {
