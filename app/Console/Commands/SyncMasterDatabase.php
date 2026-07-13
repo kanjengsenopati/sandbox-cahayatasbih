@@ -88,6 +88,14 @@ class SyncMasterDatabase extends Command
 
         // Build classroom ID mapping to map old formats (e.g. 10-D, X-D) to local standardized names
         $classroomMapping = [];
+        $defaultOutletId = null;
+        try {
+            $koperasi = DB::connection('mysql')->table('outlets')->where('name', 'Koperasi')->orWhere('code', 'KPR')->first();
+            $defaultOutletId = $koperasi ? $koperasi->id : '6bc5b484-07f9-49cc-aefa-00a8cf47e8d7';
+        } catch (\Throwable $e) {
+            $defaultOutletId = '6bc5b484-07f9-49cc-aefa-00a8cf47e8d7';
+        }
+
         try {
             $masterClassrooms = DB::connection('mysql_master')->table('classrooms')->get();
             $localClassrooms = DB::connection('mysql')->table('classrooms')->get();
@@ -222,13 +230,26 @@ class SyncMasterDatabase extends Command
                 $minTimestamp = null;
                 $maxTimestamp = null;
 
-                $processChunk = function ($rows) use ($table, $commonColumns, &$inserted, &$minTimestamp, &$maxTimestamp, $classroomMapping) {
+                $processChunk = function ($rows) use ($table, $commonColumns, &$inserted, &$minTimestamp, &$maxTimestamp, $classroomMapping, $targetColumns, $defaultOutletId) {
                     $data = $rows->map(fn($row) => (array) $row)->toArray();
                     if (!empty($data)) {
                         $columnsToUpdate = array_filter($commonColumns, fn($col) => $col !== 'id');
                         
+                        // Check if the target table has an outlet_id column but the master table does not
+                        $targetHasOutlet = in_array('outlet_id', $targetColumns);
+                        $masterHasOutlet = in_array('outlet_id', $commonColumns);
+                        $assignDefaultOutlet = $targetHasOutlet && !$masterHasOutlet && !is_null($defaultOutletId);
+
+                        if ($assignDefaultOutlet) {
+                            $columnsToUpdate[] = 'outlet_id';
+                        }
+                        
                         // Identify date range and map classroom IDs
                         foreach ($data as &$row) {
+                            if ($assignDefaultOutlet) {
+                                $row['outlet_id'] = $defaultOutletId;
+                            }
+                            
                             // Map classroom_id
                             if (isset($row['classroom_id']) && isset($classroomMapping[$row['classroom_id']])) {
                                 $row['classroom_id'] = $classroomMapping[$row['classroom_id']];

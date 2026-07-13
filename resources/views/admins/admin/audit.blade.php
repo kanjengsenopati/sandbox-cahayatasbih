@@ -153,9 +153,9 @@
                                                 <span class="text-gray-800 fw-bold fs-6">Status Sinkronisasi Terakhir</span>
                                                 <div class="text-muted fs-7 mt-1">
                                                     @if (isset($syncStatus) && $syncStatus)
-                                                        Mulai: {{ $syncStatus['started_at'] }}
+                                                        Mulai: {{ \Carbon\Carbon::parse($syncStatus['started_at'])->format('d-M-Y H:i:s') }}
                                                         @if ($syncStatus['finished_at'])
-                                                            &nbsp;|&nbsp; Selesai: {{ $syncStatus['finished_at'] }}
+                                                            &nbsp;|&nbsp; Selesai: {{ \Carbon\Carbon::parse($syncStatus['finished_at'])->format('d-M-Y H:i:s') }}
                                                             &nbsp;({{ $syncStatus['duration'] }})
                                                         @endif
                                                     @else
