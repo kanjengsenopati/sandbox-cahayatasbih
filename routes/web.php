@@ -584,6 +584,10 @@ Route::get('file-asset', function (\Illuminate\Http\Request $request) {
     
     $path = storage_path('app/public/' . $p);
     if (!file_exists($path)) {
+        $masterUrl = config('app.master_url');
+        if ($masterUrl) {
+            return redirect()->away(rtrim($masterUrl, '/') . '/file-asset?p=' . urlencode($p));
+        }
         abort(404);
     }
     
