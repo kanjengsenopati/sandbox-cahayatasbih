@@ -690,6 +690,8 @@ function ConfirmScreen({
   onSelectFile: (f: File | null) => void;
   onSubmit: () => void;
 }) {
+  const [showConfirm, setShowConfirm] = useState(false);
+
   return (
     <div className="min-h-screen w-full flex justify-center bg-secondary">
       <div className="relative w-full max-w-md min-h-screen bg-background pb-36">
@@ -789,7 +791,7 @@ function ConfirmScreen({
         {/* Footer */}
         <div className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-md px-4 pb-4 pt-3 bg-gradient-to-t from-background via-background to-background/0 z-40">
           <button
-            onClick={onSubmit}
+            onClick={() => setShowConfirm(true)}
             disabled={!proof || isUploading}
             className="w-full py-4 rounded-2xl text-primary-foreground font-semibold text-sm shadow-[var(--shadow-glow)] flex items-center justify-center gap-2 disabled:opacity-50 transition active:scale-[0.98]"
             style={{ background: "var(--gradient-card)" }}
@@ -808,6 +810,39 @@ function ConfirmScreen({
             </p>
           )}
         </div>
+
+        {/* Confirm Upload Modal */}
+        {showConfirm && proof && (
+          <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-5 animate-in fade-in">
+            <div className="bg-background rounded-[24px] shadow-[0_8px_30px_rgb(0,0,0,0.04)] w-full max-w-sm p-6 flex flex-col items-center text-center animate-in zoom-in-95 duration-200">
+              <div className="w-12 h-12 rounded-full bg-primary/10 text-primary flex items-center justify-center mb-4">
+                <Upload size={24} />
+              </div>
+              <h3 className="text-base font-bold text-foreground mb-2">Konfirmasi Kirim Bukti</h3>
+              <p className="text-sm text-muted-foreground mb-6">
+                Pastikan gambar bukti transfer Anda sudah benar dan nominalnya sesuai dengan tagihan.
+              </p>
+              <div className="grid grid-cols-2 gap-3 w-full">
+                <button
+                  onClick={() => setShowConfirm(false)}
+                  className="py-3 rounded-[24px] border border-border text-foreground font-bold text-sm active:scale-95 transition"
+                >
+                  Batal
+                </button>
+                <button
+                  onClick={() => {
+                    setShowConfirm(false);
+                    onSubmit();
+                  }}
+                  className="py-3 rounded-[24px] bg-primary text-white font-bold text-sm shadow-[0_8px_30px_rgb(0,0,0,0.04)] active:scale-95 transition"
+                  style={{ background: "var(--gradient-card)" }}
+                >
+                  Ya, Kirim
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

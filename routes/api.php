@@ -153,6 +153,7 @@ Route::prefix('ct-mobile')->middleware(['web'])->group(function () {
     Route::post('checkout', [App\Http\Controllers\Api\Wali\CheckoutController::class, 'store']);
     Route::get('payment/{id}', [App\Http\Controllers\Api\Wali\PaymentController::class, 'show']);
     Route::post('payment/{id}/upload-proof', [App\Http\Controllers\Api\Wali\PaymentProofController::class, 'store']);
+    Route::post('payment/{id}/cancel-proof', [App\Http\Controllers\Api\Wali\PaymentProofController::class, 'cancel']);
     Route::get('limit', [App\Http\Controllers\Api\Wali\LimitController::class, 'show']);
     Route::put('limit', [App\Http\Controllers\Api\Wali\LimitController::class, 'update']);
     Route::get('payment-methods', [App\Http\Controllers\Api\Wali\PaymentMethodController::class, 'index']);

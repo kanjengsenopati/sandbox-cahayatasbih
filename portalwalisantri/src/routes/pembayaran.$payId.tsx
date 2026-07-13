@@ -13,9 +13,10 @@ import {
   Loader2,
 } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { fetchPaymentDetail, uploadPaymentProof } from "@/lib/api";
+import { fetchPaymentDetail, uploadPaymentProof, cancelPaymentProof } from "@/lib/api";
 import { resolveImageUrl } from "@/lib/utils";
 import { compressImage } from "@/lib/image-compress";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/pembayaran/$payId")({
   component: PembayaranPage,
@@ -29,6 +30,11 @@ function PembayaranPage() {
   const { payId } = useParams({ from: "/pembayaran/$payId" });
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [selectedFileUrl, setSelectedFileUrl] = useState<string>("");
+  const [showConfirmUpload, setShowConfirmUpload] = useState(false);
+  const [showConfirmCancel, setShowConfirmCancel] = useState(false);
 
   const { data: paymentRes, isLoading } = useQuery({
     queryKey: ["payment", payId],
@@ -51,7 +57,11 @@ function PembayaranPage() {
       amount: Number(p.pay_amount),
       baseAmount: Number(p.pay_amount) - Number(p.unique_payment || 0),
       uniqueCode: p.unique_payment,
-      status: p.status === "PAID" ? "approved" : p.status === "REJECTED" ? "rejected" : "pending",
+      status: p.status === "PAID" 
+        ? "approved" 
+        : (p.status === "REJECTED" || proof?.status === "REJECTED") 
+          ? "rejected" 
+          : "pending",
       bankName: bank.name || "BCA", 
       bankAccount: bank.account_number || "1840558992", 
       bankHolder: bank.account_name || "Yayasan PPTQ Cahaya Tasbih",
@@ -79,7 +89,28 @@ function PembayaranPage() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["payment", payId] });
+      setSelectedFile(null);
+      setSelectedFileUrl("");
+      toast.success("Bukti transfer berhasil diunggah.");
     },
+    onError: (err: any) => {
+      toast.error(err.response?.data?.message || "Gagal mengunggah bukti transfer.");
+    }
+  });
+
+  const cancelMutation = useMutation({
+    mutationFn: async () => {
+      return cancelPaymentProof(payId);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["payment", payId] });
+      setSelectedFile(null);
+      setSelectedFileUrl("");
+      toast.success("Bukti transfer berhasil ditarik.");
+    },
+    onError: (err: any) => {
+      toast.error(err.response?.data?.message || "Gagal menarik bukti transfer.");
+    }
   });
 
   if (isLoading) {
@@ -236,7 +267,20 @@ function PembayaranPage() {
         )}
         {/* Upload bukti */}
         <div className="px-5 pt-3">
-          <ProofUploader tx={tx} onUpload={(f) => uploadMutation.mutate(f)} isUploading={uploadMutation.isPending} />
+          <ProofUploader
+            tx={tx}
+            selectedFile={selectedFile}
+            selectedFileUrl={selectedFileUrl}
+            onSelectFile={(f) => {
+              setSelectedFile(f);
+              setSelectedFileUrl(URL.createObjectURL(f));
+            }}
+            onRemoveFile={() => {
+              setSelectedFile(null);
+              setSelectedFileUrl("");
+            }}
+            isUploading={uploadMutation.isPending}
+          />
         </div>
  
         {/* Sticky action */}
@@ -244,7 +288,7 @@ function PembayaranPage() {
           <StickyAction>
             <button
               onClick={() => navigate({ to: "/riwayat" })}
-              className="w-full py-3.5 rounded-2xl bg-success text-white font-bold text-sm flex items-center justify-center gap-2"
+              className="w-full py-3.5 rounded-[24px] bg-success text-white font-bold text-sm flex items-center justify-center gap-2 shadow-[0_8px_30px_rgb(0,0,0,0.04)]"
             >
               <CheckCircle2 size={16} /> Lihat di Riwayat
             </button>
@@ -254,7 +298,7 @@ function PembayaranPage() {
           <StickyAction>
             <div className="w-full flex flex-col gap-2">
               {tx.note && (
-                <div className="rounded-2xl bg-destructive/10 border border-destructive/20 p-3 flex items-start gap-2.5 text-destructive text-sm text-left">
+                <div className="rounded-[24px] bg-destructive/10 border border-destructive/20 p-3 flex items-start gap-2.5 text-destructive text-sm text-left">
                   <XCircle size={16} className="mt-0.5 shrink-0" />
                   <div>
                     <span className="font-bold block mb-0.5">Catatan Admin:</span>
@@ -262,25 +306,125 @@ function PembayaranPage() {
                   </div>
                 </div>
               )}
-              <button
-                onClick={() => navigate({ to: "/tagihan" })}
-                className="w-full py-3.5 rounded-2xl bg-secondary border border-border text-foreground font-bold text-sm"
-              >
-                Kembali ke Tagihan
-              </button>
+              {selectedFile ? (
+                <button
+                  onClick={() => setShowConfirmUpload(true)}
+                  disabled={uploadMutation.isPending}
+                  className="w-full py-4 rounded-[24px] text-white font-bold text-sm shadow-[0_8px_30px_rgb(0,0,0,0.04)] flex items-center justify-center gap-2 active:scale-95 transition bg-primary"
+                  style={{ background: "var(--gradient-card)" }}
+                >
+                  {uploadMutation.isPending ? <Loader2 className="animate-spin" size={18} /> : <><Upload size={18} /> Kirim Bukti & Konfirmasi</>}
+                </button>
+              ) : (
+                <button
+                  onClick={() => navigate({ to: "/tagihan" })}
+                  className="w-full py-3.5 rounded-[24px] bg-secondary border border-border text-foreground font-bold text-sm"
+                >
+                  Kembali ke Tagihan
+                </button>
+              )}
             </div>
           </StickyAction>
         )}
-        {isPending && tx.proofUrl && (
-          <StickyAction>
-            <button
-              onClick={() => navigate({ to: "/riwayat" })}
-              className="w-full py-3.5 rounded-2xl text-primary-foreground font-bold text-sm shadow-[var(--shadow-glow)] active:scale-[0.98]"
-              style={{ background: "var(--gradient-card)" }}
-            >
-              Lihat Status di Riwayat
-            </button>
-          </StickyAction>
+        {isPending && (
+          <>
+            {selectedFile ? (
+              <StickyAction>
+                <button
+                  onClick={() => setShowConfirmUpload(true)}
+                  disabled={uploadMutation.isPending}
+                  className="w-full py-4 rounded-[24px] text-white font-bold text-sm shadow-[0_8px_30px_rgb(0,0,0,0.04)] flex items-center justify-center gap-2 active:scale-95 transition bg-primary"
+                  style={{ background: "var(--gradient-card)" }}
+                >
+                  {uploadMutation.isPending ? <Loader2 className="animate-spin" size={18} /> : <><Upload size={18} /> Kirim Bukti & Konfirmasi</>}
+                </button>
+              </StickyAction>
+            ) : tx.proofUrl ? (
+              <StickyAction>
+                <div className="flex flex-col gap-2 w-full">
+                  <button
+                    onClick={() => navigate({ to: "/riwayat" })}
+                    className="w-full py-3.5 rounded-[24px] text-primary-foreground font-bold text-sm shadow-[var(--shadow-glow)] active:scale-[0.98]"
+                    style={{ background: "var(--gradient-card)" }}
+                  >
+                    Lihat Status di Riwayat
+                  </button>
+                  <button
+                    onClick={() => setShowConfirmCancel(true)}
+                    disabled={cancelMutation.isPending}
+                    className="w-full py-3 rounded-[24px] bg-red-600/10 text-red-600 border border-red-600/20 font-bold text-sm active:scale-95 transition flex items-center justify-center gap-1.5"
+                  >
+                    {cancelMutation.isPending ? <Loader2 className="animate-spin" size={16} /> : "Tarik & Upload Ulang"}
+                  </button>
+                </div>
+              </StickyAction>
+            ) : null}
+          </>
+        )}
+
+        {/* Confirm Upload Modal */}
+        {showConfirmUpload && selectedFile && (
+          <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-5 animate-in fade-in">
+            <div className="bg-background rounded-[24px] shadow-[0_8px_30px_rgb(0,0,0,0.04)] w-full max-w-sm p-6 flex flex-col items-center text-center animate-in zoom-in-95 duration-200">
+              <div className="w-12 h-12 rounded-full bg-primary/10 text-primary flex items-center justify-center mb-4">
+                <Upload size={24} />
+              </div>
+              <h3 className="text-base font-bold text-foreground mb-2">Konfirmasi Kirim Bukti</h3>
+              <p className="text-sm text-muted-foreground mb-6">
+                Pastikan gambar bukti transfer Anda sudah benar dan nominalnya sesuai dengan tagihan.
+              </p>
+              <div className="grid grid-cols-2 gap-3 w-full">
+                <button
+                  onClick={() => setShowConfirmUpload(false)}
+                  className="py-3 rounded-[24px] border border-border text-foreground font-bold text-sm active:scale-95 transition"
+                >
+                  Batal
+                </button>
+                <button
+                  onClick={() => {
+                    setShowConfirmUpload(false);
+                    uploadMutation.mutate(selectedFile);
+                  }}
+                  className="py-3 rounded-[24px] bg-primary text-white font-bold text-sm shadow-[0_8px_30px_rgb(0,0,0,0.04)] active:scale-95 transition"
+                  style={{ background: "var(--gradient-card)" }}
+                >
+                  Ya, Kirim
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Confirm Cancel Modal */}
+        {showConfirmCancel && (
+          <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-5 animate-in fade-in">
+            <div className="bg-background rounded-[24px] shadow-[0_8px_30px_rgb(0,0,0,0.04)] w-full max-w-sm p-6 flex flex-col items-center text-center animate-in zoom-in-95 duration-200">
+              <div className="w-12 h-12 rounded-full bg-red-600/10 text-red-600 flex items-center justify-center mb-4">
+                <XCircle size={24} />
+              </div>
+              <h3 className="text-base font-bold text-foreground mb-2">Tarik Bukti Pembayaran?</h3>
+              <p className="text-sm text-muted-foreground mb-6">
+                Tindakan ini akan membatalkan bukti transfer saat ini dan mengembalikan status transaksi ke menunggu pembayaran.
+              </p>
+              <div className="grid grid-cols-2 gap-3 w-full">
+                <button
+                  onClick={() => setShowConfirmCancel(false)}
+                  className="py-3 rounded-[24px] border border-border text-foreground font-bold text-sm active:scale-95 transition"
+                >
+                  Batal
+                </button>
+                <button
+                  onClick={() => {
+                    setShowConfirmCancel(false);
+                    cancelMutation.mutate();
+                  }}
+                  className="py-3 rounded-[24px] bg-red-600 text-white font-bold text-sm shadow-[0_8px_30px_rgb(0,0,0,0.04)] active:scale-95 transition"
+                >
+                  Ya, Tarik
+                </button>
+              </div>
+            </div>
+          </div>
         )}
       </div>
     </div>
@@ -358,29 +502,53 @@ function CopyButton({ value, label }: { value: string; label: string }) {
   );
 }
 
-function ProofUploader({ tx, onUpload, isUploading }: { tx: any; onUpload: (f: File) => void; isUploading: boolean }) {
+function ProofUploader({
+  tx,
+  selectedFile,
+  selectedFileUrl,
+  onSelectFile,
+  onRemoveFile,
+  isUploading,
+}: {
+  tx: any;
+  selectedFile: File | null;
+  selectedFileUrl: string;
+  onSelectFile: (f: File) => void;
+  onRemoveFile: () => void;
+  isUploading: boolean;
+}) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [isCompressing, setIsCompressing] = useState(false);
   const hasProof = !!tx.proofUrl;
   const locked = tx.status === "approved";
 
   return (
-    <div className="rounded-2xl border border-border bg-card shadow-[var(--shadow-soft)] p-4">
+    <div className="rounded-[24px] border border-border bg-card shadow-[0_8px_30px_rgb(0,0,0,0.04)] p-4">
       <div className="flex items-center justify-between gap-3">
         <div>
           <p className="text-[11px] text-muted-foreground font-semibold uppercase tracking-wider">
             Bukti Bayar
           </p>
           <p className="text-sm font-bold text-foreground">
-            {hasProof ? "Bukti terunggah" : "Unggah foto bukti transfer"}
+            {selectedFile 
+              ? "Pratinjau Bukti" 
+              : hasProof 
+                ? "Bukti terunggah" 
+                : "Unggah foto bukti transfer"}
           </p>
         </div>
-        {hasProof && !locked && (
+        {(selectedFile || (hasProof && !locked)) && (
           <button
-            onClick={() => inputRef.current?.click()}
+            onClick={() => {
+              if (selectedFile) {
+                onRemoveFile();
+              } else {
+                inputRef.current?.click();
+              }
+            }}
             className="text-[11px] font-bold text-primary"
           >
-            Ganti
+            {selectedFile ? "Batal" : "Ganti"}
           </button>
         )}
       </div>
@@ -396,10 +564,10 @@ function ProofUploader({ tx, onUpload, isUploading }: { tx: any; onUpload: (f: F
             try {
               setIsCompressing(true);
               const compressed = await compressImage(f);
-              onUpload(compressed);
+              onSelectFile(compressed);
             } catch (err) {
               console.error("Compression error:", err);
-              onUpload(f);
+              onSelectFile(f);
             } finally {
               setIsCompressing(false);
             }
@@ -408,8 +576,19 @@ function ProofUploader({ tx, onUpload, isUploading }: { tx: any; onUpload: (f: F
         }}
       />
 
-      {hasProof ? (
-        <div className="mt-3 rounded-xl overflow-hidden border border-border bg-secondary">
+      {selectedFile ? (
+        <div className="mt-3 rounded-[24px] overflow-hidden border border-border bg-secondary relative">
+          <img
+            src={selectedFileUrl}
+            alt="Pratinjau bukti"
+            className="w-full max-h-72 object-contain bg-black/5"
+          />
+          <span className="absolute top-2.5 left-2.5 inline-flex items-center gap-1 px-2 py-1 rounded-full bg-primary text-white text-[10px] font-bold shadow">
+            Siap dikirim
+          </span>
+        </div>
+      ) : hasProof ? (
+        <div className="mt-3 rounded-[24px] overflow-hidden border border-border bg-secondary">
           <img
             src={resolveImageUrl(tx.proofUrl) || ''}
             alt="Bukti transfer"
@@ -420,7 +599,7 @@ function ProofUploader({ tx, onUpload, isUploading }: { tx: any; onUpload: (f: F
         <button
           disabled={isUploading || locked || isCompressing}
           onClick={() => inputRef.current?.click()}
-          className="mt-3 w-full rounded-xl border-2 border-dashed border-border bg-secondary/50 px-4 py-6 flex flex-col items-center justify-center gap-2 text-muted-foreground active:scale-[0.99] transition disabled:opacity-50"
+          className="mt-3 w-full rounded-[24px] border-2 border-dashed border-border bg-secondary/50 px-4 py-6 flex flex-col items-center justify-center gap-2 text-muted-foreground active:scale-[0.99] transition disabled:opacity-50"
         >
           <div className="w-10 h-10 rounded-full bg-primary/10 text-primary flex items-center justify-center">
             {isUploading || isCompressing ? <Loader2 className="animate-spin" size={18} /> : <Upload size={18} />}
@@ -432,7 +611,7 @@ function ProofUploader({ tx, onUpload, isUploading }: { tx: any; onUpload: (f: F
         </button>
       )}
 
-      {!hasProof && (
+      {!hasProof && !selectedFile && (
         <div className="mt-3 flex items-start gap-2 text-[11px] text-muted-foreground">
           <ImageIcon size={12} className="mt-0.5 shrink-0" />
           <span>

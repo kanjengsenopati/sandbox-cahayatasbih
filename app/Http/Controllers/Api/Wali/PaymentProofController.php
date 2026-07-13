@@ -81,4 +81,53 @@ class PaymentProofController extends BaseWaliApiController
             ], 500);
         }
     }
+
+    public function cancel($id)
+    {
+        try {
+            $transaction = Transaction::findOrFail($id);
+            
+            if ($transaction->status !== Transaction::STATUS_PENDING_CONFIRMATION && $transaction->status !== Transaction::STATUS_REJECTED) {
+                return response()->json(['message' => 'Hanya transaksi menunggu verifikasi atau ditolak yang dapat ditarik.'], 400);
+            }
+
+            // Sync related proof
+            $proof = $transaction->activeProof;
+            if ($proof) {
+                $proof->update([
+                    'is_active' => false,
+                ]);
+                $proof->delete(); // Soft delete
+            }
+
+            // Revert transaction status back to PENDING_PAYMENT
+            $transaction->update([
+                'status' => Transaction::STATUS_PENDING_PAYMENT
+            ]);
+
+            // Sync related history back to PENDING
+            if ($transaction->type == Transaction::TYPE_SALDO) {
+                $transaction->transactionDetails->each(function ($detail) {
+                    $detail->saldoHistory?->update(['status' => \App\Models\SaldoHistory::STATUS_PENDING]);
+                });
+            } elseif ($transaction->type == Transaction::TYPE_SAVING) {
+                $transaction->transactionDetails->each(function ($detail) {
+                    $detail->savingHistory?->update(['status' => \App\Models\SavingHistory::STATUS_PENDING]);
+                });
+            }
+
+            return response()->json([
+                'message' => 'Bukti pembayaran berhasil ditarik. Silakan unggah ulang.',
+            ]);
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Cancel Proof Error: ' . $e->getMessage(), [
+                'transaction_id' => $id,
+                'exception' => $e
+            ]);
+            return response()->json([
+                'message' => 'Internal Server Error',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
 }

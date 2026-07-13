@@ -52,6 +52,7 @@ export const uploadPaymentProof = (id: string | number, formData: FormData) =>
   api.post(`/payment/${id}/upload-proof`, formData, {
     headers: { 'Content-Type': 'multipart/form-data' }
   });
+export const cancelPaymentProof = (id: string | number) => api.post(`/payment/${id}/cancel-proof`);
 export const fetchLimit = () => api.get('/limit');
 export const updateLimit = (data: any) => api.put('/limit', data);
 export const fetchProfile = () => api.get('/profile');
