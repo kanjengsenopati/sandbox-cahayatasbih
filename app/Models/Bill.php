@@ -164,6 +164,14 @@ class Bill extends Model
         return $this->belongsTo(PaymentRateItem::class, 'payment_rate_item_id');
     }
 
+    public function getPaidAmountAttribute($value)
+    {
+        if ($this->status === self::STATUS_PAID) {
+            return $this->amount;
+        }
+        return $value ?? 0;
+    }
+
     public function getRemainingAmountAttribute()
     {
         return max(0, $this->amount - $this->paid_amount);

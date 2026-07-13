@@ -51,6 +51,7 @@ function Tagihan() {
       paid: b.paid,
       due: b.due_date ? `Jatuh tempo: ${safeParseDate(b.due_date).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}` : "",
       payments: b.payments || [],
+      payment_input_type: b.payment_input_type || "FIXED",
     }));
   }, [billsData]);
 
@@ -288,7 +289,7 @@ function BillCard({ bill }: { bill: any }) {
         )}
 
         {/* Expandable Payments History Panel */}
-        {bill.payments && bill.payments.length > 0 && (
+        {bill.payment_input_type === "FREE" && bill.payments && bill.payments.length > 0 && (
           <div className="mt-4 border-t border-border pt-4">
             <button
               onClick={() => setExpanded(!expanded)}

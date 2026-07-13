@@ -55,6 +55,7 @@ class BillController extends BaseWaliApiController
                 return [
                     'bill_type_id' => $first->bill_type_id,
                     'bill_type_name' => $first->billType->name ?? 'Tagihan',
+                    'payment_input_type' => $first->billType->payment_input_type ?? 'FIXED',
                     'academic_year' => $first->billType->academicYear->name ?? '-',
                     'total' => $items->sum('amount'),
                     'paid' => $items->sum('paid_amount'),
