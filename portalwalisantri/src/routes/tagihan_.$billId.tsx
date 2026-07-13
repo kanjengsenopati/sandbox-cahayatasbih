@@ -36,6 +36,38 @@ function BillDetail() {
     const b = detailData.bill;
     const details = detailData.details || [];
     
+    const mappedInstallments = detailData.bills.map((d: any) => ({
+      id: String(d.id),
+      label: d.translated_month ? `${d.translated_month} ${d.year}` : (d.name || ''),
+      month: d.translated_month || '',
+      monthNum: Number(d.month),
+      year: Number(d.year),
+      amount: Number(d.remaining_amount ?? d.amount),
+      originalAmount: Number(d.amount),
+      paidAmount: Number(d.paid_amount ?? 0),
+      paid: d.status === "PAID",
+    }));
+
+    // Sort installments in academic year order: July (7) to June (6)
+    mappedInstallments.sort((a: any, b: any) => {
+      const aNum = Number(a.monthNum);
+      const bNum = Number(b.monthNum);
+      
+      // Fallback if month values are invalid or non-numeric
+      if (isNaN(aNum) || isNaN(bNum) || aNum < 1 || aNum > 12 || bNum < 1 || bNum > 12) {
+        return a.id.localeCompare(b.id);
+      }
+
+      // Academic index: July (7) is 0, December (12) is 5, January (1) is 6, June (6) is 11
+      const aIndex = aNum >= 7 ? aNum - 7 : aNum + 5;
+      const bIndex = bNum >= 7 ? bNum - 7 : bNum + 5;
+
+      if (a.year !== b.year) {
+        return a.year - b.year;
+      }
+      return aIndex - bIndex;
+    });
+
     return {
       id: billId,
       name: detailData.billType.name,
@@ -43,16 +75,7 @@ function BillDetail() {
       academicYear: detailData.academic_year_name || detailData.billType.academic_year?.name || '',
       total: detailData.summary.total,
       paid: detailData.summary.paid,
-      installments: detailData.bills.map((d: any) => ({
-        id: String(d.id),
-        label: d.translated_month ? `${d.translated_month} ${d.year}` : (d.name || ''),
-        month: d.translated_month || '',
-        year: d.year || '',
-        amount: Number(d.remaining_amount ?? d.amount),
-        originalAmount: Number(d.amount),
-        paidAmount: Number(d.paid_amount ?? 0),
-        paid: d.status === "PAID",
-      })),
+      installments: mappedInstallments,
     };
   }, [detailData]);
 
