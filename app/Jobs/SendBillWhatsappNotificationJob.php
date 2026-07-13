@@ -18,6 +18,8 @@ class SendBillWhatsappNotificationJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
+    public $afterCommit = true;
+
     protected $students;
     protected $billTypes;
     protected $deviceId;
@@ -31,8 +33,10 @@ class SendBillWhatsappNotificationJob implements ShouldQueue
     {
         $this->students = $students;
         $this->billTypes = $billTypes;
-        $this->deviceId = ApplicationSetting::latest()->value('device_id');
-        $this->url = ApplicationSetting::latest()->value('link_whatsapp') . 'send';
+        
+        $appSetting = ApplicationSetting::latest()->first();
+        $this->deviceId = $appSetting?->device_id;
+        $this->url = $appSetting ? $appSetting->getNormalizedWhatsappUrl('send') : '';
     }
 
     /**
@@ -61,6 +65,10 @@ class SendBillWhatsappNotificationJob implements ShouldQueue
     {
         $client = new Client();
         try {
+            if (empty($this->url)) {
+                throw new \Exception('WhatsApp Gateway URL not configured.');
+            }
+
             $response = $client->get($this->url, [
                 'query' => [
                     'device_id' => $this->deviceId,

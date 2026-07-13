@@ -110,7 +110,7 @@ class Student extends Model
 
     public function studentBillNotifications()
     {
-        return $this->hasMany(StudentBillNotification::class);
+        return $this->hasMany(StudentBillNotification::class)->latest();
     }
 
     public function scopeHasSchoolPlace($query)

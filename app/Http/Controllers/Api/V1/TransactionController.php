@@ -107,27 +107,37 @@ class TransactionController extends Controller
 
         $proofImage = 'storage/' . $request->file('proof_image')->store('images/proofs', 'public');
 
-        $transaction->transactionProofs()->create([
-            'bank_id' => $request->bank_id,
-            'student_id' => $transaction->student_id,
-            'proof_image' => $proofImage,
-            'status' => TransactionProof::STATUS_WAITING_CONFIRMATION,
-        ]);
+        DB::beginTransaction();
 
-        // update transaction status
-        $transaction->update([
-            'status' => Transaction::STATUS_PENDING_CONFIRMATION
-        ]);
+        try {
+            $transaction->transactionProofs()->create([
+                'bank_id' => $request->bank_id,
+                'student_id' => $transaction->student_id,
+                'proof_image' => $proofImage,
+                'status' => TransactionProof::STATUS_WAITING_CONFIRMATION,
+            ]);
 
-        // add notif whatsapp
-        $messageWhatsapp = SendNotifWaService::sendMessagePendingTransferPayment($transaction);
-        dispatch(new SendToWhatsappNotificationJob($transaction->student?->user?->phone, $messageWhatsapp));
-        $contacts = Contact::where('type', Contact::TYPE_BENDAHARA)->orWhere('type', Contact::TYPE_SUPERADMIN)->get();
-        foreach ($contacts as $contact) {
-            dispatch(new SendToWhatsappNotificationJob($contact->phone, $messageWhatsapp));
+            // update transaction status
+            $transaction->update([
+                'status' => Transaction::STATUS_PENDING_CONFIRMATION
+            ]);
+
+            DB::commit();
+
+            // add notif whatsapp
+            $messageWhatsapp = SendNotifWaService::sendMessagePendingTransferPayment($transaction);
+            dispatch(new SendToWhatsappNotificationJob($transaction->student?->user?->phone, $messageWhatsapp));
+            $contacts = Contact::where('type', Contact::TYPE_BENDAHARA)->orWhere('type', Contact::TYPE_SUPERADMIN)->get();
+            foreach ($contacts as $contact) {
+                dispatch(new SendToWhatsappNotificationJob($contact->phone, $messageWhatsapp));
+            }
+
+            return $this->postSuccessResponse('Berhasil mengupload bukti pembayaran', ['transaction' => $transaction]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Error uploading proof: ' . $e->getMessage());
+            return $this->failedResponse('Terjadi kesalahan saat mengupload bukti pembayaran', 500);
         }
-
-        return $this->postSuccessResponse('Berhasil mengupload bukti pembayaran', ['transaction' => $transaction]);
     }
 
     public function proof($id)

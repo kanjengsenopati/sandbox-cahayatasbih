@@ -45,6 +45,8 @@ class SendBillInvoiceClass extends Command
                 });
         })->pluck('id'); // Mengambil hanya kolom 'id' dari hasil query
 
+        $billTypes = BillType::whereNull('deleted_at')->get();
+
         dispatch(new SendBillWhatsappNotificationJob($students, $billTypes));
     }
 }

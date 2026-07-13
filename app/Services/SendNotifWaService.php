@@ -15,7 +15,10 @@ class SendNotifWaService
     public static function sendMessage($number, $message)
     {
         $app_setting = ApplicationSetting::first();
-        $url = $app_setting->link_whatsapp;
+        if (!$app_setting) {
+            return "ApplicationSetting not configured.";
+        }
+        $url = $app_setting->getNormalizedWhatsappUrl('send');
         $deviceId = $app_setting->device_id;
 
         $client = new Client();

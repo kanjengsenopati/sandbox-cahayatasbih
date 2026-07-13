@@ -52,19 +52,16 @@ class SendUnpaidBillNotificationJob implements ShouldQueue
 
                 // Jika pesan tidak null, kirim notifikasi dan simpan log
                 if ($message !== null) {
-                    // Kirim notifikasi dengan delay sesuai urutan siswa
-                    dispatch(new SendToWhatsappNotificationJob($student->user->phone, $message))
-                        ->delay(now()->addSeconds($index));
+                    // Simpan log notifikasi sebagai PENDING terlebih dahulu
+                    $notificationLog = StudentBillNotification::create([
+                        'student_id' => $student->id,
+                        'message' => $message,
+                        'status' => StudentBillNotification::STATUS_PENDING,
+                    ]);
 
-                    // Simpan atau perbarui log notifikasi
-                    StudentBillNotification::updateOrCreate(
-                        ['student_id' => $student->id],
-                        [
-                            'message' => $message,
-                            'status' => StudentBillNotification::STATUS_SUCCESS,
-                            'sent_at' => now(),
-                        ]
-                    );
+                    // Kirim notifikasi dengan delay sesuai urutan siswa, masukkan ID log ke dalam job
+                    dispatch(new SendToWhatsappNotificationJob($student->user->phone, $message, $notificationLog->id))
+                        ->delay(now()->addSeconds($index));
                 } else {
                     Log::warning("Pesan notifikasi untuk siswa dengan ID {$student->id} kosong.");
                 }

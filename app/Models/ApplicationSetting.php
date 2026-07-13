@@ -150,12 +150,20 @@ class ApplicationSetting extends Model
         'whatsapp_status'
     ];
 
+    public function getNormalizedWhatsappUrl($endpoint = '')
+    {
+        $baseUrl = rtrim($this->link_whatsapp, '/');
+        if (empty($endpoint)) {
+            return $baseUrl;
+        }
+        return $baseUrl . '/' . ltrim($endpoint, '/');
+    }
+
     public function getWhatsappStatusAttribute()
     {
         $device_id = $this->device_id;
-        $link = $this->link_whatsapp;
         if ($device_id) {
-            $url = $link . 'statusDevice?device_id=' . $device_id;
+            $url = $this->getNormalizedWhatsappUrl('statusDevice') . '?device_id=' . $device_id;
             // add header to get data from api
             $response = Http::withHeaders([
                 'Accept' => 'application/json',

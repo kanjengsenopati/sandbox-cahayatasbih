@@ -16,20 +16,26 @@ class SendToWhatsappNotificationJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
+    public $afterCommit = true;
+
     protected $number;
     protected $message;
+    protected $notificationLogId;
     protected $deviceId;
     protected $url;
 
     /**
      * Create a new job instance.
      */
-    public function __construct($number, $message)
+    public function __construct($number, $message, $notificationLogId = null)
     {
         $this->number = $number;
         $this->message = $message;
-        $this->deviceId = ApplicationSetting::latest()->value('device_id');
-        $this->url = ApplicationSetting::latest()->value('link_whatsapp') . 'send';
+        $this->notificationLogId = $notificationLogId;
+        
+        $appSetting = ApplicationSetting::latest()->first();
+        $this->deviceId = $appSetting?->device_id;
+        $this->url = $appSetting ? $appSetting->getNormalizedWhatsappUrl('send') : '';
     }
 
     /**
@@ -39,6 +45,10 @@ class SendToWhatsappNotificationJob implements ShouldQueue
     {
         $client = new Client();
         try {
+            if (empty($this->url)) {
+                throw new \Exception('WhatsApp Gateway URL not configured.');
+            }
+
             $response = $client->get($this->url, [
                 'query' => [
                     'device_id' => $this->deviceId,
@@ -49,9 +59,25 @@ class SendToWhatsappNotificationJob implements ShouldQueue
 
             $result = $response->getBody()->getContents();
 
+            if ($this->notificationLogId) {
+                \App\Models\StudentBillNotification::where('id', $this->notificationLogId)
+                    ->update([
+                        'status' => \App\Models\StudentBillNotification::STATUS_SUCCESS,
+                        'sent_at' => now(),
+                    ]);
+            }
+
             return "<pre>" . print_r($result, true);
         } catch (\Exception $e) {
             Log::error('Failed to send WhatsApp notification: ' . $e->getMessage());
+
+            if ($this->notificationLogId) {
+                \App\Models\StudentBillNotification::where('id', $this->notificationLogId)
+                    ->update([
+                        'status' => \App\Models\StudentBillNotification::STATUS_FAILED,
+                    ]);
+            }
+
             return $e->getMessage();
         }
     }
