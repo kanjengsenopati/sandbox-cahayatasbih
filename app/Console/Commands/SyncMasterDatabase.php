@@ -312,45 +312,30 @@ class SyncMasterDatabase extends Command
             // Recalculate bill paid_amount and status to maintain consistency and integrity
             $this->info("Recalculating paid_amount and status for all bills...");
             
-            // 1. Reset paid_amount to 0 for all bills first
-            DB::connection('mysql')->table('bills')->update(['paid_amount' => 0]);
+            // 1. Recalculate paid_amount for all bills using successful transaction details
+            DB::connection('mysql')->statement("
+                UPDATE bills 
+                LEFT JOIN (
+                    SELECT 
+                        td.bill_id, 
+                        SUM(COALESCE(td.amount, b.amount)) AS total_paid
+                    FROM transaction_details td
+                    JOIN transactions t ON td.transaction_id = t.id
+                    JOIN bills b ON td.bill_id = b.id
+                    WHERE t.status IN ('PAID', 'approved', 'SUCCESS')
+                      AND td.deleted_at IS NULL
+                      AND t.deleted_at IS NULL
+                    GROUP BY td.bill_id
+                ) AS payments ON bills.id = payments.bill_id
+                SET bills.paid_amount = COALESCE(payments.total_paid, 0)
+            ");
             
-            // 2. Fetch and aggregate all successful transaction details
-            DB::connection('mysql')->table('transaction_details')
-                ->join('transactions', 'transaction_details.transaction_id', '=', 'transactions.id')
-                ->join('bills', 'transaction_details.bill_id', '=', 'bills.id')
-                ->whereIn('transactions.status', ['PAID', 'approved', 'SUCCESS'])
-                ->whereNull('transaction_details.deleted_at')
-                ->whereNull('transactions.deleted_at')
-                ->select(
-                    'transaction_details.bill_id',
-                    'transaction_details.amount as detail_amount',
-                    'bills.amount as bill_amount'
-                )
-                ->orderBy('transaction_details.id')
-                ->chunk(1000, function ($details) {
-                    $billPayments = [];
-                    foreach ($details as $detail) {
-                        $paid = is_null($detail->detail_amount) ? $detail->bill_amount : $detail->detail_amount;
-                        if (!isset($billPayments[$detail->bill_id])) {
-                            $billPayments[$detail->bill_id] = 0;
-                        }
-                        $billPayments[$detail->bill_id] += $paid;
-                    }
-                    
-                    foreach ($billPayments as $billId => $totalPaid) {
-                        DB::connection('mysql')->table('bills')
-                            ->where('id', $billId)
-                            ->increment('paid_amount', $totalPaid);
-                    }
-                });
-            
-            // 3. For any bill where paid_amount >= amount, status must be PAID
+            // 2. For any bill where paid_amount >= amount, status must be PAID
             DB::connection('mysql')->table('bills')
                 ->whereRaw('paid_amount >= amount')
                 ->update(['status' => 'PAID']);
                 
-            // 4. For any bill where status is PAID but paid_amount is less than amount,
+            // 3. For any bill where status is PAID but paid_amount is less than amount,
             // we must set paid_amount = amount to ensure UI consistency.
             DB::connection('mysql')->table('bills')
                 ->where('status', 'PAID')
