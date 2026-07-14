@@ -73,7 +73,7 @@
                                         </a>
                                     </div>
                                 </div>
-                                <div class="row mb-6">
+                                <div class="row mb-6 d-none">
                                     <div class="col-6">
                                         <!--begin::Label-->
                                         <label class="fs-6 fw-bold form-label" for="payment_fee">
@@ -85,8 +85,7 @@
                                             <span class="input-group-text">Rp</span>
                                             <input type="number" class="form-control form-control-solid"
                                                 id="payment_fee" name="payment_fee" placeholder="Masukkan Fee Xendit"
-                                                value="{{ @$applicationSetting->payment_fee ?? old('payment_fee') }}"
-                                                required />
+                                                value="{{ @$applicationSetting->payment_fee ?? old('payment_fee') ?? 0 }}" />
                                         </div>
                                     </div>
                                     <div class="col-6">
@@ -100,12 +99,11 @@
                                             <span class="input-group-text">Rp</span>
                                             <input type="number" class="form-control form-control-solid" id="bill_fee"
                                                 name="bill_fee" placeholder="Masukkan Fee Tagihan"
-                                                value="{{ @$applicationSetting->bill_fee ?? old('bill_fee') }}"
-                                                required />
+                                                value="{{ @$applicationSetting->bill_fee ?? old('bill_fee') ?? 0 }}" />
                                         </div>
                                     </div>
                                 </div>
-                                <div class="row mb-6">
+                                <div class="row mb-6 d-none">
                                     <div class="col-6">
                                         <!--begin::Label-->
                                         <label class="fs-6 fw-bold form-label" for="saldo_fee">
@@ -116,8 +114,7 @@
                                         <div class="input-group">
                                             <input type="number" class="form-control form-control-solid" id="saldo_fee"
                                                 name="saldo_fee" placeholder="Masukkan Fee Saldo"
-                                                value="{{ @$applicationSetting->saldo_fee ?? old('saldo_fee') }}"
-                                                required />
+                                                value="{{ @$applicationSetting->saldo_fee ?? old('saldo_fee') ?? 0 }}" />
                                             <span class="input-group-text">%</span>
                                         </div>
                                     </div>
@@ -132,8 +129,7 @@
                                             class="form-control form-control-solid time" id="payment_expire_time"
                                             name="payment_expire_time"
                                             placeholder="Masukkan Waktu Kadaluarsa Pembayaran"
-                                            value="{{ @$applicationSetting->payment_expire_time ?? old('payment_expire_time') }}"
-                                            required />
+                                            value="{{ @$applicationSetting->payment_expire_time ?? old('payment_expire_time') ?? '24:00' }}" />
                                     </div>
                                 </div>
 
