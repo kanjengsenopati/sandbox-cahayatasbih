@@ -188,9 +188,9 @@
                                                             $subEdit   = 'Edit ' . $subName;
                                                             $subDelete = 'Delete ' . $subName;
                                                         @endphp
-                                                        <div class="col-12 col-sm-6 border-bottom border-gray-100 pb-3 mb-1">
+                                                        <div class="col-12 col-sm-6 border-bottom border-gray-100 pb-4 mb-2">
                                                             <div class="d-flex justify-content-between align-items-center mb-2">
-                                                                <span class="fs-7 fw-bold text-gray-850">{{ $sub['display'] }}</span>
+                                                                <span class="fs-7 fw-bolder text-gray-800">{{ $sub['display'] }}</span>
                                                                 <div class="form-check form-check-custom form-check-solid form-check-sm">
                                                                     <!-- Individual sub-module Select All -->
                                                                     <input class="form-check-input module-checkbox sub-module-selector" type="checkbox"
@@ -198,7 +198,7 @@
                                                                 </div>
                                                             </div>
                                                             
-                                                            <div class="d-flex flex-wrap gap-x-4 gap-y-2 mt-1">
+                                                            <div class="d-flex flex-column gap-2 mt-2">
                                                                 <!-- Read Checkbox -->
                                                                 @if (in_array($subManage, (array) $permissions))
                                                                     @php $manageKey = array_search($subManage, $permissions); @endphp
@@ -210,7 +210,7 @@
                                                                         <label class="form-check-label text-gray-600 fs-7" for="permission{{ $manageKey }}">Read</label>
                                                                     </div>
                                                                 @endif
-
+ 
                                                                 <!-- Create Checkbox -->
                                                                 @if (in_array($subCreate, (array) $permissions))
                                                                     @php $createKey = array_search($subCreate, $permissions); @endphp
@@ -222,7 +222,7 @@
                                                                         <label class="form-check-label text-gray-600 fs-7" for="permission{{ $createKey }}">Create</label>
                                                                     </div>
                                                                 @endif
-
+ 
                                                                 <!-- Edit Checkbox -->
                                                                 @if (in_array($subEdit, (array) $permissions))
                                                                     @php $editKey = array_search($subEdit, $permissions); @endphp
@@ -234,7 +234,7 @@
                                                                         <label class="form-check-label text-gray-600 fs-7" for="permission{{ $editKey }}">Edit</label>
                                                                     </div>
                                                                 @endif
-
+ 
                                                                 <!-- Delete Checkbox -->
                                                                 @if (in_array($subDelete, (array) $permissions))
                                                                     @php $deleteKey = array_search($subDelete, $permissions); @endphp
