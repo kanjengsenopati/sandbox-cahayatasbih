@@ -163,6 +163,8 @@ class SyncMasterDatabase extends Command
             }
             $this->info("Built classroom mapping for " . count($classroomMapping) . " classrooms.");
 
+            $localBillsMap = null;
+
             foreach ($tables as $table) {
                 if ($syncTablesOption) {
                     $selectedTables = array_map('trim', explode(',', $syncTablesOption));
@@ -266,7 +268,7 @@ class SyncMasterDatabase extends Command
                 $minTimestamp = null;
                 $maxTimestamp = null;
 
-                $processChunk = function ($rows) use ($table, $commonColumns, &$inserted, &$minTimestamp, &$maxTimestamp, $classroomMapping, $targetColumns, $defaultOutletId) {
+                $processChunk = function ($rows) use ($table, $commonColumns, &$inserted, &$minTimestamp, &$maxTimestamp, $classroomMapping, $targetColumns, $defaultOutletId, &$localBillsMap) {
                     $data = $rows->map(fn($row) => (array) $row)->toArray();
                     if (!empty($data)) {
                         $columnsToUpdate = array_filter($commonColumns, fn($col) => $col !== 'id');
@@ -280,6 +282,17 @@ class SyncMasterDatabase extends Command
                             $columnsToUpdate[] = 'outlet_id';
                         }
                         
+                        // Pre-load local students for chunk optimization
+                        $localStudents = collect();
+                        if ($table === 'students') {
+                            $studentIds = array_column($data, 'id');
+                            $localStudents = DB::connection('mysql')->table('students')
+                                ->whereIn('id', $studentIds)
+                                ->select('id', 'saldo', 'saving')
+                                ->get()
+                                ->keyBy('id');
+                        }
+
                         // Identify date range and map classroom IDs
                         foreach ($data as &$row) {
                             if ($assignDefaultOutlet) {
@@ -297,7 +310,7 @@ class SyncMasterDatabase extends Command
 
                             // Check student balance difference and log adjustment
                             if ($table === 'students' && isset($row['id']) && isset($row['saldo'])) {
-                                $localStudent = DB::connection('mysql')->table('students')->where('id', $row['id'])->first();
+                                $localStudent = $localStudents->get($row['id']);
                                 if ($localStudent && isset($localStudent->saldo)) {
                                     $diff = $row['saldo'] - $localStudent->saldo;
                                     if ($diff != 0) {
@@ -320,7 +333,7 @@ class SyncMasterDatabase extends Command
 
                             // Check student saving difference and log adjustment
                             if ($table === 'students' && isset($row['id']) && isset($row['saving'])) {
-                                $localStudent = DB::connection('mysql')->table('students')->where('id', $row['id'])->first();
+                                $localStudent = $localStudents->get($row['id']);
                                 if ($localStudent && isset($localStudent->saving)) {
                                     $diff = $row['saving'] - $localStudent->saving;
                                     if ($diff != 0) {
@@ -402,23 +415,25 @@ class SyncMasterDatabase extends Command
                             }
 
                             // 2. Resolve ID collisions with existing active bills in local database
-                            $studentIds = array_column($data, 'student_id');
-                            $billTypeIds = array_column($data, 'bill_type_id');
-                            $academicYearIds = array_column($data, 'academic_year_id');
-                            
-                            $existingBills = DB::connection('mysql')->table('bills')
-                                ->whereIn('student_id', $studentIds)
-                                ->whereIn('bill_type_id', $billTypeIds)
-                                ->whereIn('academic_year_id', $academicYearIds)
-                                ->whereNull('deleted_at')
-                                ->get()
-                                ->groupBy(function($item) {
-                                    return $item->student_id . '_' . 
-                                           $item->bill_type_id . '_' . 
-                                           $item->academic_year_id . '_' . 
-                                           $item->month . '_' . 
-                                           $item->year;
-                                });
+                            // Load existing bills lookup map if not loaded
+                            if (is_null($localBillsMap)) {
+                                $this->info("Loading existing active bills map from local database...");
+                                $localBillsMap = [];
+                                DB::connection('mysql')->table('bills')
+                                    ->whereNull('deleted_at')
+                                    ->select('id', 'student_id', 'bill_type_id', 'academic_year_id', 'month', 'year')
+                                    ->chunkById(10000, function($bills) use (&$localBillsMap) {
+                                        foreach ($bills as $b) {
+                                            $key = $b->student_id . '_' . 
+                                                   $b->bill_type_id . '_' . 
+                                                   $b->academic_year_id . '_' . 
+                                                   $b->month . '_' . 
+                                                   $b->year;
+                                            $localBillsMap[$key] = $b->id;
+                                        }
+                                    });
+                                $this->info("Loaded " . count($localBillsMap) . " bills into lookup map.");
+                            }
 
                             foreach ($data as &$row) {
                                 if (is_null($row['deleted_at'])) {
@@ -428,10 +443,10 @@ class SyncMasterDatabase extends Command
                                            $row['month'] . '_' . 
                                            $row['year'];
                                     
-                                    if (isset($existingBills[$key])) {
-                                        $localBill = $existingBills[$key]->first();
-                                        if ($localBill->id !== $row['id']) {
-                                            $row['id'] = $localBill->id;
+                                    if (isset($localBillsMap[$key])) {
+                                        $localBillId = $localBillsMap[$key];
+                                        if ($localBillId !== $row['id']) {
+                                            $row['id'] = $localBillId;
                                         }
                                     }
                                 }
