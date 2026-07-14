@@ -70,6 +70,21 @@ class SyncMasterDatabase extends Command
         $hasErrors = false;
         $errorMessage = '';
 
+        // Clean up previous stuck running sync logs in database (older than 15 minutes)
+        try {
+            DB::connection('mysql')->table('database_sync_logs')
+                ->where('status', 'running')
+                ->where('started_at', '<', now()->subMinutes(15))
+                ->update([
+                    'status' => 'failed',
+                    'finished_at' => now(),
+                    'duration' => 120,
+                    'error' => 'Proses sinkronisasi terhenti secara tidak terduga (Stuck/Timeout/Server Restart).'
+                ]);
+        } catch (\Throwable $e) {
+            $this->warn('Could not clean up stuck database logs: ' . $e->getMessage());
+        }
+
         // Mark sync as running
         $cacheData = [
             'status' => 'running',

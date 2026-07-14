@@ -19,8 +19,34 @@ class AuditController extends Controller
         $service = new AuditService();
         $results = $service->runAll();
         
-        // Backwards compatibility/latest status from cache or db
+        // 1. Clean up previous stuck running sync logs in database (older than 15 minutes)
+        try {
+            \App\Models\DatabaseSyncLog::where('status', 'running')
+                ->where('started_at', '<', now()->subMinutes(15))
+                ->update([
+                    'status' => 'failed',
+                    'finished_at' => now(),
+                    'duration' => 120,
+                    'error' => 'Proses sinkronisasi terhenti secara tidak terduga (Stuck/Timeout/Server Restart).'
+                ]);
+        } catch (\Throwable $e) {
+            // Ignore error
+        }
+
+        // 2. Backwards compatibility/latest status from cache or db
         $syncStatus = Cache::get('last_db_sync_status');
+        
+        // Clean up stuck running status in Cache too
+        if ($syncStatus && isset($syncStatus['status']) && $syncStatus['status'] === 'running') {
+            $startedAt = isset($syncStatus['started_at']) ? strtotime($syncStatus['started_at']) : 0;
+            if (time() - $startedAt > 900) { // 15 minutes
+                $syncStatus['status'] = 'failed';
+                $syncStatus['finished_at'] = now()->toDateTimeString();
+                $syncStatus['error'] = 'Proses sinkronisasi terhenti secara tidak terduga (Stuck/Timeout/Server Restart).';
+                Cache::put('last_db_sync_status', $syncStatus, 1800);
+            }
+        }
+
         if (!$syncStatus) {
             $latestLog = \App\Models\DatabaseSyncLog::latest('id')->first();
             if ($latestLog) {
