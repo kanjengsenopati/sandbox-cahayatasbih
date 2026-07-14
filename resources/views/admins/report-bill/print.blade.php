@@ -238,7 +238,7 @@
                         $subtotal += $total;
                         @endphp
                         <td class="text-primary" width="50%">
-                            <span>{{ $billType->name ?? '' }}</span>
+                            <span>{{ $billType->formatted_name ?? '' }}</span>
                         </td>
                         <td align="right">Rp. {{ number_format($total, 0, ',', '.') }}</td>
                         </td>

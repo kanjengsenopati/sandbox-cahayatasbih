@@ -64,6 +64,7 @@ class ReportBillController extends Controller
             if (request()->type == 'bill') {
                 return DataTables::of($data)
                     ->addColumn('academic_year', fn($data) => $data->academicYear->name)
+                    ->editColumn('name', fn($data) => $data->formatted_name)
                     ->addColumn('total_bill', fn($data) => $data->bills->count())
                     ->addColumn('student_count', fn($data) => $data->bills->pluck('student_id')->unique()->count())
                     ->editColumn('type', fn($data) => $data->type === BillType::TYPE_MONTHLY

@@ -53,6 +53,39 @@ class BillType extends Model
         return $this->hasMany(BillTypeBank::class);
     }
 
+    public function getSchoolTypeAttribute()
+    {
+        return $this->rememberSchoolInfo()['type'] ?? null;
+    }
+
+    public function getSchoolNameAttribute()
+    {
+        return $this->rememberSchoolInfo()['name'] ?? null;
+    }
+
+    public function getFormattedNameAttribute()
+    {
+        $suffix = $this->school_type;
+        if ($suffix && !str_contains(strtolower($this->name), strtolower($suffix))) {
+            return $this->name . ' ' . $suffix;
+        }
+        return $this->name;
+    }
+
+    private function rememberSchoolInfo()
+    {
+        return \Illuminate\Support\Facades\Cache::remember("bill_type_{$this->id}_school_info", 3600, function() {
+            $bill = $this->bills()->first();
+            if ($bill && $bill->student && $bill->student->classroom && $bill->student->classroom->school) {
+                return [
+                    'type' => $bill->student->classroom->school->type,
+                    'name' => $bill->student->classroom->school->name,
+                ];
+            }
+            return [];
+        });
+    }
+
     protected static function booted()
     {
         static::deleting(function ($billType) {

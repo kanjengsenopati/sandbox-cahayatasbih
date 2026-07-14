@@ -9,7 +9,7 @@
             <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-6">
                 <div class="d-flex flex-column">
                     <h1 class="text-dark fw-bolder fs-2 mb-2">
-                        {{ $billType->name ?? 'Laporan Tagihan' }}
+                        {{ $billType->formatted_name ?? 'Laporan Tagihan' }}
                     </h1>
                     <ul class="breadcrumb breadcrumb-separatorless fw-bold fs-7">
                         <li class="breadcrumb-item text-muted">

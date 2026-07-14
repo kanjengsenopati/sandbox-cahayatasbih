@@ -109,10 +109,11 @@
                                     <div>
                                         <label class="form-label">Jenis Tagihan</label>
                                         <select name="bill_type_id[]" id="filter_tipe_tagihan"
-                                            class="form-select form-select-sm" id="filter_tipe_tagihan"
-                                            multiple="multiple" <option value="">Semua</option>
+                                            class="form-select form-select-sm"
+                                            multiple="multiple">
+                                            <option value="">Semua</option>
                                             @foreach ($billTypes as $billType)
-                                            <option value="{{ $billType->id }}">{{ $billType->name }}</option>
+                                            <option value="{{ $billType->id }}">{{ $billType->formatted_name }}</option>
                                             @endforeach
                                         </select>
                                     </div>

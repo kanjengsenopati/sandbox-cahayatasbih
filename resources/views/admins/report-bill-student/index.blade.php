@@ -68,7 +68,7 @@
                                         <label class="form-label">Tagihan</label>
                                         <select name="bill_type_id[]" class="form-select form-select-sm" id="filter_tipe_tagihan" multiple="multiple">
                                             @foreach ($billTypes as $billType)
-                                            <option value="{{ $billType->id }}">{{ $billType->name }} {{ $billType->academicYear ? '(' . $billType->academicYear->name . ')' : '' }}</option>
+                                            <option value="{{ $billType->id }}">{{ $billType->formatted_name }} {{ $billType->academicYear ? '(' . $billType->academicYear->name . ')' : '' }}</option>
                                             @endforeach
                                         </select>
                                     </div>
