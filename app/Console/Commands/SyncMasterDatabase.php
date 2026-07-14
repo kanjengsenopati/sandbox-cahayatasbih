@@ -459,6 +459,21 @@ class SyncMasterDatabase extends Command
                             ->table($table)
                             ->upsert($data, ['id'], $columnsToUpdate);
                         $inserted += count($data);
+
+                        // After upsert, update the in-memory bills map with the current chunk's data
+                        // so subsequent chunks can detect UUID collisions with bills from this chunk
+                        if ($table === 'bills' && is_array($localBillsMap)) {
+                            foreach ($data as $row) {
+                                if (is_null($row['deleted_at'])) {
+                                    $key = $row['student_id'] . '_' . 
+                                           $row['bill_type_id'] . '_' . 
+                                           $row['academic_year_id'] . '_' . 
+                                           $row['month'] . '_' . 
+                                           $row['year'];
+                                    $localBillsMap[$key] = $row['id'];
+                                }
+                            }
+                        }
                     }
                 };
 
