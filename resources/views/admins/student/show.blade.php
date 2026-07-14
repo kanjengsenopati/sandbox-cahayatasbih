@@ -292,7 +292,64 @@
 @push('js')
 <script>
     $(document).ready(() => {
-            var table = $('#table-saldo-history').DataTable({
+        // Silence default browser alert popups for DataTables errors
+        $.fn.dataTable.ext.errMode = 'none';
+
+        let tables = {};
+
+        // Log DataTables errors to console instead of showing alert()
+        $(document).on('error.dt', function(e, settings, techNote, message) {
+            console.error('DataTables error: ', message);
+        });
+
+        function initBillTable() {
+            if (tables['bill']) return;
+            tables['bill'] = $('#table-student-bill').DataTable({
+                ordering: false,
+                processing: true,
+                serverSide: true,
+                responsive: true,
+                ajax: {
+                    url: "{{ route('student.show', $student->id) }}",
+                    type: 'GET',
+                    data: {
+                        type: 'bill'
+                    }
+                },
+                language: {
+                    "paginate": {
+                        "next": "<i class='fa fa-angle-right'>",
+                        "previous": "<i class='fa fa-angle-left'>"
+                    },
+                    "loadingRecords": "Loading...",
+                    "processing": "Processing...",
+                },
+                columns: [{
+                    "data": null,
+                    "sortable": false,
+                    "searchable": false,
+                    responsivePriority: -1,
+                    render: function(data, type, row, meta) {
+                        return meta.row + meta.settings._iDisplayStart + 1;
+                    }
+                },
+                { data: 'academic_year.name', name: 'academic_year.name' },
+                { data: 'name', name: 'name' },
+                { data: 'total', name: 'total' },
+                { data: 'total_paid', name: 'total_paid' },
+                { data: 'total_unpaid', name: 'total_unpaid' },
+                { 
+                    data: 'status', 
+                    name: 'status',
+                    responsivePriority: -1,
+                }
+                ]
+            });
+        }
+
+        function initSaldoTable() {
+            if (tables['saldo']) return;
+            tables['saldo'] = $('#table-saldo-history').DataTable({
                 ordering: false,
                 processing: true,
                 serverSide: true,
@@ -313,23 +370,25 @@
                     "processing": "Processing...",
                 },
                 columns: [{
-                        "data": null,
-                        "sortable": false,
-                        "searchable": false,
-                        responsivePriority: -1,
-                        render: function(data, type, row, meta) {
-                            return meta.row + meta.settings._iDisplayStart + 1;
-                        }
-
-                    },
-                    { data: 'student.name', name: 'student.name' },
-                    { data: 'amount', name: 'amount' },
-                    { data: 'status', name: 'status' },
-                    { data: 'description', name: 'description' },
+                    "data": null,
+                    "sortable": false,
+                    "searchable": false,
+                    responsivePriority: -1,
+                    render: function(data, type, row, meta) {
+                        return meta.row + meta.settings._iDisplayStart + 1;
+                    }
+                },
+                { data: 'student.name', name: 'student.name' },
+                { data: 'amount', name: 'amount' },
+                { data: 'status', name: 'status' },
+                { data: 'description', name: 'description' },
                 ]
             });
+        }
 
-            var table = $('#table-saving-history').DataTable({
+        function initSavingTable() {
+            if (tables['saving']) return;
+            tables['saving'] = $('#table-saving-history').DataTable({
                 ordering: false,
                 processing: true,
                 serverSide: true,
@@ -350,23 +409,26 @@
                     "processing": "Processing...",
                 },
                 columns: [{
-                        "data": null,
-                        "sortable": false,
-                        "searchable": false,
-                        responsivePriority: -1,
-                        render: function(data, type, row, meta) {
-                            return meta.row + meta.settings._iDisplayStart + 1;
-                        }
-                    },
-                   { data: 'date', name: 'date' },
-                    { data: 'student.name', name: 'student.name' },
-                    { data: 'amount', name: 'amount' },
-                    { data: 'status', name: 'status' },
-                    { data: 'description', name: 'description' },
+                    "data": null,
+                    "sortable": false,
+                    "searchable": false,
+                    responsivePriority: -1,
+                    render: function(data, type, row, meta) {
+                        return meta.row + meta.settings._iDisplayStart + 1;
+                    }
+                },
+                { data: 'date', name: 'date' },
+                { data: 'student.name', name: 'student.name' },
+                { data: 'amount', name: 'amount' },
+                { data: 'status', name: 'status' },
+                { data: 'description', name: 'description' },
                 ]
             });
+        }
 
-            var table = $('#table-tahfidz').DataTable({
+        function initTahfidzTable() {
+            if (tables['tahfidz']) return;
+            tables['tahfidz'] = $('#table-tahfidz').DataTable({
                 ordering: false,
                 processing: true,
                 serverSide: true,
@@ -387,80 +449,67 @@
                     "processing": "Processing...",
                 },
                 columns: [{
-                        "data": null,
-                        "sortable": false,
-                        "searchable": false,
-                        responsivePriority: -1,
-                        render: function(data, type, row, meta) {
-                            return meta.row + meta.settings._iDisplayStart + 1;
-                        }
-                    },
-                    {
-                        data: 'deposit_date',
-                        name: 'deposit_date'
-                    },
-                    {
-                        data: 'student.name',
-                        name: 'student.name'
-                    },
-                    {
-                        data: 'number_of_pages',
-                        name: 'number_of_pages'
-                    },
-                    {
-                        data: 'note',
-                        name: 'note'
-                    },
-                    {
-                        data: 'feedback',
-                        name: 'feedback'
-                    },
-                    {
-                        data: 'link',
-                        name: 'link'
-                   },
-                ]
-            });
-
-            var table = $('#table-student-bill').DataTable({
-                ordering: false,
-                processing: true,
-                serverSide: true,
-                responsive: true,
-                ajax: {
-                    url: "{{ route('student.show', $student->id) }}",
-                    type: 'GET',
-                    data: {
-                        type: 'bill'
-                    }
-                },
-                language: {
-                "paginate": {
-                "next": "<i class='fa fa-angle-right'>",
-                "previous": "<i class='fa fa-angle-left'>"
-                    },
-                    "loadingRecords": "Loading...",
-                    "processing": "Processing...",
-                    },
-                    columns: [{
                     "data": null,
                     "sortable": false,
                     "searchable": false,
                     responsivePriority: -1,
                     render: function(data, type, row, meta) {
-                    return meta.row + meta.settings._iDisplayStart + 1;
+                        return meta.row + meta.settings._iDisplayStart + 1;
                     }
-                    },
-                    { data: 'academic_year.name', name: 'academic_year.name' },
-                    { data: 'name', name: 'name' },
-                    { data: 'total', name: 'total' },
-                    { data: 'total_paid', name: 'total_paid' },
-                    { data: 'total_unpaid', name: 'total_unpaid' },
-                    { data: 'status', name: 'status',
-                    responsivePriority: -1,
-                    }
-                    ]
-                    });
-        })
+                },
+                {
+                    data: 'deposit_date',
+                    name: 'deposit_date'
+                },
+                {
+                    data: 'student.name',
+                    name: 'student.name'
+                },
+                {
+                    data: 'number_of_pages',
+                    name: 'number_of_pages'
+                },
+                {
+                    data: 'note',
+                    name: 'note'
+                },
+                {
+                    data: 'feedback',
+                    name: 'feedback'
+                },
+                {
+                    data: 'link',
+                    name: 'link'
+                },
+                ]
+            });
+        }
+
+        // Lazy initialize DataTables when tabs are shown
+        $('a[data-bs-toggle="tab"]').on('shown.bs.tab', function(e) {
+            let target = $(e.target).attr("href");
+            if (target === "#kt_tab_pane_2") {
+                initBillTable();
+                if (tables['bill']) {
+                    tables['bill'].columns.adjust().responsive.recalc();
+                }
+            } else if (target === "#kt_tab_pane_3") {
+                initSaldoTable();
+                if (tables['saldo']) {
+                    tables['saldo'].columns.adjust().responsive.recalc();
+                }
+            } else if (target === "#kt_tab_pane_4") {
+                initSavingTable();
+                if (tables['saving']) {
+                    tables['saving'].columns.adjust().responsive.recalc();
+                }
+            } else if (target === "#kt_tab_pane_5") {
+                initTahfidzTable();
+                if (tables['tahfidz']) {
+                    tables['tahfidz'].columns.adjust().responsive.recalc();
+                }
+            }
+        });
+    });
 </script>
 @endpush

@@ -188,104 +188,121 @@ class StudentController extends Controller
     public function show(string $id)
     {
         if (!Auth::user()->can('Manage Santri')) {
+            if (request()->ajax()) {
+                return response()->json(['error' => 'Maaf, Anda tidak memiliki akses untuk data ini.'], 403);
+            }
             return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
         }
 
-        if (request()->ajax() && request()->type === 'saldo') {
-            $data = SaldoHistory::with('student')->where('student_id', $id)->latest();
-            return DataTables::of($data)
-                ->editColumn('amount', function ($data) {
-                    if ($data->type === 'IN') {
-                        return '<span class="badge bg-success">+' . $data->amount . '</span>';
-                    } else {
-                        return '<span class="badge bg-danger">-' . $data->amount . '</span>';
-                    }
-                })
-                ->editColumn('status', function ($data) {
-                    if ($data->status === SaldoHistory::STATUS_SUCCESS) {
-                        return '<span class="badge bg-success">' . $data->status . '</span>';
-                    } elseif ($data->status === SaldoHistory::STATUS_PENDING) {
-                        return '<span class="badge bg-warning">' . $data->status . '</span>';
-                    } else {
-                        return '<span class="badge bg-danger">' . $data->status . '</span>';
-                    }
-                })
-                ->rawColumns(['amount', 'status'])
-                ->make(true);
-        }
+        if (request()->ajax()) {
+            try {
+                if (request()->type === 'saldo') {
+                    $data = SaldoHistory::with('student')->where('student_id', $id)->latest();
+                    return DataTables::of($data)
+                        ->editColumn('amount', function ($data) {
+                            if ($data->type === 'IN') {
+                                return '<span class="badge bg-success">+' . $data->amount . '</span>';
+                            } else {
+                                return '<span class="badge bg-danger">-' . $data->amount . '</span>';
+                            }
+                        })
+                        ->editColumn('status', function ($data) {
+                            if ($data->status === SaldoHistory::STATUS_SUCCESS) {
+                                return '<span class="badge bg-success">' . $data->status . '</span>';
+                            } elseif ($data->status === SaldoHistory::STATUS_PENDING) {
+                                return '<span class="badge bg-warning">' . $data->status . '</span>';
+                            } else {
+                                return '<span class="badge bg-danger">' . $data->status . '</span>';
+                            }
+                        })
+                        ->rawColumns(['amount', 'status'])
+                        ->make(true);
+                }
 
-        if (request()->ajax() && request()->type === 'saving') {
-            $data = SavingHistory::with('student')->where('student_id', $id)->latest();
-            return DataTables::of($data)
-                ->editColumn('date', function ($data) {
-                    Carbon::setLocale('id'); // Set locale to Indonesian
-                    return Carbon::parse($data->created_at)
-                        ->translatedFormat('d F Y'); // Format tanggal dalam bahasa Indonesia
-                })
-                ->editColumn('amount', function ($data) {
-                    if ($data->type === 'IN') {
-                        return '<span class="badge bg-success">+' . number_format($data->amount, 0, ',', '.') . '</span>';
-                    } else {
-                        return '<span class="badge bg-danger">-' . number_format($data->amount, 0, ',', '.') . '</span>';
-                    }
-                })
-                ->editColumn('status', function ($data) {
-                    if ($data->status === SavingHistory::STATUS_SUCCESS) {
-                        return '<span class="badge bg-success">' . $data->status . '</span>';
-                    } elseif ($data->status === SavingHistory::STATUS_PENDING) {
-                        return '<span class="badge bg-warning">' . $data->status . '</span>';
-                    } else {
-                        return '<span class="badge bg-danger">' . $data->status . '</span>';
-                    }
-                })
-                ->rawColumns(['amount', 'status'])
-                ->make(true);
-        }
-        if (request()->ajax() && request()->type === 'bill') {
-            $data = BillType::with('billItem', 'academicYear', 'bills')
-                ->whereHas('bills', fn($query) => $query->where('student_id', $id))
-                ->latest()
-                ->get();
+                if (request()->type === 'saving') {
+                    $data = SavingHistory::with('student')->where('student_id', $id)->latest();
+                    return DataTables::of($data)
+                        ->editColumn('date', function ($data) {
+                            Carbon::setLocale('id'); // Set locale to Indonesian
+                            return Carbon::parse($data->created_at)
+                                ->translatedFormat('d F Y'); // Format tanggal dalam bahasa Indonesia
+                        })
+                        ->editColumn('amount', function ($data) {
+                            if ($data->type === 'IN') {
+                                return '<span class="badge bg-success">+' . number_format($data->amount, 0, ',', '.') . '</span>';
+                            } else {
+                                return '<span class="badge bg-danger">-' . number_format($data->amount, 0, ',', '.') . '</span>';
+                            }
+                        })
+                        ->editColumn('status', function ($data) {
+                            if ($data->status === SavingHistory::STATUS_SUCCESS) {
+                                return '<span class="badge bg-success">' . $data->status . '</span>';
+                            } elseif ($data->status === SavingHistory::STATUS_PENDING) {
+                                return '<span class="badge bg-warning">' . $data->status . '</span>';
+                            } else {
+                                return '<span class="badge bg-danger">' . $data->status . '</span>';
+                            }
+                        })
+                        ->rawColumns(['amount', 'status'])
+                        ->make(true);
+                }
 
-            return DataTables::of($data)
-                ->addColumn('total_unpaid', function ($data) use ($id) {
-                    $totalUnpaid = $data->bills->where('student_id', $id)->sum('remaining_amount');
-                    return 'Rp. ' . number_format($totalUnpaid, 0, ',', '.');
-                })
-                ->addColumn('total_paid', function ($data) use ($id) {
-                    $totalPaid = $data->bills->where('student_id', $id)->sum('paid_amount');
-                    return 'Rp. ' . number_format($totalPaid, 0, ',', '.');
-                })
-                ->addColumn('total', function ($data) use ($id) {
-                    $total = $data->bills->where('student_id', $id)->sum('amount');
-                    return 'Rp. ' . number_format($total, 0, ',', '.');
-                })
-                ->addColumn('status', function ($data) use ($id) {
-                    $totalPaid = $data->bills->where('student_id', $id)->sum('paid_amount');
-                    $total = $data->bills->where('student_id', $id)->sum('amount');
-                    if ($totalPaid == 0) {
-                        return '<span class="badge bg-danger">Belum Bayar</span>';
-                    } elseif ($totalPaid < $total) {
-                        return '<span class="badge bg-warning">Belum Lunas</span>';
-                    } else {
-                        return '<span class="badge bg-success">Lunas</span>';
-                    }
-                })
-                ->rawColumns(['status'])
-                ->make(true);
-        }
+                if (request()->type === 'bill') {
+                    $data = BillType::with([
+                        'billItem', 
+                        'academicYear', 
+                        'bills' => function ($query) use ($id) {
+                            $query->where('student_id', $id);
+                        }
+                    ])
+                    ->whereHas('bills', fn($query) => $query->where('student_id', $id))
+                    ->latest()
+                    ->get();
 
-        if (request()->ajax() && request()->type === 'tahfidz') {
-            $data = Tahfidz::with('student')->where('student_id', $id)->latest();
-            return DataTables::of($data)
-                ->editColumn('link', function ($data) {
-                    return "<a href='$data->link' target='_blank'><i class='fas fa-external-link-alt'></i></a>";
-                })
-                ->editColumn('deposit_date', function ($data) {
-                    return Carbon::parse($data->deposit_date)->format('d M Y');
-                })
-                ->rawColumns(['link'])
-                ->make(true);
+                    return DataTables::of($data)
+                        ->addColumn('total_unpaid', function ($data) use ($id) {
+                            $totalUnpaid = $data->bills->where('student_id', $id)->sum('remaining_amount');
+                            return 'Rp. ' . number_format($totalUnpaid, 0, ',', '.');
+                        })
+                        ->addColumn('total_paid', function ($data) use ($id) {
+                            $totalPaid = $data->bills->where('student_id', $id)->sum('paid_amount');
+                            return 'Rp. ' . number_format($totalPaid, 0, ',', '.');
+                        })
+                        ->addColumn('total', function ($data) use ($id) {
+                            $total = $data->bills->where('student_id', $id)->sum('amount');
+                            return 'Rp. ' . number_format($total, 0, ',', '.');
+                        })
+                        ->addColumn('status', function ($data) use ($id) {
+                            $totalPaid = $data->bills->where('student_id', $id)->sum('paid_amount');
+                            $total = $data->bills->where('student_id', $id)->sum('amount');
+                            if ($totalPaid == 0) {
+                                return '<span class="badge bg-danger">Belum Bayar</span>';
+                            } elseif ($totalPaid < $total) {
+                                return '<span class="badge bg-warning">Belum Lunas</span>';
+                            } else {
+                                return '<span class="badge bg-success">Lunas</span>';
+                            }
+                        })
+                        ->rawColumns(['status'])
+                        ->make(true);
+                }
+
+                if (request()->type === 'tahfidz') {
+                    $data = Tahfidz::with('student')->where('student_id', $id)->latest();
+                    return DataTables::of($data)
+                        ->editColumn('link', function ($data) {
+                            return "<a href='$data->link' target='_blank'><i class='fas fa-external-link-alt'></i></a>";
+                        })
+                        ->editColumn('deposit_date', function ($data) {
+                            return Carbon::parse($data->deposit_date)->format('d M Y');
+                        })
+                        ->rawColumns(['link'])
+                        ->make(true);
+                }
+            } catch (\Exception $e) {
+                Log::error('Student detail tabs AJAX error: ' . $e->getMessage() . "\n" . $e->getTraceAsString());
+                return response()->json(['error' => 'Internal server error: ' . $e->getMessage()], 500);
+            }
         }
 
 
