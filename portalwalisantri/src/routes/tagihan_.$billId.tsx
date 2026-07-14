@@ -149,7 +149,16 @@ function BillDetail() {
   const togglePick = (id: string) =>
     setPicked((s) => {
       const n = new Set(s);
-      n.has(id) ? n.delete(id) : n.add(id);
+      if (n.has(id)) {
+        const idx = unpaid.findIndex((item: any) => item.id === id);
+        if (idx !== -1) {
+          for (let i = idx; i < unpaid.length; i++) {
+            n.delete(unpaid[i].id);
+          }
+        }
+      } else {
+        n.add(id);
+      }
       return n;
     });
 
@@ -277,16 +286,23 @@ function BillDetail() {
             <div className="mt-4 space-y-3">
               {bill.installments.map((it) => {
                 const checked = picked.has(it.id);
+                const isInstallmentPaid = it.paid;
+                const isInstallmentPending = it.isPendingConfirmation;
+                
+                const idx = unpaid.findIndex((item: any) => item.id === it.id);
+                const isOrderDisabled = idx !== -1 && idx > 0 && !picked.has(unpaid[idx - 1].id);
+                const isRowDisabled = isInstallmentPaid || isInstallmentPending || isOrderDisabled;
+
                 return (
                   <div
                     key={it.id}
-                    onClick={() => !it.paid && !it.isPendingConfirmation && togglePick(it.id)}
-                    role={it.paid || it.isPendingConfirmation ? undefined : "button"}
+                    onClick={() => !isRowDisabled && togglePick(it.id)}
+                    role={isRowDisabled ? undefined : "button"}
                     className={`relative flex items-center gap-3 pl-4 pr-3 py-3.5 rounded-2xl bg-secondary/70 border transition ${
                       !it.paid && !it.isPendingConfirmation && checked
                         ? "border-primary ring-1 ring-primary/40"
                         : "border-border"
-                    } ${it.paid || it.isPendingConfirmation ? "" : "cursor-pointer active:scale-[0.99]"}`}
+                    } ${isRowDisabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer active:scale-[0.99]"}`}
                   >
                     <span
                       className={`absolute left-0 top-3 bottom-3 w-1 rounded-r-full ${
@@ -295,7 +311,7 @@ function BillDetail() {
                     />
 
                     <span className="shrink-0">
-                      <CheckBox checked={it.paid || checked} disabled={it.paid || it.isPendingConfirmation} />
+                      <CheckBox checked={it.paid || checked} disabled={isRowDisabled} />
                     </span>
 
                     <div className="flex-1 min-w-0">
@@ -320,6 +336,7 @@ function BillDetail() {
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
+                          if (isRowDisabled) return;
                           if (!selectedMethod) {
                             togglePick(it.id);
                             return;
@@ -329,7 +346,7 @@ function BillDetail() {
                             methodId: selectedMethod.payment_method_id 
                           });
                         }}
-                        disabled={checkoutMutation.isPending}
+                        disabled={isRowDisabled || checkoutMutation.isPending}
                         className="shrink-0 px-4 py-2.5 rounded-xl text-xs font-bold text-primary-foreground shadow-[var(--shadow-soft)] active:scale-95 transition flex items-center justify-center min-w-[100px]"
                         style={{ background: "var(--gradient-card)" }}
                       >
