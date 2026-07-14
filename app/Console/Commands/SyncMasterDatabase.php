@@ -101,32 +101,43 @@ class SyncMasterDatabase extends Command
             $masterClassrooms = DB::connection('mysql_master')->table('classrooms')->get();
             $localClassrooms = DB::connection('mysql')->table('classrooms')->get();
             
-            // Group local classrooms by school_id and normalized name
+            // Group only ACTIVE local classrooms by school_id and normalized name
             $localGroups = [];
             foreach ($localClassrooms as $lc) {
-                $norm = $this->normalizeClassroomName($lc->name);
-                $localGroups[$lc->school_id][$norm] = $lc->id;
+                if ($lc->deleted_at === null) {
+                    $norm = $this->normalizeClassroomName($lc->name);
+                    $localGroups[$lc->school_id][$norm] = $lc->id;
+                }
             }
             
             foreach ($masterClassrooms as $mc) {
                 $norm = $this->normalizeClassroomName($mc->name);
                 
-                // Check if we already mapped or have a local classroom for this school_id & normalized name
-                if (isset($localGroups[$mc->school_id][$norm])) {
+                // Only merge if the master classroom is ACTIVE and we have an active local classroom matching its normalized name
+                if ($mc->deleted_at === null && isset($localGroups[$mc->school_id][$norm])) {
                     $localId = $localGroups[$mc->school_id][$norm];
                 } else {
-                    // Create new local classroom
-                    $localId = (string) \Illuminate\Support\Str::uuid();
-                    DB::connection('mysql')->table('classrooms')->insert([
-                        'id' => $localId,
-                        'school_id' => $mc->school_id,
-                        'name' => $norm,
-                        'created_at' => $mc->created_at ?? now(),
-                        'updated_at' => $mc->updated_at ?? now(),
-                        'deleted_at' => $mc->deleted_at ?? null,
-                    ]);
-                    // Update local groups cache
-                    $localGroups[$mc->school_id][$norm] = $localId;
+                    // For soft-deleted master classrooms, or when no matching local active classroom exists,
+                    // we keep the master ID to prevent merging deleted classrooms into active ones.
+                    $localId = $mc->id;
+                    $exists = DB::connection('mysql')->table('classrooms')->where('id', $mc->id)->exists();
+                    if (!$exists) {
+                        DB::connection('mysql')->table('classrooms')->insert([
+                            'id' => $localId,
+                            'school_id' => $mc->school_id,
+                            'name' => $mc->deleted_at !== null ? ($mc->name ?? 'Kelas Dihapus') : $norm,
+                            'created_at' => $mc->created_at ?? now(),
+                            'updated_at' => $mc->updated_at ?? now(),
+                            'deleted_at' => $mc->deleted_at ?? null,
+                        ]);
+                    } else {
+                        // If it exists but is soft-deleted, ensure local deleted_at is updated
+                        if ($mc->deleted_at !== null) {
+                            DB::connection('mysql')->table('classrooms')
+                                ->where('id', $localId)
+                                ->update(['deleted_at' => $mc->deleted_at]);
+                        }
+                    }
                 }
                 
                 $classroomMapping[$mc->id] = $localId;
@@ -385,6 +396,128 @@ class SyncMasterDatabase extends Command
                 ->whereRaw('paid_amount < amount')
                 ->update(['paid_amount' => DB::raw('amount')]);
 
+            // 4. Soft-delete payment_rate_classrooms pointing to soft-deleted classrooms
+            $this->info("Cleaning up orphaned payment_rate_classrooms...");
+            $deletedClassroomIds = DB::connection('mysql')->table('classrooms')->whereNotNull('deleted_at')->pluck('id');
+            if ($deletedClassroomIds->isNotEmpty()) {
+                DB::connection('mysql')->table('payment_rate_classrooms')
+                    ->whereIn('classroom_id', $deletedClassroomIds)
+                    ->whereNull('deleted_at')
+                    ->update(['deleted_at' => now()]);
+            }
+
+            // 5. Soft-delete payment_rate_students pointing to soft-deleted students
+            $this->info("Cleaning up orphaned payment_rate_students...");
+            $deletedStudentIds = DB::connection('mysql')->table('students')->whereNotNull('deleted_at')->pluck('id');
+            if ($deletedStudentIds->isNotEmpty()) {
+                DB::connection('mysql')->table('payment_rate_students')
+                    ->whereIn('student_id', $deletedStudentIds)
+                    ->whereNull('deleted_at')
+                    ->update(['deleted_at' => now()]);
+            }
+
+            // 6. Automatically resolve duplicate active classroom payment rate mappings
+            $this->info("Resolving duplicate active classroom payment rate mappings...");
+            $duplicates = DB::connection('mysql')->table('payment_rate_classrooms as prc')
+                ->join('payment_rates as pr', 'prc.payment_rate_id', '=', 'pr.id')
+                ->whereNull('prc.deleted_at')
+                ->whereNull('pr.deleted_at')
+                ->select('pr.bill_type_id', 'prc.classroom_id', DB::raw('COUNT(*) as qty'))
+                ->groupBy('pr.bill_type_id', 'prc.classroom_id')
+                ->having('qty', '>', 1)
+                ->get();
+
+            foreach ($duplicates as $dup) {
+                $targetClassroom = DB::connection('mysql')->table('classrooms')->where('id', $dup->classroom_id)->first();
+                if (!$targetClassroom) continue;
+
+                $targetName = $targetClassroom->name;
+                
+                $getGradePrefix = function(?string $name): ?int {
+                    if (!$name) return null;
+                    if (preg_match('/^([0-9]+)/', $name, $matches)) {
+                        return (int) $matches[1];
+                    }
+                    return null;
+                };
+                
+                $targetGrade = $getGradePrefix($targetName);
+
+                $mappings = DB::connection('mysql')->table('payment_rate_classrooms as prc')
+                    ->join('payment_rates as pr', 'prc.payment_rate_id', '=', 'pr.id')
+                    ->where('pr.bill_type_id', $dup->bill_type_id)
+                    ->where('prc.classroom_id', $dup->classroom_id)
+                    ->whereNull('prc.deleted_at')
+                    ->whereNull('pr.deleted_at')
+                    ->select('prc.id as mapping_id', 'pr.id as rate_id')
+                    ->get();
+
+                $evaluatedMappings = [];
+                foreach ($mappings as $m) {
+                    $otherClassroomNames = DB::connection('mysql')->table('payment_rate_classrooms as prc')
+                        ->join('classrooms as c', 'prc.classroom_id', '=', 'c.id')
+                        ->where('prc.payment_rate_id', $m->rate_id)
+                        ->where('prc.classroom_id', '!=', $dup->classroom_id)
+                        ->whereNull('prc.deleted_at')
+                        ->whereNull('c.deleted_at')
+                        ->pluck('c.name')
+                        ->toArray();
+
+                    $score = 0;
+                    if ($targetGrade !== null) {
+                        foreach ($otherClassroomNames as $otherName) {
+                            if ($getGradePrefix($otherName) === $targetGrade) {
+                                $score++;
+                            }
+                        }
+                    }
+
+                    $evaluatedMappings[] = [
+                        'mapping' => $m,
+                        'score' => $score,
+                        'other_classes_count' => count($otherClassroomNames)
+                    ];
+                }
+
+                usort($evaluatedMappings, function ($a, $b) {
+                    if ($a['score'] !== $b['score']) {
+                        return $b['score'] <=> $a['score'];
+                    }
+                    return $b['other_classes_count'] <=> $a['other_classes_count'];
+                });
+
+                $correctMappingId = $evaluatedMappings[0]['mapping']->mapping_id;
+
+                foreach ($evaluatedMappings as $eval) {
+                    $m = $eval['mapping'];
+                    if ($m->mapping_id !== $correctMappingId) {
+                        DB::connection('mysql')->table('payment_rate_classrooms')
+                            ->where('id', $m->mapping_id)
+                            ->update(['deleted_at' => now()]);
+
+                        // Soft-delete unpaid bills generated from the incorrect mapping
+                        $wrongRateItemIds = DB::connection('mysql')->table('payment_rate_items')
+                            ->where('payment_rate_id', $m->rate_id)
+                            ->pluck('id');
+
+                        if ($wrongRateItemIds->isNotEmpty()) {
+                            $studentIdsInClass = DB::connection('mysql')->table('students')
+                                ->where('classroom_id', $dup->classroom_id)
+                                ->pluck('id');
+
+                            if ($studentIdsInClass->isNotEmpty()) {
+                                DB::connection('mysql')->table('bills')
+                                    ->whereIn('student_id', $studentIdsInClass)
+                                    ->whereIn('payment_rate_item_id', $wrongRateItemIds)
+                                    ->where('status', 'UNPAID')
+                                    ->whereNull('deleted_at')
+                                    ->update(['deleted_at' => now()]);
+                            }
+                        }
+                    }
+                }
+            }
+ 
             DB::connection('mysql')->statement('SET FOREIGN_KEY_CHECKS=1;');
             DB::connection('mysql')->commit();
         } catch (\Throwable $e) {
