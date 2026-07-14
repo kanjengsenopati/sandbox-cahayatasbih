@@ -19,6 +19,7 @@ export type Santri = {
   saving: number;
   daily_limit: number;
   total_shopping_today?: number;
+  has_pending_topup?: boolean;
   // Computed
   initials: string;
   className: string;

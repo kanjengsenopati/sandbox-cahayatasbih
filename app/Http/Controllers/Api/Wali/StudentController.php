@@ -14,7 +14,15 @@ class StudentController extends BaseWaliApiController
         $students = Student::with(['classroom', 'school', 'asramaHost'])
             ->where('user_id', $user->id)
             ->orderBy('name', 'asc')
-            ->get();
+            ->get()
+            ->map(function ($s) {
+                $hasPendingTopup = \App\Models\Transaction::where('student_id', $s->id)
+                    ->where('type', \App\Models\Transaction::TYPE_SALDO)
+                    ->where('status', \App\Models\Transaction::STATUS_PENDING_CONFIRMATION)
+                    ->exists();
+                $s->setAttribute('has_pending_topup', $hasPendingTopup);
+                return $s;
+            });
             
         return response()->json($students);
     }
@@ -22,6 +30,13 @@ class StudentController extends BaseWaliApiController
     public function active()
     {
         $activeStudent = $this->resolveActiveStudent();
+        if ($activeStudent) {
+            $hasPendingTopup = \App\Models\Transaction::where('student_id', $activeStudent->id)
+                ->where('type', \App\Models\Transaction::TYPE_SALDO)
+                ->where('status', \App\Models\Transaction::STATUS_PENDING_CONFIRMATION)
+                ->exists();
+            $activeStudent->setAttribute('has_pending_topup', $hasPendingTopup);
+        }
         return response()->json($activeStudent);
     }
 }

@@ -46,6 +46,7 @@ function BillDetail() {
       originalAmount: Number(d.amount),
       paidAmount: Number(d.paid_amount ?? 0),
       paid: d.status === "PAID",
+      isPendingConfirmation: !!d.is_pending_confirmation,
     }));
 
     // Sort installments in academic year order: July (7) to June (6)
@@ -142,7 +143,7 @@ function BillDetail() {
     },
   });
 
-  const unpaid = useMemo(() => bill?.installments.filter((i: any) => !i.paid) || [], [bill]);
+  const unpaid = useMemo(() => bill?.installments.filter((i: any) => !i.paid && !i.isPendingConfirmation) || [], [bill]);
   const allUnpaidPicked = unpaid.length > 0 && unpaid.every((i: any) => picked.has(i.id));
 
   const togglePick = (id: string) =>
@@ -279,22 +280,22 @@ function BillDetail() {
                 return (
                   <div
                     key={it.id}
-                    onClick={() => !it.paid && togglePick(it.id)}
-                    role={it.paid ? undefined : "button"}
+                    onClick={() => !it.paid && !it.isPendingConfirmation && togglePick(it.id)}
+                    role={it.paid || it.isPendingConfirmation ? undefined : "button"}
                     className={`relative flex items-center gap-3 pl-4 pr-3 py-3.5 rounded-2xl bg-secondary/70 border transition ${
-                      !it.paid && checked
+                      !it.paid && !it.isPendingConfirmation && checked
                         ? "border-primary ring-1 ring-primary/40"
                         : "border-border"
-                    } ${it.paid ? "" : "cursor-pointer active:scale-[0.99]"}`}
+                    } ${it.paid || it.isPendingConfirmation ? "" : "cursor-pointer active:scale-[0.99]"}`}
                   >
                     <span
                       className={`absolute left-0 top-3 bottom-3 w-1 rounded-r-full ${
-                        it.paid ? "bg-success" : "bg-primary"
+                        it.paid ? "bg-success" : it.isPendingConfirmation ? "bg-[oklch(0.78_0.16_75)]" : "bg-primary"
                       }`}
                     />
 
                     <span className="shrink-0">
-                      <CheckBox checked={it.paid || checked} disabled={it.paid} />
+                      <CheckBox checked={it.paid || checked} disabled={it.paid || it.isPendingConfirmation} />
                     </span>
 
                     <div className="flex-1 min-w-0">
@@ -310,6 +311,10 @@ function BillDetail() {
                     {it.paid ? (
                       <span className="shrink-0 px-5 py-2.5 rounded-xl bg-success text-white text-xs font-bold">
                         Lunas
+                      </span>
+                    ) : it.isPendingConfirmation ? (
+                      <span className="shrink-0 px-3 py-2.5 rounded-xl bg-[oklch(0.78_0.16_75)] text-white text-xs font-bold">
+                        Menunggu Verifikasi
                       </span>
                     ) : (
                       <button

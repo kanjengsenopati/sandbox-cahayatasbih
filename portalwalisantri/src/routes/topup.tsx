@@ -326,6 +326,7 @@ function TopupPage() {
                   <button
                     key={n}
                     onClick={() => {
+                      if (active?.has_pending_topup) return;
                       setAmount(n);
                       setCustom("");
                     }}
@@ -333,7 +334,7 @@ function TopupPage() {
                       active
                         ? "text-white border-transparent shadow-[var(--shadow-glow)] ring-2 ring-primary/40 scale-[1.03]"
                         : "bg-secondary text-foreground border-transparent hover:border-primary/30"
-                    }`}
+                    } ${active?.has_pending_topup ? "opacity-50 cursor-not-allowed" : ""}`}
                     style={
                       active ? { background: "var(--gradient-card)" } : undefined
                     }
@@ -354,13 +355,14 @@ function TopupPage() {
                   type="number"
                   inputMode="numeric"
                   value={custom}
+                  disabled={!!active?.has_pending_topup}
                   onChange={(e) => {
                     setCustom(e.target.value);
                     const v = parseInt(e.target.value, 10);
                     if (!isNaN(v)) setAmount(v);
                   }}
                   placeholder="0"
-                  className="bg-transparent flex-1 outline-none text-foreground text-sm font-semibold placeholder:text-muted-foreground"
+                  className="bg-transparent flex-1 outline-none text-foreground text-sm font-semibold placeholder:text-muted-foreground disabled:opacity-50"
                 />
               </div>
               <p className="text-[10px] text-muted-foreground mt-1.5">Minimal Rp 10.000</p>
@@ -376,14 +378,17 @@ function TopupPage() {
           <div className="bg-card rounded-2xl border border-border divide-y divide-border overflow-hidden shadow-[var(--shadow-soft)]">
             {methods.map((m: any) => {
               const Icon = m.icon;
-              const active = method === m.id;
+              const isSelected = method === m.id;
               return (
                 <button
                   key={m.id}
-                  onClick={() => setMethod(m.id)}
+                  onClick={() => {
+                    if (active?.has_pending_topup) return;
+                    setMethod(m.id);
+                  }}
                   className={`w-full flex items-center gap-3 p-4 transition text-left ${
-                    active ? "bg-primary/5" : "active:bg-secondary"
-                  }`}
+                    isSelected ? "bg-primary/5" : "active:bg-secondary"
+                  } ${active?.has_pending_topup ? "opacity-60 cursor-not-allowed" : ""}`}
                 >
                   <div
                     className={`w-11 h-11 rounded-xl flex items-center justify-center transition ${
@@ -434,13 +439,15 @@ function TopupPage() {
               </p>
             </div>
             <button
-              onClick={() => amount >= 10_000 && topupMutation.mutate()}
-              disabled={amount < 10_000 || topupMutation.isPending}
-              className="w-full py-3.5 rounded-2xl text-primary-foreground font-semibold text-sm shadow-[var(--shadow-glow)] flex items-center justify-center gap-2 disabled:opacity-50 transition active:scale-[0.98]"
+              onClick={() => topupMutation.mutate()}
+              disabled={amount < 10_000 || topupMutation.isPending || !!active?.has_pending_topup}
+              className="w-full py-4 rounded-2xl text-primary-foreground font-bold text-base shadow-[var(--shadow-glow)] disabled:opacity-50 transition active:scale-[0.98] flex items-center justify-center gap-2"
               style={{ background: "var(--gradient-card)" }}
             >
               {topupMutation.isPending ? (
-                <Loader2 className="animate-spin" size={18} />
+                <Loader2 className="animate-spin" size={20} />
+              ) : active?.has_pending_topup ? (
+                "Menunggu Verifikasi"
               ) : (
                 <>
                   <Plus size={18} /> Lanjutkan Pembayaran

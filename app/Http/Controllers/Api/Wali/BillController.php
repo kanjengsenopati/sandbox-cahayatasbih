@@ -79,12 +79,20 @@ class BillController extends BaseWaliApiController
         
         $billType = BillType::with(['billItem', 'academicYear'])->findOrFail($id);
         
-        $bills = Bill::with('academicYear')
+        $bills = Bill::with(['academicYear', 'transactionDetails' => function ($query) {
+                $query->whereHas('transaction', function ($query) {
+                    $query->where('status', \App\Models\Transaction::STATUS_PENDING_CONFIRMATION);
+                });
+            }])
             ->where('student_id', $student->id)
             ->where('bill_type_id', $id)
             ->orderBy('year', 'asc')
             ->orderBy('month', 'asc')
-            ->get();
+            ->get()
+            ->map(function ($bill) {
+                $bill->setAttribute('is_pending_confirmation', $bill->transactionDetails->isNotEmpty());
+                return $bill;
+            });
 
         // Get academic year name from billType or from the first bill
         $academicYearName = $billType->academicYear->name 
