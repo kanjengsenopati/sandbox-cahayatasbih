@@ -14,7 +14,7 @@ class SyncMasterDatabase extends Command
      *
      * @var string
      */
-    protected $signature = 'db:sync-master {--all : Sync all records instead of only last 30 days}';
+    protected $signature = 'db:sync-master {--all : Sync all records instead of only last 30 days} {--tables= : Comma-separated list of tables to sync}';
 
     /**
      * The console command description.
@@ -32,6 +32,7 @@ class SyncMasterDatabase extends Command
         $startTime = now();
         $oneMonthAgo = now()->subDays(30)->toDateTimeString();
         $syncAll = $this->option('all');
+        $syncTablesOption = $this->option('tables');
 
         $tables = [
             'schools',
@@ -140,6 +141,15 @@ class SyncMasterDatabase extends Command
             DB::connection('mysql')->statement('SET FOREIGN_KEY_CHECKS=0;');
 
             foreach ($tables as $table) {
+                if ($syncTablesOption) {
+                    $selectedTables = array_map('trim', explode(',', $syncTablesOption));
+                    if (!in_array($table, $selectedTables)) {
+                        $this->info("Skipping table (not selected): {$table}");
+                        $report[$table] = ['status' => 'skipped', 'message' => 'Tidak Dipilih'];
+                        continue;
+                    }
+                }
+                
                 $this->info("Syncing table: {$table}");
                 
                 // Safety check: verify table exists in both connections

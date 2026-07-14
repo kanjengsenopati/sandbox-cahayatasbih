@@ -41,12 +41,9 @@
                     </a>
                     {{-- Tombol Tab Sinkronisasi --}}
                     <div id="btn-toolbar-sync" style="display:none;">
-                        <form action="{{ route('admin.sync-master') }}" method="POST" id="sync-db-form">
-                            @csrf
-                            <button type="submit" class="btn btn-sm btn-primary fw-bolder" id="btn-sync-submit">
-                                <i class="fas fa-database me-1 fs-7"></i> Sinkronkan Sekarang
-                            </button>
-                        </form>
+                        <button type="submit" form="sync-db-form" class="btn btn-sm btn-primary fw-bolder" id="btn-sync-submit">
+                            <i class="fas fa-database me-1 fs-7"></i> Sinkronkan Sekarang
+                        </button>
                     </div>
                 </div>
                 <!--end::Actions-->
@@ -130,7 +127,9 @@
 
                     {{-- ===== TAB 1: SINKRONISASI DB ===== --}}
                     <div class="tab-pane fade show active" id="tab-sync" role="tabpanel" aria-labelledby="tab-sync-trigger">
-                        <div class="card card-flush shadow-sm mb-6">
+                        <form action="{{ route('admin.sync-master') }}" method="POST" id="sync-db-form">
+                            @csrf
+                            <div class="card card-flush shadow-sm mb-6">
                             <div class="card-header border-0 pt-6">
                                 <div class="card-title flex-column">
                                     <h3 class="card-label fw-bolder text-dark">Sinkronisasi Database Master</h3>
@@ -193,6 +192,239 @@
                                         <code class="fs-7 text-dark">{{ $syncStatus['error'] }}</code>
                                     </div>
                                 @endif
+
+                                <!-- Selection Card for Tables/Modules -->
+                                <div class="card border border-dashed border-gray-300 card-bordered mb-6" style="border-radius: 16px;">
+                                    <div class="card-header border-0 pt-5 min-h-auto">
+                                        <div class="card-title flex-column">
+                                            <h5 class="fw-bolder text-gray-800 fs-5 mb-1">Pilih Modul / Tabel yang Disinkronkan</h5>
+                                            <span class="text-muted fs-7">Centang modul yang ingin Anda sinkronkan. Kosongkan modul jika ingin dilewati.</span>
+                                        </div>
+                                        <div class="card-toolbar">
+                                            <div class="form-check form-check-custom form-check-solid form-check-sm">
+                                                <input class="form-check-input" type="checkbox" id="sync-check-all-tables" checked />
+                                                <label class="form-check-label fw-bold text-gray-700 fs-7 ms-2" for="sync-check-all-tables">Pilih Semua Tabel</label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="card-body pt-3 pb-6">
+                                        <div class="row row-cols-1 row-cols-md-3 g-4">
+                                            <!-- Group 1: Sekolah & UPT -->
+                                            <div class="col">
+                                                <div class="border rounded-[12px] p-4 bg-light-body h-100" style="border: 1px dashed rgba(0,0,0,0.1) !important;">
+                                                    <div class="d-flex justify-content-between align-items-center mb-3">
+                                                        <span class="fw-bolder text-dark fs-7"><i class="fas fa-school me-2 text-slate-400"></i>Sekolah & UPT</span>
+                                                        <div class="form-check form-check-custom form-check-solid form-check-sm">
+                                                            <input class="form-check-input group-checkbox" type="checkbox" data-group="school" checked />
+                                                        </div>
+                                                    </div>
+                                                    <div class="d-flex flex-column gap-2 ps-2">
+                                                        <div class="form-check form-check-custom form-check-solid form-check-sm">
+                                                            <input class="form-check-input table-checkbox" type="checkbox" name="tables[]" value="schools" data-group="school" checked id="tbl-schools" />
+                                                            <label class="form-check-label text-gray-700 fs-7" for="tbl-schools">schools (Sekolah / UPT)</label>
+                                                        </div>
+                                                        <div class="form-check form-check-custom form-check-solid form-check-sm">
+                                                            <input class="form-check-input table-checkbox" type="checkbox" name="tables[]" value="outlets" data-group="school" checked id="tbl-outlets" />
+                                                            <label class="form-check-label text-gray-700 fs-7" for="tbl-outlets">outlets (Outlet Mart)</label>
+                                                        </div>
+                                                        <div class="form-check form-check-custom form-check-solid form-check-sm">
+                                                            <input class="form-check-input table-checkbox" type="checkbox" name="tables[]" value="admin_outlets" data-group="school" checked id="tbl-admin-outlets" />
+                                                            <label class="form-check-label text-gray-700 fs-7" for="tbl-admin-outlets">admin_outlets (Admin Outlet)</label>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <!-- Group 2: Produk & Stok -->
+                                            <div class="col">
+                                                <div class="border rounded-[12px] p-4 bg-light-body h-100" style="border: 1px dashed rgba(0,0,0,0.1) !important;">
+                                                    <div class="d-flex justify-content-between align-items-center mb-3">
+                                                        <span class="fw-bolder text-dark fs-7"><i class="fas fa-boxes me-2 text-slate-400"></i>Produk & Stok Mart</span>
+                                                        <div class="form-check form-check-custom form-check-solid form-check-sm">
+                                                            <input class="form-check-input group-checkbox" type="checkbox" data-group="stock" checked />
+                                                        </div>
+                                                    </div>
+                                                    <div class="d-flex flex-column gap-2 ps-2">
+                                                        <div class="form-check form-check-custom form-check-solid form-check-sm">
+                                                            <input class="form-check-input table-checkbox" type="checkbox" name="tables[]" value="category_items" data-group="stock" checked id="tbl-category-items" />
+                                                            <label class="form-check-label text-gray-700 fs-7" for="tbl-category-items">category_items (Kategori)</label>
+                                                        </div>
+                                                        <div class="form-check form-check-custom form-check-solid form-check-sm">
+                                                            <input class="form-check-input table-checkbox" type="checkbox" name="tables[]" value="items" data-group="stock" checked id="tbl-items" />
+                                                            <label class="form-check-label text-gray-700 fs-7" for="tbl-items">items (Data Produk)</label>
+                                                        </div>
+                                                        <div class="form-check form-check-custom form-check-solid form-check-sm">
+                                                            <input class="form-check-input table-checkbox" type="checkbox" name="tables[]" value="stock_histories" data-group="stock" checked id="tbl-stock-histories" />
+                                                            <label class="form-check-label text-gray-700 fs-7" for="tbl-stock-histories">stock_histories (Riwayat Stok)</label>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <!-- Group 3: Akademik & Rekening -->
+                                            <div class="col">
+                                                <div class="border rounded-[12px] p-4 bg-light-body h-100" style="border: 1px dashed rgba(0,0,0,0.1) !important;">
+                                                    <div class="d-flex justify-content-between align-items-center mb-3">
+                                                        <span class="fw-bolder text-dark fs-7"><i class="fas fa-university me-2 text-slate-400"></i>Akademik & Bank</span>
+                                                        <div class="form-check form-check-custom form-check-solid form-check-sm">
+                                                            <input class="form-check-input group-checkbox" type="checkbox" data-group="academic" checked />
+                                                        </div>
+                                                    </div>
+                                                    <div class="d-flex flex-column gap-2 ps-2">
+                                                        <div class="form-check form-check-custom form-check-solid form-check-sm">
+                                                            <input class="form-check-input table-checkbox" type="checkbox" name="tables[]" value="academic_years" data-group="academic" checked id="tbl-academic-years" />
+                                                            <label class="form-check-label text-gray-700 fs-7" for="tbl-academic-years">academic_years (Tahun Ajaran)</label>
+                                                        </div>
+                                                        <div class="form-check form-check-custom form-check-solid form-check-sm">
+                                                            <input class="form-check-input table-checkbox" type="checkbox" name="tables[]" value="bill_items" data-group="academic" checked id="tbl-bill-items" />
+                                                            <label class="form-check-label text-gray-700 fs-7" for="tbl-bill-items">bill_items (Item Bayar)</label>
+                                                        </div>
+                                                        <div class="form-check form-check-custom form-check-solid form-check-sm">
+                                                            <input class="form-check-input table-checkbox" type="checkbox" name="tables[]" value="bill_types" data-group="academic" checked id="tbl-bill-types" />
+                                                            <label class="form-check-label text-gray-700 fs-7" for="tbl-bill-types">bill_types (Tipe Tagihan)</label>
+                                                        </div>
+                                                        <div class="form-check form-check-custom form-check-solid form-check-sm">
+                                                            <input class="form-check-input table-checkbox" type="checkbox" name="tables[]" value="banks" data-group="academic" checked id="tbl-banks" />
+                                                            <label class="form-check-label text-gray-700 fs-7" for="tbl-banks">banks (Rekening Bank)</label>
+                                                        </div>
+                                                        <div class="form-check form-check-custom form-check-solid form-check-sm">
+                                                            <input class="form-check-input table-checkbox" type="checkbox" name="tables[]" value="bill_type_banks" data-group="academic" checked id="tbl-bill-type-banks" />
+                                                            <label class="form-check-label text-gray-700 fs-7" for="tbl-bill-type-banks">bill_type_banks (Map Rekening)</label>
+                                                        </div>
+                                                        <div class="form-check form-check-custom form-check-solid form-check-sm">
+                                                            <input class="form-check-input table-checkbox" type="checkbox" name="tables[]" value="topup_banks" data-group="academic" checked id="tbl-topup-banks" />
+                                                            <label class="form-check-label text-gray-700 fs-7" for="tbl-topup-banks">topup_banks (Rekening Topup)</label>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <!-- Group 4: Tarif Tagihan -->
+                                            <div class="col">
+                                                <div class="border rounded-[12px] p-4 bg-light-body h-100" style="border: 1px dashed rgba(0,0,0,0.1) !important;">
+                                                    <div class="d-flex justify-content-between align-items-center mb-3">
+                                                        <span class="fw-bolder text-dark fs-7"><i class="fas fa-file-invoice-dollar me-2 text-slate-400"></i>Tarif Tagihan</span>
+                                                        <div class="form-check form-check-custom form-check-solid form-check-sm">
+                                                            <input class="form-check-input group-checkbox" type="checkbox" data-group="rates" checked />
+                                                        </div>
+                                                    </div>
+                                                    <div class="d-flex flex-column gap-2 ps-2">
+                                                        <div class="form-check form-check-custom form-check-solid form-check-sm">
+                                                            <input class="form-check-input table-checkbox" type="checkbox" name="tables[]" value="payment_rates" data-group="rates" checked id="tbl-payment-rates" />
+                                                            <label class="form-check-label text-gray-700 fs-7" for="tbl-payment-rates">payment_rates (Tarif Pembayaran)</label>
+                                                        </div>
+                                                        <div class="form-check form-check-custom form-check-solid form-check-sm">
+                                                            <input class="form-check-input table-checkbox" type="checkbox" name="tables[]" value="payment_rate_classrooms" data-group="rates" checked id="tbl-pr-classrooms" />
+                                                            <label class="form-check-label text-gray-700 fs-7" for="tbl-pr-classrooms">payment_rate_classrooms</label>
+                                                        </div>
+                                                        <div class="form-check form-check-custom form-check-solid form-check-sm">
+                                                            <input class="form-check-input table-checkbox" type="checkbox" name="tables[]" value="payment_rate_students" data-group="rates" checked id="tbl-pr-students" />
+                                                            <label class="form-check-label text-gray-700 fs-7" for="tbl-pr-students">payment_rate_students</label>
+                                                        </div>
+                                                        <div class="form-check form-check-custom form-check-solid form-check-sm">
+                                                            <input class="form-check-input table-checkbox" type="checkbox" name="tables[]" value="payment_rate_items" data-group="rates" checked id="tbl-pr-items" />
+                                                            <label class="form-check-label text-gray-700 fs-7" for="tbl-pr-items">payment_rate_items</label>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <!-- Group 5: Siswa & Kelas -->
+                                            <div class="col">
+                                                <div class="border rounded-[12px] p-4 bg-light-body h-100" style="border: 1px dashed rgba(0,0,0,0.1) !important;">
+                                                    <div class="d-flex justify-content-between align-items-center mb-3">
+                                                        <span class="fw-bolder text-dark fs-7"><i class="fas fa-users me-2 text-slate-400"></i>Siswa & Kelas</span>
+                                                        <div class="form-check form-check-custom form-check-solid form-check-sm">
+                                                            <input class="form-check-input group-checkbox" type="checkbox" data-group="students" checked />
+                                                        </div>
+                                                    </div>
+                                                    <div class="d-flex flex-column gap-2 ps-2">
+                                                        <div class="form-check form-check-custom form-check-solid form-check-sm">
+                                                            <input class="form-check-input table-checkbox" type="checkbox" name="tables[]" value="students" data-group="students" checked id="tbl-students" />
+                                                            <label class="form-check-label text-gray-700 fs-7" for="tbl-students">students (Data Siswa)</label>
+                                                        </div>
+                                                        <div class="form-check form-check-custom form-check-solid form-check-sm">
+                                                            <input class="form-check-input table-checkbox" type="checkbox" name="tables[]" value="student_classroom_histories" data-group="students" checked id="tbl-student-histories" />
+                                                            <label class="form-check-label text-gray-700 fs-7" for="tbl-student-histories">classroom_histories</label>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <!-- Group 6: Tagihan & Transaksi -->
+                                            <div class="col">
+                                                <div class="border rounded-[12px] p-4 bg-light-body h-100" style="border: 1px dashed rgba(0,0,0,0.1) !important;">
+                                                    <div class="d-flex justify-content-between align-items-center mb-3">
+                                                        <span class="fw-bolder text-dark fs-7"><i class="fas fa-receipt me-2 text-slate-400"></i>Tagihan & Transaksi</span>
+                                                        <div class="form-check form-check-custom form-check-solid form-check-sm">
+                                                            <input class="form-check-input group-checkbox" type="checkbox" data-group="transactions" checked />
+                                                        </div>
+                                                    </div>
+                                                    <div class="d-flex flex-column gap-2 ps-2">
+                                                        <div class="form-check form-check-custom form-check-solid form-check-sm">
+                                                            <input class="form-check-input table-checkbox" type="checkbox" name="tables[]" value="bills" data-group="transactions" checked id="tbl-bills" />
+                                                            <label class="form-check-label text-gray-700 fs-7" for="tbl-bills">bills (Tagihan Siswa)</label>
+                                                        </div>
+                                                        <div class="form-check form-check-custom form-check-solid form-check-sm">
+                                                            <input class="form-check-input table-checkbox" type="checkbox" name="tables[]" value="transaction_proofs" data-group="transactions" checked id="tbl-tx-proofs" />
+                                                            <label class="form-check-label text-gray-700 fs-7" for="tbl-tx-proofs">transaction_proofs (Bukti Trf)</label>
+                                                        </div>
+                                                        <div class="form-check form-check-custom form-check-solid form-check-sm">
+                                                            <input class="form-check-input table-checkbox" type="checkbox" name="tables[]" value="transactions" data-group="transactions" checked id="tbl-transactions" />
+                                                            <label class="form-check-label text-gray-700 fs-7" for="tbl-transactions">transactions (Transaksi)</label>
+                                                        </div>
+                                                        <div class="form-check form-check-custom form-check-solid form-check-sm">
+                                                            <input class="form-check-input table-checkbox" type="checkbox" name="tables[]" value="transaction_details" data-group="transactions" checked id="tbl-tx-details" />
+                                                            <label class="form-check-label text-gray-700 fs-7" for="tbl-tx-details">transaction_details (Rincian)</label>
+                                                        </div>
+                                                        <div class="form-check form-check-custom form-check-solid form-check-sm">
+                                                            <input class="form-check-input table-checkbox" type="checkbox" name="tables[]" value="saldo_histories" data-group="transactions" checked id="tbl-saldo-histories" />
+                                                            <label class="form-check-label text-gray-700 fs-7" for="tbl-saldo-histories">saldo_histories (Riwayat Saldo)</label>
+                                                        </div>
+                                                        <div class="form-check form-check-custom form-check-solid form-check-sm">
+                                                            <input class="form-check-input table-checkbox" type="checkbox" name="tables[]" value="saving_histories" data-group="transactions" checked id="tbl-saving-histories" />
+                                                            <label class="form-check-label text-gray-700 fs-7" for="tbl-saving-histories">saving_histories (Tabungan)</label>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <!-- Group 7: Kasir & Buku Kas -->
+                                            <div class="col">
+                                                <div class="border rounded-[12px] p-4 bg-light-body h-100" style="border: 1px dashed rgba(0,0,0,0.1) !important;">
+                                                    <div class="d-flex justify-content-between align-items-center mb-3">
+                                                        <span class="fw-bolder text-dark fs-7"><i class="fas fa-cash-register me-2 text-slate-400"></i>Kasir & Buku Kas</span>
+                                                        <div class="form-check form-check-custom form-check-solid form-check-sm">
+                                                            <input class="form-check-input group-checkbox" type="checkbox" data-group="pos" checked />
+                                                        </div>
+                                                    </div>
+                                                    <div class="d-flex flex-column gap-2 ps-2">
+                                                        <div class="form-check form-check-custom form-check-solid form-check-sm">
+                                                            <input class="form-check-input table-checkbox" type="checkbox" name="tables[]" value="point_of_sale_carts" data-group="pos" checked id="tbl-pos-carts" />
+                                                            <label class="form-check-label text-gray-700 fs-7" for="tbl-pos-carts">point_of_sale_carts (Keranjang)</label>
+                                                        </div>
+                                                        <div class="form-check form-check-custom form-check-solid form-check-sm">
+                                                            <input class="form-check-input table-checkbox" type="checkbox" name="tables[]" value="point_of_sale_transactions" data-group="pos" checked id="tbl-pos-tx" />
+                                                            <label class="form-check-label text-gray-700 fs-7" for="tbl-pos-tx">point_of_sale_transactions</label>
+                                                        </div>
+                                                        <div class="form-check form-check-custom form-check-solid form-check-sm">
+                                                            <input class="form-check-input table-checkbox" type="checkbox" name="tables[]" value="point_of_sale_transaction_details" data-group="pos" checked id="tbl-pos-details" />
+                                                            <label class="form-check-label text-gray-700 fs-7" for="tbl-pos-details">point_of_sale_details</label>
+                                                        </div>
+                                                        <div class="form-check form-check-custom form-check-solid form-check-sm">
+                                                            <input class="form-check-input table-checkbox" type="checkbox" name="tables[]" value="cash_flow_categories" data-group="pos" checked id="tbl-cf-categories" />
+                                                            <label class="form-check-label text-gray-700 fs-7" for="tbl-cf-categories">cash_flow_categories</label>
+                                                        </div>
+                                                        <div class="form-check form-check-custom form-check-solid form-check-sm">
+                                                            <input class="form-check-input table-checkbox" type="checkbox" name="tables[]" value="cash_flows" data-group="pos" checked id="tbl-cash-flows" />
+                                                            <label class="form-check-label text-gray-700 fs-7" for="tbl-cash-flows">cash_flows (Buku Kas)</label>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
 
                                 <!-- Per-table report -->
                                 @if (isset($syncStatus) && $syncStatus && !empty($syncStatus['report']))
@@ -314,6 +546,7 @@
 
                             </div>
                         </div>
+                        </form>
                     </div>
 
                     {{-- ===== TAB 2: DIAGNOSTIK SISTEM ===== --}}
@@ -447,6 +680,68 @@
                         btn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Sinkronisasi Berjalan...';
                     }
                 });
+            }
+
+            // Check All Table logic
+            var checkAll = document.getElementById('sync-check-all-tables');
+            var tableCheckboxes = document.querySelectorAll('.table-checkbox');
+            var groupCheckboxes = document.querySelectorAll('.group-checkbox');
+
+            if (checkAll) {
+                checkAll.addEventListener('change', function () {
+                    var isChecked = this.checked;
+                    tableCheckboxes.forEach(function (cb) {
+                        cb.checked = isChecked;
+                    });
+                    groupCheckboxes.forEach(function (cb) {
+                        cb.checked = isChecked;
+                    });
+                });
+            }
+
+            // Group Checkbox logic
+            groupCheckboxes.forEach(function (gCb) {
+                gCb.addEventListener('change', function () {
+                    var group = this.getAttribute('data-group');
+                    var isChecked = this.checked;
+                    document.querySelectorAll('.table-checkbox[data-group="' + group + '"]').forEach(function (tCb) {
+                        tCb.checked = isChecked;
+                    });
+                    updateMasterCheckbox();
+                });
+            });
+
+            // Table Checkbox logic
+            tableCheckboxes.forEach(function (tCb) {
+                tCb.addEventListener('change', function () {
+                    var group = this.getAttribute('data-group');
+                    var groupCb = document.querySelector('.group-checkbox[data-group="' + group + '"]');
+                    if (groupCb) {
+                        var siblings = document.querySelectorAll('.table-checkbox[data-group="' + group + '"]');
+                        var allSiblingsChecked = Array.from(siblings).every(function (cb) {
+                            return cb.checked;
+                        });
+                        var anySiblingChecked = Array.from(siblings).some(function (cb) {
+                            return cb.checked;
+                        });
+                        groupCb.checked = allSiblingsChecked;
+                        groupCb.indeterminate = anySiblingChecked && !allSiblingsChecked;
+                    }
+                    updateMasterCheckbox();
+                });
+            });
+
+            function updateMasterCheckbox() {
+                if (checkAll) {
+                    var allChecked = Array.from(tableCheckboxes).every(function (cb) {
+                        return cb.checked;
+                    });
+                    var anyChecked = Array.from(tableCheckboxes).some(function (cb) {
+                        return cb.checked;
+                    });
+                    checkAll.checked = allChecked;
+                    checkAll.indeterminate = anyChecked && !allChecked;
+                }
             }
         });
     </script>

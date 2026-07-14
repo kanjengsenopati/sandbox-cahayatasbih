@@ -47,7 +47,12 @@ class AuditController extends Controller
     public function syncMaster(Request $request)
     {
         try {
-            Artisan::call('db:sync-master');
+            $selectedTables = $request->input('tables', []);
+            $params = [];
+            if (!empty($selectedTables)) {
+                $params['--tables'] = implode(',', $selectedTables);
+            }
+            Artisan::call('db:sync-master', $params);
             return redirect()->route('admin.audit')->with('success', 'Sinkronisasi database master berhasil dijalankan!');
         } catch (\Throwable $e) {
             return redirect()->route('admin.audit')->with('error', 'Gagal memicu sinkronisasi: ' . $e->getMessage());
