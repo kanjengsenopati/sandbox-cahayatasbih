@@ -104,7 +104,7 @@ class RoleController extends Controller
             return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
         }
 
-        $permissions = Permission::pluck('name', 'id')->toArray();
+        $permissions = Permission::where('guard_name', 'web')->pluck('name', 'id')->toArray();
         $permissionValue = [];
 
         return view('admins.role.create-edit', compact('permissions', 'permissionValue'));
@@ -159,7 +159,7 @@ class RoleController extends Controller
             return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
         }
 
-        $permissions = Permission::pluck('name', 'id')->toArray();
+        $permissions = Permission::where('guard_name', 'web')->pluck('name', 'id')->toArray();
         $role = Role::with('permissions')->findOrFail($id);
         $permissionValue = $role->permissions->pluck('id')->toArray();
 
