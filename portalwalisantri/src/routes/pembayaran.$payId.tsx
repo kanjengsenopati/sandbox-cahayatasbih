@@ -79,9 +79,7 @@ function PembayaranPage() {
         month: d.bill ? Number(d.bill.month) : 0,
       })) || []).sort((a: any, b: any) => {
         if (a.year !== b.year) return a.year - b.year;
-        const aIndex = a.month >= 7 ? a.month - 7 : a.month + 5;
-        const bIndex = b.month >= 7 ? b.month - 7 : b.month + 5;
-        return aIndex - bIndex;
+        return a.month - b.month;
       }),
     };
   }, [paymentRes]);
