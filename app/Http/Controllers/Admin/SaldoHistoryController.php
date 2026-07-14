@@ -422,7 +422,7 @@ class SaldoHistoryController extends Controller
                 $query->where('type', PaymentMethod::TYPE_TRANSFER);
             })
             ->where('type', Transaction::TYPE_SALDO)
-            ->whereIn('status', [Transaction::STATUS_PAID, Transaction::STATUS_REJECTED])
+            ->where('status', Transaction::STATUS_PAID)
             ->where('is_deleted_from_archive', false)
             ->hasSchool();
 

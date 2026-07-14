@@ -96,7 +96,7 @@ class BillController extends Controller
 
     private function getTransactionData()
     {
-        $transactions = Transaction::with('student', 'paymentMethod', 'activeProof.bank', 'transactionProofs.bank')
+        $transactions = Transaction::with(['student', 'paymentMethod', 'activeProof.bank', 'transactionProofs.bank', 'transactionDetails.bill.billType'])
             ->whereHas('paymentMethod', fn($query) => $query->where('type', PaymentMethod::TYPE_TRANSFER))
             ->where('type', Transaction::TYPE_BILL)
             ->where('status', Transaction::STATUS_PENDING_CONFIRMATION)
@@ -105,7 +105,26 @@ class BillController extends Controller
 
         return DataTables::of($transactions)
             ->addColumn('proof', fn($transaction) => $this->formatProofColumn($transaction))
-            ->editColumn('pay_amount', fn($transaction) => 'Rp ' . number_format($transaction->pay_amount, 0, ',', '.'))
+            ->editColumn('pay_amount', function ($transaction) {
+                $amountHtml = 'Rp ' . number_format($transaction->pay_amount, 0, ',', '.');
+                
+                $billsInfo = [];
+                foreach ($transaction->transactionDetails as $detail) {
+                    $bill = $detail->bill;
+                    if ($bill) {
+                        $billTypeName = $bill->billType->name ?? 'Tagihan';
+                        $monthName = $bill->translated_month ?? $bill->getTranslatedMonthAttribute();
+                        $period = $monthName ? "{$monthName} {$bill->year}" : $bill->year;
+                        $billsInfo[] = "<span class='text-muted fs-8'>• {$billTypeName} ({$period})</span>";
+                    }
+                }
+                
+                if (!empty($billsInfo)) {
+                    $amountHtml .= '<br><div class="d-flex flex-column mt-1">' . implode('', $billsInfo) . '</div>';
+                }
+                
+                return $amountHtml;
+            })
             ->editColumn('status', fn($transaction) => $this->formatStatusColumn($transaction))
             ->addColumn('action', fn($transaction) => $this->formatActionColumn($transaction))
             ->addColumn('bank_recipient', function ($transaction) {
@@ -114,7 +133,7 @@ class BillController extends Controller
                 if (!$bank) return '-';
                 return "{$bank->name}<br><small class='text-muted'>No. Rek: {$bank->account_number}</small><br><small class='text-muted'>A.N: {$bank->account_name}</small>";
             })
-            ->rawColumns(['proof', 'action', 'status', 'bank_recipient'])
+            ->rawColumns(['proof', 'action', 'status', 'bank_recipient', 'pay_amount'])
             ->make(true);
     }
 
@@ -201,10 +220,10 @@ class BillController extends Controller
 
     private function getArchiveTransactionData()
     {
-        $transactions = Transaction::with('student', 'paymentMethod', 'activeProof.bank', 'transactionProofs.bank', 'admin')
+        $transactions = Transaction::with(['student', 'paymentMethod', 'activeProof.bank', 'transactionProofs.bank', 'admin', 'transactionDetails.bill.billType'])
             ->whereHas('paymentMethod', fn($query) => $query->where('type', PaymentMethod::TYPE_TRANSFER))
             ->where('type', Transaction::TYPE_BILL)
-            ->whereIn('status', [Transaction::STATUS_PAID, Transaction::STATUS_REJECTED])
+            ->where('status', Transaction::STATUS_PAID)
             ->where('is_deleted_from_archive', false)
             ->hasSchool();
 
@@ -219,7 +238,26 @@ class BillController extends Controller
 
         return DataTables::of($transactions)
             ->addColumn('proof', fn($transaction) => $this->formatProofColumn($transaction))
-            ->editColumn('pay_amount', fn($transaction) => 'Rp ' . number_format($transaction->pay_amount, 0, ',', '.'))
+            ->editColumn('pay_amount', function ($transaction) {
+                $amountHtml = 'Rp ' . number_format($transaction->pay_amount, 0, ',', '.');
+                
+                $billsInfo = [];
+                foreach ($transaction->transactionDetails as $detail) {
+                    $bill = $detail->bill;
+                    if ($bill) {
+                        $billTypeName = $bill->billType->name ?? 'Tagihan';
+                        $monthName = $bill->translated_month ?? $bill->getTranslatedMonthAttribute();
+                        $period = $monthName ? "{$monthName} {$bill->year}" : $bill->year;
+                        $billsInfo[] = "<span class='text-muted fs-8'>• {$billTypeName} ({$period})</span>";
+                    }
+                }
+                
+                if (!empty($billsInfo)) {
+                    $amountHtml .= '<br><div class="d-flex flex-column mt-1">' . implode('', $billsInfo) . '</div>';
+                }
+                
+                return $amountHtml;
+            })
             ->editColumn('status', fn($transaction) => $this->formatStatusColumn($transaction))
             ->addColumn('action', fn($transaction) => $this->formatArchiveActionColumn($transaction))
             ->addColumn('bank_recipient', function ($transaction) {
@@ -234,7 +272,7 @@ class BillController extends Controller
             ->addColumn('updated_at_formatted', function ($transaction) {
                 return $transaction->updated_at ? $transaction->updated_at->translatedFormat('d F Y H:i') : '-';
             })
-            ->rawColumns(['proof', 'action', 'status', 'bank_recipient'])
+            ->rawColumns(['proof', 'action', 'status', 'bank_recipient', 'pay_amount'])
             ->make(true);
     }
 
