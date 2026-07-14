@@ -87,17 +87,21 @@ class SyncMasterDatabase extends Command
             $this->warn('Could not create database log: ' . $e->getMessage());
         }
 
-        // Build classroom ID mapping to map old formats (e.g. 10-D, X-D) to local standardized names
-        $classroomMapping = [];
-        $defaultOutletId = null;
+        // Start database transaction and disable FK checks to ensure atomicity across the entire sync process
         try {
-            $koperasi = DB::connection('mysql')->table('outlets')->where('name', 'Koperasi')->orWhere('code', 'KPR')->first();
-            $defaultOutletId = $koperasi ? $koperasi->id : '6bc5b484-07f9-49cc-aefa-00a8cf47e8d7';
-        } catch (\Throwable $e) {
-            $defaultOutletId = '6bc5b484-07f9-49cc-aefa-00a8cf47e8d7';
-        }
+            DB::connection('mysql')->beginTransaction();
+            DB::connection('mysql')->statement('SET FOREIGN_KEY_CHECKS=0;');
 
-        try {
+            // Build classroom ID mapping to map old formats (e.g. 10-D, X-D) to local standardized names
+            $classroomMapping = [];
+            $defaultOutletId = null;
+            try {
+                $koperasi = DB::connection('mysql')->table('outlets')->where('name', 'Koperasi')->orWhere('code', 'KPR')->first();
+                $defaultOutletId = $koperasi ? $koperasi->id : '6bc5b484-07f9-49cc-aefa-00a8cf47e8d7';
+            } catch (\Throwable $e) {
+                $defaultOutletId = '6bc5b484-07f9-49cc-aefa-00a8cf47e8d7';
+            }
+
             $masterClassrooms = DB::connection('mysql_master')->table('classrooms')->get();
             $localClassrooms = DB::connection('mysql')->table('classrooms')->get();
             
@@ -143,13 +147,6 @@ class SyncMasterDatabase extends Command
                 $classroomMapping[$mc->id] = $localId;
             }
             $this->info("Built classroom mapping for " . count($classroomMapping) . " classrooms.");
-        } catch (\Throwable $e) {
-            $this->warn("Could not build classroom mapping: " . $e->getMessage());
-        }
-
-        try {
-            DB::connection('mysql')->beginTransaction();
-            DB::connection('mysql')->statement('SET FOREIGN_KEY_CHECKS=0;');
 
             foreach ($tables as $table) {
                 if ($syncTablesOption) {
@@ -231,7 +228,10 @@ class SyncMasterDatabase extends Command
                     'payment_rate_classrooms',
                     'payment_rate_students',
                     'payment_rate_items',
-                    'cash_flow_categories'
+                    'cash_flow_categories',
+                    'students',
+                    'student_classroom_histories',
+                    'bills'
                 ]);
                 if (($hasCreatedAt || $hasUpdatedAt) && !$isConfigTable && !$syncAll) {
                     $query->where(function ($q) use ($oneMonthAgo, $hasCreatedAt, $hasUpdatedAt) {
