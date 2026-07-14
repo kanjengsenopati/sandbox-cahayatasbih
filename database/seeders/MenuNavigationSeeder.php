@@ -182,7 +182,7 @@ class MenuNavigationSeeder extends Seeder
             ['name' => 'Kontak Bantuan', 'url' => '/help', 'permission' => 'Manage Kontak Bantuan', 'order' => 8],
             ['name' => 'Petugas', 'url' => '/officer', 'permission' => 'Manage Petugas', 'order' => 9],
             ['name' => 'Informasi Aplikasi', 'url' => '/app-information', 'permission' => 'app-information', 'order' => 10],
-            ['name' => 'Menu Navigasi', 'url' => '/menu-navigation', 'permission' => null, 'order' => 11],
+            ['name' => 'Menu Backoffice', 'url' => '/menu-navigation', 'permission' => null, 'order' => 11],
         ];
 
         foreach ($subPengaturan as $sub) {

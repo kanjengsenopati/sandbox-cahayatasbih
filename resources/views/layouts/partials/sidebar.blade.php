@@ -74,7 +74,21 @@
     @foreach($dbMenus as $menu)
         @php
             $permissions = array_filter(explode(',', $menu->permission ?? ''));
-            $hasAccess = empty($permissions) || auth()->user()->hasAnyPermission($permissions);
+            $hasAccess = false;
+            if ($menu->name === 'Menu Pengaturan' || $menu->name === 'Pengaturan') {
+                $hasAccess = auth()->user()->hasRole('Super Admin') || auth()->user()->hasRole('Superadmin');
+            } else {
+                if (empty($permissions)) {
+                    $hasAccess = true;
+                } else {
+                    foreach ($permissions as $perm) {
+                        if (auth()->user()->can($perm)) {
+                            $hasAccess = true;
+                            break;
+                        }
+                    }
+                }
+            }
         @endphp
         
         @if($hasAccess)
@@ -92,10 +106,18 @@
                 @php
                     $accessibleSubmenus = $menu->subMenuNavigation->filter(function($sub) {
                         if ($sub->url === route('menu-navigation.index') || str_contains($sub->url, 'menu-navigation')) {
-                            return auth()->user()->hasRole('Super Admin');
+                            return auth()->user()->hasRole('Super Admin') || auth()->user()->hasRole('Superadmin') || auth()->user()->can('Manage Menu Aplikasi');
                         }
                         $subPerms = array_filter(explode(',', $sub->permission ?? ''));
-                        return empty($subPerms) || auth()->user()->hasAnyPermission($subPerms);
+                        if (empty($subPerms)) {
+                            return true;
+                        }
+                        foreach ($subPerms as $perm) {
+                            if (auth()->user()->can($perm)) {
+                                return true;
+                            }
+                        }
+                        return false;
                     });
                     
                     $isOpen = false;
@@ -283,7 +305,7 @@
                 </div>
                 @endcanany
 
-                @if(auth()->user()->hasRole('Super Admin') || auth()->user()->hasAnyPermission(['permission', 'Manage Role', 'Manage Admin', 'Manage Informasi', 'Manage Metode Pembayaran', 'Manage Menu Aplikasi', 'Manage Kontak Bantuan', 'Manage Bank', 'Manage Pengaturan Aplikasi', 'Item Bayar', 'Manage Item Bayar', 'Manage Jenis Bayar', 'Manage Petugas', 'app-information', 'Manage Kartu Santri', 'Manage Kartu Ujian']))
+                @if(auth()->user()->hasRole('Super Admin') || auth()->user()->hasRole('Superadmin'))
                 <div data-kt-menu-trigger="click" class="menu-item menu-accordion {{ request()->routeIs(['permission.*', 'role.*', 'information-category.*',
                     'information.*', 'payment-method.*', 'application-setting.*', 'student-card-setting.*', 'application-menu.*', 'help.*',
                     'app-information.*', 'bill-item.*', 'bill-type.*', 'admin.*', 'officer.*', 'admin.audit', 'menu-navigation.*', 'submenu-navigation.*']) ? 'show' : '' }}">
