@@ -45,8 +45,9 @@ class SendNotifWaService
     {
         $student = $transaction->student;
         $parentStudent = $student->user;
+        $parentName = $parentStudent?->name ?? 'Wali Santri';
 
-        $message = "Assalamualaikum Bapak/Ibu " . $parentStudent->name . ",\n";
+        $message = "Assalamualaikum Bapak/Ibu " . $parentName . ",\n";
         $message .= "PEMBAYARAN " . $transaction->payment_code . " BERHASIL\n";
         $message .= "--------------------------------\n";
         $message .= "1. NIS : *" . $student->nis . "*\n";
@@ -119,9 +120,10 @@ class SendNotifWaService
     public static function sendMessageUnpaidNotification($student, $billTypes)
     {
         $parentStudent = $student->user;
+        $parentName = $parentStudent?->name ?? 'Wali Santri';
         $must_pay = 0;
 
-        $message = "Assalamualaikum Bapak/Ibu *" . $parentStudent->name . "*,\n\n";
+        $message = "Assalamualaikum Bapak/Ibu *" . $parentName . "*,\n\n";
         $message .= "Anda memiliki Kewajiban Administrasi Keuangan yang belum terbayar, sebagai berikut:\n";
         $message .= "--------------------------------\n";
         $message .= "1. NIS           : *" . $student->nis . "*\n";
@@ -187,8 +189,9 @@ class SendNotifWaService
     public static function sendMessageUnpaidPpdb($ppdbRegistration)
     {
         $parentStudent = $ppdbRegistration->user;
+        $parentName = $parentStudent?->name ?? 'Wali Santri';
 
-        $message = "Assalamualaikum Bapak/Ibu " . $parentStudent->name . ",\n";
+        $message = "Assalamualaikum Bapak/Ibu " . $parentName . ",\n";
         $message .= "Pendaftaran PPDB Putra/Putri Anda Berhasil, Silahkan Melakukan Pembayaran Pendaftaran sebagai berikut:\n";
         $message .= "--------------------------------\n";
         $message .= "1. No Registrasi : *" . $ppdbRegistration->no_reg . "*\n";
@@ -211,8 +214,9 @@ class SendNotifWaService
     public static function sendMessageConfirmPpdb($ppdbRegistration)
     {
         $parentStudent = $ppdbRegistration->user;
+        $parentName = $parentStudent?->name ?? 'Wali Santri';
 
-        $message = "Assalamualaikum Bapak/Ibu " . $parentStudent->name . ",\n";
+        $message = "Assalamualaikum Bapak/Ibu " . $parentName . ",\n";
         $message .= "Pendaftaran PPDB Putra/Putri Anda " . $ppdbRegistration->translated_status . "\n";
         $message .= "--------------------------------\n";
         $message .= "1. No Registrasi : *" . $ppdbRegistration->no_reg . "*\n";
@@ -234,19 +238,20 @@ class SendNotifWaService
     {
         $student = $transaction->student;
         $parentStudent = $student->user;
+        $parentName = $parentStudent?->name ?? 'Wali Santri';
 
         $message = "APLIKASI PPTQ CAHAYA TASBIH\n";
         $message .= "--------------------------------\n";
         if ($transaction->status == Transaction::STATUS_PENDING_CONFIRMATION) {
             $message .= "*-STATUS MENUNGGU VERIFIKASI PETUGAS-*\n";
             $message .= "--------------------------------\n";
-            $message .= "Assalamu'alaikum Bapak / Ibu " . $parentStudent->name . ",\n";
+            $message .= "Assalamu'alaikum Bapak / Ibu " . $parentName . ",\n";
             $message .= "Terima kasih sudah melakukan upload bukti pembayaran *" . $transaction->payment_code . "* sebesar *Rp. " . number_format($transaction->pay_amount, 0, ',', '.') . "*.\n";
             $message .= "*Mohon menunggu verifikasi petugas untuk segera diproses.*\n";
         } else {
             $message .= "*-STATUS MENUNGGU UPLOAD BUKTI PEMBAYARAN TRANSFER-*\n";
             $message .= "--------------------------------\n";
-            $message .= "Assalamu'alaikum Bapak / Ibu " . $parentStudent->name . ",\n";
+            $message .= "Assalamu'alaikum Bapak / Ibu " . $parentName . ",\n";
             $message .= "Terima kasih sudah melakukan transaksi *" . $transaction->payment_code . "* sebesar *Rp. " . number_format($transaction->pay_amount, 0, ',', '.') . "* dengan cara pembayaran transfer via aplikasi.\n";
             $message .= "*Mohon segera upload bukti pembayaran ke aplikasi untuk segera diproses petugas.*\n";
             $message .= "--------------------------------\n";
@@ -264,12 +269,13 @@ class SendNotifWaService
     {
         $student = $transaction->student;
         $parentStudent = $student->user;
+        $parentName = $parentStudent?->name ?? 'Wali Santri';
 
         $message = "APLIKASI PPTQ CAHAYA TASBIH\n";
         $message .= "--------------------------------\n";
         $message .= "*-STATUS PEMBAYARAN DITOLAK-*\n";
         $message .= "--------------------------------\n";
-        $message .= "Assalamu'alaikum Bapak / Ibu " . $parentStudent->name . ",\n";
+        $message .= "Assalamu'alaikum Bapak / Ibu " . $parentName . ",\n";
         $message .= "Mohon maaf, pembayaran *" . $transaction->payment_code . "* sebesar *Rp. " . number_format($transaction->pay_amount, 0, ',', '.') . "* ditolak.\n";
         $message .= "Alasan : " . $transaction?->activeProof?->note . "\n";
         $message .= "*Mohon segera upload ulang bukti pembayaran untuk segera diproses petugas.*\n";
@@ -285,6 +291,7 @@ class SendNotifWaService
     public static function balanceAdjustment($student, $history, $type)
     {
         $parentStudent = $student->user;
+        $parentName = $parentStudent?->name ?? 'Wali Santri';
         $title = $type == 'SALDO' ? 'SALDO' : 'TABUNGAN';
 
         // Format tanggal dengan Carbon
@@ -298,7 +305,7 @@ class SendNotifWaService
 
         $message = "*-PENYESUAIAN " . strtoupper($title) . " SANTRI-*\n";
         $message .= "--------------------------------\n";
-        $message .= "Assalamu'alaikum Bapak / Ibu " . $parentStudent->name . ",\n";
+        $message .= "Assalamu'alaikum Bapak / Ibu " . $parentName . ",\n";
         $message .= "Pemberitahuan bahwa *" . ucfirst($title) . "* atas nama santri : \n";
         $message .= "--------------------------------\n";
         $message .= "1. Nama : *" . $student->name . "*\n";
@@ -419,12 +426,13 @@ class SendNotifWaService
     public static function sendMessageAcceptedPpdb($registration)
     {
         $parent = $registration->user;
+        $parentName = $parent?->name ?? 'Wali Santri';
 
         $message = "APLIKASI PPTQ CAHAYA TASBIH\n";
         $message .= "--------------------------------\n";
         $message .= "*-PENGUMUMAN HASIL PPDB-*\n";
         $message .= "--------------------------------\n";
-        $message .= "Assalamu'alaikum Bapak / Ibu " . $parent->name . ",\n\n";
+        $message .= "Assalamu'alaikum Bapak / Ibu " . $parentName . ",\n\n";
 
         $message .= "Alhamdulillah, calon peserta didik berikut:\n";
         $message .= "*Nama:* " . $registration->name . "\n";
@@ -448,12 +456,13 @@ class SendNotifWaService
     public static function sendMessageRejectedPpdb($registration)
     {
         $parent = $registration->user;
+        $parentName = $parent?->name ?? 'Wali Santri';
 
         $message = "APLIKASI PPTQ CAHAYA TASBIH\n";
         $message .= "--------------------------------\n";
         $message .= "*-PENGUMUMAN HASIL PPDB-*\n";
         $message .= "--------------------------------\n";
-        $message .= "Assalamu'alaikum Bapak / Ibu {$parent->name},\n\n";
+        $message .= "Assalamu'alaikum Bapak / Ibu {$parentName},\n\n";
         $message .= "Dengan hormat kami sampaikan bahwa pendaftaran PPDB atas nama:\n";
         $message .= "*Nama:* {$registration->name}\n";
         $message .= "*Nomor Registrasi:* {$registration->registration_code}\n";

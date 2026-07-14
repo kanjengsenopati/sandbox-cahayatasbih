@@ -206,7 +206,7 @@ class TransactionService
             try {
                 return DB::transaction(function () use ($request, $paymentMethodType, $type) {
                     $appSetting = ApplicationSetting::latest()->first();
-                    $expiryTimeInMinutes = $appSetting->getPaymentExpireTimeInMinutesAttribute();
+                    $expiryTimeInMinutes = $appSetting ? $appSetting->getPaymentExpireTimeInMinutesAttribute() : 1440; // Default to 24 hours (1440 minutes)
 
                     // Menghitung jumlah transaksi yang ada
                     $transactionCount = Transaction::whereDate('created_at', now())->count();
@@ -361,10 +361,10 @@ class TransactionService
     public static function createPaymentPpdb($request, $paymentMethodType, $registerFee, $ppdbRegistration)
     {
         $appSetting = ApplicationSetting::latest()->first();
-        $expiryTimeInMinutes = $appSetting->getPaymentExpireTimeInMinutesAttribute();
+        $expiryTimeInMinutes = $appSetting ? $appSetting->getPaymentExpireTimeInMinutesAttribute() : 1440;
         $paymentCode = 'PPDB-' . Str::random(2) . time();
         // get total pay amount from register fee + payment_fee + bill_fee
-        $payAmount = $registerFee + $appSetting->payment_fee + $appSetting->bill_fee;
+        $payAmount = $registerFee + ($appSetting ? $appSetting->payment_fee : 0) + ($appSetting ? $appSetting->bill_fee : 0);
 
         $transaction = Transaction::create([
             'payment_method_id' => $paymentMethodType->id,
@@ -375,7 +375,7 @@ class TransactionService
             'paid_at' => null,
             'type' => 'PPDB',
             'user_id' => auth('wali')->user()->id,
-            'app_fee' => $appSetting->bill_fee,
+            'app_fee' => $appSetting ? $appSetting->bill_fee : 0,
         ]);
 
         TransactionDetail::create([
@@ -391,12 +391,15 @@ class TransactionService
     public static function updateAppFee($transaction)
     {
         $appSetting = ApplicationSetting::latest()->first();
-        $expiredTimeInMinutes = $appSetting->getPaymentExpireTimeInMinutesAttribute();
+        $expiredTimeInMinutes = $appSetting ? $appSetting->getPaymentExpireTimeInMinutesAttribute() : 1440;
 
         // Hitung app_fee berdasarkan tipe transaksi dan bulatkan ke atas
-        $app_fee = $transaction->type == Transaction::TYPE_BILL
-            ? $appSetting->bill_fee
-            : ceil($transaction->pay_amount * $appSetting->saldo_fee / 100);
+        $app_fee = 0;
+        if ($appSetting) {
+            $app_fee = $transaction->type == Transaction::TYPE_BILL
+                ? $appSetting->bill_fee
+                : ceil($transaction->pay_amount * $appSetting->saldo_fee / 100);
+        }
 
         // Perbarui transaksi dengan app_fee yang telah dibulatkan dan informasi lainnya
         $transaction->update([

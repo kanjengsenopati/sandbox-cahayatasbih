@@ -18,8 +18,6 @@ class SendBillWhatsappNotificationJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-    public $afterCommit = true;
-
     protected $students;
     protected $billTypes;
     protected $deviceId;
@@ -37,6 +35,7 @@ class SendBillWhatsappNotificationJob implements ShouldQueue
         $appSetting = ApplicationSetting::latest()->first();
         $this->deviceId = $appSetting?->device_id;
         $this->url = $appSetting ? $appSetting->getNormalizedWhatsappUrl('send') : '';
+        $this->afterCommit = true;
     }
 
     /**

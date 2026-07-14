@@ -16,8 +16,6 @@ class SendToWhatsappNotificationJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-    public $afterCommit = true;
-
     protected $number;
     protected $message;
     protected $notificationLogId;
@@ -36,6 +34,7 @@ class SendToWhatsappNotificationJob implements ShouldQueue
         $appSetting = ApplicationSetting::latest()->first();
         $this->deviceId = $appSetting?->device_id;
         $this->url = $appSetting ? $appSetting->getNormalizedWhatsappUrl('send') : '';
+        $this->afterCommit = true;
     }
 
     /**
