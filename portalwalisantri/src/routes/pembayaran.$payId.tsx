@@ -69,7 +69,11 @@ function PembayaranPage() {
       note: proof?.note,
       items: p.transaction_details?.map((d: any) => ({
         id: d.id,
-        label: d.bill?.bill_type?.name || (p.type === "SALDO" ? "Topup Saldo" : "Pembayaran"),
+        label: d.bill?.bill_type?.name 
+          ? (d.bill.translated_month 
+              ? `${d.bill.bill_type.name} - ${d.bill.translated_month} ${d.bill.year}` 
+              : `${d.bill.bill_type.name} - ${d.bill.year}`)
+          : (p.type === "SALDO" ? "Topup Saldo" : "Pembayaran"),
         amount: d.bill?.amount || d.saldo_history?.amount || d.saving_history?.amount || 0,
       })) || [],
     };
