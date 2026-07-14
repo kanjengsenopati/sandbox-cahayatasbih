@@ -67,7 +67,7 @@ function PembayaranPage() {
       bankHolder: bank.account_name || "Yayasan PPTQ Cahaya Tasbih",
       proofUrl: proof?.proof_image_url || proof?.proof_image,
       note: proof?.note,
-      items: p.transaction_details?.map((d: any) => ({
+      items: (p.transaction_details?.map((d: any) => ({
         id: d.id,
         label: d.bill?.bill_type?.name 
           ? (d.bill.translated_month 
@@ -75,7 +75,14 @@ function PembayaranPage() {
               : `${d.bill.bill_type.name} - ${d.bill.year}`)
           : (p.type === "SALDO" ? "Topup Saldo" : "Pembayaran"),
         amount: d.bill?.amount || d.saldo_history?.amount || d.saving_history?.amount || 0,
-      })) || [],
+        year: d.bill ? Number(d.bill.year) : 0,
+        month: d.bill ? Number(d.bill.month) : 0,
+      })) || []).sort((a: any, b: any) => {
+        if (a.year !== b.year) return a.year - b.year;
+        const aIndex = a.month >= 7 ? a.month - 7 : a.month + 5;
+        const bIndex = b.month >= 7 ? b.month - 7 : b.month + 5;
+        return aIndex - bIndex;
+      }),
     };
   }, [paymentRes]);
 
