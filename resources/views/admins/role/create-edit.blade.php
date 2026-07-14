@@ -114,19 +114,19 @@
                                     <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-4" id="modules_container">
                                         @php
                                         $modulesRaw = ['Role', 'Admin', 'Santri', 'Wali Santri',
-                                        'Sekolah', 'Bank', 'Outlet',
+                                        'Bank', 'Outlet',
                                         'Informasi', 'Metode Pembayaran', 'Menu Aplikasi', 'Kontak Bantuan',
                                         'Barang','Saldo Santri', 'Tabungan Santri', 'Jadwal', 'Tahfidz',
                                         'Pos Kasir', 'Tagihan', 'Status Tagihan', 'Perilaku Santri',
                                         'Prestasi Santri', 'Nilai Santri', 'Perizinan', 'Asrama',
-                                        'PPDB', 'Mata Pelajaran', 'Tahun Ajaran', 'Semester', 'Kenaikan Kelas',
+                                        'PPDB',
                                         'Pengaturan Aplikasi', 'Item Bayar', 'Jenis Bayar', 'Payroll', 'Laporan Presensi', 'Shift', 'Laporan Pos Kasir',
                                         'Laporan Pos Multi Outlet',
                                         'Laporan Rugi Laba',
                                         'Laporan Tagihan',
                                         'Laporan Santri', 'Laporan Tahfidz', 'Laporan Perilaku Siswa',
                                         'Laporan Saldo Santri', 'Laporan Fee Aplikasi', 'Laporan Transaksi',
-                                        'Kelulusan Santri', 'Kategori Arus Kas', 'Arus Kas', 'Laporan Arus Kas',
+                                        'Kategori Arus Kas', 'Arus Kas', 'Laporan Arus Kas',
                                         'Gelombang PPDB', 'Kartu Santri', 'Kartu Ujian', 'Petugas', 'Biometric'
                                         ];
 
@@ -149,6 +149,110 @@
                                             return strcasecmp($a['display'], $b['display']);
                                         });
                                         @endphp
+
+                                        <!-- Unified Academic Module Card -->
+                                        <div class="col-12 col-md-6 col-lg-6 module-col">
+                                            <div class="card h-100 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border-0" style="border-radius: 24px; border: 1px solid #f1f1f4; background: #ffffff;">
+                                                <div class="card-body p-5">
+                                                    <!-- Header Card: Module Name + Card Select All -->
+                                                    <div class="d-flex justify-content-between align-items-center mb-4 pb-2 border-bottom">
+                                                        <span class="fs-5 fw-bolder text-gray-800 module-title">Akademik</span>
+                                                        <div class="d-flex align-items-center gap-2">
+                                                            <span class="fs-7 text-muted fw-bold">Pilih Semua</span>
+                                                            <div class="form-check form-check-custom form-check-solid">
+                                                                <input class="form-check-input module-checkbox" type="checkbox"
+                                                                    data-module="Akademik" id="select_module_Akademik">
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    
+                                                    <!-- Sub-modules Grid inside Card Body -->
+                                                    <div class="row g-4">
+                                                        @php
+                                                        $academicSubModules = [
+                                                            ['internal' => 'Sekolah', 'display' => 'UPT / Sekolah'],
+                                                            ['internal' => 'Tahun Ajaran', 'display' => 'Tahun Ajaran'],
+                                                            ['internal' => 'Semester', 'display' => 'Semester'],
+                                                            ['internal' => 'Mata Pelajaran', 'display' => 'Mata Pelajaran'],
+                                                            ['internal' => 'Kenaikan Kelas', 'display' => 'Kenaikan Kelas'],
+                                                            ['internal' => 'Kelulusan Santri', 'display' => 'Kelulusan Siswa']
+                                                        ];
+                                                        @endphp
+
+                                                        @foreach ($academicSubModules as $sub)
+                                                        @php
+                                                            $subName = $sub['internal'];
+                                                            $subKey = str_replace(' ', '', $subName);
+                                                            $subManage = 'Manage ' . $subName;
+                                                            $subCreate = 'Create ' . $subName;
+                                                            $subEdit   = 'Edit ' . $subName;
+                                                            $subDelete = 'Delete ' . $subName;
+                                                        @endphp
+                                                        <div class="col-12 col-sm-6 border-bottom border-gray-100 pb-3 mb-1">
+                                                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                                                <span class="fs-7 fw-bold text-gray-850">{{ $sub['display'] }}</span>
+                                                                <div class="form-check form-check-custom form-check-solid form-check-sm">
+                                                                    <!-- Individual sub-module Select All -->
+                                                                    <input class="form-check-input module-checkbox sub-module-selector" type="checkbox"
+                                                                        data-module="{{ $subKey }}" data-parent-module="Akademik" id="select_module_{{ $subKey }}">
+                                                                </div>
+                                                            </div>
+                                                            
+                                                            <div class="d-flex flex-wrap gap-x-4 gap-y-2 mt-1">
+                                                                <!-- Read Checkbox -->
+                                                                @if (in_array($subManage, (array) $permissions))
+                                                                    @php $manageKey = array_search($subManage, $permissions); @endphp
+                                                                    <div class="form-check form-check-custom form-check-solid form-check-sm">
+                                                                        <input class="form-check-input permission-checkbox isscheck_{{ $subKey }} isscheck_Akademik"
+                                                                            type="checkbox" name="permissions[]" data-module="{{ $subKey }}" data-parent-module="Akademik"
+                                                                            value="{{ $manageKey }}" id="permission{{ $manageKey }}"
+                                                                            @if(in_array($manageKey, (array) $permissionValue)) checked @endif>
+                                                                        <label class="form-check-label text-gray-600 fs-7" for="permission{{ $manageKey }}">Read</label>
+                                                                    </div>
+                                                                @endif
+
+                                                                <!-- Create Checkbox -->
+                                                                @if (in_array($subCreate, (array) $permissions))
+                                                                    @php $createKey = array_search($subCreate, $permissions); @endphp
+                                                                    <div class="form-check form-check-custom form-check-solid form-check-sm">
+                                                                        <input class="form-check-input permission-checkbox isscheck_{{ $subKey }} isscheck_Akademik"
+                                                                            type="checkbox" name="permissions[]" data-module="{{ $subKey }}" data-parent-module="Akademik"
+                                                                            value="{{ $createKey }}" id="permission{{ $createKey }}"
+                                                                            @if(in_array($createKey, (array) $permissionValue)) checked @endif>
+                                                                        <label class="form-check-label text-gray-600 fs-7" for="permission{{ $createKey }}">Create</label>
+                                                                    </div>
+                                                                @endif
+
+                                                                <!-- Edit Checkbox -->
+                                                                @if (in_array($subEdit, (array) $permissions))
+                                                                    @php $editKey = array_search($subEdit, $permissions); @endphp
+                                                                    <div class="form-check form-check-custom form-check-solid form-check-sm">
+                                                                        <input class="form-check-input permission-checkbox isscheck_{{ $subKey }} isscheck_Akademik"
+                                                                            type="checkbox" name="permissions[]" data-module="{{ $subKey }}" data-parent-module="Akademik"
+                                                                            value="{{ $editKey }}" id="permission{{ $editKey }}"
+                                                                            @if(in_array($editKey, (array) $permissionValue)) checked @endif>
+                                                                        <label class="form-check-label text-gray-600 fs-7" for="permission{{ $editKey }}">Edit</label>
+                                                                    </div>
+                                                                @endif
+
+                                                                <!-- Delete Checkbox -->
+                                                                @if (in_array($subDelete, (array) $permissions))
+                                                                    @php $deleteKey = array_search($subDelete, $permissions); @endphp
+                                                                    <div class="form-check form-check-custom form-check-solid form-check-sm">
+                                                                        <input class="form-check-input permission-checkbox isscheck_{{ $subKey }} isscheck_Akademik"
+                                                                            type="checkbox" name="permissions[]" data-module="{{ $subKey }}" data-parent-module="Akademik"
+                                                                            value="{{ $deleteKey }}" id="permission{{ $deleteKey }}"
+                                                                            @if(in_array($deleteKey, (array) $permissionValue)) checked @endif>
+                                                                        <label class="form-check-label text-gray-600 fs-7" for="permission{{ $deleteKey }}">Delete</label>
+                                                                    </div>
+                                                                @endif
+                                                            </div>
+                                                        </div>
+                                                        @endforeach
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
 
                                         @foreach ($modulesMapped as $mod)
                                         @php
@@ -268,12 +372,12 @@
 @push('js')
 <script>
     $(document).ready(function() {
-        // Real-time search filter for module cards
+        // Real-time search filter for module cards (searching all text within the card)
         $('#search_module').on('keyup', function() {
             var value = $(this).val().toLowerCase();
             $('.module-col').filter(function() {
-                var moduleName = $(this).find('.module-title').text().toLowerCase();
-                $(this).toggle(moduleName.indexOf(value) > -1);
+                var text = $(this).text().toLowerCase();
+                $(this).toggle(text.indexOf(value) > -1);
             });
         });
 
@@ -314,6 +418,17 @@
                 $('.permission-checkbox.isscheck_' + module).prop('checked', this.checked);
                 updateModuleCheckbox(module);
                 
+                // Custom relationship for parent module 'Akademik'
+                if (module === 'Akademik') {
+                    // Update all academic sub-module selector checkboxes
+                    $('.sub-module-selector').prop('checked', this.checked);
+                } else {
+                    var parentModule = $(this).data('parent-module');
+                    if (parentModule) {
+                        updateModuleCheckbox(parentModule);
+                    }
+                }
+
                 // Update master "all" checkbox state
                 var allChecked = $('.permission-checkbox').length === $('.permission-checkbox:checked').length;
                 $('.module-checkbox[data-module="all"]').prop('checked', allChecked);
@@ -325,6 +440,12 @@
             var module = $(this).data('module');
             updateModuleCheckbox(module);
             
+            // Custom relationship for parent module
+            var parentModule = $(this).data('parent-module');
+            if (parentModule) {
+                updateModuleCheckbox(parentModule);
+            }
+
             // Update master "all" checkbox state
             var allChecked = $('.permission-checkbox').length === $('.permission-checkbox:checked').length;
             $('.module-checkbox[data-module="all"]').prop('checked', allChecked);
