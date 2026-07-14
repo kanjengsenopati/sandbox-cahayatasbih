@@ -305,6 +305,27 @@
                                     <div class="d-flex justify-content-end"></div>
 
                                     @if ($student ?? false)
+                                    @php
+                                        $filteredYearId = request('academic_year_id');
+                                        if ($filteredYearId) {
+                                            $filteredYear = $academicYears->where('id', $filteredYearId)->first();
+                                            $displayYearName = $filteredYear ? $filteredYear->name : 'Semua Tahun Ajaran';
+                                            
+                                            $history = $student->classroomHistories->where('academic_year_id', $filteredYearId)->first();
+                                            if ($history) {
+                                                $displayClassName = $history->classroom->name ?? '-';
+                                            } else {
+                                                if ($student->classroom && $student->classroom->academic_year_id == $filteredYearId) {
+                                                    $displayClassName = $student->classroom->name;
+                                                } else {
+                                                    $displayClassName = '-';
+                                                }
+                                            }
+                                        } else {
+                                            $displayYearName = $student->classroom->academicYear->name ?? 'Semua Tahun Ajaran';
+                                            $displayClassName = $student->classroom->name ?? '-';
+                                        }
+                                    @endphp
                                     <div class="card-body pt-3">
                                         <div class="card-information">
                                             <div class="row align-items-center g-5">
@@ -315,11 +336,7 @@
                                                         <span class="info-colon">:</span>
                                                         <span class="info-value">
                                                             <span class="text-slate-800 fw-bold">
-                                                                @if(request('academic_year_id'))
-                                                                    {{ $academicYears->where('id', request('academic_year_id'))->first()->name ?? 'Semua Tahun Ajaran' }}
-                                                                @else
-                                                                    Semua Tahun Ajaran
-                                                                @endif
+                                                                {{ $displayYearName }}
                                                             </span>
                                                         </span>
                                                     </div>
@@ -341,7 +358,7 @@
                                                         <span class="info-label">Kelas</span>
                                                         <span class="info-colon">:</span>
                                                         <span class="info-value">
-                                                            <span class="text-slate-700 fw-semibold">{{ @$student->classroom->name ?? '' }}</span>
+                                                            <span class="text-slate-700 fw-semibold">{{ $displayClassName }}</span>
                                                         </span>
                                                     </div>
                                                     <div class="info-item">

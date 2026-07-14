@@ -79,8 +79,15 @@ class CheckBillClass extends Command
                     $query->whereIn('gender', explode(',', $paymentRate->gender));
                 })
                 ->when($paymentRate->jamaah_status, function ($query) use ($paymentRate) {
-                    $query->whereHas('user', function ($userQuery) use ($paymentRate) {
-                        $userQuery->whereIn('jamaah_status', array_map('trim', explode(',', $paymentRate->jamaah_status)));
+                    $statuses = array_map('trim', explode(',', $paymentRate->jamaah_status));
+                    $query->where(function ($q) use ($statuses) {
+                        $q->whereHas('user', function ($userQuery) use ($statuses) {
+                            $userQuery->whereIn('jamaah_status', $statuses);
+                        });
+                        if (in_array('NON_JAMAAH', $statuses)) {
+                            $q->orWhereNull('user_id')
+                              ->orWhereDoesntHave('user');
+                        }
                     });
                 })
                 ->get();
