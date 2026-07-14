@@ -14,8 +14,10 @@ class MenuNavigationSeeder extends Seeder
     public function run(): void
     {
         // Clear existing menus
-        MenuNavigation::truncate();
-        SubMenuNavigation::truncate();
+        \Illuminate\Support\Facades\Schema::disableForeignKeyConstraints();
+        SubMenuNavigation::query()->delete();
+        MenuNavigation::query()->delete();
+        \Illuminate\Support\Facades\Schema::enableForeignKeyConstraints();
 
         // 1. Dashboard
         $dashboard = MenuNavigation::create([
@@ -50,8 +52,8 @@ class MenuNavigationSeeder extends Seeder
         $subPondokMart = [
             ['name' => 'POS Kasir', 'url' => '/order-item?mode=outlet', 'permission' => 'Manage Pos Kasir', 'order' => 1],
             ['name' => 'Barang & Inventory', 'url' => '/item?mode=outlet', 'permission' => 'Manage Barang', 'order' => 2],
-            ['name' => 'Laporan POS', 'url' => '/pos-transaction?mode=outlet', 'permission' => 'Manage Laporan Pos Kasir,Manage Laporan Pos Multi Outlet', 'order' => 3],
-            ['name' => 'Rugi Laba', 'url' => '/report-profit-loss?mode=outlet', 'permission' => 'Manage Laporan Pos Multi Outlet,Manage Laporan Rugi Laba', 'order' => 4],
+            ['name' => 'Laporan POS', 'url' => '/pos-transaction?mode=outlet', 'permission' => 'Manage Laporan Pos Multi Outlet', 'order' => 3],
+            ['name' => 'Rugi Laba', 'url' => '/report-profit-loss?mode=outlet', 'permission' => 'Manage Laporan Rugi Laba', 'order' => 4],
             ['name' => 'Data Karyawan & Payroll', 'url' => '/karyawan?mode=outlet', 'permission' => 'Manage Karyawan,Manage Shift', 'order' => 5],
             ['name' => 'Presensi Karyawan', 'url' => '/report-attendance?mode=outlet', 'permission' => 'Manage Laporan Presensi', 'order' => 6],
             ['name' => 'Kiosk Presensi Wajah', 'url' => '/biometric-mapping/kiosk', 'permission' => 'Manage Biometric', 'order' => 7],
@@ -138,8 +140,8 @@ class MenuNavigationSeeder extends Seeder
         ]);
 
         $subLaporan = [
-            ['name' => 'Laporan POS Multi Outlet', 'url' => '/pos-transaction?mode=kantin', 'permission' => 'Manage Laporan Pos Kasir,Manage Laporan Pos Multi Outlet', 'order' => 1],
-            ['name' => 'Rugi Laba Outlet', 'url' => '/report-profit-loss?mode=kantin', 'permission' => 'Manage Laporan Pos Multi Outlet,Manage Laporan Rugi Laba,Manage Arus Kas', 'order' => 2],
+            ['name' => 'Laporan POS Multi Outlet', 'url' => '/pos-transaction?mode=kantin', 'permission' => 'Manage Laporan Pos Multi Outlet', 'order' => 1],
+            ['name' => 'Rugi Laba Outlet', 'url' => '/report-profit-loss?mode=kantin', 'permission' => 'Manage Laporan Rugi Laba', 'order' => 2],
             ['name' => 'Transaksi', 'url' => '/report-transaction', 'permission' => 'Manage Laporan Transaksi', 'order' => 3],
             ['name' => 'Tagihan', 'url' => '/report-bill', 'permission' => 'Manage Laporan Tagihan', 'order' => 4],
             ['name' => 'Tagihan Santri', 'url' => '/report-bill-student', 'permission' => 'Manage Laporan Tagihan', 'order' => 5],

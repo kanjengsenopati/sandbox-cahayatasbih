@@ -25,7 +25,8 @@ class AuthServiceProvider extends ServiceProvider
         $this->registerPolicies();
 
         \Illuminate\Support\Facades\Gate::before(function ($user, $ability) {
-            return ($user->hasRole('Super Admin') || $user->hasRole('Superadmin')) ? true : null;
+            $roles = $user->roles->pluck('name')->map('strtolower');
+            return ($roles->contains('super admin') || $roles->contains('superadmin')) ? true : null;
         });
     }
 }
