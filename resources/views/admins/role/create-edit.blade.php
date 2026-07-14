@@ -137,6 +137,8 @@
                                                 $displayName = 'Peran';
                                             } elseif ($module === 'Admin') {
                                                 $displayName = 'Pengguna';
+                                            } elseif ($module === 'Outlet') {
+                                                $displayName = 'Pondok Mart (Outlet)';
                                             }
                                             return [
                                                 'internal' => $module,
