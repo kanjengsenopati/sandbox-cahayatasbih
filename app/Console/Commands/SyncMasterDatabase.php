@@ -339,6 +339,91 @@ class SyncMasterDatabase extends Command
                         }
                         unset($row);
 
+                        // Deduplicate and resolve UUID collisions for bills table
+                        if ($table === 'bills') {
+                            // 1. Deduplicate active bills within the incoming chunk itself
+                            $chunkGroups = [];
+                            foreach ($data as $index => $row) {
+                                if (is_null($row['deleted_at'])) {
+                                    $key = $row['student_id'] . '_' . 
+                                           $row['bill_type_id'] . '_' . 
+                                           $row['academic_year_id'] . '_' . 
+                                           $row['month'] . '_' . 
+                                           $row['year'];
+                                    $chunkGroups[$key][] = [
+                                        'index' => $index,
+                                        'id' => $row['id'],
+                                        'status' => $row['status'] ?? 'UNPAID',
+                                        'paid_amount' => $row['paid_amount'] ?? 0,
+                                        'updated_at' => $row['updated_at'] ?? null,
+                                        'created_at' => $row['created_at'] ?? null,
+                                    ];
+                                }
+                            }
+
+                            foreach ($chunkGroups as $key => $groupBills) {
+                                if (count($groupBills) > 1) {
+                                    usort($groupBills, function($a, $b) {
+                                        $aPaid = ($a['status'] === 'PAID' || $a['paid_amount'] > 0);
+                                        $bPaid = ($b['status'] === 'PAID' || $b['paid_amount'] > 0);
+                                        if ($aPaid !== $bPaid) {
+                                            return $bPaid <=> $aPaid;
+                                        }
+                                        if ($a['paid_amount'] != $b['paid_amount']) {
+                                            return $b['paid_amount'] <=> $a['paid_amount'];
+                                        }
+                                        $aTime = strtotime($a['updated_at'] ?? $a['created_at'] ?? '1970-01-01');
+                                        $bTime = strtotime($b['updated_at'] ?? $b['created_at'] ?? '1970-01-01');
+                                        return $bTime <=> $aTime;
+                                    });
+
+                                    $keepId = $groupBills[0]['id'];
+                                    foreach ($groupBills as $gb) {
+                                        if ($gb['id'] !== $keepId) {
+                                            $data[$gb['index']]['deleted_at'] = now()->toDateTimeString();
+                                        }
+                                    }
+                                }
+                            }
+
+                            // 2. Resolve ID collisions with existing active bills in local database
+                            $studentIds = array_column($data, 'student_id');
+                            $billTypeIds = array_column($data, 'bill_type_id');
+                            $academicYearIds = array_column($data, 'academic_year_id');
+                            
+                            $existingBills = DB::connection('mysql')->table('bills')
+                                ->whereIn('student_id', $studentIds)
+                                ->whereIn('bill_type_id', $billTypeIds)
+                                ->whereIn('academic_year_id', $academicYearIds)
+                                ->whereNull('deleted_at')
+                                ->get()
+                                ->groupBy(function($item) {
+                                    return $item->student_id . '_' . 
+                                           $item->bill_type_id . '_' . 
+                                           $item->academic_year_id . '_' . 
+                                           $item->month . '_' . 
+                                           $item->year;
+                                });
+
+                            foreach ($data as &$row) {
+                                if (is_null($row['deleted_at'])) {
+                                    $key = $row['student_id'] . '_' . 
+                                           $row['bill_type_id'] . '_' . 
+                                           $row['academic_year_id'] . '_' . 
+                                           $row['month'] . '_' . 
+                                           $row['year'];
+                                    
+                                    if (isset($existingBills[$key])) {
+                                        $localBill = $existingBills[$key]->first();
+                                        if ($localBill->id !== $row['id']) {
+                                            $row['id'] = $localBill->id;
+                                        }
+                                    }
+                                }
+                            }
+                            unset($row);
+                        }
+
                         // Run upsert operation
                         DB::connection('mysql')
                             ->table($table)
