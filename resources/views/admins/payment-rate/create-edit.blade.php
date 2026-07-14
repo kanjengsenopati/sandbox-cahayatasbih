@@ -346,14 +346,13 @@
                             <div class="mb-5">
                                 <label class="form-label fw-bold fs-6 text-gray-700">Status Wali</label>
                                 <select name="jamaah_status[]" class="form-select form-select-solid {{ isset($paymentRate) ? 'bg-light' : '' }}" id="jamaah_status"
-                                    data-control="select2" data-placeholder="Semua Status (Siswa Umum & Jamaah)" data-allow-clear="true" multiple="multiple" {{ isset($paymentRate) ? 'disabled' : '' }}>
+                                    data-control="select2" data-placeholder="Semua Status (Jamaah, Non Jamaah, Mukimin)" data-allow-clear="true" multiple="multiple" {{ isset($paymentRate) ? 'disabled' : '' }}>
                                     @php
                                         $jamaahValues = isset($paymentRate) ? explode(',', $paymentRate->jamaah_status) : [];
                                     @endphp
                                     <option value="JAMAAH" {{ in_array('JAMAAH', $jamaahValues) ? 'selected' : '' }}>Jamaah</option>
                                     <option value="NON_JAMAAH" {{ in_array('NON_JAMAAH', $jamaahValues) ? 'selected' : '' }}>Non Jamaah</option>
                                     <option value="MUKIMIN" {{ in_array('MUKIMIN', $jamaahValues) ? 'selected' : '' }}>Mukimin</option>
-                                    <option value="UNKNOWN" {{ in_array('UNKNOWN', $jamaahValues) ? 'selected' : '' }}>Belum Tahu</option>
                                 </select>
                                 @if(isset($paymentRate))
                                     <input type="hidden" name="jamaah_status" value="{{ $paymentRate->jamaah_status }}">
@@ -458,9 +457,6 @@
                                         <button type="button" class="btn btn-sm btn-light-primary py-1 px-2 fs-8" id="btn-select-all-mukimin">
                                             Pilih Semua Mukimin
                                         </button>
-                                        <button type="button" class="btn btn-sm btn-light-warning py-1 px-2 fs-8" id="btn-select-all-tidak-tahu">
-                                            Pilih Semua Belum Tahu
-                                        </button>
                                     </div>
                                     <select name="students[]" class="form-select form-select-solid"
                                         id="student_id" data-control="select2" data-close-on-select="false"
@@ -524,7 +520,7 @@
                     .then(function(response) {
                          if (response.data.length > 0) {
                              $.each(response.data, function(key, value) {
-                                 var statusText = 'BELUM TAHU';
+                                 var statusText = 'NON JAMAAH';
                                  if (value.jamaah_status === 'JAMAAH') {
                                      statusText = 'JAMAAH';
                                  } else if (value.jamaah_status === 'NON_JAMAAH') {
@@ -751,10 +747,6 @@
 
         $('#btn-select-all-mukimin').click(function() {
             toggleStudentsByStatus('MUKIMIN');
-        });
-
-        $('#btn-select-all-tidak-tahu').click(function() {
-            toggleStudentsByStatus('UNKNOWN');
         });
 
         // Auto-trigger pemuatan kelas jika sekolah sudah terpilih saat halaman diload

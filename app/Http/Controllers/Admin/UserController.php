@@ -74,7 +74,7 @@ class UserController extends Controller
                 } elseif ($data->jamaah_status === 'MUKIMIN') {
                     return '<span class="badge badge-light-primary fw-bolder px-2 py-1">Mukimin</span>';
                 }
-                return '<span class="badge badge-light-warning fw-bolder px-2 py-1">Belum Tahu</span>';
+                return '<span class="badge badge-light-danger fw-bolder px-2 py-1">Non Jamaah</span>';
             })
             ->editColumn('last_login', function ($data) {
                 return $data->last_login
@@ -276,7 +276,7 @@ class UserController extends Controller
         $request->validate([
             'ids' => 'required|array',
             'ids.*' => 'required|exists:users,id',
-            'jamaah_status' => 'required|in:JAMAAH,NON_JAMAAH,UNKNOWN,MUKIMIN',
+            'jamaah_status' => 'required|in:JAMAAH,NON_JAMAAH,MUKIMIN',
         ]);
 
         try {

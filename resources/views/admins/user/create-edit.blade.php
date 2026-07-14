@@ -183,9 +183,8 @@
                                             <select name="jamaah_status" class="form-select form-select-solid" id="jamaah_status"
                                                 data-control="select2" data-placeholder="Pilih Status Jamaah"
                                                 data-hide-search="true" required>
-                                                <option value="UNKNOWN" {{ (old('jamaah_status') ?? @$user->jamaah_status) == 'UNKNOWN' ? 'selected' : '' }}>Belum Tahu (Default)</option>
                                                 <option value="JAMAAH" {{ (old('jamaah_status') ?? @$user->jamaah_status) == 'JAMAAH' ? 'selected' : '' }}>Jamaah</option>
-                                                <option value="NON_JAMAAH" {{ (old('jamaah_status') ?? @$user->jamaah_status) == 'NON_JAMAAH' ? 'selected' : '' }}>Non Jamaah</option>
+                                                <option value="NON_JAMAAH" {{ (old('jamaah_status') ?? @$user->jamaah_status ?? 'NON_JAMAAH') == 'NON_JAMAAH' ? 'selected' : '' }}>Non Jamaah (Default)</option>
                                                 <option value="MUKIMIN" {{ (old('jamaah_status') ?? @$user->jamaah_status) == 'MUKIMIN' ? 'selected' : '' }}>Mukimin</option>
                                             </select>
                                             <!--end::Input-->

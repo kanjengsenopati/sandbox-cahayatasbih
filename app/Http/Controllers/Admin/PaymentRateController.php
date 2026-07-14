@@ -826,7 +826,7 @@ class PaymentRateController extends Controller
                 'name' => $student->name,
                 'nis' => $student->nis,
                 'gender' => $student->gender,
-                'jamaah_status' => $student->user?->jamaah_status ?? 'UNKNOWN'
+                'jamaah_status' => $student->user?->jamaah_status ?? 'NON_JAMAAH'
             ];
         });
 

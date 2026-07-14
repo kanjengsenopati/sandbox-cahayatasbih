@@ -92,7 +92,7 @@ class PaymentRateService
                 // Filter by jamaah status if set
                 if ($paymentRate->jamaah_status) {
                     $student->loadMissing('user');
-                    if (!in_array($student->user?->jamaah_status ?? 'UNKNOWN', array_map('trim', explode(',', $paymentRate->jamaah_status)))) {
+                    if (!in_array($student->user?->jamaah_status ?? 'NON_JAMAAH', array_map('trim', explode(',', $paymentRate->jamaah_status)))) {
                         continue;
                     }
                 }
@@ -143,7 +143,7 @@ class PaymentRateService
                 // Filter by jamaah status if set
                 if ($paymentRate->jamaah_status) {
                     $student->loadMissing('user');
-                    if (!in_array($student->user?->jamaah_status ?? 'UNKNOWN', array_map('trim', explode(',', $paymentRate->jamaah_status)))) {
+                    if (!in_array($student->user?->jamaah_status ?? 'NON_JAMAAH', array_map('trim', explode(',', $paymentRate->jamaah_status)))) {
                         continue;
                     }
                 }

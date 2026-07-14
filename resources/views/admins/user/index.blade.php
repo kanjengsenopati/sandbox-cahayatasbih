@@ -248,8 +248,7 @@
                                 <div>
                                     <label class="form-label text-slate-600 fw-bold">Filter Status Asal</label>
                                     <select name="migration_origin_status" class="form-select form-select-sm" id="filter_migration_origin_status">
-                                        <option value="UNKNOWN" selected>Belum Tahu (Default)</option>
-                                        <option value="">Semua</option>
+                                        <option value="" selected>Semua</option>
                                         <option value="JAMAAH">Jamaah</option>
                                         <option value="NON_JAMAAH">Non Jamaah</option>
                                         <option value="MUKIMIN">Mukimin</option>
@@ -265,7 +264,6 @@
                                         <option value="JAMAAH" selected>Jamaah</option>
                                         <option value="NON_JAMAAH">Non Jamaah</option>
                                         <option value="MUKIMIN">Mukimin</option>
-                                        <option value="UNKNOWN">Belum Tahu</option>
                                     </select>
                                     <button type="button" class="btn btn-primary btn-sm" id="btn-apply-bulk-migration">
                                         <i class="fas fa-check me-1"></i> Terapkan Semua

@@ -88,7 +88,7 @@ class UserImportData implements ToCollection, WithHeadingRow
                 $jamaahStatusInput = strtoupper(trim($row['status_jamaah'] ?? ''));
                 $jamaahStatusNormalized = str_replace([' ', '-'], '_', $jamaahStatusInput);
                 
-                $jamaahStatus = 'UNKNOWN'; // default
+                $jamaahStatus = 'NON_JAMAAH'; // default
                 if ($jamaahStatusNormalized === 'JAMAAH') {
                     $jamaahStatus = 'JAMAAH';
                 } elseif (in_array($jamaahStatusNormalized, ['NON_JAMAAH', 'BUKAN_JAMAAH', 'NONJAMAAH'])) {

@@ -61,7 +61,7 @@ class RegistrationPaymentRateSeeder extends Seeder
                 ],
                 [
                     'amount' => 5000000,
-                    'jamaah_status' => 'NON_JAMAAH,UNKNOWN',
+                    'jamaah_status' => 'NON_JAMAAH',
                 ],
                 [
                     'amount' => 1000000,

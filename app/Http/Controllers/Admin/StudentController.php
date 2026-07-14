@@ -104,8 +104,6 @@ class StudentController extends Controller
                         $badgeHtml = '<div class="mt-1"><span class="badge badge-light-danger fw-bolder px-2 py-1">Non Jamaah</span></div>';
                     } elseif ($jamaahStatus === 'MUKIMIN') {
                         $badgeHtml = '<div class="mt-1"><span class="badge badge-light-primary fw-bolder px-2 py-1">Mukimin</span></div>';
-                    } elseif ($jamaahStatus === 'UNKNOWN') {
-                        $badgeHtml = '<div class="mt-1"><span class="badge badge-light-warning fw-bolder px-2 py-1">Belum Jelas</span></div>';
                     }
 
                     // Use avatar_url accessor for proper absolute URL
@@ -606,7 +604,7 @@ class StudentController extends Controller
                             $statusJamaahInput = strtoupper(trim($row['status_jamaah_wali'] ?? ''));
                             $statusJamaahNormalized = str_replace([' ', '-'], '_', $statusJamaahInput);
                             
-                            $statusJamaah = 'UNKNOWN';
+                            $statusJamaah = 'NON_JAMAAH';
                             if ($statusJamaahNormalized === 'JAMAAH') {
                                 $statusJamaah = 'JAMAAH';
                             } elseif (in_array($statusJamaahNormalized, ['NON_JAMAAH', 'BUKAN_JAMAAH', 'NONJAMAAH'])) {

@@ -19,7 +19,7 @@ echo " DIAGNOSTIC REPORT: WALI SANTRI & DATA PERWALIAN\n";
 echo "=========================================================\n\n";
 
 // 1. Check parent users by status
-$statuses = ['NON_JAMAAH', 'MUKIMIN', 'JAMAAH', 'UNKNOWN'];
+$statuses = ['NON_JAMAAH', 'MUKIMIN', 'JAMAAH'];
 echo "1. STATUS WALI SANTRI DI DATABASE:\n";
 foreach ($statuses as $status) {
     $count = User::where('jamaah_status', $status)->count();
