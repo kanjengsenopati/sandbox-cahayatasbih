@@ -322,7 +322,7 @@
                             @can('Manage Kenaikan Kelas')
                             <div class="tab-pane fade @if($activeTab == 'grade-promotion') show active @endif" id="tab-grade-promotion" role="tabpanel">
                                 <div class="d-flex align-items-center justify-content-between mb-5">
-                                    <x-text.h2>Proses Kenaikan Kelas Santri</x-text.h2>
+                                    <x-text.h2>Proses Kenaikan Kelas Siswa</x-text.h2>
                                 </div>
                                 
                                 <!-- Filters -->

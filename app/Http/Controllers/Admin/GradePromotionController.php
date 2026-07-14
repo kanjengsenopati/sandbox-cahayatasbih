@@ -13,6 +13,8 @@ use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Auth;
 use App\Models\StudentClassroomHistory;
 use App\Http\Requests\Admin\GradePromotionRequest;
+use App\Models\Bill;
+use App\Models\PaymentRate;
 
 class GradePromotionController extends Controller
 {
@@ -107,18 +109,89 @@ class GradePromotionController extends Controller
         try {
             $data = $request->validated();
 
+            // 1. Hapus tagihan belum bayar (UNPAID) siswa pada tahun ajaran target untuk menghindari duplikasi
+            Bill::whereIn('student_id', $data['student_ids'])
+                ->where('academic_year_id', $data['academic_year_id'])
+                ->where('status', Bill::STATUS_UNPAID)
+                ->delete();
+
+            // 2. Ambil tarif pembayaran (PaymentRate) reguler untuk kelas baru di tahun ajaran target
+            $paymentRates = PaymentRate::where('type', PaymentRate::TYPE_REGULAR)
+                ->whereHas('paymentRateClassrooms', function ($q) use ($data) {
+                    $q->where('classroom_id', $data['new_classroom_id']);
+                })
+                ->whereHas('billType', function ($q) use ($data) {
+                    $q->where('academic_year_id', $data['academic_year_id']);
+                })
+                ->with(['paymentRateItems', 'billType'])
+                ->get();
+
+            $billsToInsert = [];
+            $timestamp = now();
+
             foreach ($data['student_ids'] as $studentId) {
-                $student = Student::find($studentId);
+                $student = Student::with('user')->find($studentId);
+                if (!$student) continue;
+
+                // Update kelas dan set status aktif agar tampil di backoffice dan PWA
                 $student->update([
                     'classroom_id' => $data['new_classroom_id'],
+                    'status' => Student::STATUS_ACTIVE,
                 ]);
 
-                // Create history of student classroom
+                // Buat riwayat kelas siswa
                 StudentClassroomHistory::create([
                     'student_id' => $studentId,
                     'classroom_id' => $data['new_classroom_id'],
                     'academic_year_id' => $data['academic_year_id'],
                 ]);
+
+                // Generate tagihan baru berdasarkan tarif kelas baru
+                foreach ($paymentRates as $paymentRate) {
+                    // Filter berdasarkan gender jika ada
+                    if ($paymentRate->gender) {
+                        $allowedGenders = array_map('trim', explode(',', $paymentRate->gender));
+                        if (!in_array($student->gender, $allowedGenders)) {
+                            continue;
+                        }
+                    }
+
+                    // Filter berdasarkan status jamaah wali jika ada
+                    if ($paymentRate->jamaah_status && $student->user) {
+                        $allowedStatuses = array_map('trim', explode(',', $paymentRate->jamaah_status));
+                        if (!in_array($student->user->jamaah_status, $allowedStatuses)) {
+                            continue;
+                        }
+                    }
+
+                    // Tambahkan tagihan untuk setiap item pembayaran
+                    foreach ($paymentRate->paymentRateItems as $item) {
+                        if ($item->amount <= 0) continue;
+
+                        $billsToInsert[] = [
+                            'id'                   => \Illuminate\Support\Str::uuid()->toString(),
+                            'bill_type_id'         => $paymentRate->bill_type_id,
+                            'student_id'           => $student->id,
+                            'classroom_id'         => $data['new_classroom_id'],
+                            'academic_year_id'     => $data['academic_year_id'],
+                            'month'                => $item->month,
+                            'amount'               => $item->amount,
+                            'paid_amount'          => 0,
+                            'status'               => Bill::STATUS_UNPAID,
+                            'year'                 => $item->year,
+                            'payment_rate_item_id' => $item->id,
+                            'created_at'           => $timestamp,
+                            'updated_at'           => $timestamp,
+                        ];
+                    }
+                }
+            }
+
+            // Bulk Insert tagihan untuk performa optimal
+            if (!empty($billsToInsert)) {
+                foreach (array_chunk($billsToInsert, 500) as $chunk) {
+                    Bill::insert($chunk);
+                }
             }
 
             // Commit the transaction
