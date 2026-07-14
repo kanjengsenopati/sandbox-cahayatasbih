@@ -1,10 +1,19 @@
 @php
 $user = \App\Models\User::find(@$value ?? 0);
+$statusText = '';
+if ($user) {
+    $statusText = match($user->jamaah_status) {
+        'JAMAAH' => 'Jamaah',
+        'NON_JAMAAH' => 'Non Jamaah',
+        'MUKIMIN' => 'Mukimin',
+        default => 'Non Jamaah'
+    };
+}
 @endphp
 <select name="user_id" id="user_id" data-control="select2" class="form-select form-select-solid {{$class ?? ''}}" {{
     $attributes }}>
     @if($user)
-    <option selected value="{{@$user->id}}">{{$user->name}}</option>
+    <option selected value="{{@$user->id}}">{{$user->name}} [{{$statusText}}]</option>
     @endif
 </select>
 
@@ -27,8 +36,14 @@ $user = \App\Models\User::find(@$value ?? 0);
             processResults: function (data) {
                 return {
                 results:  $.map(data, function (item) {
+                        var statusText = 'Non Jamaah';
+                        if (item.jamaah_status === 'JAMAAH') {
+                            statusText = 'Jamaah';
+                        } else if (item.jamaah_status === 'MUKIMIN') {
+                            statusText = 'Mukimin';
+                        }
                         return {
-                            text: item.name,
+                            text: item.name + ' [' + statusText + ']',
                             id: item.id
                         }
                     })

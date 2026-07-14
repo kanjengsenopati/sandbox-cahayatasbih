@@ -154,7 +154,29 @@
                                                 <tr>
                                                     <td class="grey" width="20%">Wali Siswa</td>
                                                     <td></td>
-                                                    <td>{{ $student->user->name ?? 'Belum diatur' }}</td>
+                                                    <td>
+                                                        {{ $student->user->name ?? 'Belum diatur' }}
+                                                        @if($student->user && $student->user->jamaah_status)
+                                                            @php
+                                                                $status = $student->user->jamaah_status;
+                                                                $badgeClass = match($status) {
+                                                                    'JAMAAH' => 'badge-light-success',
+                                                                    'NON_JAMAAH' => 'badge-light-danger',
+                                                                    'MUKIMIN' => 'badge-light-primary',
+                                                                    default => 'badge-light-danger'
+                                                                };
+                                                                $statusLabel = match($status) {
+                                                                    'JAMAAH' => 'Jamaah',
+                                                                    'NON_JAMAAH' => 'Non Jamaah',
+                                                                    'MUKIMIN' => 'Mukimin',
+                                                                    default => 'Non Jamaah'
+                                                                };
+                                                            @endphp
+                                                            <span class="badge {{ $badgeClass }} fw-bolder ms-2 px-2 py-1">
+                                                                {{ $statusLabel }}
+                                                            </span>
+                                                        @endif
+                                                    </td>
                                                 </tr>
                                                 <tr>
                                                     <td class="grey" width="20%">UPT</td>
