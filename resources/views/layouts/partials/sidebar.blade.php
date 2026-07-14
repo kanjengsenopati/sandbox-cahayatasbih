@@ -42,6 +42,99 @@
             <!--begin::Menu-->
             <div class="menu menu-column menu-title-gray-800 menu-state-title-primary menu-state-icon-primary menu-state-bullet-primary menu-arrow-gray-500"
                 id="#kt_aside_menu" data-kt-menu="true">
+@php
+    $dbMenus = \App\Models\MenuNavigation::with(['subMenuNavigation' => function($q) {
+        $q->where('is_active', true)->orderBy('order');
+    }])->where('is_active', true)->orderBy('order')->get();
+    
+    $isUrlActive = function($url) {
+        $parsed = parse_url($url);
+        $path = ltrim($parsed['path'] ?? '', '/');
+        if (!request()->is($path . '*')) {
+            return false;
+        }
+        if (isset($parsed['query'])) {
+            parse_str($parsed['query'], $queryArr);
+            foreach ($queryArr as $key => $val) {
+                if (request()->query($key) !== $val) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    };
+@endphp
+
+@if($dbMenus->count() > 0)
+    <div class="menu-item">
+        <div class="menu-content pb-2">
+            <span class="menu-section text-muted text-uppercase fs-8 ls-1">Menu Utama</span>
+        </div>
+    </div>
+    @foreach($dbMenus as $menu)
+        @php
+            $permissions = array_filter(explode(',', $menu->permission ?? ''));
+            $hasAccess = empty($permissions) || auth()->user()->hasAnyPermission($permissions);
+        @endphp
+        
+        @if($hasAccess)
+            @if($menu->url)
+                <div class="menu-item">
+                    <a class="menu-link {{ $isUrlActive($menu->url) ? ' active' : '' }}"
+                        href="{{ $menu->url }}">
+                        <span class="menu-icon">
+                            <i class="{{ $menu->icon ?? 'fa-solid fa-circle' }}" style="color: #ffffff;"></i>
+                        </span>
+                        <span class="menu-title">{{ $menu->name }}</span>
+                    </a>
+                </div>
+            @else
+                @php
+                    $accessibleSubmenus = $menu->subMenuNavigation->filter(function($sub) {
+                        if ($sub->url === route('menu-navigation.index') || str_contains($sub->url, 'menu-navigation')) {
+                            return auth()->user()->hasRole('Super Admin');
+                        }
+                        $subPerms = array_filter(explode(',', $sub->permission ?? ''));
+                        return empty($subPerms) || auth()->user()->hasAnyPermission($subPerms);
+                    });
+                    
+                    $isOpen = false;
+                    foreach ($accessibleSubmenus as $sub) {
+                        if ($isUrlActive($sub->url)) {
+                            $isOpen = true;
+                            break;
+                        }
+                    }
+                @endphp
+                
+                @if($accessibleSubmenus->count() > 0)
+                    <div data-kt-menu-trigger="click" class="menu-item menu-accordion {{ $isOpen ? 'show' : '' }}">
+                        <span class="menu-link">
+                            <span class="menu-icon">
+                                <i class="{{ $menu->icon ?? 'fa-solid fa-folder' }}" style="color: #ffffff;"></i>
+                            </span>
+                            <span class="menu-title">{{ $menu->name }}</span>
+                            <span class="menu-arrow"></span>
+                        </span>
+                        <div class="menu-sub menu-sub-accordion menu-active-bg">
+                            @foreach($accessibleSubmenus as $sub)
+                                <div class="menu-item">
+                                    <a class="menu-link {{ $isUrlActive($sub->url) ? ' active' : '' }}"
+                                        href="{{ $sub->url }}">
+                                        <span class="menu-bullet">
+                                            <span class="bullet bullet-dot"></span>
+                                        </span>
+                                        <span class="menu-title">{{ $sub->name }}</span>
+                                    </a>
+                                </div>
+                            @endforeach
+                        </div>
+                    </div>
+                @endif
+            @endif
+        @endif
+    @endforeach
+@else
                 <div class="menu-item">
                     <div class="menu-content pb-2">
                         <span class="menu-section text-muted text-uppercase fs-8 ls-1">Menu Utama</span>
@@ -81,7 +174,7 @@
                 </div>
                 @endcan -->
 
-                @canany(['Manage Outlet', 'Manage Barang', 'Manage Pos Kasir', 'Manage Laporan Pos Kasir', 'Manage Laporan Pos Multi Outlet', 'Manage Laporan Rugi Laba', 'Manage Arus Kas', 'Manage Shift', 'Manage Laporan Presensi', 'Manage Payroll', 'Manage Biometric'])
+                @canany(['Manage Outlet', 'Manage Barang', 'Manage Pos Kasir', 'Manage Laporan Pos Kasir', 'Manage Laporan Pos Multi Outlet', 'Manage Laporan Rugi Laba', 'Manage Karyawan', 'Manage Shift', 'Manage Laporan Presensi', 'Manage Biometric'])
                 <div data-kt-menu-trigger="click" class="menu-item menu-accordion {{ ((request()->routeIs(['outlet.*', 'item.*', 'category-item.*', 'stock-history.*', 'order-item.*', 'pos-transaction.*', 'report-pos.*', 'report-profit-loss.*', 'working-shift.*', 'report-attendance.*', 'payroll.*', 'karyawan.*']) && request('mode') === 'outlet') || request()->routeIs('biometric-mapping.kiosk')) ? 'show' : '' }}">
                     <span class="menu-link">
                         <span class="menu-icon">
@@ -127,7 +220,7 @@
                         </div>
                         @endcanany
  
-                        @canany(['Manage Arus Kas', 'Manage Laporan Pos Multi Outlet', 'Manage Laporan Rugi Laba'])
+                        @canany(['Manage Laporan Pos Multi Outlet', 'Manage Laporan Rugi Laba'])
                         <div class="menu-item">
                             <a class="menu-link {{ (request()->routeIs('report-profit-loss.*') && request('mode') === 'outlet') ? ' active' : '' }}"
                                 href="{{ route('report-profit-loss.index', ['mode' => 'outlet']) }}">
@@ -190,10 +283,10 @@
                 </div>
                 @endcanany
 
-                @canany(['permission', 'Manage Role', 'Manage Admin', 'Manage Informasi', 'Manage Metode Pembayaran', 'Manage Menu Aplikasi', 'Manage Kontak Bantuan', 'Manage Bank', 'Manage Pengaturan Aplikasi', 'Item Bayar', 'Manage Item Bayar', 'Manage Jenis Bayar', 'Manage Petugas', 'app-information', 'Manage Kartu Santri', 'Manage Kartu Ujian'])
+                @if(auth()->user()->hasRole('Super Admin') || auth()->user()->hasAnyPermission(['permission', 'Manage Role', 'Manage Admin', 'Manage Informasi', 'Manage Metode Pembayaran', 'Manage Menu Aplikasi', 'Manage Kontak Bantuan', 'Manage Bank', 'Manage Pengaturan Aplikasi', 'Item Bayar', 'Manage Item Bayar', 'Manage Jenis Bayar', 'Manage Petugas', 'app-information', 'Manage Kartu Santri', 'Manage Kartu Ujian']))
                 <div data-kt-menu-trigger="click" class="menu-item menu-accordion {{ request()->routeIs(['permission.*', 'role.*', 'information-category.*',
                     'information.*', 'payment-method.*', 'application-setting.*', 'student-card-setting.*', 'application-menu.*', 'help.*',
-                    'app-information.*', 'bill-item.*', 'bill-type.*', 'admin.*', 'officer.*', 'admin.audit']) ? 'show' : '' }}">
+                    'app-information.*', 'bill-item.*', 'bill-type.*', 'admin.*', 'officer.*', 'admin.audit', 'menu-navigation.*', 'submenu-navigation.*']) ? 'show' : '' }}">
                     <span class="menu-link ">
                         <span class="menu-icon">
                             <i class="fa-solid fa-cog" style="color: #ffffff;"></i>
@@ -320,9 +413,22 @@
                             </a>
                         </div>
                         @endcan
+ 
+                        {{-- Submenu: Menu Navigasi (Hanya untuk Super Admin) --}}
+                        @if(auth()->user()->hasRole('Super Admin'))
+                        <div class="menu-item ">
+                            <a class="menu-link {{ request()->routeIs('menu-navigation.*') ? ' active' : '' }}"
+                                href="{{ route('menu-navigation.index') }}">
+                                <span class="menu-bullet">
+                                    <i class="fa-solid fa-compass text-white/80 fs-7"></i>
+                                </span>
+                                <span class="menu-title">Menu Navigasi</span>
+                            </a>
+                        </div>
+                        @endif
                     </div>
                 </div>
-                @endcanany
+                @endif
 
                 @canany(['Manage Wali Santri', 'Manage Santri', 'Manage PPDB', 'Manage Kategori Arus Kas'])
                 <div data-kt-menu-trigger="click" class="menu-item menu-accordion {{ (
@@ -750,6 +856,7 @@
                 </div>
                 @endif
                 @endcanany
+                @endif
             </div>
             <!--end::Menu-->
         </div>

@@ -24,7 +24,9 @@ class MenuNavigationRequest extends FormRequest
         return [
             'name' => ['required', 'string'],
             'icon' => ['nullable', 'string'],
+            'url' => ['nullable', 'string'],
             'order' => ['required', 'integer'],
+            'permission' => ['nullable', 'string'],
         ];
     }
 }

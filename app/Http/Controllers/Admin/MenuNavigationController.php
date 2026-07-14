@@ -11,6 +11,16 @@ use App\Models\SubMenuNavigation;
 
 class MenuNavigationController extends Controller
 {
+    public function __construct()
+    {
+        $this->middleware(function ($request, $next) {
+            if (!auth()->user() || !auth()->user()->hasRole('Super Admin')) {
+                return redirect('/dashboard')->with('error', 'Maaf, hanya Super Admin yang dapat mengakses halaman tersebut.');
+            }
+            return $next($request);
+        });
+    }
+
     /**
      * Display a listing of the resource.
      */

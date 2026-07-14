@@ -14,7 +14,8 @@ class MenuNavigation extends Model
     protected $fillable = [
         'name',
         'icon',
-        'order', // Add this line (1/2)
+        'url',
+        'order',
         'is_active',
         'permission',
     ];

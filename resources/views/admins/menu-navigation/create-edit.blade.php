@@ -112,6 +112,19 @@
                                 </div>
                                 <div class="fv-row mb-7">
                                     <!--begin::Label-->
+                                    <label class="fs-6 fw-bold form-label mt-3" for="url">
+                                        <span>Url Menu (Kosongkan jika dropdown memiliki submenu)</span>
+                                        <i class="fas fa-exclamation-circle ms-1 fs-7" data-bs-toggle="tooltip"
+                                            title="Masukkan Url Menu (opsional)"></i>
+                                    </label>
+                                    <!--end::Label-->
+                                    <!--begin::Input-->
+                                    <input type="text" class="form-control form-control-solid" name="url" id="url"
+                                        placeholder="Contoh: /dashboard" value="{{ @$menuNavigation->url }}" />
+                                    <!--end::Input-->
+                                </div>
+                                <div class="fv-row mb-7">
+                                    <!--begin::Label-->
                                     <label class="fs-6 fw-bold form-label mt-3" for="order">
                                         <span class="required">Urutan</span>
                                         <i class="fas fa-exclamation-circle ms-1 fs-7" data-bs-toggle="tooltip"
@@ -126,7 +139,7 @@
                                 <div class="fv-row mb-7">
                                     <!--begin::Label-->
                                     <label class="fs-6 fw-bold form-label mt-3" for="permission">
-                                        <span class="required">Permission</span>
+                                        <span>Permission</span>
                                         <i class="fas fa-exclamation-circle ms-1 fs-7" data-bs-toggle="tooltip"
                                             title="Masukkan Permission"></i>
                                     </label>
@@ -134,7 +147,7 @@
                                     <!--begin::Input-->
                                     <input type="text" class="form-control form-control-solid" name="permission"
                                         id="permission" placeholder="Masukkan Permission"
-                                        value="{{ @$menuNavigation->permission }}" required />
+                                        value="{{ @$menuNavigation->permission }}" />
                                     <!--end::Input-->
                                 </div>
                                 <!--end::Input group-->
