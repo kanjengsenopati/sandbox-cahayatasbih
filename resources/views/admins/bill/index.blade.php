@@ -745,6 +745,11 @@
     let displayText = (item.nis ? item.nis + ' - ' : '') +
     item.name + ' - ' +
     (item.classroom?.name ? item.classroom.name : '');
+    
+    if (item.status === 'DROPPED_OUT') {
+        displayText += ' (KELUAR - Ada Tunggakan)';
+    }
+    
     return {
     text: displayText,
     id: item.id
@@ -753,7 +758,25 @@
     
     $('#student_id').empty().select2({
     data: results,
-    cache: true
+    cache: true,
+    templateResult: function (state) {
+        if (!state.id) {
+            return state.text;
+        }
+        if (state.text.indexOf('(KELUAR') !== -1) {
+            return $('<span class="text-danger fw-bold">' + state.text + '</span>');
+        }
+        return state.text;
+    },
+    templateSelection: function (state) {
+        if (!state.id) {
+            return state.text;
+        }
+        if (state.text.indexOf('(KELUAR') !== -1) {
+            return $('<span class="text-danger fw-bold">' + state.text + '</span>');
+        }
+        return state.text;
+    }
     });
     },
     cache: true

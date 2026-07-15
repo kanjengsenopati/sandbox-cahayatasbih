@@ -85,6 +85,9 @@ class PaymentRateService
     {
         foreach ($classrooms as $classroom) {
             foreach ($classroom->students as $student) {
+                if ($student->status === \App\Models\Student::STATUS_DROPPED_OUT) {
+                    continue;
+                }
                 // Filter by gender if set
                 if ($paymentRate->gender && !in_array($student->gender, explode(',', $paymentRate->gender))) {
                     continue;
@@ -136,6 +139,9 @@ class PaymentRateService
 
         foreach ($classrooms as $classroom) {
             foreach ($classroom->students as $student) {
+                if ($student->status === \App\Models\Student::STATUS_DROPPED_OUT) {
+                    continue;
+                }
                 // Filter by gender if set
                 if ($paymentRate->gender && !in_array($student->gender, explode(',', $paymentRate->gender))) {
                     continue;

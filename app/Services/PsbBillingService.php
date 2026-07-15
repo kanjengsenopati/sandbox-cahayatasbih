@@ -83,6 +83,11 @@ class PsbBillingService
      */
     public function generateBillsForStudent(Student $student, PpdbTrack $track): void
     {
+        if ($student->status === Student::STATUS_DROPPED_OUT) {
+            Log::info("Skipping bill generation for student {$student->id} because their status is Keluar (DROPPED_OUT).");
+            return;
+        }
+
         if (!$track->installment_plan || empty($track->installment_plan)) {
             return;
         }

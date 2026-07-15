@@ -180,6 +180,10 @@ class Student extends Model
                 $student->asrama_host_id = null;
             }
         });
+
+        static::deleted(function ($student) {
+            $student->bills()->where('status', \App\Models\Bill::STATUS_UNPAID)->delete();
+        });
     }
 
     private static function generateRandomNumber()

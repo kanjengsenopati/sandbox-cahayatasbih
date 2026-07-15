@@ -47,7 +47,14 @@ class Select2Controller extends Controller
     public function student($request)
     {
         return Student::hasSchoolPlace()
-            ->with('classroom.school')->whereRaw('LOWER(name) like ?', ['%' . strtolower($request->search) . '%'])
+            ->with('classroom.school')
+            ->where(function ($q) {
+                $q->where('status', '!=', Student::STATUS_DROPPED_OUT)
+                  ->orWhereHas('bills', function ($bQ) {
+                      $bQ->where('status', \App\Models\Bill::STATUS_UNPAID);
+                  });
+            })
+            ->whereRaw('LOWER(name) like ?', ['%' . strtolower($request->search) . '%'])
             ->hasSchool()
             ->take(30)
             ->get();
@@ -121,6 +128,12 @@ class Select2Controller extends Controller
         return Student::with('classroom.school')
             ->whereHas('classroom', function ($query) use ($request) {
                 $query->where('school_id', $request->school_id);
+            })
+            ->where(function ($q) {
+                $q->where('status', '!=', Student::STATUS_DROPPED_OUT)
+                  ->orWhereHas('bills', function ($bQ) {
+                      $bQ->where('status', \App\Models\Bill::STATUS_UNPAID);
+                  });
             })
             ->whereRaw('LOWER(name) like ?', ['%' . strtolower($request->search) . '%'])
             ->hasSchool()
