@@ -382,6 +382,83 @@
         padding-top: 10px !important;
         padding-bottom: 10px !important;
     }
+
+    /* --- Custom DataTables Loading/Processing Redesign --- */
+    div.dataTables_wrapper {
+        position: relative;
+    }
+
+    div.dataTables_wrapper div.dataTables_processing {
+        position: absolute !important;
+        top: 0 !important;
+        left: 0 !important;
+        width: 100% !important;
+        height: 100% !important;
+        margin: 0 !important;
+        padding: 20px !important;
+        background-color: rgba(248, 250, 252, 0.45) !important;
+        backdrop-filter: blur(4px) !important;
+        -webkit-backdrop-filter: blur(4px) !important;
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: center !important;
+        justify-content: center !important;
+        z-index: 1050 !important;
+        border: none !important;
+        box-shadow: none !important;
+        isolation: isolate !important;
+
+        /* Typography matching PakRT system */
+        color: #1e293b !important;
+        font-family: 'Inter', sans-serif !important;
+        font-size: 14px !important;
+        font-weight: 500 !important;
+        gap: 12px !important;
+        text-align: center !important;
+
+        /* Animation transition */
+        opacity: 0;
+        animation: fadeInProcessing 0.2s ease-in-out forwards;
+    }
+
+    @keyframes fadeInProcessing {
+        from { opacity: 0; }
+        to { opacity: 1; }
+    }
+
+    /* Modern Animated Spinner (Accent Primary: Blue-600) */
+    div.dataTables_wrapper div.dataTables_processing::before {
+        content: "" !important;
+        display: block !important;
+        width: 32px !important;
+        height: 32px !important;
+        border: 3px solid rgba(37, 99, 235, 0.15) !important;
+        border-top-color: #2563eb !important;
+        border-radius: 50% !important;
+        animation: dt-spin 0.8s linear infinite !important;
+        margin: 0 auto !important;
+        position: relative !important;
+        z-index: 2 !important;
+    }
+
+    @keyframes dt-spin {
+        to { transform: rotate(360deg); }
+    }
+
+    /* Premium Card Container (Mutlak 24px radius, Surface Elevation Shadow) */
+    div.dataTables_wrapper div.dataTables_processing::after {
+        content: "" !important;
+        position: absolute !important;
+        top: 50% !important;
+        left: 50% !important;
+        transform: translate(-50%, -50%) !important;
+        width: 290px !important;
+        height: 125px !important;
+        background: #ffffff !important;
+        border-radius: 24px !important;
+        box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08) !important;
+        z-index: -1 !important;
+    }
 </style>
 
 @stack('css')

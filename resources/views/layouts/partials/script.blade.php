@@ -17,6 +17,15 @@
 <livewire:scripts />
 @stack('js')
 <script>
+    // Set DataTables global defaults
+    if (typeof $.fn.dataTable !== 'undefined') {
+        $.extend(true, $.fn.dataTable.defaults, {
+            language: {
+                processing: "Sedang memproses data, Silahkan ditunggu..."
+            }
+        });
+    }
+
     // Translate input title to title_en and description to description_en when input title and description
     const translate = (input, output) => {
         if ($(input).val() != '') {
