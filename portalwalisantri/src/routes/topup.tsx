@@ -1133,7 +1133,7 @@ function ProofUploader({
             setDrag(false);
             handleFile(e.dataTransfer.files?.[0]);
           }}
-          className={`rounded-3xl border-2 border-dashed p-5 transition ${
+          className={`rounded-3xl border-2 border-dashed p-4 transition ${
             drag
               ? "border-primary bg-primary/5 scale-[1.01]"
               : error
@@ -1141,22 +1141,7 @@ function ProofUploader({
               : "border-border bg-card"
           }`}
         >
-          <div className="flex flex-col items-center text-center">
-            <div
-              className="w-14 h-14 rounded-2xl flex items-center justify-center text-primary-foreground shadow-[var(--shadow-glow)]"
-              style={{ background: "var(--gradient-card)" }}
-            >
-              <FileImage size={24} />
-            </div>
-            <p className="mt-3 text-sm font-bold text-foreground">
-              Tarik & lepas bukti di sini
-            </p>
-            <p className="text-[11px] text-muted-foreground mt-0.5">
-              atau pilih sumber di bawah · JPG / PNG / WEBP · maks 20 MB (Auto-compress s.d 300KB)
-            </p>
-          </div>
-
-          <div className="mt-4 grid grid-cols-2 gap-2.5">
+          <div className="grid grid-cols-2 gap-2.5">
             <button
               onClick={() => cameraRef.current?.click()}
               className="flex flex-col items-center gap-1 py-3 rounded-2xl bg-secondary border border-border active:scale-95 transition"
