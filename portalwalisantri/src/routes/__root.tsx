@@ -153,6 +153,7 @@ function RootComponent() {
       try {
         // Dynamic import to avoid breaking if Firebase variables are not set yet or unsupported
         import("@/lib/firebase").then(({ messaging }) => {
+          if (!messaging) return;
           import("firebase/messaging").then(({ onMessage }) => {
             onMessage(messaging, (payload) => {
               const toasterEnabled = localStorage.getItem("ct_toaster_enabled") !== "false";

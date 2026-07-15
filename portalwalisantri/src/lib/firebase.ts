@@ -17,12 +17,27 @@ const getFirebaseConfig = () => {
 
 const firebaseConfig = getFirebaseConfig();
 
-// Inisialisasi Firebase App
-const app = initializeApp(firebaseConfig);
-export const messaging = getMessaging(app);
+// Inisialisasi Firebase App secara aman
+export let app: any = null;
+export let messaging: any = null;
+
+if (firebaseConfig.apiKey && firebaseConfig.apiKey.trim() !== "") {
+  try {
+    app = initializeApp(firebaseConfig);
+    messaging = getMessaging(app);
+  } catch (error) {
+    console.error("Gagal menginisialisasi Firebase SDK:", error);
+  }
+} else {
+  console.warn("Firebase tidak diinisialisasi: API Key tidak tersedia atau kosong.");
+}
 
 // Fungsi untuk mendapatkan Token FCM Browser PWA
 export const getDeviceToken = async () => {
+  if (!messaging) {
+    console.warn("Token FCM tidak dapat diambil karena Firebase Messaging tidak aktif.");
+    return null;
+  }
   try {
     const isBrowser = typeof window !== 'undefined';
     const win = isBrowser ? (window as any) : null;

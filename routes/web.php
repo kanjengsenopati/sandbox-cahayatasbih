@@ -575,6 +575,31 @@ Route::get('pwa-asset', function (\Illuminate\Http\Request $request) {
     abort(404);
 })->name('pwa-asset');
 
+// Route dependency Workbox yang diimpor oleh Service Worker sw.js
+Route::get('workbox-{hash}.js', function ($hash) {
+    $path = base_path("portalwalisantri/dist/client/workbox-{$hash}.js");
+    if (file_exists($path)) {
+        return response()->file($path, [
+            'Content-Type' => 'application/javascript',
+            'Cache-Control' => 'public, max-age=31536000',
+            'Service-Worker-Allowed' => '/'
+        ]);
+    }
+    abort(404);
+})->where('hash', '[a-zA-Z0-9]+');
+
+// Route untuk manifest.webmanifest yang diminta relatif terhadap Service Worker scope
+Route::get('manifest.webmanifest', function () {
+    $path = base_path("portalwalisantri/dist/client/manifest.webmanifest");
+    if (file_exists($path)) {
+        return response()->file($path, [
+            'Content-Type' => 'application/manifest+json',
+            'Cache-Control' => 'public, max-age=31536000'
+        ]);
+    }
+    abort(404);
+});
+
 Route::get('file-asset', function (\Illuminate\Http\Request $request) {
     $p = $request->query('p');
     if (!$p) abort(404);
