@@ -746,7 +746,8 @@
                                     return state.text;
                                 }
                                 if (state.text.indexOf('(KELUAR') !== -1) {
-                                    return $('<span class="text-danger fw-bold">' + state.text + '</span>');
+                                    let cleanText = state.text.replace(' (KELUAR - Ada Tunggakan)', '');
+                                    return $('<span>' + cleanText + ' <span class="badge bg-danger text-white ms-2" style="font-size: 10px; padding: 3px 6px; border-radius: 4px; font-weight: bold; display: inline-block; vertical-align: middle; line-height: 1;">KELUAR - Ada Tunggakan</span></span>');
                                 }
                                 return state.text;
                             },
@@ -755,7 +756,8 @@
                                     return state.text;
                                 }
                                 if (state.text.indexOf('(KELUAR') !== -1) {
-                                    return $('<span class="text-danger fw-bold">' + state.text + '</span>');
+                                    let cleanText = state.text.replace(' (KELUAR - Ada Tunggakan)', '');
+                                    return $('<span>' + cleanText + ' <span class="badge bg-danger text-white ms-2" style="font-size: 10px; padding: 3px 6px; border-radius: 4px; font-weight: bold; display: inline-block; vertical-align: middle; line-height: 1;">KELUAR - Ada Tunggakan</span></span>');
                                 }
                                 return state.text;
                             }
