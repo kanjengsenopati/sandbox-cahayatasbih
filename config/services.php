@@ -31,4 +31,14 @@ return [
         'region' => env('AWS_DEFAULT_REGION', 'us-east-1'),
     ],
 
+    'firebase' => [
+        'api_key' => env('VITE_FIREBASE_API_KEY'),
+        'auth_domain' => env('VITE_FIREBASE_AUTH_DOMAIN'),
+        'project_id' => env('VITE_FIREBASE_PROJECT_ID'),
+        'storage_bucket' => env('VITE_FIREBASE_STORAGE_BUCKET'),
+        'messaging_sender_id' => env('VITE_FIREBASE_MESSAGING_SENDER_ID'),
+        'app_id' => env('VITE_FIREBASE_APP_ID'),
+        'vapid_public_key' => env('VITE_FIREBASE_VAPID_PUBLIC_KEY'),
+    ],
+
 ];

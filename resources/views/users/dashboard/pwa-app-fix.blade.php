@@ -61,6 +61,18 @@
 
 <!-- DEPLOYMENT VERSION v14: {{ date('Y-m-d H:i:s') }} | manifest={{ $manifestPath ? 'YES' : 'NO' }} | bypass={{ $useBypass ? 'YES' : 'NO' }} | version={{ $manifestVersion }} -->
 
+<script>
+    window.firebaseConfig = {
+        apiKey: "{{ config('services.firebase.api_key') }}",
+        authDomain: "{{ config('services.firebase.auth_domain') }}",
+        projectId: "{{ config('services.firebase.project_id') }}",
+        storageBucket: "{{ config('services.firebase.storage_bucket') }}",
+        messagingSenderId: "{{ config('services.firebase.messaging_sender_id') }}",
+        appId: "{{ config('services.firebase.app_id') }}",
+        vapidKey: "{{ config('services.firebase.vapid_public_key') }}"
+    };
+</script>
+
 @if($entry)
     @php
         $cssFile = $entry['css'][0] ?? null;
