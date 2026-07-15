@@ -47,7 +47,7 @@ class BillController extends Controller
         $academicYears = \App\Models\AcademicYear::orderBy('start_year', 'desc')->get();
 
         if ($studentId = request()->student_id) {
-            $student = Student::with(['classroom.school', 'classroom.academicYear', 'classroomHistories.classroom'])->findOrFail($studentId);
+            $student = Student::with(['classroom.school', 'classroomHistories.classroom'])->findOrFail($studentId);
             $academicYearId = request()->academic_year_id;
 
             $billMonth = $this->getBills($studentId, BillType::TYPE_MONTHLY, $academicYearId);
