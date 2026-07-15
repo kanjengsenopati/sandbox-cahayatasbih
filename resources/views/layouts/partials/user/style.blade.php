@@ -386,7 +386,7 @@
     /* --- Custom DataTables Loading/Processing Redesign --- */
     div.dataTables_wrapper {
         position: relative;
-        min-height: 150px; /* Prevents layout collapse and gives space for the loading card */
+        min-height: 200px; /* Prevents layout collapse and gives space for the loading card */
     }
 
     /* Glassmorphism backdrop overlay on the wrapper */
@@ -411,28 +411,30 @@
         to { opacity: 1; }
     }
 
-    /* Elevated White Card for the loading box */
+    /* Elevated White/Purple Card for the loading box */
     div.dataTables_wrapper div.dataTables_processing {
         display: none;
         position: absolute !important;
         top: 50% !important;
         left: 50% !important;
         transform: translate(-50%, -50%) !important;
-        width: 290px !important;
-        height: 125px !important;
+        width: 540px !important;
+        max-width: 90% !important;
+        height: auto !important;
+        min-height: 160px !important;
         margin: 0 !important;
-        padding: 20px !important;
-        background: #ffffff !important;
+        padding: 24px 32px !important;
+        background: linear-gradient(135deg, #FAF5FF 0%, #F3E8FF 100%) !important; /* Smooth Purple */
+        border: 1px solid rgba(138, 99, 210, 0.2) !important; /* Smooth Purple Border */
         border-radius: 24px !important; /* Mutlak 24px radius */
-        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08) !important; /* Surface Elevation */
+        box-shadow: 0 10px 40px rgba(138, 99, 210, 0.08) !important;
         z-index: 1050 !important;
-        border: none !important;
 
-        /* Typography matching PakRT system */
-        color: #1e293b !important; /* Slate-800 */
+        /* Typography matching branding */
+        color: #5A306B !important; /* Deep Purple text */
         font-family: 'Inter', sans-serif !important;
-        font-size: 14px !important; /* Text.Body size */
-        font-weight: 500 !important;
+        font-size: 20px !important; /* 2x Larger text size */
+        font-weight: 600 !important;
         text-align: center !important;
         opacity: 0;
         transition: opacity 0.2s ease-in-out;
@@ -444,18 +446,18 @@
         flex-direction: column !important;
         align-items: center !important;
         justify-content: center !important;
-        gap: 12px !important;
+        gap: 16px !important;
         opacity: 1 !important;
     }
 
-    /* Modern Animated Spinner (Accent Primary: Blue-600) */
+    /* Modern Animated Spinner (Branding Primary: Purple #8a63d2) */
     div.dataTables_wrapper div.dataTables_processing::before {
         content: "" !important;
         display: block !important;
-        width: 32px !important;
-        height: 32px !important;
-        border: 3px solid rgba(37, 99, 235, 0.15) !important;
-        border-top-color: #2563eb !important;
+        width: 42px !important;
+        height: 42px !important;
+        border: 3.5px solid rgba(138, 99, 210, 0.15) !important;
+        border-top-color: #8a63d2 !important;
         border-radius: 50% !important;
         animation: dt-spin 0.8s linear infinite !important;
         margin: 0 auto !important;
