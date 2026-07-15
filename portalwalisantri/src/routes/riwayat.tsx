@@ -11,6 +11,7 @@ import {
   Coffee,
   ShoppingBag,
   ChevronDown,
+  ChevronRight,
   Calendar as CalendarIcon,
   X,
   Receipt,
