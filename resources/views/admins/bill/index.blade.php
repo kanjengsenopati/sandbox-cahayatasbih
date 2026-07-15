@@ -278,25 +278,15 @@
                                                     NIS/NISN/Nama
                                                 </label>
                                                 <div class="col-md-9">
-                                                    <div class="d-flex flex-column flex-md-row gap-3">
-                                                        <div class="flex-grow-1">
-                                                            <select name="student_id" id="student_id" class="form-select form-select-solid">
-                                                                @if(request('student_id') && isset($student))
-                                                                    <option value="{{ $student->id }}" selected>
-                                                                        {{ $student->nis ? $student->nis . ' - ' : '' }}{{ $student->name }} - {{ $student->classroom->name ?? '' }}
-                                                                    </option>
-                                                                @else
-                                                                    <option value="">Pilih Siswa</option>
-                                                                @endif
-                                                            </select>
-                                                        </div>
-                                                        <button id="btn-cari" class="btn btn-primary w-100 w-md-auto" type="submit">
-                                                            <span class="indicator-label" id="buttonText">Tampilkan</span>
-                                                            <span class="indicator-progress d-none">
-                                                                <span class="spinner-border spinner-border-sm align-middle ms-2"></span>
-                                                            </span>
-                                                        </button>
-                                                    </div>
+                                                    <select name="student_id" id="student_id" class="form-select form-select-solid">
+                                                        @if(request('student_id') && isset($student))
+                                                            <option value="{{ $student->id }}" selected>
+                                                                {{ $student->nis ? $student->nis . ' - ' : '' }}{{ $student->name }} - {{ $student->classroom->name ?? '' }}
+                                                            </option>
+                                                        @else
+                                                            <option value="">Pilih Siswa</option>
+                                                        @endif
+                                                    </select>
                                                 </div>
                                             </div>
                                         </form>
@@ -694,19 +684,6 @@
 @push('js')
 <script>
     $(document).ready(function () {
-        function changeButtonText(button) {
-            var buttonText = button.find('.indicator-label');
-            var indicatorProgress = button.find('.indicator-progress');
-
-            if (buttonText.text() === 'Cari') {
-                buttonText.text('Mencari...');
-                indicatorProgress.removeClass('d-none');
-            } else {
-                buttonText.text('Cari');
-                indicatorProgress.addClass('d-none');
-            }
-        }
-
         // on click modal-pay button to show modal and load data
         $(document).on('click', '.modal-pay', function () {
             var url = $(this).data('url');
@@ -721,76 +698,102 @@
                 }
             });
         });
-
-        
     });
 </script>
 <script>
     $(document).ready(function() {
-    // Function to fetch student data based on selected school
-    function fetchStudentData() {
-    var school_id = $('#school_id').val();
-    if (school_id) {
-    $.ajax({
-    url: "{{ route('select2') }}",
-    dataType: 'json',
-    delay: 300,
-    data: {
-    search: '', // Assuming you need a default search term
-    data_type: "STUDENT_BY_SCHOOL",
-    school_id: school_id
-    },
-    success: function (data) {
-    var results = $.map(data, function (item) {
-    let displayText = (item.nis ? item.nis + ' - ' : '') +
-    item.name + ' - ' +
-    (item.classroom?.name ? item.classroom.name : '');
-    
-    if (item.status === 'DROPPED_OUT') {
-        displayText += ' (KELUAR - Ada Tunggakan)';
-    }
-    
-    return {
-    text: displayText,
-    id: item.id
-    };
-    });
-    
-    $('#student_id').empty().select2({
-    data: results,
-    cache: true,
-    templateResult: function (state) {
-        if (!state.id) {
-            return state.text;
+        // Function to fetch student data based on selected school
+        function fetchStudentData(selectedId = null) {
+            var school_id = $('#school_id').val();
+            if (school_id) {
+                $.ajax({
+                    url: "{{ route('select2') }}",
+                    dataType: 'json',
+                    delay: 300,
+                    data: {
+                        search: '', // Assuming you need a default search term
+                        data_type: "STUDENT_BY_SCHOOL",
+                        school_id: school_id
+                    },
+                    success: function (data) {
+                        var results = $.map(data, function (item) {
+                            let displayText = (item.nis ? item.nis + ' - ' : '') +
+                                item.name + ' - ' +
+                                (item.classroom?.name ? item.classroom.name : '');
+                            
+                            if (item.status === 'DROPPED_OUT') {
+                                displayText += ' (KELUAR - Ada Tunggakan)';
+                            }
+                            
+                            return {
+                                text: displayText,
+                                id: item.id
+                            };
+                        });
+                        
+                        // Menambahkan opsi "Pilih Siswa" di bagian atas list
+                        results.unshift({ id: '', text: 'Pilih Siswa' });
+                        
+                        $('#student_id').empty().select2({
+                            data: results,
+                            cache: true,
+                            templateResult: function (state) {
+                                if (!state.id) {
+                                    return state.text;
+                                }
+                                if (state.text.indexOf('(KELUAR') !== -1) {
+                                    return $('<span class="text-danger fw-bold">' + state.text + '</span>');
+                                }
+                                return state.text;
+                            },
+                            templateSelection: function (state) {
+                                if (!state.id) {
+                                    return state.text;
+                                }
+                                if (state.text.indexOf('(KELUAR') !== -1) {
+                                    return $('<span class="text-danger fw-bold">' + state.text + '</span>');
+                                }
+                                return state.text;
+                            }
+                        });
+
+                        // Set nilai siswa terpilih jika ada di request
+                        if (selectedId) {
+                            $('#student_id').val(selectedId).trigger('change', [true]);
+                        }
+                    },
+                    cache: true
+                });
+            } else {
+                $('#student_id').empty();
+            }
         }
-        if (state.text.indexOf('(KELUAR') !== -1) {
-            return $('<span class="text-danger fw-bold">' + state.text + '</span>');
-        }
-        return state.text;
-    },
-    templateSelection: function (state) {
-        if (!state.id) {
-            return state.text;
-        }
-        if (state.text.indexOf('(KELUAR') !== -1) {
-            return $('<span class="text-danger fw-bold">' + state.text + '</span>');
-        }
-        return state.text;
-    }
-    });
-    },
-    cache: true
-    });
-    } else {
-    $('#student_id').empty();
-    }
-    }
-    
-    // Bind the change event to the fetchStudentData function
-    $('#school_id').change(fetchStudentData);
-    
-    // Call the function on page load
-    fetchStudentData();
+        
+        // Bind the change event to the fetchStudentData function
+        $('#school_id').change(function() {
+            fetchStudentData();
+        });
+        
+        // Auto-submit form ketika siswa dipilih
+        $('#student_id').change(function(e, isProgrammatic) {
+            if (isProgrammatic) {
+                return;
+            }
+            if ($(this).val()) {
+                $(this).closest('form').submit();
+            }
+        });
+
+        // Auto-submit form ketika tahun ajaran diubah dan siswa sudah dipilih
+        $('#academic_year_id').change(function() {
+            if ($('#student_id').val()) {
+                $(this).closest('form').submit();
+            }
+        });
+        
+        // Call the function on page load
+        var initialStudentId = "{{ request('student_id') }}";
+        fetchStudentData(initialStudentId);
     });
 </script>
 <script>
