@@ -389,41 +389,62 @@
         min-height: 150px; /* Prevents layout collapse and gives space for the loading card */
     }
 
-    div.dataTables_wrapper div.dataTables_processing {
-        display: none;
+    /* Glassmorphism backdrop overlay on the wrapper */
+    div.dataTables_wrapper.dt-processing-active::before {
+        content: "" !important;
         position: absolute !important;
         top: 0 !important;
         left: 0 !important;
         width: 100% !important;
         height: 100% !important;
-        margin: 0 !important;
-        padding: 20px !important;
         background-color: rgba(248, 250, 252, 0.45) !important;
         backdrop-filter: blur(4px) !important;
         -webkit-backdrop-filter: blur(4px) !important;
+        z-index: 1040 !important;
+        border-radius: 24px !important;
+        opacity: 0;
+        animation: fadeInOverlay 0.2s ease-in-out forwards;
+    }
+
+    @keyframes fadeInOverlay {
+        from { opacity: 0; }
+        to { opacity: 1; }
+    }
+
+    /* Elevated White Card for the loading box */
+    div.dataTables_wrapper div.dataTables_processing {
+        display: none;
+        position: absolute !important;
+        top: 50% !important;
+        left: 50% !important;
+        transform: translate(-50%, -50%) !important;
+        width: 290px !important;
+        height: 125px !important;
+        margin: 0 !important;
+        padding: 20px !important;
+        background: #ffffff !important;
+        border-radius: 24px !important; /* Mutlak 24px radius */
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08) !important; /* Surface Elevation */
         z-index: 1050 !important;
         border: none !important;
-        box-shadow: none !important;
-        isolation: isolate !important;
 
         /* Typography matching PakRT system */
-        color: #1e293b !important;
+        color: #1e293b !important; /* Slate-800 */
         font-family: 'Inter', sans-serif !important;
-        font-size: 14px !important;
+        font-size: 14px !important; /* Text.Body size */
         font-weight: 500 !important;
-        gap: 12px !important;
         text-align: center !important;
-
         opacity: 0;
         transition: opacity 0.2s ease-in-out;
     }
 
-    /* Active state (when display inline style is not none) */
-    div.dataTables_wrapper div.dataTables_processing:not([style*="display: none"]):not([style*="display:none"]) {
+    /* Active state (when wrapper is dt-processing-active) */
+    div.dataTables_wrapper.dt-processing-active div.dataTables_processing {
         display: flex !important;
         flex-direction: column !important;
         align-items: center !important;
         justify-content: center !important;
+        gap: 12px !important;
         opacity: 1 !important;
     }
 
@@ -439,26 +460,11 @@
         animation: dt-spin 0.8s linear infinite !important;
         margin: 0 auto !important;
         position: relative !important;
-        z-index: 2 !important;
+        z-index: 1052 !important;
     }
 
     @keyframes dt-spin {
         to { transform: rotate(360deg); }
-    }
-
-    /* Premium Card Container (Mutlak 24px radius, Surface Elevation Shadow) */
-    div.dataTables_wrapper div.dataTables_processing::after {
-        content: "" !important;
-        position: absolute !important;
-        top: 50% !important;
-        left: 50% !important;
-        transform: translate(-50%, -50%) !important;
-        width: 290px !important;
-        height: 125px !important;
-        background: #ffffff !important;
-        border-radius: 24px !important;
-        box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08) !important;
-        z-index: -1 !important;
     }
 </style>
 

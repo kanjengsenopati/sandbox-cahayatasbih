@@ -24,6 +24,16 @@
                 processing: "Sedang memproses data, Silahkan ditunggu..."
             }
         });
+
+        // Listen to processing event globally to toggle active class
+        $(document).on('processing.dt', function(e, settings, processing) {
+            var wrapper = $(e.target).closest('.dataTables_wrapper');
+            if (processing) {
+                wrapper.addClass('dt-processing-active');
+            } else {
+                wrapper.removeClass('dt-processing-active');
+            }
+        });
     }
 
     // Translate input title to title_en and description to description_en when input title and description
