@@ -91,7 +91,7 @@ jobs:
             npm run build
             echo "=== Building PWA ==="
             cd portalwalisantri && npm ci && npm run build && cd ..
-            php artisan migrate --force
-            php artisan optimize:clear
-            php artisan optimize
-            php artisan queue:restart
+            /www/server/php/84/bin/php artisan migrate --force
+            /www/server/php/84/bin/php artisan optimize:clear
+            /www/server/php/84/bin/php artisan optimize
+            /www/server/php/84/bin/php artisan queue:restart

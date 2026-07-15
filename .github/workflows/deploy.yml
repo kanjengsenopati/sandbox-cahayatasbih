@@ -47,24 +47,24 @@ jobs:
             cd portalwalisantri && npm ci && npm run build && cd ..
 
             echo "=== Running Migrations ==="
-            php artisan migrate --force
+            /www/server/php/84/bin/php artisan migrate --force
 
             echo "=== Running Seeders ==="
-            php artisan db:seed --class=KaryawanOutletSeeder --force
+            /www/server/php/84/bin/php artisan db:seed --class=KaryawanOutletSeeder --force
 
             echo "=== Creating Storage Symlink ==="
-            php artisan storage:link || echo "Storage link may already exist"
+            /www/server/php/84/bin/php artisan storage:link || echo "Storage link may already exist"
 
             echo "=== Optimizing & Caching Laravel ==="
-            php artisan config:cache
-            php artisan route:cache
-            php artisan view:cache
+            /www/server/php/84/bin/php artisan config:cache
+            /www/server/php/84/bin/php artisan route:cache
+            /www/server/php/84/bin/php artisan view:cache
 
             echo "=== Running Audit ==="
-            php artisan app:audit || echo "Audit failed"
+            /www/server/php/84/bin/php artisan app:audit || echo "Audit failed"
 
             echo "=== Running Diagnostics ==="
-            php diagnose_perwalian.php || echo "Diagnostic failed"
+            /www/server/php/84/bin/php diagnose_perwalian.php || echo "Diagnostic failed"
 
             echo "=== Fixing Permissions ==="
             chown -R www:www $DEPLOY_PATH || echo "Failed to chown"
