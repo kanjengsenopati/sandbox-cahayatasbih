@@ -254,9 +254,11 @@
     /* --- Custom DataTables Loading/Processing Redesign --- */
     div.dataTables_wrapper {
         position: relative;
+        min-height: 150px; /* Prevents layout collapse and gives space for the loading card */
     }
 
     div.dataTables_wrapper div.dataTables_processing {
+        display: none;
         position: absolute !important;
         top: 0 !important;
         left: 0 !important;
@@ -267,10 +269,6 @@
         background-color: rgba(248, 250, 252, 0.45) !important;
         backdrop-filter: blur(4px) !important;
         -webkit-backdrop-filter: blur(4px) !important;
-        display: flex !important;
-        flex-direction: column !important;
-        align-items: center !important;
-        justify-content: center !important;
         z-index: 1050 !important;
         border: none !important;
         box-shadow: none !important;
@@ -284,14 +282,17 @@
         gap: 12px !important;
         text-align: center !important;
 
-        /* Animation transition */
         opacity: 0;
-        animation: fadeInProcessing 0.2s ease-in-out forwards;
+        transition: opacity 0.2s ease-in-out;
     }
 
-    @keyframes fadeInProcessing {
-        from { opacity: 0; }
-        to { opacity: 1; }
+    /* Active state (when display inline style is not none) */
+    div.dataTables_wrapper div.dataTables_processing:not([style*="display: none"]):not([style*="display:none"]) {
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: center !important;
+        justify-content: center !important;
+        opacity: 1 !important;
     }
 
     /* Modern Animated Spinner (Accent Primary: Blue-600) */
