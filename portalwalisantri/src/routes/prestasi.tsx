@@ -2,6 +2,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { Trophy, ArrowLeft, Loader2, Award, Calendar, Gift } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { fetchAchievements } from "@/lib/api";
+import { useSantri } from "@/contexts/SantriContext";
 
 export const Route = createFileRoute("/prestasi")({
   component: Prestasi,
@@ -10,6 +11,7 @@ export const Route = createFileRoute("/prestasi")({
 
 function Prestasi() {
   const navigate = useNavigate();
+  const { active } = useSantri();
 
   const { data: achievementsRes, isLoading } = useQuery({
     queryKey: ["achievements"],
@@ -54,14 +56,22 @@ function Prestasi() {
             </div>
           </div>
 
-          <div className="relative mt-6 text-white">
-            <p className="text-xs text-white/70 uppercase tracking-widest font-semibold">Nama Santri</p>
-            <p className="text-xl font-bold mt-1 tracking-tight">{studentName}</p>
+          <div className="relative mt-6 text-white flex justify-between items-end gap-4">
+            <div className="min-w-0 flex-1">
+              <p className="text-xs text-white/70 uppercase tracking-widest font-semibold">Nama Santri</p>
+              <p className="text-xl font-bold mt-1 tracking-tight truncate">{studentName}</p>
+            </div>
+            {active && (
+              <div className="text-right shrink-0">
+                <p className="text-xs text-white/70 uppercase tracking-widest font-semibold">{active.school?.name || active.jenjang || "-"}</p>
+                <p className="text-sm font-bold mt-1 text-white/90">Kelas {active.classroom?.name || active.className || "-"}</p>
+              </div>
+            )}
           </div>
         </div>
 
         {/* Total Trophy Card */}
-        <section className="px-6 -mt-10 relative z-10">
+        <section className="px-6 -mt-16 relative z-10">
           <div 
             className="rounded-3xl p-6 text-white shadow-[var(--shadow-glow)] relative overflow-hidden"
             style={{ background: "var(--gradient-card)" }}
