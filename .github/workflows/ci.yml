@@ -89,6 +89,8 @@ jobs:
             composer install --no-dev --optimize-autoloader
             npm ci
             npm run build
+            echo "=== Building PWA ==="
+            cd portalwalisantri && npm ci && npm run build && cd ..
             php artisan migrate --force
             php artisan optimize:clear
             php artisan optimize

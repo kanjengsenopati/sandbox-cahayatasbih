@@ -228,13 +228,7 @@ function RiwayatPage() {
   const activeFilters =
     (type !== "all" ? 1 : 0) + (cat !== "all" ? 1 : 0) + (range !== "all" ? 1 : 0) + (q ? 1 : 0);
 
-  if (isLoadingSaldo || isLoadingPos) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <Loader2 className="animate-spin text-primary" size={40} />
-      </div>
-    );
-  }
+  // Enabled Skeleton loading below by removing fullscreen loader block
 
   return (
     <div className="min-h-screen w-full flex justify-center bg-secondary">
@@ -372,7 +366,20 @@ function RiwayatPage() {
 
         {/* Transaction list */}
         <section className="px-6 mt-6 space-y-5">
-          {groups.length === 0 && (
+          {isLoadingSaldo || isLoadingPos ? (
+            <div className="bg-card rounded-3xl border border-border shadow-[var(--shadow-soft)] overflow-hidden divide-y divide-border">
+              {[1, 2, 3, 4, 5].map((i) => (
+                <div key={i} className="flex items-center gap-3 p-4 animate-pulse">
+                  <div className="w-11 h-11 rounded-2xl bg-slate-100 shrink-0" />
+                  <div className="flex-1 space-y-2">
+                    <div className="h-4 w-32 bg-slate-100 rounded" />
+                    <div className="h-3 w-16 bg-slate-100 rounded animate-pulse" />
+                  </div>
+                  <div className="h-4 w-16 bg-slate-100 rounded" />
+                </div>
+              ))}
+            </div>
+          ) : groups.length === 0 ? (
             <div className="text-center py-12">
               <div className="w-16 h-16 rounded-2xl bg-secondary mx-auto flex items-center justify-center text-muted-foreground">
                 <Receipt size={28} />
@@ -380,25 +387,25 @@ function RiwayatPage() {
               <p className="mt-3 text-sm font-bold text-foreground">Tidak ada transaksi</p>
               <p className="text-xs text-muted-foreground">Coba ubah filter atau kata kunci pencarian.</p>
             </div>
-          )}
-
-          {groups.map(([day, items]) => (
-            <div key={day}>
-              <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-2 px-1">
-                {day}
-              </p>
-              <div className="bg-card rounded-3xl border border-border shadow-[var(--shadow-soft)] overflow-hidden divide-y divide-border">
-                {items.map((t) => (
-                  <TxRow
-                    key={t.id}
-                    tx={t}
-                    open={openId === t.id}
-                    onToggle={() => setOpenId(openId === t.id ? null : t.id)}
-                  />
-                ))}
+          ) : (
+            groups.map(([day, items]) => (
+              <div key={day}>
+                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-2 px-1">
+                  {day}
+                </p>
+                <div className="bg-card rounded-3xl border border-border shadow-[var(--shadow-soft)] overflow-hidden divide-y divide-border">
+                  {items.map((t) => (
+                    <TxRow
+                      key={t.id}
+                      tx={t}
+                      open={openId === t.id}
+                      onToggle={() => setOpenId(openId === t.id ? null : t.id)}
+                    />
+                  ))}
+                </div>
               </div>
-            </div>
-          ))}
+            ))
+          )}
         </section>
       </div>
     </div>

@@ -37,7 +37,7 @@ class DashboardController extends BaseWaliApiController
 
             $saldoHistories = \App\Models\SaldoHistory::with('transaction_details')->where('student_id', $activeStudent->id)
                 ->whereNotIn('usage', [\App\Models\SaldoHistory::USAGE_POS, \App\Models\SaldoHistory::USAGE_BILL])
-                ->whereDate('created_at', now()->toDateString())
+                ->where('created_at', '>=', now()->startOfDay())
                 ->latest()
                 ->get()
                 ->map(function($item) {
@@ -55,7 +55,7 @@ class DashboardController extends BaseWaliApiController
             $posTransactions = \App\Models\PointOfSaleTransaction::with(['pointOfSaleTransactionDetails.item', 'admins'])
                 ->where('student_id', $activeStudent->id)
                 ->where('status', 'SUCCESS')
-                ->whereDate('created_at', now()->toDateString())
+                ->where('created_at', '>=', now()->startOfDay())
                 ->latest()
                 ->get()
                 ->map(function($item) {
@@ -92,7 +92,7 @@ class DashboardController extends BaseWaliApiController
                 ->whereHas('transactionDetails', function ($q) {
                     $q->whereNull('deleted_at');
                 })
-                ->whereDate('created_at', now()->toDateString())
+                ->where('created_at', '>=', now()->startOfDay())
                 ->latest()
                 ->get()
                 ->map(function($item) {

@@ -114,7 +114,7 @@ function Dashboard() {
   const fmt = (n: number) =>
     new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0 }).format(n);
 
-  if (isLoadingSantri || (active && isLoadingDashboard)) {
+  if (isLoadingSantri) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <Loader2 className="animate-spin text-primary" size={40} />
@@ -335,7 +335,20 @@ function Dashboard() {
         )}
 
         <div className="bg-card rounded-3xl border border-border divide-y divide-border overflow-hidden shadow-[var(--shadow-soft)]">
-          {(dashboard?.recentTransactions && Array.isArray(dashboard.recentTransactions) && dashboard.recentTransactions.length > 0) ? (
+          {isLoadingDashboard ? (
+            <div className="divide-y divide-border">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="flex items-center gap-3 p-4 animate-pulse">
+                  <div className="w-11 h-11 rounded-2xl bg-slate-100 shrink-0" />
+                  <div className="flex-1 space-y-2">
+                    <div className="h-4 w-32 bg-slate-100 rounded" />
+                    <div className="h-3 w-16 bg-slate-100 rounded animate-pulse" />
+                  </div>
+                  <div className="h-4 w-16 bg-slate-100 rounded" />
+                </div>
+              ))}
+            </div>
+          ) : (dashboard?.recentTransactions && Array.isArray(dashboard.recentTransactions) && dashboard.recentTransactions.length > 0) ? (
             dashboard.recentTransactions
               .filter((t: any) => !(t.category === "BILL" && ["CANCELLED", "cancelled", "rejected", "REJECTED", "EXPIRED", "expired", "failed", "FAILED"].includes(t.status)))
               .map((t: any, i: number) => {

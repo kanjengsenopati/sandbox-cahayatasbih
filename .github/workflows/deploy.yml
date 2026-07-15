@@ -36,11 +36,15 @@ jobs:
             git fetch https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/kanjengsenopati/sandbox-cahayatasbih.git main
             git reset --hard FETCH_HEAD
 
-            echo "=== Clearing Stale Cache ==="
-            rm -f bootstrap/cache/config.php bootstrap/cache/routes.php bootstrap/cache/services.php bootstrap/cache/packages.php
-
             echo "=== Refreshing Autoloader ==="
-            composer dump-autoload
+            composer dump-autoload --optimize
+
+            echo "=== Installing dependencies & Building Assets ==="
+            npm ci
+            npm run build
+
+            echo "=== Building PWA ==="
+            cd portalwalisantri && npm ci && npm run build && cd ..
 
             echo "=== Running Migrations ==="
             php artisan migrate --force
@@ -51,11 +55,10 @@ jobs:
             echo "=== Creating Storage Symlink ==="
             php artisan storage:link || echo "Storage link may already exist"
 
-            echo "=== Clearing Cache ==="
-            php artisan config:clear
-            php artisan cache:clear
-            php artisan route:clear
-            php artisan view:clear
+            echo "=== Optimizing & Caching Laravel ==="
+            php artisan config:cache
+            php artisan route:cache
+            php artisan view:cache
 
             echo "=== Running Audit ==="
             php artisan app:audit || echo "Audit failed"

@@ -63,12 +63,19 @@ class DashboardController extends Controller
                     'labels' => [],
                     'data' => []
                 ];
+                $startDate = Carbon::today()->subDays(6)->startOfDay();
+                $salesData = PointOfSaleTransaction::whereIn('outlet_id', $outletIds)
+                    ->where('status', 'SUCCESS')
+                    ->where('created_at', '>=', $startDate)
+                    ->selectRaw('DATE(created_at) as date_only, SUM(pay_amount) as total_amount')
+                    ->groupBy('date_only')
+                    ->pluck('total_amount', 'date_only')
+                    ->toArray();
+
                 for ($i = 6; $i >= 0; $i--) {
                     $date = Carbon::today()->subDays($i);
-                    $amount = PointOfSaleTransaction::whereIn('outlet_id', $outletIds)
-                        ->where('status', 'SUCCESS')
-                        ->whereDate('created_at', $date)
-                        ->sum('pay_amount');
+                    $dateStr = $date->toDateString();
+                    $amount = $salesData[$dateStr] ?? 0;
                     $salesChart['labels'][] = $date->translatedFormat('d M');
                     $salesChart['data'][] = (int) $amount;
                 }

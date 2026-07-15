@@ -23,7 +23,7 @@ class BillTransactionController extends BaseWaliApiController
             ->latest();
 
         if ($request->filter == 'today') {
-            $query->whereDate('created_at', now());
+            $query->where('created_at', '>=', now()->startOfDay());
         } elseif ($request->filter == 'week') {
             $query->where('created_at', '>=', now()->startOfWeek());
         } elseif ($request->filter == 'month') {
