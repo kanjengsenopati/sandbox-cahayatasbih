@@ -237,7 +237,7 @@
                             <div>
                                 <div class="card card-flush h-lg-100" id="kt_contacts_main">
                                     <div class="card-body pt-5">
-                                        <form action="{{ route('bill.index') }}" method="GET">
+                                        <form action="{{ route('bill.index') }}" method="GET" id="filter-form">
                                             <!-- Unit Pendidikan -->
                                             <div class="row mb-4">
                                                 <label class="col-md-3 col-form-label fw-bold fs-6 required" for="school_id">
@@ -789,6 +789,18 @@
             if ($('#student_id').val()) {
                 $(this).closest('form').submit();
             }
+        });
+        
+        // Tampilkan loading overlay saat filter-form disubmit
+        $('#filter-form').on('submit', function() {
+            Swal.fire({
+                title: 'Mohon Tunggu',
+                text: 'Sedang memuat data...',
+                allowOutsideClick: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
         });
         
         // Call the function on page load

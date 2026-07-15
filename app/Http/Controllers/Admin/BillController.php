@@ -47,7 +47,7 @@ class BillController extends Controller
         $academicYears = \App\Models\AcademicYear::orderBy('start_year', 'desc')->get();
 
         if ($studentId = request()->student_id) {
-            $student = Student::findOrFail($studentId);
+            $student = Student::with(['classroom.school', 'classroom.academicYear', 'classroomHistories.classroom'])->findOrFail($studentId);
             $academicYearId = request()->academic_year_id;
 
             $billMonth = $this->getBills($studentId, BillType::TYPE_MONTHLY, $academicYearId);
@@ -83,9 +83,7 @@ class BillController extends Controller
 
     private function calculateBillTotals($item, $studentId)
     {
-        $bills = Bill::where('student_id', $studentId)
-            ->where('bill_type_id', $item->id)
-            ->get();
+        $bills = $item->bills;
 
         $item->total_bill = $bills->sum('amount');
         $item->total_paid = $bills->sum('paid_amount');
