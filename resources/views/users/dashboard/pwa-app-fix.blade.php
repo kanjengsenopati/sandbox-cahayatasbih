@@ -33,6 +33,7 @@
     // Try multiple possible locations for manifest
     // Checking base_path directly bypasses any symlink issues with PHP file_exists
     $possiblePaths = [
+        public_path('portalwalisantri/dist/vite-manifest.json'),
         base_path('portalwalisantri/dist/client/vite-manifest.json'),
         base_path('portalwalisantri/dist/.vite/manifest.json'),
         base_path('portalwalisantri/dist/vite-manifest.json'),
@@ -150,9 +151,9 @@
             }
         });
 
-        // Register sw.js via the bypass route with root scope
+        // Register sw.js via the dedicated root route with root scope
         window.addEventListener('load', function() {
-            navigator.serviceWorker.register('/pwa-asset?f=sw.js', { scope: '/' })
+            navigator.serviceWorker.register('/sw.js', { scope: '/' })
                 .then(function(reg) {
                     console.log('Wali Santri PWA: Service Worker registered successfully with scope:', reg.scope);
                     

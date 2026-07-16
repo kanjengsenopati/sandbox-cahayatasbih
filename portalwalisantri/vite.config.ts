@@ -6,7 +6,7 @@ import { VitePWA } from 'vite-plugin-pwa';
 import tailwindcss from '@tailwindcss/vite';
 
 export default defineConfig({
-  base: './',
+  base: '/portalwalisantri/dist/',
   envDir: '../', // Read environment variables from Laravel root .env
   plugins: [
     TanStackRouterVite({
@@ -23,10 +23,8 @@ export default defineConfig({
         cleanupOutdatedCaches: true,
         skipWaiting: true,
         clientsClaim: true,
-        navigateFallback: '/pwa-asset?f=index.html',
-        modifyURLPrefix: {
-          '': '/pwa-asset?f='
-        }
+        inlineWorkboxRuntime: true,
+        navigateFallback: '/portalwalisantri/dist/index.html',
       },
       manifest: {
         name: 'CT-Mobile',
@@ -44,7 +42,7 @@ export default defineConfig({
   ],
   build: {
     manifest: 'vite-manifest.json',
-    outDir: 'dist/client',
+    outDir: '../public/portalwalisantri/dist',
     rollupOptions: {
       input: 'index.html',
     }

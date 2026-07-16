@@ -601,6 +601,26 @@ Route::get('manifest.webmanifest', function () {
     abort(404);
 });
 
+// Route untuk sw.js agar dilayani di level root domain dengan static filesystem bypass
+Route::get('sw.js', function () {
+    $paths = [
+        public_path("portalwalisantri/dist/sw.js"),
+        base_path("portalwalisantri/dist/client/sw.js"),
+        base_path("portalwalisantri/dist/sw.js"),
+    ];
+
+    foreach ($paths as $path) {
+        if (file_exists($path)) {
+            return response()->file($path, [
+                'Content-Type' => 'application/javascript',
+                'Cache-Control' => 'no-cache, no-store, must-revalidate',
+                'Service-Worker-Allowed' => '/'
+            ]);
+        }
+    }
+    abort(404);
+});
+
 // Route untuk firebase-messaging-sw.js agar dilayani di level root domain dan terintegrasi dengan ENV config
 Route::get('firebase-messaging-sw.js', function () {
     $paths = [
