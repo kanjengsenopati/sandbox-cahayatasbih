@@ -33,21 +33,29 @@ messaging.onBackgroundMessage((payload) => {
   self.registration.showNotification(title, notificationOptions);
 });
 
-// Tangani klik pada notifikasi
+// Tangani klik pada notifikasi dengan Hash Routing support
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
   
-  // Tentukan URL tujuan berdasarkan type payload (contoh: tagihan, tabungan)
-  let targetUrl = '/ct-mobile/app/';
-  if (event.notification.data && event.notification.data.type === 'Transaction') {
-    targetUrl = '/ct-mobile/app/tagihan';
+  // Tentukan URL tujuan berdasarkan type payload (contoh: tagihan, perizinan)
+  let targetUrl = '/ct-mobile/app/#/';
+  if (event.notification.data) {
+    const type = event.notification.data.type;
+    if (type === 'Transaction') {
+      targetUrl = '/ct-mobile/app/#/tagihan';
+    } else if (type === 'StudentPermit') {
+      targetUrl = '/ct-mobile/app/#/perizinan';
+    }
   }
 
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
-      // Cari jika tab PWA sudah terbuka, cukup fokuskan tab tersebut
+      // Cari jika tab PWA sudah terbuka, navigasikan ke URL tujuan dan fokuskan
       for (const client of clientList) {
         if (client.url.includes('/ct-mobile/app') && 'focus' in client) {
+          if ('navigate' in client) {
+            client.navigate(targetUrl);
+          }
           return client.focus();
         }
       }

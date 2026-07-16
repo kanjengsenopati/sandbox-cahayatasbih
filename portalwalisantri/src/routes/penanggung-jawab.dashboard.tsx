@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { ArrowLeft, Loader2, Calendar, ClipboardList, CheckCircle2, XCircle, Clock, ShieldAlert, Scan, LogOut, Phone, RefreshCw, ChevronDown, ChevronUp, Image as ImageIcon } from "lucide-react";
+import { ArrowLeft, Loader2, Calendar, ClipboardList, CheckCircle2, XCircle, Clock, ShieldAlert, Scan, LogOut, Phone, RefreshCw, ChevronDown, ChevronUp, Image as ImageIcon, BellRing } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { fetchPendingPermits, fetchActivePermits, fetchOverduePermits, postPermitAction, postLogout, fetchPenanggungJawabStats, fetchMyStudents, fetchStudentHistory, fetchPendingReturnPermits, postPermitReturnAction, updatePenanggungJawabFcmToken } from "@/lib/api";
 import { resolveImageUrl } from "@/lib/utils";
@@ -18,6 +18,14 @@ export const Route = createFileRoute("/penanggung-jawab/dashboard")({
 function PenanggungJawabDashboardPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+
+  const [tab, setTab] = useState<"pending" | "active" | "overdue" | "my-students" | "pending_return">("pending");
+  const [rejectId, setRejectId] = useState<string | null>(null);
+  const [rejectionReason, setRejectionReason] = useState("");
+  const [historyStudentId, setHistoryStudentId] = useState<string | null>(null);
+  const [expandedPermitId, setExpandedPermitId] = useState<string | null>(null);
+  const [expandedHistoryId, setExpandedHistoryId] = useState<string | null>(null);
+  const [zoomPhotoUrl, setZoomPhotoUrl] = useState<string | null>(null);
 
   // Register push notifications & FCM token for Penanggung Jawab
   useEffect(() => {
@@ -55,10 +63,45 @@ function PenanggungJawabDashboardPage() {
     if (!messaging) return;
     const unsubscribe = onMessage(messaging, (payload) => {
       console.log("Pesan perizinan diterima di foreground (Penanggung Jawab):", payload);
-      toast.info(payload.notification?.title || "Pemberitahuan Baru", {
-        description: payload.notification?.body,
-        duration: 7000,
-      });
+      
+      const title = payload.notification?.title || "Pemberitahuan Baru";
+      const body = payload.notification?.body || "";
+      const type = payload.data?.type || "";
+
+      toast.custom((t) => (
+        <div className="w-full max-w-sm bg-white/95 backdrop-blur-md rounded-[24px] border border-slate-100 shadow-[0_10px_30px_rgba(0,0,0,0.08)] p-5 flex gap-4 items-start animate-in fade-in slide-in-from-top-4 duration-300">
+          <div className="w-12 h-12 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0 border border-blue-100">
+            <BellRing size={22} className="animate-pulse" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="flex justify-between items-baseline">
+              <span className="text-[10px] font-extrabold uppercase tracking-widest text-blue-600">Perizinan Santri</span>
+              <span className="text-[10px] text-slate-400">Baru saja</span>
+            </div>
+            <p className="text-[14px] font-bold text-slate-900 mt-1">{title}</p>
+            <p className="text-[12px] text-slate-500 mt-1.5 leading-relaxed">{body}</p>
+            <div className="mt-4 flex gap-2">
+              <button
+                onClick={() => {
+                  toast.dismiss(t);
+                  if (type === 'StudentPermit' || title.toLowerCase().includes('pulang') || body.toLowerCase().includes('pulang') || body.toLowerCase().includes('kembali')) {
+                    setTab("pending_return");
+                  } else {
+                    setTab("pending");
+                  }
+                }}
+                className="px-4 py-2 rounded-xl bg-primary text-white text-[11px] font-bold hover:opacity-90 active:scale-95 transition-all shadow-sm"
+              >
+                Tinjau Sekarang
+              </button>
+              <button onClick={() => toast.dismiss(t)} className="px-4 py-2 rounded-xl bg-slate-100 text-slate-600 text-[11px] font-bold hover:bg-slate-200">
+                Tutup
+              </button>
+            </div>
+          </div>
+        </div>
+      ), { duration: 8000 });
+
       // Invalidate all relevant permit queries to refresh UI dynamically without page reload
       queryClient.invalidateQueries({ queryKey: ["penanggung-jawab-stats"] });
       queryClient.invalidateQueries({ queryKey: ["pending-permits"] });
@@ -67,15 +110,7 @@ function PenanggungJawabDashboardPage() {
       queryClient.invalidateQueries({ queryKey: ["pending-return-permits"] });
     });
     return () => unsubscribe();
-  }, [queryClient]);
-
-  const [tab, setTab] = useState<"pending" | "active" | "overdue" | "my-students" | "pending_return">("pending");
-  const [rejectId, setRejectId] = useState<string | null>(null);
-  const [rejectionReason, setRejectionReason] = useState("");
-  const [historyStudentId, setHistoryStudentId] = useState<string | null>(null);
-  const [expandedPermitId, setExpandedPermitId] = useState<string | null>(null);
-  const [expandedHistoryId, setExpandedHistoryId] = useState<string | null>(null);
-  const [zoomPhotoUrl, setZoomPhotoUrl] = useState<string | null>(null);
+  }, [queryClient, setTab]);
   
   // Return Flow States
   const [rejectReturnId, setRejectReturnId] = useState<string | null>(null);

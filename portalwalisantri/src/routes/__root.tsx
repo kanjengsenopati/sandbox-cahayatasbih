@@ -6,9 +6,11 @@ import {
   Link,
   createRootRouteWithContext,
   useRouter,
+  useNavigate,
   HeadContent,
   Scripts,
 } from "@tanstack/react-router";
+import { BellRing } from "lucide-react";
 
 import appCss from "../styles.css?url";
 import { SantriProvider } from "@/contexts/SantriContext";
@@ -116,6 +118,7 @@ const APP_VERSION = "1.1.0"; // Increment this to force update and purge caches
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+  const navigate = useNavigate();
 
   useEffect(() => {
     // 1. Initialize Theme (Original vs Modern/Neumorphism)
@@ -158,10 +161,50 @@ function RootComponent() {
             onMessage(messaging, (payload) => {
               const toasterEnabled = localStorage.getItem("ct_toaster_enabled") !== "false";
               if (toasterEnabled) {
-                toast.info(payload.notification?.title || "Pemberitahuan Baru", {
-                  description: payload.notification?.body,
-                  duration: 6000,
-                });
+                const title = payload.notification?.title || "Pemberitahuan Baru";
+                const body = payload.notification?.body || "";
+                const type = payload.data?.type || "";
+
+                toast.custom((t) => (
+                  <div className="w-full max-w-sm bg-white/95 backdrop-blur-md rounded-[24px] border border-slate-100 shadow-[0_10px_30px_rgba(0,0,0,0.08)] p-5 flex gap-4 items-start animate-in fade-in slide-in-from-top-4 duration-300">
+                    <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 border ${
+                      type === 'Transaction' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-blue-50 text-blue-600 border-blue-100'
+                    }`}>
+                      <BellRing size={22} className={type === 'Transaction' ? 'animate-bounce' : 'animate-pulse'} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex justify-between items-baseline">
+                        <span className={`text-[10px] font-extrabold uppercase tracking-widest ${
+                          type === 'Transaction' ? 'text-emerald-600' : 'text-blue-600'
+                        }`}>
+                          {type === 'Transaction' ? 'Transaksi Baru' : 'Info Santri'}
+                        </span>
+                        <span className="text-[10px] text-slate-400">Baru saja</span>
+                      </div>
+                      <p className="text-[14px] font-bold text-slate-900 mt-1">{title}</p>
+                      <p className="text-[12px] text-slate-500 mt-1.5 leading-relaxed">{body}</p>
+                      <div className="mt-4 flex gap-2">
+                        <button
+                          onClick={() => {
+                            toast.dismiss(t);
+                            if (type === 'Transaction') navigate({ to: "/tagihan" });
+                            else if (type === 'StudentPermit') navigate({ to: "/perizinan" });
+                            else navigate({ to: "/" });
+                          }}
+                          className="px-4 py-2 rounded-xl bg-primary text-white text-[11px] font-bold hover:opacity-90 active:scale-95 transition-all shadow-sm"
+                        >
+                          Lihat Detail
+                        </button>
+                        <button
+                          onClick={() => toast.dismiss(t)}
+                          className="px-4 py-2 rounded-xl bg-slate-100 text-slate-600 text-[11px] font-bold hover:bg-slate-200"
+                        >
+                          Tutup
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ), { duration: 8000 });
               }
 
               // Real-time PWA cache invalidation

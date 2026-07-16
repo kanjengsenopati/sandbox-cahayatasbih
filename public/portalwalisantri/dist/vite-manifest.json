@@ -1,27 +1,18 @@
 {
   "F:/Antigravity/Projects/cahayatasbih/portalwalisantri/src/styles.css": {
-    "file": "assets/styles-BQvWLAVN.css",
+    "file": "assets/styles-CTVkMjyD.css",
     "src": "F:/Antigravity/Projects/cahayatasbih/portalwalisantri/src/styles.css"
   },
   "index.html": {
-    "file": "assets/index-Dez6mwBw.js",
+    "file": "assets/index-CIBTekHh.js",
     "name": "index",
     "src": "index.html",
     "isEntry": true,
-    "dynamicImports": [
-      "node_modules/workbox-window/build/workbox-window.prod.es5.mjs"
-    ],
     "css": [
-      "assets/styles-BQvWLAVN.css"
+      "assets/styles-CTVkMjyD.css"
     ],
     "assets": [
-      "assets/styles-BQvWLAVN.css"
+      "assets/styles-CTVkMjyD.css"
     ]
-  },
-  "node_modules/workbox-window/build/workbox-window.prod.es5.mjs": {
-    "file": "assets/workbox-window.prod.es5-BBnX5xw4.js",
-    "name": "workbox-window.prod.es5",
-    "src": "node_modules/workbox-window/build/workbox-window.prod.es5.mjs",
-    "isDynamicEntry": true
   }
 }

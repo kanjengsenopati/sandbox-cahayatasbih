@@ -601,6 +601,47 @@ Route::get('manifest.webmanifest', function () {
     abort(404);
 });
 
+// Route untuk firebase-messaging-sw.js agar dilayani di level root domain dan terintegrasi dengan ENV config
+Route::get('firebase-messaging-sw.js', function () {
+    $paths = [
+        base_path("portalwalisantri/dist/client/firebase-messaging-sw.js"),
+        base_path("portalwalisantri/dist/firebase-messaging-sw.js"),
+        public_path("portalwalisantri/dist/firebase-messaging-sw.js"),
+        base_path("portalwalisantri/public/firebase-messaging-sw.js"),
+    ];
+
+    foreach ($paths as $path) {
+        if (file_exists($path)) {
+            $content = file_get_contents($path);
+            
+            // Suntikkan konfigurasi Firebase dari Laravel config secara dinamis
+            $config = config('services.firebase');
+            $configJs = json_encode([
+                'apiKey' => $config['api_key'],
+                'authDomain' => $config['auth_domain'],
+                'projectId' => $config['project_id'],
+                'storageBucket' => $config['storage_bucket'],
+                'messagingSenderId' => $config['messaging_sender_id'],
+                'appId' => $config['app_id'],
+            ], JSON_PRETTY_PRINT);
+            
+            // Gantikan const firebaseConfig = { ... }
+            $content = preg_replace(
+                '/const firebaseConfig = \{.*?\};/s',
+                "const firebaseConfig = {$configJs};",
+                $content
+            );
+            
+            return response($content, 200, [
+                'Content-Type' => 'application/javascript',
+                'Cache-Control' => 'no-cache, no-store, must-revalidate',
+                'Service-Worker-Allowed' => '/'
+            ]);
+        }
+    }
+    abort(404);
+});
+
 Route::get('file-asset', function (\Illuminate\Http\Request $request) {
     $p = $request->query('p');
     if (!$p) abort(404);
