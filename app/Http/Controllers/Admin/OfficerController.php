@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Models\Officer;
-use App\Models\User;
+use App\Models\Admin;
 use Illuminate\Http\Request;
 use Yajra\DataTables\DataTables;
 use App\Http\Controllers\Controller;
@@ -57,7 +57,7 @@ class OfficerController extends Controller
         if (!Auth::user()->can('Create Petugas')) {
             return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
         }
-        $users = User::select('id', 'name', 'phone')->get();
+        $users = Admin::select('id', 'name', 'phone')->get();
         return view('admins.officer.create-edit', compact('users'));
     }
 
@@ -71,13 +71,12 @@ class OfficerController extends Controller
         }
         $data = $request->validated();
 
-        $user = User::findOrFail($data['user_id']);
-        $user->access_scope = $data['access_scope'];
-        if (!$user->phone && !empty($data['phone'])) {
-            $user->phone = $data['phone'];
+        $admin = Admin::findOrFail($data['admin_id']);
+        $admin->access_scope = $data['access_scope'];
+        if (!$admin->phone && !empty($data['phone'])) {
+            $admin->phone = $data['phone'];
         }
-        $user->save();
-        $user->assignRole('Penanggung Jawab');
+        $admin->save();
 
         if ($request->hasFile('photo')) {
             $data['photo'] = 'storage/' . $request->file('photo')->store('images/officers', 'public');
@@ -104,7 +103,7 @@ class OfficerController extends Controller
         if (!Auth::user()->can('Edit Petugas')) {
             return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
         }
-        $users = User::select('id', 'name', 'phone')->get();
+        $users = Admin::select('id', 'name', 'phone')->get();
         return view('admins.officer.create-edit', compact('officer', 'users'));
     }
 
@@ -118,12 +117,12 @@ class OfficerController extends Controller
         }
         $data = $request->validated();
 
-        $user = User::findOrFail($data['user_id']);
-        $user->access_scope = $data['access_scope'];
-        if (!$user->phone && !empty($data['phone'])) {
-            $user->phone = $data['phone'];
+        $admin = Admin::findOrFail($data['admin_id']);
+        $admin->access_scope = $data['access_scope'];
+        if (!$admin->phone && !empty($data['phone'])) {
+            $admin->phone = $data['phone'];
         }
-        $user->save();
+        $admin->save();
 
         if ($request->hasFile('photo')) {
             if ($officer->photo) {

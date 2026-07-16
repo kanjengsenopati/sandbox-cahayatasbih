@@ -145,26 +145,6 @@ class DeduplicateParentsCommand extends Command
                             }
                         }
 
-                        // 6. Relink officers (unique user_id)
-                        if (Schema::hasTable('officers')) {
-                            $hasOfficer = DB::table('officers')->where('user_id', $dupUser->id)->first();
-                            if ($hasOfficer) {
-                                $primaryHasOfficer = DB::table('officers')->where('user_id', $primaryUser->id)->exists();
-                                if (!$primaryHasOfficer) {
-                                    DB::table('officers')
-                                        ->where('user_id', $dupUser->id)
-                                        ->update(['user_id' => $primaryUser->id]);
-                                    $this->line("    -> Re-assigned Officer record to Primary");
-                                } else {
-                                    // Primary already has an officer record, set to null to avoid unique key violation
-                                    DB::table('officers')
-                                        ->where('user_id', $dupUser->id)
-                                        ->update(['user_id' => null]);
-                                    $this->line("    -> Reset duplicate user's Officer relation to NULL (Primary already has one)");
-                                }
-                            }
-                        }
-
                         // Force Delete the duplicate user to completely clean the database
                         $dupUser->forceDelete();
                         $this->line("    -> Account ID {$dupUser->id} permanently deleted.");

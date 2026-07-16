@@ -20,7 +20,7 @@ class OfficerRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'user_id' => 'required|exists:users,id',
+            'admin_id' => 'required|exists:admins,id',
             'position' => 'required|string|max:255',
             'duty' => 'required|string',
             'phone' => 'required|string|max:20',

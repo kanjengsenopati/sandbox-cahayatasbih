@@ -71,9 +71,9 @@ class AsramaController extends Controller
 
         $officers = Officer::with('user')
             ->select('officers.*')
-            ->leftJoin('users', 'users.id', '=', 'officers.user_id')
+            ->leftJoin('admins', 'admins.id', '=', 'officers.admin_id')
             ->where('officers.is_active', 1)
-            ->orderBy('users.name', 'asc')
+            ->orderBy('admins.name', 'asc')
             ->get();
         
         // Fetch all active students that don't have an asrama yet, or we can fetch all active students
@@ -115,46 +115,51 @@ class AsramaController extends Controller
 
             if ($request->input('host_type') === 'existing') {
                 $officer = Officer::findOrFail($request->input('officer_id'));
-                $hostAdminId = $this->getOrCreateAdminForOfficer($officer);
+                $hostAdminId = $officer->admin_id;
             } else {
-                // Resolve or create a new User record first since 'name' is in the users table
                 $phone = $request->input('new_officer_phone');
                 $name = $request->input('new_officer_name');
 
-                $user = User::where('phone', $phone)->first();
-                if (!$user) {
+                $admin = Admin::where('phone', $phone)->first();
+                if (!$admin) {
                     $emailName = Str::slug($name, '');
                     $email = $emailName . '@cahayatasbih.com';
-                    $count = User::where('email', $email)->count();
+                    $count = Admin::where('email', $email)->count();
                     if ($count > 0) {
                         $email = $emailName . rand(100, 999) . '@cahayatasbih.com';
                     }
 
-                    $user = User::create([
+                    $role = Role::where('name', 'like', '%PETUGAS%')->first() ?? Role::first();
+                    $roleId = $role ? $role->id : null;
+
+                    $admin = Admin::create([
                         'name' => $name,
                         'phone' => $phone,
                         'email' => $email,
                         'password' => bcrypt('12345678'),
+                        'avatar' => 'assets/media/avatars/150-26.jpg',
                         'is_active' => 1,
+                        'role_id' => $roleId,
                     ]);
+
+                    if ($role) {
+                        $admin->assignRole($role);
+                    }
                 } else {
-                    $user->update([
+                    $admin->update([
                         'name' => $name,
                         'is_active' => 1,
                     ]);
                 }
 
-                $user->assignRole('Penanggung Jawab');
-
-                // Create new officer record
                 $officer = Officer::create([
-                    'user_id' => $user->id,
+                    'admin_id' => $admin->id,
                     'phone' => $phone,
                     'position' => $request->input('new_officer_position'),
                     'duty' => $request->input('new_officer_duty'),
                     'is_active' => 1,
                 ]);
-                $hostAdminId = $this->getOrCreateAdminForOfficer($officer);
+                $hostAdminId = $admin->id;
             }
 
             // Create Asrama record
@@ -194,9 +199,9 @@ class AsramaController extends Controller
         $asrama = Asrama::with('students')->findOrFail($id);
         $officers = Officer::with('user')
             ->select('officers.*')
-            ->leftJoin('users', 'users.id', '=', 'officers.user_id')
+            ->leftJoin('admins', 'admins.id', '=', 'officers.admin_id')
             ->where('officers.is_active', 1)
-            ->orderBy('users.name', 'asc')
+            ->orderBy('admins.name', 'asc')
             ->get();
         
         // Find which officer is currently linked to the host_admin_id
@@ -255,46 +260,51 @@ class AsramaController extends Controller
 
             if ($request->input('host_type') === 'existing') {
                 $officer = Officer::findOrFail($request->input('officer_id'));
-                $hostAdminId = $this->getOrCreateAdminForOfficer($officer);
+                $hostAdminId = $officer->admin_id;
             } else {
-                // Resolve or create a new User record first since 'name' is in the users table
                 $phone = $request->input('new_officer_phone');
                 $name = $request->input('new_officer_name');
 
-                $user = User::where('phone', $phone)->first();
-                if (!$user) {
+                $admin = Admin::where('phone', $phone)->first();
+                if (!$admin) {
                     $emailName = Str::slug($name, '');
                     $email = $emailName . '@cahayatasbih.com';
-                    $count = User::where('email', $email)->count();
+                    $count = Admin::where('email', $email)->count();
                     if ($count > 0) {
                         $email = $emailName . rand(100, 999) . '@cahayatasbih.com';
                     }
 
-                    $user = User::create([
+                    $role = Role::where('name', 'like', '%PETUGAS%')->first() ?? Role::first();
+                    $roleId = $role ? $role->id : null;
+
+                    $admin = Admin::create([
                         'name' => $name,
                         'phone' => $phone,
                         'email' => $email,
                         'password' => bcrypt('12345678'),
+                        'avatar' => 'assets/media/avatars/150-26.jpg',
                         'is_active' => 1,
+                        'role_id' => $roleId,
                     ]);
+
+                    if ($role) {
+                        $admin->assignRole($role);
+                    }
                 } else {
-                    $user->update([
+                    $admin->update([
                         'name' => $name,
                         'is_active' => 1,
                     ]);
                 }
 
-                $user->assignRole('Penanggung Jawab');
-
-                // Create new officer record
                 $officer = Officer::create([
-                    'user_id' => $user->id,
+                    'admin_id' => $admin->id,
                     'phone' => $phone,
                     'position' => $request->input('new_officer_position'),
                     'duty' => $request->input('new_officer_duty'),
                     'is_active' => 1,
                 ]);
-                $hostAdminId = $this->getOrCreateAdminForOfficer($officer);
+                $hostAdminId = $admin->id;
             }
 
             // Update Asrama
@@ -373,50 +383,5 @@ class AsramaController extends Controller
         }
     }
 
-    /**
-     * Helper to get or dynamically create an Admin account linked to an Officer's phone.
-     */
-    private function getOrCreateAdminForOfficer(Officer $officer)
-    {
-        // Search by phone
-        $admin = Admin::where('phone', $officer->phone)->first();
 
-        if (!$admin) {
-            // Create a new Admin account
-            $emailName = Str::slug($officer->name, '');
-            $email = $emailName . '@cahayatasbih.com';
-            
-            // Handle email collision by appending random string if needed
-            $count = Admin::where('email', $email)->count();
-            if ($count > 0) {
-                $email = $emailName . rand(100, 999) . '@cahayatasbih.com';
-            }
-
-            // Search for "PETUGAS PIKET" role first to assign it both in admins table flat column and Spatie pivot table
-            $role = Role::where('name', 'like', '%PETUGAS%')->first() ?? Role::first();
-            $roleId = $role ? $role->id : null;
-
-            $admin = Admin::create([
-                'name' => $officer->name,
-                'email' => $email,
-                'phone' => $officer->phone,
-                'password' => bcrypt('12345678'),
-                'avatar' => 'assets/media/avatars/150-26.jpg',
-                'is_active' => 1,
-                'role_id' => $roleId,
-            ]);
-
-            if ($role) {
-                $admin->assignRole($role);
-            }
-        } else {
-            // Make sure the existing admin profile matches current officer name and status
-            $admin->update([
-                'name' => $officer->name,
-                'is_active' => 1,
-            ]);
-        }
-
-        return $admin->id;
-    }
 }

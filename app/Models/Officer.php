@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use App\Models\User;
+use App\Models\Admin;
 
 class Officer extends Model
 {
@@ -16,28 +16,36 @@ class Officer extends Model
     protected $appends = ['name'];
 
     protected $fillable = [
-        // 'name' dihapus, nama diambil dari relasi User
         'position',
         'duty',
         'phone',
         'photo',
         'is_active',
-        'user_id',
+        'admin_id',
     ];
+
     /**
-    * Relasi ke User yang mewakili petugas ini.
+    * Relasi ke Admin yang mewakili petugas ini.
     */
-    public function user(): BelongsTo
+    public function admin(): BelongsTo
     {
-        return $this->belongsTo(User::class);
+        return $this->belongsTo(Admin::class, 'admin_id');
     }
 
     /**
-     * Accessor untuk menampilkan nama petugas melalui User.
+    * Relasi ke User (diarahkan ke Admin agar tidak memecah PWA/API)
+    */
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(Admin::class, 'admin_id');
+    }
+
+    /**
+     * Accessor untuk menampilkan nama petugas melalui Admin.
      */
     public function getNameAttribute()
     {
-        return $this->user ? $this->user->name : null;
+        return $this->admin ? $this->admin->name : null;
     }
 }
 

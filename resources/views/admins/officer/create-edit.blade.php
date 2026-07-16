@@ -38,69 +38,77 @@
                                 @csrf
                                 <x-form.put-method />
 
-                                <!-- Name Input -->
-                                <div class="fv-row mb-7">
-                                    <label class="fs-6 fw-bold form-label mt-3" for="user_id">
-                                        <span class="required">Nama Petugas / Pengurus (Pilih User)</span>
-                                    </label>
-                                    <select class="form-select form-select-solid" name="user_id" id="user_id" data-control="select2" data-placeholder="Pilih User" required>
-                                        <option value=""></option>
-                                        @foreach($users as $user)
-                                            <option value="{{ $user->id }}" {{ (@$officer->user_id ?? old('user_id')) == $user->id ? 'selected' : '' }}>
-                                                {{ $user->name }}
-                                            </option>
-                                        @endforeach
-                                    </select>
-                                </div>
+                                <div class="row">
+                                    <!-- Column 1 (Left) -->
+                                    <div class="col-lg-6">
+                                        <!-- Name Input -->
+                                        <div class="fv-row mb-7">
+                                            <label class="fs-6 fw-bold form-label mt-3" for="admin_id">
+                                                <span class="required">Nama Petugas / Pengurus (Pilih User)</span>
+                                            </label>
+                                            <select class="form-select form-select-solid" name="admin_id" id="admin_id" data-control="select2" data-placeholder="Pilih User" required>
+                                                <option value=""></option>
+                                                @foreach($users as $user)
+                                                    <option value="{{ $user->id }}" {{ (@$officer->admin_id ?? old('admin_id')) == $user->id ? 'selected' : '' }}>
+                                                        {{ $user->name }}
+                                                    </option>
+                                                @endforeach
+                                            </select>
+                                        </div>
 
-                                <!-- Access Scope Input -->
-                                <div class="fv-row mb-7">
-                                    <label class="fs-6 fw-bold form-label mt-3" for="access_scope">
-                                        <span class="required">Lingkup Akses (Access Scope)</span>
-                                    </label>
-                                    <select class="form-select form-select-solid" name="access_scope" id="access_scope" required>
-                                        <option value="pwa" {{ (@$officer->user->access_scope ?? old('access_scope')) == 'pwa' ? 'selected' : '' }}>PWA Saja</option>
-                                        <option value="backoffice" {{ (@$officer->user->access_scope ?? old('access_scope')) == 'backoffice' ? 'selected' : '' }}>Backoffice Saja</option>
-                                        <option value="both" {{ (@$officer->user->access_scope ?? old('access_scope')) == 'both' ? 'selected' : '' }}>Keduanya (PWA & Backoffice)</option>
-                                    </select>
-                                </div>
+                                        <!-- Access Scope Input -->
+                                        <div class="fv-row mb-7">
+                                            <label class="fs-6 fw-bold form-label mt-3" for="access_scope">
+                                                <span class="required">Lingkup Akses (Access Scope)</span>
+                                            </label>
+                                            <select class="form-select form-select-solid" name="access_scope" id="access_scope" required>
+                                                <option value="pwa" {{ (@$officer->user->access_scope ?? old('access_scope')) == 'pwa' ? 'selected' : '' }}>PWA Saja</option>
+                                                <option value="backoffice" {{ (@$officer->user->access_scope ?? old('access_scope')) == 'backoffice' ? 'selected' : '' }}>Backoffice Saja</option>
+                                                <option value="both" {{ (@$officer->user->access_scope ?? old('access_scope')) == 'both' ? 'selected' : '' }}>Keduanya (PWA & Backoffice)</option>
+                                            </select>
+                                        </div>
 
-                                <!-- Position Input -->
-                                <div class="fv-row mb-7">
-                                    <label class="fs-6 fw-bold form-label mt-3" for="position">
-                                        <span class="required">Jabatan</span>
-                                    </label>
-                                    <input type="text" class="form-control form-control-solid" name="position" id="position"
-                                        placeholder="Contoh: Kepala Kepengasuhan, Bendahara Pondok" value="{{ @$officer->position ?? old('position') }}"
-                                        required />
-                                </div>
+                                        <!-- Phone Input -->
+                                        <div class="fv-row mb-7">
+                                            <label class="fs-6 fw-bold form-label mt-3" for="phone">
+                                                <span class="required">Nomor WhatsApp</span>
+                                                <i class="fas fa-exclamation-circle ms-1 fs-7" data-bs-toggle="tooltip"
+                                                    title="Gunakan format internasional bersih tanpa spasi atau tanda hubung, contoh: 6281234567890"></i>
+                                            </label>
+                                            <input type="text" class="form-control form-control-solid" name="phone" id="phone"
+                                                placeholder="Contoh: 6281234567890" value="{{ @$officer->phone ?? old('phone') }}"
+                                                required />
+                                        </div>
 
-                                <!-- Duty Input -->
-                                <div class="fv-row mb-7">
-                                    <label class="fs-6 fw-bold form-label mt-3" for="duty">
-                                        <span class="required">Tugas / Deskripsi</span>
-                                    </label>
-                                    <textarea class="form-control form-control-solid" name="duty" id="duty" rows="3"
-                                        placeholder="Jelaskan deskripsi tugas dan wewenang yang bisa dikonsultasikan oleh wali"
-                                        required>{{ @$officer->duty ?? old('duty') }}</textarea>
-                                </div>
+                                        <!-- Photo Upload -->
+                                        <div class="fv-row mb-6">
+                                            <x-form.image-upload label="Foto Petugas (Opsional)" name="photo"
+                                                :value="@$officer->photo ?? null" />
+                                        </div>
+                                    </div>
 
-                                <!-- Phone Input -->
-                                <div class="fv-row mb-7">
-                                    <label class="fs-6 fw-bold form-label mt-3" for="phone">
-                                        <span class="required">Nomor WhatsApp</span>
-                                        <i class="fas fa-exclamation-circle ms-1 fs-7" data-bs-toggle="tooltip"
-                                            title="Gunakan format internasional bersih tanpa spasi atau tanda hubung, contoh: 6281234567890"></i>
-                                    </label>
-                                    <input type="text" class="form-control form-control-solid" name="phone" id="phone"
-                                        placeholder="Contoh: 6281234567890" value="{{ @$officer->phone ?? old('phone') }}"
-                                        required />
-                                </div>
+                                    <!-- Column 2 (Right) -->
+                                    <div class="col-lg-6">
+                                        <!-- Position Input -->
+                                        <div class="fv-row mb-7">
+                                            <label class="fs-6 fw-bold form-label mt-3" for="position">
+                                                <span class="required">Jabatan</span>
+                                            </label>
+                                            <input type="text" class="form-control form-control-solid" name="position" id="position"
+                                                placeholder="Contoh: Kepala Kepengasuhan, Bendahara Pondok" value="{{ @$officer->position ?? old('position') }}"
+                                                required />
+                                        </div>
 
-                                <!-- Photo Upload -->
-                                <div class="fv-row mb-6">
-                                    <x-form.image-upload label="Foto Petugas (Opsional)" name="photo"
-                                        :value="@$officer->photo ?? null" />
+                                        <!-- Duty Input -->
+                                        <div class="fv-row mb-7">
+                                            <label class="fs-6 fw-bold form-label mt-3" for="duty">
+                                                <span class="required">Tugas / Deskripsi</span>
+                                            </label>
+                                            <textarea class="form-control form-control-solid" name="duty" id="duty" rows="6"
+                                                placeholder="Jelaskan deskripsi tugas dan wewenang yang bisa dikonsultasikan oleh wali"
+                                                required>{{ @$officer->duty ?? old('duty') }}</textarea>
+                                        </div>
+                                    </div>
                                 </div>
 
                                 <div class="separator mb-6"></div>
