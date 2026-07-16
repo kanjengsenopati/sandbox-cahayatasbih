@@ -45,6 +45,8 @@ jobs:
 
             echo "=== Building PWA ==="
             cd portalwalisantri && npm ci && npm run build && cd ..
+            rm -f public/workbox-*.js
+            cp portalwalisantri/dist/client/workbox-*.js public/ || true
 
             echo "=== Running Migrations ==="
             /www/server/php/84/bin/php artisan migrate --force
