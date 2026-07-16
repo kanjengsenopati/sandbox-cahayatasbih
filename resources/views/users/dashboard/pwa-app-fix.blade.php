@@ -1,7 +1,32 @@
 @extends('layouts.wali-pwa')
 
+@php $isSpa = true; @endphp
+
 @section('content')
-<div id="root"></div>
+<div id="root">
+    <!-- PWA Splash Screen Instan (< 0.1s First Paint) -->
+    <div id="pwa-splash" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: #ffffff; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 9999; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+        <div style="display: flex; flex-direction: column; align-items: center; gap: 16px;">
+            <!-- Brand Icon (Custom SVG) -->
+            <div style="width: 72px; height: 72px; background: linear-gradient(135deg, #9b1de8 0%, #7c15bd 100%); border-radius: 24px; display: flex; align-items: center; justify-content: center; box-shadow: 0 10px 25px rgba(155, 29, 232, 0.25);">
+                <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+                </svg>
+            </div>
+            <div style="text-align: center;">
+                <h2 style="margin: 0; font-size: 18px; font-weight: 800; color: #0F172A; letter-spacing: -0.025em;">CT-Mobile</h2>
+                <p style="margin: 4px 0 0 0; font-size: 11px; font-weight: 600; color: #94A3B8; text-transform: uppercase; letter-spacing: 0.1em;">Cahaya Tasbih</p>
+            </div>
+            <!-- Spinner -->
+            <div class="pwa-spinner" style="margin-top: 12px; width: 24px; height: 24px; border: 3px solid rgba(155, 29, 232, 0.1); border-top-color: #9b1de8; border-radius: 50%; animation: pwa-spin 0.8s linear infinite;"></div>
+        </div>
+    </div>
+    <style>
+        @keyframes pwa-spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</div>
 
 <!-- PRODUCTION ASSETS - HARD CODED, NO ENV CHECKS -->
 @php

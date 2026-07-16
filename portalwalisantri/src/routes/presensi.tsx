@@ -5,7 +5,7 @@ import { fetchAttendances } from "@/lib/api";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
 
-export const Route = createFileRoute("/presensi" as any)({
+export const Route = createFileRoute("/presensi")({
   component: AttendancePage,
   head: () => ({ meta: [{ title: "Riwayat Kehadiran — SantriPay" }] }),
 });

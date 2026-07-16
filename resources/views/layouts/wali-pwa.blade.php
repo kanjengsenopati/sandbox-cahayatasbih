@@ -18,7 +18,9 @@
     <!-- Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     
+    @if(empty($isSpa))
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    @endif
 
     <style>
         body { font-family: 'Inter', sans-serif; -webkit-tap-highlight-color: transparent; background: #F8FAFC; color: #0F172A; overflow-x: hidden; }
@@ -33,7 +35,9 @@
         @yield('content')
     </main>
 
+    @if(empty($isSpa))
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    @endif
 
     @if(session('success'))
     <script>

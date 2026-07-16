@@ -16,6 +16,7 @@ import { Route as TabunganRouteImport } from './routes/tabungan'
 import { Route as RiwayatRouteImport } from './routes/riwayat'
 import { Route as ProfilRouteImport } from './routes/profil'
 import { Route as PrestasiRouteImport } from './routes/prestasi'
+import { Route as PresensiRouteImport } from './routes/presensi'
 import { Route as PetugasRouteImport } from './routes/petugas'
 import { Route as PerizinanRouteImport } from './routes/perizinan'
 import { Route as PerilakuRouteImport } from './routes/perilaku'
@@ -35,6 +36,7 @@ import { Route as ProfilBantuanRouteImport } from './routes/profil_.bantuan'
 import { Route as PenanggungJawabScanRouteImport } from './routes/penanggung-jawab.scan'
 import { Route as PenanggungJawabDashboardRouteImport } from './routes/penanggung-jawab.dashboard'
 import { Route as PembayaranPayIdRouteImport } from './routes/pembayaran.$payId'
+import { Route as KaryawanPresensiRouteImport } from './routes/karyawan.presensi'
 import { Route as BeritaNewsIdRouteImport } from './routes/berita.$newsId'
 import { Route as AdminApprovalRouteImport } from './routes/admin.approval'
 
@@ -71,6 +73,11 @@ const ProfilRoute = ProfilRouteImport.update({
 const PrestasiRoute = PrestasiRouteImport.update({
   id: '/prestasi',
   path: '/prestasi',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PresensiRoute = PresensiRouteImport.update({
+  id: '/presensi',
+  path: '/presensi',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PetugasRoute = PetugasRouteImport.update({
@@ -169,6 +176,11 @@ const PembayaranPayIdRoute = PembayaranPayIdRouteImport.update({
   path: '/pembayaran/$payId',
   getParentRoute: () => rootRouteImport,
 } as any)
+const KaryawanPresensiRoute = KaryawanPresensiRouteImport.update({
+  id: '/karyawan/presensi',
+  path: '/karyawan/presensi',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const BeritaNewsIdRoute = BeritaNewsIdRouteImport.update({
   id: '/berita/$newsId',
   path: '/berita/$newsId',
@@ -191,6 +203,7 @@ export interface FileRoutesByFullPath {
   '/perilaku': typeof PerilakuRoute
   '/perizinan': typeof PerizinanRoute
   '/petugas': typeof PetugasRoute
+  '/presensi': typeof PresensiRoute
   '/prestasi': typeof PrestasiRoute
   '/profil': typeof ProfilRoute
   '/riwayat': typeof RiwayatRoute
@@ -200,6 +213,7 @@ export interface FileRoutesByFullPath {
   '/topup': typeof TopupRoute
   '/admin/approval': typeof AdminApprovalRoute
   '/berita/$newsId': typeof BeritaNewsIdRoute
+  '/karyawan/presensi': typeof KaryawanPresensiRoute
   '/pembayaran/$payId': typeof PembayaranPayIdRoute
   '/penanggung-jawab/dashboard': typeof PenanggungJawabDashboardRoute
   '/penanggung-jawab/scan': typeof PenanggungJawabScanRoute
@@ -221,6 +235,7 @@ export interface FileRoutesByTo {
   '/perilaku': typeof PerilakuRoute
   '/perizinan': typeof PerizinanRoute
   '/petugas': typeof PetugasRoute
+  '/presensi': typeof PresensiRoute
   '/prestasi': typeof PrestasiRoute
   '/profil': typeof ProfilRoute
   '/riwayat': typeof RiwayatRoute
@@ -230,6 +245,7 @@ export interface FileRoutesByTo {
   '/topup': typeof TopupRoute
   '/admin/approval': typeof AdminApprovalRoute
   '/berita/$newsId': typeof BeritaNewsIdRoute
+  '/karyawan/presensi': typeof KaryawanPresensiRoute
   '/pembayaran/$payId': typeof PembayaranPayIdRoute
   '/penanggung-jawab/dashboard': typeof PenanggungJawabDashboardRoute
   '/penanggung-jawab/scan': typeof PenanggungJawabScanRoute
@@ -252,6 +268,7 @@ export interface FileRoutesById {
   '/perilaku': typeof PerilakuRoute
   '/perizinan': typeof PerizinanRoute
   '/petugas': typeof PetugasRoute
+  '/presensi': typeof PresensiRoute
   '/prestasi': typeof PrestasiRoute
   '/profil': typeof ProfilRoute
   '/riwayat': typeof RiwayatRoute
@@ -261,6 +278,7 @@ export interface FileRoutesById {
   '/topup': typeof TopupRoute
   '/admin/approval': typeof AdminApprovalRoute
   '/berita/$newsId': typeof BeritaNewsIdRoute
+  '/karyawan/presensi': typeof KaryawanPresensiRoute
   '/pembayaran/$payId': typeof PembayaranPayIdRoute
   '/penanggung-jawab/dashboard': typeof PenanggungJawabDashboardRoute
   '/penanggung-jawab/scan': typeof PenanggungJawabScanRoute
@@ -284,6 +302,7 @@ export interface FileRouteTypes {
     | '/perilaku'
     | '/perizinan'
     | '/petugas'
+    | '/presensi'
     | '/prestasi'
     | '/profil'
     | '/riwayat'
@@ -293,6 +312,7 @@ export interface FileRouteTypes {
     | '/topup'
     | '/admin/approval'
     | '/berita/$newsId'
+    | '/karyawan/presensi'
     | '/pembayaran/$payId'
     | '/penanggung-jawab/dashboard'
     | '/penanggung-jawab/scan'
@@ -314,6 +334,7 @@ export interface FileRouteTypes {
     | '/perilaku'
     | '/perizinan'
     | '/petugas'
+    | '/presensi'
     | '/prestasi'
     | '/profil'
     | '/riwayat'
@@ -323,6 +344,7 @@ export interface FileRouteTypes {
     | '/topup'
     | '/admin/approval'
     | '/berita/$newsId'
+    | '/karyawan/presensi'
     | '/pembayaran/$payId'
     | '/penanggung-jawab/dashboard'
     | '/penanggung-jawab/scan'
@@ -344,6 +366,7 @@ export interface FileRouteTypes {
     | '/perilaku'
     | '/perizinan'
     | '/petugas'
+    | '/presensi'
     | '/prestasi'
     | '/profil'
     | '/riwayat'
@@ -353,6 +376,7 @@ export interface FileRouteTypes {
     | '/topup'
     | '/admin/approval'
     | '/berita/$newsId'
+    | '/karyawan/presensi'
     | '/pembayaran/$payId'
     | '/penanggung-jawab/dashboard'
     | '/penanggung-jawab/scan'
@@ -375,6 +399,7 @@ export interface RootRouteChildren {
   PerilakuRoute: typeof PerilakuRoute
   PerizinanRoute: typeof PerizinanRoute
   PetugasRoute: typeof PetugasRoute
+  PresensiRoute: typeof PresensiRoute
   PrestasiRoute: typeof PrestasiRoute
   ProfilRoute: typeof ProfilRoute
   RiwayatRoute: typeof RiwayatRoute
@@ -384,6 +409,7 @@ export interface RootRouteChildren {
   TopupRoute: typeof TopupRoute
   AdminApprovalRoute: typeof AdminApprovalRoute
   BeritaNewsIdRoute: typeof BeritaNewsIdRoute
+  KaryawanPresensiRoute: typeof KaryawanPresensiRoute
   PembayaranPayIdRoute: typeof PembayaranPayIdRoute
   PenanggungJawabDashboardRoute: typeof PenanggungJawabDashboardRoute
   PenanggungJawabScanRoute: typeof PenanggungJawabScanRoute
@@ -444,6 +470,13 @@ declare module '@tanstack/react-router' {
       path: '/prestasi'
       fullPath: '/prestasi'
       preLoaderRoute: typeof PrestasiRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/presensi': {
+      id: '/presensi'
+      path: '/presensi'
+      fullPath: '/presensi'
+      preLoaderRoute: typeof PresensiRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/petugas': {
@@ -579,6 +612,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PembayaranPayIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/karyawan/presensi': {
+      id: '/karyawan/presensi'
+      path: '/karyawan/presensi'
+      fullPath: '/karyawan/presensi'
+      preLoaderRoute: typeof KaryawanPresensiRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/berita/$newsId': {
       id: '/berita/$newsId'
       path: '/berita/$newsId'
@@ -607,6 +647,7 @@ const rootRouteChildren: RootRouteChildren = {
   PerilakuRoute: PerilakuRoute,
   PerizinanRoute: PerizinanRoute,
   PetugasRoute: PetugasRoute,
+  PresensiRoute: PresensiRoute,
   PrestasiRoute: PrestasiRoute,
   ProfilRoute: ProfilRoute,
   RiwayatRoute: RiwayatRoute,
@@ -616,6 +657,7 @@ const rootRouteChildren: RootRouteChildren = {
   TopupRoute: TopupRoute,
   AdminApprovalRoute: AdminApprovalRoute,
   BeritaNewsIdRoute: BeritaNewsIdRoute,
+  KaryawanPresensiRoute: KaryawanPresensiRoute,
   PembayaranPayIdRoute: PembayaranPayIdRoute,
   PenanggungJawabDashboardRoute: PenanggungJawabDashboardRoute,
   PenanggungJawabScanRoute: PenanggungJawabScanRoute,

@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { postMobileCheckin } from "@/lib/api";
 import { toast } from "sonner";
 
-export const Route = createFileRoute("/karyawan/presensi" as any)({
+export const Route = createFileRoute("/karyawan/presensi")({
   component: EmployeeAttendancePage,
   head: () => ({ meta: [{ title: "Presensi Mandiri — Karyawan" }] }),
 });
