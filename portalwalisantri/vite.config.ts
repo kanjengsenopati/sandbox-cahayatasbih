@@ -7,7 +7,7 @@ import tailwindcss from '@tailwindcss/vite';
 
 export default defineConfig({
   base: './',
-  envDir: '../',
+  envDir: '../', // Read environment variables from Laravel root .env
   plugins: [
     TanStackRouterVite({
       routesDirectory: './src/routes',
