@@ -102,7 +102,7 @@
                                             <th>Saldo Awal</th>
                                             <th>Saldo Akhir</th>
                                             <th class="min-w-100px" style="width: 22%">Keterangan</th>
-                                            {{-- <th class="text-center min-w-100px" style="width: 22%">Aksi</th> --}}
+                                            <th class="text-center min-w-100px" style="width: 10%">Aksi</th>
                                         </tr>
                                     </thead>
                                     <tbody class="text-gray-600 fw-bold"></tbody>
@@ -280,6 +280,13 @@
                          return data ? data : 'N/A'; // Null handler
                         }
                     },
+                    {
+                        data: 'action',
+                        name: 'action',
+                        orderable: false,
+                        searchable: false,
+                        className: 'text-center'
+                    }
                 ]
             });
     })
@@ -568,6 +575,65 @@
                     .catch((error) => {
                         console.error('Error deleting archive:', error);
                         var msg = 'Terjadi kesalahan saat menghapus arsip';
+                        if (error.response && error.response.data && error.response.data.message) {
+                            msg = error.response.data.message;
+                        }
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Gagal',
+                            text: msg
+                        });
+                    });
+                }
+            });
+        });
+
+        $(document).on('click', '.delete-history-btn', function() {
+            var id = $(this).data('id');
+            Swal.fire({
+                title: 'Apakah Anda yakin?',
+                text: "Riwayat saldo ini akan dihapus permanen dan saldo siswa akan disesuaikan kembali!",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#3085d6',
+                cancelButtonColor: '#d33',
+                confirmButtonText: 'Ya, hapus!',
+                cancelButtonText: 'Batal'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    Swal.fire({
+                        title: 'Menghapus...',
+                        text: 'Harap tunggu',
+                        allowOutsideClick: false,
+                        didOpen: () => {
+                            Swal.showLoading();
+                        }
+                    });
+
+                    axios.delete(`{{ url('saldo-history/record') }}/${id}`, {
+                        data: {
+                            _token: '{{ csrf_token() }}'
+                        }
+                    })
+                    .then((response) => {
+                        if (response.data.code == '200') {
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Berhasil',
+                                text: response.data.message
+                            });
+                            $('#table-saldo-history').DataTable().ajax.reload();
+                        } else {
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Gagal',
+                                text: response.data.message
+                            });
+                        }
+                    })
+                    .catch((error) => {
+                        console.error('Error deleting history:', error);
+                        var msg = 'Terjadi kesalahan saat menghapus riwayat';
                         if (error.response && error.response.data && error.response.data.message) {
                             msg = error.response.data.message;
                         }

@@ -350,6 +350,7 @@ Route::group(['middleware' => ['auth']], function () {
     Route::resource('saving-bank', SavingBankController::class, ['only' => ['index', 'edit', 'update']])->names('saving-bank');
     Route::post('saldo-history/status-payment/{id}', [SaldoHistoryController::class, 'updateStatusPayment'])->name('saldo-history.status-payment');
     Route::post('saldo-history/import', [SaldoHistoryController::class, 'import'])->name('saldo-history.import');
+    Route::delete('saldo-history/record/{id}', [SaldoHistoryController::class, 'deleteHistory'])->name('saldo-history.delete-history');
     Route::resource('saldo-history', SaldoHistoryController::class);
     Route::post('saving-history/status-payment/{id}', [SavingHistoryController::class, 'updateStatusPayment'])->name('saving-history.status-payment');
     Route::resource('saving-history', SavingHistoryController::class);

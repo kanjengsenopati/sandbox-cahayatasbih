@@ -69,7 +69,15 @@ class SaldoHistoryController extends Controller
                         return '<span class="badge bg-danger">' . $data->status . '</span>';
                     }
                 })
-                ->rawColumns(['amount', 'status', 'date', 'balance_before', 'balance_after'])
+                ->addColumn('action', function ($row) {
+                    if (Auth::user()->hasRole('Super Admin')) {
+                        return '<button class="btn btn-danger btn-sm delete-history-btn" data-id="' . $row->id . '">
+                                    <i class="fas fa-trash"></i> Hapus
+                                </button>';
+                    }
+                    return '-';
+                })
+                ->rawColumns(['amount', 'status', 'date', 'balance_before', 'balance_after', 'action'])
                 ->make(true);
         }
         if (request()->ajax() && request()->type === 'topup') {
@@ -499,5 +507,48 @@ class SaldoHistoryController extends Controller
                         <i class='fas fa-trash me-1'></i> Hapus
                     </button>";
         }
+    }
+
+    public function deleteHistory($id)
+    {
+        if (!Auth::user()->hasRole('Super Admin')) {
+            return response()->json([
+                'code' => '403',
+                'message' => 'Hanya Super Admin yang dapat menghapus riwayat saldo.'
+            ], 403);
+        }
+
+        $history = SaldoHistory::findOrFail($id);
+        $student = $history->student;
+
+        if (!$student) {
+            return response()->json([
+                'code' => '404',
+                'message' => 'Data siswa tidak ditemukan.'
+            ], 404);
+        }
+
+        // Adjust student balance back based on transaction type
+        if ($history->type === SaldoHistory::TYPE_IN) {
+            $student->saldo -= $history->amount;
+        } elseif ($history->type === SaldoHistory::TYPE_OUT || $history->type === SaldoHistory::TYPE_WITHDRAW) {
+            $student->saldo += $history->amount;
+        }
+
+        $student->save();
+
+        // Delete the associated TransactionDetail if exists
+        $transactionDetail = TransactionDetail::where('saldo_history_id', $history->id)->first();
+        if ($transactionDetail) {
+            $transactionDetail->delete();
+        }
+
+        // Delete the history record
+        $history->delete();
+
+        return response()->json([
+            'code' => '200',
+            'message' => 'Riwayat saldo berhasil dihapus dan saldo siswa telah disesuaikan.'
+        ]);
     }
 }
