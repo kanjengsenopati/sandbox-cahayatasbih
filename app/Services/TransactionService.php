@@ -242,17 +242,15 @@ class TransactionService
                     foreach ($pendingTransactions as $pendingTx) {
                         $pendingTx->update(['status' => Transaction::STATUS_CANCELLED]);
 
-                        // Cancel related Saldo/Saving History
+                        // Cancel related Saldo/Saving History by deleting them
                         if ($pendingTx->type === Transaction::TYPE_SALDO || $pendingTx->type === Transaction::TYPE_SAVING) {
                             $details = \App\Models\TransactionDetail::where('transaction_id', $pendingTx->id)->get();
                             foreach ($details as $detail) {
                                 if ($detail->saldo_history_id) {
-                                    \App\Models\SaldoHistory::where('id', $detail->saldo_history_id)
-                                        ->update(['status' => \App\Models\SaldoHistory::STATUS_FAILED]);
+                                    \App\Models\SaldoHistory::where('id', $detail->saldo_history_id)->delete();
                                 }
                                 if ($detail->saving_history_id) {
-                                    \App\Models\SavingHistory::where('id', $detail->saving_history_id)
-                                        ->update(['status' => \App\Models\SavingHistory::STATUS_FAILED]);
+                                    \App\Models\SavingHistory::where('id', $detail->saving_history_id)->delete();
                                 }
                             }
                         }
@@ -413,8 +411,49 @@ class TransactionService
     {
         DB::beginTransaction();
         try {
+            $oldStatus = $transaction->status;
             $transaction->update($data);
-            if (request()->status == Transaction::STATUS_PAID) {
+
+            // Rollback logic: Transition from PAID to non-PAID status
+            if ($oldStatus === Transaction::STATUS_PAID && $transaction->status !== Transaction::STATUS_PAID) {
+                if ($transaction->type == Transaction::TYPE_SALDO) {
+                    $student = Student::find($transaction->student_id);
+                    $transactionDetail = $transaction->transactionDetails->first();
+                    if ($transactionDetail && $transactionDetail->saldoHistory) {
+                        $amountToSub = $transactionDetail->saldoHistory->amount;
+                        $student->decrement('saldo', $amountToSub);
+                    }
+                    if ($transaction->unique_payment > 0) {
+                        $student->decrement('saldo', $transaction->unique_payment);
+                        \App\Models\SaldoHistory::where('student_id', $student->id)
+                            ->where('amount', $transaction->unique_payment)
+                            ->where('type', SaldoHistory::TYPE_IN)
+                            ->where('usage', SaldoHistory::USAGE_TOPUP)
+                            ->where('description', 'like', '%Pengembalian Kode Unik%')
+                            ->delete();
+                    }
+                } elseif ($transaction->type == Transaction::TYPE_SAVING) {
+                    $student = Student::find($transaction->student_id);
+                    $transactionDetail = $transaction->transactionDetails->first();
+                    if ($transactionDetail && $transactionDetail->savingHistory) {
+                        $amountToSub = $transactionDetail->savingHistory->amount;
+                        $student->decrement('saving', $amountToSub);
+                    }
+                } elseif ($transaction->type == Transaction::TYPE_BILL) {
+                    $transaction->transactionDetails->each(function ($detail) {
+                        $bill = $detail->bill;
+                        if ($bill) {
+                            $paidVal = $detail->amount ?? $bill->remaining_amount;
+                            $bill->paid_amount = max(0, $bill->paid_amount - $paidVal);
+                            $bill->status = Bill::STATUS_UNPAID;
+                            $bill->save();
+                        }
+                    });
+                }
+            }
+
+            // Normal processing transition to PAID
+            if ($oldStatus !== Transaction::STATUS_PAID && $transaction->status == Transaction::STATUS_PAID) {
                 // change transaction status to paid
                 $transaction->update([
                     'status' => Transaction::STATUS_PAID,
@@ -500,40 +539,39 @@ class TransactionService
                 }
                 self::dispatchNotifications($transaction);
             }
-            if ($transaction->activeProof) {
-                if (request()->status == Transaction::STATUS_REJECTED) {
-                    $transaction->update([
-                        'status' => Transaction::STATUS_REJECTED,
-                    ]);
+
+            // Normal processing transition to REJECTED (or if status is REJECTED)
+            if ($transaction->status == Transaction::STATUS_REJECTED) {
+                if ($transaction->activeProof) {
                     $transaction->activeProof->update([
                         'status' => TransactionProof::STATUS_REJECTED,
-                        'note' => $data['note'] ?: "Kode Unik Tidak Sama, pastikan nominal transfer sesuai dengan yang tertera (3 digit kode unik wajib sama)",
-                    ]);
-
-                    // Delete related history so no history appears in UI
-                    if ($transaction->type == Transaction::TYPE_SALDO) {
-                        $transaction->transactionDetails->each(function ($detail) {
-                            $detail->saldoHistory?->delete();
-                        });
-                    } elseif ($transaction->type == Transaction::TYPE_SAVING) {
-                        $transaction->transactionDetails->each(function ($detail) {
-                            $detail->savingHistory?->delete();
-                        });
-                    }
-                    // send notification to whatsapp
-                    $messageWhatsapp = SendNotifWaService::sendMessageRejectedPayment($transaction);
-                    \App\Services\NotificationService::sendFromTemplate('payment_rejected', $transaction->student->user, [], $transaction);
-                    dispatch(new SendToWhatsappNotificationJob($transaction->student->user->phone, $messageWhatsapp));
-                    $contacts = Contact::where('type', Contact::TYPE_BENDAHARA)->orWhere('type', Contact::TYPE_SUPERADMIN)->get();
-                    foreach ($contacts as $contact) {
-                        dispatch(new SendToWhatsappNotificationJob($contact->phone, $messageWhatsapp));
-                    }
-                } else {
-                    $transaction->activeProof->update([
-                        'status' => $data['status'],
-                        'note' => null,
+                        'note' => ($data['note'] ?? null) ?: "Kode Unik Tidak Sama, pastikan nominal transfer sesuai dengan yang tertera (3 digit kode unik wajib sama)",
                     ]);
                 }
+
+                // Delete related history so no history appears in UI
+                if ($transaction->type == Transaction::TYPE_SALDO) {
+                    $transaction->transactionDetails->each(function ($detail) {
+                        $detail->saldoHistory?->delete();
+                    });
+                } elseif ($transaction->type == Transaction::TYPE_SAVING) {
+                    $transaction->transactionDetails->each(function ($detail) {
+                        $detail->savingHistory?->delete();
+                    });
+                }
+                // send notification to whatsapp
+                $messageWhatsapp = SendNotifWaService::sendMessageRejectedPayment($transaction);
+                \App\Services\NotificationService::sendFromTemplate('payment_rejected', $transaction->student->user, [], $transaction);
+                dispatch(new SendToWhatsappNotificationJob($transaction->student->user->phone, $messageWhatsapp));
+                $contacts = Contact::where('type', Contact::TYPE_BENDAHARA)->orWhere('type', Contact::TYPE_SUPERADMIN)->get();
+                foreach ($contacts as $contact) {
+                    dispatch(new SendToWhatsappNotificationJob($contact->phone, $messageWhatsapp));
+                }
+            } elseif ($transaction->activeProof && $transaction->status !== Transaction::STATUS_PAID) {
+                $transaction->activeProof->update([
+                    'status' => $data['status'],
+                    'note' => null,
+                ]);
             }
             DB::commit();
             return [

@@ -28,11 +28,29 @@ class AutoExpiredClass extends Command
     public function handle()
     {
         // Get transactions that are pending payment and past their expiry time
-        $expiredTransactions = Transaction::where('status', Transaction::STATUS_PENDING_PAYMENT)
+        $expiredTxIds = Transaction::where('status', Transaction::STATUS_PENDING_PAYMENT)
             ->where('expiry_time', '<=', Carbon::now())
-            ->update(['status' => Transaction::STATUS_EXPIRED]);
+            ->pluck('id');
+
+        $count = $expiredTxIds->count();
+
+        if ($count > 0) {
+            // Delete related SaldoHistory and SavingHistory
+            $details = \App\Models\TransactionDetail::whereIn('transaction_id', $expiredTxIds)->get();
+            foreach ($details as $detail) {
+                if ($detail->saldo_history_id) {
+                    \App\Models\SaldoHistory::where('id', $detail->saldo_history_id)->delete();
+                }
+                if ($detail->saving_history_id) {
+                    \App\Models\SavingHistory::where('id', $detail->saving_history_id)->delete();
+                }
+            }
+
+            // Update status of transactions to EXPIRED
+            Transaction::whereIn('id', $expiredTxIds)->update(['status' => Transaction::STATUS_EXPIRED]);
+        }
 
         // Output the result
-        $this->info("Expired $expiredTransactions transactions.");
+        $this->info("Expired $count transactions.");
     }
 }

@@ -118,8 +118,8 @@ class DashboardController extends BaseWaliApiController
             
             $todaySummary = [
                 'count' => $recentTransactions->count(),
-                'in' => $saldoHistories->where('type', 'IN')->sum('amount'),
-                'out' => $saldoHistories->where('type', 'OUT')->sum('amount') 
+                'in' => $saldoHistories->where('type', 'IN')->where('status', \App\Models\SaldoHistory::STATUS_SUCCESS)->sum('amount'),
+                'out' => $saldoHistories->where('type', 'OUT')->where('status', \App\Models\SaldoHistory::STATUS_SUCCESS)->sum('amount') 
                     + $posTransactions->sum('amount') 
                     + $billTransactions->where('status', \App\Models\Transaction::STATUS_PAID)->sum('amount'),
             ];
