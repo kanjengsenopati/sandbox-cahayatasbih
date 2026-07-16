@@ -194,6 +194,8 @@ class BillController extends Controller
 
         if ($transaction->status === Transaction::STATUS_PAID) {
             return "<span class='badge badge-success'>Lunas</span>";
+        } elseif ($transaction->status === Transaction::STATUS_REJECTED) {
+            return "<span class='badge badge-danger'>Ditolak</span>";
         }
 
         $options = [

@@ -132,9 +132,11 @@ class SaldoHistoryController extends Controller
                         // Tambahkan button simpan
                         $action .= "<button class='btn btn-primary btn-sm mt-2' onclick='saveStatus(\"{$transaction->id}\")'>Simpan</button>";
 
-                        // Jika status sudah lunas maka tidak bisa diubah
+                        // Jika status sudah lunas atau ditolak maka tidak bisa diubah
                         if ($transaction->status == Transaction::STATUS_PAID) {
                             $action = "<span class='badge badge-success'>Lunas</span>";
+                        } elseif ($transaction->status == Transaction::STATUS_REJECTED) {
+                            $action = "<span class='badge badge-danger'>Ditolak</span>";
                         }
 
                         return $action;

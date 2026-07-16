@@ -503,21 +503,21 @@ class TransactionService
             if ($transaction->activeProof) {
                 if (request()->status == Transaction::STATUS_REJECTED) {
                     $transaction->update([
-                        'status' => Transaction::STATUS_PENDING_PAYMENT,
+                        'status' => Transaction::STATUS_REJECTED,
                     ]);
                     $transaction->activeProof->update([
                         'status' => TransactionProof::STATUS_REJECTED,
                         'note' => $data['note'] ?: "Kode Unik Tidak Sama, pastikan nominal transfer sesuai dengan yang tertera (3 digit kode unik wajib sama)",
                     ]);
 
-                    // Sync related history to FAILED
+                    // Delete related history so no history appears in UI
                     if ($transaction->type == Transaction::TYPE_SALDO) {
                         $transaction->transactionDetails->each(function ($detail) {
-                            $detail->saldoHistory?->update(['status' => \App\Models\SaldoHistory::STATUS_FAILED]);
+                            $detail->saldoHistory?->delete();
                         });
                     } elseif ($transaction->type == Transaction::TYPE_SAVING) {
                         $transaction->transactionDetails->each(function ($detail) {
-                            $detail->savingHistory?->update(['status' => \App\Models\SavingHistory::STATUS_FAILED]);
+                            $detail->savingHistory?->delete();
                         });
                     }
                     // send notification to whatsapp

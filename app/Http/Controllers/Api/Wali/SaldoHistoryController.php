@@ -46,8 +46,8 @@ class SaldoHistoryController extends BaseWaliApiController
 
                 $tx = \App\Models\Transaction::withTrashed()->with('activeProof')->find($transactionDetail->transaction_id);
                 
-                // If transaction is missing, cancelled, or deleted by admin
-                if (!$tx || $tx->status === \App\Models\Transaction::STATUS_CANCELLED || $tx->trashed()) {
+                // If transaction is missing, cancelled, rejected, or deleted by admin
+                if (!$tx || $tx->status === \App\Models\Transaction::STATUS_CANCELLED || $tx->status === \App\Models\Transaction::STATUS_REJECTED || $tx->trashed()) {
                     $history->delete();
                     $histories->forget($key);
                 } else {
