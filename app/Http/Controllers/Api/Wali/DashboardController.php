@@ -37,6 +37,7 @@ class DashboardController extends BaseWaliApiController
 
             $saldoHistories = \App\Models\SaldoHistory::with('transaction_details')->where('student_id', $activeStudent->id)
                 ->whereNotIn('usage', [\App\Models\SaldoHistory::USAGE_POS, \App\Models\SaldoHistory::USAGE_BILL])
+                ->whereNotIn('status', [\App\Models\SaldoHistory::STATUS_FAILED])
                 ->where('created_at', '>=', now()->startOfDay())
                 ->latest()
                 ->get()

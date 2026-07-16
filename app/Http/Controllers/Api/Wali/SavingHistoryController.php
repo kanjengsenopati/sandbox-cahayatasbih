@@ -13,6 +13,7 @@ class SavingHistoryController extends BaseWaliApiController
         if (!$student) return response()->json(['data' => []]);
         
         $query = SavingHistory::where('student_id', $student->id)
+            ->whereNotIn('status', [SavingHistory::STATUS_FAILED])
             ->latest();
             
         if ($request->filter == 'today') {

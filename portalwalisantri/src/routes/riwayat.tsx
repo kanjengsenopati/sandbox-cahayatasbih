@@ -166,17 +166,19 @@ function RiwayatPage() {
   });
 
   const allTxs: Tx[] = useMemo(() => {
-    const saldoMapped: Tx[] = saldoHistories.map((s: any) => ({
-      id: s.id,
-      name: s.type === "IN" ? "Top Up Saldo" : "Pengeluaran Saldo",
-      category: s.type === "IN" ? "topup" : "kantin",
-      type: s.type === "IN" ? "in" : "out",
-      amount: s.amount,
-      date: s.created_at,
-      note: s.note,
-      status: s.status,
-      payId: s.transaction_id || s.transactionId,
-    }));
+    const saldoMapped: Tx[] = saldoHistories
+      .filter((s: any) => !["CANCELLED", "cancelled", "rejected", "REJECTED", "EXPIRED", "expired", "failed", "FAILED"].includes(s.status))
+      .map((s: any) => ({
+        id: s.id,
+        name: s.type === "IN" ? "Top Up Saldo" : "Pengeluaran Saldo",
+        category: s.type === "IN" ? "topup" : "kantin",
+        type: s.type === "IN" ? "in" : "out",
+        amount: s.amount,
+        date: s.created_at,
+        note: s.note,
+        status: s.status,
+        payId: s.transaction_id || s.transactionId,
+      }));
 
     const posMapped: Tx[] = posTransactions.map((p: any) => ({
       id: p.id,

@@ -350,7 +350,7 @@ function Dashboard() {
             </div>
           ) : (dashboard?.recentTransactions && Array.isArray(dashboard.recentTransactions) && dashboard.recentTransactions.length > 0) ? (
             dashboard.recentTransactions
-              .filter((t: any) => !(t.category === "BILL" && ["CANCELLED", "cancelled", "rejected", "REJECTED", "EXPIRED", "expired", "failed", "FAILED"].includes(t.status)))
+              .filter((t: any) => !["CANCELLED", "cancelled", "rejected", "REJECTED", "EXPIRED", "expired", "failed", "FAILED"].includes(t.status))
               .map((t: any, i: number) => {
                 const isIn = t.type === "IN";
                 const isBill = t.category === "BILL";

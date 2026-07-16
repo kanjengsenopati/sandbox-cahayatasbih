@@ -14,6 +14,7 @@ class SaldoHistoryController extends BaseWaliApiController
         
         $query = SaldoHistory::where('student_id', $student->id)
             ->whereNotIn('usage', [SaldoHistory::USAGE_POS, SaldoHistory::USAGE_BILL])
+            ->whereNotIn('status', [SaldoHistory::STATUS_FAILED])
             ->latest();
             
         if ($request->filter == 'today') {
