@@ -111,12 +111,16 @@
         @foreach($entry['css'] ?? [] as $css)
             <link rel="stylesheet" href="/pwa-asset?f={{ urlencode($css) }}&v={{ $manifestVersion }}">
         @endforeach
-        <script type="module" src="/pwa-asset?f={{ urlencode($entry['file']) }}&v={{ $manifestVersion }}"></script>
+        {{-- PENTING: Jangan tambahkan ?v= pada script type=module karena menyebabkan dual React instance --}}
+        <script type="module" src="/pwa-asset?f={{ urlencode($entry['file']) }}"></script>
     @else
         @foreach($entry['css'] ?? [] as $css)
             <link rel="stylesheet" href="{{ $manifestUrlBase }}{{ $css }}?v={{ $manifestVersion }}">
         @endforeach
-        <script type="module" src="{{ $manifestUrlBase }}{{ $entry['file'] }}?v={{ $manifestVersion }}"></script>
+        {{-- PENTING: Jangan tambahkan ?v= pada script type=module --}}
+        {{-- ES Module URL dengan ?v= dianggap modul BERBEDA oleh browser, menyebabkan React dimuat 2x --}}
+        {{-- Content hash di nama file (index-YULT9kmj.js) sudah cukup untuk cache busting --}}
+        <script type="module" src="{{ $manifestUrlBase }}{{ $entry['file'] }}"></script>
     @endif
 @else
     <!-- FALLBACK: Direct asset loading if manifest logic fails (ensure this points to a built asset if needed) -->
@@ -151,9 +155,9 @@
             }
         });
 
-        // Register sw.js via the dedicated root route with root scope
+        // Register sw.js via pwa-asset bypass route (Nginx memblokir request langsung ke /sw.js)
         window.addEventListener('load', function() {
-            navigator.serviceWorker.register('/sw.js', { scope: '/' })
+            navigator.serviceWorker.register('/pwa-asset?f=sw.js', { scope: '/' })
                 .then(function(reg) {
                     console.log('Wali Santri PWA: Service Worker registered successfully with scope:', reg.scope);
                     

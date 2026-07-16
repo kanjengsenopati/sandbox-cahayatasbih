@@ -44,6 +44,13 @@ jobs:
             npm run build
 
             echo "=== Building PWA ==="
+            echo "Membersihkan artefak build lama..."
+            rm -rf portalwalisantri/dist/client || true
+            rm -rf public/portalwalisantri/dist/assets || true
+            rm -f public/portalwalisantri/dist/sw.js || true
+            rm -f public/portalwalisantri/dist/registerSW.js || true
+            rm -f public/portalwalisantri/dist/index.html || true
+            rm -f public/workbox-*.js || true
             cd portalwalisantri && npm ci && npm run build && cd ..
 
             echo "=== Running Migrations ==="

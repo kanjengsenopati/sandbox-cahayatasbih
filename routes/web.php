@@ -542,7 +542,10 @@ Route::get('pwa-asset', function (\Illuminate\Http\Request $request) {
     
     $filename = basename($file);
     
+    // Prioritaskan public_path (lokasi build baru) sebelum base_path (lokasi build lama)
     $paths = [
+        public_path("portalwalisantri/dist/{$file}"),
+        public_path("portalwalisantri/dist/assets/{$filename}"),
         base_path("portalwalisantri/dist/client/{$file}"),
         base_path("portalwalisantri/dist/{$file}"),
         base_path("portalwalisantri/dist/client/assets/{$filename}"),
@@ -566,8 +569,10 @@ Route::get('pwa-asset', function (\Illuminate\Http\Request $request) {
                 'Cache-Control' => 'public, max-age=31536000'
             ];
             
+            // Service Worker harus tidak di-cache agresif agar update bisa terdeteksi
             if (str_ends_with($path, 'sw.js')) {
                 $headers['Service-Worker-Allowed'] = '/';
+                $headers['Cache-Control'] = 'no-cache, no-store, must-revalidate';
             }
             
             return response()->file($path, $headers);

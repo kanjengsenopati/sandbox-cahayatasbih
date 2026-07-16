@@ -24,7 +24,7 @@ export default defineConfig({
         skipWaiting: true,
         clientsClaim: true,
         inlineWorkboxRuntime: true,
-        navigateFallback: '/portalwalisantri/dist/index.html',
+        navigateFallback: null,
       },
       manifest: {
         name: 'CT-Mobile',
