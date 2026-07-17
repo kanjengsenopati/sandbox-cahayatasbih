@@ -416,21 +416,23 @@ class TransactionService
 
             // Rollback logic: Transition from PAID to non-PAID status
             if ($oldStatus === Transaction::STATUS_PAID && $transaction->status !== Transaction::STATUS_PAID) {
+                if ($transaction->unique_payment > 0) {
+                    $student = Student::find($transaction->student_id);
+                    $student->decrement('saldo', $transaction->unique_payment);
+                    \App\Models\SaldoHistory::where('student_id', $student->id)
+                        ->where('amount', $transaction->unique_payment)
+                        ->where('type', SaldoHistory::TYPE_IN)
+                        ->where('usage', SaldoHistory::USAGE_TOPUP)
+                        ->where('description', 'like', '%Pengembalian Kode Unik%')
+                        ->delete();
+                }
+
                 if ($transaction->type == Transaction::TYPE_SALDO) {
                     $student = Student::find($transaction->student_id);
                     $transactionDetail = $transaction->transactionDetails->first();
                     if ($transactionDetail && $transactionDetail->saldoHistory) {
                         $amountToSub = $transactionDetail->saldoHistory->amount;
                         $student->decrement('saldo', $amountToSub);
-                    }
-                    if ($transaction->unique_payment > 0) {
-                        $student->decrement('saldo', $transaction->unique_payment);
-                        \App\Models\SaldoHistory::where('student_id', $student->id)
-                            ->where('amount', $transaction->unique_payment)
-                            ->where('type', SaldoHistory::TYPE_IN)
-                            ->where('usage', SaldoHistory::USAGE_TOPUP)
-                            ->where('description', 'like', '%Pengembalian Kode Unik%')
-                            ->delete();
                     }
                 } elseif ($transaction->type == Transaction::TYPE_SAVING) {
                     $student = Student::find($transaction->student_id);
