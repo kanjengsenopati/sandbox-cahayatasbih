@@ -49,7 +49,7 @@ function PetugasPage() {
             </button>
             <div>
               <p className="text-[11px] text-white/70 font-semibold uppercase tracking-wider">Layanan Wali</p>
-              <p className="text-base font-bold text-white">Hubungi Petugas Pesantren</p>
+              <p className="text-base font-bold text-white">Hubungi Petugas Pesantren dan Sekolah</p>
             </div>
           </div>
 
