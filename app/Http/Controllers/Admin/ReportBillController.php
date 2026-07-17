@@ -906,13 +906,18 @@ class ReportBillController extends Controller
     public function sendWa($id)
     {
         $billTypes = BillType::with('bills.student')->where('id', $id)->get();
-        // get student_id where status bill is unpaid from month 1 and month now
-        $students = Student::whereHas('bills', function ($query) use ($id) {
+        $currentMonth = (int) date('n');
+        $currentYear = (int) date('Y');
+        $students = Student::whereHas('bills', function ($query) use ($id, $currentMonth, $currentYear) {
             $query->where('bill_type_id', $id)
                 ->where('status', Bill::STATUS_UNPAID)
-                ->where('month', '>=', 1)
-                ->where('month', '<=', date('n'))
-                ->where('year', '<=', date('Y'));
+                ->where(function ($q) use ($currentMonth, $currentYear) {
+                    $q->where('year', '<', $currentYear)
+                        ->orWhere(function ($q2) use ($currentMonth, $currentYear) {
+                            $q2->where('year', $currentYear)
+                                ->where('month', '<=', $currentMonth);
+                        });
+                });
         })->pluck('id')->toArray();
 
         dispatch(new SendBillWhatsappNotificationJob($students, $billTypes));

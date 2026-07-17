@@ -145,12 +145,19 @@ class SendNotifWaService
                 $message .= "Total Kekurangan : *Rp." . number_format($total_unpaid, 0, ',', '.') . "*\n";
                 $message .= "Status Pembayaran: *" . ($total_unpaid > 0 ? 'Belum Lunas' : 'Lunas') . "*\n";
             } else {
+                $currentMonth = (int) date('n');
+                $currentYear = (int) date('Y');
                 $unpaidBills = $billType->bills()
                     ->where('student_id', $student->id)
                     ->where('status', Bill::STATUS_UNPAID)
-                    ->where('month', '<=', intval(date('n')))
-                    ->where('year', '<=', date('Y'))
-                    ->orderBy('month', 'asc') // Pastikan bulan diurutkan dari yang terkecil ke yang terbesar
+                    ->where(function ($q) use ($currentMonth, $currentYear) {
+                        $q->where('year', '<', $currentYear)
+                            ->orWhere(function ($q2) use ($currentMonth, $currentYear) {
+                                $q2->where('year', $currentYear)
+                                    ->where('month', '<=', $currentMonth);
+                            });
+                    })
+                    ->orderByRaw('CONCAT(year, LPAD(month, 2, "0")) ASC')
                     ->get();
 
                 $totalUnpaid = $unpaidBills->sum('amount');

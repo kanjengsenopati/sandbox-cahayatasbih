@@ -89,6 +89,8 @@ function Dashboard() {
     enabled: !!active,
   });
 
+  const hasUnpaidBills = dashboard?.has_unpaid_bills || false;
+
   const [newsPage, setNewsPage] = useState(1);
   const [allNews, setAllNews] = useState<any[]>([]);
 
@@ -181,7 +183,9 @@ function Dashboard() {
           </div>
           <button className="relative w-11 h-11 rounded-[16px] bg-slate-50 flex items-center justify-center hover:bg-slate-100 transition">
             <Bell size={20} className="text-slate-600" />
-            <span className="absolute top-2.5 right-2.5 w-2.5 h-2.5 rounded-full bg-red-500 border-2 border-slate-50" />
+            {hasUnpaidBills && (
+              <span className="absolute top-2.5 right-2.5 w-2.5 h-2.5 rounded-full bg-red-500 border-2 border-slate-50" />
+            )}
           </button>
         </div>
       </header>

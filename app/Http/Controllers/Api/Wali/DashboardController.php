@@ -178,6 +178,21 @@ class DashboardController extends BaseWaliApiController
                 ->get();
         });
 
+        $hasUnpaidBills = false;
+        if ($activeStudent) {
+            $currentMonth = (int) date('n');
+            $currentYear = (int) date('Y');
+            $hasUnpaidBills = \App\Models\Bill::where('student_id', $activeStudent->id)
+                ->where('status', \App\Models\Bill::STATUS_UNPAID)
+                ->where(function ($q) use ($currentMonth, $currentYear) {
+                    $q->where('year', '<', $currentYear)
+                        ->orWhere(function ($q2) use ($currentMonth, $currentYear) {
+                            $q2->where('year', $currentYear)
+                                ->where('month', '<=', $currentMonth);
+                        });
+                })->exists();
+        }
+
         return response()->json([
             'user' => $user,
             'informations' => $informations,
@@ -189,6 +204,7 @@ class DashboardController extends BaseWaliApiController
             'todaySummary' => $todaySummary,
             'unit_transfer' => $unitTransfer,
             'menus' => $menus,
+            'has_unpaid_bills' => $hasUnpaidBills,
         ]);
     }
 }
