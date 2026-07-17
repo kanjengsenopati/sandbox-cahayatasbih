@@ -75,10 +75,15 @@ echo "\nBootstrapping Laravel application:\n";
 try {
     require __DIR__.'/../vendor/autoload.php';
     $app = require_once __DIR__.'/../bootstrap/app.php';
+    
+    // Mulai session secara manual lewat Laravel Http Kernel
     $kernel = $app->make(Illuminate\Contracts\Http\Kernel::class);
-    $response = $kernel->handle(
-        $request = Illuminate\Http\Request::capture()
-    );
+    $request = Illuminate\Http\Request::capture();
+    
+    // Penting: Agar session middleware berjalan, kita perlu mensimulasikan request web
+    $request->setLaravelSession($app['session']->driver());
+    
+    $response = $kernel->handle($request);
     
     echo "  - Laravel Boot: SUCCESS\n";
     echo "  - Session Driver: " . config('session.driver') . "\n";
@@ -87,6 +92,29 @@ try {
     echo "  - Session Secure: " . (config('session.secure') ? 'TRUE' : 'FALSE') . "\n";
     echo "  - Session Domain: " . (config('session.domain') ?? 'NULL') . "\n";
     echo "  - CSRF Token: " . csrf_token() . "\n";
+    echo "  - Is Request Secure (HTTPS): " . ($request->isSecure() ? 'YES' : 'NO') . "\n";
+    
+    // Cetak headers penting terkait proxy
+    echo "\nRequest Headers:\n";
+    echo "  - HTTP_X_FORWARDED_PROTO: " . ($request->server('HTTP_X_FORWARDED_PROTO') ?? 'NOT SET') . "\n";
+    echo "  - HTTP_X_FORWARDED_PORT: " . ($request->server('HTTP_X_FORWARDED_PORT') ?? 'NOT SET') . "\n";
+    echo "  - HTTP_X_FORWARDED_FOR: " . ($request->server('HTTP_X_FORWARDED_FOR') ?? 'NOT SET') . "\n";
+    echo "  - HTTP_HOST: " . ($request->server('HTTP_HOST') ?? 'NOT SET') . "\n";
+    
+    // Tes persistensi session Laravel
+    $session = $request->session();
+    if ($session) {
+        $counter = $session->get('diagnostic_counter', 0) + 1;
+        $session->put('diagnostic_counter', $counter);
+        $session->save(); // simpan manual
+        echo "\nLaravel Session Persistence Test:\n";
+        echo "  - Counter: " . $counter . " (Refresh halaman untuk melihat apakah nilai bertambah!)\n";
+        echo "  - Session ID: " . $session->getId() . "\n";
+    } else {
+        echo "\nLaravel Session: NOT AVAILABLE\n";
+    }
+    
+    $kernel->terminate($request, $response);
     
 } catch (Exception $e) {
     echo "  - Laravel Boot: FAILED with error: " . $e->getMessage() . "\n";
