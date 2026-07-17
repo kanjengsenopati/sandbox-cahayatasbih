@@ -75,14 +75,8 @@ echo "\nBootstrapping Laravel application:\n";
 try {
     require __DIR__.'/../vendor/autoload.php';
     $app = require_once __DIR__.'/../bootstrap/app.php';
-    
-    // Mulai session secara manual lewat Laravel Http Kernel
     $kernel = $app->make(Illuminate\Contracts\Http\Kernel::class);
     $request = Illuminate\Http\Request::capture();
-    
-    // Penting: Agar session middleware berjalan, kita perlu mensimulasikan request web
-    $request->setLaravelSession($app['session']->driver());
-    
     $response = $kernel->handle($request);
     
     echo "  - Laravel Boot: SUCCESS\n";
