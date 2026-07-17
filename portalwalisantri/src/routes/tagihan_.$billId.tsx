@@ -6,6 +6,7 @@ import { SantriSwitcherTrigger } from "@/components/SantriSwitcher";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { fetchBillDetail, postCheckout, fetchPaymentMethods } from "@/lib/api";
 import { Building2, CreditCard, Smartphone, ShieldCheck } from "lucide-react";
+import { Text } from "@/components/Text";
 
 export const Route = createFileRoute("/tagihan_/$billId")({
   component: BillDetail,
@@ -22,6 +23,7 @@ function BillDetail() {
   const navigate = useNavigate();
   const { active, isLoading: isLoadingSantri } = useSantri();
   const [picked, setPicked] = useState<Set<string>>(new Set());
+  const [customAmounts, setCustomAmounts] = useState<Record<string, number>>({});
 
   const { data: detailData, isLoading: isLoadingDetail } = useQuery({
     queryKey: ["bill-detail", billId],
@@ -80,6 +82,18 @@ function BillDetail() {
     };
   }, [detailData]);
 
+  useEffect(() => {
+    if (bill?.installments) {
+      const initial: Record<string, number> = {};
+      bill.installments.forEach((it) => {
+        if (!it.paid && !it.isPendingConfirmation) {
+          initial[it.id] = it.amount;
+        }
+      });
+      setCustomAmounts(initial);
+    }
+  }, [bill]);
+
   const [method, setMethod] = useState<string>("");
 
   const { data: methodsRes, isLoading: isLoadingMethods } = useQuery({
@@ -131,10 +145,19 @@ function BillDetail() {
   }, [methods, method]);
 
   const checkoutMutation = useMutation({
-    mutationFn: async ({ installmentIds, methodId }: { installmentIds: string[], methodId: string }) => {
+    mutationFn: async ({ 
+      installmentIds, 
+      methodId, 
+      customAmounts 
+    }: { 
+      installmentIds: string[], 
+      methodId: string, 
+      customAmounts?: Record<string, number> 
+    }) => {
       const res = await postCheckout({
         bill_ids: installmentIds,
         payment_method_id: methodId,
+        custom_amounts: customAmounts,
       });
       return res.data;
     },
@@ -166,8 +189,15 @@ function BillDetail() {
     setPicked(allUnpaidPicked ? new Set() : new Set(unpaid.map((i) => i.id)));
 
   const pickedTotal = useMemo(
-    () => bill?.installments.filter((i: any) => picked.has(i.id)).reduce((a: number, b: any) => a + b.amount, 0) || 0,
-    [picked, bill?.installments],
+    () => bill?.installments
+      .filter((i: any) => picked.has(i.id))
+      .reduce((a: number, b: any) => {
+        const amt = detailData?.billType?.payment_input_type === 'FREE'
+          ? (customAmounts[b.id] ?? b.amount)
+          : b.amount;
+        return a + amt;
+      }, 0) || 0,
+    [picked, bill?.installments, customAmounts, detailData?.billType?.payment_input_type],
   );
 
   if (isLoadingSantri || isLoadingDetail) {
@@ -298,7 +328,7 @@ function BillDetail() {
                     key={it.id}
                     onClick={() => !isRowDisabled && togglePick(it.id)}
                     role={isRowDisabled ? undefined : "button"}
-                    className={`relative flex items-center gap-3 pl-4 pr-3 py-3.5 rounded-2xl bg-secondary/70 border transition ${
+                    className={`relative flex flex-col pl-4 pr-3 py-3.5 rounded-2xl bg-secondary/70 border transition ${
                       !it.paid && !it.isPendingConfirmation && checked
                         ? "border-primary ring-1 ring-primary/40"
                         : "border-border"
@@ -310,48 +340,90 @@ function BillDetail() {
                       }`}
                     />
 
-                    <span className="shrink-0">
-                      <CheckBox checked={it.paid || checked} disabled={isRowDisabled} />
-                    </span>
+                    <div className="flex items-center gap-3 w-full">
+                      <span className="shrink-0">
+                        <CheckBox checked={it.paid || checked} disabled={isRowDisabled} />
+                      </span>
 
-                    <div className="flex-1 min-w-0">
-                      {it.label && (
-                        <p className="text-[11px] font-bold text-primary uppercase tracking-widest mb-1">{it.label}</p>
-                      )}
-                      <p className="text-base font-bold text-foreground tabular-nums leading-tight">{fmt(it.amount)}</p>
-                      {it.paidAmount > 0 && !it.paid && (
-                        <p className="text-[10px] text-muted-foreground mt-0.5">Sisa dari {fmt(it.originalAmount)}</p>
+                      <div className="flex-1 min-w-0">
+                        {it.label && (
+                          <p className="text-[11px] font-bold text-primary uppercase tracking-widest mb-1">{it.label}</p>
+                        )}
+                        <p className="text-base font-bold text-foreground tabular-nums leading-tight">{fmt(it.amount)}</p>
+                        {it.paidAmount > 0 && !it.paid && (
+                          <p className="text-[10px] text-muted-foreground mt-0.5">Sisa dari {fmt(it.originalAmount)}</p>
+                        )}
+                      </div>
+
+                      {it.paid ? (
+                        <span className="shrink-0 px-5 py-2.5 rounded-xl bg-success text-white text-xs font-bold">
+                          Lunas
+                        </span>
+                      ) : it.isPendingConfirmation ? (
+                        <span className="shrink-0 px-3 py-2.5 rounded-xl bg-[oklch(0.78_0.16_75)] text-white text-xs font-bold">
+                          Menunggu Verifikasi
+                        </span>
+                      ) : (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (isRowDisabled) return;
+                            if (!selectedMethod) {
+                              togglePick(it.id);
+                              return;
+                            }
+                            const amt = customAmounts[it.id] ?? it.amount;
+                            if (amt <= 0) return;
+                            checkoutMutation.mutate({ 
+                              installmentIds: [it.id], 
+                              methodId: selectedMethod.payment_method_id,
+                              customAmounts: detailData?.billType?.payment_input_type === 'FREE' ? { [it.id]: amt } : undefined
+                            });
+                          }}
+                          disabled={isRowDisabled || checkoutMutation.isPending || (checked && (customAmounts[it.id] ?? 0) <= 0)}
+                          className="shrink-0 px-4 py-2.5 rounded-xl text-xs font-bold text-primary-foreground shadow-[var(--shadow-soft)] active:scale-95 transition flex items-center justify-center min-w-[100px]"
+                          style={{ background: "var(--gradient-card)" }}
+                        >
+                          {checkoutMutation.isPending ? <Loader2 className="animate-spin" size={14} /> : "Bayar Sekarang"}
+                        </button>
                       )}
                     </div>
 
-                    {it.paid ? (
-                      <span className="shrink-0 px-5 py-2.5 rounded-xl bg-success text-white text-xs font-bold">
-                        Lunas
-                      </span>
-                    ) : it.isPendingConfirmation ? (
-                      <span className="shrink-0 px-3 py-2.5 rounded-xl bg-[oklch(0.78_0.16_75)] text-white text-xs font-bold">
-                        Menunggu Verifikasi
-                      </span>
-                    ) : (
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          if (isRowDisabled) return;
-                          if (!selectedMethod) {
-                            togglePick(it.id);
-                            return;
-                          }
-                          checkoutMutation.mutate({ 
-                            installmentIds: [it.id], 
-                            methodId: selectedMethod.payment_method_id 
-                          });
-                        }}
-                        disabled={isRowDisabled || checkoutMutation.isPending}
-                        className="shrink-0 px-4 py-2.5 rounded-xl text-xs font-bold text-primary-foreground shadow-[var(--shadow-soft)] active:scale-95 transition flex items-center justify-center min-w-[100px]"
-                        style={{ background: "var(--gradient-card)" }}
-                      >
-                        {checkoutMutation.isPending ? <Loader2 className="animate-spin" size={14} /> : "Bayar Sekarang"}
-                      </button>
+                    {/* Custom Amount input field for FREE input type */}
+                    {detailData?.billType?.payment_input_type === 'FREE' && checked && (
+                      <div className="mt-3 pt-3 border-t border-border w-full" onClick={(e) => e.stopPropagation()}>
+                        <Text.Label className="block mb-1">
+                          Nominal Cicilan / Angsuran
+                        </Text.Label>
+                        <div className="relative flex items-center mt-1.5">
+                          <span className="absolute left-3.5 text-slate-500 font-semibold text-sm">Rp</span>
+                          <input
+                            type="number"
+                            value={customAmounts[it.id] ?? ""}
+                            onChange={(e) => {
+                              const val = Math.min(it.amount, Math.max(0, parseInt(e.target.value) || 0));
+                              setCustomAmounts(prev => ({
+                                ...prev,
+                                [it.id]: val
+                              }));
+                            }}
+                            className="w-full pl-9 pr-3 py-2 bg-background border border-border rounded-xl font-bold text-foreground text-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/40"
+                            placeholder="Masukkan nominal"
+                            min="1"
+                            max={it.amount}
+                          />
+                        </div>
+                        {((customAmounts[it.id] ?? 0) <= 0) && (
+                          <Text.Caption className="text-red-600 mt-1 block font-semibold not-italic">
+                            Nominal harus lebih dari Rp 0
+                          </Text.Caption>
+                        )}
+                        {(customAmounts[it.id] > 0 && customAmounts[it.id] < it.amount) && (
+                          <Text.Caption className="text-emerald-600 mt-1 block font-semibold not-italic">
+                            Sisa tagihan akan menjadi {fmt(it.amount - customAmounts[it.id])}
+                          </Text.Caption>
+                        )}
+                      </div>
                     )}
                   </div>
                 );
@@ -439,12 +511,28 @@ function BillDetail() {
                 onClick={() => {
                   const items = Array.from(picked);
                   if (items.length === 0 || !selectedMethod) return;
+
+                  // Construct custom amounts payload if payment_input_type is FREE
+                  const reqCustomAmounts: Record<string, number> = {};
+                  if (detailData?.billType?.payment_input_type === 'FREE') {
+                    items.forEach((id) => {
+                      reqCustomAmounts[id] = customAmounts[id] ?? 0;
+                    });
+                  }
+
                   checkoutMutation.mutate({ 
                     installmentIds: items, 
-                    methodId: selectedMethod.payment_method_id 
+                    methodId: selectedMethod.payment_method_id,
+                    customAmounts: detailData?.billType?.payment_input_type === 'FREE' ? reqCustomAmounts : undefined
                   });
                 }}
-                disabled={picked.size === 0 || !method || checkoutMutation.isPending}
+                disabled={
+                  picked.size === 0 || 
+                  !method || 
+                  checkoutMutation.isPending ||
+                  (detailData?.billType?.payment_input_type === 'FREE' && 
+                    Array.from(picked).some((id) => (customAmounts[id] ?? 0) <= 0))
+                }
                 className="shrink-0 px-5 py-2.5 rounded-xl text-primary-foreground font-bold text-sm shadow-[var(--shadow-glow)] disabled:opacity-50 transition active:scale-[0.98] flex items-center justify-center min-w-[120px]"
                 style={{ background: "var(--gradient-card)" }}
               >

@@ -60,10 +60,13 @@ class CheckoutController extends BaseWaliApiController
             $existingDetailsCount = TransactionDetail::where('transaction_id', $transaction->id)->count();
             
             if ($existingDetailsCount == 0) {
+                $customAmounts = $request->custom_amounts ?? [];
                 foreach ($request->bill_ids as $billId) {
+                    $customAmount = isset($customAmounts[$billId]) ? intval($customAmounts[$billId]) : null;
                     TransactionDetail::create([
                         'transaction_id' => $transaction->id,
                         'bill_id' => $billId,
+                        'amount' => $customAmount,
                     ]);
                 }
             }
