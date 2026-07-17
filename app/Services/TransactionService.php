@@ -423,7 +423,7 @@ class TransactionService
                     \App\Models\SaldoHistory::where('student_id', $student->id)
                         ->where('amount', (int) $transaction->unique_payment)
                         ->where('description', 'like', '%Kode Unik%')
-                        ->delete();
+                        ->forceDelete();
                 }
 
                 if ($transaction->type == Transaction::TYPE_SALDO) {
@@ -548,6 +548,31 @@ class TransactionService
                         'status' => TransactionProof::STATUS_REJECTED,
                         'note' => ($data['note'] ?? null) ?: "Kode Unik Tidak Sama, pastikan nominal transfer sesuai dengan yang tertera (3 digit kode unik wajib sama)",
                     ]);
+                }
+
+                // Safety net: Clean up any orphaned kode unik SaldoHistory records
+                // This handles cases where kode unik was added during a PAID transition
+                // but the PAID→non-PAID rollback didn't clean it up properly
+                if ($transaction->unique_payment > 0) {
+                    $student = Student::find($transaction->student_id);
+                    $deletedCount = \App\Models\SaldoHistory::where('student_id', $student->id)
+                        ->where('amount', (int) $transaction->unique_payment)
+                        ->where('description', 'like', '%Kode Unik%')
+                        ->count();
+
+                    if ($deletedCount > 0) {
+                        // Only decrement saldo if the rollback block above didn't already handle it
+                        // (i.e., when the old status was NOT PAID, meaning the PAID→non-PAID block didn't fire)
+                        if ($oldStatus !== Transaction::STATUS_PAID) {
+                            $student->decrement('saldo', $transaction->unique_payment * $deletedCount);
+                            Log::info("REJECTED Safety Net: Mengurangi saldo siswa {$student->name} ({$student->id}) sebesar Rp." . ($transaction->unique_payment * $deletedCount) . " (kode unik orphan).");
+                        }
+                        \App\Models\SaldoHistory::where('student_id', $student->id)
+                            ->where('amount', (int) $transaction->unique_payment)
+                            ->where('description', 'like', '%Kode Unik%')
+                            ->forceDelete();
+                        Log::info("REJECTED Cleanup: Force-deleted {$deletedCount} kode unik SaldoHistory record(s) for student {$student->name} ({$student->id}).");
+                    }
                 }
 
                 // Delete related history so no history appears in UI

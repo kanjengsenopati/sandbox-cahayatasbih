@@ -41,6 +41,19 @@ class DashboardController extends BaseWaliApiController
                 ->where('created_at', '>=', now()->startOfDay())
                 ->latest()
                 ->get()
+                ->reject(function($item) use ($activeStudent) {
+                    // Lazy cleanup: remove orphaned kode unik SaldoHistory records
+                    if ($item->status === \App\Models\SaldoHistory::STATUS_SUCCESS
+                        && stripos($item->description, 'Kode Unik') !== false
+                        && $item->transaction_details->isEmpty()
+                    ) {
+                        $activeStudent->decrement('saldo', $item->amount);
+                        $item->forceDelete();
+                        \Illuminate\Support\Facades\Log::info("Dashboard Lazy Cleanup: Removed orphaned kode unik SaldoHistory (Rp.{$item->amount}) for student {$activeStudent->name} ({$activeStudent->id}).");
+                        return true;
+                    }
+                    return false;
+                })
                 ->map(function($item) {
                     return [
                         'id' => $item->transaction_details->first()?->transaction_id,
