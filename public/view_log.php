@@ -12,16 +12,38 @@ if (isset($_GET['lines'])) {
     $lines = intval($_GET['lines']);
 }
 
-// Read last N lines
-$file = new SplFileObject($logFile, 'r');
-$file->seek(PHP_INT_MAX);
-$totalLines = $file->key();
-
-$start = max(0, $totalLines - $lines);
-$file->seek($start);
-
-echo "=== LAST $lines LINES OF LARAVEL LOG ===\n\n";
-while (!$file->eof()) {
-    echo $file->current();
-    $file->next();
+// Fast tail implementation using fseek
+$handle = fopen($logFile, 'r');
+if (!$handle) {
+    die("Failed to open log file.");
 }
+
+$linecounter = $lines;
+$pos = -2;
+$beginning = false;
+$text = [];
+
+while ($linecounter > 0) {
+    $t = " ";
+    while ($t != "\n") {
+        if (fseek($handle, $pos, SEEK_END) == -1) {
+            $beginning = true;
+            break;
+        }
+        $t = fgetc($handle);
+        $pos--;
+    }
+    $linecounter--;
+    if ($beginning) {
+        rewind($handle);
+    }
+    $line = fgets($handle);
+    if ($line !== false) {
+        $text[] = $line;
+    }
+    if ($beginning) break;
+}
+fclose($handle);
+
+echo "=== LAST $lines LINES OF LARAVEL LOG (FAST TAIL) ===\n\n";
+echo implode("", array_reverse($text));
