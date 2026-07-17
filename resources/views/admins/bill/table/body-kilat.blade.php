@@ -285,6 +285,7 @@
         });
 
         // Handle "Bayar" button click
+        // Handle "Bayar" button click
         const modalPayBtn = document.querySelector('.modal-pay');
         if (modalPayBtn) {
             modalPayBtn.addEventListener('click', function() {
@@ -296,6 +297,12 @@
 
                 // Remove any existing bill_ids hidden inputs
                 document.querySelectorAll('input[name="bill_ids[]"]').forEach(input => input.remove());
+
+                // Reset payment option to default LUNAS
+                const paymentOption = document.getElementById('payment-option');
+                if (paymentOption) {
+                    paymentOption.value = 'LUNAS';
+                }
 
                 selectedCheckboxes.forEach(checkbox => {
                     const billId = checkbox.getAttribute('data-bill-id');
@@ -344,6 +351,23 @@
                                     </div>
                                 </div>
                             `;
+
+                            // Create companion card for Sisa Angsuran
+                            const companionDiv = document.createElement('div');
+                            companionDiv.className = 'col-md-6 mb-3 sisa-angsuran-card';
+                            companionDiv.setAttribute('data-companion-bill-id', billId);
+                            companionDiv.style.display = 'none'; // hidden by default since LUNAS is default
+                            companionDiv.innerHTML = `
+                                <div class="card h-100 border border-success border-opacity-20 shadow-none" style="border-radius: 16px; background-color: #f0fdf4;">
+                                    <div class="card-body p-3 d-flex flex-column justify-content-center align-items-center text-center">
+                                        <span class="text-slate-500 fs-9 fw-bold text-uppercase tracking-wider mb-1">Sisa Angsuran</span>
+                                        <span class="text-emerald-600 fw-boldest fs-3" id="sisa-amount-${billId}">Rp 0</span>
+                                    </div>
+                                </div>
+                            `;
+
+                            paymentDetails.appendChild(colDiv);
+                            paymentDetails.appendChild(companionDiv);
                         } else {
                             colDiv.innerHTML = `
                                 <div class="card h-100 border border-gray-200 shadow-none" style="border-radius: 16px; background-color: #f8fafc;">
@@ -359,14 +383,58 @@
                                     </div>
                                 </div>
                             `;
+                            paymentDetails.appendChild(colDiv);
                         }
-
-                        paymentDetails.appendChild(colDiv);
                     }
                 });
 
-                calculateTotal();
+                // Apply initial state behavior (Lunas by default)
+                updatePaymentOptionBehavior();
             });
+        }
+
+        // Behavior control for Lunas / Angsur
+        function updatePaymentOptionBehavior() {
+            const paymentOption = document.getElementById('payment-option');
+            const isAngsur = paymentOption && paymentOption.value === 'ANGSUR';
+            
+            const customInputs = document.querySelectorAll('.custom-amount-input');
+            customInputs.forEach(input => {
+                const billId = input.getAttribute('data-bill-id');
+                const maxAmount = parseInt(input.getAttribute('data-max-amount'));
+                const companionCard = document.querySelector(`.sisa-angsuran-card[data-companion-bill-id="${billId}"]`);
+                
+                if (isAngsur) {
+                    input.removeAttribute('readonly');
+                    input.classList.remove('bg-light');
+                    if (companionCard) {
+                        companionCard.style.display = 'block';
+                        // Update the dynamic text
+                        let val = parseInt(input.value);
+                        if (isNaN(val) || val < 0) val = 0;
+                        const sisa = Math.max(0, maxAmount - val);
+                        const sisaAmountEl = document.getElementById(`sisa-amount-${billId}`);
+                        if (sisaAmountEl) {
+                            sisaAmountEl.textContent = `Rp ${sisa.toLocaleString('id-ID')}`;
+                        }
+                    }
+                } else {
+                    input.setAttribute('readonly', 'readonly');
+                    input.classList.add('bg-light');
+                    input.value = maxAmount; // Force to full amount
+                    if (companionCard) {
+                        companionCard.style.display = 'none';
+                    }
+                }
+            });
+            
+            calculateTotal();
+        }
+
+        // Listen for payment option changes
+        const paymentOption = document.getElementById('payment-option');
+        if (paymentOption) {
+            paymentOption.addEventListener('change', updatePaymentOptionBehavior);
         }
 
         // Recalculate and update interface
@@ -401,11 +469,13 @@
                 if (balanceOption) {
                     if (studentBalance < total) {
                         balanceOption.style.display = 'none';
+                        balanceOption.disabled = true;
                         if (paymentMethod.value === 'BALANCE') {
                             paymentMethod.value = '';
                         }
                     } else {
                         balanceOption.style.display = 'block';
+                        balanceOption.disabled = false;
                     }
                 }
             }
@@ -417,11 +487,23 @@
                 const maxAmt = parseInt(e.target.getAttribute('data-max-amount'));
                 let val = parseInt(e.target.value);
                 if (isNaN(val) || val < 1) {
-                    // Let the user edit but clamp on blur or calculation
                     val = 0;
                 } else if (val > maxAmt) {
                     e.target.value = maxAmt;
+                    val = maxAmt;
                 }
+                
+                // Update dynamic remaining amount for the card
+                const billId = e.target.getAttribute('data-bill-id');
+                const companionCard = document.querySelector(`.sisa-angsuran-card[data-companion-bill-id="${billId}"]`);
+                if (companionCard) {
+                    const sisa = Math.max(0, maxAmt - val);
+                    const sisaAmountEl = document.getElementById(`sisa-amount-${billId}`);
+                    if (sisaAmountEl) {
+                        sisaAmountEl.textContent = `Rp ${sisa.toLocaleString('id-ID')}`;
+                    }
+                }
+
                 calculateTotal();
             }
         });
@@ -432,9 +514,23 @@
                 let val = parseInt(e.target.value);
                 if (isNaN(val) || val < 1) {
                     e.target.value = 1;
+                    val = 1;
                 } else if (val > maxAmt) {
                     e.target.value = maxAmt;
+                    val = maxAmt;
                 }
+
+                // Update companion card
+                const billId = e.target.getAttribute('data-bill-id');
+                const companionCard = document.querySelector(`.sisa-angsuran-card[data-companion-bill-id="${billId}"]`);
+                if (companionCard) {
+                    const sisa = Math.max(0, maxAmt - val);
+                    const sisaAmountEl = document.getElementById(`sisa-amount-${billId}`);
+                    if (sisaAmountEl) {
+                        sisaAmountEl.textContent = `Rp ${sisa.toLocaleString('id-ID')}`;
+                    }
+                }
+
                 calculateTotal();
             }
         }, true);

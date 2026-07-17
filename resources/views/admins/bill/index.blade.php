@@ -635,16 +635,29 @@
                         <span class="text-emerald-600 fw-boldest fs-2hx" id="total-amount">Rp 0</span>
                     </div>
 
-                    <!-- Payment Method Select (Compact) -->
-                    <div class="mb-4">
-                        <span class="fw-bold text-slate-700 fs-6 d-block mb-2">Metode Pembayaran</span>
-                        <div class="card shadow-none border border-gray-200" style="border-radius: 16px;">
-                            <div class="card-body p-3">
-                                <select class="form-select form-select-solid" name="payment_method" id="payment-method" required>
-                                    <option value="">Pilih Metode Pembayaran</option>
-                                    <option value="BALANCE">Saldo</option>
-                                    <option value="CASH">Tunai</option>
-                                </select>
+                    <!-- Payment Options side-by-side -->
+                    <div class="row mb-4">
+                        <div class="col-md-6 mb-3 mb-md-0">
+                            <span class="fw-bold text-slate-700 fs-6 d-block mb-2">Tipe Pembayaran</span>
+                            <div class="card shadow-none border border-gray-200" style="border-radius: 16px;">
+                                <div class="card-body p-3">
+                                    <select class="form-select form-select-solid" id="payment-option" required>
+                                        <option value="LUNAS">Lunas</option>
+                                        <option value="ANGSUR">Angsur</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <span class="fw-bold text-slate-700 fs-6 d-block mb-2">Metode Pembayaran</span>
+                            <div class="card shadow-none border border-gray-200" style="border-radius: 16px;">
+                                <div class="card-body p-3">
+                                    <select class="form-select form-select-solid" name="payment_method" id="payment-method" required>
+                                        <option value="">Pilih Metode Pembayaran</option>
+                                        <option value="BALANCE">Saldo</option>
+                                        <option value="CASH">Tunai</option>
+                                    </select>
+                                </div>
                             </div>
                         </div>
                     </div>

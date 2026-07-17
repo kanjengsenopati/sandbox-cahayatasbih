@@ -20,9 +20,9 @@ class PaymentMethodController extends BaseWaliApiController
         $type = $request->get('type', 'SALDO');
         $billIds = $request->get('bill_ids', []);
 
-        // Fetch payment methods (Transfer only)
+        // Fetch payment methods (Transfer and Balance)
         $methods = PaymentMethod::where('is_active', true)
-            ->where('type', PaymentMethod::TYPE_TRANSFER)
+            ->whereIn('type', [PaymentMethod::TYPE_TRANSFER, PaymentMethod::TYPE_BALANCE])
             ->get()
             ->map(function($m) use ($schoolId, $type, $billIds) {
                 $banks = [];

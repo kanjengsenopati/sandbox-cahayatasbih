@@ -82,15 +82,20 @@ function BillDetail() {
     };
   }, [detailData]);
 
+  const [paymentOptions, setPaymentOptions] = useState<Record<string, "LUNAS" | "ANGSUR">>({});
+
   useEffect(() => {
     if (bill?.installments) {
-      const initial: Record<string, number> = {};
+      const initialAmounts: Record<string, number> = {};
+      const initialOptions: Record<string, "LUNAS" | "ANGSUR"> = {};
       bill.installments.forEach((it) => {
         if (!it.paid && !it.isPendingConfirmation) {
-          initial[it.id] = it.amount;
+          initialAmounts[it.id] = it.amount;
+          initialOptions[it.id] = "LUNAS";
         }
       });
-      setCustomAmounts(initial);
+      setCustomAmounts(initialAmounts);
+      setPaymentOptions(initialOptions);
     }
   }, [bill]);
 
@@ -108,6 +113,22 @@ function BillDetail() {
   const methods = useMemo(() => {
     if (!methodsRes) return [];
     return methodsRes.flatMap((m: any) => {
+      if (m.type === "BALANCE") {
+        const studentBalance = active?.saldo ?? 0;
+        if (studentBalance < pickedTotal) {
+          return [];
+        }
+        return [{
+          id: m.id,
+          payment_method_id: m.id,
+          label: m.name,
+          desc: `Bayar instan menggunakan Saldo Santri (Saldo: ${fmt(studentBalance)})`,
+          icon: CreditCard,
+          fee: 0,
+          account: "-",
+          holder: "-",
+        }];
+      }
       if (m.type === "TRANSFER") {
         return (m.banks || []).map((b: any) => ({
           id: b.id,
@@ -134,13 +155,17 @@ function BillDetail() {
       }
       return [];
     });
-  }, [methodsRes]);
+  }, [methodsRes, active?.saldo, pickedTotal]);
 
   const selectedMethod = useMemo(() => methods.find((m: any) => m.id === method), [method, methods]);
 
   useEffect(() => {
-    if (methods.length > 0 && !method) {
-      setMethod(methods[0].id);
+    if (methods.length > 0) {
+      if (!method || !methods.some((m: any) => m.id === method)) {
+        setMethod(methods[0].id);
+      }
+    } else {
+      setMethod("");
     }
   }, [methods, method]);
 
@@ -387,41 +412,74 @@ function BillDetail() {
                           {checkoutMutation.isPending ? <Loader2 className="animate-spin" size={14} /> : "Bayar Sekarang"}
                         </button>
                       )}
-                    </div>
-
-                    {/* Custom Amount input field for FREE input type */}
+                    </div>                    {/* Custom Amount input field for FREE input type */}
                     {detailData?.billType?.payment_input_type === 'FREE' && checked && (
                       <div className="mt-3 pt-3 border-t border-border w-full" onClick={(e) => e.stopPropagation()}>
-                        <Text.Label className="block mb-1">
-                          Nominal Cicilan / Angsuran
-                        </Text.Label>
-                        <div className="relative flex items-center mt-1.5">
-                          <span className="absolute left-3.5 text-slate-500 font-semibold text-sm">Rp</span>
-                          <input
-                            type="number"
-                            value={customAmounts[it.id] ?? ""}
-                            onChange={(e) => {
-                              const val = Math.min(it.amount, Math.max(0, parseInt(e.target.value) || 0));
-                              setCustomAmounts(prev => ({
-                                ...prev,
-                                [it.id]: val
-                              }));
+                        {/* Segment selector Lunas / Angsur */}
+                        <div className="flex gap-2 mb-3">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setPaymentOptions(prev => ({ ...prev, [it.id]: 'LUNAS' }));
+                              setCustomAmounts(prev => ({ ...prev, [it.id]: it.amount }));
                             }}
-                            className="w-full pl-9 pr-3 py-2 bg-background border border-border rounded-xl font-bold text-foreground text-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/40"
-                            placeholder="Masukkan nominal"
-                            min="1"
-                            max={it.amount}
-                          />
+                            className={`flex-1 py-2 text-xs font-bold rounded-xl border transition ${
+                              paymentOptions[it.id] !== 'ANGSUR'
+                                ? "bg-primary text-white border-primary shadow-sm"
+                                : "bg-secondary text-slate-600 border-border hover:bg-slate-100"
+                            }`}
+                          >
+                            Lunas
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setPaymentOptions(prev => ({ ...prev, [it.id]: 'ANGSUR' }));
+                            }}
+                            className={`flex-1 py-2 text-xs font-bold rounded-xl border transition ${
+                              paymentOptions[it.id] === 'ANGSUR'
+                                ? "bg-primary text-white border-primary shadow-sm"
+                                : "bg-secondary text-slate-600 border-border hover:bg-slate-100"
+                            }`}
+                          >
+                            Angsur
+                          </button>
                         </div>
-                        {((customAmounts[it.id] ?? 0) <= 0) && (
-                          <Text.Caption className="text-red-600 mt-1 block font-semibold not-italic">
-                            Nominal harus lebih dari Rp 0
-                          </Text.Caption>
-                        )}
-                        {(customAmounts[it.id] > 0 && customAmounts[it.id] < it.amount) && (
-                          <Text.Caption className="text-emerald-600 mt-1 block font-semibold not-italic">
-                            Sisa tagihan akan menjadi {fmt(it.amount - customAmounts[it.id])}
-                          </Text.Caption>
+
+                        {paymentOptions[it.id] === 'ANGSUR' && (
+                          <>
+                            <Text.Label className="block mb-1">
+                              Nominal Cicilan / Angsuran
+                            </Text.Label>
+                            <div className="relative flex items-center mt-1.5">
+                              <span className="absolute left-3.5 text-slate-500 font-semibold text-sm">Rp</span>
+                              <input
+                                type="number"
+                                value={customAmounts[it.id] ?? ""}
+                                onChange={(e) => {
+                                  const val = Math.min(it.amount, Math.max(0, parseInt(e.target.value) || 0));
+                                  setCustomAmounts(prev => ({
+                                    ...prev,
+                                    [it.id]: val
+                                  }));
+                                }}
+                                className="w-full pl-9 pr-3 py-2 bg-background border border-border rounded-xl font-bold text-foreground text-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/40"
+                                placeholder="Masukkan nominal"
+                                min="1"
+                                max={it.amount}
+                              />
+                            </div>
+                            {((customAmounts[it.id] ?? 0) <= 0) && (
+                              <Text.Caption className="text-red-600 mt-1 block font-semibold not-italic">
+                                Nominal harus lebih dari Rp 0
+                              </Text.Caption>
+                            )}
+                            {(customAmounts[it.id] > 0 && customAmounts[it.id] < it.amount) && (
+                              <Text.Caption className="text-emerald-600 mt-1 block font-semibold not-italic">
+                                Sisa Angsuran akan menjadi {fmt(it.amount - customAmounts[it.id])}
+                              </Text.Caption>
+                            )}
+                          </>
                         )}
                       </div>
                     )}
