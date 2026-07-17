@@ -123,6 +123,44 @@ class Admin extends Authenticatable
         return $outletIds;
     }
 
+    /**
+     * Get the effective outlet ID based on mode and request input.
+     *
+     * @param string|null $mode
+     * @param string|null $requestOutletId
+     * @return string|null
+     */
+    public function getEffectiveOutletId(?string $mode, ?string $requestOutletId = null): ?string
+    {
+        if ($this->outlet_id) {
+            return $this->outlet_id;
+        }
+
+        if ($mode === 'outlet') {
+            if ($requestOutletId) {
+                return $requestOutletId;
+            }
+
+            // Get default/first outlet assigned to this admin
+            $authOutletIds = $this->getOutletIds();
+            $query = \App\Models\Outlet::where('is_active', 1);
+
+            if (!empty($authOutletIds)) {
+                $query->whereIn('id', $authOutletIds);
+            } elseif (!$this->hasRole('Super Admin')) {
+                $query->where('id', $this->outlet_id);
+            }
+
+            $firstOutlet = $query->orderBy('name')->first();
+            return $firstOutlet ? $firstOutlet->id : null;
+        }
+
+        // Fallback to Koperasi/KPR
+        $koperasi = \App\Models\Outlet::where('name', 'Koperasi')->orWhere('code', 'KPR')->first();
+        return $koperasi ? $koperasi->id : '6bc5b484-07f9-49cc-aefa-00a8cf47e8d7';
+    }
+
+
     public function attendances()
     {
         return $this->morphMany(Attendance::class, 'presensiable');

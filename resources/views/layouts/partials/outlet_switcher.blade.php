@@ -1,10 +1,16 @@
 @if(!auth()->user()->outlet_id && request('mode') === 'outlet')
     @php
-        $outlets = \App\Models\Outlet::where('is_active', 1)
-            ->where('code', '!=', 'KPR')
-            ->where('name', '!=', 'Koperasi')
-            ->orderBy('name')
-            ->get();
+        $user = auth()->user();
+        $authOutletIds = $user->getOutletIds();
+        $query = \App\Models\Outlet::where('is_active', 1);
+
+        if (!empty($authOutletIds)) {
+            $query->whereIn('id', $authOutletIds);
+        } elseif (!$user->hasRole('Super Admin')) {
+            $query->where('id', $user->outlet_id);
+        }
+
+        $outlets = $query->orderBy('name')->get();
         $selectedOutletId = request('outlet_id');
         if (!$selectedOutletId && $outlets->isNotEmpty()) {
             $selectedOutletId = $outlets->first()->id;

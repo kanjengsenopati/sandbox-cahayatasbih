@@ -196,23 +196,7 @@ class ItemController extends Controller
 
     public function searchItem(Request $request)
     {
-        $outletId = auth()->user()->outlet_id;
-        if (!$outletId) {
-            if ($request->mode === 'outlet') {
-                $outletId = $request->outlet_id;
-                if (!$outletId) {
-                    $firstOutlet = \App\Models\Outlet::where('is_active', 1)
-                        ->where('code', '!=', 'KPR')
-                        ->where('name', '!=', 'Koperasi')
-                        ->orderBy('name')
-                        ->first();
-                    $outletId = $firstOutlet ? $firstOutlet->id : null;
-                }
-            } else {
-                $koperasi = \App\Models\Outlet::where('name', 'Koperasi')->orWhere('code', 'KPR')->first();
-                $outletId = $koperasi ? $koperasi->id : '6bc5b484-07f9-49cc-aefa-00a8cf47e8d7';
-            }
-        }
+        $outletId = auth()->user()->getEffectiveOutletId($request->mode, $request->outlet_id);
 
         $koperasi = \App\Models\Outlet::where('name', 'Koperasi')->orWhere('code', 'KPR')->first();
         $koperasiId = $koperasi ? $koperasi->id : '6bc5b484-07f9-49cc-aefa-00a8cf47e8d7';
@@ -243,23 +227,7 @@ class ItemController extends Controller
 
     public function searchItemCode(Request $request)
     {
-        $outletId = auth()->user()->outlet_id;
-        if (!$outletId) {
-            if ($request->mode === 'outlet') {
-                $outletId = $request->outlet_id;
-                if (!$outletId) {
-                    $firstOutlet = \App\Models\Outlet::where('is_active', 1)
-                        ->where('code', '!=', 'KPR')
-                        ->where('name', '!=', 'Koperasi')
-                        ->orderBy('name')
-                        ->first();
-                    $outletId = $firstOutlet ? $firstOutlet->id : null;
-                }
-            } else {
-                $koperasi = \App\Models\Outlet::where('name', 'Koperasi')->orWhere('code', 'KPR')->first();
-                $outletId = $koperasi ? $koperasi->id : '6bc5b484-07f9-49cc-aefa-00a8cf47e8d7';
-            }
-        }
+        $outletId = auth()->user()->getEffectiveOutletId($request->mode, $request->outlet_id);
 
         $koperasi = \App\Models\Outlet::where('name', 'Koperasi')->orWhere('code', 'KPR')->first();
         $koperasiId = $koperasi ? $koperasi->id : '6bc5b484-07f9-49cc-aefa-00a8cf47e8d7';
@@ -284,23 +252,7 @@ class ItemController extends Controller
     public function searchItemName(Request $request)
     {
         $searchTerm = strtolower($request->search);
-        $outletId = auth()->user()->outlet_id;
-        if (!$outletId) {
-            if ($request->mode === 'outlet') {
-                $outletId = $request->outlet_id;
-                if (!$outletId) {
-                    $firstOutlet = \App\Models\Outlet::where('is_active', 1)
-                        ->where('code', '!=', 'KPR')
-                        ->where('name', '!=', 'Koperasi')
-                        ->orderBy('name')
-                        ->first();
-                    $outletId = $firstOutlet ? $firstOutlet->id : null;
-                }
-            } else {
-                $koperasi = \App\Models\Outlet::where('name', 'Koperasi')->orWhere('code', 'KPR')->first();
-                $outletId = $koperasi ? $koperasi->id : '6bc5b484-07f9-49cc-aefa-00a8cf47e8d7';
-            }
-        }
+        $outletId = auth()->user()->getEffectiveOutletId($request->mode, $request->outlet_id);
 
         $koperasi = \App\Models\Outlet::where('name', 'Koperasi')->orWhere('code', 'KPR')->first();
         $koperasiId = $koperasi ? $koperasi->id : '6bc5b484-07f9-49cc-aefa-00a8cf47e8d7';
