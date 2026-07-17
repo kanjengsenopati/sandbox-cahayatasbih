@@ -99,6 +99,18 @@ function BillDetail() {
     }
   }, [bill]);
 
+  const pickedTotal = useMemo(
+    () => bill?.installments
+      .filter((i: any) => picked.has(i.id))
+      .reduce((a: number, b: any) => {
+        const amt = detailData?.billType?.payment_input_type === 'FREE'
+          ? (customAmounts[b.id] ?? b.amount)
+          : b.amount;
+        return a + amt;
+      }, 0) || 0,
+    [picked, bill?.installments, customAmounts, detailData?.billType?.payment_input_type],
+  );
+
   const [method, setMethod] = useState<string>("");
 
   const { data: methodsRes, isLoading: isLoadingMethods } = useQuery({
@@ -213,17 +225,7 @@ function BillDetail() {
   const togglePickAll = () =>
     setPicked(allUnpaidPicked ? new Set() : new Set(unpaid.map((i) => i.id)));
 
-  const pickedTotal = useMemo(
-    () => bill?.installments
-      .filter((i: any) => picked.has(i.id))
-      .reduce((a: number, b: any) => {
-        const amt = detailData?.billType?.payment_input_type === 'FREE'
-          ? (customAmounts[b.id] ?? b.amount)
-          : b.amount;
-        return a + amt;
-      }, 0) || 0,
-    [picked, bill?.installments, customAmounts, detailData?.billType?.payment_input_type],
-  );
+
 
   if (isLoadingSantri || isLoadingDetail) {
     return (
