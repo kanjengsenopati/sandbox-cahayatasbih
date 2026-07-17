@@ -61,10 +61,15 @@ export function SantriProvider({ children }: { children: ReactNode }) {
     const location = useLocation();
     const isLoginPage =
         location.pathname === "/login" ||
+        location.pathname === "/register" ||
         (typeof window !== "undefined" &&
-            (window.location.pathname.endsWith("/login") ||
-                window.location.pathname.endsWith("/login/") ||
-                window.location.hash.startsWith("#/login")));
+            (window.location.hash.startsWith("#/login") ||
+                window.location.hash.startsWith("#/register") ||
+                ((window.location.pathname.endsWith("/login") ||
+                    window.location.pathname.endsWith("/login/")) &&
+                    (!window.location.hash ||
+                        window.location.hash === "#" ||
+                        window.location.hash === "#/"))));
     const isPenanggungJawabRoute = location.pathname.startsWith("/penanggung-jawab");
 
     const { data: students = [], isPending: isPendingStudents } = useQuery({
