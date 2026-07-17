@@ -186,7 +186,7 @@
                     <input type="hidden" id="edit_bill_id">
                     <div class="mb-3">
                         <label for="edit_amount" class="form-label">Nominal Tagihan</label>
-                        <input type="number" class="form-control" id="edit_amount" required min="0">
+                        <input type="text" class="form-control input-money" id="edit_amount" required>
                     </div>
                 </form>
             </div>
@@ -360,7 +360,7 @@
         // Save Bill Logic
         $('#saveBillBtn').click(function() {
             var billId = $('#edit_bill_id').val();
-            var amount = $('#edit_amount').val();
+            var amount = $('#edit_amount').val().replace(/\D/g, '');
 
             if (!amount) {
                 Swal.fire('Error', 'Nominal tidak boleh kosong', 'error');
@@ -610,7 +610,7 @@
                 var amount = $(this).data('amount');
 
                 $('#edit_bill_id').val(billId);
-                $('#edit_amount').val(amount);
+                $('#edit_amount').val(Number(amount).toLocaleString('id-ID'));
                 $('#editBillModal').modal('show');
             });
 

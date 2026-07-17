@@ -21,8 +21,8 @@
                     </div>
                     <div class="mb-3">
                         <label for="amount" class="form-label">Jumlah Pembayaran:</label>
-                        <input type="text" class="form-control" id="amount" name="amount"
-                            value="Rp {{ number_format($amount, 0, ',', '.') }}">
+                        <input type="text" class="form-control input-money" name="amount"
+                            value="{{ number_format($amount, 0, ',', '.') }}">
                     </div>
                     <div class="mb-3">
                         <label for="payment_method" class="form-label">Metode Pembayaran:</label>

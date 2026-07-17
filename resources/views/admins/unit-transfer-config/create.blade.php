@@ -95,7 +95,7 @@
                         <div class="row mb-6">
                             <label class="col-lg-4 col-form-label required fw-bold fs-6">Biaya Pendaftaran (Rp)</label>
                             <div class="col-lg-8">
-                                <input type="number" name="amount" class="form-control form-control-solid" placeholder="Contoh: 500000" value="{{ old('amount', 0) }}" min="0" required />
+                                <input type="text" name="amount" class="form-control form-control-solid input-money" placeholder="Contoh: 500.000" value="{{ old('amount') ? number_format(old('amount'), 0, ',', '.') : 0 }}" required />
                                 <div class="form-text">Jumlah tagihan daftar ulang yang akan di-generate.</div>
                                 @error('amount') <span class="text-danger">{{ $message }}</span> @enderror
                             </div>

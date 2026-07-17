@@ -83,9 +83,9 @@
                                         </label>
                                         <div class="input-group">
                                             <span class="input-group-text">Rp</span>
-                                            <input type="number" class="form-control form-control-solid"
+                                            <input type="text" class="form-control form-control-solid input-money"
                                                 id="payment_fee" name="payment_fee" placeholder="Masukkan Fee Xendit"
-                                                value="{{ @$applicationSetting->payment_fee ?? old('payment_fee') ?? 0 }}" />
+                                                value="{{ isset($applicationSetting->payment_fee) ? number_format($applicationSetting->payment_fee, 0, ',', '.') : (old('payment_fee') ? number_format(old('payment_fee'), 0, ',', '.') : 0) }}" />
                                         </div>
                                     </div>
                                     <div class="col-6">
@@ -97,9 +97,9 @@
                                         </label>
                                         <div class="input-group">
                                             <span class="input-group-text">Rp</span>
-                                            <input type="number" class="form-control form-control-solid" id="bill_fee"
+                                            <input type="text" class="form-control form-control-solid input-money" id="bill_fee"
                                                 name="bill_fee" placeholder="Masukkan Fee Tagihan"
-                                                value="{{ @$applicationSetting->bill_fee ?? old('bill_fee') ?? 0 }}" />
+                                                value="{{ isset($applicationSetting->bill_fee) ? number_format($applicationSetting->bill_fee, 0, ',', '.') : (old('bill_fee') ? number_format(old('bill_fee'), 0, ',', '.') : 0) }}" />
                                         </div>
                                     </div>
                                 </div>

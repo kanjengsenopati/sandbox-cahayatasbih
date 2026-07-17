@@ -18,6 +18,12 @@ export const Route = createFileRoute("/tagihan_/$billId")({
 const fmt = (n: number) =>
   new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0 }).format(n);
 
+const formatThousand = (n: number | undefined | null) => {
+  if (n === undefined || n === null) return "";
+  if (n === 0) return "";
+  return new Intl.NumberFormat("id-ID").format(n);
+};
+
 function BillDetail() {
   const { billId } = useParams({ from: "/tagihan_/$billId" });
   const navigate = useNavigate();
@@ -456,10 +462,12 @@ function BillDetail() {
                             <div className="relative flex items-center mt-1.5">
                               <span className="absolute left-3.5 text-slate-500 font-semibold text-sm">Rp</span>
                               <input
-                                type="number"
-                                value={customAmounts[it.id] ?? ""}
+                                type="text"
+                                value={formatThousand(customAmounts[it.id])}
                                 onChange={(e) => {
-                                  const val = Math.min(it.amount, Math.max(0, parseInt(e.target.value) || 0));
+                                  const clean = e.target.value.replace(/\D/g, "");
+                                  const numVal = clean === "" ? 0 : parseInt(clean);
+                                  const val = Math.min(it.amount, Math.max(0, numVal));
                                   setCustomAmounts(prev => ({
                                     ...prev,
                                     [it.id]: val
@@ -467,8 +475,6 @@ function BillDetail() {
                                 }}
                                 className="w-full pl-9 pr-3 py-2 bg-background border border-border rounded-xl font-bold text-foreground text-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary/40"
                                 placeholder="Masukkan nominal"
-                                min="1"
-                                max={it.amount}
                               />
                             </div>
                             {((customAmounts[it.id] ?? 0) <= 0) && (

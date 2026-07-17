@@ -339,13 +339,11 @@
                                             <label class="fs-9 text-slate-500 fw-bold text-uppercase">Jumlah Bayar (Sisa: Rp ${amount.toLocaleString('id-ID')})</label>
                                             <div class="input-group input-group-sm mt-1">
                                                 <span class="input-group-text bg-white border-gray-300 text-slate-600">Rp</span>
-                                                <input type="number" class="form-control border-gray-300 custom-amount-input" 
-                                                    name="custom_amounts[${billId}]" 
-                                                    value="${amount}" 
-                                                    max="${amount}" 
-                                                    min="1" 
-                                                    data-bill-id="${billId}" 
-                                                    data-max-amount="${amount}">
+                                                 <input type="text" class="form-control border-gray-300 custom-amount-input input-money" 
+                                                     name="custom_amounts[${billId}]" 
+                                                     value="${amount.toLocaleString('id-ID')}" 
+                                                     data-bill-id="${billId}" 
+                                                     data-max-amount="${amount}">
                                             </div>
                                         </div>
                                     </div>
@@ -410,7 +408,7 @@
                     if (companionCard) {
                         companionCard.style.display = 'block';
                         // Update the dynamic text
-                        let val = parseInt(input.value);
+                        let val = parseInt(input.value.replace(/\D/g, ''));
                         if (isNaN(val) || val < 0) val = 0;
                         const sisa = Math.max(0, maxAmount - val);
                         const sisaAmountEl = document.getElementById(`sisa-amount-${billId}`);
@@ -421,7 +419,7 @@
                 } else {
                     input.setAttribute('readonly', 'readonly');
                     input.classList.add('bg-light');
-                    input.value = maxAmount; // Force to full amount
+                    input.value = maxAmount.toLocaleString('id-ID'); // Force to full amount
                     if (companionCard) {
                         companionCard.style.display = 'none';
                     }
@@ -450,7 +448,7 @@
 
                 if (inputType === 'FREE') {
                     const input = document.querySelector(`.custom-amount-input[data-bill-id="${billId}"]`);
-                    let amt = input ? parseInt(input.value) : defaultAmount;
+                    let amt = input ? parseInt(input.value.replace(/\D/g, '')) : defaultAmount;
                     if (isNaN(amt) || amt < 1) amt = 0;
                     total += amt;
                 } else {
@@ -485,11 +483,11 @@
         document.addEventListener('input', function(e) {
             if (e.target && e.target.classList.contains('custom-amount-input')) {
                 const maxAmt = parseInt(e.target.getAttribute('data-max-amount'));
-                let val = parseInt(e.target.value);
+                let val = parseInt(e.target.value.replace(/\D/g, ''));
                 if (isNaN(val) || val < 1) {
                     val = 0;
                 } else if (val > maxAmt) {
-                    e.target.value = maxAmt;
+                    e.target.value = maxAmt.toLocaleString('id-ID');
                     val = maxAmt;
                 }
                 
@@ -511,12 +509,12 @@
         document.addEventListener('blur', function(e) {
             if (e.target && e.target.classList.contains('custom-amount-input')) {
                 const maxAmt = parseInt(e.target.getAttribute('data-max-amount'));
-                let val = parseInt(e.target.value);
+                let val = parseInt(e.target.value.replace(/\D/g, ''));
                 if (isNaN(val) || val < 1) {
                     e.target.value = 1;
                     val = 1;
                 } else if (val > maxAmt) {
-                    e.target.value = maxAmt;
+                    e.target.value = maxAmt.toLocaleString('id-ID');
                     val = maxAmt;
                 }
 
