@@ -30,18 +30,25 @@ if ($newContent !== $content) {
     echo "\nSESSION_DRIVER sudah bernilai 'file' atau tidak ada perubahan.\n";
 }
 
-// Bersihkan cache config
-echo "\nRunning config:clear...\n";
-$phpPath = '/www/server/php/84/bin/php';
-$artisanPath = __DIR__ . '/../artisan';
-
-$output = [];
-$return_var = 0;
-exec("$phpPath $artisanPath config:clear 2>&1", $output, $return_var);
-echo implode("\n", $output) . "\nCode: $return_var\n";
-
-$output = [];
-$return_var = 0;
-exec("$phpPath $artisanPath config:cache 2>&1", $output, $return_var);
-echo "\nRunning config:cache...\n";
-echo implode("\n", $output) . "\nCode: $return_var\n";
+// Bersihkan cache config secara programmatis
+echo "\nRunning Artisan config commands programmatically...\n";
+try {
+    require __DIR__.'/../vendor/autoload.php';
+    $app = require_once __DIR__.'/../bootstrap/app.php';
+    
+    $kernel = $app->make(Illuminate\Contracts\Console\Kernel::class);
+    $kernel->bootstrap();
+    
+    // Jalankan config:clear
+    $exitCode = Illuminate\Support\Facades\Artisan::call('config:clear');
+    echo "config:clear exit code: $exitCode\n";
+    echo "Output:\n" . Illuminate\Support\Facades\Artisan::output() . "\n";
+    
+    // Jalankan config:cache
+    $exitCode = Illuminate\Support\Facades\Artisan::call('config:cache');
+    echo "config:cache exit code: $exitCode\n";
+    echo "Output:\n" . Illuminate\Support\Facades\Artisan::output() . "\n";
+    
+} catch (Exception $e) {
+    echo "Artisan call failed: " . $e->getMessage() . "\n";
+}
