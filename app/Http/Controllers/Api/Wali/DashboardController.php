@@ -31,6 +31,8 @@ class DashboardController extends BaseWaliApiController
 
         $recentTransactions = collect();
         $todaySummary = ['count' => 0, 'in' => 0, 'out' => 0];
+        $tahfidzCount = 0;
+        $studyCount = 0;
         if ($activeStudent) {
             $tahfidzCount = Tahfidz::where('student_id', $activeStudent->id)->sum('number_of_pages');
             $studyCount = StudyGrade::where('student_id', $activeStudent->id)->distinct('study_id')->count();
@@ -196,7 +198,11 @@ class DashboardController extends BaseWaliApiController
             $currentMonth = (int) date('n');
             $currentYear = (int) date('Y');
             $hasUnpaidBills = \App\Models\Bill::where('student_id', $activeStudent->id)
+                ->whereHas('billType', function ($q) {
+                    $q->whereNull('deleted_at');
+                })
                 ->where('status', \App\Models\Bill::STATUS_UNPAID)
+                ->where('amount', '>', 0)
                 ->where(function ($q) use ($currentMonth, $currentYear) {
                     $q->where('year', '<', $currentYear)
                         ->orWhere(function ($q2) use ($currentMonth, $currentYear) {

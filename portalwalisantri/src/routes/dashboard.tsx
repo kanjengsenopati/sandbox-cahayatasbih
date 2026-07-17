@@ -25,7 +25,7 @@ import {
   Users,
   Receipt,
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { MobileShell } from "@/components/MobileShell";
 import { useSantri } from "@/contexts/SantriContext";
 import { SantriSwitcherTrigger } from "@/components/SantriSwitcher";
@@ -33,6 +33,7 @@ import { useQuery } from "@tanstack/react-query";
 import { fetchDashboard, fetchInformations } from "@/lib/api";
 import { resolveImageUrl, safeParseDate } from "@/lib/utils";
 import { Text } from "@/components/Text";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/dashboard")({
   component: Dashboard,
@@ -90,6 +91,52 @@ function Dashboard() {
   });
 
   const hasUnpaidBills = dashboard?.has_unpaid_bills || false;
+
+  useEffect(() => {
+    if (hasUnpaidBills) {
+      toast.custom(
+        (t) => (
+          <div className="w-full max-w-sm bg-white/95 backdrop-blur-md rounded-[24px] border border-red-100 shadow-[0_10px_30px_rgba(239,68,68,0.08)] p-5 flex gap-4 items-start animate-in fade-in slide-in-from-top-4 duration-300">
+            <div className="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 border border-red-100 bg-red-50 text-red-500">
+              <Bell size={22} className="animate-bounce" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="flex justify-between items-baseline">
+                <span className="text-[10px] font-extrabold uppercase tracking-widest text-red-600">
+                  Tagihan Aktif
+                </span>
+                <span className="text-[10px] text-slate-400">Penting</span>
+              </div>
+              <p className="text-[14px] font-bold text-slate-900 mt-1">
+                Ada Tagihan Belum Lunas
+              </p>
+              <p className="text-[12px] text-slate-500 mt-1.5 leading-relaxed">
+                Anda memiliki tagihan aktif bulan berjalan yang belum dibayar. Harap segera melakukan pembayaran.
+              </p>
+              <div className="mt-4 flex gap-2">
+                <button
+                  onClick={() => {
+                    toast.dismiss(t);
+                    navigate({ to: "/tagihan" });
+                  }}
+                  className="px-4 py-2 rounded-xl bg-red-600 text-white text-[11px] font-bold hover:opacity-90 active:scale-95 transition-all shadow-sm"
+                >
+                  Bayar Sekarang
+                </button>
+                <button
+                  onClick={() => toast.dismiss(t)}
+                  className="px-4 py-2 rounded-xl bg-slate-100 text-slate-600 text-[11px] font-bold hover:bg-slate-200"
+                >
+                  Tutup
+                </button>
+              </div>
+            </div>
+          </div>
+        ),
+        { id: "unpaid-bill-notification", duration: 10000 }
+      );
+    }
+  }, [hasUnpaidBills, navigate]);
 
   const [newsPage, setNewsPage] = useState(1);
   const [allNews, setAllNews] = useState<any[]>([]);
