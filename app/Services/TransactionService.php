@@ -419,11 +419,10 @@ class TransactionService
                 if ($transaction->unique_payment > 0) {
                     $student = Student::find($transaction->student_id);
                     $student->decrement('saldo', $transaction->unique_payment);
+                    Log::info("Rollback Kode Unik: Mengurangi saldo siswa {$student->name} ({$student->id}) sebesar Rp.{$transaction->unique_payment} akibat pembatalan transaksi.");
                     \App\Models\SaldoHistory::where('student_id', $student->id)
-                        ->where('amount', $transaction->unique_payment)
-                        ->where('type', SaldoHistory::TYPE_IN)
-                        ->where('usage', SaldoHistory::USAGE_TOPUP)
-                        ->where('description', 'like', '%Pengembalian Kode Unik%')
+                        ->where('amount', (int) $transaction->unique_payment)
+                        ->where('description', 'like', '%Kode Unik%')
                         ->delete();
                 }
 
