@@ -184,7 +184,7 @@ class BillController extends Controller
         }
 
         if ($transaction->created_at) {
-            $formattedDate = strtoupper($transaction->created_at->translatedFormat('d-M-Y , H : i'));
+            $formattedDate = strtoupper(\Carbon\Carbon::parse($transaction->created_at)->translatedFormat('d-M-Y , H : i'));
             $statusBadge .= "<br><div class='text-slate-400 mt-1' style='font-size: 12px; font-style: italic; color: #94a3b8;'>{$formattedDate}</div>";
         }
 
@@ -275,7 +275,7 @@ class BillController extends Controller
                 return $transaction->admin?->name ?? '-';
             })
             ->addColumn('updated_at_formatted', function ($transaction) {
-                return $transaction->updated_at ? $transaction->updated_at->translatedFormat('d F Y H:i') : '-';
+                return $transaction->updated_at ? \Carbon\Carbon::parse($transaction->updated_at)->translatedFormat('d F Y H:i') : '-';
             })
             ->rawColumns(['proof', 'action', 'status', 'bank_recipient', 'pay_amount'])
             ->make(true);
