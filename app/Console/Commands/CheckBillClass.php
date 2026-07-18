@@ -2,11 +2,13 @@
 
 namespace App\Console\Commands;
 
+use App\Models\Bill;
 use App\Models\BillType;
 use App\Models\PaymentRate;
 use App\Models\Student;
-use App\Services\PaymentRateService;
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 class CheckBillClass extends Command
 {
@@ -22,30 +24,14 @@ class CheckBillClass extends Command
      *
      * @var string
      */
-    protected $description = 'Check and create bills for students in classes';
-
-    /**
-     * @var PaymentRateService
-     */
-    protected $paymentRateService;
-
-    /**
-     * Create a new command instance.
-     *
-     * @param PaymentRateService $paymentRateService
-     */
-    public function __construct(PaymentRateService $paymentRateService)
-    {
-        parent::__construct();
-        $this->paymentRateService = $paymentRateService;
-    }
+    protected $description = 'Check and create missing bills for students based on active academic year and payment rates';
 
     /**
      * Execute the console command.
      */
     public function handle()
     {
-        // Fetch the bill types that are monthly
+        // Fetch active academic year's bill types
         $billTypes = BillType::whereHas(
             'academicYear',
             function ($query) {
@@ -53,79 +39,111 @@ class CheckBillClass extends Command
             }
         )->get();
 
+        $totalCreated = 0;
+
         foreach ($billTypes as $billType) {
-            // Fetch the payment rates along with the classrooms and payment items
-            $paymentRates = PaymentRate::with(['paymentRateClassrooms', 'paymentRateItems'])
+            $paymentRates = PaymentRate::with(['paymentRateClassrooms', 'paymentRateStudents', 'paymentRateItems'])
                 ->where('bill_type_id', $billType->id)
                 ->get();
 
             foreach ($paymentRates as $paymentRate) {
-                // Skip if paymentRateItems is empty
                 if ($paymentRate->paymentRateItems->isEmpty()) {
-                    $this->warn("Skipping bill creation for Payment Rate ID {$paymentRate->id} due to empty paymentRateItems.");
                     continue;
                 }
 
-                // Flatten the classroom IDs
-                $classrooms = $paymentRate->paymentRateClassrooms->pluck('classroom_id')->toArray();
+                $students = $this->getStudentsForRate($paymentRate);
 
-                // Find students who haven't received a bill yet and belong to the relevant classrooms
-                $students = Student::whereDoesntHave('bills', function ($query) use ($billType) {
-                    $query->where('bill_type_id', $billType->id);
-                })
-                ->whereIn('classroom_id', $classrooms)
-                ->where('status', 'ACTIVE')
-                ->when($paymentRate->gender, function ($query) use ($paymentRate) {
-                    $query->whereIn('gender', explode(',', $paymentRate->gender));
-                })
-                ->when($paymentRate->jamaah_status, function ($query) use ($paymentRate) {
-                    $statuses = array_map('trim', explode(',', $paymentRate->jamaah_status));
-                    $query->where(function ($q) use ($statuses) {
-                        $q->whereHas('user', function ($userQuery) use ($statuses) {
-                            $userQuery->whereIn('jamaah_status', $statuses);
-                        });
-                        if (in_array('NON_JAMAAH', $statuses)) {
-                            $q->orWhereNull('user_id')
-                              ->orWhereDoesntHave('user');
-                        }
-                    });
-                })
-                ->get();
-
-
-                foreach ($students as $student) {
-                    // Prepare the data array
-                    $data = [
-                        'classrooms' => [$student->classroom_id],
-                        'price' => [],
-                        'months' => [],
-                        'year' => [],
-                    ];
-
-                    // Loop through each payment rate item to create bills
-                    foreach ($paymentRate->paymentRateItems as $item) {
-                        $billAmount = $item->amount;
-                        $billMonth = $item->month;
-                        $billYear = $item->year;
-
-                        // Populate the data array
-                        $data['price'][$billMonth] = $billAmount;
-                        $data['months'][] = $billMonth;
-                        $data['year'][$billMonth] = $billYear;
-                        $data['tahun_' . $billMonth] = $billYear;
-                        $data['bulan_' . $billMonth] = $billAmount;
-                    }
-
-                    // Call the service method once for each student with the accumulated data
-                    $this->paymentRateService->createBillsForStudents($paymentRate, $billType, $data);
+                if ($students->isEmpty()) {
+                    continue;
                 }
 
+                $timestamp = now();
+                $billsToInsert = [];
 
-                // Log details in the terminal
-                $this->info('Bill Type: ' . $billType->name);
-                $this->info('Classroom IDs: ' . implode(', ', $classrooms));
-                $this->info('Students: ' . $students->pluck('name')->implode(', '));
+                foreach ($students as $student) {
+                    foreach ($paymentRate->paymentRateItems as $item) {
+                        // Check if bill exists
+                        $exists = DB::table('bills')
+                            ->where('student_id', $student->id)
+                            ->where('bill_type_id', $billType->id)
+                            ->where('month', $item->month)
+                            ->where('year', $item->year)
+                            ->whereNull('deleted_at')
+                            ->exists();
+
+                        if (!$exists) {
+                            $billsToInsert[] = [
+                                'id'                   => Str::uuid()->toString(),
+                                'bill_type_id'         => $billType->id,
+                                'classroom_id'         => $student->classroom_id,
+                                'student_id'           => $student->id,
+                                'academic_year_id'     => $billType->academic_year_id,
+                                'month'                => $item->month,
+                                'year'                 => $item->year,
+                                'amount'               => $item->amount,
+                                'paid_amount'          => 0,
+                                'status'               => Bill::STATUS_UNPAID,
+                                'payment_rate_item_id' => $item->id,
+                                'created_at'           => $timestamp,
+                                'updated_at'           => $timestamp,
+                            ];
+                            $totalCreated++;
+                        }
+                    }
+                }
+
+                if (!empty($billsToInsert)) {
+                    foreach (array_chunk($billsToInsert, 500) as $chunk) {
+                        DB::table('bills')->insert($chunk);
+                    }
+                }
             }
         }
+
+        $this->info("Completed checking and syncing bills. Created {$totalCreated} missing bills.");
+    }
+
+    /**
+     * Get students matching a PaymentRate's filters
+     */
+    private function getStudentsForRate(PaymentRate $paymentRate): \Illuminate\Support\Collection
+    {
+        $query = Student::query()->where('status', 'ACTIVE');
+
+        if ($paymentRate->type === PaymentRate::TYPE_REGULAR) {
+            $classroomIds = $paymentRate->paymentRateClassrooms->pluck('classroom_id')->toArray();
+            if (empty($classroomIds)) {
+                return collect([]);
+            }
+            $query->whereIn('classroom_id', $classroomIds);
+        } else {
+            $studentIds = $paymentRate->paymentRateStudents->pluck('student_id')->toArray();
+            if (empty($studentIds)) {
+                return collect([]);
+            }
+            $query->whereIn('id', $studentIds);
+        }
+
+        if ($paymentRate->gender) {
+            $query->whereIn('gender', array_map('trim', explode(',', $paymentRate->gender)));
+        }
+
+        if ($paymentRate->jamaah_status) {
+            $statuses = array_map('trim', explode(',', $paymentRate->jamaah_status));
+            $query->where(function ($q) use ($statuses) {
+                $q->whereHas('user', function ($userQ) use ($statuses) {
+                    $userQ->whereIn('jamaah_status', $statuses);
+                });
+                if (in_array('NON_JAMAAH', $statuses)) {
+                    $q->orWhereNull('user_id')
+                      ->orWhereDoesntHave('user')
+                      ->orWhereHas('user', function ($userQ) {
+                          $userQ->whereNull('jamaah_status');
+                      });
+                }
+            });
+        }
+
+        return $query->get(['id', 'name', 'classroom_id', 'gender', 'user_id']);
     }
 }
