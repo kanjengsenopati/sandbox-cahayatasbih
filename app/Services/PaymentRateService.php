@@ -113,7 +113,16 @@ class PaymentRateService
                     ->where('year', $billYear)
                     ->first();
 
-                if (!$existingBill) {
+                if ($existingBill) {
+                    // Sync existing UNPAID bill with correct rate item and amount
+                    if ($existingBill->status === 'UNPAID' && ($existingBill->payment_rate_item_id !== ($paymentRateItem?->id ?? null) || $existingBill->amount != $billAmount)) {
+                        $existingBill->update([
+                            'amount' => $billAmount,
+                            'payment_rate_item_id' => $paymentRateItem?->id ?? null,
+                            'classroom_id' => $classroom->id,
+                        ]);
+                    }
+                } else {
                     $student->bills()->create([
                         'bill_type_id' => $billType->id,
                         'classroom_id' => $classroom->id,
@@ -158,7 +167,8 @@ class PaymentRateService
                 foreach ($paymentRate->paymentRateItems as $item) {
                     $billMonth = $item->month;
                     $billYear = $item->year;
-                    $billAmount = $data['bulan_' . $billMonth] ?? 0; // Use default 0 if not set
+                    // Use item->amount as primary source; fallback to data keys for compatibility
+                    $billAmount = $data['bulan_' . $billMonth] ?? $item->amount;
 
                     // Check for existing bill
                     $existingBill = $student->bills()
@@ -167,7 +177,16 @@ class PaymentRateService
                         ->where('year', $billYear)
                         ->first();
 
-                    if (!$existingBill) {
+                    if ($existingBill) {
+                        // Sync existing UNPAID bill with correct rate item and amount
+                        if ($existingBill->status === 'UNPAID' && ($existingBill->payment_rate_item_id !== $item->id || $existingBill->amount != $billAmount)) {
+                            $existingBill->update([
+                                'amount' => $billAmount,
+                                'payment_rate_item_id' => $item->id,
+                                'classroom_id' => $classroom->id,
+                            ]);
+                        }
+                    } else {
                         // Create a new bill record
                         $student->bills()->create([
                             'bill_type_id' => $billType->id,

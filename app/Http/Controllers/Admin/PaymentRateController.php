@@ -113,8 +113,17 @@ class PaymentRateController extends Controller
                         $q->whereIn('gender', $request->gender);
                     })
                     ->when($request->jamaah_status, function($q) use ($request) {
-                        $q->whereHas('user', function($userQ) use ($request) {
-                            $userQ->whereIn('jamaah_status', $request->jamaah_status);
+                        $q->where(function ($qq) use ($request) {
+                            $qq->whereHas('user', function($userQ) use ($request) {
+                                $userQ->whereIn('jamaah_status', $request->jamaah_status);
+                            });
+                            if (in_array('NON_JAMAAH', $request->jamaah_status)) {
+                                $qq->orWhereNull('user_id')
+                                   ->orWhereDoesntHave('user')
+                                   ->orWhereHas('user', function ($userQ) {
+                                       $userQ->whereNull('jamaah_status');
+                                   });
+                            }
                         });
                     })
                     ->get(['id', 'classroom_id', 'gender', 'user_id']);
@@ -125,8 +134,17 @@ class PaymentRateController extends Controller
                         $q->whereIn('gender', $request->gender);
                     })
                     ->when($request->jamaah_status, function($q) use ($request) {
-                        $q->whereHas('user', function($userQ) use ($request) {
-                            $userQ->whereIn('jamaah_status', $request->jamaah_status);
+                        $q->where(function ($qq) use ($request) {
+                            $qq->whereHas('user', function($userQ) use ($request) {
+                                $userQ->whereIn('jamaah_status', $request->jamaah_status);
+                            });
+                            if (in_array('NON_JAMAAH', $request->jamaah_status)) {
+                                $qq->orWhereNull('user_id')
+                                   ->orWhereDoesntHave('user')
+                                   ->orWhereHas('user', function ($userQ) {
+                                       $userQ->whereNull('jamaah_status');
+                                   });
+                            }
                         });
                     })
                     ->get(['id', 'classroom_id', 'gender', 'user_id']);
@@ -247,8 +265,18 @@ class PaymentRateController extends Controller
 
         // Apply Payment Rate Parent Jamaah Status Filter
         if ($paymentRate->jamaah_status) {
-            $query->whereHas('user', function ($userQ) use ($paymentRate) {
-                $userQ->whereIn('jamaah_status', array_map('trim', explode(',', $paymentRate->jamaah_status)));
+            $statuses = array_map('trim', explode(',', $paymentRate->jamaah_status));
+            $query->where(function ($q) use ($statuses) {
+                $q->whereHas('user', function ($userQ) use ($statuses) {
+                    $userQ->whereIn('jamaah_status', $statuses);
+                });
+                if (in_array('NON_JAMAAH', $statuses)) {
+                    $q->orWhereNull('user_id')
+                      ->orWhereDoesntHave('user')
+                      ->orWhereHas('user', function ($userQ) {
+                          $userQ->whereNull('jamaah_status');
+                      });
+                }
             });
         }
 
@@ -531,13 +559,23 @@ class PaymentRateController extends Controller
                 $students = Student::whereIn('classroom_id', $allClassroomIds)
                                    ->where('status', 'ACTIVE') 
                                    ->when($paymentRate->gender, function($q) use ($paymentRate) {
-                                       $q->whereIn('gender', explode(',', $paymentRate->gender));
-                                   })
+                                        $q->whereIn('gender', explode(',', $paymentRate->gender));
+                                    })
                                    ->when($paymentRate->jamaah_status, function($q) use ($paymentRate) {
-                                       $q->whereHas('user', function($userQ) use ($paymentRate) {
-                                           $userQ->whereIn('jamaah_status', explode(',', $paymentRate->jamaah_status));
-                                       });
-                                   })
+                                        $statuses = array_map('trim', explode(',', $paymentRate->jamaah_status));
+                                        $q->where(function ($qq) use ($statuses) {
+                                            $qq->whereHas('user', function($userQ) use ($statuses) {
+                                                $userQ->whereIn('jamaah_status', $statuses);
+                                            });
+                                            if (in_array('NON_JAMAAH', $statuses)) {
+                                                $qq->orWhereNull('user_id')
+                                                   ->orWhereDoesntHave('user')
+                                                   ->orWhereHas('user', function ($userQ) {
+                                                       $userQ->whereNull('jamaah_status');
+                                                   });
+                                            }
+                                        });
+                                    })
                                    ->get();
             } else {
                 $allStudentIds = $paymentRate->paymentRateStudents()->pluck('student_id');
@@ -547,10 +585,20 @@ class PaymentRateController extends Controller
                                        $q->whereIn('gender', explode(',', $paymentRate->gender));
                                    })
                                    ->when($paymentRate->jamaah_status, function($q) use ($paymentRate) {
-                                       $q->whereHas('user', function($userQ) use ($paymentRate) {
-                                           $userQ->whereIn('jamaah_status', explode(',', $paymentRate->jamaah_status));
-                                       });
-                                   })
+                                        $statuses = array_map('trim', explode(',', $paymentRate->jamaah_status));
+                                        $q->where(function ($qq) use ($statuses) {
+                                            $qq->whereHas('user', function($userQ) use ($statuses) {
+                                                $userQ->whereIn('jamaah_status', $statuses);
+                                            });
+                                            if (in_array('NON_JAMAAH', $statuses)) {
+                                                $qq->orWhereNull('user_id')
+                                                   ->orWhereDoesntHave('user')
+                                                   ->orWhereHas('user', function ($userQ) {
+                                                       $userQ->whereNull('jamaah_status');
+                                                   });
+                                            }
+                                        });
+                                    })
                                    ->get();
             }
 
@@ -1005,11 +1053,22 @@ class PaymentRateController extends Controller
             // Ambil ID Item dari Map (Tanpa Query)
             $rateItemId = $rateItemsMap["{$month}_{$targetYear}"] ?? null;
 
-            // Cek Duplicate via flipped array map (RAM), super cepat & hemat memori
-            $key = "{$student->id}_{$month}_{$targetYear}";
-            $exists = isset($existingBillKeys[$key]);
+            // Cek jika bill UNPAID untuk student ini sudah ada
+            $existingBill = Bill::where('student_id', $student->id)
+                ->where('bill_type_id', $billType->id)
+                ->where('month', $month)
+                ->where('year', $targetYear)
+                ->first();
 
-            if (!$exists) {
+            if ($existingBill) {
+                if ($existingBill->status === Bill::STATUS_UNPAID && ($existingBill->payment_rate_item_id !== $rateItemId || $existingBill->amount !== $targetAmount)) {
+                    $existingBill->update([
+                        'amount' => $targetAmount,
+                        'payment_rate_item_id' => $rateItemId,
+                        'classroom_id' => $student->classroom_id,
+                    ]);
+                }
+            } else {
                 $billsToInsert[] = [
                     'id'                 => Str::uuid()->toString(),
                     'bill_type_id'       => $billType->id,
@@ -1040,8 +1099,18 @@ class PaymentRateController extends Controller
                     $q->whereIn('gender', explode(',', $paymentRate->gender));
                 })
                 ->when($paymentRate->jamaah_status, function($q) use ($paymentRate) {
-                    $q->whereHas('user', function($userQ) use ($paymentRate) {
-                        $userQ->whereIn('jamaah_status', explode(',', $paymentRate->jamaah_status));
+                    $statuses = array_map('trim', explode(',', $paymentRate->jamaah_status));
+                    $q->where(function ($qq) use ($statuses) {
+                        $qq->whereHas('user', function($userQ) use ($statuses) {
+                            $userQ->whereIn('jamaah_status', $statuses);
+                        });
+                        if (in_array('NON_JAMAAH', $statuses)) {
+                            $qq->orWhereNull('user_id')
+                               ->orWhereDoesntHave('user')
+                               ->orWhereHas('user', function ($userQ) {
+                                   $userQ->whereNull('jamaah_status');
+                               });
+                        }
                     });
                 })
                 ->get();
@@ -1053,8 +1122,18 @@ class PaymentRateController extends Controller
                     $q->whereIn('gender', explode(',', $paymentRate->gender));
                 })
                 ->when($paymentRate->jamaah_status, function($q) use ($paymentRate) {
-                    $q->whereHas('user', function($userQ) use ($paymentRate) {
-                        $userQ->whereIn('jamaah_status', explode(',', $paymentRate->jamaah_status));
+                    $statuses = array_map('trim', explode(',', $paymentRate->jamaah_status));
+                    $q->where(function ($qq) use ($statuses) {
+                        $qq->whereHas('user', function($userQ) use ($statuses) {
+                            $userQ->whereIn('jamaah_status', $statuses);
+                        });
+                        if (in_array('NON_JAMAAH', $statuses)) {
+                            $qq->orWhereNull('user_id')
+                               ->orWhereDoesntHave('user')
+                               ->orWhereHas('user', function ($userQ) {
+                                   $userQ->whereNull('jamaah_status');
+                               });
+                        }
                     });
                 })
                 ->get();
@@ -1065,13 +1144,22 @@ class PaymentRateController extends Controller
 
         foreach ($students as $student) {
              // Check if bill exists
-             $exists = Bill::where('student_id', $student->id)
+             $existingBill = Bill::where('student_id', $student->id)
                 ->where('bill_type_id', $billType->id)
                 ->where('month', $newItem->month)
                 ->where('year', $newItem->year)
-                ->exists();
+                ->first();
 
-             if(!$exists) {
+             if ($existingBill) {
+                // Sync existing UNPAID bill with correct rate item and amount
+                if ($existingBill->status === Bill::STATUS_UNPAID && ($existingBill->payment_rate_item_id !== $newItem->id || $existingBill->amount !== $newItem->amount)) {
+                    $existingBill->update([
+                        'amount' => $newItem->amount,
+                        'payment_rate_item_id' => $newItem->id,
+                        'classroom_id' => $student->classroom_id,
+                    ]);
+                }
+             } else {
                 $billsToInsert[] = [
                     'id'                 => Str::uuid()->toString(),
                     'bill_type_id'       => $billType->id,

@@ -162,6 +162,13 @@ class PsbBillingService
                         'amount' => $amount,
                         'status' => Bill::STATUS_UNPAID,
                     ]);
+                } elseif ($existingBill->status === Bill::STATUS_UNPAID && ($existingBill->payment_rate_item_id !== $paymentRateItem->id || $existingBill->amount != $amount)) {
+                    // Sync existing UNPAID bill with correct rate item and amount
+                    $existingBill->update([
+                        'amount' => $amount,
+                        'payment_rate_item_id' => $paymentRateItem->id,
+                        'classroom_id' => $student->classroom_id,
+                    ]);
                 }
             }
 
