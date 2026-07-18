@@ -1,6 +1,6 @@
 @extends('layouts.master', ['title' => 'Laporan Transaksi POS Multi-Outlet'])
 @php
-    $isKasir = auth()->user()->hasAnyRole(['Kasir Koperasi', 'Kasir Karyawan Outlet', 'Kasir']);
+    $isKasir = auth()->user()->isKasir();
 @endphp
 @section('content')
 <style>
@@ -63,7 +63,7 @@
                     <li class="breadcrumb-item">
                         <span class="bullet bg-gray-300 w-5px h-2px"></span>
                     </li>
-                    <li class="breadcrumb-item text-dark">POS Multi-Outlet</li>
+                    <li class="breadcrumb-item text-dark">{{ $isKasir ? (auth()->user()->isKasirKoperasi() ? 'Koperasi' : 'Outlet') : 'POS Multi-Outlet' }}</li>
                 </ul>
             </div>
         </div>

@@ -241,7 +241,7 @@ class PosTransactionController extends Controller
                         return 'Rp ' . number_format($data->pay_amount, 0, ',', '.');
                     })
                     ->addColumn('profit', function ($data) {
-                        if (auth()->user()->hasAnyRole(['Kasir Koperasi', 'Kasir Karyawan Outlet', 'Kasir'])) {
+                        if (auth()->user()->isKasir()) {
                             return 'Rp 0';
                         }
                         return 'Rp ' . number_format($data->profit, 0, ',', '.');
