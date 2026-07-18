@@ -19,6 +19,29 @@ use Illuminate\Support\Facades\Cache;
 
 class OrderItemController extends Controller
 {
+    public function __construct()
+    {
+        $this->middleware(function ($request, $next) {
+            $user = auth()->user();
+            if ($user) {
+                $mode = $request->input('mode') ?? request('mode');
+                if ($user->hasRole('Kasir Koperasi') && $mode === 'outlet') {
+                    if ($request->ajax()) {
+                        return response()->json(['success' => false, 'message' => 'Maaf, Anda tidak memiliki akses.'], 403);
+                    }
+                    return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
+                }
+                if ($user->hasRole('Kasir Karyawan Outlet') && $mode === 'kantin') {
+                    if ($request->ajax()) {
+                        return response()->json(['success' => false, 'message' => 'Maaf, Anda tidak memiliki akses.'], 403);
+                    }
+                    return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
+                }
+            }
+            return $next($request);
+        });
+    }
+
 
     public function dashboard()
     {

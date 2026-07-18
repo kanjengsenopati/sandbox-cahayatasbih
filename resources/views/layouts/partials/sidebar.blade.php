@@ -111,6 +111,18 @@
                             $roles = auth()->user()->roles->pluck('name')->map('strtolower');
                             return $roles->contains('super admin') || $roles->contains('superadmin') || auth()->user()->can('Manage Menu Aplikasi');
                         }
+
+                        // Restrict POS Kasir menus based on role and mode URL parameter
+                        $user = auth()->user();
+                        if (str_contains($sub->url, 'order-item')) {
+                            if ($user->hasRole('Kasir Koperasi') && str_contains($sub->url, 'mode=outlet')) {
+                                return false;
+                            }
+                            if ($user->hasRole('Kasir Karyawan Outlet') && str_contains($sub->url, 'mode=kantin')) {
+                                return false;
+                            }
+                        }
+
                         $subPerms = array_filter(explode(',', $sub->permission ?? ''));
                         if (empty($subPerms)) {
                             return true;
