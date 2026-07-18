@@ -77,15 +77,17 @@ class MenuNavigationSeeder extends Seeder
             'url' => null,
             'order' => 4,
             'is_active' => true,
-            'permission' => 'Manage Wali Santri,Manage Santri,Manage Outlet,Manage PPDB,Manage Kategori Arus Kas',
+            'permission' => 'Manage Wali Santri,Manage Santri,Manage Asrama,Manage Petugas,Manage Outlet,Manage PPDB,Manage Kategori Arus Kas',
         ]);
 
         $subMasterData = [
             ['name' => 'Data Wali Siswa', 'url' => '/user', 'permission' => 'Manage Wali Santri', 'order' => 1],
             ['name' => 'Data Siswa', 'url' => '/student', 'permission' => 'Manage Santri', 'order' => 2],
-            ['name' => 'Data Outlet', 'url' => '/outlet', 'permission' => 'Manage Outlet', 'order' => 3],
-            ['name' => 'Data PPDB', 'url' => '/ppdb', 'permission' => 'Manage PPDB', 'order' => 4],
-            ['name' => 'Kategori Arus Kas', 'url' => '/cashflow-category', 'permission' => 'Manage Kategori Arus Kas', 'order' => 5],
+            ['name' => 'Data Ustadz & Petugas', 'url' => '/officer', 'permission' => 'Manage Petugas', 'order' => 3],
+            ['name' => 'Data Kamar Santri', 'url' => '/asrama', 'permission' => 'Manage Asrama', 'order' => 4],
+            ['name' => 'Data Outlet', 'url' => '/outlet', 'permission' => 'Manage Outlet', 'order' => 5],
+            ['name' => 'Data PPDB', 'url' => '/ppdb', 'permission' => 'Manage PPDB', 'order' => 6],
+            ['name' => 'Kategori Arus Kas', 'url' => '/cashflow-category', 'permission' => 'Manage Kategori Arus Kas', 'order' => 7],
         ];
 
         foreach ($subMasterData as $sub) {
@@ -178,9 +180,8 @@ class MenuNavigationSeeder extends Seeder
             ['name' => 'Metode Pembayaran', 'url' => '/payment-method', 'permission' => 'Manage Metode Pembayaran', 'order' => 6],
             ['name' => 'Menu Aplikasi Wali', 'url' => '/application-menu', 'permission' => 'Manage Menu Aplikasi', 'order' => 7],
             ['name' => 'Kontak Bantuan', 'url' => '/help', 'permission' => 'Manage Kontak Bantuan', 'order' => 8],
-            ['name' => 'Petugas', 'url' => '/officer', 'permission' => 'Manage Petugas', 'order' => 9],
-            ['name' => 'Informasi Aplikasi', 'url' => '/app-information', 'permission' => 'app-information', 'order' => 10],
-            ['name' => 'Menu Backoffice', 'url' => '/menu-navigation', 'permission' => null, 'order' => 11],
+            ['name' => 'Informasi Aplikasi', 'url' => '/app-information', 'permission' => 'app-information', 'order' => 9],
+            ['name' => 'Menu Backoffice', 'url' => '/menu-navigation', 'permission' => null, 'order' => 10],
         ];
 
         foreach ($subPengaturan as $sub) {

@@ -139,6 +139,10 @@
                                                 $displayName = 'Pengguna';
                                             } elseif ($module === 'Outlet') {
                                                 $displayName = 'Pondok Mart (Outlet)';
+                                            } elseif ($module === 'Petugas') {
+                                                $displayName = 'Data Ustadz & Petugas';
+                                            } elseif ($module === 'Asrama') {
+                                                $displayName = 'Data Kamar';
                                             }
                                             return [
                                                 'internal' => $module,

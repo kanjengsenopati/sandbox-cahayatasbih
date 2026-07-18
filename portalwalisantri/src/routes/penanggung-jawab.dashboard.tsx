@@ -12,7 +12,7 @@ import { toast } from "sonner";
 
 export const Route = createFileRoute("/penanggung-jawab/dashboard")({
   component: PenanggungJawabDashboardPage,
-  head: () => ({ meta: [{ title: "Dashboard Pengasuh Asrama — CT-Mobile" }] }),
+  head: () => ({ meta: [{ title: "Dashboard Penanggung Jawab Kamar — CT-Mobile" }] }),
 });
 
 function PenanggungJawabDashboardPage() {
@@ -341,7 +341,7 @@ function PenanggungJawabDashboardPage() {
               </div>
               <div>
                 <p className="text-[10px] text-indigo-200 font-semibold !normal-case tracking-tight leading-none">
-                  {statsRes?.asrama_name || "Asrama Binaan"}
+                  {statsRes?.asrama_name || "Kamar Binaan"}
                 </p>
                 <p className="text-base font-semibold text-white leading-tight mt-1">
                   {statsRes?.host_name || "Penanggung Jawab"}
@@ -920,7 +920,7 @@ function PenanggungJawabDashboardPage() {
               <div className="bg-card rounded-3xl border border-border p-8 text-center shadow-[var(--shadow-soft)]">
                 <p className="text-sm font-semibold text-foreground">Tidak Ada Santri</p>
                 <p className="text-xs text-muted-foreground mt-1">
-                  Anda belum ditunjuk sebagai Host Asrama untuk santri manapun.
+                  Anda belum ditunjuk sebagai Penanggung Jawab Kamar untuk santri manapun.
                 </p>
               </div>
             ) : (

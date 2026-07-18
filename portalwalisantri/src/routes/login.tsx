@@ -9,7 +9,7 @@ export const Route = createFileRoute("/login")({
   head: () => ({
     meta: [
       { title: "Masuk — CT-Mobile" },
-      { name: "description", content: "Aplikasi mobile wali santri, asrama, dan perizinan Cahaya Tasbih." },
+      { name: "description", content: "Aplikasi mobile wali santri, kamar, dan perizinan Cahaya Tasbih." },
     ],
   }),
 });

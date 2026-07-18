@@ -46,7 +46,7 @@ class OfficerController extends Controller
                 ->rawColumns(['action', 'photo', 'status'])
                 ->make(true);
         }
-        return view('admins.officer.index');
+        return view('admins.officer-kamar.index', ['activeTab' => 'officer']);
     }
 
     /**

@@ -287,7 +287,7 @@ function Dashboard() {
 
             <div className="mt-6 flex items-center justify-between text-xs gap-3">
               <div className="min-w-0" style={{ width: "30%" }}>
-                <Text.Label className="text-white/85 block text-[10px]">Asrama</Text.Label>
+                <Text.Label className="text-white/85 block text-[10px]">Kamar</Text.Label>
                 <Text.Caption className="text-white not-italic font-bold truncate mt-0.5 block">{(active as any).asrama_name || "-"}</Text.Caption>
               </div>
               <div className="h-8 w-px bg-white/20 shrink-0" />

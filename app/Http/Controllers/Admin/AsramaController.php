@@ -57,7 +57,7 @@ class AsramaController extends Controller
                 ->make(true);
         }
 
-        return view('admins.asrama.index');
+        return view('admins.officer-kamar.index', ['activeTab' => 'kamar']);
     }
 
     /**

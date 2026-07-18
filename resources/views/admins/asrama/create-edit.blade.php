@@ -1,4 +1,4 @@
-@extends('layouts.master', ['title' => isset($asrama) ? 'Edit Data Asrama' : 'Tambah Data Asrama'])
+@extends('layouts.master', ['title' => isset($asrama) ? 'Edit Data Kamar' : 'Tambah Data Kamar'])
 @section('content')
 <div class="content d-flex flex-column flex-column-fluid" id="kt_content">
     <!--begin::Toolbar-->
@@ -7,16 +7,16 @@
             <div data-kt-swapper="true" data-kt-swapper-mode="prepend"
                 data-kt-swapper-parent="{default: '#kt_content_container', 'lg': '#kt_toolbar_container'}"
                 class="page-title d-flex align-items-center flex-wrap me-3 mb-5 mb-lg-0">
-                <h1 class="d-flex text-dark fw-bolder fs-3 align-items-center my-1">{{ isset($asrama) ? 'Edit Data Asrama' : 'Tambah Data Asrama' }}</h1>
+                <h1 class="d-flex text-dark fw-bolder fs-3 align-items-center my-1">{{ isset($asrama) ? 'Edit Data Kamar' : 'Tambah Data Kamar' }}</h1>
                 <span class="h-20px border-gray-300 border-start mx-4"></span>
                 <ul class="breadcrumb breadcrumb-separatorless fw-bold fs-7 my-1">
                     <li class="breadcrumb-item text-muted">
-                        <a href="{{ route('asrama.index') }}" class="text-muted text-hover-primary">Data Asrama</a>
+                        <a href="{{ route('asrama.index') }}" class="text-muted text-hover-primary">Data Kamar</a>
                     </li>
                     <li class="breadcrumb-item">
                         <span class="bullet bg-gray-300 w-5px h-2px"></span>
                     </li>
-                    <li class="breadcrumb-item text-dark">{{ isset($asrama) ? 'Edit Asrama' : 'Tambah Asrama' }}</li>
+                    <li class="breadcrumb-item text-dark">{{ isset($asrama) ? 'Edit Kamar' : 'Tambah Kamar' }}</li>
                 </ul>
             </div>
         </div>
@@ -31,7 +31,7 @@
                 <!--begin::Card header-->
                 <div class="card-header border-0 pt-6">
                     <div class="card-title">
-                        <h2>Formulir {{ isset($asrama) ? 'Edit' : 'Tambah' }} Data Asrama</h2>
+                        <h2>Formulir {{ isset($asrama) ? 'Edit' : 'Tambah' }} Data Kamar</h2>
                     </div>
                 </div>
                 <!--end::Card header-->
@@ -54,11 +54,11 @@
                             </div>
                         @endif
 
-                        <!--begin::Input Group - Nama Asrama-->
+                        <!--begin::Input Group - Nama Kamar-->
                         <div class="fv-row mb-7">
-                            <label class="required fw-bold fs-6 mb-2">Nama Asrama</label>
+                            <label class="required fw-bold fs-6 mb-2">Nama Kamar</label>
                             <input type="text" name="name" class="form-control form-control-solid mb-3 mb-lg-0" 
-                                placeholder="Contoh: Asrama Al-Fatih, Asrama Umar bin Khattab" 
+                                placeholder="Contoh: Kamar Al-Fatih, Kamar Umar bin Khattab" 
                                 value="{{ old('name', isset($asrama) ? $asrama->name : '') }}" required />
                         </div>
                         <!--end::Input Group-->
@@ -68,17 +68,17 @@
                         <!--end::Divider-->
 
                         <!--begin::Host Section-->
-                        <h4 class="fw-bolder mb-6"><i class="fa fa-user-tie text-primary me-2"></i>Pengaturan Penanggung Jawab Pengampu</h4>
+                        <h4 class="fw-bolder mb-6"><i class="fa fa-user-tie text-primary me-2"></i>Pengaturan Penanggung Jawab / Ustadz Pengampu</h4>
                         
                         <!--begin::Host Type Radio Selection-->
                         <div class="fv-row mb-7">
-                            <label class="fw-bold fs-6 mb-3">Tipe Input Penanggung Jawab Host</label>
+                            <label class="fw-bold fs-6 mb-3">Tipe Input Penanggung Jawab Kamar</label>
                             <div class="d-flex align-items-center gap-10 mt-2">
                                 <div class="form-check form-check-custom form-check-solid">
                                     <input class="form-check-input" type="radio" value="existing" name="host_type" id="host_existing" 
                                         {{ old('host_type', isset($currentOfficerId) ? 'existing' : 'existing') === 'existing' ? 'checked' : '' }} />
                                     <label class="form-check-label fw-bold text-gray-800" for="host_existing">
-                                        Pilih Dari Data Petugas Aktif
+                                        Pilih Dari Data Petugas / Ustadz Aktif
                                     </label>
                                 </div>
                                 <div class="form-check form-check-custom form-check-solid">
@@ -93,8 +93,8 @@
 
                         <!--begin::Existing Host Select Group-->
                         <div class="fv-row mb-7" id="existing_host_group">
-                            <label class="required fw-bold fs-6 mb-2">Pilih Penanggung Jawab Pengampu</label>
-                            <select name="officer_id" class="form-select form-select-solid" data-control="select2" data-placeholder="Pilih Penanggung Jawab Pengampu...">
+                            <label class="required fw-bold fs-6 mb-2">Pilih Penanggung Jawab / Ustadz Pengampu</label>
+                            <select name="officer_id" class="form-select form-select-solid" data-control="select2" data-placeholder="Pilih Penanggung Jawab / Ustadz...">
                                 <option value=""></option>
                                 @foreach($officers as $officer)
                                     <option value="{{ $officer->id }}" 
@@ -103,21 +103,21 @@
                                     </option>
                                 @endforeach
                             </select>
-                            <div class="text-muted fs-7 mt-2">Akun Admin PWA Penanggung Jawab akan secara otomatis disinkronkan ke nomor WA petugas ini.</div>
+                            <div class="text-muted fs-7 mt-2">Akun Admin PWA Penanggung Jawab akan secara otomatis disinkronkan ke nomor WA petugas/ustadz ini.</div>
                         </div>
 
                         <!--begin::New Host Form Group (Hidden by default)-->
                         <div id="new_host_group" class="d-none bg-light-primary p-6 rounded-3 mb-7 border border-primary border-dashed">
-                            <h5 class="fw-bold mb-5"><i class="fa fa-plus-circle text-primary me-2"></i>Formulir Input Petugas & Akun Admin Baru</h5>
+                            <h5 class="fw-bold mb-5"><i class="fa fa-plus-circle text-primary me-2"></i>Formulir Input Petugas / Ustadz Baru</h5>
                             
                             <div class="row g-9 mb-6">
                                 <div class="col-md-6 fv-row">
-                                    <label class="required fw-bold fs-6 mb-2">Nama Lengkap Petugas</label>
+                                    <label class="required fw-bold fs-6 mb-2">Nama Lengkap Petugas / Ustadz</label>
                                     <input type="text" name="new_officer_name" class="form-control form-control-solid" 
                                         placeholder="Nama Lengkap Penanggung Jawab" value="{{ old('new_officer_name') }}" />
                                 </div>
                                 <div class="col-md-6 fv-row">
-                                    <label class="required fw-bold fs-6 mb-2">No. WhatsApp Petugas (Format: 08...)</label>
+                                    <label class="required fw-bold fs-6 mb-2">No. WhatsApp (Format: 08...)</label>
                                     <input type="text" name="new_officer_phone" class="form-control form-control-solid" 
                                         placeholder="Contoh: 081225129109" value="{{ old('new_officer_phone') }}" />
                                 </div>
@@ -127,12 +127,12 @@
                                 <div class="col-md-6 fv-row">
                                     <label class="required fw-bold fs-6 mb-2">Jabatan</label>
                                     <input type="text" name="new_officer_position" class="form-control form-control-solid" 
-                                        placeholder="Contoh: Host Asrama, Pembina Kamar" value="{{ old('new_officer_position', 'Host Asrama') }}" />
+                                        placeholder="Contoh: Host Kamar, Pembina Kamar" value="{{ old('new_officer_position', 'Host Kamar') }}" />
                                 </div>
                                 <div class="col-md-6 fv-row">
                                     <label class="required fw-bold fs-6 mb-2">Tugas / Tanggung Jawab</label>
                                     <input type="text" name="new_officer_duty" class="form-control form-control-solid" 
-                                        placeholder="Contoh: Pengawasan & Perizinan Asrama" value="{{ old('new_officer_duty', 'Pengawasan & Perizinan Asrama') }}" />
+                                        placeholder="Contoh: Pengawasan & Perizinan Kamar" value="{{ old('new_officer_duty', 'Pengawasan & Perizinan Kamar') }}" />
                                 </div>
                             </div>
                             <div class="text-primary fs-7 mt-4">
@@ -149,7 +149,7 @@
                         <h4 class="fw-bolder mb-6"><i class="fa fa-graduation-cap text-success me-2"></i>Alokasi Siswa / Santri Binaan</h4>
 
                         <div class="fv-row mb-7">
-                            <label class="fw-bold fs-6 mb-2">Pilih Santri yang Tinggal di Asrama Ini</label>
+                            <label class="fw-bold fs-6 mb-2">Pilih Santri yang Tinggal di Kamar Ini</label>
                             <select name="student_ids[]" class="form-select form-select-solid" data-control="select2" 
                                 data-placeholder="Pilih & alokasikan santri..." data-allow-clear="true" multiple="multiple">
                                 @foreach($students as $student)
@@ -162,7 +162,7 @@
                                     </option>
                                 @endforeach
                             </select>
-                            <div class="text-muted fs-7 mt-2">Daftar di atas menampilkan semua siswa aktif. Siswa yang dialokasikan akan berpindah asrama ke asrama ini.</div>
+                            <div class="text-muted fs-7 mt-2">Daftar di atas menampilkan semua siswa aktif. Siswa yang dialokasikan akan berpindah kamar ke kamar ini.</div>
                         </div>
 
                         <!--begin::Actions-->

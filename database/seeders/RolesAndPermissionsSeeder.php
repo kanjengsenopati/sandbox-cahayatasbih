@@ -35,6 +35,18 @@ class RolesAndPermissionsSeeder extends Seeder
             'Approve Perizinan',
             'Scan Perizinan',
 
+            // Petugas / Ustadz CRUD Permissions
+            'Manage Petugas',
+            'Create Petugas',
+            'Edit Petugas',
+            'Delete Petugas',
+
+            // Asrama / Kamar CRUD Permissions
+            'Manage Asrama',
+            'Create Asrama',
+            'Edit Asrama',
+            'Delete Asrama',
+
             // Laporan Pos Multi Outlet CRUD Permissions
             'Manage Laporan Pos Multi Outlet',
             'Create Laporan Pos Multi Outlet',
@@ -67,7 +79,11 @@ class RolesAndPermissionsSeeder extends Seeder
         ]);
         $ustadzAsramaRole->syncPermissions([
             'Manage Perizinan',
-            'Approve Perizinan'
+            'Approve Perizinan',
+            'Manage Asrama',
+            'Create Asrama',
+            'Edit Asrama',
+            'Delete Asrama'
         ]);
 
         // Petugas Keamanan (Security) Role
