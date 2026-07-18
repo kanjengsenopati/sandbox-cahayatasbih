@@ -56,6 +56,9 @@ jobs:
             echo "=== Running Migrations ==="
             /www/server/php/84/bin/php artisan migrate --force
 
+            echo "=== Syncing Payment Rate Bills ==="
+            /www/server/php/84/bin/php artisan bills:sync-rate --force
+
             echo "=== Running Seeders ==="
             /www/server/php/84/bin/php artisan db:seed --class=KaryawanOutletSeeder --force
 
