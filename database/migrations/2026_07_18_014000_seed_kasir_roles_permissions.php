@@ -58,13 +58,21 @@ return new class extends Migration
             Permission::firstOrCreate(['name' => $perm, 'guard_name' => 'web']);
         }
 
+        // Cashiers only need POS cashier access and POS transaction reports
+        $kasirDefaultPermissions = [
+            'Manage Pos Kasir',
+            'Create Pos Kasir',
+            'Manage Laporan Pos Kasir',
+            'Manage Laporan Pos Multi Outlet',
+        ];
+
         // 2. Setup Role: Kasir Koperasi
         $kasirKoperasi = Role::firstOrCreate(['name' => 'Kasir Koperasi', 'guard_name' => 'web']);
-        $kasirKoperasi->syncPermissions($koperasiPermissions);
+        $kasirKoperasi->syncPermissions($kasirDefaultPermissions);
 
         // 3. Setup Role: Kasir Karyawan Outlet
         $kasirOutlet = Role::firstOrCreate(['name' => 'Kasir Karyawan Outlet', 'guard_name' => 'web']);
-        $kasirOutlet->syncPermissions($allPermissions);
+        $kasirOutlet->syncPermissions($kasirDefaultPermissions);
     }
 
     /**

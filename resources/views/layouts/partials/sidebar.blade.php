@@ -112,9 +112,9 @@
                             return $roles->contains('super admin') || $roles->contains('superadmin') || auth()->user()->can('Manage Menu Aplikasi');
                         }
 
-                        // Restrict POS Kasir menus based on role and mode URL parameter
+                        // Restrict POS Kasir and Laporan POS menus based on role and mode URL parameter
                         $user = auth()->user();
-                        if (str_contains($sub->url, 'order-item')) {
+                        if (str_contains($sub->url, 'order-item') || str_contains($sub->url, 'pos-transaction')) {
                             if ($user->hasRole('Kasir Koperasi') && str_contains($sub->url, 'mode=outlet')) {
                                 return false;
                             }

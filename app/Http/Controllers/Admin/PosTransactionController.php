@@ -22,6 +22,22 @@ class PosTransactionController extends Controller
             return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
         }
 
+        // Restrict report access by role and mode parameter
+        $user = Auth::user();
+        $mode = $request->input('mode');
+        if ($user->hasRole('Kasir Koperasi') && $mode === 'outlet') {
+            if ($request->ajax()) {
+                return response()->json(['success' => false, 'message' => 'Maaf, Anda tidak memiliki akses.'], 403);
+            }
+            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
+        }
+        if ($user->hasRole('Kasir Karyawan Outlet') && $mode !== 'outlet') {
+            if ($request->ajax()) {
+                return response()->json(['success' => false, 'message' => 'Maaf, Anda tidak memiliki akses.'], 403);
+            }
+            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
+        }
+
         // Tentukan outlet_ids berdasarkan hak akses admin yang login
         $authOutletIds = auth()->user()->getOutletIds();
         $hasOutletRestriction = count($authOutletIds) > 0;
@@ -214,6 +230,9 @@ class PosTransactionController extends Controller
                         return 'Rp ' . number_format($data->pay_amount, 0, ',', '.');
                     })
                     ->addColumn('profit', function ($data) {
+                        if (auth()->user()->hasAnyRole(['Kasir Koperasi', 'Kasir Karyawan Outlet', 'Kasir'])) {
+                            return 'Rp 0';
+                        }
                         return 'Rp ' . number_format($data->profit, 0, ',', '.');
                     })
                     ->addColumn('date', function ($data) {

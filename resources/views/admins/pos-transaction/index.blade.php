@@ -1,4 +1,7 @@
 @extends('layouts.master', ['title' => 'Laporan Transaksi POS Multi-Outlet'])
+@php
+    $isKasir = auth()->user()->hasAnyRole(['Kasir Koperasi', 'Kasir Karyawan Outlet', 'Kasir']);
+@endphp
 @section('content')
 <style>
     .premium-card {
@@ -72,6 +75,7 @@
         <div id="kt_content_container" class="container-fluid px-0">
 
             <!-- Navigasi Tab Utama -->
+            @if(!$isKasir)
             <ul class="nav nav-tabs nav-tabs-custom mb-6" id="reportTabs" role="tablist">
                 <li class="nav-item" role="presentation">
                     <button class="nav-link active" id="transactions-tab" data-bs-toggle="tab" data-bs-target="#transactions-pane" type="button" role="tab" aria-controls="transactions-pane" aria-selected="true">
@@ -91,6 +95,7 @@
                 </li>
                 @endcanany
             </ul>
+            @endif
 
             <!-- Isi Tab Utama -->
             <div class="tab-content" id="reportTabsContent">
@@ -99,6 +104,7 @@
                 <div class="tab-pane fade show active" id="transactions-pane" role="tabpanel" aria-labelledby="transactions-tab">
                     
                     <!-- GRID REKAP HARI INI, MINGGU INI, BULAN INI -->
+                    @if(!$isKasir)
                     <div class="row g-6 mb-6">
                         <!-- Hari Ini -->
                         <div class="col-md-4">
@@ -160,6 +166,7 @@
                             </div>
                         </div>
                     </div>
+                    @endif
 
                     <!-- CARD UTAMA: FILTER DAN TABEL TRANSAKSI -->
                     <div class="card premium-card mb-5">
@@ -206,6 +213,7 @@
                                     </div>
                                 </form>
 
+                                @if(!$isKasir)
                                 <div class="d-flex gap-2">
                                     <div class="card bg-light-primary border-0 p-3 d-flex flex-row align-items-center gap-3">
                                         <i class="fa-solid fa-money-bill-trend-up text-primary fs-4"></i>
@@ -222,6 +230,7 @@
                                         </div>
                                     </div>
                                 </div>
+                                @endif
                             </div>
                         </div>
 
@@ -238,7 +247,9 @@
                                             <th>Pembeli</th>
                                             <th>Item Belanja</th>
                                             <th>Total Omzet</th>
+                                            @if(!$isKasir)
                                             <th>Profit</th>
+                                            @endif
                                             <th>Status</th>
                                             <th class="text-center" style="width: 10%">Aksi</th>
                                         </tr>
@@ -251,6 +262,7 @@
                 </div>
 
                 <!-- TAB STATISTIK & RINGKASAN -->
+                @if(!$isKasir)
                 <div class="tab-pane fade" id="stats-pane" role="tabpanel" aria-labelledby="stats-tab">
                     <!-- GRID REKAP TOTAL -->
                     <div class="row g-6 mb-6">
@@ -339,6 +351,7 @@
                         </div>
                     </div>
                 </div>
+                @endif
 
                 @canany(['Manage Laporan Pos Multi Outlet', 'Manage Laporan Pos Kasir'])
                 <!-- TAB 2: SERAH TERIMA DANA -->
@@ -589,6 +602,7 @@
         }
 
         // Initialize Top Items table
+        @if(!$isKasir)
         tableTopItems = $('#table-top-items').DataTable({
             ordering: false,
             processing: true,
@@ -718,9 +732,12 @@
         };
 
         posChart = Highcharts.chart('chart-container', options);
+        @endif
 
         // Load Initial Dynamic Summary
+        @if(!$isKasir)
         fetchFilteredSummary();
+        @endif
 
         $('#filter_status, #filter_outlet_id').on('change', function() {
             reloadTransactions();
@@ -812,7 +829,9 @@
                 { data: 'student', name: 'student' },
                 { data: 'details', name: 'details' },
                 { data: 'pay_amount', name: 'pay_amount' },
+                @if(!$isKasir)
                 { data: 'profit', name: 'profit' },
+                @endif
                 { data: 'status', name: 'status' },
                 { data: 'action', name: 'action', orderable: false, searchable: false }
             ],
@@ -909,10 +928,12 @@
 
     function reloadTransactions() {
         transactionTable.ajax.reload();
-        if (typeof tableTopItems !== 'undefined') {
+        @if(!$isKasir)
+        if (typeof tableTopItems !== 'undefined' && tableTopItems) {
             tableTopItems.ajax.reload();
         }
         fetchFilteredSummary();
+        @endif
     }
 </script>
 @endpush
