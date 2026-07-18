@@ -102,21 +102,29 @@ class SaldoHistoryController extends Controller
                 })
 
                 ->editColumn('status', function ($transaction) {
+                    $statusHtml = '';
                     if ($transaction->status == Transaction::STATUS_PENDING) {
-                        return '<span class="badge badge-primary">Belum Dibayar</span>';
+                        $statusHtml = '<span class="badge badge-primary">Belum Dibayar</span>';
                     } elseif ($transaction->status == Transaction::STATUS_PENDING_PAYMENT) {
-                        return '<span class="badge badge-warning">Menunggu Pembayaran</span>';
+                        $statusHtml = '<span class="badge badge-warning">Menunggu Pembayaran</span>';
                     } elseif ($transaction->status == Transaction::STATUS_PENDING_CONFIRMATION) {
-                        return '<span class="badge badge-danger">Menunggu Verifikasi</span>';
+                        $statusHtml = '<span class="badge badge-danger">Menunggu Verifikasi</span>';
                     } elseif ($transaction->status == Transaction::STATUS_PAID) {
-                        return '<span class="badge badge-success">Lunas</span>';
+                        $statusHtml = '<span class="badge badge-success">Lunas</span>';
                     } elseif ($transaction->status == Transaction::STATUS_EXPIRED) {
-                        return '<span class="badge badge-secondary">Kedaluwarsa</span>';
+                        $statusHtml = '<span class="badge badge-secondary">Kedaluwarsa</span>';
                     } elseif ($transaction->status == Transaction::STATUS_CANCELLED) {
-                        return '<span class="badge badge-secondary">Dibatalkan</span>';
+                        $statusHtml = '<span class="badge badge-secondary">Dibatalkan</span>';
                     } elseif ($transaction->status == Transaction::STATUS_REJECTED) {
-                        return '<span class="badge badge-danger">Ditolak</span><br><small>' . $transaction->activeProof?->note . '</small>';
+                        $statusHtml = '<span class="badge badge-danger">Ditolak</span><br><small>' . $transaction->activeProof?->note . '</small>';
                     }
+
+                    if ($transaction->created_at) {
+                        $formattedDate = strtoupper($transaction->created_at->translatedFormat('d-M-Y , H : i'));
+                        $statusHtml .= "<br><div class='text-slate-400 mt-1' style='font-size: 12px; font-style: italic; color: #94a3b8;'>{$formattedDate}</div>";
+                    }
+
+                    return $statusHtml;
                 })
                 ->addColumn('action', function ($transaction) {
                     if (Auth::user()->can('Edit Saldo Santri')) {
@@ -456,21 +464,29 @@ class SaldoHistoryController extends Controller
                 return 'Rp ' . number_format($transaction->pay_amount, 0, ',', '.');
             })
             ->editColumn('status', function ($transaction) {
+                $statusHtml = '';
                 if ($transaction->status == Transaction::STATUS_PENDING) {
-                    return '<span class="badge badge-primary">Belum Dibayar</span>';
+                    $statusHtml = '<span class="badge badge-primary">Belum Dibayar</span>';
                 } elseif ($transaction->status == Transaction::STATUS_PENDING_PAYMENT) {
-                    return '<span class="badge badge-warning">Menunggu Pembayaran</span>';
+                    $statusHtml = '<span class="badge badge-warning">Menunggu Pembayaran</span>';
                 } elseif ($transaction->status == Transaction::STATUS_PENDING_CONFIRMATION) {
-                    return '<span class="badge badge-danger">Menunggu Verifikasi</span>';
+                    $statusHtml = '<span class="badge badge-danger">Menunggu Verifikasi</span>';
                 } elseif ($transaction->status == Transaction::STATUS_PAID) {
-                    return '<span class="badge badge-success">Lunas</span>';
+                    $statusHtml = '<span class="badge badge-success">Lunas</span>';
                 } elseif ($transaction->status == Transaction::STATUS_EXPIRED) {
-                    return '<span class="badge badge-secondary">Kedaluwarsa</span>';
+                    $statusHtml = '<span class="badge badge-secondary">Kedaluwarsa</span>';
                 } elseif ($transaction->status == Transaction::STATUS_CANCELLED) {
-                    return '<span class="badge badge-secondary">Dibatalkan</span>';
+                    $statusHtml = '<span class="badge badge-secondary">Dibatalkan</span>';
                 } elseif ($transaction->status == Transaction::STATUS_REJECTED) {
-                    return '<span class="badge badge-danger">Ditolak</span><br><small>' . $transaction->activeProof?->note . '</small>';
+                    $statusHtml = '<span class="badge badge-danger">Ditolak</span><br><small>' . $transaction->activeProof?->note . '</small>';
                 }
+
+                if ($transaction->created_at) {
+                    $formattedDate = strtoupper($transaction->created_at->translatedFormat('d-M-Y , H : i'));
+                    $statusHtml .= "<br><div class='text-slate-400 mt-1' style='font-size: 12px; font-style: italic; color: #94a3b8;'>{$formattedDate}</div>";
+                }
+
+                return $statusHtml;
             })
             ->addColumn('action', function ($transaction) {
                 return $this->formatArchiveActionColumn($transaction);

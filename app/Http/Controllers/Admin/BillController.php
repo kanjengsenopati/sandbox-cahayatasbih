@@ -183,6 +183,11 @@ class BillController extends Controller
             $statusBadge .= "<br><small class='text-danger d-block mt-1 fw-bold'>{$transaction->activeProof?->note}</small>";
         }
 
+        if ($transaction->created_at) {
+            $formattedDate = strtoupper($transaction->created_at->translatedFormat('d-M-Y , H : i'));
+            $statusBadge .= "<br><div class='text-slate-400 mt-1' style='font-size: 12px; font-style: italic; color: #94a3b8;'>{$formattedDate}</div>";
+        }
+
         return $statusBadge;
     }
 
