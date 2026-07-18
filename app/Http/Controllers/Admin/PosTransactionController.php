@@ -99,8 +99,18 @@ class PosTransactionController extends Controller
             }
 
             // Base query untuk tabel transaksi
-            $data = PointOfSaleTransaction::with(['outlet', 'student', 'student.classroom', 'admins', 'pointOfSaleTransactionDetails.item'])
-                ->when($hasOutletRestriction, function ($q) use ($authOutletIds) {
+            $data = PointOfSaleTransaction::with(['outlet', 'student', 'student.classroom', 'admins', 'pointOfSaleTransactionDetails.item']);
+            
+            if ($user->hasRole('Kasir Koperasi')) {
+                $data->where('outlet_id', $koperasiId);
+            } elseif ($user->hasRole('Kasir Karyawan Outlet')) {
+                if ($hasOutletRestriction) {
+                    $data->whereIn('outlet_id', array_diff($authOutletIds, [$koperasiId]));
+                } else {
+                    $data->where('outlet_id', '!=', $koperasiId);
+                }
+            } else {
+                $data->when($hasOutletRestriction, function ($q) use ($authOutletIds) {
                     $q->whereIn('outlet_id', $authOutletIds);
                 })
                 ->when(!$hasOutletRestriction && $request->filled('outlet_id'), function ($q) use ($request) {
@@ -111,8 +121,9 @@ class PosTransactionController extends Controller
                     if (in_array($request->outlet_id, $authOutletIds)) {
                         $q->where('outlet_id', $request->outlet_id);
                     }
-                })
-                ->when($request->filled('start_date') && $request->filled('end_date'), function ($query) use ($request) {
+                });
+            }
+            $data->when($request->filled('start_date') && $request->filled('end_date'), function ($query) use ($request) {
                     $query->whereDate('created_at', '>=', $request->start_date)
                         ->whereDate('created_at', '<=', $request->end_date);
                 })

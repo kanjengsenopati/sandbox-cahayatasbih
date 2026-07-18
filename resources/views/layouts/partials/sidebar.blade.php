@@ -91,6 +91,11 @@
                     }
                 }
             }
+            
+            // Hardening: Cashier roles do not have access to general Dashboard
+            if ($menu->name === 'Dashboard' && auth()->user()->hasAnyRole(['Kasir Koperasi', 'Kasir Karyawan Outlet', 'Kasir'])) {
+                $hasAccess = false;
+            }
         @endphp
         
         @if($hasAccess)
@@ -114,6 +119,22 @@
 
                         // Restrict POS Kasir and Laporan POS menus based on role and mode URL parameter
                         $user = auth()->user();
+                        
+                        // Hardening: Cashier roles can ONLY access POS Kasir and Laporan POS/Laporan POS Multi Outlet.
+                        // All other submenus are strictly blocked.
+                        if ($user->hasAnyRole(['Kasir Koperasi', 'Kasir Karyawan Outlet', 'Kasir'])) {
+                            $isAllowedSub = false;
+                            if (str_contains($sub->url, 'order-item') && !str_contains($sub->url, 'mode=history')) {
+                                $isAllowedSub = true;
+                            }
+                            if (str_contains($sub->url, 'pos-transaction')) {
+                                $isAllowedSub = true;
+                            }
+                            if (!$isAllowedSub) {
+                                return false;
+                            }
+                        }
+
                         if (str_contains($sub->url, 'order-item') || str_contains($sub->url, 'pos-transaction')) {
                             if ($user->hasRole('Kasir Koperasi') && str_contains($sub->url, 'mode=outlet')) {
                                 return false;

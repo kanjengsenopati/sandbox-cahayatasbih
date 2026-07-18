@@ -15,6 +15,23 @@ use Illuminate\Support\Facades\Storage;
 
 class ProfitLossReportController extends Controller
 {
+    public function __construct()
+    {
+        $this->middleware(function ($request, $next) {
+            $user = auth()->user();
+            if ($user && $user->hasAnyRole(['Kasir Koperasi', 'Kasir Karyawan Outlet', 'Kasir'])) {
+                if ($request->ajax()) {
+                    return response()->json(['success' => false, 'message' => 'Maaf, Anda tidak memiliki akses.'], 403);
+                }
+                if ($user->hasRole('Kasir Koperasi')) {
+                    return redirect('/order-item?mode=kantin')->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
+                }
+                return redirect('/order-item?mode=outlet')->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
+            }
+            return $next($request);
+        });
+    }
+
     /**
      * Ensure default expense categories exist in the database.
      */

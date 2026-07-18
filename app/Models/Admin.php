@@ -132,6 +132,31 @@ class Admin extends Authenticatable
      */
     public function getEffectiveOutletId(?string $mode, ?string $requestOutletId = null): ?string
     {
+        $koperasi = \App\Models\Outlet::where('name', 'Koperasi')->orWhere('code', 'KPR')->first();
+        $koperasiId = $koperasi ? $koperasi->id : '6bc5b484-07f9-49cc-aefa-00a8cf47e8d7';
+
+        if ($this->hasRole('Kasir Koperasi')) {
+            return $koperasiId;
+        }
+
+        if ($this->hasRole('Kasir Karyawan Outlet')) {
+            $authOutletIds = $this->getOutletIds();
+            $allowedOutletIds = array_diff($authOutletIds, [$koperasiId]);
+
+            if ($requestOutletId && in_array($requestOutletId, $allowedOutletIds)) {
+                return $requestOutletId;
+            }
+
+            if (!empty($allowedOutletIds)) {
+                return $allowedOutletIds[0];
+            }
+
+            // Fallback to first non-koperasi outlet in database
+            $firstNonKoperasi = \App\Models\Outlet::where('id', '!=', $koperasiId)->where('is_active', 1)->orderBy('name')->first();
+            return $firstNonKoperasi ? $firstNonKoperasi->id : null;
+        }
+
+        // Default behavior for other roles (Super Admin, etc.)
         if ($this->outlet_id) {
             return $this->outlet_id;
         }
@@ -141,7 +166,6 @@ class Admin extends Authenticatable
                 return $requestOutletId;
             }
 
-            // Get default/first outlet assigned to this admin
             $authOutletIds = $this->getOutletIds();
             $query = \App\Models\Outlet::where('is_active', 1);
 
@@ -155,9 +179,7 @@ class Admin extends Authenticatable
             return $firstOutlet ? $firstOutlet->id : null;
         }
 
-        // Fallback to Koperasi/KPR
-        $koperasi = \App\Models\Outlet::where('name', 'Koperasi')->orWhere('code', 'KPR')->first();
-        return $koperasi ? $koperasi->id : '6bc5b484-07f9-49cc-aefa-00a8cf47e8d7';
+        return $koperasiId;
     }
 
 
