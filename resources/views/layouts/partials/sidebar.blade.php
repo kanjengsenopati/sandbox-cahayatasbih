@@ -92,9 +92,12 @@
                 }
             }
             
-            // Hardening: Cashier roles do not have access to general Dashboard
-            if ($menu->name === 'Dashboard' && auth()->user()->isKasir()) {
-                $hasAccess = false;
+            // Hardening: Cashier roles ONLY have access to the unified Unit Usaha menu (Pondok Mart & Koperasi / Koperasi Pesantren / Pondok Mart Outlet).
+            // All other parent menus (Dashboard, Master Data, Entri Data, Laporan, Akademik, etc.) are strictly hidden.
+            if (auth()->user()->isKasir()) {
+                if (!str_contains($menu->name, 'Pondok Mart') && !str_contains($menu->name, 'Koperasi')) {
+                    $hasAccess = false;
+                }
             }
         @endphp
         
