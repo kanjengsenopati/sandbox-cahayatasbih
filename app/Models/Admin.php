@@ -124,6 +124,53 @@ class Admin extends Authenticatable
     }
 
     /**
+     * Check if admin has any cashier role (case-insensitive & substring matching)
+     */
+    public function isKasir(): bool
+    {
+        $roles = $this->roles->pluck('name')->map(fn($r) => strtolower($r));
+        foreach ($roles as $role) {
+            if (str_contains($role, 'kasir')) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Check if admin has Kasir Koperasi / Kantin role (case-insensitive & substring matching)
+     */
+    public function isKasirKoperasi(): bool
+    {
+        $roles = $this->roles->pluck('name')->map(fn($r) => strtolower($r));
+        foreach ($roles as $role) {
+            if (str_contains($role, 'kasir') && (str_contains($role, 'koperasi') || str_contains($role, 'kantin'))) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Check if admin has Kasir Outlet role (case-insensitive & substring matching)
+     */
+    public function isKasirOutlet(): bool
+    {
+        $roles = $this->roles->pluck('name')->map(fn($r) => strtolower($r));
+        foreach ($roles as $role) {
+            if (str_contains($role, 'kasir') && str_contains($role, 'outlet')) {
+                return true;
+            }
+        }
+        foreach ($roles as $role) {
+            if (str_contains($role, 'kasir') && !str_contains($role, 'koperasi') && !str_contains($role, 'kantin')) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
      * Get the effective outlet ID based on mode and request input.
      *
      * @param string|null $mode
@@ -135,11 +182,11 @@ class Admin extends Authenticatable
         $koperasi = \App\Models\Outlet::where('name', 'Koperasi')->orWhere('code', 'KPR')->first();
         $koperasiId = $koperasi ? $koperasi->id : '6bc5b484-07f9-49cc-aefa-00a8cf47e8d7';
 
-        if ($this->hasRole('Kasir Koperasi')) {
+        if ($this->isKasirKoperasi()) {
             return $koperasiId;
         }
 
-        if ($this->hasRole('Kasir Karyawan Outlet')) {
+        if ($this->isKasirOutlet()) {
             $authOutletIds = $this->getOutletIds();
             $allowedOutletIds = array_diff($authOutletIds, [$koperasiId]);
 

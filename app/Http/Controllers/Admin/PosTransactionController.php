@@ -25,13 +25,13 @@ class PosTransactionController extends Controller
         // Restrict report access by role and mode parameter
         $user = Auth::user();
         $mode = $request->input('mode');
-        if ($user->hasRole('Kasir Koperasi') && $mode === 'outlet') {
+        if ($user->isKasirKoperasi() && $mode === 'outlet') {
             if ($request->ajax()) {
                 return response()->json(['success' => false, 'message' => 'Maaf, Anda tidak memiliki akses.'], 403);
             }
             return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
         }
-        if ($user->hasRole('Kasir Karyawan Outlet') && $mode !== 'outlet') {
+        if ($user->isKasirOutlet() && $mode !== 'outlet') {
             if ($request->ajax()) {
                 return response()->json(['success' => false, 'message' => 'Maaf, Anda tidak memiliki akses.'], 403);
             }
@@ -101,9 +101,9 @@ class PosTransactionController extends Controller
             // Base query untuk tabel transaksi
             $data = PointOfSaleTransaction::with(['outlet', 'student', 'student.classroom', 'admins', 'pointOfSaleTransactionDetails.item']);
             
-            if ($user->hasRole('Kasir Koperasi')) {
+            if ($user->isKasirKoperasi()) {
                 $data->where('outlet_id', $koperasiId);
-            } elseif ($user->hasRole('Kasir Karyawan Outlet')) {
+            } elseif ($user->isKasirOutlet()) {
                 if ($hasOutletRestriction) {
                     $data->whereIn('outlet_id', array_diff($authOutletIds, [$koperasiId]));
                 } else {

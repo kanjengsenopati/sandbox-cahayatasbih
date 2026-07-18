@@ -27,10 +27,10 @@ class DashboardController extends Controller
         try {
             $user = Auth::user();
             if ($user) {
-                if ($user->hasRole('Kasir Koperasi')) {
+                if ($user->isKasirKoperasi()) {
                     return redirect('/order-item?mode=kantin');
                 }
-                if ($user->hasRole('Kasir Karyawan Outlet') || $user->hasRole('Kasir')) {
+                if ($user->isKasirOutlet() || $user->isKasir()) {
                     return redirect('/order-item?mode=outlet');
                 }
             }

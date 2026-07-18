@@ -93,7 +93,7 @@
             }
             
             // Hardening: Cashier roles do not have access to general Dashboard
-            if ($menu->name === 'Dashboard' && auth()->user()->hasAnyRole(['Kasir Koperasi', 'Kasir Karyawan Outlet', 'Kasir'])) {
+            if ($menu->name === 'Dashboard' && auth()->user()->isKasir()) {
                 $hasAccess = false;
             }
         @endphp
@@ -122,7 +122,7 @@
                         
                         // Hardening: Cashier roles can ONLY access POS Kasir and Laporan POS/Laporan POS Multi Outlet.
                         // All other submenus are strictly blocked.
-                        if ($user->hasAnyRole(['Kasir Koperasi', 'Kasir Karyawan Outlet', 'Kasir'])) {
+                        if ($user->isKasir()) {
                             $isAllowedSub = false;
                             if (str_contains($sub->url, 'order-item') && !str_contains($sub->url, 'mode=history')) {
                                 $isAllowedSub = true;
@@ -136,7 +136,7 @@
                         }
 
                         if (str_contains($sub->url, 'order-item') || str_contains($sub->url, 'pos-transaction')) {
-                            if ($user->hasRole('Kasir Karyawan Outlet') && str_contains($sub->url, 'mode=kantin')) {
+                            if ($user->isKasirOutlet() && str_contains($sub->url, 'mode=kantin')) {
                                 return false;
                             }
                         }
@@ -155,9 +155,9 @@
                     
                     $displayMenuName = $menu->name;
                     if (str_contains($menu->name, 'Pondok Mart')) {
-                        if (auth()->user()->hasRole('Kasir Koperasi')) {
+                        if (auth()->user()->isKasirKoperasi()) {
                             $displayMenuName = 'Koperasi Pesantren';
-                        } elseif (auth()->user()->hasRole('Kasir Karyawan Outlet')) {
+                        } elseif (auth()->user()->isKasirOutlet()) {
                             $displayMenuName = 'Pondok Mart (Outlet)';
                         } else {
                             $displayMenuName = 'Pondok Mart & Koperasi';
@@ -167,7 +167,7 @@
                     $isOpen = false;
                     foreach ($accessibleSubmenus as $sub) {
                         $checkUrl = $sub->url;
-                        if (auth()->user()->hasRole('Kasir Koperasi')) {
+                        if (auth()->user()->isKasirKoperasi()) {
                             $checkUrl = str_replace('mode=outlet', 'mode=kantin', $checkUrl);
                         }
                         if ($isUrlActive($checkUrl)) {
@@ -190,7 +190,7 @@
                             @foreach($accessibleSubmenus as $sub)
                                 @php
                                     $subUrl = $sub->url;
-                                    if (auth()->user()->hasRole('Kasir Koperasi')) {
+                                    if (auth()->user()->isKasirKoperasi()) {
                                         $subUrl = str_replace('mode=outlet', 'mode=kantin', $subUrl);
                                     }
                                 @endphp
