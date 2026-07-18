@@ -136,9 +136,6 @@
                         }
 
                         if (str_contains($sub->url, 'order-item') || str_contains($sub->url, 'pos-transaction')) {
-                            if ($user->hasRole('Kasir Koperasi') && str_contains($sub->url, 'mode=outlet')) {
-                                return false;
-                            }
                             if ($user->hasRole('Kasir Karyawan Outlet') && str_contains($sub->url, 'mode=kantin')) {
                                 return false;
                             }
@@ -156,9 +153,24 @@
                         return false;
                     });
                     
+                    $displayMenuName = $menu->name;
+                    if (str_contains($menu->name, 'Pondok Mart')) {
+                        if (auth()->user()->hasRole('Kasir Koperasi')) {
+                            $displayMenuName = 'Koperasi Pesantren';
+                        } elseif (auth()->user()->hasRole('Kasir Karyawan Outlet')) {
+                            $displayMenuName = 'Pondok Mart (Outlet)';
+                        } else {
+                            $displayMenuName = 'Pondok Mart & Koperasi';
+                        }
+                    }
+
                     $isOpen = false;
                     foreach ($accessibleSubmenus as $sub) {
-                        if ($isUrlActive($sub->url)) {
+                        $checkUrl = $sub->url;
+                        if (auth()->user()->hasRole('Kasir Koperasi')) {
+                            $checkUrl = str_replace('mode=outlet', 'mode=kantin', $checkUrl);
+                        }
+                        if ($isUrlActive($checkUrl)) {
                             $isOpen = true;
                             break;
                         }
@@ -171,14 +183,20 @@
                             <span class="menu-icon">
                                 <i class="{{ $menu->icon ?? 'fa-solid fa-folder' }}" style="color: #ffffff;"></i>
                             </span>
-                            <span class="menu-title">{{ $menu->name }}</span>
+                            <span class="menu-title">{{ $displayMenuName }}</span>
                             <span class="menu-arrow"></span>
                         </span>
                         <div class="menu-sub menu-sub-accordion menu-active-bg">
                             @foreach($accessibleSubmenus as $sub)
+                                @php
+                                    $subUrl = $sub->url;
+                                    if (auth()->user()->hasRole('Kasir Koperasi')) {
+                                        $subUrl = str_replace('mode=outlet', 'mode=kantin', $subUrl);
+                                    }
+                                @endphp
                                 <div class="menu-item">
-                                    <a class="menu-link {{ $isUrlActive($sub->url) ? ' active' : '' }}"
-                                        href="{{ $sub->url }}">
+                                    <a class="menu-link {{ $isUrlActive($subUrl) ? ' active' : '' }}"
+                                        href="{{ $subUrl }}">
                                         <span class="menu-bullet">
                                             <span class="bullet bullet-dot"></span>
                                         </span>

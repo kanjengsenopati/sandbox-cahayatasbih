@@ -39,9 +39,9 @@ class MenuNavigationSeeder extends Seeder
             'permission' => 'Manage Sekolah,Manage Tahun Ajaran,Manage Semester,Manage Mata Pelajaran,Manage Kenaikan Kelas,Manage Kelulusan Santri',
         ]);
 
-        // 3. Pondok Mart (Outlet)
+        // 3. Pondok Mart & Koperasi (Unit Usaha)
         $pondokMart = MenuNavigation::create([
-            'name' => 'Pondok Mart (Outlet)',
+            'name' => 'Pondok Mart & Koperasi',
             'icon' => 'fa-solid fa-store',
             'url' => null,
             'order' => 3,
@@ -77,16 +77,15 @@ class MenuNavigationSeeder extends Seeder
             'url' => null,
             'order' => 4,
             'is_active' => true,
-            'permission' => 'Manage Wali Santri,Manage Santri,Manage Outlet,Manage Barang,Manage PPDB,Manage Kategori Arus Kas',
+            'permission' => 'Manage Wali Santri,Manage Santri,Manage Outlet,Manage PPDB,Manage Kategori Arus Kas',
         ]);
 
         $subMasterData = [
             ['name' => 'Data Wali Siswa', 'url' => '/user', 'permission' => 'Manage Wali Santri', 'order' => 1],
             ['name' => 'Data Siswa', 'url' => '/student', 'permission' => 'Manage Santri', 'order' => 2],
             ['name' => 'Data Outlet', 'url' => '/outlet', 'permission' => 'Manage Outlet', 'order' => 3],
-            ['name' => 'Manajemen Barang', 'url' => '/item?mode=kantin', 'permission' => 'Manage Barang', 'order' => 4],
-            ['name' => 'Data PPDB', 'url' => '/ppdb', 'permission' => 'Manage PPDB', 'order' => 5],
-            ['name' => 'Kategori Arus Kas', 'url' => '/cashflow-category', 'permission' => 'Manage Kategori Arus Kas', 'order' => 6],
+            ['name' => 'Data PPDB', 'url' => '/ppdb', 'permission' => 'Manage PPDB', 'order' => 4],
+            ['name' => 'Kategori Arus Kas', 'url' => '/cashflow-category', 'permission' => 'Manage Kategori Arus Kas', 'order' => 5],
         ];
 
         foreach ($subMasterData as $sub) {
@@ -106,17 +105,16 @@ class MenuNavigationSeeder extends Seeder
             'url' => null,
             'order' => 5,
             'is_active' => true,
-            'permission' => 'Manage Saldo Santri,Manage Tabungan Santri,Manage Jadwal,Manage Tahfidz,Manage Pos Kasir,Manage Tagihan,Manage Perilaku Santri,Manage Nilai Pelajaran,Manage Prestasi Santri,Manage Nilai Santri,Manage Arus Kas,Manage Perizinan,Manage Payroll',
+            'permission' => 'Manage Saldo Santri,Manage Tabungan Santri,Manage Jadwal,Manage Tahfidz,Manage Tagihan,Manage Perilaku Santri,Manage Nilai Pelajaran,Manage Prestasi Santri,Manage Nilai Santri,Manage Arus Kas,Manage Perizinan,Manage Payroll',
         ]);
 
         $subEntriData = [
             ['name' => 'Tagihan', 'url' => '/bill', 'permission' => 'Manage Tagihan', 'order' => 1],
             ['name' => 'Saldo Santri', 'url' => '/saldo-history', 'permission' => 'Manage Saldo Santri', 'order' => 2],
             ['name' => 'Tabungan Santri', 'url' => '/saving-history', 'permission' => 'Manage Tabungan Santri', 'order' => 3],
-            ['name' => 'POS Kasir', 'url' => '/order-item?mode=kantin', 'permission' => 'Manage Pos Kasir', 'order' => 4],
-            ['name' => 'Arus Kas', 'url' => '/cashflow', 'permission' => 'Manage Arus Kas', 'order' => 5],
-            ['name' => 'Perizinan Santri', 'url' => '/student-permit', 'permission' => 'Manage Perizinan', 'order' => 6],
-            ['name' => 'Payroll Koperasi', 'url' => '/payroll?mode=kantin', 'permission' => 'Manage Payroll', 'order' => 7],
+            ['name' => 'Arus Kas', 'url' => '/cashflow', 'permission' => 'Manage Arus Kas', 'order' => 4],
+            ['name' => 'Perizinan Santri', 'url' => '/student-permit', 'permission' => 'Manage Perizinan', 'order' => 5],
+            ['name' => 'Payroll Koperasi', 'url' => '/payroll?mode=kantin', 'permission' => 'Manage Payroll', 'order' => 6],
         ];
 
         foreach ($subEntriData as $sub) {
@@ -136,21 +134,19 @@ class MenuNavigationSeeder extends Seeder
             'url' => null,
             'order' => 6,
             'is_active' => true,
-            'permission' => 'Manage Laporan Pos Kasir,Manage Laporan Pos Multi Outlet,Manage Laporan Tagihan,Manage Laporan Santri,Manage Laporan Nilai Akademik,Manage Laporan Tahfidz,Manage Laporan Perilaku Siswa,Manage Laporan Saldo Santri,Manage Laporan Fee Aplikasi,Manage Laporan Transaksi,Manage Laporan Rugi Laba,Manage Laporan Audit Log,Manage Laporan Presensi',
+            'permission' => 'Manage Laporan Tagihan,Manage Laporan Santri,Manage Laporan Nilai Akademik,Manage Laporan Tahfidz,Manage Laporan Perilaku Siswa,Manage Laporan Saldo Santri,Manage Laporan Fee Aplikasi,Manage Laporan Transaksi,Manage Laporan Audit Log,Manage Laporan Presensi',
         ]);
 
         $subLaporan = [
-            ['name' => 'Laporan POS Multi Outlet', 'url' => '/pos-transaction?mode=kantin', 'permission' => 'Manage Laporan Pos Multi Outlet', 'order' => 1],
-            ['name' => 'Rugi Laba Outlet', 'url' => '/report-profit-loss?mode=kantin', 'permission' => 'Manage Laporan Rugi Laba', 'order' => 2],
-            ['name' => 'Transaksi', 'url' => '/report-transaction', 'permission' => 'Manage Laporan Transaksi', 'order' => 3],
-            ['name' => 'Tagihan', 'url' => '/report-bill', 'permission' => 'Manage Laporan Tagihan', 'order' => 4],
-            ['name' => 'Tagihan Santri', 'url' => '/report-bill-student', 'permission' => 'Manage Laporan Tagihan', 'order' => 5],
-            ['name' => 'Kehadiran Siswa', 'url' => '/report-attendance?mode=kantin', 'permission' => 'Manage Laporan Presensi', 'order' => 6],
-            ['name' => 'Rapor Siswa', 'url' => '/report-student', 'permission' => 'Manage Laporan Santri', 'order' => 7],
-            ['name' => 'Catatan Wali Kelas', 'url' => '/report-student-counseling-score', 'permission' => 'Manage Laporan Perilaku Siswa', 'order' => 8],
-            ['name' => 'Tabungan & Saldo', 'url' => '/report-saldo', 'permission' => 'Manage Laporan Saldo Santri', 'order' => 9],
-            ['name' => 'Fee Aplikasi', 'url' => '/report-app-fee', 'permission' => 'Manage Laporan Fee Aplikasi', 'order' => 10],
-            ['name' => 'Audit Log', 'url' => '/report-audit', 'permission' => 'Manage Laporan Audit Log', 'order' => 11],
+            ['name' => 'Transaksi', 'url' => '/report-transaction', 'permission' => 'Manage Laporan Transaksi', 'order' => 1],
+            ['name' => 'Tagihan', 'url' => '/report-bill', 'permission' => 'Manage Laporan Tagihan', 'order' => 2],
+            ['name' => 'Tagihan Santri', 'url' => '/report-bill-student', 'permission' => 'Manage Laporan Tagihan', 'order' => 3],
+            ['name' => 'Kehadiran Siswa', 'url' => '/report-attendance?mode=kantin', 'permission' => 'Manage Laporan Presensi', 'order' => 4],
+            ['name' => 'Rapor Siswa', 'url' => '/report-student', 'permission' => 'Manage Laporan Santri', 'order' => 5],
+            ['name' => 'Catatan Wali Kelas', 'url' => '/report-student-counseling-score', 'permission' => 'Manage Laporan Perilaku Siswa', 'order' => 6],
+            ['name' => 'Tabungan & Saldo', 'url' => '/report-saldo', 'permission' => 'Manage Laporan Saldo Santri', 'order' => 7],
+            ['name' => 'Fee Aplikasi', 'url' => '/report-app-fee', 'permission' => 'Manage Laporan Fee Aplikasi', 'order' => 8],
+            ['name' => 'Audit Log', 'url' => '/report-audit', 'permission' => 'Manage Laporan Audit Log', 'order' => 9],
         ];
 
         foreach ($subLaporan as $sub) {
