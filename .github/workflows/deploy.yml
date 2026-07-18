@@ -51,9 +51,13 @@ jobs:
             rm -f public/portalwalisantri/dist/registerSW.js || true
             rm -f public/portalwalisantri/dist/index.html || true
             rm -f public/workbox-*.js || true
-            cd portalwalisantri && npm ci && npm run build && cd ..
+            cd portalwalisantri
+            npm ci
+            npm run build
+            cd $DEPLOY_PATH
 
             echo "=== Running Migrations ==="
+            cd $DEPLOY_PATH
             /www/server/php/84/bin/php artisan migrate --force
 
             echo "=== Syncing Payment Rate Bills ==="
