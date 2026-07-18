@@ -229,13 +229,38 @@
                                                 </td>
                                                 <td>{{ $status }}</td>
                                                 <td>
-                                                    @if (Auth::user()->can('Edit Status Tagihan'))
-                                                    @if ($billForMonth)
-                                                    <a onclick="changeStatus('{{ $billForMonth->id }}', '{{ $isPaid ? 'UNPAID' : 'PAID' }}')"
-                                                        class="btn btn-success btn-sm">Ubah Status</a>
-                                                    @else
-                                                    <span>-</span>
-                                                    @endif
+                                                    @php
+                                                        $user = Auth::user();
+                                                        $canEditStatus = false;
+                                                        if ($user) {
+                                                            if ($user->hasRole('Super Admin') || $user->can('Edit Status Tagihan')) {
+                                                                $canEditStatus = true;
+                                                            } elseif ($user->hasRole('Bendahara')) {
+                                                                $username = strtolower($user->username ?? '');
+                                                                $name = strtolower($user->name ?? '');
+                                                                if (
+                                                                    str_contains($username, 'khoirus') || 
+                                                                    str_contains($username, 'paramita') ||
+                                                                    str_contains($name, 'khoirus') || 
+                                                                    str_contains($name, 'paramita')
+                                                                ) {
+                                                                    $canEditStatus = true;
+                                                                }
+                                                            }
+                                                        }
+                                                    @endphp
+                                                    @if ($canEditStatus)
+                                                        @if ($billForMonth)
+                                                            @if ($isPaid)
+                                                            <a onclick="changeStatus('{{ $billForMonth->id }}', 'UNPAID')"
+                                                                class="btn btn-danger btn-sm">Batalkan</a>
+                                                            @else
+                                                            <a onclick="changeStatus('{{ $billForMonth->id }}', 'PAID')"
+                                                                class="btn btn-success btn-sm">Ubah Status</a>
+                                                            @endif
+                                                        @else
+                                                        <span>-</span>
+                                                        @endif
                                                     @endif
                                                     @if ($isPaid)
                                                     @elseif ($isUnpaid && $paymentLink)
@@ -309,16 +334,21 @@
     });
 
    function changeStatus(billId, status) {
-        var statusLabel = status === 'PAID' ? 'LUNAS' : 'BELUM LUNAS';
+        var title = status === 'PAID' ? 'Ubah Status Tagihan' : 'Batalkan Pembayaran';
+        var text = status === 'PAID' 
+            ? 'Apakah Anda yakin ingin mengubah status tagihan ini menjadi LUNAS?' 
+            : 'Apakah Anda yakin ingin MEMBATALKAN pembayaran tagihan ini? Transaksi pembayaran akan dihapus/di-rollback.';
+        var confirmText = status === 'PAID' ? 'Ya, Ubah!' : 'Ya, Batalkan!';
+        var confirmColor = status === 'PAID' ? '#10B981' : '#DC2626';
         
         Swal.fire({
-            title: 'Ubah Status Tagihan',
-            text: 'Apakah Anda yakin ingin mengubah status tagihan ini menjadi ' + statusLabel + '?',
+            title: title,
+            text: text,
             icon: 'warning',
             showCancelButton: true,
-            confirmButtonColor: '#3085d6',
-            cancelButtonColor: '#d33',
-            confirmButtonText: 'Ya, Ubah!',
+            confirmButtonColor: confirmColor,
+            cancelButtonColor: '#94a3b8',
+            confirmButtonText: confirmText,
             cancelButtonText: 'Batal'
         }).then((result) => {
             if (result.isConfirmed) {

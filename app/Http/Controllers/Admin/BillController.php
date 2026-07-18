@@ -596,7 +596,27 @@ class BillController extends Controller
 
     public function changeStatus()
     {
-        if (!Auth::user()->can('Edit Status Tagihan')) {
+        $user = Auth::user();
+        $isAuthorized = false;
+
+        if ($user) {
+            if ($user->hasRole('Super Admin') || $user->can('Edit Status Tagihan')) {
+                $isAuthorized = true;
+            } elseif ($user->hasRole('Bendahara')) {
+                $username = strtolower($user->username ?? '');
+                $name = strtolower($user->name ?? '');
+                if (
+                    str_contains($username, 'khoirus') || 
+                    str_contains($username, 'paramita') ||
+                    str_contains($name, 'khoirus') || 
+                    str_contains($name, 'paramita')
+                ) {
+                    $isAuthorized = true;
+                }
+            }
+        }
+
+        if (!$isAuthorized) {
             return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
         }
 
