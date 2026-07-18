@@ -676,4 +676,214 @@ class BillController extends Controller
 
         return redirect()->back()->with('success', 'Tagihan berhasil dihapus');
     }
+
+    public function downloadTemplate(Request $request)
+    {
+        $schoolId = $request->school_id;
+        $classroomId = $request->classroom_id;
+
+        $school = School::find($schoolId);
+        $classroom = Classroom::find($classroomId);
+        $schoolName = $school ? str_replace(' ', '_', $school->name) : 'Semua_UPT';
+        $classroomName = $classroom ? str_replace(' ', '_', $classroom->name) : 'Semua_Kelas';
+
+        $fileName = "Template_Pembayaran_{$schoolName}_{$classroomName}.xlsx";
+
+        return \Maatwebsite\Excel\Facades\Excel::download(
+            new \App\Exports\StudentBillTemplateExport($schoolId, $classroomId),
+            $fileName
+        );
+    }
+
+    public function previewImport(Request $request)
+    {
+        $request->validate([
+            'file' => 'required|mimes:xls,xlsx',
+            'bill_type_id' => 'required|exists:bill_types,id',
+        ]);
+
+        $file = $request->file('file');
+        $billTypeId = $request->bill_type_id;
+        $billType = BillType::findOrFail($billTypeId);
+
+        // Baca file Excel
+        $rows = \Maatwebsite\Excel\Facades\Excel::toArray([], $file)[0];
+
+        $previewData = [];
+        $isValidGlobal = true;
+
+        for ($i = 1; $i < count($rows); $i++) {
+            $row = $rows[$i];
+            if (empty($row[1]) && empty($row[4])) {
+                continue; // Skip baris kosong
+            }
+
+            $name = $row[1] ?? '';
+            $className = $row[2] ?? '';
+            $amount = intval($row[3] ?? 0);
+            $studentId = $row[4] ?? null;
+
+            $student = null;
+            $status = 'VALID';
+            $message = '';
+
+            if ($studentId) {
+                $student = Student::with('classroom')->find($studentId);
+            }
+
+            if (!$student && $name) {
+                $student = Student::where('name', 'like', $name)
+                    ->whereHas('classroom', function($q) use ($className) {
+                        $q->where('name', 'like', $className);
+                    })
+                    ->first();
+            }
+
+            if (!$student) {
+                $status = 'INVALID';
+                $message = 'Siswa tidak ditemukan';
+                $isValidGlobal = false;
+            } else {
+                if ($amount <= 0) {
+                    $status = 'INVALID';
+                    $message = 'Nominal bayar harus > 0';
+                    $isValidGlobal = false;
+                } else {
+                    $bill = Bill::where('student_id', $student->id)
+                        ->where('bill_type_id', $billTypeId)
+                        ->first();
+                    
+                    if ($bill && $bill->status === Bill::STATUS_PAID) {
+                        $status = 'INVALID';
+                        $message = 'Tagihan sudah lunas';
+                        $isValidGlobal = false;
+                    }
+                }
+            }
+
+            $previewData[] = [
+                'student_id' => $student ? $student->id : null,
+                'name' => $student ? $student->name : $name,
+                'classroom' => $student && $student->classroom ? $student->classroom->name : $className,
+                'amount' => $amount,
+                'status' => $status,
+                'message' => $message,
+            ];
+        }
+
+        return response()->json([
+            'success' => true,
+            'data' => $previewData,
+            'is_valid_global' => $isValidGlobal,
+            'bill_type_name' => $billType->name,
+        ]);
+    }
+
+    public function confirmImport(Request $request)
+    {
+        $request->validate([
+            'bill_type_id' => 'required|exists:bill_types,id',
+            'data' => 'required|array',
+            'data.*.student_id' => 'required|exists:students,id',
+            'data.*.amount' => 'required|integer|min:1',
+        ]);
+
+        $billTypeId = $request->bill_type_id;
+        $billType = BillType::findOrFail($billTypeId);
+        $importedData = $request->data;
+        $adminId = Auth::id();
+
+        $successCount = 0;
+        $failedCount = 0;
+
+        DB::beginTransaction();
+        try {
+            $paymentMethod = PaymentMethod::where('type', PaymentMethod::TYPE_CASH)->first();
+            $paymentMethodId = $paymentMethod ? $paymentMethod->id : PaymentMethod::CASH_PAYMENT;
+
+            foreach ($importedData as $item) {
+                $studentId = $item['student_id'];
+                $amount = intval($item['amount']);
+
+                $student = Student::with('classroom')->findOrFail($studentId);
+
+                $bill = Bill::where('student_id', $studentId)
+                    ->where('bill_type_id', $billTypeId)
+                    ->first();
+
+                if (!$bill) {
+                    $bill = Bill::create([
+                        'bill_type_id' => $billTypeId,
+                        'student_id' => $studentId,
+                        'classroom_id' => $student->classroom_id ?? '',
+                        'academic_year_id' => $billType->academic_year_id ?? $student->classroom->academic_year_id ?? '',
+                        'month' => intval(date('m')),
+                        'year' => intval(date('Y')),
+                        'amount' => $amount,
+                        'paid_amount' => 0,
+                        'status' => Bill::STATUS_UNPAID,
+                    ]);
+                }
+
+                if ($bill->status === Bill::STATUS_PAID) {
+                    $failedCount++;
+                    continue;
+                }
+
+                $transactionCount = Transaction::whereDate('created_at', now())->count();
+                $paymentCode = 'CHT-IMP-' . now()->format('Ymd') . str_pad($transactionCount + 1, 4, '0', STR_PAD_LEFT);
+
+                $transaction = Transaction::create([
+                    'pay_amount' => $amount,
+                    'payment_code' => $paymentCode,
+                    'student_id' => $studentId,
+                    'expiry_time' => Carbon::now()->addMinutes(1440),
+                    'status' => Transaction::STATUS_PAID,
+                    'paid_at' => now(),
+                    'type' => Transaction::TYPE_BILL,
+                    'admin_id' => $adminId,
+                    'payment_method_id' => $paymentMethodId,
+                ]);
+
+                TransactionDetail::create([
+                    'transaction_id' => $transaction->id,
+                    'bill_id' => $bill->id,
+                    'amount' => $amount,
+                ]);
+
+                $bill->paid_amount = min($bill->amount, $bill->paid_amount + $amount);
+                if ($bill->paid_amount >= $bill->amount) {
+                    $bill->status = Bill::STATUS_PAID;
+                }
+                $bill->save();
+
+                try {
+                    if ($student->user && $student->user->phone) {
+                        TransactionService::dispatchNotifications($transaction);
+                    }
+                } catch (\Exception $e) {
+                    Log::warning("Gagal mengirim WA notifikasi import: " . $e->getMessage());
+                }
+
+                $successCount++;
+            }
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => "Berhasil mengimport {$successCount} data pembayaran tagihan.",
+                'success_count' => $successCount,
+                'failed_count' => $failedCount,
+            ]);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error("Gagal melakukan import: " . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => "Gagal memproses import: " . $e->getMessage(),
+            ], 500);
+        }
+    }
 }

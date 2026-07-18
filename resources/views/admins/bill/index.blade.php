@@ -229,6 +229,9 @@
                         <li class="nav-item">
                             <a class="nav-link" data-bs-toggle="tab" href="#arsip_riwayat">Arsip Riwayat</a>
                         </li>
+                        <li class="nav-item">
+                            <a class="nav-link" data-bs-toggle="tab" href="#import_pembayaran">Import Pembayaran</a>
+                        </li>
                     </ul>
 
                     <div class="tab-content" id="myTabContent">
@@ -606,6 +609,10 @@
                         <div class="tab-pane fade" id="arsip_riwayat" role="tabpanel">
                             <!-- Arsip Riwayat Content -->
                             @include('admins.bill.transfer-tab.archive')
+                        </div>
+                        <div class="tab-pane fade" id="import_pembayaran" role="tabpanel">
+                            <!-- Import Pembayaran Content -->
+                            @include('admins.bill.import-tab.index')
                         </div>
                     </div>
                     <!--end::Card body-->
