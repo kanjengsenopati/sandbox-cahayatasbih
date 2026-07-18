@@ -54,10 +54,16 @@
                         <select name="bill_type_id" id="import-bill-type-id" class="form-select form-select-solid" required style="border-radius: 12px;">
                             <option value="">Pilih Jenis Tagihan Bebas/Pendaftaran</option>
                             @php
-                                $billTypes = \App\Models\BillType::where('type', \App\Models\BillType::TYPE_OTHER)->orderBy('name')->get();
+                                $billTypes = \App\Models\BillType::where('type', \App\Models\BillType::TYPE_OTHER)
+                                    ->with('academicYear')
+                                    ->get()
+                                    ->unique(function ($item) {
+                                        return strtolower($item->name) . '-' . $item->academic_year_id . '-' . strtolower($item->school_type ?? '');
+                                    })
+                                    ->sortBy('formatted_name');
                             @endphp
                             @foreach ($billTypes as $bt)
-                                <option value="{{ $bt->id }}">{{ $bt->name }} {{ $bt->academicYear ? '('.$bt->academicYear->name.')' : '' }}</option>
+                                <option value="{{ $bt->id }}">{{ $bt->formatted_name }} {{ $bt->academicYear ? '('.$bt->academicYear->name.')' : '' }}</option>
                             @endforeach
                         </select>
                     </div>

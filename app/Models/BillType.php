@@ -82,6 +82,18 @@ class BillType extends Model
                     'name' => $bill->student->classroom->school->name,
                 ];
             }
+
+            // Fallback: Cari dari tarif pembayaran (PaymentRate -> PaymentRateClassroom -> Classroom -> School)
+            $rate = $this->paymentRates()->first();
+            if ($rate) {
+                $rateClassroom = $rate->paymentRateClassrooms()->first();
+                if ($rateClassroom && $rateClassroom->classroom && $rateClassroom->classroom->school) {
+                    return [
+                        'type' => $rateClassroom->classroom->school->type,
+                        'name' => $rateClassroom->classroom->school->name,
+                    ];
+                }
+            }
             return [];
         });
     }
