@@ -13,6 +13,7 @@ class AuditService
         'cleanup_ghost_bills.php',
         'find_ghost_bills.php',
         'find_duplicate_bill_types.php',
+        'find_duplicate_students.php',
         'check_image.php',
         'check_avatars.php',
         'check_bills.php',

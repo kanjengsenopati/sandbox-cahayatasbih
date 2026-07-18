@@ -64,7 +64,19 @@ class AuditController extends Controller
         // Fetch full sync history list
         $syncHistory = \App\Models\DatabaseSyncLog::orderBy('id', 'desc')->take(10)->get();
 
-        return view('admins.admin.audit', compact('results', 'syncStatus', 'syncHistory'));
+        // Cari siswa duplikat berdasarkan nama yang sama persis
+        $duplicateNames = \App\Models\Student::select('name')
+            ->groupBy('name')
+            ->havingRaw('COUNT(name) > 1')
+            ->pluck('name');
+
+        $duplicateStudents = \App\Models\Student::with(['classroom.school', 'user'])
+            ->whereIn('name', $duplicateNames)
+            ->orderBy('name')
+            ->get()
+            ->groupBy('name');
+
+        return view('admins.admin.audit', compact('results', 'syncStatus', 'syncHistory', 'duplicateStudents'));
     }
 
     /**
@@ -82,6 +94,111 @@ class AuditController extends Controller
             return redirect()->route('admin.audit')->with('success', 'Sinkronisasi database master berhasil dijalankan!');
         } catch (\Throwable $e) {
             return redirect()->route('admin.audit')->with('error', 'Gagal memicu sinkronisasi: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Merge duplicate student profiles and migrate histories.
+     */
+    public function mergeStudents(Request $request)
+    {
+        $request->validate([
+            'source_id' => 'required|exists:students,id',
+            'target_id' => 'required|exists:students,id',
+        ]);
+
+        $sourceId = $request->source_id;
+        $targetId = $request->target_id;
+
+        if ($sourceId === $targetId) {
+            return redirect()->back()->with('error', 'Siswa asal dan target tidak boleh sama!');
+        }
+
+        \Illuminate\Support\Facades\DB::beginTransaction();
+        try {
+            $source = \App\Models\Student::findOrFail($sourceId);
+            $target = \App\Models\Student::findOrFail($targetId);
+
+            // 1. Pindahkan tagihan (bills)
+            \App\Models\Bill::where('student_id', $sourceId)->update(['student_id' => $targetId]);
+
+            // 2. Pindahkan transaksi (transactions)
+            \App\Models\Transaction::where('student_id', $sourceId)->update(['student_id' => $targetId]);
+
+            // 3. Pindahkan riwayat saldo (saldo_histories)
+            \App\Models\SaldoHistory::where('student_id', $sourceId)->update(['student_id' => $targetId]);
+
+            // 4. Pindahkan riwayat tabungan (saving_histories)
+            \App\Models\SavingHistory::where('student_id', $sourceId)->update(['student_id' => $targetId]);
+
+            // 5. Pindahkan tahfidz (tahfidzs)
+            if (\Schema::hasTable('tahfidzs')) {
+                \App\Models\Tahfidz::where('student_id', $sourceId)->update(['student_id' => $targetId]);
+            }
+
+            // 6. Pindahkan student_card_prints (jika ada)
+            if (\Schema::hasTable('student_card_prints')) {
+                \DB::table('student_card_prints')->where('student_id', $sourceId)->update(['student_id' => $targetId]);
+            }
+
+            // 7. Pindahkan student_classroom_histories
+            if (\Schema::hasTable('student_classroom_histories')) {
+                \DB::table('student_classroom_histories')->where('student_id', $sourceId)->update(['student_id' => $targetId]);
+            }
+
+            // 8. Pindahkan student_bill_notifications
+            if (\Schema::hasTable('student_bill_notifications')) {
+                \DB::table('student_bill_notifications')->where('student_id', $sourceId)->update(['student_id' => $targetId]);
+            }
+
+            // 9. Pindahkan point_of_sale_transactions
+            if (\Schema::hasTable('point_of_sale_transactions')) {
+                \DB::table('point_of_sale_transactions')->where('student_id', $sourceId)->update(['student_id' => $targetId]);
+            }
+
+            // 10. Pindahkan attendances (polymorphic)
+            if (\Schema::hasTable('attendances')) {
+                \DB::table('attendances')
+                    ->where('presensiable_id', $sourceId)
+                    ->where('presensiable_type', \App\Models\Student::class)
+                    ->update(['presensiable_id' => $targetId]);
+            }
+
+            // 11. Pindahkan biometric_mappings (polymorphic)
+            if (\Schema::hasTable('biometric_mappings')) {
+                \DB::table('biometric_mappings')
+                    ->where('presensiable_id', $sourceId)
+                    ->where('presensiable_type', \App\Models\Student::class)
+                    ->update(['presensiable_id' => $targetId]);
+            }
+
+            // 12. Pindahkan data prestasi (student_achievements)
+            if (\Schema::hasTable('student_achievements')) {
+                \DB::table('student_achievements')->where('student_id', $sourceId)->update(['student_id' => $targetId]);
+            }
+
+            // 13. Pindahkan nilai konseling (student_counseling_scores)
+            if (\Schema::hasTable('student_counseling_scores')) {
+                \DB::table('student_counseling_scores')->where('student_id', $sourceId)->update(['student_id' => $targetId]);
+            }
+
+            // 14. Akumulasikan saldo & tabungan
+            $target->saldo += $source->saldo;
+            $target->saving += $source->saving;
+            $target->save();
+
+            // 15. Hapus siswa asal (soft delete)
+            $source->delete();
+
+            \Illuminate\Support\Facades\DB::commit();
+
+            return redirect()->route('admin.audit', ['tab' => 'duplicate-students'])
+                ->with('success', "Berhasil menggabungkan data siswa {$source->name} ke {$target->name}. Seluruh saldo, tabungan, riwayat tagihan, dan transaksi telah dipindahkan.");
+
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\DB::rollBack();
+            \Illuminate\Support\Facades\Log::error("Merge students failed: " . $e->getMessage());
+            return redirect()->back()->with('error', "Gagal menggabungkan data siswa: " . $e->getMessage());
         }
     }
 }
