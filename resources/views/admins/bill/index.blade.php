@@ -267,6 +267,14 @@
                                                     <select name="academic_year_id" id="academic_year_id" class="form-select form-select-solid">
                                                         <option value="">Semua Tahun Ajaran</option>
                                                         @foreach ($academicYears as $year)
+                                                            @php
+                                                                if (isset($student)) {
+                                                                    $startYear = $year->getStartYearSafe();
+                                                                    if ($startYear !== null && $student->getEntryYear() > $startYear) {
+                                                                        continue;
+                                                                    }
+                                                                }
+                                                            @endphp
                                                             <option value="{{ $year->id }}" {{ request('academic_year_id') == $year->id ? 'selected' : '' }}>
                                                                 {{ $year->name }}
                                                             </option>

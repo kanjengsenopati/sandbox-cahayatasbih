@@ -51,6 +51,17 @@ class BillController extends Controller
             $student = Student::with(['classroom.school', 'classroomHistories.classroom'])->findOrFail($studentId);
             $academicYearId = request()->academic_year_id;
 
+            // Reset academicYearId if it starts before student's entry year
+            if ($academicYearId) {
+                $selectedYear = \App\Models\AcademicYear::find($academicYearId);
+                $selectedStartYear = $selectedYear?->getStartYearSafe();
+                if ($selectedStartYear !== null && $student->getEntryYear() > $selectedStartYear) {
+                    $academicYearId = null;
+                    request()->query->set('academic_year_id', null);
+                    request()->request->set('academic_year_id', null);
+                }
+            }
+
             $billMonth = $this->getBills($studentId, BillType::TYPE_MONTHLY, $academicYearId);
             $billOthers = $this->getBills($studentId, BillType::TYPE_OTHER, $academicYearId);
 
