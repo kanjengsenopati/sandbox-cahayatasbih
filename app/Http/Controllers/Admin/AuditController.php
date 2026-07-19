@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Services\AuditService;
+use App\Services\AuditComparisonService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Artisan;
@@ -71,7 +72,7 @@ class AuditController extends Controller
     /**
      * Show system diagnostics UI.
      */
-    public function diagnosticsIndex(Request $request)
+    public function diagnosticsIndex(Request $request, AuditComparisonService $comparisonService)
     {
         if (!Auth::user()->can('Manage Audit dan Sinkron')) {
             return redirect()->route('dashboard')->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
@@ -80,7 +81,11 @@ class AuditController extends Controller
         $service = new AuditService();
         $results = $service->runAll();
 
-        return view('admins.admin.audit.diagnostics', compact('results'));
+        // Get detailed comparisons
+        $comparison = $comparisonService->getComparisonData();
+        $aiInsight = $comparisonService->generateAiInsight($comparison);
+
+        return view('admins.admin.audit.diagnostics', compact('results', 'comparison', 'aiInsight'));
     }
 
     /**

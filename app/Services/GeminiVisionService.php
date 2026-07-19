@@ -103,4 +103,55 @@ class GeminiVisionService
 
         return null;
     }
+
+    /**
+     * Call Gemini API to generate text insight based on a text prompt.
+     *
+     * @param string $prompt
+     * @return string|null
+     */
+    public static function generateTextInsight(string $prompt): ?string
+    {
+        $apiKey = env('GEMINI_API_KEY');
+        
+        if (empty($apiKey)) {
+            Log::error('Gemini API Key is missing. Cannot generate AI Insight.');
+            return null;
+        }
+
+        $url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=" . $apiKey;
+
+        $payload = [
+            'contents' => [
+                [
+                    'parts' => [
+                        ['text' => $prompt]
+                    ]
+                ]
+            ],
+            'generationConfig' => [
+                'temperature' => 0.7,
+                'maxOutputTokens' => 800,
+            ]
+        ];
+
+        try {
+            $response = Http::timeout(30)->post($url, $payload);
+
+            if ($response->successful()) {
+                $data = $response->json();
+                $textResult = $data['candidates'][0]['content']['parts'][0]['text'] ?? '';
+                return trim($textResult);
+            } else {
+                Log::error('Gemini API Error for text insight', [
+                    'status' => $response->status(),
+                    'body' => $response->body()
+                ]);
+            }
+        } catch (\Exception $e) {
+            Log::error('Gemini API Exception for text insight: ' . $e->getMessage());
+        }
+
+        return null;
+    }
 }
