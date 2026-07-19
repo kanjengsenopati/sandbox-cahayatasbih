@@ -69,9 +69,8 @@ class CleanupBalances extends Command
                     $this->info("  <- Source (Duplicate): ID {$source->id} | Saldo: {$source->saldo} | Tabungan: {$source->saving}");
 
                     if (!$dryRun) {
-                        // Relink all standard related tables
+                        // Relink all standard related tables (excluding bills)
                         $tablesToUpdate = [
-                            'bills' => 'student_id',
                             'transactions' => 'student_id',
                             'saldo_histories' => 'student_id',
                             'saving_histories' => 'student_id',
@@ -91,7 +90,7 @@ class CleanupBalances extends Command
                             }
                         }
 
-                        // Relink polymorphic relations
+                        // Relink polymorphic relations (excluding biometric_mappings)
                         if (Schema::hasTable('attendances')) {
                             DB::table('attendances')
                                 ->where('presensiable_id', $source->id)
@@ -99,12 +98,11 @@ class CleanupBalances extends Command
                                 ->update(['presensiable_id' => $target->id]);
                         }
 
-                        if (Schema::hasTable('biometric_mappings')) {
-                            DB::table('biometric_mappings')
-                                ->where('presensiable_id', $source->id)
-                                ->where('presensiable_type', Student::class)
-                                ->update(['presensiable_id' => $target->id]);
-                        }
+                        // Safely merge bills with unique constraints handled
+                        $this->mergeBills($source->id, $target->id, $dryRun);
+
+                        // Safely merge biometric mappings with unique constraints handled
+                        $this->mergeBiometricMappings($source->id, $target->id, $dryRun);
 
                         // Accumulate balances
                         $target->saldo = (int)round($target->saldo) + (int)round($source->saldo);
@@ -115,6 +113,9 @@ class CleanupBalances extends Command
                         $source->delete();
                         $this->info("  Status: Merged successfully.");
                     } else {
+                        // Simulate merging bills and biometrics
+                        $this->mergeBills($source->id, $target->id, $dryRun);
+                        $this->mergeBiometricMappings($source->id, $target->id, $dryRun);
                         $this->info("  Status: Simulating merge.");
                     }
                 }
@@ -215,5 +216,95 @@ class CleanupBalances extends Command
         }
 
         return 0;
+    }
+
+    /**
+     * Safely merge bills between source and target students.
+     */
+    private function mergeBills($sourceId, $targetId, $dryRun)
+    {
+        if (!Schema::hasTable('bills')) return;
+
+        $sourceBills = DB::table('bills')->where('student_id', $sourceId)->whereNull('deleted_at')->get();
+        foreach ($sourceBills as $sb) {
+            $targetBill = DB::table('bills')
+                ->where('student_id', $targetId)
+                ->where('bill_type_id', $sb->bill_type_id)
+                ->where('academic_year_id', $sb->academic_year_id)
+                ->where('month', $sb->month)
+                ->where('year', $sb->year)
+                ->whereNull('deleted_at')
+                ->first();
+
+            if ($targetBill) {
+                $this->info("    - Bill conflict found for type {$sb->bill_type_id}, month {$sb->month}/{$sb->year}:");
+                $this->info("      Merging source bill ID {$sb->id} (paid: {$sb->paid_amount}) into target bill ID {$targetBill->id} (paid: {$targetBill->paid_amount})");
+
+                if (!$dryRun) {
+                    // Relink transaction details (payments) to the target bill
+                    DB::table('transaction_details')->where('bill_id', $sb->id)->update(['bill_id' => $targetBill->id]);
+
+                    // Accumulate paid amount and update status
+                    $newPaid = (int)round($targetBill->paid_amount) + (int)round($sb->paid_amount);
+                    $newStatus = ($newPaid >= $targetBill->amount) ? 'PAID' : 'UNPAID';
+                    DB::table('bills')->where('id', $targetBill->id)->update([
+                        'paid_amount' => min($targetBill->amount, $newPaid),
+                        'status' => $newStatus
+                    ]);
+
+                    // Soft-delete the duplicate bill to resolve the unique active record constraint
+                    DB::table('bills')->where('id', $sb->id)->update([
+                        'deleted_at' => now()
+                    ]);
+                }
+            } else {
+                // No conflict, safe to transfer
+                if (!$dryRun) {
+                    DB::table('bills')->where('id', $sb->id)->update(['student_id' => $targetId]);
+                }
+            }
+        }
+
+        // Also update any soft-deleted source bills to point to target student ID
+        if (!$dryRun) {
+            DB::table('bills')->where('student_id', $sourceId)->whereNotNull('deleted_at')->update(['student_id' => $targetId]);
+        }
+    }
+
+    /**
+     * Safely merge biometric mappings between source and target students.
+     */
+    private function mergeBiometricMappings($sourceId, $targetId, $dryRun)
+    {
+        if (!Schema::hasTable('biometric_mappings')) return;
+
+        $sourceMappings = DB::table('biometric_mappings')
+            ->where('presensiable_id', $sourceId)
+            ->where('presensiable_type', Student::class)
+            ->get();
+
+        foreach ($sourceMappings as $sm) {
+            $targetMapping = DB::table('biometric_mappings')
+                ->where('presensiable_id', $targetId)
+                ->where('presensiable_type', Student::class)
+                ->where('biometric_type', $sm->biometric_type)
+                ->where('biometric_index', $sm->biometric_index)
+                ->first();
+
+            if ($targetMapping) {
+                $this->info("    - Biometric mapping conflict found for type {$sm->biometric_type}, index {$sm->biometric_index}:");
+                $this->info("      Deleting source mapping ID {$sm->id} since target already has one.");
+                if (!$dryRun) {
+                    DB::table('biometric_mappings')->where('id', $sm->id)->delete();
+                }
+            } else {
+                // No conflict, safe to transfer
+                if (!$dryRun) {
+                    DB::table('biometric_mappings')->where('id', $sm->id)->update([
+                        'presensiable_id' => $targetId
+                    ]);
+                }
+            }
+        }
     }
 }
