@@ -163,6 +163,55 @@ class SyncMasterDatabase extends Command
             }
             $this->info("Built classroom mapping for " . count($classroomMapping) . " classrooms.");
 
+            // Build student ID mapping to map old UUIDs to local standardized ones
+            $studentMapping = [];
+            try {
+                $masterStudents = DB::connection('mysql_master')->table('students')
+                    ->select('id', 'nis', 'nisn', 'name')
+                    ->get();
+                $localStudents = DB::connection('mysql')->table('students')
+                    ->select('id', 'nis', 'nisn', 'name')
+                    ->get();
+                
+                $localByNis = [];
+                $localByNisn = [];
+                $localByName = [];
+                
+                foreach ($localStudents as $ls) {
+                    if (!empty($ls->nis)) {
+                        $localByNis[$ls->nis] = $ls->id;
+                    }
+                    if (!empty($ls->nisn)) {
+                        $localByNisn[$ls->nisn] = $ls->id;
+                    }
+                    $normName = strtolower(trim($ls->name));
+                    if (!empty($normName)) {
+                        $localByName[$normName] = $ls->id;
+                    }
+                }
+                
+                foreach ($masterStudents as $ms) {
+                    $localId = null;
+                    if (!empty($ms->nis) && isset($localByNis[$ms->nis])) {
+                        $localId = $localByNis[$ms->nis];
+                    } elseif (!empty($ms->nisn) && isset($localByNisn[$ms->nisn])) {
+                        $localId = $localByNisn[$ms->nisn];
+                    } else {
+                        $normName = strtolower(trim($ms->name));
+                        if (!empty($normName) && isset($localByName[$normName])) {
+                            $localId = $localByName[$normName];
+                        }
+                    }
+                    
+                    if ($localId) {
+                        $studentMapping[$ms->id] = $localId;
+                    }
+                }
+                $this->info("Built student mapping for " . count($studentMapping) . " students.");
+            } catch (\Throwable $e) {
+                $this->warn("Could not build student mapping: " . $e->getMessage());
+            }
+
             $localBillsMap = null;
 
             foreach ($tables as $table) {
@@ -268,10 +317,25 @@ class SyncMasterDatabase extends Command
                 $minTimestamp = null;
                 $maxTimestamp = null;
 
-                $processChunk = function ($rows) use ($table, $commonColumns, &$inserted, &$minTimestamp, &$maxTimestamp, $classroomMapping, $targetColumns, $defaultOutletId, &$localBillsMap) {
+                $processChunk = function ($rows) use ($table, $commonColumns, &$inserted, &$minTimestamp, &$maxTimestamp, $classroomMapping, $studentMapping, $targetColumns, $defaultOutletId, &$localBillsMap) {
                     $data = $rows->map(fn($row) => (array) $row)->toArray();
                     if (!empty($data)) {
+                        // Map student IDs first to use local IDs everywhere
+                        foreach ($data as &$row) {
+                            if (isset($row['student_id']) && isset($studentMapping[$row['student_id']])) {
+                                $row['student_id'] = $studentMapping[$row['student_id']];
+                            }
+                            if ($table === 'students' && isset($row['id']) && isset($studentMapping[$row['id']])) {
+                                $row['id'] = $studentMapping[$row['id']];
+                            }
+                        }
+                        unset($row);
+
                         $columnsToUpdate = array_filter($commonColumns, fn($col) => $col !== 'id');
+                        if ($table === 'students') {
+                            // Exclude saldo and saving from being overwritten by master data
+                            $columnsToUpdate = array_filter($columnsToUpdate, fn($col) => !in_array($col, ['saldo', 'saving']));
+                        }
                         
                         // Check if the target table has an outlet_id column but the master table does not
                         $targetHasOutlet = in_array('outlet_id', $targetColumns);
@@ -308,49 +372,7 @@ class SyncMasterDatabase extends Command
                                 $row['to_classroom_id'] = $classroomMapping[$row['to_classroom_id']];
                             }
 
-                            // Check student balance difference and log adjustment
-                            if ($table === 'students' && isset($row['id']) && isset($row['saldo'])) {
-                                $localStudent = $localStudents->get($row['id']);
-                                if ($localStudent && isset($localStudent->saldo)) {
-                                    $diff = $row['saldo'] - $localStudent->saldo;
-                                    if ($diff != 0) {
-                                        DB::connection('mysql')->table('saldo_histories')->insert([
-                                            'id' => (string) \Illuminate\Support\Str::uuid(),
-                                            'student_id' => $row['id'],
-                                            'type' => $diff > 0 ? 'IN' : 'OUT',
-                                            'amount' => abs($diff),
-                                            'description' => 'Adjustment sinkronisasi master (selisih saldo)',
-                                            'status' => 'SUCCESS',
-                                            'usage' => $diff > 0 ? 'TOPUP' : 'BILL',
-                                            'balance_before' => $localStudent->saldo,
-                                            'balance_after' => $row['saldo'],
-                                            'created_at' => now(),
-                                            'updated_at' => now(),
-                                        ]);
-                                    }
-                                }
-                            }
-
-                            // Check student saving difference and log adjustment
-                            if ($table === 'students' && isset($row['id']) && isset($row['saving'])) {
-                                $localStudent = $localStudents->get($row['id']);
-                                if ($localStudent && isset($localStudent->saving)) {
-                                    $diff = $row['saving'] - $localStudent->saving;
-                                    if ($diff != 0) {
-                                        DB::connection('mysql')->table('saving_histories')->insert([
-                                            'id' => (string) \Illuminate\Support\Str::uuid(),
-                                            'student_id' => $row['id'],
-                                            'type' => $diff > 0 ? 'IN' : 'OUT',
-                                            'amount' => abs($diff),
-                                            'description' => 'Adjustment sinkronisasi master (selisih tabungan)',
-                                            'status' => 'SUCCESS',
-                                            'date' => now(),
-                                            'created_at' => now(),
-                                            'updated_at' => now(),
-                                        ]);
-                                    }
-                                }
-                            }
+                            // Balance and saving adjustment logs are disabled since local balances are protected and kept as source of truth.
 
                             $dateStr = $row['created_at'] ?? $row['updated_at'] ?? null;
                             if ($dateStr) {
