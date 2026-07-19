@@ -19,8 +19,10 @@ class OfficerRequest extends FormRequest
      */
     public function rules(): array
     {
+        $officerId = $this->route('officer') ? $this->route('officer')->id : null;
+
         return [
-            'admin_id' => 'required|exists:admins,id',
+            'admin_id' => 'required|exists:admins,id|unique:officers,admin_id,' . $officerId,
             'position' => 'required|string|max:255',
             'duty' => 'required|string',
             'phone' => 'required|string|max:20',

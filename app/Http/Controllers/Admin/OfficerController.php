@@ -83,7 +83,10 @@ class OfficerController extends Controller
         }
         $data['is_active'] = $request->has('is_active') ? $request->is_active : true;
         
-        Officer::create($data);
+        Officer::updateOrCreate(
+            ['admin_id' => $data['admin_id']],
+            $data
+        );
         return redirect()->route('officer.index')->with('success', 'Petugas berhasil ditambahkan');
     }
 

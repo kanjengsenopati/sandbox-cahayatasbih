@@ -152,13 +152,15 @@ class AsramaController extends Controller
                     ]);
                 }
 
-                $officer = Officer::create([
-                    'admin_id' => $admin->id,
-                    'phone' => $phone,
-                    'position' => $request->input('new_officer_position'),
-                    'duty' => $request->input('new_officer_duty'),
-                    'is_active' => 1,
-                ]);
+                $officer = Officer::updateOrCreate(
+                    ['admin_id' => $admin->id],
+                    [
+                        'phone' => $phone,
+                        'position' => $request->input('new_officer_position'),
+                        'duty' => $request->input('new_officer_duty'),
+                        'is_active' => 1,
+                    ]
+                );
                 $hostAdminId = $admin->id;
             }
 
@@ -297,13 +299,15 @@ class AsramaController extends Controller
                     ]);
                 }
 
-                $officer = Officer::create([
-                    'admin_id' => $admin->id,
-                    'phone' => $phone,
-                    'position' => $request->input('new_officer_position'),
-                    'duty' => $request->input('new_officer_duty'),
-                    'is_active' => 1,
-                ]);
+                $officer = Officer::updateOrCreate(
+                    ['admin_id' => $admin->id],
+                    [
+                        'phone' => $phone,
+                        'position' => $request->input('new_officer_position'),
+                        'duty' => $request->input('new_officer_duty'),
+                        'is_active' => 1,
+                    ]
+                );
                 $hostAdminId = $admin->id;
             }
 
