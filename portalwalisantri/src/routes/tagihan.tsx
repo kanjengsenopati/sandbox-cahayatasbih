@@ -58,8 +58,31 @@ function Tagihan() {
 
   const academicYears = useMemo(() => {
     const years = bills.map((b: any) => b.category);
-    return Array.from(new Set(years)).filter(Boolean).sort().reverse();
-  }, [bills]);
+    const uniqueYears = Array.from(new Set(years)).filter(Boolean);
+
+    // Filter based on active student entry year from NIS
+    if (active?.nis) {
+      const cleanNis = active.nis.replace(/\D/g, "");
+      if (cleanNis.length === 9) {
+        const yearPart = cleanNis.substring(4, 6);
+        const entryYear = 2000 + parseInt(yearPart, 10);
+        if (!isNaN(entryYear)) {
+          return uniqueYears.filter((yr: string) => {
+            const parts = yr.split("/");
+            if (parts.length > 0) {
+              const startYear = parseInt(parts[0], 10);
+              if (!isNaN(startYear)) {
+                return startYear >= entryYear;
+              }
+            }
+            return true;
+          }).sort().reverse();
+        }
+      }
+    }
+
+    return uniqueYears.sort().reverse();
+  }, [bills, active]);
 
   const filtered = useMemo(() => {
     return bills.filter((b: any) => {

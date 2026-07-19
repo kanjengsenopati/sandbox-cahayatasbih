@@ -7,6 +7,7 @@ import axios from "axios";
 export type Santri = {
     id: string;
     name: string;
+    nis?: string;
     avatar?: string;
     classroom?: {
         name: string;
@@ -40,6 +41,7 @@ const mapSantri = (s: any): Santri => ({
     ...s,
     id: s.id?.toString() || "",
     name: s.name || "Santri",
+    nis: s.nis || "",
     initials: s.name
         ? s.name
               .split(" ")
