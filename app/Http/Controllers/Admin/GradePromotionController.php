@@ -148,6 +148,12 @@ class GradePromotionController extends Controller
 
                 // Generate tagihan baru berdasarkan tarif kelas baru
                 foreach ($paymentRates as $paymentRate) {
+                    // Prevent generating bills for years before the student's entry year
+                    $startYear = $paymentRate->billType?->academicYear?->getStartYearSafe();
+                    if ($startYear !== null && $student->getEntryYear() > $startYear) {
+                        continue;
+                    }
+
                     // Filter berdasarkan gender jika ada
                     if ($paymentRate->gender) {
                         $allowedGenders = array_map('trim', explode(',', $paymentRate->gender));

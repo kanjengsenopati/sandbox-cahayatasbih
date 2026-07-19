@@ -59,8 +59,14 @@ class CheckBillClass extends Command
 
                 $timestamp = now();
                 $billsToInsert = [];
+                $startYear = $billType->academicYear?->getStartYearSafe();
 
                 foreach ($students as $student) {
+                    // Prevent generating bills for years before the student's entry year
+                    if ($startYear !== null && $student->getEntryYear() > $startYear) {
+                        continue;
+                    }
+
                     foreach ($paymentRate->paymentRateItems as $item) {
                         // Check if bill exists
                         $exists = DB::table('bills')

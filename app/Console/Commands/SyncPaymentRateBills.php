@@ -101,8 +101,15 @@ class SyncPaymentRateBills extends Command
             // Process each student
             $timestamp = now();
             $billsToInsert = [];
+            $startYear = $billType->academicYear?->getStartYearSafe();
 
             foreach ($students as $student) {
+                // Prevent generating bills for years before the student's entry year
+                if ($startYear !== null && $student->getEntryYear() > $startYear) {
+                    $this->warn("    [SKIP] {$student->name} (NIS: {$student->nis}) entered in {$student->getEntryYear()}, bill is for {$billType->academicYear->name}.");
+                    continue;
+                }
+
                 foreach ($paymentRate->paymentRateItems as $item) {
                     $billMonth = $item->month;
                     $billYear  = $item->year;

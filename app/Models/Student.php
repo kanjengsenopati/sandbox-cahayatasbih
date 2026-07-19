@@ -238,5 +238,43 @@ class Student extends Model
     {
         return $this->morphMany(BiometricMapping::class, 'presensiable');
     }
+
+    /**
+     * Get the calendar year when the student entered the school.
+     * Uses NIS as primary source of truth, falls back to first classroom history,
+     * and then to created_at year.
+     */
+    public function getEntryYear(): int
+    {
+        // 1. Try to extract entry year from NIS (format: [4-digit pondok][2-digit year][3-digit sequence])
+        if ($this->nis) {
+            $cleanNis = preg_replace('/\D/', '', $this->nis);
+            if (strlen($cleanNis) == 9) {
+                $yearPart = substr($cleanNis, 4, 2);
+                if (is_numeric($yearPart)) {
+                    return 2000 + intval($yearPart);
+                }
+            }
+        }
+
+        // 2. Try to get entry year from classroom history
+        $firstHistory = $this->classroomHistories()
+            ->with('academicYear')
+            ->get()
+            ->sortBy(function ($history) {
+                return $history->academicYear?->start_year ?? 9999;
+            })
+            ->first();
+
+        if ($firstHistory && $firstHistory->academicYear) {
+            $historyStartYear = $firstHistory->academicYear->getStartYearSafe();
+            if ($historyStartYear) {
+                return $historyStartYear;
+            }
+        }
+
+        // 3. Fallback to created_at year
+        return $this->created_at ? $this->created_at->year : intval(date('Y'));
+    }
 }
 

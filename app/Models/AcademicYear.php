@@ -17,4 +17,24 @@ class AcademicYear extends Model
         'end_year',
         'is_active',
     ];
+
+    /**
+     * Safely get the starting calendar year.
+     * Parses from name (e.g. '2026/2027' -> 2026) if start_year is null.
+     */
+    public function getStartYearSafe(): ?int
+    {
+        if ($this->start_year) {
+            return (int) $this->start_year;
+        }
+
+        if ($this->name) {
+            $parts = explode('/', $this->name);
+            if (count($parts) > 0 && is_numeric($parts[0])) {
+                return intval($parts[0]);
+            }
+        }
+
+        return null;
+    }
 }
