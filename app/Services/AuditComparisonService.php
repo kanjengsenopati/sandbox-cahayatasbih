@@ -8,7 +8,7 @@ use App\Services\GeminiVisionService;
 class AuditComparisonService
 {
     /**
-     * Compare local database with master database.
+     * Compare local database with master database using high-performance bulk queries.
      */
     public function getComparisonData(): array
     {
@@ -50,6 +50,49 @@ class AuditComparisonService
         $masterSchools = DB::connection('mysql_master')->table('schools')->get()->keyBy('id');
         $masterAcademicYears = DB::connection('mysql_master')->table('academic_years')->get()->keyBy('id');
 
+        // 3. BULK PRE-FETCH: Grouped aggregations to eliminate N+1 queries
+        // Local pre-fetched maps
+        $localBillsMap = DB::connection('mysql')->table('bills')
+            ->whereNull('deleted_at')
+            ->select('student_id', DB::raw('COUNT(*) as total_count'), DB::raw('SUM(amount) as total_amount'))
+            ->groupBy('student_id')
+            ->get()
+            ->keyBy('student_id');
+
+        $localTxMap = DB::connection('mysql')->table('saldo_histories')
+            ->select('student_id', DB::raw('COUNT(*) as total_count'))
+            ->groupBy('student_id')
+            ->get()
+            ->keyBy('student_id');
+
+        $localHistoryMap = DB::connection('mysql')->table('student_classroom_histories')
+            ->whereNull('deleted_at')
+            ->orderBy('created_at', 'desc')
+            ->get()
+            ->unique('student_id')
+            ->keyBy('student_id');
+
+        // Master pre-fetched maps
+        $masterBillsMap = DB::connection('mysql_master')->table('bills')
+            ->whereNull('deleted_at')
+            ->select('student_id', DB::raw('COUNT(*) as total_count'), DB::raw('SUM(amount) as total_amount'))
+            ->groupBy('student_id')
+            ->get()
+            ->keyBy('student_id');
+
+        $masterTxMap = DB::connection('mysql_master')->table('saldo_histories')
+            ->select('student_id', DB::raw('COUNT(*) as total_count'))
+            ->groupBy('student_id')
+            ->get()
+            ->keyBy('student_id');
+
+        $masterHistoryMap = DB::connection('mysql_master')->table('student_classroom_histories')
+            ->whereNull('deleted_at')
+            ->orderBy('created_at', 'desc')
+            ->get()
+            ->unique('student_id')
+            ->keyBy('student_id');
+
         $discrepancies = [];
 
         foreach ($masterStudents as $id => $ms) {
@@ -76,30 +119,21 @@ class AuditComparisonService
                     }
                 }
                 
-                // Get latest academic year from histories
-                $latestHistory = DB::connection('mysql')->table('student_classroom_histories')
-                    ->where('student_id', $ls->id)
-                    ->whereNull('deleted_at')
-                    ->orderBy('created_at', 'desc')
-                    ->first();
-                if ($latestHistory && isset($localAcademicYears[$latestHistory->academic_year_id])) {
-                    $localAY = $localAcademicYears[$latestHistory->academic_year_id]->name;
+                if (isset($localHistoryMap[$ls->id])) {
+                    $ayId = $localHistoryMap[$ls->id]->academic_year_id;
+                    if (isset($localAcademicYears[$ayId])) {
+                        $localAY = $localAcademicYears[$ayId]->name;
+                    }
                 }
 
-                // Count bills
-                $localBillsCount = DB::connection('mysql')->table('bills')
-                    ->where('student_id', $ls->id)
-                    ->whereNull('deleted_at')
-                    ->count();
-                $localBillsTotal = DB::connection('mysql')->table('bills')
-                    ->where('student_id', $ls->id)
-                    ->whereNull('deleted_at')
-                    ->sum('amount');
+                if (isset($localBillsMap[$ls->id])) {
+                    $localBillsCount = (int) $localBillsMap[$ls->id]->total_count;
+                    $localBillsTotal = (float) $localBillsMap[$ls->id]->total_amount;
+                }
 
-                // Count transactions / saldo histories
-                $localTxCount = DB::connection('mysql')->table('saldo_histories')
-                    ->where('student_id', $ls->id)
-                    ->count();
+                if (isset($localTxMap[$ls->id])) {
+                    $localTxCount = (int) $localTxMap[$ls->id]->total_count;
+                }
             }
 
             // Resolve master student details
@@ -120,30 +154,21 @@ class AuditComparisonService
                 }
             }
 
-            // Get latest academic year from master histories
-            $latestMasterHistory = DB::connection('mysql_master')->table('student_classroom_histories')
-                ->where('student_id', $ms->id)
-                ->whereNull('deleted_at')
-                ->orderBy('created_at', 'desc')
-                ->first();
-            if ($latestMasterHistory && isset($masterAcademicYears[$latestMasterHistory->academic_year_id])) {
-                $masterAY = $masterAcademicYears[$latestMasterHistory->academic_year_id]->name;
+            if (isset($masterHistoryMap[$ms->id])) {
+                $ayId = $masterHistoryMap[$ms->id]->academic_year_id;
+                if (isset($masterAcademicYears[$ayId])) {
+                    $masterAY = $masterAcademicYears[$ayId]->name;
+                }
             }
 
-            // Count master bills
-            $masterBillsCount = DB::connection('mysql_master')->table('bills')
-                ->where('student_id', $ms->id)
-                ->whereNull('deleted_at')
-                ->count();
-            $masterBillsTotal = DB::connection('mysql_master')->table('bills')
-                ->where('student_id', $ms->id)
-                ->whereNull('deleted_at')
-                ->sum('amount');
+            if (isset($masterBillsMap[$ms->id])) {
+                $masterBillsCount = (int) $masterBillsMap[$ms->id]->total_count;
+                $masterBillsTotal = (float) $masterBillsMap[$ms->id]->total_amount;
+            }
 
-            // Count master transactions / saldo histories
-            $masterTxCount = DB::connection('mysql_master')->table('saldo_histories')
-                ->where('student_id', $ms->id)
-                ->count();
+            if (isset($masterTxMap[$ms->id])) {
+                $masterTxCount = (int) $masterTxMap[$ms->id]->total_count;
+            }
 
             // Compare details
             $hasDiff = !$ls || 
@@ -214,27 +239,21 @@ class AuditComparisonService
                     }
                 }
                 
-                $latestHistory = DB::connection('mysql')->table('student_classroom_histories')
-                    ->where('student_id', $ls->id)
-                    ->whereNull('deleted_at')
-                    ->orderBy('created_at', 'desc')
-                    ->first();
-                if ($latestHistory && isset($localAcademicYears[$latestHistory->academic_year_id])) {
-                    $localAY = $localAcademicYears[$latestHistory->academic_year_id]->name;
+                if (isset($localHistoryMap[$ls->id])) {
+                    $ayId = $localHistoryMap[$ls->id]->academic_year_id;
+                    if (isset($localAcademicYears[$ayId])) {
+                        $localAY = $localAcademicYears[$ayId]->name;
+                    }
                 }
 
-                $localBillsCount = DB::connection('mysql')->table('bills')
-                    ->where('student_id', $ls->id)
-                    ->whereNull('deleted_at')
-                    ->count();
-                $localBillsTotal = DB::connection('mysql')->table('bills')
-                    ->where('student_id', $ls->id)
-                    ->whereNull('deleted_at')
-                    ->sum('amount');
+                if (isset($localBillsMap[$ls->id])) {
+                    $localBillsCount = (int) $localBillsMap[$ls->id]->total_count;
+                    $localBillsTotal = (float) $localBillsMap[$ls->id]->total_amount;
+                }
 
-                $localTxCount = DB::connection('mysql')->table('saldo_histories')
-                    ->where('student_id', $ls->id)
-                    ->count();
+                if (isset($localTxMap[$ls->id])) {
+                    $localTxCount = (int) $localTxMap[$ls->id]->total_count;
+                }
 
                 $discrepancies[] = [
                     'nis' => $ls->nis ?: '-',

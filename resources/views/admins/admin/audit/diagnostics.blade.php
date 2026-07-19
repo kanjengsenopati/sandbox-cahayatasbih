@@ -32,7 +32,7 @@
                 </div>
                 <!--begin::Actions-->
                 <div class="d-flex align-items-center gap-2 gap-lg-3">
-                    <a href="{{ route('admin.audit.diagnostics') }}"
+                    <a href="{{ route('admin.audit.diagnostics', ['refresh' => 1]) }}"
                        id="btn-toolbar-audit"
                        class="btn btn-sm btn-primary fw-bolder">
                         <i class="fas fa-sync-alt me-1 fs-7 text-white"></i> Jalankan Ulang Audit & Analisis AI
@@ -158,7 +158,7 @@
                     </div>
                 </div>
 
-                <!-- AI Insight Card -->
+                <!-- AI Insight Card (Async AJAX Loading) -->
                 <div class="card card-flush shadow-sm mb-6" style="border-radius: 24px; background: linear-gradient(to right, #fdf8ff, #f9f0ff); border: 1px solid #ebd5ff;">
                     <div class="card-body p-6">
                         <div class="d-flex align-items-center mb-4 justify-content-between">
@@ -175,8 +175,11 @@
                             </div>
                             <span class="badge bg-purple-600 text-white font-semibold px-3 py-1 text-uppercase fs-8" style="background-color: #8b5cf6;">Gemini Powered</span>
                         </div>
-                        <div class="fs-6 text-slate-700 leading-relaxed ps-2">
-                            {!! $aiInsight !!}
+                        <div id="ai-insight-container" class="fs-6 text-slate-700 leading-relaxed ps-2">
+                            <div class="d-flex align-items-center py-4 text-purple-600">
+                                <div class="spinner-border spinner-border-sm me-3 text-purple-600" role="status"></div>
+                                <span class="fw-bold fs-7">Sedang memuat analisis AI Insight otomatis...</span>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -434,4 +437,25 @@
         </div>
         <!--end::Post-->
     </div>
+
+    <!-- Async AJAX script for loading AI Insight without blocking HTTP response -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            fetch('{{ route("admin.audit.diagnostics.ai-insight") }}')
+                .then(response => response.json())
+                .then(data => {
+                    const container = document.getElementById('ai-insight-container');
+                    if (data && data.html) {
+                        container.innerHTML = data.html;
+                    } else {
+                        container.innerHTML = '<span class="text-muted fs-7">Tidak ada rekomendasi AI Insight.</span>';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error fetching AI Insight:', error);
+                    const container = document.getElementById('ai-insight-container');
+                    container.innerHTML = '<span class="text-danger fs-7"><i class="fas fa-exclamation-circle me-1"></i> Gagal memuat AI Insight secara otomatis.</span>';
+                });
+        });
+    </script>
 @endsection

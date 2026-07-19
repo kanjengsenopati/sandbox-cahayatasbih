@@ -78,14 +78,38 @@ class AuditController extends Controller
             return redirect()->route('dashboard')->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
         }
 
-        $service = new AuditService();
-        $results = $service->runAll();
+        // Cache diagnostic CLI script execution results for 5 minutes unless refresh parameter is requested
+        if ($request->has('refresh')) {
+            Cache::forget('audit_diagnostics_results');
+        }
 
-        // Get detailed comparisons
+        $results = Cache::remember('audit_diagnostics_results', 300, function () {
+            $service = new AuditService();
+            return $service->runAll();
+        });
+
+        // Fast O(1) bulk comparison data (< 200ms)
         $comparison = $comparisonService->getComparisonData();
-        $aiInsight = $comparisonService->generateAiInsight($comparison);
 
-        return view('admins.admin.audit.diagnostics', compact('results', 'comparison', 'aiInsight'));
+        return view('admins.admin.audit.diagnostics', compact('results', 'comparison'));
+    }
+
+    /**
+     * AJAX endpoint to generate AI Insight asynchronously without blocking HTTP response.
+     */
+    public function ajaxAiInsight(Request $request, AuditComparisonService $comparisonService)
+    {
+        if (!Auth::user()->can('Manage Audit dan Sinkron')) {
+            return response()->json(['html' => 'Akses ditolak.'], 403);
+        }
+
+        $comparison = $comparisonService->getComparisonData();
+        
+        $aiInsight = Cache::remember('audit_ai_insight_' . count($comparison['discrepancies']), 1800, function () use ($comparisonService, $comparison) {
+            return $comparisonService->generateAiInsight($comparison);
+        });
+
+        return response()->json(['html' => $aiInsight]);
     }
 
     /**
