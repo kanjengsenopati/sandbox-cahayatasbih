@@ -88,10 +88,89 @@ class AuditController extends Controller
             return $service->runAll();
         });
 
-        // Fast O(1) bulk comparison data (< 200ms)
-        $comparison = $comparisonService->getComparisonData();
+        $search = $request->input('search');
+        $page = (int) $request->input('page', 1);
+
+        // Fast O(1) bulk comparison data (< 200ms) with search & pagination (default 10)
+        $comparison = $comparisonService->getComparisonData($search, $page, 10);
 
         return view('admins.admin.audit.diagnostics', compact('results', 'comparison'));
+    }
+
+    /**
+     * Synchronize selected students from master database.
+     */
+    public function syncSelectedStudents(Request $request)
+    {
+        if (!Auth::user()->can('Manage Audit dan Sinkron')) {
+            return redirect()->route('dashboard')->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
+        }
+
+        $studentIds = $request->input('student_ids', []);
+        if (empty($studentIds) || !is_array($studentIds)) {
+            return redirect()->back()->with('error', 'Silakan pilih minimal satu siswa untuk disinkronkan.');
+        }
+
+        try {
+            \Illuminate\Support\Facades\DB::statement('SET FOREIGN_KEY_CHECKS=0;');
+
+            $masterStudents = \Illuminate\Support\Facades\DB::connection('mysql_master')->table('students')
+                ->whereIn('id', $studentIds)
+                ->whereNull('deleted_at')
+                ->get();
+
+            $syncedCount = 0;
+            foreach ($masterStudents as $ms) {
+                // Ensure classroom exists in local DB if linked
+                if (!empty($ms->classroom_id)) {
+                    $masterClassroom = \Illuminate\Support\Facades\DB::connection('mysql_master')->table('classrooms')->where('id', $ms->classroom_id)->first();
+                    if ($masterClassroom) {
+                        \Illuminate\Support\Facades\DB::connection('mysql')->table('classrooms')->updateOrInsert(
+                            ['id' => $masterClassroom->id],
+                            (array) $masterClassroom
+                        );
+                    }
+                }
+
+                \Illuminate\Support\Facades\DB::connection('mysql')->table('students')->updateOrInsert(
+                    ['id' => $ms->id],
+                    (array) $ms
+                );
+
+                // Sync student_classroom_histories
+                $masterHistories = \Illuminate\Support\Facades\DB::connection('mysql_master')->table('student_classroom_histories')
+                    ->where('student_id', $ms->id)
+                    ->get();
+                foreach ($masterHistories as $mh) {
+                    \Illuminate\Support\Facades\DB::connection('mysql')->table('student_classroom_histories')->updateOrInsert(
+                        ['id' => $mh->id],
+                        (array) $mh
+                    );
+                }
+
+                // Sync bills
+                $masterBills = \Illuminate\Support\Facades\DB::connection('mysql_master')->table('bills')
+                    ->where('student_id', $ms->id)
+                    ->get();
+                foreach ($masterBills as $mb) {
+                    \Illuminate\Support\Facades\DB::connection('mysql')->table('bills')->updateOrInsert(
+                        ['id' => $mb->id],
+                        (array) $mb
+                    );
+                }
+
+                $syncedCount++;
+            }
+
+            \Illuminate\Support\Facades\DB::statement('SET FOREIGN_KEY_CHECKS=1;');
+
+            // Clear caches
+            Cache::forget('audit_diagnostics_results');
+
+            return redirect()->back()->with('success', "Berhasil menyinkronkan data {$syncedCount} siswa terpilih dari Database Master.");
+        } catch (\Throwable $e) {
+            return redirect()->back()->with('error', 'Gagal menyinkronkan siswa terpilih: ' . $e->getMessage());
+        }
     }
 
     /**

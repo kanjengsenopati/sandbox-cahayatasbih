@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use Illuminate\Support\Facades\DB;
+use Illuminate\Pagination\LengthAwarePaginator;
 use App\Services\GeminiVisionService;
 
 class AuditComparisonService
@@ -10,7 +11,7 @@ class AuditComparisonService
     /**
      * Compare local database with master database using high-performance bulk queries.
      */
-    public function getComparisonData(): array
+    public function getComparisonData(?string $search = null, int $page = 1, int $perPage = 10): array
     {
         // 1. Get summary counts
         $localStudentsCount = DB::connection('mysql')->table('students')->whereNull('deleted_at')->count();
@@ -51,7 +52,6 @@ class AuditComparisonService
         $masterAcademicYears = DB::connection('mysql_master')->table('academic_years')->get()->keyBy('id');
 
         // 3. BULK PRE-FETCH: Grouped aggregations to eliminate N+1 queries
-        // Local pre-fetched maps
         $localBillsMap = DB::connection('mysql')->table('bills')
             ->whereNull('deleted_at')
             ->select('student_id', DB::raw('COUNT(*) as total_count'), DB::raw('SUM(amount) as total_amount'))
@@ -72,7 +72,6 @@ class AuditComparisonService
             ->unique('student_id')
             ->keyBy('student_id');
 
-        // Master pre-fetched maps
         $masterBillsMap = DB::connection('mysql_master')->table('bills')
             ->whereNull('deleted_at')
             ->select('student_id', DB::raw('COUNT(*) as total_count'), DB::raw('SUM(amount) as total_amount'))
@@ -183,6 +182,7 @@ class AuditComparisonService
 
             if ($hasDiff) {
                 $discrepancies[] = [
+                    'id' => $id,
                     'nis' => $ms->nis ?: ($ls ? $ls->nis : '-'),
                     'name' => $ms->name,
                     'local' => [
@@ -256,6 +256,7 @@ class AuditComparisonService
                 }
 
                 $discrepancies[] = [
+                    'id' => $id,
                     'nis' => $ls->nis ?: '-',
                     'name' => $ls->name,
                     'local' => [
@@ -294,9 +295,33 @@ class AuditComparisonService
             }
         }
 
+        // 4. Filter discrepancies by search term (case-insensitive substring on name or NIS)
+        $filteredDiscrepancies = array_values(array_filter($discrepancies, function ($item) use ($search) {
+            if (empty($search)) return true;
+            $term = strtolower(trim($search));
+            return str_contains(strtolower($item['name']), $term) || 
+                   str_contains(strtolower($item['nis']), $term);
+        }));
+
+        // 5. Paginate discrepancies (default 10 per page)
+        $offset = ($page - 1) * $perPage;
+        $pageItems = array_slice($filteredDiscrepancies, $offset, $perPage);
+
+        $paginatedDiscrepancies = new LengthAwarePaginator(
+            $pageItems,
+            count($filteredDiscrepancies),
+            $perPage,
+            $page,
+            [
+                'path' => request()->url(),
+                'query' => request()->query()
+            ]
+        );
+
         return [
             'summaries' => $summaries,
-            'discrepancies' => $discrepancies,
+            'total_discrepancies' => count($discrepancies),
+            'discrepancies' => $paginatedDiscrepancies,
         ];
     }
 
@@ -306,7 +331,7 @@ class AuditComparisonService
     public function generateAiInsight(array $comparison): string
     {
         $summaries = $comparison['summaries'];
-        $discrepancies = $comparison['discrepancies'];
+        $totalDiscrepancies = $comparison['total_discrepancies'] ?? 0;
 
         $prompt = "Kamu adalah AI Auditor handal untuk aplikasi keuangan sekolah Cahaya Tasbih.
 Berikut adalah data perbandingan integritas data antara Database Lokal saat ini (Data Awal) dan Database Master Lama (Data dari DB Lama):
@@ -318,7 +343,7 @@ Ringkasan Perbedaan:
 - Total Saldo: Lokal (Rp " . number_format($summaries['saldo']['local'], 0, ',', '.') . ") vs Master (Rp " . number_format($summaries['saldo']['master'], 0, ',', '.') . ") [Selisih: Rp " . number_format($summaries['saldo']['diff'], 0, ',', '.') . "]
 - Total Tabungan: Lokal (Rp " . number_format($summaries['saving']['local'], 0, ',', '.') . ") vs Master (Rp " . number_format($summaries['saving']['master'], 0, ',', '.') . ") [Selisih: Rp " . number_format($summaries['saving']['diff'], 0, ',', '.') . "]
 
-Jumlah Siswa dengan Perbedaan Detail (UPT, Kelas, Saldo, Tagihan): " . count($discrepancies) . " siswa.
+Jumlah Siswa dengan Perbedaan Detail (UPT, Kelas, Saldo, Tagihan): " . $totalDiscrepancies . " siswa.
 
 Tugas kamu:
 Berikan analisis AI Insight yang ringkas, profesional, dan taktis dalam Bahasa Indonesia. Kembalikan HANYA teks HTML bersih (gunakan tag <p>, <ul>, <li>, <strong>, <span> dengan class-class Bootstrap) yang siap dirender di dalam halaman web. Jangan gunakan karakter markdown seperti bintang ganda (**) untuk cetak tebal, gunakan tag <strong> saja.
