@@ -6,11 +6,6 @@
         </a>
     </li>
     <li class="nav-item">
-        <a class="nav-link {{ request()->routeIs('admin.audit') ? 'active fw-bolder' : '' }}" href="{{ route('admin.audit') }}">
-            <i class="fa-solid fa-rotate me-2"></i>Audit & Sinkronisasi
-        </a>
-    </li>
-    <li class="nav-item">
         <a class="nav-link {{ request()->routeIs('working-shift.*') ? 'active fw-bolder' : '' }}" href="{{ route('working-shift.index') }}">
             <i class="fa-solid fa-clock me-2"></i>Shift Presensi
         </a>

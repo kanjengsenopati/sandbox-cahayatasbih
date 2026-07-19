@@ -93,9 +93,17 @@ use App\Http\Controllers\Admin\ReportStudentCounselingScoreController;
 | be assigned to the "web" middleware group. Make something great!
 |
 */
-// Admin audit route (legacy UI)
+// Admin audit route
 Route::prefix('admin')->middleware(['auth'])->group(function () {
-    Route::get('audit', [App\Http\Controllers\Admin\AuditController::class, 'index'])->name('admin.audit');
+    Route::get('audit/sync', [App\Http\Controllers\Admin\AuditController::class, 'syncIndex'])->name('admin.audit.sync');
+    Route::get('audit/diagnostics', [App\Http\Controllers\Admin\AuditController::class, 'diagnosticsIndex'])->name('admin.audit.diagnostics');
+    Route::get('audit/duplicate-students', [App\Http\Controllers\Admin\AuditController::class, 'duplicatesIndex'])->name('admin.audit.duplicates');
+
+    // Redirect old route for compatibility
+    Route::get('audit', function() {
+        return redirect()->route('admin.audit.sync');
+    })->name('admin.audit');
+
     Route::post('sync-master', [App\Http\Controllers\Admin\AuditController::class, 'syncMaster'])->name('admin.sync-master');
     Route::post('audit/merge-students', [App\Http\Controllers\Admin\AuditController::class, 'mergeStudents'])->name('admin.merge-students');
 });

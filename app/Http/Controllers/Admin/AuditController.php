@@ -5,20 +5,21 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Services\AuditService;
 use Illuminate\Http\Request;
-
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Auth;
 
 class AuditController extends Controller
 {
     /**
-     * Show audit results (legacy UI).
+     * Show database sync UI.
      */
-    public function index(Request $request)
+    public function syncIndex(Request $request)
     {
-        $service = new AuditService();
-        $results = $service->runAll();
-        
+        if (!Auth::user()->can('Manage Audit dan Sinkron')) {
+            return redirect()->route('dashboard')->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
+        }
+
         // 1. Clean up previous stuck running sync logs in database (older than 15 minutes)
         try {
             \App\Models\DatabaseSyncLog::where('status', 'running')
@@ -64,6 +65,33 @@ class AuditController extends Controller
         // Fetch full sync history list
         $syncHistory = \App\Models\DatabaseSyncLog::orderBy('id', 'desc')->take(10)->get();
 
+        return view('admins.admin.audit.sync', compact('syncStatus', 'syncHistory'));
+    }
+
+    /**
+     * Show system diagnostics UI.
+     */
+    public function diagnosticsIndex(Request $request)
+    {
+        if (!Auth::user()->can('Manage Audit dan Sinkron')) {
+            return redirect()->route('dashboard')->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
+        }
+
+        $service = new AuditService();
+        $results = $service->runAll();
+
+        return view('admins.admin.audit.diagnostics', compact('results'));
+    }
+
+    /**
+     * Show duplicate students UI.
+     */
+    public function duplicatesIndex(Request $request)
+    {
+        if (!Auth::user()->can('Manage Audit dan Sinkron')) {
+            return redirect()->route('dashboard')->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
+        }
+
         // Cari siswa duplikat berdasarkan nama yang sama persis
         $duplicateNames = \App\Models\Student::select('name')
             ->groupBy('name')
@@ -76,7 +104,7 @@ class AuditController extends Controller
             ->get()
             ->groupBy('name');
 
-        return view('admins.admin.audit', compact('results', 'syncStatus', 'syncHistory', 'duplicateStudents'));
+        return view('admins.admin.audit.duplicate-students', compact('duplicateStudents'));
     }
 
     /**
@@ -84,6 +112,10 @@ class AuditController extends Controller
      */
     public function syncMaster(Request $request)
     {
+        if (!Auth::user()->can('Manage Audit dan Sinkron')) {
+            return redirect()->route('dashboard')->with('error', 'Maaf, Anda tidak memiliki akses untuk tindakan ini');
+        }
+
         try {
             $selectedTables = $request->input('tables', []);
             $params = [];
@@ -91,9 +123,9 @@ class AuditController extends Controller
                 $params['--tables'] = implode(',', $selectedTables);
             }
             Artisan::call('db:sync-master', $params);
-            return redirect()->route('admin.audit')->with('success', 'Sinkronisasi database master berhasil dijalankan!');
+            return redirect()->route('admin.audit.sync')->with('success', 'Sinkronisasi database master berhasil dijalankan!');
         } catch (\Throwable $e) {
-            return redirect()->route('admin.audit')->with('error', 'Gagal memicu sinkronisasi: ' . $e->getMessage());
+            return redirect()->route('admin.audit.sync')->with('error', 'Gagal memicu sinkronisasi: ' . $e->getMessage());
         }
     }
 
@@ -102,6 +134,10 @@ class AuditController extends Controller
      */
     public function mergeStudents(Request $request)
     {
+        if (!Auth::user()->can('Manage Audit dan Sinkron')) {
+            return redirect()->route('dashboard')->with('error', 'Maaf, Anda tidak memiliki akses untuk tindakan ini');
+        }
+
         $request->validate([
             'source_id' => 'required|exists:students,id',
             'target_id' => 'required|exists:students,id',
@@ -192,7 +228,7 @@ class AuditController extends Controller
 
             \Illuminate\Support\Facades\DB::commit();
 
-            return redirect()->route('admin.audit', ['tab' => 'duplicate-students'])
+            return redirect()->route('admin.audit.duplicates')
                 ->with('success', "Berhasil menggabungkan data siswa {$source->name} ke {$target->name}. Seluruh saldo, tabungan, riwayat tagihan, dan transaksi telah dipindahkan.");
 
         } catch (\Throwable $e) {
@@ -202,3 +238,4 @@ class AuditController extends Controller
         }
     }
 }
+
