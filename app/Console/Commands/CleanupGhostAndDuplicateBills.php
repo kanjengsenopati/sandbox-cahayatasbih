@@ -81,150 +81,149 @@ class CleanupGhostAndDuplicateBills extends Command
             }
         }
 
-        $students = $studentsQuery->get();
-        $this->info("Found {$students->count()} students for auditing.");
-
         $totalGhostDeleted = 0;
         $totalDuplicateDeleted = 0;
 
-        foreach ($students as $student) {
-            $this->line("--------------------------------------------------");
-            $this->info("Auditing Student: {$student->name} (NIS: {$student->nis}, ID: {$student->id})");
+        $studentsQuery->chunk(50, function ($students) use (&$totalGhostDeleted, &$totalDuplicateDeleted, $isDryRun) {
+            foreach ($students as $student) {
+                $this->line("--------------------------------------------------");
+                $this->info("Auditing Student: {$student->name} (NIS: {$student->nis}, ID: {$student->id})");
 
-            // FIRST: Normalize Syahriah into 12 monthly bills (July - June)
-            $this->normalizeSyahriahBillsForStudent($student, $isDryRun);
+                // FIRST: Normalize Syahriah into 12 monthly bills (July - June)
+                $this->normalizeSyahriahBillsForStudent($student, $isDryRun);
 
-            // SECOND: Fix Zarkasi bills into 1 single 550k annual bill per year & delete 450k ghost bills
-            $this->normalizeZarkasiBillsForStudent($student, $isDryRun);
+                // SECOND: Fix Zarkasi bills into 1 single 550k annual bill per year & delete 450k ghost bills
+                $this->normalizeZarkasiBillsForStudent($student, $isDryRun);
 
-            // Fetch classroom history for student
-            $histories = StudentClassroomHistory::with(['classroom.school', 'academicYear'])
-                ->where('student_id', $student->id)
-                ->whereNull('deleted_at')
-                ->get();
+                // Fetch classroom history for student
+                $histories = StudentClassroomHistory::with(['classroom.school', 'academicYear'])
+                    ->where('student_id', $student->id)
+                    ->whereNull('deleted_at')
+                    ->get();
 
-            $historyByAcademicYear = [];
-            foreach ($histories as $hist) {
-                if ($hist->academic_year_id && $hist->classroom) {
-                    $historyByAcademicYear[$hist->academic_year_id] = [
-                        'classroom_id' => $hist->classroom_id,
-                        'classroom_name' => $hist->classroom->name,
-                        'school_id' => $hist->classroom->school_id,
-                        'school_name' => $hist->classroom->school?->name ?? '',
-                    ];
-                }
-            }
-
-            // Fetch all active bills for student
-            $bills = Bill::with(['billType.billItem', 'billType.academicYear', 'academicYear', 'classroom.school'])
-                ->where('student_id', $student->id)
-                ->whereNull('deleted_at')
-                ->get();
-
-            $this->line("  Active Bills Count: " . $bills->count());
-
-            // A. GHOST BILL AUDIT
-            foreach ($bills as $bill) {
-                if ($bill->status !== Bill::STATUS_UNPAID || (int)$bill->paid_amount > 0) {
-                    continue; // Never touch paid bills
+                $historyByAcademicYear = [];
+                foreach ($histories as $hist) {
+                    if ($hist->academic_year_id && $hist->classroom) {
+                        $historyByAcademicYear[$hist->academic_year_id] = [
+                            'classroom_id' => $hist->classroom_id,
+                            'classroom_name' => $hist->classroom->name,
+                            'school_id' => $hist->classroom->school_id,
+                            'school_name' => $hist->classroom->school?->name ?? '',
+                        ];
+                    }
                 }
 
-                $billAcadYearId = $bill->academic_year_id;
-                $billType = $bill->billType;
-                $billTypeName = strtoupper($billType?->name ?? '');
-                $billItemName = strtoupper($billType?->billItem?->name ?? '');
-                $billCategory = $this->normalizeFeeCategory($billTypeName . ' ' . $billItemName);
+                // Fetch all active bills for student
+                $bills = Bill::with(['billType.billItem', 'billType.academicYear', 'academicYear', 'classroom.school'])
+                    ->where('student_id', $student->id)
+                    ->whereNull('deleted_at')
+                    ->get();
 
-                // Check 1: Historical enrollment school unit mismatch
-                if (isset($historyByAcademicYear[$billAcadYearId])) {
-                    $enrolledSchoolName = strtoupper($historyByAcademicYear[$billAcadYearId]['school_name']);
+                $this->line("  Active Bills Count: " . $bills->count());
 
-                    $isBillForMA = (str_contains($billTypeName, 'MA') || str_contains($billItemName, 'MA') || (!str_contains($billTypeName, 'SMP') && !str_contains($billTypeName, 'SD')));
-                    $isStudentInSMP = (str_contains($enrolledSchoolName, 'SMP') || str_contains($enrolledSchoolName, 'SD'));
+                // A. GHOST BILL AUDIT
+                foreach ($bills as $bill) {
+                    if ($bill->status !== Bill::STATUS_UNPAID || (int)$bill->paid_amount > 0) {
+                        continue; // Never touch paid bills
+                    }
 
-                    if ($isBillForMA && $isStudentInSMP) {
-                        $this->warn("  [GHOST DETECTED] Bill #{$bill->id} ({$billType?->name} - {$bill->academicYear?->name}) is for MA/General, but student was enrolled in {$enrolledSchoolName} in that academic year.");
+                    $billAcadYearId = $bill->academic_year_id;
+                    $billType = $bill->billType;
+                    $billTypeName = strtoupper($billType?->name ?? '');
+                    $billItemName = strtoupper($billType?->billItem?->name ?? '');
+                    $billCategory = $this->normalizeFeeCategory($billTypeName . ' ' . $billItemName);
+
+                    // Check 1: Historical enrollment school unit mismatch
+                    if (isset($historyByAcademicYear[$billAcadYearId])) {
+                        $enrolledSchoolName = strtoupper($historyByAcademicYear[$billAcadYearId]['school_name']);
+
+                        $isBillForMA = (str_contains($billTypeName, 'MA') || str_contains($billItemName, 'MA') || (!str_contains($billTypeName, 'SMP') && !str_contains($billTypeName, 'SD')));
+                        $isStudentInSMP = (str_contains($enrolledSchoolName, 'SMP') || str_contains($enrolledSchoolName, 'SD'));
+
+                        if ($isBillForMA && $isStudentInSMP) {
+                            $this->warn("  [GHOST DETECTED] Bill #{$bill->id} ({$billType?->name} - {$bill->academicYear?->name}) is for MA/General, but student was enrolled in {$enrolledSchoolName} in that academic year.");
+                            if (!$isDryRun) {
+                                $bill->delete();
+                            }
+                            $totalGhostDeleted++;
+                            continue;
+                        }
+                    }
+
+                    // Check 2: Parallel category payment matching in same academic year
+                    $hasPaidParallelCategory = $bills->first(function($otherBill) use ($bill, $billCategory) {
+                        if ($otherBill->id === $bill->id) return false;
+                        if ($otherBill->academic_year_id !== $bill->academic_year_id) return false;
+                        if ((int)$otherBill->paid_amount == 0 && $otherBill->status === Bill::STATUS_UNPAID) return false;
+
+                        $otherTypeName = strtoupper($otherBill->billType?->name ?? '');
+                        $otherItemName = strtoupper($otherBill->billType?->billItem?->name ?? '');
+                        $otherCategory = $this->normalizeFeeCategory($otherTypeName . ' ' . $otherItemName);
+
+                        return ($billCategory === $otherCategory);
+                    });
+
+                    if ($hasPaidParallelCategory) {
+                        $this->warn("  [GHOST DETECTED] Bill #{$bill->id} ({$billType?->name} {$bill->month}/{$bill->year}) is UNPAID ghost bill. Parallel paid bill #{$hasPaidParallelCategory->id} ({$hasPaidParallelCategory->billType?->name}) exists for category '{$billCategory}'!");
                         if (!$isDryRun) {
                             $bill->delete();
                         }
                         $totalGhostDeleted++;
-                        continue;
                     }
                 }
 
-                // Check 2: Parallel category payment matching in same academic year
-                $hasPaidParallelCategory = $bills->first(function($otherBill) use ($bill, $billCategory) {
-                    if ($otherBill->id === $bill->id) return false;
-                    if ($otherBill->academic_year_id !== $bill->academic_year_id) return false;
-                    if ((int)$otherBill->paid_amount == 0 && $otherBill->status === Bill::STATUS_UNPAID) return false;
+                // Reload remaining active bills after ghost cleanup
+                $remainingBills = Bill::with(['billType.billItem', 'academicYear'])
+                    ->where('student_id', $student->id)
+                    ->whereNull('deleted_at')
+                    ->get();
 
-                    $otherTypeName = strtoupper($otherBill->billType?->name ?? '');
-                    $otherItemName = strtoupper($otherBill->billType?->billItem?->name ?? '');
-                    $otherCategory = $this->normalizeFeeCategory($otherTypeName . ' ' . $otherItemName);
+                // B. DUPLICATE BILL AUDIT
+                $grouped = [];
+                foreach ($remainingBills as $b) {
+                    $typeName = strtoupper($b->billType?->name ?? 'UNKNOWN');
+                    $itemName = strtoupper($b->billType?->billItem?->name ?? '');
+                    $category = $this->normalizeFeeCategory($typeName . ' ' . $itemName);
+                    $key = $b->academic_year_id . '_' . $b->month . '_' . $b->year . '_' . $category;
 
-                    return ($billCategory === $otherCategory);
-                });
-
-                if ($hasPaidParallelCategory) {
-                    $this->warn("  [GHOST DETECTED] Bill #{$bill->id} ({$billType?->name} {$bill->month}/{$bill->year}) is UNPAID ghost bill. Parallel paid bill #{$hasPaidParallelCategory->id} ({$hasPaidParallelCategory->billType?->name}) exists for category '{$billCategory}'!");
-                    if (!$isDryRun) {
-                        $bill->delete();
-                    }
-                    $totalGhostDeleted++;
+                    $grouped[$key][] = $b;
                 }
-            }
 
-            // Reload remaining active bills after ghost cleanup
-            $remainingBills = Bill::with(['billType.billItem', 'academicYear'])
-                ->where('student_id', $student->id)
-                ->whereNull('deleted_at')
-                ->get();
+                foreach ($grouped as $key => $groupBills) {
+                    if (count($groupBills) > 1) {
+                        $this->info("  [DUPLICATE GROUP] Key: {$key} Count: " . count($groupBills));
 
-            // B. DUPLICATE BILL AUDIT
-            $grouped = [];
-            foreach ($remainingBills as $b) {
-                $typeName = strtoupper($b->billType?->name ?? 'UNKNOWN');
-                $itemName = strtoupper($b->billType?->billItem?->name ?? '');
-                $category = $this->normalizeFeeCategory($typeName . ' ' . $itemName);
-                $key = $b->academic_year_id . '_' . $b->month . '_' . $b->year . '_' . $category;
-
-                $grouped[$key][] = $b;
-            }
-
-            foreach ($grouped as $key => $groupBills) {
-                if (count($groupBills) > 1) {
-                    $this->info("  [DUPLICATE GROUP] Key: {$key} Count: " . count($groupBills));
-
-                    usort($groupBills, function($a, $b) {
-                        $aPaid = ($a->status === Bill::STATUS_PAID || (int)$a->paid_amount > 0);
-                        $bPaid = ($b->status === Bill::STATUS_PAID || (int)$b->paid_amount > 0);
-                        if ($aPaid !== $bPaid) {
-                            return $bPaid <=> $aPaid;
-                        }
-                        if ($a->paid_amount != $b->paid_amount) {
-                            return $b->paid_amount <=> $a->paid_amount;
-                        }
-                        return $b->updated_at <=> $a->updated_at;
-                    });
-
-                    $keepBill = $groupBills[0];
-                    $this->info("    Keeping Bill #{$keepBill->id} ({$keepBill->billType?->name}, Month {$keepBill->month}/{$keepBill->year}, Paid: Rp {$keepBill->paid_amount}, Status: {$keepBill->status})");
-
-                    for ($i = 1; $i < count($groupBills); $i++) {
-                        $dupBill = $groupBills[$i];
-                        if ($dupBill->status === Bill::STATUS_UNPAID && (int)$dupBill->paid_amount == 0) {
-                            $this->warn("    [DELETING DUPLICATE] Bill #{$dupBill->id} ({$dupBill->billType?->name}, Month {$dupBill->month}/{$dupBill->year}, Paid: Rp 0, Status: UNPAID)");
-                            if (!$isDryRun) {
-                                $dupBill->delete();
+                        usort($groupBills, function($a, $b) {
+                            $aPaid = ($a->status === Bill::STATUS_PAID || (int)$a->paid_amount > 0);
+                            $bPaid = ($b->status === Bill::STATUS_PAID || (int)$b->paid_amount > 0);
+                            if ($aPaid !== $bPaid) {
+                                return $bPaid <=> $aPaid;
                             }
-                            $totalDuplicateDeleted++;
-                        } else {
-                            $this->warn("    [WARNING] Duplicate Bill #{$dupBill->id} has payments (Paid: Rp {$dupBill->paid_amount}). Retaining for manual review.");
+                            if ($a->paid_amount != $b->paid_amount) {
+                                return $b->paid_amount <=> $a->paid_amount;
+                            }
+                            return $b->updated_at <=> $a->updated_at;
+                        });
+
+                        $keepBill = $groupBills[0];
+                        $this->info("    Keeping Bill #{$keepBill->id} ({$keepBill->billType?->name}, Month {$keepBill->month}/{$keepBill->year}, Paid: Rp {$keepBill->paid_amount}, Status: {$keepBill->status})");
+
+                        for ($i = 1; $i < count($groupBills); $i++) {
+                            $dupBill = $groupBills[$i];
+                            if ($dupBill->status === Bill::STATUS_UNPAID && (int)$dupBill->paid_amount == 0) {
+                                $this->warn("    [DELETING DUPLICATE] Bill #{$dupBill->id} ({$dupBill->billType?->name}, Month {$dupBill->month}/{$dupBill->year}, Paid: Rp 0, Status: UNPAID)");
+                                if (!$isDryRun) {
+                                    $dupBill->delete();
+                                }
+                                $totalDuplicateDeleted++;
+                            } else {
+                                $this->warn("    [WARNING] Duplicate Bill #{$dupBill->id} has payments (Paid: Rp {$dupBill->paid_amount}). Retaining for manual review.");
+                            }
                         }
                     }
                 }
             }
-        }
+        });
 
         $this->line("==================================================");
         $this->info("COMPREHENSIVE AUDIT & CLEANUP COMPLETED.");
@@ -360,14 +359,12 @@ class CleanupGhostAndDuplicateBills extends Command
             $totalPaid = $billsInYear->sum('paid_amount');
             $this->info("  [ZARKASI FIX] Processing Zarkasi for Academic Year ID: {$acadYearId} (Total Paid: Rp " . number_format($totalPaid) . ")...");
 
-            // Delete ALL existing Zarkasi bills for this academic year to rebuild clean single bill
             if (!$isDryRun) {
                 foreach ($billsInYear as $zb) {
                     $zb->delete();
                 }
             }
 
-            // Target single bill amount is 550,000
             $zarkasiAmount = 550000;
             $allocatedPaid = min($totalPaid, $zarkasiAmount);
             $status = ($allocatedPaid >= $zarkasiAmount) ? Bill::STATUS_PAID : Bill::STATUS_UNPAID;
