@@ -222,9 +222,11 @@ class SaldoHistoryController extends Controller
 
     public function store(SaldoHistoryRequest $request)
     {
+        $isAjax = $request->ajax() || $request->wantsJson() || $request->expectsJson() || $request->header('X-Requested-With') === 'XMLHttpRequest';
+
         // Authorization check
         if (!Auth::user()->can('Create Saldo Santri')) {
-            if ($request->ajax()) {
+            if ($isAjax) {
                 return response()->json(['code' => 403, 'message' => 'Maaf, Anda tidak memiliki akses untuk aksi tersebut'], 403);
             }
             return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
@@ -239,7 +241,7 @@ class SaldoHistoryController extends Controller
 
         // Check if there's an active transaction in the cache
         if (Cache::has($cacheKey)) {
-            if ($request->ajax()) {
+            if ($isAjax) {
                 return response()->json(['code' => 400, 'message' => 'Transaksi sedang diproses, silakan coba lagi sebentar.'], 400);
             }
             return redirect()->route('saldo-history.index')->with('error', 'Transaksi sedang diproses, silakan coba lagi nanti');
@@ -283,7 +285,7 @@ class SaldoHistoryController extends Controller
                 $this->sendNotifications($student, $saldoHistoryRecord);
             }
 
-            if ($request->ajax()) {
+            if ($isAjax) {
                 return response()->json([
                     'code' => 200,
                     'message' => 'Berhasil penyesuaian saldo untuk santri ' . $student->name,
@@ -298,7 +300,7 @@ class SaldoHistoryController extends Controller
             DB::rollBack();
             Log::error($e);
 
-            if ($request->ajax()) {
+            if ($isAjax) {
                 return response()->json([
                     'code' => 500,
                     'message' => 'Gagal penyesuaian saldo: ' . $e->getMessage()

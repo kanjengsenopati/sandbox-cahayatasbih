@@ -319,21 +319,27 @@
             amount: amount,
             description: desc,
             _token: "{{ csrf_token() }}"
+        }, {
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'Accept': 'application/json'
+            }
         })
         .then(function(response) {
             btn.prop('disabled', false).html('<i class="fas fa-check me-1"></i> Update');
 
-            if (response.data && (response.data.code == 200 || response.data.code == '200')) {
+            var resData = response.data;
+            if (resData && (resData.code == 200 || resData.code == '200' || resData.new_saldo !== undefined)) {
                 Swal.fire({
                     icon: 'success',
                     title: 'Berhasil!',
-                    text: response.data.message || 'Saldo santri berhasil diperbarui.',
+                    text: resData.message || 'Saldo santri berhasil diperbarui.',
                     timer: 2000,
                     showConfirmButton: false
                 });
 
                 // Update Saldo Awal attribute, text, and badge class
-                var newSaldo = response.data.new_saldo;
+                var newSaldo = resData.new_saldo !== undefined ? resData.new_saldo : 0;
                 var awalBadge = $('#saldo-awal-' + rowId);
                 awalBadge.attr('data-saldo', newSaldo).text('Rp ' + formatRupiahVal(newSaldo));
                 if (newSaldo < 0) {
@@ -350,7 +356,7 @@
                 Swal.fire({
                     icon: 'error',
                     title: 'Gagal',
-                    text: response.data.message || 'Terjadi kesalahan saat menyimpan penyesuaian saldo.'
+                    text: (resData && resData.message) ? resData.message : 'Terjadi kesalahan saat menyimpan penyesuaian saldo.'
                 });
             }
         })
