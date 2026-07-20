@@ -189,6 +189,12 @@ class SaldoHistoryController extends Controller
                 ->editColumn('saldo', function ($student) {
                     return $student->saldo ?? 0;
                 })
+                ->addColumn('status', function ($student) {
+                    return $student->status;
+                })
+                ->addColumn('translated_status', function ($student) {
+                    return $student->translated_status;
+                })
                 ->addColumn('avatar_url', function ($student) {
                     return $student->avatar_url ?? asset('assets/media/avatars/default.png');
                 })

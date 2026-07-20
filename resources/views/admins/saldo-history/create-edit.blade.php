@@ -39,7 +39,7 @@
                             <span class="svg-icon svg-icon-1 position-absolute ms-4">
                                 <i class="fas fa-search text-gray-400"></i>
                             </span>
-                            <input type="text" id="custom-search" class="form-control form-control-solid w-250px ps-12 fs-7" placeholder="Cari Nama / NIS Santri..." />
+                            <input type="text" id="custom-search" class="form-control form-control-solid w-250px ps-12 fs-7" placeholder="Cari santri (min. 3 huruf)..." />
                         </div>
 
                         <div class="w-200px">
@@ -111,7 +111,7 @@
                 "loadingRecords": "Memuat data...",
                 "processing": "Sedang memproses...",
                 "search": "",
-                "searchPlaceholder": "Cari santri..."
+                "searchPlaceholder": "Cari santri (min. 3 huruf)..."
             },
             columns: [
                 {
@@ -134,13 +134,27 @@
                     name: 'name',
                     render: function(data, type, row) {
                         var avatar = row.avatar_url ? row.avatar_url : '{{ asset("assets/media/avatars/default.png") }}';
+                        var statusText = row.translated_status || row.status || 'Aktif';
+                        var badgeClass = 'bg-light-success text-success';
+
+                        if (row.status === 'INACTIVE') {
+                            badgeClass = 'bg-light-danger text-danger';
+                        } else if (row.status === 'GRADUATED') {
+                            badgeClass = 'bg-light-warning text-warning';
+                        } else if (row.status === 'TRANSFERRED') {
+                            badgeClass = 'bg-light-info text-info';
+                        } else if (row.status === 'DROPPED_OUT') {
+                            badgeClass = 'bg-light-secondary text-secondary';
+                        }
+
                         return `
                             <div class="d-flex align-items-center">
                                 <div class="symbol symbol-circle symbol-35px me-3">
                                     <img src="${avatar}" alt="${data}" style="object-fit: cover;" />
                                 </div>
-                                <div class="d-flex flex-column">
-                                    <span class="text-gray-800 text-hover-primary fw-bolder fs-6">${data}</span>
+                                <div class="d-flex flex-column align-items-start">
+                                    <span class="text-gray-800 text-hover-primary fw-bolder fs-6 mb-1">${data}</span>
+                                    <span class="badge ${badgeClass} fs-8 px-2 py-1">${statusText}</span>
                                 </div>
                             </div>
                         `;
@@ -157,16 +171,24 @@
                     data: 'saldo',
                     name: 'saldo',
                     render: function(data, type, row) {
-                        var formatted = formatRupiahVal(data);
-                        return `<span class="badge bg-light-primary text-primary fw-bolder fs-7" id="saldo-awal-${row.id}" data-saldo="${data}">Rp ${formatted}</span>`;
+                        var val = parseInt(data) || 0;
+                        var formatted = formatRupiahVal(val);
+                        var badgeClass = val < 0 
+                            ? 'bg-danger text-white fw-bolder px-3 py-2 fs-7' 
+                            : 'bg-light-primary text-primary fw-bolder fs-7';
+                        return `<span class="badge ${badgeClass}" id="saldo-awal-${row.id}" data-saldo="${val}">Rp ${formatted}</span>`;
                     }
                 },
                 {
                     data: 'saldo',
                     name: 'saldo_sekarang',
                     render: function(data, type, row) {
-                        var formatted = formatRupiahVal(data);
-                        return `<span class="badge bg-light-success text-success fw-bolder fs-7" id="saldo-sekarang-${row.id}">Rp ${formatted}</span>`;
+                        var val = parseInt(data) || 0;
+                        var formatted = formatRupiahVal(val);
+                        var badgeClass = val < 0 
+                            ? 'bg-danger text-white fw-bolder px-3 py-2 fs-7' 
+                            : 'bg-light-success text-success fw-bolder fs-7';
+                        return `<span class="badge ${badgeClass}" id="saldo-sekarang-${row.id}">Rp ${formatted}</span>`;
                     }
                 },
                 {
@@ -201,9 +223,19 @@
             table.ajax.reload();
         });
 
-        // Search keyup event
-        $('#custom-search').keyup(function() {
-            table.search($(this).val()).draw();
+        // Custom Search Input: only filter if search query is at least 3 characters or empty
+        var searchTimer;
+        $('#custom-search').on('keyup input', function() {
+            clearTimeout(searchTimer);
+            var val = $(this).val().trim();
+            
+            searchTimer = setTimeout(function() {
+                if (val.length >= 3) {
+                    table.search(val).draw();
+                } else if (val.length === 0) {
+                    table.search('').draw();
+                }
+            }, 300);
         });
     });
 
@@ -248,9 +280,9 @@
         badgeElem.text('Rp ' + formatRupiahVal(newSaldo));
 
         if (newSaldo < 0) {
-            badgeElem.removeClass('bg-light-success text-success bg-light-primary text-primary').addClass('bg-light-danger text-danger');
+            badgeElem.attr('class', 'badge bg-danger text-white fw-bolder px-3 py-2 fs-7');
         } else {
-            badgeElem.removeClass('bg-light-danger text-danger').addClass('bg-light-success text-success');
+            badgeElem.attr('class', 'badge bg-light-success text-success fw-bolder fs-7');
         }
     }
 
@@ -295,9 +327,15 @@
                     showConfirmButton: false
                 });
 
-                // Update Saldo Awal attribute and text
+                // Update Saldo Awal attribute, text, and badge class
                 var newSaldo = response.data.new_saldo;
-                $('#saldo-awal-' + rowId).attr('data-saldo', newSaldo).text('Rp ' + formatRupiahVal(newSaldo));
+                var awalBadge = $('#saldo-awal-' + rowId);
+                awalBadge.attr('data-saldo', newSaldo).text('Rp ' + formatRupiahVal(newSaldo));
+                if (newSaldo < 0) {
+                    awalBadge.attr('class', 'badge bg-danger text-white fw-bolder px-3 py-2 fs-7');
+                } else {
+                    awalBadge.attr('class', 'badge bg-light-primary text-primary fw-bolder fs-7');
+                }
                 
                 // Clear input fields and recalculate
                 $('#amount-' + rowId).val('');
