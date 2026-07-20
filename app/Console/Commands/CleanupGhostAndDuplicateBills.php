@@ -6,11 +6,14 @@ use App\Models\AcademicYear;
 use App\Models\Bill;
 use App\Models\BillType;
 use App\Models\Classroom;
+use App\Models\PaymentRate;
+use App\Models\PaymentRateItem;
 use App\Models\School;
 use App\Models\Student;
 use App\Models\StudentClassroomHistory;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 class CleanupGhostAndDuplicateBills extends Command
 {
@@ -29,7 +32,7 @@ class CleanupGhostAndDuplicateBills extends Command
      *
      * @var string
      */
-    protected $description = 'Audit and clean up ghost bills for transfer students and duplicate bills for MA students (grades 10, 11, 12).';
+    protected $description = 'Audit and clean up ghost bills, duplicate bills, and normalize monthly bills into 12 months (July-June).';
 
     public function handle(): int
     {
@@ -41,7 +44,10 @@ class CleanupGhostAndDuplicateBills extends Command
             $this->warn('=== DRY RUN MODE - No database changes will be executed ===');
         }
 
-        $this->info('Starting comprehensive audit and cleanup of ghost and duplicate bills...');
+        $this->info('Starting comprehensive audit, cleanup, and monthly normalization...');
+
+        // 0. Ensure PaymentRates & PaymentRateItems have 12 monthly items for MONTHLY BillTypes
+        $this->ensurePaymentRateItems12Months($isDryRun);
 
         // 1. Identify MA schools
         $maSchools = School::where('name', 'LIKE', '%MA%')
@@ -84,6 +90,9 @@ class CleanupGhostAndDuplicateBills extends Command
         foreach ($students as $student) {
             $this->line("--------------------------------------------------");
             $this->info("Auditing Student: {$student->name} (NIS: {$student->nis}, ID: {$student->id})");
+
+            // FIRST: Normalize single large yearly bills into 12 monthly bills (July - June)
+            $this->normalizeMonthlyBillsForStudent($student, $isDryRun);
 
             // Fetch classroom history for student
             $histories = StudentClassroomHistory::with(['classroom.school', 'academicYear'])
@@ -142,8 +151,6 @@ class CleanupGhostAndDuplicateBills extends Command
                 }
 
                 // Check 2: Parallel category payment matching in same academic year
-                // If student ALREADY HAS a PAID bill in the same fee category for the same academic year (e.g. SMP paid bill),
-                // then any UNPAID bill in that same fee category is a ghost/duplicate bill!
                 $hasPaidParallelCategory = $bills->first(function($otherBill) use ($bill, $billCategory) {
                     if ($otherBill->id === $bill->id) return false;
                     if ($otherBill->academic_year_id !== $bill->academic_year_id) return false;
@@ -187,7 +194,6 @@ class CleanupGhostAndDuplicateBills extends Command
                 if (count($groupBills) > 1) {
                     $this->info("  [DUPLICATE GROUP] Key: {$key} Count: " . count($groupBills));
 
-                    // Sort: PAID bills first (highest paid_amount), then most recently updated
                     usort($groupBills, function($a, $b) {
                         $aPaid = ($a->status === Bill::STATUS_PAID || (int)$a->paid_amount > 0);
                         $bPaid = ($b->status === Bill::STATUS_PAID || (int)$b->paid_amount > 0);
@@ -201,12 +207,12 @@ class CleanupGhostAndDuplicateBills extends Command
                     });
 
                     $keepBill = $groupBills[0];
-                    $this->info("    Keeping Bill #{$keepBill->id} ({$keepBill->billType?->name}, Paid: Rp {$keepBill->paid_amount}, Status: {$keepBill->status})");
+                    $this->info("    Keeping Bill #{$keepBill->id} ({$keepBill->billType?->name}, Month {$keepBill->month}/{$keepBill->year}, Paid: Rp {$keepBill->paid_amount}, Status: {$keepBill->status})");
 
                     for ($i = 1; $i < count($groupBills); $i++) {
                         $dupBill = $groupBills[$i];
                         if ($dupBill->status === Bill::STATUS_UNPAID && (int)$dupBill->paid_amount == 0) {
-                            $this->warn("    [DELETING DUPLICATE] Bill #{$dupBill->id} ({$dupBill->billType?->name}, Paid: Rp 0, Status: UNPAID)");
+                            $this->warn("    [DELETING DUPLICATE] Bill #{$dupBill->id} ({$dupBill->billType?->name}, Month {$dupBill->month}/{$dupBill->year}, Paid: Rp 0, Status: UNPAID)");
                             if (!$isDryRun) {
                                 $dupBill->delete();
                             }
@@ -232,6 +238,164 @@ class CleanupGhostAndDuplicateBills extends Command
     }
 
     /**
+     * Normalize single large yearly bills into 12 monthly bills (July - June)
+     */
+    private function normalizeMonthlyBillsForStudent(Student $student, bool $isDryRun)
+    {
+        $activeBills = Bill::with(['billType.academicYear'])
+            ->where('student_id', $student->id)
+            ->whereNull('deleted_at')
+            ->get();
+
+        $groupedByBillType = $activeBills->groupBy('bill_type_id');
+
+        foreach ($groupedByBillType as $billTypeId => $typeBills) {
+            $first = $typeBills->first();
+            $billType = $first->billType;
+            if (!$billType) continue;
+
+            $isMonthlyType = ($billType->type === 'MONTHLY' || str_contains(strtoupper($billType->name), 'SYAHRIAH') || str_contains(strtoupper($billType->name), 'ZARKASI'));
+            if (!$isMonthlyType) continue;
+
+            $acadYear = $billType->academicYear;
+            if (!$acadYear) continue;
+
+            $startYear = $acadYear->getStartYearSafe() ?? 2026;
+            $endYear = $startYear + 1;
+
+            // Check if there is a single bill entry with amount >= 5,000,000 (e.g. 6,000,000)
+            $singleLargeBill = $typeBills->first(function($b) {
+                return (int)$b->amount >= 5000000;
+            });
+
+            if ($singleLargeBill || $typeBills->count() < 12) {
+                $this->info("  [MONTHLY EXPANSION] Splitting bill for {$billType->name} ({$acadYear->name}) into 12 monthly entries (July {$startYear} - June {$endYear})...");
+
+                // Calculate total paid across existing bills for this bill type
+                $totalPaid = $typeBills->sum('paid_amount');
+                $totalYearlyAmount = $singleLargeBill ? (int)$singleLargeBill->amount : 6000000;
+                $monthlyAmount = intval($totalYearlyAmount / 12);
+                if ($monthlyAmount <= 0) $monthlyAmount = 500000;
+
+                // Academic months sequence: July (7) to June (6)
+                $monthsSequence = [
+                    ['month' => 7, 'year' => $startYear],
+                    ['month' => 8, 'year' => $startYear],
+                    ['month' => 9, 'year' => $startYear],
+                    ['month' => 10, 'year' => $startYear],
+                    ['month' => 11, 'year' => $startYear],
+                    ['month' => 12, 'year' => $startYear],
+                    ['month' => 1, 'year' => $endYear],
+                    ['month' => 2, 'year' => $endYear],
+                    ['month' => 3, 'year' => $endYear],
+                    ['month' => 4, 'year' => $endYear],
+                    ['month' => 5, 'year' => $endYear],
+                    ['month' => 6, 'year' => $endYear],
+                ];
+
+                // Soft-delete existing un-normalized bills for this bill_type
+                if (!$isDryRun) {
+                    foreach ($typeBills as $tb) {
+                        $tb->delete();
+                    }
+                }
+
+                // Re-allocate paid amount chronologically
+                $remainingPaidPool = $totalPaid;
+                $now = now();
+
+                foreach ($monthsSequence as $mInfo) {
+                    $m = $mInfo['month'];
+                    $y = $mInfo['year'];
+
+                    $allocatedPaid = 0;
+                    if ($remainingPaidPool >= $monthlyAmount) {
+                        $allocatedPaid = $monthlyAmount;
+                        $remainingPaidPool -= $monthlyAmount;
+                    } elseif ($remainingPaidPool > 0) {
+                        $allocatedPaid = $remainingPaidPool;
+                        $remainingPaidPool = 0;
+                    }
+
+                    $status = ($allocatedPaid >= $monthlyAmount) ? Bill::STATUS_PAID : Bill::STATUS_UNPAID;
+
+                    if (!$isDryRun) {
+                        DB::table('bills')->insert([
+                            'id' => (string)Str::uuid(),
+                            'bill_type_id' => $billType->id,
+                            'classroom_id' => $student->classroom_id,
+                            'student_id' => $student->id,
+                            'academic_year_id' => $billType->academic_year_id,
+                            'month' => $m,
+                            'year' => $y,
+                            'amount' => $monthlyAmount,
+                            'paid_amount' => $allocatedPaid,
+                            'status' => $status,
+                            'created_at' => $now,
+                            'updated_at' => $now,
+                        ]);
+                    }
+                    $this->line("    + Created Monthly Bill: Month {$m}/{$y} | Amount: Rp " . number_format($monthlyAmount) . " | Paid: Rp " . number_format($allocatedPaid) . " | Status: {$status}");
+                }
+            }
+        }
+    }
+
+    /**
+     * Ensure PaymentRates & PaymentRateItems have 12 monthly items for MONTHLY BillTypes
+     */
+    private function ensurePaymentRateItems12Months(bool $isDryRun)
+    {
+        $monthlyBillTypes = BillType::with(['academicYear', 'paymentRates.paymentRateItems'])
+            ->where('type', 'MONTHLY')
+            ->orWhere('name', 'LIKE', '%SYAHRIAH%')
+            ->get();
+
+        foreach ($monthlyBillTypes as $bt) {
+            $acadYear = $bt->academicYear;
+            if (!$acadYear) continue;
+
+            $startYear = $acadYear->getStartYearSafe() ?? 2026;
+            $endYear = $startYear + 1;
+
+            $monthsSequence = [
+                ['month' => 7, 'year' => $startYear],
+                ['month' => 8, 'year' => $startYear],
+                ['month' => 9, 'year' => $startYear],
+                ['month' => 10, 'year' => $startYear],
+                ['month' => 11, 'year' => $startYear],
+                ['month' => 12, 'year' => $startYear],
+                ['month' => 1, 'year' => $endYear],
+                ['month' => 2, 'year' => $endYear],
+                ['month' => 3, 'year' => $endYear],
+                ['month' => 4, 'year' => $endYear],
+                ['month' => 5, 'year' => $endYear],
+                ['month' => 6, 'year' => $endYear],
+            ];
+
+            foreach ($bt->paymentRates as $pr) {
+                if ($pr->paymentRateItems->count() < 12) {
+                    $this->info("  [FIX RATE] Expanding PaymentRate #{$pr->id} ({$bt->name}) to 12 monthly items of Rp 500,000...");
+                    if (!$isDryRun) {
+                        // Soft delete existing items if incomplete
+                        PaymentRateItem::where('payment_rate_id', $pr->id)->delete();
+
+                        foreach ($monthsSequence as $mInfo) {
+                            PaymentRateItem::create([
+                                'id' => (string)Str::uuid(),
+                                'payment_rate_id' => $pr->id,
+                                'month' => $mInfo['month'],
+                                'year' => $mInfo['year'],
+                                'amount' => 500000,
+                            ]);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    /**
      * Helper to normalize fee category string across naming variations
      */
     private function normalizeFeeCategory(string $rawName): string
@@ -251,7 +415,6 @@ class CleanupGhostAndDuplicateBills extends Command
             return 'REGISTRASI';
         }
 
-        // Clean out common noise words
         $clean = preg_replace('/(BIAYA|APLIKASI|CT|SMP|MA|SD|-|\s|20\d\d\/20\d\d|\d{4})+/', '', $upper);
         return trim($clean) ?: 'GENERAL';
     }
