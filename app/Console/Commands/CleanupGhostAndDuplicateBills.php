@@ -32,7 +32,7 @@ class CleanupGhostAndDuplicateBills extends Command
      *
      * @var string
      */
-    protected $description = 'Audit and clean up ghost bills, duplicate bills, normalize Syahriah 12 months, and fix Zarkasi 550k annual bills.';
+    protected $description = 'Audit and clean up ghost bills, duplicate bills, normalize Syahriah 12 months, fix Zarkasi, and relink null payment_rate_item_id.';
 
     public function handle(): int
     {
@@ -44,10 +44,13 @@ class CleanupGhostAndDuplicateBills extends Command
             $this->warn('=== DRY RUN MODE - No database changes will be executed ===');
         }
 
-        $this->info('Starting comprehensive audit, cleanup, Syahriah 12-month expansion, and Zarkasi fix...');
+        $this->info('Starting comprehensive audit, cleanup, Syahriah 12-month expansion, Zarkasi fix, and payment rate item relinking...');
 
-        // 0. Ensure PaymentRates & PaymentRateItems have 12 monthly items for SYAHRIAH BillTypes only
+        // 0. Ensure PaymentRates & PaymentRateItems have 12 monthly items for SYAHRIAH BillTypes
         $this->ensureSyahriahPaymentRateItems12Months($isDryRun);
+
+        // 0b. Relink bills with NULL payment_rate_item_id to their respective payment_rate_items
+        $this->relinkNullPaymentRateItems($isDryRun);
 
         // 1. Identify MA schools
         $maSchools = School::where('name', 'LIKE', '%MA%')
@@ -238,6 +241,60 @@ class CleanupGhostAndDuplicateBills extends Command
     }
 
     /**
+     * Relink bills with NULL payment_rate_item_id to payment_rate_items
+     */
+    private function relinkNullPaymentRateItems(bool $isDryRun)
+    {
+        $unlinkedBills = Bill::whereNull('payment_rate_item_id')
+            ->whereNull('deleted_at')
+            ->get();
+
+        if ($unlinkedBills->isEmpty()) {
+            return;
+        }
+
+        $this->info("  [RELINKING] Found {$unlinkedBills->count()} bills with NULL payment_rate_item_id. Relinking...");
+
+        $relinkedCount = 0;
+        foreach ($unlinkedBills as $bill) {
+            $rateItem = PaymentRateItem::whereHas('paymentRate', function($q) use ($bill) {
+                $q->where('bill_type_id', $bill->bill_type_id);
+            })
+            ->where('month', $bill->month)
+            ->where('year', $bill->year)
+            ->first();
+
+            if (!$rateItem) {
+                // Find or create PaymentRate for this bill_type_id
+                $paymentRate = PaymentRate::where('bill_type_id', $bill->bill_type_id)->first();
+                if (!$paymentRate) {
+                    $paymentRate = PaymentRate::create([
+                        'id' => (string)Str::uuid(),
+                        'bill_type_id' => $bill->bill_type_id,
+                        'amount' => $bill->amount,
+                        'type' => 'REGULAR',
+                    ]);
+                }
+
+                $rateItem = PaymentRateItem::create([
+                    'id' => (string)Str::uuid(),
+                    'payment_rate_id' => $paymentRate->id,
+                    'month' => $bill->month,
+                    'year' => $bill->year,
+                    'amount' => $bill->amount,
+                ]);
+            }
+
+            if ($rateItem && !$isDryRun) {
+                $bill->update(['payment_rate_item_id' => $rateItem->id]);
+                $relinkedCount++;
+            }
+        }
+
+        $this->info("  [RELINKING COMPLETE] Successfully relinked {$relinkedCount} bills to payment_rate_items.");
+    }
+
+    /**
      * Normalize Syahriah into 12 monthly bills (July - June)
      */
     private function normalizeSyahriahBillsForStudent(Student $student, bool $isDryRun)
@@ -299,6 +356,17 @@ class CleanupGhostAndDuplicateBills extends Command
                 $remainingPaidPool = $totalPaid;
                 $now = now();
 
+                // Find or create PaymentRate for this bill_type_id
+                $paymentRate = PaymentRate::where('bill_type_id', $billType->id)->first();
+                if (!$paymentRate && !$isDryRun) {
+                    $paymentRate = PaymentRate::create([
+                        'id' => (string)Str::uuid(),
+                        'bill_type_id' => $billType->id,
+                        'amount' => $totalYearlyAmount,
+                        'type' => 'REGULAR',
+                    ]);
+                }
+
                 foreach ($monthsSequence as $mInfo) {
                     $m = $mInfo['month'];
                     $y = $mInfo['year'];
@@ -314,6 +382,25 @@ class CleanupGhostAndDuplicateBills extends Command
 
                     $status = ($allocatedPaid >= $monthlyAmount) ? Bill::STATUS_PAID : Bill::STATUS_UNPAID;
 
+                    // Ensure payment_rate_item exists for this month/year
+                    $rateItem = null;
+                    if ($paymentRate) {
+                        $rateItem = PaymentRateItem::where('payment_rate_id', $paymentRate->id)
+                            ->where('month', $m)
+                            ->where('year', $y)
+                            ->first();
+
+                        if (!$rateItem && !$isDryRun) {
+                            $rateItem = PaymentRateItem::create([
+                                'id' => (string)Str::uuid(),
+                                'payment_rate_id' => $paymentRate->id,
+                                'month' => $m,
+                                'year' => $y,
+                                'amount' => $monthlyAmount,
+                            ]);
+                        }
+                    }
+
                     if (!$isDryRun) {
                         DB::table('bills')->insert([
                             'id' => (string)Str::uuid(),
@@ -326,6 +413,7 @@ class CleanupGhostAndDuplicateBills extends Command
                             'amount' => $monthlyAmount,
                             'paid_amount' => $allocatedPaid,
                             'status' => $status,
+                            'payment_rate_item_id' => $rateItem?->id,
                             'created_at' => $now,
                             'updated_at' => $now,
                         ]);
@@ -369,6 +457,24 @@ class CleanupGhostAndDuplicateBills extends Command
             $allocatedPaid = min($totalPaid, $zarkasiAmount);
             $status = ($allocatedPaid >= $zarkasiAmount) ? Bill::STATUS_PAID : Bill::STATUS_UNPAID;
 
+            $paymentRate = PaymentRate::where('bill_type_id', $first->bill_type_id)->first();
+            $rateItem = null;
+            if ($paymentRate) {
+                $rateItem = PaymentRateItem::where('payment_rate_id', $paymentRate->id)
+                    ->where('month', 7)
+                    ->where('year', $startYear)
+                    ->first();
+                if (!$rateItem && !$isDryRun) {
+                    $rateItem = PaymentRateItem::create([
+                        'id' => (string)Str::uuid(),
+                        'payment_rate_id' => $paymentRate->id,
+                        'month' => 7,
+                        'year' => $startYear,
+                        'amount' => $zarkasiAmount,
+                    ]);
+                }
+            }
+
             if (!$isDryRun) {
                 DB::table('bills')->insert([
                     'id' => (string)Str::uuid(),
@@ -381,6 +487,7 @@ class CleanupGhostAndDuplicateBills extends Command
                     'amount' => $zarkasiAmount,
                     'paid_amount' => $allocatedPaid,
                     'status' => $status,
+                    'payment_rate_item_id' => $rateItem?->id,
                     'created_at' => now(),
                     'updated_at' => now(),
                 ]);

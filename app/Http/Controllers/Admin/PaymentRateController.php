@@ -295,7 +295,10 @@ class PaymentRateController extends Controller
         // Calculate aggregates in DB using withSum/withCount
         $query->withSum(['bills as total' => function ($q) use ($paymentRate, $paymentRateItemIds, $dateRange) {
                 $q->where('bill_type_id', $paymentRate->bill_type_id)
-                    ->whereIn('payment_rate_item_id', $paymentRateItemIds);
+                    ->where(function ($qq) use ($paymentRateItemIds) {
+                        $qq->whereIn('payment_rate_item_id', $paymentRateItemIds)
+                           ->orWhereNull('payment_rate_item_id');
+                    });
 
                 if ($dateRange['startYear'] && $dateRange['endYear']) {
                     ($this->dateRangeFilter($dateRange))($q);
@@ -303,7 +306,10 @@ class PaymentRateController extends Controller
             }], 'amount')
             ->withSum(['bills as total_paid' => function ($q) use ($paymentRate, $paymentRateItemIds, $dateRange) {
                 $q->where('bill_type_id', $paymentRate->bill_type_id)
-                    ->whereIn('payment_rate_item_id', $paymentRateItemIds);
+                    ->where(function ($qq) use ($paymentRateItemIds) {
+                        $qq->whereIn('payment_rate_item_id', $paymentRateItemIds)
+                           ->orWhereNull('payment_rate_item_id');
+                    });
 
                 if ($dateRange['startYear'] && $dateRange['endYear']) {
                     ($this->dateRangeFilter($dateRange))($q);
