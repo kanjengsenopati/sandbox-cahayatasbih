@@ -240,17 +240,17 @@ class SaldoHistoryController extends Controller
         // Check if there's an active transaction in the cache
         if (Cache::has($cacheKey)) {
             if ($request->ajax()) {
-                return response()->json(['code' => 400, 'message' => 'Transaksi sedang diproses, silakan coba lagi nanti'], 400);
+                return response()->json(['code' => 400, 'message' => 'Transaksi sedang diproses, silakan coba lagi sebentar.'], 400);
             }
             return redirect()->route('saldo-history.index')->with('error', 'Transaksi sedang diproses, silakan coba lagi nanti');
         }
 
-        // Set a cache entry to lock the transaction
-        Cache::put($cacheKey, true, now()->addMinutes(5)); // Lock for 5 minutes
-
-        DB::beginTransaction();
+        // Set a cache entry to lock the transaction briefly (15 seconds)
+        Cache::put($cacheKey, true, now()->addSeconds(15));
 
         try {
+            DB::beginTransaction();
+
             // Fetch payment method
             $paymentMethod = PaymentMethod::where('type', PaymentMethod::TYPE_CASH)->first();
             if (!$paymentMethod) {
@@ -277,11 +277,11 @@ class SaldoHistoryController extends Controller
 
             DB::commit();
 
-            // Clear the cache entry
-            Cache::forget($cacheKey);
-
-            // Send notifications
-            $this->sendNotifications($transaction->student, $transaction->transactionDetails()->first()->saldoHistory);
+            // Send notifications safely
+            $saldoHistoryRecord = $transaction->transactionDetails()->first()?->saldoHistory;
+            if ($saldoHistoryRecord) {
+                $this->sendNotifications($student, $saldoHistoryRecord);
+            }
 
             if ($request->ajax()) {
                 return response()->json([
@@ -298,9 +298,6 @@ class SaldoHistoryController extends Controller
             DB::rollBack();
             Log::error($e);
 
-            // Ensure the cache entry is cleared in case of an error
-            Cache::forget($cacheKey);
-
             if ($request->ajax()) {
                 return response()->json([
                     'code' => 500,
@@ -308,7 +305,9 @@ class SaldoHistoryController extends Controller
                 ], 500);
             }
 
-            return redirect()->route('saldo-history.index')->with('error', 'Gagal Topup Saldo');
+            return redirect()->route('saldo-history.index')->with('error', 'Gagal Topup Saldo: ' . $e->getMessage());
+        } finally {
+            Cache::forget($cacheKey);
         }
     }
 
@@ -380,25 +379,35 @@ class SaldoHistoryController extends Controller
 
     private function sendNotifications($student, $saldoHistory)
     {
-        $activity = ($saldoHistory->type === 'IN') ? 'Topup Saldo' : 'Tarik Saldo';
-        $messageWhatsapp = SendNotifWaService::balanceAdjustment($student, $saldoHistory, "SALDO");
+        try {
+            $activity = ($saldoHistory->type === 'IN') ? 'Topup Saldo' : 'Tarik Saldo';
+            $messageWhatsapp = SendNotifWaService::balanceAdjustment($student, $saldoHistory, "SALDO");
 
-        \App\Services\NotificationService::sendFromTemplate(
-            'balance_update',
-            $student->user,
-            [
-                'student_name' => $student->name,
-                'activity' => $activity,
-                'amount' => number_format($saldoHistory->amount, 0, ',', '.'),
-                'balance' => number_format($student->saldo, 0, ',', '.')
-            ],
-            null
-        );
-        dispatch(new SendToWhatsappNotificationJob($student->user?->phone, $messageWhatsapp));
+            if ($student && $student->user) {
+                \App\Services\NotificationService::sendFromTemplate(
+                    'balance_update',
+                    $student->user,
+                    [
+                        'student_name' => $student->name,
+                        'activity' => $activity,
+                        'amount' => number_format($saldoHistory->amount, 0, ',', '.'),
+                        'balance' => number_format($student->saldo, 0, ',', '.')
+                    ],
+                    null
+                );
+                if ($student->user->phone) {
+                    dispatch(new SendToWhatsappNotificationJob($student->user->phone, $messageWhatsapp));
+                }
+            }
 
-        $contacts = Contact::where('type', Contact::TYPE_BENDAHARA)->orWhere('type', Contact::TYPE_SUPERADMIN)->get();
-        foreach ($contacts as $contact) {
-            dispatch(new SendToWhatsappNotificationJob($contact->phone, $messageWhatsapp));
+            $contacts = Contact::where('type', Contact::TYPE_BENDAHARA)->orWhere('type', Contact::TYPE_SUPERADMIN)->get();
+            foreach ($contacts as $contact) {
+                if ($contact->phone) {
+                    dispatch(new SendToWhatsappNotificationJob($contact->phone, $messageWhatsapp));
+                }
+            }
+        } catch (\Throwable $th) {
+            Log::error("Failed to send balance adjustment notification: " . $th->getMessage());
         }
     }
 
