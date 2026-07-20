@@ -256,7 +256,7 @@ class TransactionService
                         }
                     }
 
-                    $transaction = Transaction::create(array_merge($transactionData, $validatedData));
+                    $transaction = Transaction::create(array_merge($validatedData, $transactionData));
 
                     if (($type ?? Transaction::TYPE_BILL) == Transaction::TYPE_BILL && $request->bill_ids) {
                         $customAmounts = $request->custom_amounts ?? [];
@@ -505,20 +505,20 @@ class TransactionService
                 if ($transaction->type == Transaction::TYPE_SALDO) {
                     $student = Student::find($transaction->student_id);
                     $transactionDetail = $transaction?->transactionDetails?->first();
-                    $saldoBefore = $student->saldo;
+                    if ($transactionDetail && $transactionDetail->saldoHistory) {
+                        $saldoBefore = $student->saldo;
+                        $amountToAdd = $transactionDetail->saldoHistory->amount;
 
-                    // Tentukan amount yang akan ditambahkan (hanya untuk saldo biasa)
-                    $amountToAdd = $transactionDetail?->saldoHistory?->amount ?? throw new Exception('Saldo history not found');
+                        // Update saldo siswa secara atomic
+                        $student->increment('saldo', $amountToAdd);
 
-                    // Update saldo siswa secara atomic
-                    $student->increment('saldo', $amountToAdd);
-
-                    // Update status saldo history jika ada
-                    $transactionDetail?->saldoHistory?->update([
-                        'status' => SaldoHistory::STATUS_SUCCESS,
-                        'balance_before' => $saldoBefore ?? 0,
-                        'balance_after' => $student->saldo ?? 0,
-                    ]);
+                        // Update status saldo history jika ada
+                        $transactionDetail->saldoHistory->update([
+                            'status' => SaldoHistory::STATUS_SUCCESS,
+                            'balance_before' => $saldoBefore ?? 0,
+                            'balance_after' => $student->saldo ?? 0,
+                        ]);
+                    }
                 } elseif ($transaction->type == Transaction::TYPE_SAVING) {
                     foreach ($transaction->transactionDetails as $detail) {
                         $detail->savingHistory->update([
