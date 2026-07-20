@@ -41,10 +41,9 @@ class CleanupGhostAndDuplicateBills extends Command
             $this->warn('=== DRY RUN MODE - No database changes will be executed ===');
         }
 
-        $this->info('Starting audit and cleanup of ghost and duplicate bills...');
+        $this->info('Starting comprehensive audit and cleanup of ghost and duplicate bills...');
 
-        // 1. Identify MA schools / classrooms
-        $maSchoolIds = [];
+        // 1. Identify MA schools
         $maSchools = School::where('name', 'LIKE', '%MA%')
             ->orWhere('name', 'LIKE', '%ALIYAH%')
             ->pluck('id')
@@ -58,7 +57,6 @@ class CleanupGhostAndDuplicateBills extends Command
         } elseif ($targetSchool) {
             $studentsQuery->where('school_id', $targetSchool);
         } else {
-            // Target MA students (or all students if MA school filter is applied)
             if (!empty($maSchools)) {
                 $studentsQuery->where(function($q) use ($maSchools) {
                     $q->whereIn('school_id', $maSchools)
@@ -115,7 +113,6 @@ class CleanupGhostAndDuplicateBills extends Command
             $this->line("  Active Bills Count: " . $bills->count());
 
             // A. GHOST BILL AUDIT
-            // Ghost bills are UNPAID bills attached to MA / wrong unit for past academic years when student was actually in another unit (e.g. SMP)
             foreach ($bills as $bill) {
                 if ($bill->status !== Bill::STATUS_UNPAID || (int)$bill->paid_amount > 0) {
                     continue; // Never touch paid bills
@@ -123,49 +120,44 @@ class CleanupGhostAndDuplicateBills extends Command
 
                 $billAcadYearId = $bill->academic_year_id;
                 $billType = $bill->billType;
-                $billTypeName = $billType?->name ?? '';
-                $billItemName = $billType?->billItem?->name ?? '';
+                $billTypeName = strtoupper($billType?->name ?? '');
+                $billItemName = strtoupper($billType?->billItem?->name ?? '');
+                $billCategory = $this->normalizeFeeCategory($billTypeName . ' ' . $billItemName);
 
-                // Check historical enrollment for this academic year
+                // Check 1: Historical enrollment school unit mismatch
                 if (isset($historyByAcademicYear[$billAcadYearId])) {
-                    $enrolledSchoolId = $historyByAcademicYear[$billAcadYearId]['school_id'];
                     $enrolledSchoolName = strtoupper($historyByAcademicYear[$billAcadYearId]['school_name']);
 
-                    // Is this bill an MA bill while student was enrolled in SMP/SD in that academic year?
-                    $isBillForMA = (stripos($billTypeName, 'MA') !== false || stripos($billItemName, 'MA') !== false);
-                    $isStudentInSMP = (stripos($enrolledSchoolName, 'SMP') !== false || stripos($enrolledSchoolName, 'SD') !== false);
+                    $isBillForMA = (str_contains($billTypeName, 'MA') || str_contains($billItemName, 'MA') || (!str_contains($billTypeName, 'SMP') && !str_contains($billTypeName, 'SD')));
+                    $isStudentInSMP = (str_contains($enrolledSchoolName, 'SMP') || str_contains($enrolledSchoolName, 'SD'));
 
                     if ($isBillForMA && $isStudentInSMP) {
-                        $this->warn("  [GHOST DETECTED] Bill #{$bill->id} ({$billTypeName} - {$bill->academicYear?->name}) is for MA, but student was enrolled in {$enrolledSchoolName} in that academic year.");
+                        $this->warn("  [GHOST DETECTED] Bill #{$bill->id} ({$billType?->name} - {$bill->academicYear?->name}) is for MA/General, but student was enrolled in {$enrolledSchoolName} in that academic year.");
                         if (!$isDryRun) {
-                            $bill->delete(); // Soft delete
+                            $bill->delete();
                         }
                         $totalGhostDeleted++;
                         continue;
                     }
                 }
 
-                // Generic Ghost Check: Parallel SMP vs MA bill check in the same academic year
-                // If student has a PAID bill for SMP fee (e.g. SYAHRIAH SMP, ZARKASI SMP, BIAYA APLIKASI CT - SMP) for month/year/acad_year,
-                // and an UNPAID MA bill (e.g. SYAHRIAH MA, ZARKASI, BIAYA APLIKASI CT - MA) exists for the same month/year/acad_year, it is a ghost bill!
-                $hasPaidParallelBill = $bills->first(function($otherBill) use ($bill, $billTypeName, $billItemName) {
+                // Check 2: Parallel category payment matching in same academic year
+                // If student ALREADY HAS a PAID bill in the same fee category for the same academic year (e.g. SMP paid bill),
+                // then any UNPAID bill in that same fee category is a ghost/duplicate bill!
+                $hasPaidParallelCategory = $bills->first(function($otherBill) use ($bill, $billCategory) {
                     if ($otherBill->id === $bill->id) return false;
                     if ($otherBill->academic_year_id !== $bill->academic_year_id) return false;
-                    if ($otherBill->month != $bill->month || $otherBill->year != $bill->year) return false;
                     if ((int)$otherBill->paid_amount == 0 && $otherBill->status === Bill::STATUS_UNPAID) return false;
 
-                    // Check if otherBill is the SMP counterpart that is PAID
-                    $otherTypeName = $otherBill->billType?->name ?? '';
-                    $otherItemName = $otherBill->billType?->billItem?->name ?? '';
+                    $otherTypeName = strtoupper($otherBill->billType?->name ?? '');
+                    $otherItemName = strtoupper($otherBill->billType?->billItem?->name ?? '');
+                    $otherCategory = $this->normalizeFeeCategory($otherTypeName . ' ' . $otherItemName);
 
-                    $baseCategoryBill = preg_replace('/(SMP|MA|CT|-|\s)+/i', '', $billTypeName);
-                    $baseCategoryOther = preg_replace('/(SMP|MA|CT|-|\s)+/i', '', $otherTypeName);
-
-                    return (strtolower($baseCategoryBill) === strtolower($baseCategoryOther));
+                    return ($billCategory === $otherCategory);
                 });
 
-                if ($hasPaidParallelBill) {
-                    $this->warn("  [GHOST DETECTED] Bill #{$bill->id} ({$billTypeName} {$bill->month}/{$bill->year}) is UNPAID ghost bill. Parallel paid bill #{$hasPaidParallelBill->id} ({$hasPaidParallelBill->billType?->name}) exists!");
+                if ($hasPaidParallelCategory) {
+                    $this->warn("  [GHOST DETECTED] Bill #{$bill->id} ({$billType?->name} {$bill->month}/{$bill->year}) is UNPAID ghost bill. Parallel paid bill #{$hasPaidParallelCategory->id} ({$hasPaidParallelCategory->billType?->name}) exists for category '{$billCategory}'!");
                     if (!$isDryRun) {
                         $bill->delete();
                     }
@@ -180,13 +172,13 @@ class CleanupGhostAndDuplicateBills extends Command
                 ->get();
 
             // B. DUPLICATE BILL AUDIT
-            // Group bills by (academic_year_id, month, year, normalized_category)
+            // Group remaining bills by (academic_year_id, month, year, fee_category)
             $grouped = [];
             foreach ($remainingBills as $b) {
-                $typeName = $b->billType?->name ?? 'UNKNOWN';
-                // Normalize category name (e.g. "SYAHRIAH" vs "SYAHRIAH 2026/2027")
-                $normCat = preg_replace('/(20\d\d\/20\d\d|\d{4}|\s)+/', '', strtoupper($typeName));
-                $key = $b->academic_year_id . '_' . $b->month . '_' . $b->year . '_' . $normCat;
+                $typeName = strtoupper($b->billType?->name ?? 'UNKNOWN');
+                $itemName = strtoupper($b->billType?->billItem?->name ?? '');
+                $category = $this->normalizeFeeCategory($typeName . ' ' . $itemName);
+                $key = $b->academic_year_id . '_' . $b->month . '_' . $b->year . '_' . $category;
 
                 $grouped[$key][] = $b;
             }
@@ -228,7 +220,7 @@ class CleanupGhostAndDuplicateBills extends Command
         }
 
         $this->line("==================================================");
-        $this->info("AUDIT & CLEANUP COMPLETED.");
+        $this->info("COMPREHENSIVE AUDIT & CLEANUP COMPLETED.");
         $this->info("Ghost Bills Soft-Deleted     : {$totalGhostDeleted}");
         $this->info("Duplicate Bills Soft-Deleted : {$totalDuplicateDeleted}");
 
@@ -237,5 +229,30 @@ class CleanupGhostAndDuplicateBills extends Command
         }
 
         return Command::SUCCESS;
+    }
+
+    /**
+     * Helper to normalize fee category string across naming variations
+     */
+    private function normalizeFeeCategory(string $rawName): string
+    {
+        $upper = strtoupper($rawName);
+
+        if (str_contains($upper, 'SYAHRIAH')) {
+            return 'SYAHRIAH';
+        }
+        if (str_contains($upper, 'ZARKASI')) {
+            return 'ZARKASI';
+        }
+        if (str_contains($upper, 'APLIKASI')) {
+            return 'APLIKASI';
+        }
+        if (str_contains($upper, 'REGISTRASI') || str_contains($upper, 'PSB') || str_contains($upper, 'PPDB')) {
+            return 'REGISTRASI';
+        }
+
+        // Clean out common noise words
+        $clean = preg_replace('/(BIAYA|APLIKASI|CT|SMP|MA|SD|-|\s|20\d\d\/20\d\d|\d{4})+/', '', $upper);
+        return trim($clean) ?: 'GENERAL';
     }
 }
