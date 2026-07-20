@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Models\User;
 use App\Models\Contact;
 use App\Models\Student;
+use App\Models\Classroom;
 use App\Models\Transaction;
 use App\Models\SaldoHistory;
 use Illuminate\Http\Request;
@@ -170,7 +171,32 @@ class SaldoHistoryController extends Controller
         if (!Auth::user()->can('Create Saldo Santri')) {
             return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
         }
-        return view('admins.saldo-history.create-edit');
+
+        if (request()->ajax()) {
+            $students = Student::with('classroom')->hasSchool()
+                ->when(request('classroom_id'), function ($query, $classroomId) {
+                    $query->where('classroom_id', $classroomId);
+                })
+                ->latest();
+
+            return DataTables::of($students)
+                ->addColumn('nis', function ($student) {
+                    return $student->nis ?? $student->nisn ?? '-';
+                })
+                ->addColumn('classroom', function ($student) {
+                    return $student->classroom->name ?? 'Belum ada kelas';
+                })
+                ->editColumn('saldo', function ($student) {
+                    return $student->saldo ?? 0;
+                })
+                ->addColumn('avatar_url', function ($student) {
+                    return $student->avatar_url ?? asset('assets/media/avatars/default.png');
+                })
+                ->make(true);
+        }
+
+        $classrooms = Classroom::orderBy('name')->get();
+        return view('admins.saldo-history.create-edit', compact('classrooms'));
     }
 
     /**
@@ -181,6 +207,9 @@ class SaldoHistoryController extends Controller
     {
         // Authorization check
         if (!Auth::user()->can('Create Saldo Santri')) {
+            if ($request->ajax()) {
+                return response()->json(['code' => 403, 'message' => 'Maaf, Anda tidak memiliki akses untuk aksi tersebut'], 403);
+            }
             return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
         }
 
@@ -193,6 +222,9 @@ class SaldoHistoryController extends Controller
 
         // Check if there's an active transaction in the cache
         if (Cache::has($cacheKey)) {
+            if ($request->ajax()) {
+                return response()->json(['code' => 400, 'message' => 'Transaksi sedang diproses, silakan coba lagi nanti'], 400);
+            }
             return redirect()->route('saldo-history.index')->with('error', 'Transaksi sedang diproses, silakan coba lagi nanti');
         }
 
@@ -203,7 +235,14 @@ class SaldoHistoryController extends Controller
 
         try {
             // Fetch payment method
-            $paymentMethod = PaymentMethod::where('type', PaymentMethod::TYPE_CASH)->firstOrFail();
+            $paymentMethod = PaymentMethod::where('type', PaymentMethod::TYPE_CASH)->first();
+            if (!$paymentMethod) {
+                $paymentMethod = PaymentMethod::create([
+                    'type' => PaymentMethod::TYPE_CASH,
+                    'name' => 'Tunai / Cash',
+                    'is_active' => true,
+                ]);
+            }
             $paymentMethodType = $paymentMethod->type;
 
             // Create transaction
@@ -227,6 +266,16 @@ class SaldoHistoryController extends Controller
             // Send notifications
             $this->sendNotifications($transaction->student, $transaction->transactionDetails()->first()->saldoHistory);
 
+            if ($request->ajax()) {
+                return response()->json([
+                    'code' => 200,
+                    'message' => 'Berhasil penyesuaian saldo untuk santri ' . $student->name,
+                    'student_id' => $student->id,
+                    'new_saldo' => $student->saldo,
+                    'formatted_new_saldo' => 'Rp ' . number_format($student->saldo, 0, ',', '.')
+                ]);
+            }
+
             return redirect()->route('saldo-history.index')->with('success', 'Berhasil Topup Saldo');
         } catch (\Exception $e) {
             DB::rollBack();
@@ -234,6 +283,13 @@ class SaldoHistoryController extends Controller
 
             // Ensure the cache entry is cleared in case of an error
             Cache::forget($cacheKey);
+
+            if ($request->ajax()) {
+                return response()->json([
+                    'code' => 500,
+                    'message' => 'Gagal penyesuaian saldo: ' . $e->getMessage()
+                ], 500);
+            }
 
             return redirect()->route('saldo-history.index')->with('error', 'Gagal Topup Saldo');
         }
