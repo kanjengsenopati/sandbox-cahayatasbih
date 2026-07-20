@@ -55,6 +55,9 @@ jobs:
           DB_DATABASE: testing
           DB_USERNAME: root
           DB_PASSWORD: root
+          CACHE_DRIVER: array
+          SESSION_DRIVER: array
+          QUEUE_CONNECTION: sync
         run: php artisan migrate -n
       - name: Create storage symlink
         run: php artisan storage:link
@@ -66,6 +69,9 @@ jobs:
           DB_DATABASE: testing
           DB_USERNAME: root
           DB_PASSWORD: root
+          CACHE_DRIVER: array
+          SESSION_DRIVER: array
+          QUEUE_CONNECTION: sync
         run: php artisan test
 
   deploy:
