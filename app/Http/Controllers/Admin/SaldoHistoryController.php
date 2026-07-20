@@ -183,8 +183,19 @@ class SaldoHistoryController extends Controller
                 ->addColumn('nis', function ($student) {
                     return $student->nis ?? $student->nisn ?? '-';
                 })
+                ->filterColumn('nis', function ($query, $keyword) {
+                    $query->where(function ($q) use ($keyword) {
+                        $q->where('nis', 'like', "%{$keyword}%")
+                          ->orWhere('nisn', 'like', "%{$keyword}%");
+                    });
+                })
                 ->addColumn('classroom', function ($student) {
                     return $student->classroom->name ?? 'Belum ada kelas';
+                })
+                ->filterColumn('classroom', function ($query, $keyword) {
+                    $query->whereHas('classroom', function ($q) use ($keyword) {
+                        $q->where('name', 'like', "%{$keyword}%");
+                    });
                 })
                 ->editColumn('saldo', function ($student) {
                     return $student->saldo ?? 0;

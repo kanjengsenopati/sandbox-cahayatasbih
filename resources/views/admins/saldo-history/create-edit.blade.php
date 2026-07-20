@@ -125,6 +125,7 @@
                 {
                     data: 'nis',
                     name: 'nis',
+                    searchable: true,
                     render: function(data) {
                         return `<span class="fw-bold text-gray-700 fs-7">${data ? data : '-'}</span>`;
                     }
@@ -132,6 +133,7 @@
                 {
                     data: 'name',
                     name: 'name',
+                    searchable: true,
                     render: function(data, type, row) {
                         var avatar = row.avatar_url ? row.avatar_url : '{{ asset("assets/media/avatars/default.png") }}';
                         var statusText = row.translated_status || row.status || 'Aktif';
@@ -163,6 +165,7 @@
                 {
                     data: 'classroom',
                     name: 'classroom',
+                    searchable: true,
                     render: function(data) {
                         return `<span class="badge badge-light-dark fs-7">${data}</span>`;
                     }
@@ -170,6 +173,7 @@
                 {
                     data: 'saldo',
                     name: 'saldo',
+                    searchable: false,
                     render: function(data, type, row) {
                         var val = parseInt(data) || 0;
                         var formatted = formatRupiahVal(val);
@@ -182,6 +186,7 @@
                 {
                     data: 'saldo',
                     name: 'saldo_sekarang',
+                    searchable: false,
                     render: function(data, type, row) {
                         var val = parseInt(data) || 0;
                         var formatted = formatRupiahVal(val);
