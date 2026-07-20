@@ -67,6 +67,22 @@ class CheckBillClass extends Command
                         continue;
                     }
 
+                    // Check historical classroom history for past academic years to protect transfer students
+                    if ($billType->academicYear && !$billType->academicYear->is_active) {
+                        $history = DB::table('student_classroom_histories')
+                            ->where('student_id', $student->id)
+                            ->where('academic_year_id', $billType->academic_year_id)
+                            ->whereNull('deleted_at')
+                            ->first();
+
+                        if ($history) {
+                            $allowedClassroomIds = $paymentRate->paymentRateClassrooms->pluck('classroom_id')->toArray();
+                            if (!empty($allowedClassroomIds) && !in_array($history->classroom_id, $allowedClassroomIds)) {
+                                continue;
+                            }
+                        }
+                    }
+
                     foreach ($paymentRate->paymentRateItems as $item) {
                         // Check if bill exists
                         $exists = DB::table('bills')

@@ -110,6 +110,24 @@ class SyncPaymentRateBills extends Command
                     continue;
                 }
 
+                // Check historical classroom history for past academic years to protect transfer students
+                if ($billType->academicYear && !$billType->academicYear->is_active) {
+                    $history = DB::table('student_classroom_histories')
+                        ->where('student_id', $student->id)
+                        ->where('academic_year_id', $billType->academic_year_id)
+                        ->whereNull('deleted_at')
+                        ->first();
+
+                    if ($history) {
+                        // Check if history classroom matches payment rate classroom
+                        $allowedClassroomIds = $paymentRate->paymentRateClassrooms->pluck('classroom_id')->toArray();
+                        if (!empty($allowedClassroomIds) && !in_array($history->classroom_id, $allowedClassroomIds)) {
+                            $this->warn("    [SKIP HISTORICAL] {$student->name} was in classroom {$history->classroom_id} during {$billType->academicYear->name}, not in target rate classrooms.");
+                            continue;
+                        }
+                    }
+                }
+
                 foreach ($paymentRate->paymentRateItems as $item) {
                     $billMonth = $item->month;
                     $billYear  = $item->year;
