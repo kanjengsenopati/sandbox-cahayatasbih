@@ -802,7 +802,13 @@ class BillController extends Controller
 
             $totalAmount = 0;
             foreach ($paymentColIndices as $colIdx) {
-                $cellVal = intval($row[$colIdx] ?? 0);
+                $rawVal = $row[$colIdx] ?? 0;
+                if (is_string($rawVal)) {
+                    $cleaned = preg_replace('/[^0-9]/', '', $rawVal);
+                    $cellVal = intval($cleaned);
+                } else {
+                    $cellVal = intval($rawVal);
+                }
                 if ($cellVal > 0) {
                     $totalAmount += $cellVal;
                 }

@@ -140,7 +140,7 @@ class StudentBillTemplateExport implements FromCollection, WithHeadings, ShouldA
 
         $paymentColsCount = max(1, $this->columnsCount - 4); // Columns between Kelas and ID Siswa
         for ($i = 0; $i < $paymentColsCount; $i++) {
-            $row[] = '';
+            $row[] = 0; // Number 0, will render as "Rp 0" placeholder
         }
 
         $row[] = $student->id; // ID Siswa (UUID)
@@ -159,7 +159,9 @@ class StudentBillTemplateExport implements FromCollection, WithHeadings, ShouldA
 
     public function styles(Worksheet $sheet)
     {
-        $highestColumn = $sheet->getHighestColumn();
+        $highestColumnLetter = $sheet->getHighestColumn();
+        $highestColumnIndex = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::columnIndexFromString($highestColumnLetter);
+        $highestRow = $sheet->getHighestRow();
 
         $sheet->getStyle($sheet->calculateWorksheetDimension())->getAlignment()->setWrapText(true);
         $sheet->getStyle($sheet->calculateWorksheetDimension())->applyFromArray([
@@ -178,7 +180,7 @@ class StudentBillTemplateExport implements FromCollection, WithHeadings, ShouldA
             ],
         ]);
 
-        $sheet->getStyle('A1:' . $highestColumn . '1')->applyFromArray([
+        $sheet->getStyle('A1:' . $highestColumnLetter . '1')->applyFromArray([
             'font' => [
                 'bold' => true,
                 'color' => ['argb' => 'FFFFFF']
@@ -193,8 +195,19 @@ class StudentBillTemplateExport implements FromCollection, WithHeadings, ShouldA
                 'horizontal' => Alignment::HORIZONTAL_CENTER,
             ]
         ]);
+
+        // Format payment columns with Rp currency format, auto thousand separator, and right alignment
+        if ($highestColumnIndex >= 5 && $highestRow >= 2) {
+            $firstPaymentColLetter = 'D';
+            $lastPaymentColLetter = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($highestColumnIndex - 1);
+            
+            $paymentRange = "{$firstPaymentColLetter}2:{$lastPaymentColLetter}{$highestRow}";
+            
+            $sheet->getStyle($paymentRange)->getNumberFormat()->setFormatCode('"Rp "#,##0');
+            $sheet->getStyle($paymentRange)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_RIGHT);
+        }
         
         // Hide the ID Siswa column (last column) to make it look cleaner, but still parseable
-        $sheet->getColumnDimension($highestColumn)->setVisible(false);
+        $sheet->getColumnDimension($highestColumnLetter)->setVisible(false);
     }
 }
