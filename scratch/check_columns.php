@@ -7,22 +7,12 @@ $kernel->bootstrap();
 
 use Illuminate\Support\Facades\DB;
 
-echo "--- TRANSACTIONS TABLE ---\n";
+echo "--- BILLS TABLE ---\n";
 try {
-    $columns = DB::select("SHOW COLUMNS FROM transactions");
+    $columns = DB::select("SHOW COLUMNS FROM bills");
     foreach ($columns as $column) {
         echo "Field: {$column->Field} | Type: {$column->Type}\n";
     }
 } catch (\Exception $e) {
-    echo "Error transactions: " . $e->getMessage() . "\n";
-}
-
-echo "\n--- TRANSACTION_PROOFS TABLE ---\n";
-try {
-    $columns = DB::select("SHOW COLUMNS FROM transaction_proofs");
-    foreach ($columns as $column) {
-        echo "Field: {$column->Field} | Type: {$column->Type}\n";
-    }
-} catch (\Exception $e) {
-    echo "Error transaction_proofs: " . $e->getMessage() . "\n";
+    echo "Error bills: " . $e->getMessage() . "\n";
 }
