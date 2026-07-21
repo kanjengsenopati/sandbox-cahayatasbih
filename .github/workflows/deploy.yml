@@ -60,6 +60,9 @@ jobs:
             cd $DEPLOY_PATH
             /www/server/php/84/bin/php artisan migrate --force
 
+            echo "=== Fixing Master Rates 2026/2027 ==="
+            /www/server/php/84/bin/php artisan bills:fix-rates-2026 || echo "Fix rates 2026 failed"
+
             echo "=== Syncing Payment Rate Bills ==="
             /www/server/php/84/bin/php artisan bills:sync-rate --force
 
