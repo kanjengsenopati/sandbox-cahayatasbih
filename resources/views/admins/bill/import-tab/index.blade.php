@@ -5,7 +5,7 @@
             <div class="card-body p-6">
                 <div class="mb-5">
                     <h4 class="text-slate-800 fw-semibold fs-5" style="color: #1e293b;">Unduh Template Siswa</h4>
-                    <p class="text-slate-400 fst-italic fs-7" style="color: #94a3b8;">Gunakan form ini untuk mengunduh template Excel berisi data siswa berdasarkan UPT dan Kelas pilihan Anda.</p>
+                    <p class="text-slate-400 fst-italic fs-7" style="color: #94a3b8;">Gunakan form ini untuk mengunduh template Excel berisi data siswa berdasarkan UPT, Kelas, Tahun Ajaran, dan Jenis Tagihan pilihan Anda.</p>
                 </div>
 
                 <form action="{{ route('bill.download-template') }}" method="GET" id="form-download-template">
@@ -20,11 +20,36 @@
                         </select>
                     </div>
 
-                    <!-- Pilih Kelas (Classroom) -->
+                    <!-- Pilih Multi Kelas (Classrooms) -->
                     <div class="mb-4">
                         <label class="text-slate-400 fw-bold fs-9 text-uppercase tracking-wider mb-2 d-block" style="color: #94a3b8; font-size: 11px;">Kelas <span class="text-danger">*</span></label>
-                        <select name="classroom_id" id="import-classroom-id" class="form-select form-select-solid" required style="border-radius: 12px;" disabled>
-                            <option value="">Pilih UPT Terlebih Dahulu</option>
+                        <select name="classroom_ids[]" id="import-classroom-ids" class="form-select form-select-solid" data-control="select2" data-placeholder="Semua Kelas" multiple="multiple" style="border-radius: 12px;" disabled>
+                        </select>
+                    </div>
+
+                    <!-- Pilih Tahun Ajaran -->
+                    <div class="mb-4">
+                        <label class="text-slate-400 fw-bold fs-9 text-uppercase tracking-wider mb-2 d-block" style="color: #94a3b8; font-size: 11px;">Tahun Ajaran <span class="text-danger">*</span></label>
+                        <select name="academic_year_id" id="template-academic-year-id" class="form-select form-select-solid" required style="border-radius: 12px;">
+                            <option value="">Pilih Tahun Ajaran</option>
+                            @foreach ($academicYears as $ay)
+                                <option value="{{ $ay->id }}">{{ $ay->name }} {{ $ay->is_active ? '(Aktif)' : '' }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    <!-- Pilih Jenis Tagihan Pembayaran -->
+                    <div class="mb-4">
+                        <label class="text-slate-400 fw-bold fs-9 text-uppercase tracking-wider mb-2 d-block" style="color: #94a3b8; font-size: 11px;">Jenis Tagihan Pembayaran</label>
+                        <select name="bill_type_ids[]" id="template-bill-type-ids" class="form-select form-select-solid" data-control="select2" data-placeholder="Pilih Tahun Ajaran Terlebih Dahulu" multiple="multiple" style="border-radius: 12px;" disabled>
+                            @php
+                                $allTemplateBillTypes = \App\Models\BillType::with('academicYear')
+                                    ->get()
+                                    ->sortBy('formatted_name');
+                            @endphp
+                            @foreach ($allTemplateBillTypes as $bt)
+                                <option value="{{ $bt->id }}" data-academic-year-id="{{ $bt->academic_year_id }}">{{ $bt->formatted_name }} {{ $bt->academicYear ? '('.$bt->academicYear->name.')' : '' }}</option>
+                            @endforeach
                         </select>
                     </div>
 
@@ -139,13 +164,14 @@
 @push('js')
 <script>
     $(document).ready(function() {
-        // Load classroom dinamis berdasarkan UPT terpilih
+        // Load classroom dinamis (Multi-Select) berdasarkan UPT terpilih
         $('#import-school-id').change(function() {
             var schoolId = $(this).val();
-            var classroomSelect = $('#import-classroom-id');
+            var classroomSelect = $('#import-classroom-ids');
             
+            classroomSelect.empty().val(null).trigger('change');
             if (schoolId) {
-                classroomSelect.prop('disabled', true).html('<option value="">Sedang memuat...</option>');
+                classroomSelect.prop('disabled', true);
                 
                 $.ajax({
                     url: "{{ route('select2') }}",
@@ -155,17 +181,43 @@
                         school_id: schoolId
                     },
                     success: function(data) {
-                        classroomSelect.prop('disabled', false).html('<option value="">Semua Kelas</option>');
+                        classroomSelect.prop('disabled', false);
                         $.each(data, function(index, item) {
-                            classroomSelect.append('<option value="' + item.id + '">' + item.name + '</option>');
+                            var newOption = new Option(item.name, item.id, false, false);
+                            classroomSelect.append(newOption);
                         });
+                        classroomSelect.trigger('change');
                     },
                     error: function() {
-                        classroomSelect.prop('disabled', false).html('<option value="">Gagal memuat kelas</option>');
+                        classroomSelect.prop('disabled', false);
                     }
                 });
             } else {
-                classroomSelect.prop('disabled', true).html('<option value="">Pilih UPT Terlebih Dahulu</option>');
+                classroomSelect.prop('disabled', true).trigger('change');
+            }
+        });
+
+        // Filter options bill type template berdasarkan tahun ajaran yang dipilih
+        $('#template-academic-year-id').change(function() {
+            var academicYearId = $(this).val();
+            var billTypeSelect = $('#template-bill-type-ids');
+
+            billTypeSelect.val(null).trigger('change');
+            if (academicYearId) {
+                billTypeSelect.prop('disabled', false);
+                billTypeSelect.find('option').each(function() {
+                    var optionAyId = $(this).data('academic-year-id');
+                    if (optionAyId == academicYearId) {
+                        $(this).prop('disabled', false);
+                    } else {
+                        $(this).prop('disabled', true);
+                    }
+                });
+                billTypeSelect.trigger('change');
+            } else {
+                billTypeSelect.prop('disabled', true);
+                billTypeSelect.find('option').prop('disabled', true);
+                billTypeSelect.trigger('change');
             }
         });
 

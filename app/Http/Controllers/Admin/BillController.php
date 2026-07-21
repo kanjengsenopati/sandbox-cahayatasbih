@@ -712,17 +712,27 @@ class BillController extends Controller
     public function downloadTemplate(Request $request)
     {
         $schoolId = $request->school_id;
-        $classroomId = $request->classroom_id;
+        $classroomIds = $request->classroom_ids ?? ($request->classroom_id ? [$request->classroom_id] : []);
+        $academicYearId = $request->academic_year_id;
+        $billTypeIds = $request->bill_type_ids ?? ($request->bill_type_id ? [$request->bill_type_id] : []);
 
         $school = School::find($schoolId);
-        $classroom = Classroom::find($classroomId);
         $schoolName = $school ? str_replace(' ', '_', $school->name) : 'Semua_UPT';
-        $classroomName = $classroom ? str_replace(' ', '_', $classroom->name) : 'Semua_Kelas';
+
+        $classroomName = 'Semua_Kelas';
+        if (!empty($classroomIds)) {
+            $classrooms = Classroom::whereIn('id', (array)$classroomIds)->pluck('name')->toArray();
+            if (count($classrooms) === 1) {
+                $classroomName = str_replace(' ', '_', $classrooms[0]);
+            } elseif (count($classrooms) > 1) {
+                $classroomName = count($classrooms) . '_Kelas';
+            }
+        }
 
         $fileName = "Template_Pembayaran_{$schoolName}_{$classroomName}.xlsx";
 
         return \Maatwebsite\Excel\Facades\Excel::download(
-            new \App\Exports\StudentBillTemplateExport($schoolId, $classroomId),
+            new \App\Exports\StudentBillTemplateExport($schoolId, $classroomIds, $academicYearId, $billTypeIds),
             $fileName
         );
     }
@@ -753,19 +763,50 @@ class BillController extends Controller
         // Baca file Excel
         $rows = \Maatwebsite\Excel\Facades\Excel::toArray([], $file)[0];
 
+        if (empty($rows) || count($rows) < 2) {
+            return response()->json([
+                'success' => false,
+                'message' => 'File Excel kosong atau tidak memiliki baris data.',
+            ], 422);
+        }
+
+        $headers = $rows[0];
+        $idColIndex = count($headers) - 1;
+        foreach ($headers as $idx => $headerName) {
+            if (strtolower(trim($headerName ?? '')) === 'id siswa' || strtolower(trim($headerName ?? '')) === 'id_siswa') {
+                $idColIndex = $idx;
+                break;
+            }
+        }
+
         $previewData = [];
         $isValidGlobal = true;
 
+        $paymentColIndices = [];
+        for ($c = 3; $c < $idColIndex; $c++) {
+            $paymentColIndices[] = $c;
+        }
+        if (empty($paymentColIndices)) {
+            $paymentColIndices = [3];
+        }
+
         for ($i = 1; $i < count($rows); $i++) {
             $row = $rows[$i];
-            if (empty($row[1]) && empty($row[4])) {
+            $name = $row[1] ?? '';
+            $className = $row[2] ?? '';
+            $studentId = $row[$idColIndex] ?? null;
+
+            if (empty($name) && empty($studentId)) {
                 continue; // Skip baris kosong
             }
 
-            $name = $row[1] ?? '';
-            $className = $row[2] ?? '';
-            $amount = intval($row[3] ?? 0);
-            $studentId = $row[4] ?? null;
+            $totalAmount = 0;
+            foreach ($paymentColIndices as $colIdx) {
+                $cellVal = intval($row[$colIdx] ?? 0);
+                if ($cellVal > 0) {
+                    $totalAmount += $cellVal;
+                }
+            }
 
             $student = null;
             $status = 'VALID';
@@ -788,7 +829,7 @@ class BillController extends Controller
                 $message = 'Siswa tidak ditemukan';
                 $isValidGlobal = false;
             } else {
-                if ($amount <= 0) {
+                if ($totalAmount <= 0) {
                     $status = 'INVALID';
                     $message = 'Nominal bayar harus > 0';
                     $isValidGlobal = false;
@@ -810,7 +851,7 @@ class BillController extends Controller
                 'student_id' => $student ? $student->id : null,
                 'name' => $student ? $student->name : $name,
                 'classroom' => $student && $student->classroom ? $student->classroom->name : $className,
-                'amount' => $amount,
+                'amount' => $totalAmount,
                 'status' => $status,
                 'message' => $message,
             ];
