@@ -48,11 +48,22 @@
 
                 <form id="form-preview-import" enctype="multipart/form-data">
                     @csrf
+                    <!-- Pilih Tahun Ajaran -->
+                    <div class="mb-4">
+                        <label class="text-slate-400 fw-bold fs-9 text-uppercase tracking-wider mb-2 d-block" style="color: #94a3b8; font-size: 11px;">Tahun Ajaran <span class="text-danger">*</span></label>
+                        <select name="academic_year_id" id="import-academic-year-id" class="form-select form-select-solid" required style="border-radius: 12px;">
+                            <option value="">Pilih Tahun Ajaran</option>
+                            @foreach ($academicYears as $ay)
+                                <option value="{{ $ay->id }}">{{ $ay->name }} {{ $ay->is_active ? '(Aktif)' : '' }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+
                     <!-- Pilih Nama Tagihan (BillType type=OTHER) -->
                     <div class="mb-4">
                         <label class="text-slate-400 fw-bold fs-9 text-uppercase tracking-wider mb-2 d-block" style="color: #94a3b8; font-size: 11px;">Nama Tagihan Pendaftaran <span class="text-danger">*</span></label>
-                        <select name="bill_type_id" id="import-bill-type-id" class="form-select form-select-solid" required style="border-radius: 12px;">
-                            <option value="">Pilih Jenis Tagihan Bebas/Pendaftaran</option>
+                        <select name="bill_type_id" id="import-bill-type-id" class="form-select form-select-solid" required style="border-radius: 12px;" disabled>
+                            <option value="">Pilih Tahun Ajaran Terlebih Dahulu</option>
                             @php
                                 $billTypes = \App\Models\BillType::where('type', \App\Models\BillType::TYPE_OTHER)
                                     ->with('academicYear')
@@ -63,7 +74,7 @@
                                     ->sortBy('formatted_name');
                             @endphp
                             @foreach ($billTypes as $bt)
-                                <option value="{{ $bt->id }}">{{ $bt->formatted_name }} {{ $bt->academicYear ? '('.$bt->academicYear->name.')' : '' }}</option>
+                                <option value="{{ $bt->id }}" data-academic-year-id="{{ $bt->academic_year_id }}" class="d-none">{{ $bt->formatted_name }} {{ $bt->academicYear ? '('.$bt->academicYear->name.')' : '' }}</option>
                             @endforeach
                         </select>
                     </div>
@@ -158,8 +169,47 @@
             }
         });
 
+        // Filter options bill type berdasarkan tahun ajaran yang dipilih
+        $('#import-academic-year-id').change(function() {
+            var academicYearId = $(this).val();
+            var billTypeSelect = $('#import-bill-type-id');
+
+            billTypeSelect.val('');
+            if (academicYearId) {
+                var count = 0;
+                billTypeSelect.find('option').each(function() {
+                    var optionAyId = $(this).data('academic-year-id');
+                    if (!optionAyId) return; // Skip placeholder option
+
+                    if (optionAyId == academicYearId) {
+                        $(this).removeClass('d-none').prop('disabled', false);
+                        count++;
+                    } else {
+                        $(this).addClass('d-none').prop('disabled', true);
+                    }
+                });
+
+                if (count > 0) {
+                    billTypeSelect.prop('disabled', false);
+                    billTypeSelect.find('option[value=""]').text('Pilih Jenis Tagihan Bebas/Pendaftaran').removeClass('d-none').prop('disabled', false);
+                } else {
+                    billTypeSelect.prop('disabled', true);
+                    billTypeSelect.find('option[value=""]').text('Tidak ada tagihan untuk tahun ajaran ini').removeClass('d-none').prop('disabled', false);
+                }
+            } else {
+                billTypeSelect.prop('disabled', true);
+                billTypeSelect.find('option[value=""]').text('Pilih Tahun Ajaran Terlebih Dahulu').removeClass('d-none').prop('disabled', false);
+                billTypeSelect.find('option').each(function() {
+                    if ($(this).val() !== '') {
+                        $(this).addClass('d-none').prop('disabled', true);
+                    }
+                });
+            }
+        });
+
         var lastImportedData = [];
         var activeBillTypeId = null;
+        var activeAcademicYearId = null;
 
         // Form Submit Preview Excel
         $('#form-preview-import').submit(function(e) {
@@ -167,6 +217,7 @@
             
             var formData = new FormData(this);
             activeBillTypeId = $('#import-bill-type-id').val();
+            activeAcademicYearId = $('#import-academic-year-id').val();
             
             Swal.fire({
                 title: 'Membaca Excel...',
@@ -187,7 +238,11 @@
                     Swal.close();
                     if (response.success && response.data.length > 0) {
                         lastImportedData = response.data;
-                        $('#preview-title-tagihan').text('Preview Data Pembayaran: ' + response.bill_type_name);
+                        var titleText = 'Preview Data Pembayaran: ' + response.bill_type_name;
+                        if (response.academic_year_name) {
+                            titleText += ' (' + response.academic_year_name + ')';
+                        }
+                        $('#preview-title-tagihan').text(titleText);
                         
                         var tbody = $('#table-preview-data tbody');
                         tbody.empty();
@@ -260,8 +315,10 @@
         $('#btn-cancel-import').click(function() {
             $('#section-preview-import').addClass('d-none');
             $('#form-preview-import')[0].reset();
+            $('#import-academic-year-id').trigger('change');
             lastImportedData = [];
             activeBillTypeId = null;
+            activeAcademicYearId = null;
         });
 
         // Konfirmasi & Simpan Pembayaran
@@ -307,6 +364,7 @@
                         type: 'POST',
                         data: {
                             _token: "{{ csrf_token() }}",
+                            academic_year_id: activeAcademicYearId,
                             bill_type_id: activeBillTypeId,
                             data: validData
                         },

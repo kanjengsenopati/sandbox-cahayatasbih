@@ -731,12 +731,24 @@ class BillController extends Controller
     {
         $request->validate([
             'file' => 'required|mimes:xls,xlsx',
+            'academic_year_id' => 'required|exists:academic_years,id',
             'bill_type_id' => 'required|exists:bill_types,id',
         ]);
 
         $file = $request->file('file');
+        $academicYearId = $request->academic_year_id;
         $billTypeId = $request->bill_type_id;
-        $billType = BillType::findOrFail($billTypeId);
+
+        $billType = BillType::with('academicYear')->where('id', $billTypeId)->firstOrFail();
+
+        if ($billType->academic_year_id && $billType->academic_year_id !== $academicYearId) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Jenis tagihan yang dipilih tidak sesuai dengan Tahun Ajaran yang dipilih.',
+            ], 422);
+        }
+
+        $academicYearName = $billType->academicYear?->name ?? \App\Models\AcademicYear::find($academicYearId)?->name;
 
         // Baca file Excel
         $rows = \Maatwebsite\Excel\Facades\Excel::toArray([], $file)[0];
@@ -783,6 +795,7 @@ class BillController extends Controller
                 } else {
                     $bill = Bill::where('student_id', $student->id)
                         ->where('bill_type_id', $billTypeId)
+                        ->where('academic_year_id', $academicYearId)
                         ->first();
                     
                     if ($bill && $bill->status === Bill::STATUS_PAID) {
@@ -807,21 +820,32 @@ class BillController extends Controller
             'success' => true,
             'data' => $previewData,
             'is_valid_global' => $isValidGlobal,
-            'bill_type_name' => $billType->name,
+            'bill_type_name' => $billType->formatted_name ?? $billType->name,
+            'academic_year_name' => $academicYearName,
         ]);
     }
 
     public function confirmImport(Request $request)
     {
         $request->validate([
+            'academic_year_id' => 'required|exists:academic_years,id',
             'bill_type_id' => 'required|exists:bill_types,id',
             'data' => 'required|array',
             'data.*.student_id' => 'required|exists:students,id',
             'data.*.amount' => 'required|integer|min:1',
         ]);
 
+        $academicYearId = $request->academic_year_id;
         $billTypeId = $request->bill_type_id;
-        $billType = BillType::findOrFail($billTypeId);
+        $billType = BillType::where('id', $billTypeId)->firstOrFail();
+
+        if ($billType->academic_year_id && $billType->academic_year_id !== $academicYearId) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Jenis tagihan yang dipilih tidak sesuai dengan Tahun Ajaran yang dipilih.',
+            ], 422);
+        }
+
         $importedData = $request->data;
         $adminId = Auth::id();
 
@@ -841,6 +865,7 @@ class BillController extends Controller
 
                 $bill = Bill::where('student_id', $studentId)
                     ->where('bill_type_id', $billTypeId)
+                    ->where('academic_year_id', $academicYearId)
                     ->first();
 
                 if (!$bill) {
@@ -848,7 +873,7 @@ class BillController extends Controller
                         'bill_type_id' => $billTypeId,
                         'student_id' => $studentId,
                         'classroom_id' => $student->classroom_id ?? '',
-                        'academic_year_id' => $billType->academic_year_id ?? $student->classroom->academic_year_id ?? '',
+                        'academic_year_id' => $academicYearId,
                         'month' => intval(date('m')),
                         'year' => intval(date('Y')),
                         'amount' => $amount,
