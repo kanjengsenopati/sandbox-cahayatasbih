@@ -141,7 +141,7 @@ class PaymentRateController extends Controller
 
             foreach ($months as $month) {
                 $amountInput = ($billType->type == BillType::TYPE_MONTHLY) ? $request->{"bulan_$month"} : $request->price;
-                $amount = $amountInput ? (int) str_replace('.', '', $amountInput) : 0;
+                $amount = $amountInput ? (int) preg_replace('/[^0-9]/', '', (string)$amountInput) : 0;
                 $year = ($billType->type == BillType::TYPE_MONTHLY) ? $request->{"tahun_$month"} : $request->year;
 
                 $item = $paymentRate->paymentRateItems()->create([
@@ -1138,7 +1138,7 @@ class PaymentRateController extends Controller
             // Tentukan Tahun & Nominal
             $targetYear = ($billType->type == BillType::TYPE_MONTHLY) ? $request->{"tahun_$month"} : $request->year;
             $targetAmountRaw = ($billType->type == BillType::TYPE_MONTHLY) ? $request->{"bulan_$month"} : $request->price;
-            $targetAmount = $targetAmountRaw ? (int) str_replace('.', '', $targetAmountRaw) : 0;
+            $targetAmount = $targetAmountRaw ? (int) preg_replace('/[^0-9]/', '', (string)$targetAmountRaw) : 0;
 
             // Skip jika nominal 0
             if ($targetAmount == 0) continue;
@@ -1146,15 +1146,16 @@ class PaymentRateController extends Controller
             // Ambil ID Item dari Map (Tanpa Query)
             $rateItemId = $rateItemsMap["{$month}_{$targetYear}"] ?? null;
 
-            // Cek jika bill UNPAID untuk student ini sudah ada
-            $existingBill = Bill::where('student_id', $student->id)
-                ->where('bill_type_id', $billType->id)
-                ->where('month', $month)
-                ->where('year', $targetYear)
-                ->first();
+            $billKey = "{$student->id}_{$month}_{$targetYear}";
 
-            if ($existingBill) {
-                if ($existingBill->status === Bill::STATUS_UNPAID && ($existingBill->payment_rate_item_id !== $rateItemId || $existingBill->amount !== $targetAmount)) {
+            if (isset($existingBillKeys[$billKey])) {
+                $existingBill = Bill::where('student_id', $student->id)
+                    ->where('bill_type_id', $billType->id)
+                    ->where('month', $month)
+                    ->where('year', $targetYear)
+                    ->first();
+
+                if ($existingBill && $existingBill->status === Bill::STATUS_UNPAID && ($existingBill->payment_rate_item_id !== $rateItemId || $existingBill->amount !== $targetAmount)) {
                     $existingBill->update([
                         'amount' => $targetAmount,
                         'payment_rate_item_id' => $rateItemId,
