@@ -40,8 +40,8 @@ jobs:
             composer dump-autoload --optimize
 
             echo "=== Installing dependencies & Building Assets ==="
-            [ -d "node_modules" ] || npm ci
-            chmod -R +x node_modules/.bin 2>/dev/null || true
+            rm -rf node_modules
+            npm ci
             npm run build
 
             echo "=== Building PWA ==="
@@ -53,8 +53,8 @@ jobs:
             rm -f public/portalwalisantri/dist/index.html || true
             rm -f public/workbox-*.js || true
             cd portalwalisantri
-            [ -d "node_modules" ] || npm ci
-            chmod -R +x node_modules/.bin 2>/dev/null || true
+            rm -rf node_modules
+            npm ci
             npm run build
             cd $DEPLOY_PATH
 
