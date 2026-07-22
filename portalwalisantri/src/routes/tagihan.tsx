@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import {
   ArrowLeft,
   Search,
@@ -31,6 +31,7 @@ function Tagihan() {
   const [tab, setTab] = useState<"due" | "paid">("due");
   const [q, setQ] = useState("");
   const [selectedYear, setSelectedYear] = useState("");
+  const [userHasSelectedYear, setUserHasSelectedYear] = useState(false);
 
   const { data: billsData, isLoading: isLoadingBills } = useQuery({
     queryKey: ["bills", active?.id],
@@ -84,6 +85,18 @@ function Tagihan() {
     return uniqueYears.sort().reverse();
   }, [bills, active]);
 
+  // Reset user search choice on active student change
+  useEffect(() => {
+    setUserHasSelectedYear(false);
+  }, [active?.id]);
+
+  // Default selected filter to the latest academic year (e.g. 2026/2027)
+  useEffect(() => {
+    if (academicYears.length > 0 && !userHasSelectedYear) {
+      setSelectedYear(academicYears[0]);
+    }
+  }, [academicYears, userHasSelectedYear]);
+
   const filtered = useMemo(() => {
     return bills.filter((b: any) => {
       const isPaid = b.paid >= b.total;
@@ -111,7 +124,15 @@ function Tagihan() {
     );
   }
 
-  const totalDue = bills.filter((b: any) => b.paid < b.total).reduce((acc: number, b: any) => acc + (b.total - b.paid), 0);
+  const totalDue = useMemo(() => {
+    return bills
+      .filter((b: any) => {
+        if (b.paid >= b.total) return false;
+        if (selectedYear && b.category !== selectedYear) return false;
+        return true;
+      })
+      .reduce((acc: number, b: any) => acc + (b.total - b.paid), 0);
+  }, [bills, selectedYear]);
 
   return (
     <MobileShell>
@@ -199,7 +220,10 @@ function Tagihan() {
         <div className="relative shrink-0">
           <select
             value={selectedYear}
-            onChange={(e) => setSelectedYear(e.target.value)}
+            onChange={(e) => {
+              setSelectedYear(e.target.value);
+              setUserHasSelectedYear(true);
+            }}
             className="appearance-none bg-secondary text-foreground text-xs font-bold pl-4 pr-9 py-3.5 rounded-full border border-transparent focus:border-primary outline-none transition cursor-pointer"
           >
             <option value="">Semua TA</option>
