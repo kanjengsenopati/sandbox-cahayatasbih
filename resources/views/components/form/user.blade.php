@@ -1,6 +1,7 @@
 @php
 $user = \App\Models\User::find(@$value ?? 0);
 $statusText = '';
+$phoneText = '';
 if ($user) {
     $statusText = match($user->jamaah_status) {
         'JAMAAH' => 'Jamaah',
@@ -8,12 +9,13 @@ if ($user) {
         'MUKIMIN' => 'Mukimin',
         default => 'Non Jamaah'
     };
+    $phoneText = !empty($user->phone) ? ' - ' . $user->phone : '';
 }
 @endphp
 <select name="user_id" id="user_id" data-control="select2" class="form-select form-select-solid {{$class ?? ''}}" {{
     $attributes }}>
     @if($user)
-    <option selected value="{{@$user->id}}">{{$user->name}} [{{$statusText}}]</option>
+    <option selected value="{{@$user->id}}">{{$user->name}} [{{$statusText}}]{{$phoneText}}</option>
     @endif
 </select>
 
@@ -42,8 +44,9 @@ if ($user) {
                         } else if (item.jamaah_status === 'MUKIMIN') {
                             statusText = 'Mukimin';
                         }
+                        var phoneText = item.phone ? ' - ' + item.phone : '';
                         return {
-                            text: item.name + ' [' + statusText + ']',
+                            text: item.name + ' [' + statusText + ']' + phoneText,
                             id: item.id
                         }
                     })

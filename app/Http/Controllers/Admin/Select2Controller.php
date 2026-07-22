@@ -39,9 +39,48 @@ class Select2Controller extends Controller
 
     public function user($request)
     {
-        return User::whereRaw('LOWER(name) like ?', ['%' . strtolower($request->search) . '%'])
-            ->take(30)
+        $search = strtolower(trim($request->search ?? ''));
+        $cleanSearch = preg_replace('/[^0-9]/', '', $search);
+
+        $users = User::withCount('student')
+            ->where(function ($q) use ($search, $cleanSearch) {
+                $q->whereRaw('LOWER(name) like ?', ['%' . $search . '%'])
+                  ->orWhereRaw('LOWER(phone) like ?', ['%' . $search . '%']);
+
+                if (!empty($cleanSearch)) {
+                    $q->orWhereRaw("REPLACE(REPLACE(REPLACE(phone, ' ', ''), '-', ''), '+62', '0') like ?", ['%' . $cleanSearch . '%']);
+                }
+            })
+            ->take(60)
             ->get();
+
+        // Group by normalized name + normalized phone to merge duplicates
+        $deduped = $users->groupBy(function ($u) {
+            $normName = strtolower(trim($u->name));
+            $normPhone = preg_replace('/[^0-9]/', '', $u->phone ?? '');
+            return $normName . '|' . $normPhone;
+        })->map(function ($group) {
+            return $group->sort(function ($a, $b) {
+                if ($a->student_count !== $b->student_count) {
+                    return $b->student_count <=> $a->student_count;
+                }
+                $statusScore = function ($status) {
+                    return match ($status) {
+                        'JAMAAH' => 3,
+                        'MUKIMIN' => 2,
+                        default => 1
+                    };
+                };
+                $scoreA = $statusScore($a->jamaah_status);
+                $scoreB = $statusScore($b->jamaah_status);
+                if ($scoreA !== $scoreB) {
+                    return $scoreB <=> $scoreA;
+                }
+                return strcmp($b->created_at ?? $b->id, $a->created_at ?? $a->id);
+            })->first();
+        })->values()->take(30);
+
+        return $deduped;
     }
 
     public function student($request)
