@@ -148,14 +148,32 @@ class AuditController extends Controller
                     );
                 }
 
-                // Sync bills
+                // Sync bills with deduplication key (student_id, bill_type_id, academic_year_id, month, year)
                 $masterBills = \Illuminate\Support\Facades\DB::connection('mysql_master')->table('bills')
                     ->where('student_id', $ms->id)
                     ->get();
+
                 foreach ($masterBills as $mb) {
+                    $mbData = (array) $mb;
+
+                    if (is_null($mb->deleted_at)) {
+                        $existingLocalBill = \Illuminate\Support\Facades\DB::connection('mysql')->table('bills')
+                            ->where('student_id', $ms->id)
+                            ->where('bill_type_id', $mb->bill_type_id)
+                            ->where('academic_year_id', $mb->academic_year_id)
+                            ->where('month', $mb->month)
+                            ->where('year', $mb->year)
+                            ->whereNull('deleted_at')
+                            ->first();
+
+                        if ($existingLocalBill) {
+                            $mbData['id'] = $existingLocalBill->id;
+                        }
+                    }
+
                     \Illuminate\Support\Facades\DB::connection('mysql')->table('bills')->updateOrInsert(
-                        ['id' => $mb->id],
-                        (array) $mb
+                        ['id' => $mbData['id']],
+                        $mbData
                     );
                 }
 
