@@ -41,6 +41,7 @@ jobs:
 
             echo "=== Installing dependencies & Building Assets ==="
             [ -d "node_modules" ] || npm ci
+            chmod -R +x node_modules/.bin 2>/dev/null || true
             npm run build
 
             echo "=== Building PWA ==="
@@ -53,6 +54,7 @@ jobs:
             rm -f public/workbox-*.js || true
             cd portalwalisantri
             [ -d "node_modules" ] || npm ci
+            chmod -R +x node_modules/.bin 2>/dev/null || true
             npm run build
             cd $DEPLOY_PATH
 
@@ -92,12 +94,10 @@ jobs:
             echo "=== Running Diagnostics ==="
             /www/server/php/84/bin/php diagnose_perwalian.php || echo "Diagnostic failed"
 
-            echo "=== Fixing Permissions (Fast Bulk Operation) ==="
+            echo "=== Fixing Permissions (Fast Safe Operation) ==="
             chown -R www:www $DEPLOY_PATH || echo "Failed to chown"
-            find $DEPLOY_PATH -type d -exec chmod 775 {} + || echo "Failed to chmod dirs"
-            find $DEPLOY_PATH -type f -exec chmod 664 {} + || echo "Failed to chmod files"
-            chmod -R 775 $DEPLOY_PATH/storage || echo "Failed to chmod storage"
-            chmod -R 775 $DEPLOY_PATH/bootstrap/cache || echo "Failed to chmod cache"
+            chmod -R 775 $DEPLOY_PATH/storage $DEPLOY_PATH/bootstrap/cache || echo "Failed to chmod storage/cache"
+            chmod -R +x $DEPLOY_PATH/node_modules/.bin $DEPLOY_PATH/portalwalisantri/node_modules/.bin 2>/dev/null || true
             chmod 660 $DEPLOY_PATH/.env || chmod 600 $DEPLOY_PATH/.env || echo "Failed to secure .env"
 
             echo "=== Deployment Finished Successfully ==="
