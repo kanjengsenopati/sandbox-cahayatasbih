@@ -143,21 +143,26 @@ class BillTypeController extends Controller
 
         $rawAcademicYearId = request('academic_year_id');
         if (is_array($rawAcademicYearId)) {
-            $academicYearIds = array_filter($rawAcademicYearId);
+            $academicYearIds = array_values(array_filter($rawAcademicYearId));
         } elseif (is_string($rawAcademicYearId) && trim($rawAcademicYearId) !== '') {
-            $academicYearIds = array_filter(explode(',', $rawAcademicYearId));
+            $academicYearIds = array_values(array_filter(explode(',', $rawAcademicYearId)));
         } else {
             $academicYearIds = [];
         }
 
         // Get related bill types with the same bill_item_id or name for cross-year rate filtering
-        $relatedBillTypeIds = BillType::when($billType->bill_item_id, function ($q) use ($billType) {
-                $q->where('bill_item_id', $billType->bill_item_id);
-            }, function ($q) use ($billType) {
-                $q->where('name', $billType->name);
-            })
-            ->pluck('id')
-            ->toArray();
+        $relatedQuery = BillType::query();
+        if (!empty($billType->bill_item_id)) {
+            $relatedQuery->where('bill_item_id', $billType->bill_item_id);
+        } elseif (!empty($billType->name)) {
+            $relatedQuery->where('name', $billType->name);
+        } else {
+            $relatedQuery->where('id', $billType->id);
+        }
+        $relatedBillTypeIds = $relatedQuery->pluck('id')->toArray();
+        if (empty($relatedBillTypeIds)) {
+            $relatedBillTypeIds = [$billType->id];
+        }
 
         // Regular Rates (Classroom Based)
         $regularRates = PaymentRate::with(['billType.academicYear', 'paymentRateClassrooms.classroom.school'])
