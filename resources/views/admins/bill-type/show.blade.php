@@ -118,9 +118,24 @@
                                             <span class="text-dark fw-bolder">{{ $loop->iteration }}</span>
                                         </td>
                                         <td>
-                                            <span class="text-gray-800 fw-bold d-block fs-6">
-                                                {{ $rate->paymentRateClassrooms->first()?->classroom?->school?->name ?? '-' }}
-                                            </span>
+                                            @php
+                                                $schoolNames = $rate->paymentRateClassrooms
+                                                    ->map(fn($prc) => $prc->classroom?->school?->name)
+                                                    ->filter()
+                                                    ->unique();
+                                            @endphp
+                                            @if($schoolNames->count() > 1)
+                                                <span class="badge badge-light-warning fw-bolder" title="Peringatan: Tarif ini berisi kelas dari beberapa sekolah sekaligus">
+                                                    <i class="fas fa-exclamation-triangle text-warning me-1"></i> Multi-Sekolah
+                                                </span>
+                                                <span class="text-gray-600 fs-8 d-block mt-1">
+                                                    {{ $schoolNames->implode(', ') }}
+                                                </span>
+                                            @else
+                                                <span class="text-gray-800 fw-bold d-block fs-6">
+                                                    {{ $schoolNames->first() ?? '-' }}
+                                                </span>
+                                            @endif
                                         </td>
                                         <td>
                                             @foreach($rate->paymentRateClassrooms as $prClassroom)
@@ -218,8 +233,14 @@
                                             <span class="text-dark fw-bolder">{{ $loop->iteration }}</span>
                                         </td>
                                         <td>
+                                            @php
+                                                $transferSchoolNames = $rate->paymentRateStudents
+                                                    ->map(fn($prs) => $prs->student?->classroom?->school?->name)
+                                                    ->filter()
+                                                    ->unique();
+                                            @endphp
                                             <span class="text-gray-800 fw-bold d-block fs-6">
-                                                {{ $rate->paymentRateStudents->first()?->student?->classroom?->school?->name ?? '-' }}
+                                                {{ $transferSchoolNames->implode(', ') ?: '-' }}
                                             </span>
                                         </td>
                                         <td>

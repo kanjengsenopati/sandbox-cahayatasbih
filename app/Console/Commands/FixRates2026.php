@@ -280,17 +280,71 @@ class FixRates2026 extends Command
         $this->line("    Items: {$itemsCreated} created, {$itemsUpdated} fixed, {$itemsCorrect} correct, {$extrasDeleted} extras removed");
     }
 
-    private function fixClassroomMapping(PaymentRate $paymentRate, array $allClassrooms, bool $isDryRun): void
+    private function fixClassroomMapping(BillType $billType, PaymentRate $paymentRate, bool $isDryRun): void
     {
         $existingMappings = DB::table('payment_rate_classrooms')
             ->where('payment_rate_id', $paymentRate->id)
+            ->whereNull('deleted_at')
             ->pluck('classroom_id')
             ->toArray();
 
-        $missingClassrooms = array_diff($allClassrooms, $existingMappings);
+        // Determine target school ID for this payment rate
+        $targetSchoolId = null;
+
+        if (!empty($existingMappings)) {
+            // Take the majority school_id among existing mapped classrooms
+            $targetSchoolId = DB::table('classrooms')
+                ->whereIn('id', $existingMappings)
+                ->whereNull('deleted_at')
+                ->select('school_id', DB::raw('count(*) as total'))
+                ->groupBy('school_id')
+                ->orderBy('total', 'desc')
+                ->value('school_id');
+        }
+
+        if (!$targetSchoolId) {
+            // Try matching BillType name or BillItem name to school
+            $nameToCheck = strtoupper($billType->name . ' ' . ($billType->billItem?->name ?? ''));
+            if (str_contains($nameToCheck, 'MA') || str_contains($nameToCheck, 'ALIYAH')) {
+                $targetSchoolId = DB::table('schools')->where('name', 'LIKE', '%MA%')->orWhere('name', 'LIKE', '%ALIYAH%')->value('id');
+            } elseif (str_contains($nameToCheck, 'SMP')) {
+                $targetSchoolId = DB::table('schools')->where('name', 'LIKE', '%SMP%')->value('id');
+            } elseif (str_contains($nameToCheck, 'PONDOK')) {
+                $targetSchoolId = DB::table('schools')->where('name', 'LIKE', '%PONDOK%')->value('id');
+            }
+        }
+
+        // Get classrooms belonging strictly to the target school (or all if no school identified)
+        $targetClassroomsQuery = Classroom::whereNull('deleted_at');
+        if ($targetSchoolId) {
+            $targetClassroomsQuery->where('school_id', $targetSchoolId);
+        }
+        $targetClassroomIds = $targetClassroomsQuery->pluck('id')->toArray();
+
+        // Clean up invalid cross-school classroom mappings if targetSchoolId is known
+        if ($targetSchoolId && !empty($existingMappings)) {
+            $invalidMappings = DB::table('classrooms')
+                ->whereIn('id', $existingMappings)
+                ->where('school_id', '!=', $targetSchoolId)
+                ->pluck('id')
+                ->toArray();
+
+            if (!empty($invalidMappings)) {
+                if (!$isDryRun) {
+                    DB::table('payment_rate_classrooms')
+                        ->where('payment_rate_id', $paymentRate->id)
+                        ->whereIn('classroom_id', $invalidMappings)
+                        ->delete();
+                }
+                $this->warn("    [CLEAN] Removed " . count($invalidMappings) . " cross-school classroom mapping(s)");
+                $existingMappings = array_diff($existingMappings, $invalidMappings);
+            }
+        }
+
+        $missingClassrooms = array_diff($targetClassroomIds, $existingMappings);
 
         if (empty($missingClassrooms)) {
-            $this->line("    Classrooms: All " . count($allClassrooms) . " mapped ✓");
+            $this->line("    Classrooms: All " . count($targetClassroomIds) . " mapped for target school ✓");
             return;
         }
 
@@ -308,6 +362,6 @@ class FixRates2026 extends Command
             DB::table('payment_rate_classrooms')->insert($inserts);
         }
 
-        $this->info("    [MAP] Added " . count($missingClassrooms) . " missing classroom(s) (total: " . count($allClassrooms) . ")");
+        $this->info("    [MAP] Added " . count($missingClassrooms) . " missing classroom(s) (total target: " . count($targetClassroomIds) . ")");
     }
 }

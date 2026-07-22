@@ -63,6 +63,9 @@ jobs:
             echo "=== Fixing Master Rates 2026/2027 ==="
             /www/server/php/84/bin/php artisan bills:fix-rates-2026 || echo "Fix rates 2026 failed"
 
+            echo "=== Cleaning Up Cross School Rates ==="
+            /www/server/php/84/bin/php artisan bills:fix-cross-school-rates || echo "Fix cross school rates failed"
+
             echo "=== Syncing Payment Rate Bills ==="
             /www/server/php/84/bin/php artisan bills:sync-rate --force
 

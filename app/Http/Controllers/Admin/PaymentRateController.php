@@ -82,8 +82,24 @@ class PaymentRateController extends Controller
 
             $billType = BillType::findOrFail($request->bill_type_id);
 
-            // Backend Protection: Block attempting to store for already created classrooms
+            // Backend Protection: Validate classrooms match the selected school & block duplicates
             if ($request->type == PaymentRate::TYPE_REGULAR && !empty($request->classrooms)) {
+                if ($request->school_id) {
+                    $mismatchedClasses = Classroom::whereIn('id', $request->classrooms)
+                        ->where('school_id', '!=', $request->school_id)
+                        ->pluck('name')
+                        ->toArray();
+
+                    if (!empty($mismatchedClasses)) {
+                        $mismatchedNames = implode(', ', $mismatchedClasses);
+                        DB::rollBack();
+                        $lock->release();
+                        return redirect()->back()
+                            ->with('error', "Gagal: Kelas ({$mismatchedNames}) tidak berada di bawah sekolah yang dipilih.")
+                            ->withInput();
+                    }
+                }
+
                 $existingClassroomIds = DB::table('payment_rate_classrooms')
                     ->join('payment_rates', 'payment_rate_classrooms.payment_rate_id', '=', 'payment_rates.id')
                     ->join('bill_types', 'payment_rates.bill_type_id', '=', 'bill_types.id')
@@ -494,7 +510,19 @@ class PaymentRateController extends Controller
         }
         
         $schools = $schoolsQuery->orderBy('name')->get();
-        $classrooms = Classroom::orderByRaw("CAST(name AS UNSIGNED) ASC, name ASC")->get();
+
+        $selectedSchoolId = null;
+        if ($paymentRate->type == PaymentRate::TYPE_REGULAR && $paymentRate->paymentRateClassrooms->isNotEmpty()) {
+            $selectedSchoolId = $paymentRate->paymentRateClassrooms->first()->classroom?->school_id;
+        } elseif ($paymentRate->type == PaymentRate::TYPE_TRANSFER && $paymentRate->paymentRateStudents->isNotEmpty()) {
+            $selectedSchoolId = $paymentRate->paymentRateStudents->first()->student?->classroom?->school_id;
+        }
+
+        $classroomsQuery = Classroom::orderByRaw("CAST(name AS UNSIGNED) ASC, name ASC");
+        if ($selectedSchoolId) {
+            $classroomsQuery->where('school_id', $selectedSchoolId);
+        }
+        $classrooms = $classroomsQuery->get();
         
         return view('admins.payment-rate.create-edit', compact('paymentRate', 'schools', 'billType', 'classrooms'));
     }
