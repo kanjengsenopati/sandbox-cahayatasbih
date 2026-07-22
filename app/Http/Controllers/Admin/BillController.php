@@ -80,13 +80,20 @@ class BillController extends Controller
 
     private function getBills($studentId, $type, $academicYearId = null)
     {
-        $query = BillType::with(['billItem', 'academicYear', 'bills' => fn($query) => $query->where('student_id', $studentId)->with(['transactions.admin', 'transactions.user'])])
+        $query = BillType::with(['billItem', 'academicYear', 'bills' => function ($query) use ($studentId, $academicYearId) {
+                $query->where('student_id', $studentId);
+                if ($academicYearId) {
+                    $query->where('academic_year_id', $academicYearId);
+                }
+                $query->with(['transactions.admin', 'transactions.user']);
+            }])
             ->where('type', $type)
-            ->whereHas('bills', fn($query) => $query->where('student_id', $studentId));
-
-        if ($academicYearId) {
-            $query->where('academic_year_id', $academicYearId);
-        }
+            ->whereHas('bills', function ($query) use ($studentId, $academicYearId) {
+                $query->where('student_id', $studentId);
+                if ($academicYearId) {
+                    $query->where('academic_year_id', $academicYearId);
+                }
+            });
 
         return $query->latest()
             ->get()

@@ -104,8 +104,8 @@ class SyncPaymentRateBills extends Command
             $startYear = $billType->academicYear?->getStartYearSafe();
 
             foreach ($students as $student) {
-                // Prevent generating bills for years before the student's entry year
-                if ($startYear !== null && $student->getEntryYear() > $startYear) {
+                // Prevent generating bills for years before the student's entry year (only for past/inactive academic years)
+                if ($startYear !== null && !$billType->academicYear?->is_active && $student->getEntryYear() > $startYear) {
                     $this->warn("    [SKIP] {$student->name} (NIS: {$student->nis}) entered in {$student->getEntryYear()}, bill is for {$billType->academicYear->name}.");
                     continue;
                 }

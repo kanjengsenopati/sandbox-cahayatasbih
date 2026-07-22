@@ -282,7 +282,11 @@ class Student extends Model
             if (strlen($cleanNis) == 9) {
                 $yearPart = substr($cleanNis, 4, 2);
                 if (is_numeric($yearPart)) {
-                    return 2000 + intval($yearPart);
+                    $nisYear = 2000 + intval($yearPart);
+                    $maxValidYear = (int) date('Y') + 1;
+                    if ($nisYear >= 2010 && $nisYear <= $maxValidYear) {
+                        return $nisYear;
+                    }
                 }
             }
         }
