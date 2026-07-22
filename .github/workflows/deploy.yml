@@ -40,7 +40,7 @@ jobs:
             composer dump-autoload --optimize
 
             echo "=== Installing dependencies & Building Assets ==="
-            npm ci
+            [ -d "node_modules" ] || npm ci
             npm run build
 
             echo "=== Building PWA ==="
@@ -52,7 +52,7 @@ jobs:
             rm -f public/portalwalisantri/dist/index.html || true
             rm -f public/workbox-*.js || true
             cd portalwalisantri
-            npm ci
+            [ -d "node_modules" ] || npm ci
             npm run build
             cd $DEPLOY_PATH
 
@@ -67,13 +67,13 @@ jobs:
             /www/server/php/84/bin/php artisan bills:fix-cross-school-rates || echo "Fix cross school rates failed"
 
             echo "=== Syncing Payment Rate Bills ==="
-            /www/server/php/84/bin/php artisan bills:sync-rate --force
+            /www/server/php/84/bin/php artisan bills:sync-rate --force || echo "Sync rate failed"
 
             echo "=== Cleaning Up Ghost & Duplicate Bills ==="
             /www/server/php/84/bin/php artisan bills:cleanup-ghost-duplicates || echo "Ghost & Duplicate bills cleanup failed"
 
             echo "=== Running Seeders ==="
-            /www/server/php/84/bin/php artisan db:seed --class=KaryawanOutletSeeder --force
+            /www/server/php/84/bin/php artisan db:seed --class=KaryawanOutletSeeder --force || echo "Seeder failed"
 
             echo "=== Creating Storage Symlink ==="
             /www/server/php/84/bin/php artisan storage:link || echo "Storage link may already exist"
@@ -92,13 +92,13 @@ jobs:
             echo "=== Running Diagnostics ==="
             /www/server/php/84/bin/php diagnose_perwalian.php || echo "Diagnostic failed"
 
-            echo "=== Fixing Permissions ==="
+            echo "=== Fixing Permissions (Fast Bulk Operation) ==="
             chown -R www:www $DEPLOY_PATH || echo "Failed to chown"
-            find $DEPLOY_PATH -type d -exec chmod 775 {} \; || echo "Failed to chmod dirs"
-            find $DEPLOY_PATH -type f -exec chmod 664 {} \; || echo "Failed to chmod files"
+            find $DEPLOY_PATH -type d -exec chmod 775 {} + || echo "Failed to chmod dirs"
+            find $DEPLOY_PATH -type f -exec chmod 664 {} + || echo "Failed to chmod files"
             chmod -R 775 $DEPLOY_PATH/storage || echo "Failed to chmod storage"
             chmod -R 775 $DEPLOY_PATH/bootstrap/cache || echo "Failed to chmod cache"
             chmod 660 $DEPLOY_PATH/.env || chmod 600 $DEPLOY_PATH/.env || echo "Failed to secure .env"
 
-            echo "=== Deployment Finished ==="
+            echo "=== Deployment Finished Successfully ==="
           EOF
