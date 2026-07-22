@@ -161,6 +161,7 @@ class StudentGraduationController extends Controller
             $student->update([
                 'status' => Student::STATUS_GRADUATED,
             ]);
+            $student->cleanupFutureUnpaidBills();
         }
         return redirect()->back()->with('success', 'Berhasil Memproses Kelulusan Siswa');
     }

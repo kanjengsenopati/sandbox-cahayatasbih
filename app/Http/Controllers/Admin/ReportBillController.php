@@ -38,7 +38,9 @@ class ReportBillController extends Controller
             $data = BillType::select('bill_types.*')
                 ->join('bills', 'bills.bill_type_id', '=', 'bill_types.id')
                 ->join('students', 'students.id', '=', 'bills.student_id')
-                ->join('classrooms', 'classrooms.id', '=', 'students.classroom_id');
+                ->join('classrooms', 'classrooms.id', '=', 'students.classroom_id')
+                ->whereNull('bills.deleted_at')
+                ->whereNull('students.deleted_at');
 
             // Apply the date filters by comparing the concatenated year and month in MySQL
             if ($startDate && $endDate) {
@@ -192,6 +194,8 @@ class ReportBillController extends Controller
             // JOIN Tables (Inner Join filter otomatis data yg kosong)
             ->join('bills', 'bills.student_id', '=', 'students.id')
             ->join('classrooms', 'classrooms.id', '=', 'bills.classroom_id')
+            ->whereNull('bills.deleted_at')
+            ->whereNull('students.deleted_at')
             ->where('bills.bill_type_id', $id);
 
         // 3. Apply Filters
@@ -279,6 +283,8 @@ class ReportBillController extends Controller
         $query = DB::table('bills')
             ->join('students', 'students.id', '=', 'bills.student_id')
             ->join('classrooms', 'classrooms.id', '=', 'bills.classroom_id')
+            ->whereNull('bills.deleted_at')
+            ->whereNull('students.deleted_at')
             ->where('bills.bill_type_id', $id);
 
         // 1. Filter Sekolah (Sekarang pakai alias 'classrooms')

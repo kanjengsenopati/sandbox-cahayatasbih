@@ -52,6 +52,9 @@ class CleanupGhostAndDuplicateBills extends Command
         // 0b. Relink bills with NULL payment_rate_item_id to their respective payment_rate_items
         $this->relinkNullPaymentRateItems($isDryRun);
 
+        // 0c. Clean up orphaned bills (deleted/missing student) and post-departure bills for non-active students
+        $this->cleanupOrphanedAndInactiveBills($isDryRun);
+
         // 1. Identify MA schools
         $maSchools = School::where('name', 'LIKE', '%MA%')
             ->orWhere('name', 'LIKE', '%ALIYAH%')
@@ -571,5 +574,43 @@ class CleanupGhostAndDuplicateBills extends Command
 
         $clean = preg_replace('/(BIAYA|APLIKASI|CT|SMP|MA|SD|-|\s|20\d\d\/20\d\d|\d{4})+/', '', $upper);
         return trim($clean) ?: 'GENERAL';
+    }
+
+    /**
+     * Audit and clean up orphaned bills (deleted/missing students) and post-departure bills for non-active students
+     */
+    private function cleanupOrphanedAndInactiveBills(bool $isDryRun): void
+    {
+        $this->info("Auditing orphaned bills (bills with deleted/missing students)...");
+        $orphanedBillsCount = Bill::whereDoesntHave('student')
+            ->where('status', Bill::STATUS_UNPAID)
+            ->whereNull('deleted_at')
+            ->count();
+
+        if ($orphanedBillsCount > 0) {
+            $this->warn("Found {$orphanedBillsCount} orphaned unpaid bills.");
+            if (!$isDryRun) {
+                Bill::whereDoesntHave('student')
+                    ->where('status', Bill::STATUS_UNPAID)
+                    ->whereNull('deleted_at')
+                    ->delete();
+                $this->info("Deleted {$orphanedBillsCount} orphaned unpaid bills.");
+            }
+        } else {
+            $this->info("No orphaned unpaid bills found.");
+        }
+
+        $this->info("Auditing future unpaid bills for non-active students...");
+        $inactiveStudents = Student::where('status', '!=', Student::STATUS_ACTIVE)->get();
+        $cleanedCount = 0;
+
+        foreach ($inactiveStudents as $student) {
+            if (!$isDryRun) {
+                $student->cleanupFutureUnpaidBills();
+            }
+            $cleanedCount++;
+        }
+
+        $this->info("Processed future unpaid bills cleanup for {$cleanedCount} non-active students.");
     }
 }

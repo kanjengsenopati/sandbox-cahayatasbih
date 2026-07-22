@@ -91,6 +91,7 @@ class ReportBillStudentController extends Controller
     private function buildBillQuery()
     {
         return Bill::whereHas('billType')
+            ->whereHas('student')
             ->when(request()->filled('start_date'), function ($query) {
                 $startDate = Carbon::parse(request()->start_date);
                 $query->where(function ($sub) use ($startDate) {
@@ -236,7 +237,8 @@ class ReportBillStudentController extends Controller
             ])
             ->join('bills', 'bills.student_id', '=', 'students.id')
             ->join('classrooms', 'classrooms.id', '=', 'students.classroom_id')
-            ->whereNull('bills.deleted_at');
+            ->whereNull('bills.deleted_at')
+            ->whereNull('students.deleted_at');
 
         // Date range filter
         if (request()->filled('start_date')) {
@@ -295,7 +297,8 @@ class ReportBillStudentController extends Controller
         $baseQuery = DB::table('bills')
             ->join('students', 'students.id', '=', 'bills.student_id')
             ->join('classrooms', 'classrooms.id', '=', 'students.classroom_id')
-            ->whereNull('bills.deleted_at');
+            ->whereNull('bills.deleted_at')
+            ->whereNull('students.deleted_at');
 
         // Apply the same filters
         if (request()->filled('start_date')) {

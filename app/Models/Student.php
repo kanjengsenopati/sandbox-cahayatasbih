@@ -121,6 +121,36 @@ class Student extends Model
         }
     }
 
+    public function scopeActive($query)
+    {
+        return $query->where('status', self::STATUS_ACTIVE);
+    }
+
+    /**
+     * Clean up UNPAID bills for periods after student departure/graduation.
+     * Retains unpaid bills charged while active as historical arrears.
+     */
+    public function cleanupFutureUnpaidBills($departureDate = null)
+    {
+        if ($this->status === self::STATUS_ACTIVE) {
+            return;
+        }
+
+        $departureYear = $departureDate ? (int)date('Y', strtotime($departureDate)) : (int)date('Y');
+        $departureMonth = $departureDate ? (int)date('n', strtotime($departureDate)) : (int)date('n');
+
+        $this->bills()
+            ->where('status', \App\Models\Bill::STATUS_UNPAID)
+            ->where(function($query) use ($departureYear, $departureMonth) {
+                $query->where('year', '>', $departureYear)
+                      ->orWhere(function($sub) use ($departureYear, $departureMonth) {
+                          $sub->where('year', '=', $departureYear)
+                              ->where('month', '>', $departureMonth);
+                      });
+            })
+            ->delete();
+    }
+
     // count total shopping this day
     public function getTotalShoppingTodayAttribute()
     {

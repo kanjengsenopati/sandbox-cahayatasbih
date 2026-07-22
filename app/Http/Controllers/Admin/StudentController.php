@@ -348,7 +348,11 @@ class StudentController extends Controller
             file_exists($student->avatar) ? unlink($student->avatar) : '';
             $data['avatar'] = 'storage/' . $request->file('avatar')->store('images/avatar', 'public');
         }
+        $oldStatus = $student->status;
         $student->update($data);
+        if ($student->status !== Student::STATUS_ACTIVE && $oldStatus !== $student->status) {
+            $student->cleanupFutureUnpaidBills();
+        }
         return redirect()->route('student.index')->with('success', 'Siswa berhasil diubah');
     }
 
