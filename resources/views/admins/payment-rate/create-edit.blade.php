@@ -422,12 +422,18 @@
                                         <div class="row row-cols-3 g-2" id="classroom_grid_container">
                                             @if(isset($classrooms))
                                             @foreach ($classrooms as $classroom)
+                                            @php
+                                                $isCreated = isset($existingClassroomIds) && in_array($classroom->id, $existingClassroomIds);
+                                            @endphp
                                             <div class="col">
-                                                <label class="btn btn-outline btn-outline-dashed btn-outline-default d-flex align-items-center justify-content-start p-2 w-100 h-100 cursor-pointer text-start" style="border-radius: 8px;">
+                                                <label class="btn btn-outline btn-outline-dashed btn-outline-default d-flex align-items-center justify-content-start p-2 w-100 h-100 {{ $isCreated ? 'pe-none bg-light-secondary opacity-75 border-gray-300' : 'cursor-pointer' }} text-start" style="border-radius: 8px;">
                                                     <div class="form-check form-check-custom form-check-solid form-check-sm me-2">
-                                                        <input class="form-check-input classroom-checkbox" type="checkbox" name="classrooms[]" value="{{ $classroom->id }}" />
+                                                        <input class="form-check-input classroom-checkbox" type="checkbox" name="classrooms[]" value="{{ $classroom->id }}" {{ $isCreated ? 'checked disabled' : '' }} />
                                                     </div>
                                                     <span class="fs-7 fw-bold text-gray-800">{{ $classroom->name }}</span>
+                                                    @if($isCreated)
+                                                        <span class="badge badge-light-danger fw-bolder fs-9 ms-auto me-1" title="Kelas ini sudah dibuatkan tarif"><i class="fas fa-lock text-danger me-1 fs-9"></i>Sudah Dibuat</span>
+                                                    @endif
                                                 </label>
                                             </div>
                                             @endforeach
@@ -545,6 +551,7 @@
         $('#school_id').on('change', function() {
             var school_id = $(this).val();
             var gridContainer = $('#classroom_grid_container');
+            var billTypeId = $('input[name="bill_type_id"]').val();
 
             // Clear classrooms
             gridContainer.empty();
@@ -552,18 +559,27 @@
             if (school_id) {
                 // Fetch Classrooms
                 axios.get("{{ route('payment-rate.get-classroom') }}", {
-                        params: { school_id: school_id }
+                        params: { 
+                            school_id: school_id,
+                            bill_type_id: billTypeId 
+                        }
                     })
                     .then(function(response) {
                         if (response.data.length > 0) {
                             $.each(response.data, function(key, value) {
+                                var isCreated = value.is_already_created;
+                                var cardClass = isCreated ? "btn btn-outline btn-outline-dashed btn-outline-default d-flex align-items-center justify-content-start p-2 w-100 h-100 pe-none bg-light-secondary opacity-75 text-start border-gray-300" : "btn btn-outline btn-outline-dashed btn-outline-default d-flex align-items-center justify-content-start p-2 w-100 h-100 cursor-pointer text-start";
+                                var checkAttr = isCreated ? "checked disabled" : "";
+                                var badgeHtml = isCreated ? `<span class="badge badge-light-danger fw-bolder fs-9 ms-auto me-1" title="Kelas ini sudah dibuatkan tarif"><i class="fas fa-lock text-danger me-1 fs-9"></i>Sudah Dibuat</span>` : "";
+
                                 var cardHtml = `
                                     <div class="col">
-                                        <label class="btn btn-outline btn-outline-dashed btn-outline-default d-flex align-items-center justify-content-start p-2 w-100 h-100 cursor-pointer text-start" style="border-radius: 8px;">
+                                        <label class="${cardClass}" style="border-radius: 8px;">
                                             <div class="form-check form-check-custom form-check-solid form-check-sm me-2">
-                                                <input class="form-check-input classroom-checkbox" type="checkbox" name="classrooms[]" value="${value.id}" />
+                                                <input class="form-check-input classroom-checkbox" type="checkbox" name="classrooms[]" value="${value.id}" ${checkAttr} />
                                             </div>
                                             <span class="fs-7 fw-bold text-gray-800">${value.name}</span>
+                                            ${badgeHtml}
                                         </label>
                                     </div>
                                 `;
@@ -606,7 +622,7 @@
         }
 
         function updateSelectAllButtonText() {
-            var checkboxes = $('.classroom-checkbox');
+            var checkboxes = $('.classroom-checkbox:not(:disabled)');
             var checkedCount = checkboxes.filter(':checked').length;
             var totalCount = checkboxes.length;
 
@@ -619,7 +635,7 @@
 
         // 2. Handle 'Select All' Classrooms
         $('#btn-select-all-classrooms').click(function() {
-            var checkboxes = $('.classroom-checkbox');
+            var checkboxes = $('.classroom-checkbox:not(:disabled)');
             if (checkboxes.length === 0) {
                 return;
             }

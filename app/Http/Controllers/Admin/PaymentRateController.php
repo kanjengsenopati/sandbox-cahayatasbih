@@ -42,7 +42,26 @@ class PaymentRateController extends Controller
         
         $schools = $schoolsQuery->orderBy('name')->get();
         $classroomValue = [];
-        return view('admins.payment-rate.create-edit', compact('billType', 'schools', 'classroomValue'));
+
+        $existingClassroomIds = DB::table('payment_rate_classrooms')
+            ->join('payment_rates', 'payment_rate_classrooms.payment_rate_id', '=', 'payment_rates.id')
+            ->join('bill_types', 'payment_rates.bill_type_id', '=', 'bill_types.id')
+            ->where(function($q) use ($billType) {
+                $q->where('payment_rates.bill_type_id', $billType->id)
+                  ->orWhere(function($sub) use ($billType) {
+                      $sub->where('bill_types.name', $billType->name)
+                          ->where('bill_types.academic_year_id', $billType->academic_year_id);
+                  });
+            })
+            ->where('payment_rates.type', PaymentRate::TYPE_REGULAR)
+            ->whereNull('payment_rates.deleted_at')
+            ->whereNull('payment_rate_classrooms.deleted_at')
+            ->pluck('payment_rate_classrooms.classroom_id')
+            ->unique()
+            ->values()
+            ->toArray();
+
+        return view('admins.payment-rate.create-edit', compact('billType', 'schools', 'classroomValue', 'existingClassroomIds'));
     }
 
     /**
@@ -62,6 +81,36 @@ class PaymentRateController extends Controller
             DB::beginTransaction();
 
             $billType = BillType::findOrFail($request->bill_type_id);
+
+            // Backend Protection: Block attempting to store for already created classrooms
+            if ($request->type == PaymentRate::TYPE_REGULAR && !empty($request->classrooms)) {
+                $existingClassroomIds = DB::table('payment_rate_classrooms')
+                    ->join('payment_rates', 'payment_rate_classrooms.payment_rate_id', '=', 'payment_rates.id')
+                    ->join('bill_types', 'payment_rates.bill_type_id', '=', 'bill_types.id')
+                    ->where(function($q) use ($billType) {
+                        $q->where('payment_rates.bill_type_id', $billType->id)
+                          ->orWhere(function($sub) use ($billType) {
+                              $sub->where('bill_types.name', $billType->name)
+                                  ->where('bill_types.academic_year_id', $billType->academic_year_id);
+                          });
+                    })
+                    ->where('payment_rates.type', PaymentRate::TYPE_REGULAR)
+                    ->whereNull('payment_rates.deleted_at')
+                    ->whereNull('payment_rate_classrooms.deleted_at')
+                    ->pluck('payment_rate_classrooms.classroom_id')
+                    ->unique()
+                    ->toArray();
+
+                $duplicatedIds = array_intersect($request->classrooms, $existingClassroomIds);
+                if (!empty($duplicatedIds)) {
+                    $classNames = Classroom::whereIn('id', $duplicatedIds)->pluck('name')->implode(', ');
+                    DB::rollBack();
+                    $lock->release();
+                    return redirect()->back()
+                        ->with('error', "Gagal: Kelas ({$classNames}) sudah memiliki tarif untuk tagihan ini.")
+                        ->withInput();
+                }
+            }
 
             // 2. Buat Parent Payment Rate
             $paymentRate = $billType->paymentRates()->create([
@@ -840,7 +889,40 @@ class PaymentRateController extends Controller
     public function getClassroom(Request $request)
     {
         $school = School::findOrFail($request->school_id);
-        $classrooms = Classroom::where('school_id', $school->id)->orderByRaw("CAST(name AS UNSIGNED) ASC, name ASC")->get();
+        $billTypeId = $request->bill_type_id;
+
+        $existingClassroomIds = [];
+        if ($billTypeId) {
+            $billType = BillType::find($billTypeId);
+            if ($billType) {
+                $existingClassroomIds = DB::table('payment_rate_classrooms')
+                    ->join('payment_rates', 'payment_rate_classrooms.payment_rate_id', '=', 'payment_rates.id')
+                    ->join('bill_types', 'payment_rates.bill_type_id', '=', 'bill_types.id')
+                    ->where(function($q) use ($billType) {
+                        $q->where('payment_rates.bill_type_id', $billType->id)
+                          ->orWhere(function($sub) use ($billType) {
+                              $sub->where('bill_types.name', $billType->name)
+                                  ->where('bill_types.academic_year_id', $billType->academic_year_id);
+                          });
+                    })
+                    ->where('payment_rates.type', PaymentRate::TYPE_REGULAR)
+                    ->whereNull('payment_rates.deleted_at')
+                    ->whereNull('payment_rate_classrooms.deleted_at')
+                    ->pluck('payment_rate_classrooms.classroom_id')
+                    ->unique()
+                    ->values()
+                    ->toArray();
+            }
+        }
+
+        $classrooms = Classroom::where('school_id', $school->id)
+            ->orderByRaw("CAST(name AS UNSIGNED) ASC, name ASC")
+            ->get()
+            ->map(function($classroom) use ($existingClassroomIds) {
+                $classroom->is_already_created = in_array($classroom->id, $existingClassroomIds);
+                return $classroom;
+            });
+
         return response()->json($classrooms);
     }
 
