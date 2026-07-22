@@ -38,8 +38,8 @@ class BillTypeController extends Controller
 
             return DataTables::of($data)
                 ->addColumn('payment_rates', function ($data) {
-                    // show button to link to payment rate
-                    $action = route('bill-type.show', $data->id);
+                    // show button to link to payment rate with default academic year parameter
+                    $action = route('bill-type.show', $data->id) . '?academic_year_id=' . $data->academic_year_id;
                     return "<i class='fas fa-money-bill-wave'></i> <a href='$action'>Tarif Pembayaran</a>";
                 })
                 ->editColumn('type', function ($data) {
@@ -142,23 +142,31 @@ class BillTypeController extends Controller
         }
 
         $rawAcademicYearId = request('academic_year_id');
-        if (is_array($rawAcademicYearId)) {
+        if ($rawAcademicYearId === 'all') {
+            $academicYearIds = [];
+        } elseif (is_array($rawAcademicYearId)) {
             $academicYearIds = array_values(array_filter($rawAcademicYearId));
         } elseif (is_string($rawAcademicYearId) && trim($rawAcademicYearId) !== '') {
             $academicYearIds = array_values(array_filter(explode(',', $rawAcademicYearId)));
         } else {
-            $academicYearIds = [];
+            // Default to target bill type's academic year if no filter explicitly provided
+            $academicYearIds = !empty($billType->academic_year_id) ? [$billType->academic_year_id] : [];
         }
 
-        // Get related bill types with the same bill_item_id or name for cross-year rate filtering
-        $relatedQuery = BillType::query();
+        // Get related bill types matching Pos Bayar, Nama Pembayaran, & Tipe Pembayaran for cross-year rate filtering
+        $relatedQuery = BillType::query()
+            ->where('name', $billType->name);
+
         if (!empty($billType->bill_item_id)) {
             $relatedQuery->where('bill_item_id', $billType->bill_item_id);
-        } elseif (!empty($billType->name)) {
-            $relatedQuery->where('name', $billType->name);
-        } else {
-            $relatedQuery->where('id', $billType->id);
         }
+        if (!empty($billType->type)) {
+            $relatedQuery->where('type', $billType->type);
+        }
+        if (!empty($billType->payment_input_type)) {
+            $relatedQuery->where('payment_input_type', $billType->payment_input_type);
+        }
+
         $relatedBillTypeIds = $relatedQuery->pluck('id')->toArray();
         if (empty($relatedBillTypeIds)) {
             $relatedBillTypeIds = [$billType->id];

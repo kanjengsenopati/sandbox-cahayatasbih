@@ -18,9 +18,17 @@
                     <h1 class="d-flex text-dark fw-bolder fs-3 align-items-center my-1">
                         Data Tarif Pembayaran
                     </h1>
-                    <span class="text-muted fw-bold fs-7">
-                        List Tarif Pembayaran: <span class="text-primary">{{ $billType->name }}</span>
-                    </span>
+                    <div class="d-flex align-items-center gap-2 flex-wrap mt-1">
+                        <span class="badge badge-light-primary fw-bolder" title="Pos Bayar">
+                            <i class="fas fa-school text-primary me-1"></i> {{ $billType->billItem?->name ?? 'Pos Bayar' }}
+                        </span>
+                        <span class="badge badge-light-info fw-bolder" title="Nama Pembayaran">
+                            <i class="fas fa-file-alt text-info me-1"></i> {{ $billType->name }}
+                        </span>
+                        <span class="badge badge-light-success fw-bolder" title="Tipe Pembayaran">
+                            <i class="fas fa-clock text-success me-1"></i> {{ $billType->type == 'MONTHLY' ? 'Bulanan' : 'Bebas' }}{{ $billType->payment_input_type == 'FREE' ? ' (Cicilan)' : ' (Fix)' }}
+                        </span>
+                    </div>
                 </div>
             </div>
             <!--end::Title-->
@@ -49,7 +57,7 @@
                         <h3 class="fw-bolder m-0 text-dark">Daftar Tagihan</h3>
                         <span class="text-gray-400">|</span>
                         <div class="min-w-225px">
-                            <select class="form-select form-select-solid form-select-sm" data-control="select2" multiple="multiple" data-hide-search="true" id="filter_academic_year" data-placeholder="Tampilkan Semua">
+                            <select class="form-select form-select-solid form-select-sm" data-control="select2" multiple="multiple" data-hide-search="true" id="filter_academic_year" data-placeholder="Semua Tahun Ajaran">
                                 @foreach($academicYears as $year)
                                 <option value="{{ $year->id }}" {{ in_array($year->id, $academicYearIds ?? []) ? 'selected' : '' }}>{{ $year->name }}</option>
                                 @endforeach
@@ -369,7 +377,7 @@
             if (selectedYears && selectedYears.length > 0) {
                 url.searchParams.set('academic_year_id', selectedYears.join(','));
             } else {
-                url.searchParams.delete('academic_year_id');
+                url.searchParams.set('academic_year_id', 'all');
             }
             window.location.href = url.toString();
         });
