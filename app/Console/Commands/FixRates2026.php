@@ -215,7 +215,7 @@ class FixRates2026 extends Command
             $this->fixRateItems($paymentRate, $config['items'], $isDryRun);
 
             // Fix classroom mapping
-            $this->fixClassroomMapping($paymentRate, $allClassrooms, $isDryRun);
+            $this->fixClassroomMapping($billType, $paymentRate, $isDryRun);
         }
     }
 
@@ -288,11 +288,31 @@ class FixRates2026 extends Command
             ->pluck('classroom_id')
             ->toArray();
 
-        // Determine target school ID for this payment rate
+        // Determine target school ID for this payment rate by checking 3 UPT Utama first
         $targetSchoolId = null;
+        $nameToCheck = strtoupper($billType->name . ' ' . ($billType->billItem?->name ?? ''));
 
-        if (!empty($existingMappings)) {
-            // Take the majority school_id among existing mapped classrooms
+        if (str_contains($nameToCheck, 'PONDOK') || str_contains($nameToCheck, 'PPTQ')) {
+            $targetSchoolId = DB::table('schools')
+                ->where('type', 'PONDOK')
+                ->orWhere('name', 'LIKE', '%PONDOK%')
+                ->orWhere('name', 'LIKE', '%PPTQ%')
+                ->value('id');
+        } elseif (str_contains($nameToCheck, 'MA') || str_contains($nameToCheck, 'ALIYAH')) {
+            $targetSchoolId = DB::table('schools')
+                ->where('type', 'MA')
+                ->orWhere('name', 'LIKE', '%MA%')
+                ->orWhere('name', 'LIKE', '%ALIYAH%')
+                ->value('id');
+        } elseif (str_contains($nameToCheck, 'SMP')) {
+            $targetSchoolId = DB::table('schools')
+                ->where('type', 'SMP')
+                ->orWhere('name', 'LIKE', '%SMP%')
+                ->value('id');
+        }
+
+        if (!$targetSchoolId && !empty($existingMappings)) {
+            // Fallback: Take the majority school_id among existing mapped classrooms
             $targetSchoolId = DB::table('classrooms')
                 ->whereIn('id', $existingMappings)
                 ->whereNull('deleted_at')
@@ -300,18 +320,6 @@ class FixRates2026 extends Command
                 ->groupBy('school_id')
                 ->orderBy('total', 'desc')
                 ->value('school_id');
-        }
-
-        if (!$targetSchoolId) {
-            // Try matching BillType name or BillItem name to school
-            $nameToCheck = strtoupper($billType->name . ' ' . ($billType->billItem?->name ?? ''));
-            if (str_contains($nameToCheck, 'MA') || str_contains($nameToCheck, 'ALIYAH')) {
-                $targetSchoolId = DB::table('schools')->where('name', 'LIKE', '%MA%')->orWhere('name', 'LIKE', '%ALIYAH%')->value('id');
-            } elseif (str_contains($nameToCheck, 'SMP')) {
-                $targetSchoolId = DB::table('schools')->where('name', 'LIKE', '%SMP%')->value('id');
-            } elseif (str_contains($nameToCheck, 'PONDOK')) {
-                $targetSchoolId = DB::table('schools')->where('name', 'LIKE', '%PONDOK%')->value('id');
-            }
         }
 
         // Get classrooms belonging strictly to the target school (or all if no school identified)

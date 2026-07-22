@@ -143,7 +143,7 @@ class CleanupGhostAndDuplicateBills extends Command
                     if (isset($historyByAcademicYear[$billAcadYearId])) {
                         $enrolledSchoolName = strtoupper($historyByAcademicYear[$billAcadYearId]['school_name']);
 
-                        $isBillForMA = (str_contains($billTypeName, 'MA') || str_contains($billItemName, 'MA') || (!str_contains($billTypeName, 'SMP') && !str_contains($billTypeName, 'SD')));
+                        $isBillForMA = (str_contains($billTypeName, 'MA') || str_contains($billItemName, 'MA') || (!str_contains($billTypeName, 'SMP') && !str_contains($billTypeName, 'SD') && !str_contains($billTypeName, 'PONDOK')));
                         $isStudentInSMP = (str_contains($enrolledSchoolName, 'SMP') || str_contains($enrolledSchoolName, 'SD'));
 
                         if ($isBillForMA && $isStudentInSMP) {
@@ -154,6 +154,20 @@ class CleanupGhostAndDuplicateBills extends Command
                             $totalGhostDeleted++;
                             continue;
                         }
+                    }
+
+                    // Check 1b: UPT Pondok Cross-School Leakage Detection
+                    $studentSchoolName = strtoupper($student->classroom?->school?->name ?? '');
+                    $isBillForPondok = (str_contains($billTypeName, 'PONDOK') || str_contains($billItemName, 'PONDOK'));
+                    $isStudentInNonPondok = (!str_contains($studentSchoolName, 'PONDOK') && !str_contains($studentSchoolName, 'PPTQ'));
+
+                    if ($isBillForPondok && $isStudentInNonPondok) {
+                        $this->warn("  [CROSS-UPT LEAKAGE DETECTED] Bill #{$bill->id} ({$billType?->name} - {$bill->academicYear?->name}) is for UPT PONDOK, but student is enrolled in non-pondok school '{$studentSchoolName}'.");
+                        if (!$isDryRun) {
+                            $bill->delete();
+                        }
+                        $totalGhostDeleted++;
+                        continue;
                     }
 
                     // Check 2: Parallel category payment matching in same academic year

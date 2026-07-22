@@ -91,10 +91,30 @@ class PaymentCheckController extends Controller
             $currentDue = 0;
             
             $monthSequence = [7, 8, 9, 10, 11, 12, 1, 2, 3, 4, 5, 6];
-            
+
+            // Strict UPT Filter: Match student's UPT school with bill type
+            $studentSchoolName = strtoupper($student->classroom?->school?->name ?? '');
+            $isSmp = str_contains($studentSchoolName, 'SMP');
+            $isMa = str_contains($studentSchoolName, 'MA') || str_contains($studentSchoolName, 'ALIYAH');
+            $isPondok = str_contains($studentSchoolName, 'PONDOK') || str_contains($studentSchoolName, 'PPTQ');
+
+            $filteredBills = $student->bills->filter(function($b) use ($isSmp, $isMa, $isPondok) {
+                $btName = strtoupper($b->billType?->name ?? '');
+                if ($isSmp) {
+                    return !str_contains($btName, 'PONDOK') && !str_contains($btName, 'MA');
+                }
+                if ($isMa) {
+                    return !str_contains($btName, 'PONDOK') && !str_contains($btName, 'SMP');
+                }
+                if ($isPondok) {
+                    return str_contains($btName, 'PONDOK');
+                }
+                return true;
+            });
+
             foreach ($monthSequence as $m) {
                 $year = ($m >= 7) ? $startYear : $startYear + 1;
-                $bill = $student->bills->where('month', $m)->where('year', $year)->first();
+                $bill = $filteredBills->where('month', $m)->where('year', $year)->first();
                 
                 $status = 'unpaid';
                 $amount = 0;
