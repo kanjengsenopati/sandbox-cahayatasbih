@@ -61,7 +61,7 @@ class CleanupGhostAndDuplicateBills extends Command
             ->pluck('id')
             ->toArray();
 
-        // 2. Fetch Students to Audit
+        // 2. Fetch Students to Audit (ALL active students for cross-UPT detection)
         $studentsQuery = Student::query();
 
         if ($targetNis) {
@@ -69,22 +69,8 @@ class CleanupGhostAndDuplicateBills extends Command
         } elseif ($targetSchool) {
             $studentsQuery->where('school_id', $targetSchool);
         } else {
-            if (!empty($maSchools)) {
-                $studentsQuery->where(function($q) use ($maSchools) {
-                    $q->whereIn('school_id', $maSchools)
-                      ->orWhereHas('classroom.school', function($sq) use ($maSchools) {
-                          $sq->whereIn('id', $maSchools);
-                      })
-                      ->orWhereHas('classroom', function($cq) {
-                          $cq->where('name', 'LIKE', '10%')
-                             ->orWhere('name', 'LIKE', '11%')
-                             ->orWhere('name', 'LIKE', '12%')
-                             ->orWhere('name', 'LIKE', 'X%')
-                             ->orWhere('name', 'LIKE', 'XI%')
-                             ->orWhere('name', 'LIKE', 'XII%');
-                      });
-                });
-            }
+            // Default: audit ALL active students across all UPTs (SMP, MA, PONDOK)
+            $studentsQuery->where('status', 'ACTIVE');
         }
 
         $totalGhostDeleted = 0;
@@ -156,13 +142,33 @@ class CleanupGhostAndDuplicateBills extends Command
                         }
                     }
 
-                    // Check 1b: UPT Pondok Cross-School Leakage Detection
+                    // Check 1b: Full 3-UPT Cross-School Leakage Detection (SMP, MA, PONDOK)
                     $studentSchoolName = strtoupper($student->classroom?->school?->name ?? '');
-                    $isBillForPondok = (str_contains($billTypeName, 'PONDOK') || str_contains($billItemName, 'PONDOK'));
-                    $isStudentInNonPondok = (!str_contains($studentSchoolName, 'PONDOK') && !str_contains($studentSchoolName, 'PPTQ'));
+                    $isStudentSmp = str_contains($studentSchoolName, 'SMP');
+                    $isStudentMa = str_contains($studentSchoolName, 'MA') || str_contains($studentSchoolName, 'ALIYAH');
+                    $isStudentPondok = str_contains($studentSchoolName, 'PONDOK') || str_contains($studentSchoolName, 'PPTQ');
 
-                    if ($isBillForPondok && $isStudentInNonPondok) {
-                        $this->warn("  [CROSS-UPT LEAKAGE DETECTED] Bill #{$bill->id} ({$billType?->name} - {$bill->academicYear?->name}) is for UPT PONDOK, but student is enrolled in non-pondok school '{$studentSchoolName}'.");
+                    $isBillForPondok = str_contains($billTypeName, 'PONDOK') || str_contains($billItemName, 'PONDOK');
+                    $isBillForSmp = str_contains($billTypeName, 'SMP') || str_contains($billItemName, 'SMP');
+                    $isBillForMa = (str_contains($billTypeName, ' MA') || str_contains($billItemName, ' MA')
+                                 || str_contains($billTypeName, 'ALIYAH') || str_contains($billItemName, 'ALIYAH'));
+
+                    $isCrossUpt = false;
+                    $crossUptDetail = '';
+
+                    if ($isBillForPondok && !$isStudentPondok) {
+                        $isCrossUpt = true;
+                        $crossUptDetail = "Bill UPT=PONDOK, Student UPT={$studentSchoolName}";
+                    } elseif ($isBillForSmp && !$isStudentSmp) {
+                        $isCrossUpt = true;
+                        $crossUptDetail = "Bill UPT=SMP, Student UPT={$studentSchoolName}";
+                    } elseif ($isBillForMa && !$isStudentMa) {
+                        $isCrossUpt = true;
+                        $crossUptDetail = "Bill UPT=MA, Student UPT={$studentSchoolName}";
+                    }
+
+                    if ($isCrossUpt) {
+                        $this->warn("  [CROSS-UPT LEAKAGE] Bill #{$bill->id} ({$billType?->name} - {$bill->academicYear?->name}) — {$crossUptDetail}");
                         if (!$isDryRun) {
                             $bill->delete();
                         }

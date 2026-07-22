@@ -12,10 +12,35 @@ class BillController extends BaseWaliApiController
     {
         $student = $this->resolveActiveStudent();
         if (!$student) return response()->json(['unpaid' => [], 'paid' => []]);
-        
-        $groupedBills = Bill::with(['billType.billItem', 'billType.academicYear'])
+
+        // Load student's school for UPT filtering
+        $student->load('classroom.school');
+
+        $allBills = Bill::with(['billType.billItem', 'billType.academicYear'])
             ->where('student_id', $student->id)
-            ->get()
+            ->get();
+
+        // Strict UPT Filter: Only show bills matching student's UPT school
+        $studentSchoolName = strtoupper($student->classroom?->school?->name ?? '');
+        $isSmp = str_contains($studentSchoolName, 'SMP');
+        $isMa = str_contains($studentSchoolName, 'MA') || str_contains($studentSchoolName, 'ALIYAH');
+        $isPondok = str_contains($studentSchoolName, 'PONDOK') || str_contains($studentSchoolName, 'PPTQ');
+
+        $filteredBills = $allBills->filter(function ($b) use ($isSmp, $isMa, $isPondok) {
+            $btName = strtoupper($b->billType?->name ?? '');
+            if ($isSmp) {
+                return !str_contains($btName, 'PONDOK') && !str_contains($btName, 'MA');
+            }
+            if ($isMa) {
+                return !str_contains($btName, 'PONDOK') && !str_contains($btName, 'SMP');
+            }
+            if ($isPondok) {
+                return str_contains($btName, 'PONDOK');
+            }
+            return true;
+        });
+
+        $groupedBills = $filteredBills
             ->groupBy('bill_type_id')
             ->map(function ($items) use ($student) {
                 $first = $items->first();

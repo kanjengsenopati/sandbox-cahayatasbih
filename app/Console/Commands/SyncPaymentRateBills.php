@@ -233,6 +233,17 @@ class SyncPaymentRateBills extends Command
             $query->whereIn('id', $studentIds);
         }
 
+        // Strict 3-UPT Guard: Ensure student's classroom belongs strictly to the target UPT school of the BillType
+        $billType = $paymentRate->billType;
+        if ($billType) {
+            $targetSchoolId = $this->resolveTargetSchoolIdForBillType($billType);
+            if ($targetSchoolId) {
+                $query->whereHas('classroom', function ($q) use ($targetSchoolId) {
+                    $q->where('school_id', $targetSchoolId);
+                });
+            }
+        }
+
         // Filter by gender
         if ($paymentRate->gender) {
             $query->whereIn('gender', array_map('trim', explode(',', $paymentRate->gender)));
@@ -257,4 +268,48 @@ class SyncPaymentRateBills extends Command
 
         return $query->get(['id', 'name', 'classroom_id', 'gender', 'user_id']);
     }
+
+    /**
+     * Resolve the target school_id for a BillType based on its name (3-UPT: SMP, MA, PONDOK).
+     * Returns null if no specific UPT can be determined.
+     */
+    private function resolveTargetSchoolIdForBillType(BillType $billType): ?string
+    {
+        $nameToCheck = strtoupper($billType->name . ' ' . ($billType->billItem?->name ?? ''));
+
+        if (str_contains($nameToCheck, 'PONDOK') || str_contains($nameToCheck, 'PPTQ')) {
+            return DB::table('schools')
+                ->where(function ($q) {
+                    $q->where('type', 'PONDOK')
+                      ->orWhere('name', 'LIKE', '%PONDOK%')
+                      ->orWhere('name', 'LIKE', '%PPTQ%');
+                })
+                ->whereNull('deleted_at')
+                ->value('id');
+        }
+
+        if (str_contains($nameToCheck, 'MA') || str_contains($nameToCheck, 'ALIYAH')) {
+            return DB::table('schools')
+                ->where(function ($q) {
+                    $q->where('type', 'MA')
+                      ->orWhere('name', 'LIKE', '%MA%')
+                      ->orWhere('name', 'LIKE', '%ALIYAH%');
+                })
+                ->whereNull('deleted_at')
+                ->value('id');
+        }
+
+        if (str_contains($nameToCheck, 'SMP')) {
+            return DB::table('schools')
+                ->where(function ($q) {
+                    $q->where('type', 'SMP')
+                      ->orWhere('name', 'LIKE', '%SMP%');
+                })
+                ->whereNull('deleted_at')
+                ->value('id');
+        }
+
+        return null;
+    }
 }
+
