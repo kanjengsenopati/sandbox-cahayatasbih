@@ -141,27 +141,43 @@ class BillTypeController extends Controller
             return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
         }
 
-        $academicYearId = request('academic_year_id');
+        $rawAcademicYearId = request('academic_year_id');
+        if (is_array($rawAcademicYearId)) {
+            $academicYearIds = array_filter($rawAcademicYearId);
+        } elseif (is_string($rawAcademicYearId) && trim($rawAcademicYearId) !== '') {
+            $academicYearIds = array_filter(explode(',', $rawAcademicYearId));
+        } else {
+            $academicYearIds = [];
+        }
+
+        // Get related bill types with the same bill_item_id or name for cross-year rate filtering
+        $relatedBillTypeIds = BillType::when($billType->bill_item_id, function ($q) use ($billType) {
+                $q->where('bill_item_id', $billType->bill_item_id);
+            }, function ($q) use ($billType) {
+                $q->where('name', $billType->name);
+            })
+            ->pluck('id')
+            ->toArray();
 
         // Regular Rates (Classroom Based)
-        $regularRates = PaymentRate::with(['billType', 'paymentRateClassrooms.classroom.school'])
-            ->where('bill_type_id', $billType->id)
+        $regularRates = PaymentRate::with(['billType.academicYear', 'paymentRateClassrooms.classroom.school'])
+            ->whereIn('bill_type_id', $relatedBillTypeIds)
             ->where('type', 'REGULAR')
-            ->when($academicYearId, function ($query) use ($academicYearId) {
-                $query->whereHas('billType', function ($q) use ($academicYearId) {
-                    $q->where('academic_year_id', $academicYearId);
+            ->when(!empty($academicYearIds), function ($query) use ($academicYearIds) {
+                $query->whereHas('billType', function ($q) use ($academicYearIds) {
+                    $q->whereIn('academic_year_id', $academicYearIds);
                 });
             })
             ->latest()
             ->get();
 
         // Transfer Rates (Student Based)
-        $transferRates = PaymentRate::with(['billType', 'paymentRateStudents.student'])
-            ->where('bill_type_id', $billType->id)
+        $transferRates = PaymentRate::with(['billType.academicYear', 'paymentRateStudents.student'])
+            ->whereIn('bill_type_id', $relatedBillTypeIds)
             ->where('type', 'TRANSFER')
-            ->when($academicYearId, function ($query) use ($academicYearId) {
-                $query->whereHas('billType', function ($q) use ($academicYearId) {
-                    $q->where('academic_year_id', $academicYearId);
+            ->when(!empty($academicYearIds), function ($query) use ($academicYearIds) {
+                $query->whereHas('billType', function ($q) use ($academicYearIds) {
+                    $q->whereIn('academic_year_id', $academicYearIds);
                 });
             })
             ->latest()
@@ -169,7 +185,7 @@ class BillTypeController extends Controller
 
         $academicYears = AcademicYear::orderBy('name', 'DESC')->get();
 
-        return view('admins.bill-type.show', compact('billType', 'academicYears', 'regularRates', 'transferRates'));
+        return view('admins.bill-type.show', compact('billType', 'academicYears', 'regularRates', 'transferRates', 'academicYearIds'));
     }
 
     /**

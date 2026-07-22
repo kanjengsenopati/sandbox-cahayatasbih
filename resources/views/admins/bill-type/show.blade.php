@@ -48,11 +48,10 @@
                     <div class="d-flex align-items-center position-relative my-1 gap-3">
                         <h3 class="fw-bolder m-0 text-dark">Daftar Tagihan</h3>
                         <span class="text-gray-400">|</span>
-                        <div class="w-200px">
-                            <select class="form-select form-select-solid form-select-sm" data-control="select2" data-hide-search="true" id="filter_academic_year" data-placeholder="Filter Tahun Ajaran">
-                                <option value="">Semua Tahun</option>
+                        <div class="min-w-225px">
+                            <select class="form-select form-select-solid form-select-sm" data-control="select2" multiple="multiple" data-hide-search="true" id="filter_academic_year" data-placeholder="Tampilkan Semua">
                                 @foreach($academicYears as $year)
-                                <option value="{{ $year->id }}" {{ $year->status ? 'selected' : '' }}>{{ $year->name }}</option>
+                                <option value="{{ $year->id }}" {{ in_array($year->id, $academicYearIds ?? []) ? 'selected' : '' }}>{{ $year->name }}</option>
                                 @endforeach
                             </select>
                         </div>
@@ -363,12 +362,12 @@
 @push('js')
 <script>
     $(document).ready(function() {
-        // Handle Filter Change
-        $('#filter_academic_year').change(function() {
-            var yearId = $(this).val();
+        // Handle Filter Change (Multi-select)
+        $('#filter_academic_year').on('change', function() {
+            var selectedYears = $(this).val();
             var url = new URL(window.location.href);
-            if(yearId) {
-                url.searchParams.set('academic_year_id', yearId);
+            if (selectedYears && selectedYears.length > 0) {
+                url.searchParams.set('academic_year_id', selectedYears.join(','));
             } else {
                 url.searchParams.delete('academic_year_id');
             }
