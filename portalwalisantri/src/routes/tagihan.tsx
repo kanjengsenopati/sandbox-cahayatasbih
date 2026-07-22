@@ -116,14 +116,6 @@ function Tagihan() {
     return Array.from(map.entries());
   }, [filtered]);
 
-  if (isLoadingSantri || isLoadingBills) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <Loader2 className="animate-spin text-primary" size={40} />
-      </div>
-    );
-  }
-
   const totalDue = useMemo(() => {
     return bills
       .filter((b: any) => {
@@ -133,6 +125,14 @@ function Tagihan() {
       })
       .reduce((acc: number, b: any) => acc + (b.total - b.paid), 0);
   }, [bills, selectedYear]);
+
+  if (isLoadingSantri || isLoadingBills) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <Loader2 className="animate-spin text-primary" size={40} />
+      </div>
+    );
+  }
 
   return (
     <MobileShell>
