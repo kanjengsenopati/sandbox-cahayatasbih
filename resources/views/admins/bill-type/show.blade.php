@@ -169,7 +169,12 @@
                                             @endif
                                         </td>
                                         <td>
-                                            <span class="badge badge-light-success fs-7 fw-bolder">Rp. {{ number_format($rate->amount, 0, ',', '.') }}</span>
+                                            @php
+                                                $totalMasterAmount = ($billType->type == 'MONTHLY' || $rate->paymentRateItems->count() > 0)
+                                                    ? ($rate->paymentRateItems->count() > 0 ? $rate->paymentRateItems->sum('amount') : $rate->amount * 12)
+                                                    : $rate->amount;
+                                            @endphp
+                                            <span class="badge badge-light-success fs-7 fw-bolder">Rp. {{ number_format($totalMasterAmount, 0, ',', '.') }}</span>
                                         </td>
                                         <td class="text-center">
                                             <div class="d-flex justify-content-center gap-2">
@@ -282,7 +287,12 @@
                                             @endif
                                         </td>
                                         <td>
-                                            <span class="badge badge-light-success fs-7 fw-bolder">Rp. {{ number_format($rate->amount, 0, ',', '.') }}</span>
+                                            @php
+                                                $totalTransferMasterAmount = ($billType->type == 'MONTHLY' || $rate->paymentRateItems->count() > 0)
+                                                    ? ($rate->paymentRateItems->count() > 0 ? $rate->paymentRateItems->sum('amount') : $rate->amount * 12)
+                                                    : $rate->amount;
+                                            @endphp
+                                            <span class="badge badge-light-success fs-7 fw-bolder">Rp. {{ number_format($totalTransferMasterAmount, 0, ',', '.') }}</span>
                                         </td>
                                         <td class="text-center">
                                             <div class="d-flex justify-content-center gap-2">
@@ -681,7 +691,7 @@
                         
                         var cardStyle = b.status === 'PAID' 
                             ? 'bg-light-success border-success' 
-                            : 'bg-white border-gray-200';
+                            : (b.status === 'PARTIAL' ? 'bg-light-warning border-warning' : 'bg-white border-gray-200');
                         
                         // Refined to p-3, min-height 145px, d-flex flex-column to be compact and eliminate blank gaps
                         html += '<div class="card h-100 border ' + cardStyle + ' shadow-sm rounded-4 position-relative p-3 d-flex flex-column" style="min-height: 145px; transition: transform 0.2s, box-shadow 0.2s;">';
@@ -698,20 +708,22 @@
                         // Prominent Month & Year Badge (Centered mt-2 to avoid checkbox overlap)
                         html += '<div class="badge badge-light-primary fw-bolder text-uppercase fs-8 py-1.5 px-3 w-100 mb-1.5 text-center mt-2">' + (b.translated_month || '-') + ' ' + b.year + '</div>';
                         
-                        // Solid Status Badge (Red for Unpaid, Emerald for Paid)
+                        // Dynamic Status Badge (Emerald for PAID, Yellow for PARTIAL, Red for UNPAID)
                         var statusStyle = b.status === 'PAID' 
                             ? 'background-color: #10b981 !important; color: #ffffff !important;' 
-                            : 'background-color: #dc2626 !important; color: #ffffff !important;';
-                        var statusLabel = b.status === 'PAID' ? 'LUNAS' : 'BELUM LUNAS';
+                            : (b.status === 'PARTIAL' 
+                                ? 'background-color: #f59e0b !important; color: #ffffff !important;' 
+                                : 'background-color: #dc2626 !important; color: #ffffff !important;');
+                        var statusLabel = b.status === 'PAID' ? 'LUNAS' : (b.status === 'PARTIAL' ? 'CICILAN' : 'BELUM LUNAS');
                         html += '<div class="badge fw-bold fs-8 py-1.5 px-3 w-100 mb-2 text-center" style="' + statusStyle + '">' + statusLabel + '</div>';
                         
                         // Nominal
-                        var amountColor = b.status === 'PAID' ? 'text-success' : 'text-primary';
+                        var amountColor = b.status === 'PAID' ? 'text-success' : (b.status === 'PARTIAL' ? 'text-warning' : 'text-primary');
                         html += '<div class="fs-5 fw-bolder ' + amountColor + ' text-center mb-2">Rp. ' + new Intl.NumberFormat('id-ID').format(b.amount) + '</div>';
                         
                         // Aligned Bottom Buttons / Status
                         html += '<div class="mt-auto">';
-                        if (b.status === 'UNPAID') {
+                        if (b.status === 'UNPAID' || b.status === 'PARTIAL') {
                             html += '<div class="d-flex gap-2 w-100">';
                             html += '<button type="button" class="btn btn-sm btn-light-primary w-50 edit-bill-btn py-1 fs-8 d-flex align-items-center justify-content-center" data-bill-id="' + b.id + '" data-amount="' + b.amount + '" data-rate-id="' + rateId + '" data-student-id="' + studentId + '" title="Edit">';
                             html += '<i class="bi bi-pencil-square me-1 fs-8"></i>Edit';

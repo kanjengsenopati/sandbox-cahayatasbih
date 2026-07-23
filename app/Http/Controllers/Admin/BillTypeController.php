@@ -107,6 +107,20 @@ class BillTypeController extends Controller
 
         try {
             $validated = $request->validated();
+
+            $existing = BillType::where('name', $validated['name'])
+                ->where('academic_year_id', $validated['academic_year_id'] ?? null)
+                ->when(!empty($validated['bill_item_id']), function($q) use ($validated) {
+                    $q->where('bill_item_id', $validated['bill_item_id']);
+                })
+                ->whereNull('deleted_at')
+                ->first();
+
+            if ($existing) {
+                DB::rollBack();
+                return redirect()->route('bill-type.show', $existing->id)->with('info', 'Jenis bayar ini sudah ada. Anda diarahkan ke halaman tarif pembayaran.');
+            }
+
             $billType = BillType::create($validated);
             if ($request->has('bank_ids')) {
                 foreach ($request->bank_ids as $bankId) {

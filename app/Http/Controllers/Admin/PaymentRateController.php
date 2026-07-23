@@ -300,10 +300,17 @@ class PaymentRateController extends Controller
 
     private function getBillData(string $id, array $dateRange)
     {
-        $paymentRate = PaymentRate::with(['paymentRateItems', 'paymentRateClassrooms', 'paymentRateStudents'])->findOrFail($id);
+        $paymentRate = PaymentRate::with(['billType', 'paymentRateItems', 'paymentRateClassrooms', 'paymentRateStudents'])->findOrFail($id);
 
         // Get all relevant payment rate item IDs once
         $paymentRateItemIds = $paymentRate->paymentRateItems->pluck('id')->toArray();
+        $relatedBillTypeIds = [$paymentRate->bill_type_id];
+        if ($paymentRate->billType) {
+            $relatedBillTypeIds = BillType::where('name', $paymentRate->billType->name)
+                ->where('academic_year_id', $paymentRate->billType->academic_year_id)
+                ->pluck('id')
+                ->toArray();
+        }
 
         // Base query on Students
         $query = Student::query()
@@ -358,8 +365,8 @@ class PaymentRateController extends Controller
         }
 
         // Calculate aggregates in DB using withSum/withCount
-        $query->withSum(['bills as total' => function ($q) use ($paymentRate, $paymentRateItemIds, $dateRange) {
-                $q->where('bill_type_id', $paymentRate->bill_type_id)
+        $query->withSum(['bills as total' => function ($q) use ($relatedBillTypeIds, $paymentRateItemIds, $dateRange) {
+                $q->whereIn('bill_type_id', $relatedBillTypeIds)
                     ->where(function ($qq) use ($paymentRateItemIds) {
                         $qq->whereIn('payment_rate_item_id', $paymentRateItemIds)
                            ->orWhereNull('payment_rate_item_id');
@@ -369,8 +376,8 @@ class PaymentRateController extends Controller
                     ($this->dateRangeFilter($dateRange))($q);
                 }
             }], 'amount')
-            ->withSum(['bills as total_paid' => function ($q) use ($paymentRate, $paymentRateItemIds, $dateRange) {
-                $q->where('bill_type_id', $paymentRate->bill_type_id)
+            ->withSum(['bills as total_paid' => function ($q) use ($relatedBillTypeIds, $paymentRateItemIds, $dateRange) {
+                $q->whereIn('bill_type_id', $relatedBillTypeIds)
                     ->where(function ($qq) use ($paymentRateItemIds) {
                         $qq->whereIn('payment_rate_item_id', $paymentRateItemIds)
                            ->orWhereNull('payment_rate_item_id');
@@ -1004,10 +1011,24 @@ class PaymentRateController extends Controller
     public function getBillDetails(Request $request)
     {
         try {
+            $paymentRate = PaymentRate::with('paymentRateItems')->find($request->payment_rate_id);
+            $paymentRateItemIds = $paymentRate ? $paymentRate->paymentRateItems->pluck('id')->toArray() : [];
+
+            $relatedBillTypeIds = [$request->bill_type_id];
+            if ($paymentRate && $paymentRate->billType) {
+                $relatedBillTypeIds = BillType::where('name', $paymentRate->billType->name)
+                    ->where('academic_year_id', $paymentRate->billType->academic_year_id)
+                    ->pluck('id')
+                    ->toArray();
+            }
+
             $bills = Bill::where('student_id', $request->student_id)
-                ->where('bill_type_id', $request->bill_type_id)
-                ->whereHas('paymentRateItems', function ($q) use ($request) {
-                    $q->where('payment_rate_id', $request->payment_rate_id);
+                ->whereIn('bill_type_id', $relatedBillTypeIds)
+                ->when(!empty($paymentRateItemIds), function ($q) use ($paymentRateItemIds) {
+                    $q->where(function ($qq) use ($paymentRateItemIds) {
+                        $qq->whereIn('payment_rate_item_id', $paymentRateItemIds)
+                           ->orWhereNull('payment_rate_item_id');
+                    });
                 })
                 ->orderByRaw("CASE 
                     WHEN month >= 7 THEN month - 6 
@@ -1021,11 +1042,14 @@ class PaymentRateController extends Controller
                         'month' => $bill->month,
                         'year' => $bill->year,
                         'amount' => $bill->amount,
+                        'paid_amount' => $bill->paid_amount ?? 0,
                         'status' => $bill->status,
                         'translated_month' => $bill->translated_month,
                         'status_badge' => $bill->status === Bill::STATUS_PAID
                             ? '<span class="badge bg-success">Lunas</span>'
-                            : '<span class="badge bg-danger">Belum Lunas</span>'
+                            : ($bill->status === 'PARTIAL'
+                                ? '<span class="badge bg-warning">Cicilan</span>'
+                                : '<span class="badge bg-danger">Belum Lunas</span>')
                     ];
                 });
 
