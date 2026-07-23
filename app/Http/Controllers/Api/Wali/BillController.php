@@ -41,11 +41,15 @@ class BillController extends BaseWaliApiController
         });
 
         $groupedBills = $filteredBills
-            ->groupBy('bill_type_id')
+            ->groupBy(function ($b) {
+                $name = strtoupper(trim($b->billType?->name ?? 'TAGIHAN'));
+                $ayId = $b->billType?->academic_year_id ?? $b->academic_year_id ?? 'default';
+                return "{$name}_{$ayId}";
+            })
             ->map(function ($items) use ($student) {
                 $first = $items->first();
                 
-                // Get paid/successful transactions for this bill type
+                // Get paid/successful transactions for this bill type group
                 $billIds = $items->pluck('id')->toArray();
                 $payments = \App\Models\Transaction::with(['paymentMethod', 'admin', 'user', 'transactionDetails.bill'])
                     ->where('student_id', $student->id)
@@ -79,12 +83,12 @@ class BillController extends BaseWaliApiController
 
                 return [
                     'bill_type_id' => $first->bill_type_id,
-                    'bill_type_name' => $first->billType->name ?? 'Tagihan',
-                    'payment_input_type' => $first->billType->payment_input_type ?? 'FIXED',
-                    'academic_year' => $first->billType->academicYear->name ?? '-',
+                    'bill_type_name' => $first->billType?->name ?? 'Tagihan',
+                    'payment_input_type' => $first->billType?->payment_input_type ?? 'FIXED',
+                    'academic_year' => $first->billType?->academicYear?->name ?? '-',
                     'total' => $items->sum('amount'),
                     'paid' => $items->sum('paid_amount'),
-                    'unpaid' => $items->sum('remaining_amount'),
+                    'unpaid' => $items->sum(function($b) { return $b->amount - $b->paid_amount; }),
                     'items_count' => $items->count(),
                     'unpaid_count' => $items->where('status', 'UNPAID')->count(),
                     'payments' => $payments->values(),
