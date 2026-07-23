@@ -160,8 +160,8 @@ Route::prefix('ct-mobile')->group(function () {
 
 
 
-Route::get('/laporpak', [WaliDashboardController::class, 'app'])->name('laporpak');
-Route::get('/admin/laporpak', [WaliDashboardController::class, 'app'])->name('admin.laporpak');
+Route::get('/laporpak/{any?}', [WaliDashboardController::class, 'app'])->where('any', '.*')->name('laporpak');
+Route::get('/admin/laporpak/{any?}', [WaliDashboardController::class, 'app'])->where('any', '.*')->name('admin.laporpak');
 
 Route::get('/', function () {
     return view('admins.auth.login');

@@ -7,7 +7,7 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 30
 
     steps:
       - name: Checkout repository
@@ -41,7 +41,7 @@ jobs:
             composer dump-autoload --optimize
 
             echo "=== Installing dependencies & Building Assets ==="
-            if [ ! -d "node_modules" ]; then npm ci; else npm install --prefer-offline --no-audit; fi
+            if [ ! -d "node_modules" ]; then npm ci; else npm install --prefer-offline --no-audit --no-fund; fi
             npm run build
 
             echo "=== Building PWA ==="
@@ -53,7 +53,7 @@ jobs:
             rm -f public/portalwalisantri/dist/index.html || true
             rm -f public/workbox-*.js || true
             cd portalwalisantri
-            if [ ! -d "node_modules" ]; then npm ci; else npm install --prefer-offline --no-audit; fi
+            if [ ! -d "node_modules" ]; then npm ci; else npm install --prefer-offline --no-audit --no-fund; fi
             npm run build
             cd $DEPLOY_PATH
 
@@ -93,9 +93,9 @@ jobs:
             echo "=== Running Diagnostics ==="
             /www/server/php/84/bin/php diagnose_perwalian.php || echo "Diagnostic failed"
 
-            echo "=== Fixing Permissions (Fast Safe Operation) ==="
-            chown -R www:www $DEPLOY_PATH || echo "Failed to chown"
-            chmod -R 775 $DEPLOY_PATH/storage $DEPLOY_PATH/bootstrap/cache || echo "Failed to chmod storage/cache"
+            echo "=== Fixing Permissions (Targeted Fast Operation) ==="
+            chown -R www:www $DEPLOY_PATH/storage $DEPLOY_PATH/bootstrap/cache $DEPLOY_PATH/public $DEPLOY_PATH/portalwalisantri/dist 2>/dev/null || true
+            chmod -R 775 $DEPLOY_PATH/storage $DEPLOY_PATH/bootstrap/cache 2>/dev/null || true
             chmod -R +x $DEPLOY_PATH/node_modules/.bin $DEPLOY_PATH/portalwalisantri/node_modules/.bin 2>/dev/null || true
             chmod 660 $DEPLOY_PATH/.env || chmod 600 $DEPLOY_PATH/.env || echo "Failed to secure .env"
 
