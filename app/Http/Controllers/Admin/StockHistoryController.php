@@ -57,12 +57,27 @@ class StockHistoryController extends Controller
                     return $data->type == StockHistory::TYPE_IN ? '<span class="text-success">+' . $data->quantity . '</span>' : '<span class="text-danger">-' . $data->quantity . '</span>';
                 })
                 ->addColumn('action', function ($data) {
-                    $actionEdit = route('stock-history.edit', $data->id);
                     $actionDelete = route('stock-history.destroy', $data->id);
-                    return "<div class='d-flex justify-content-center'>" .
-                        view('components.action.edit', ['action' => $actionEdit, 'name' => 'Barang']) . '&nbsp;' .
-                        view('components.action.delete', ['action' => $actionDelete, 'id' => $data->id, 'name' => 'Barang']) .
-                        "</div>";
+                    $html = "<div class='d-flex justify-content-center'>";
+                    if (auth()->user()->can('Edit Barang')) {
+                        $html .= "<button type='button' class='btn btn-icon btn-bg-light btn-active-color-primary btn-sm me-1 btn-edit-stock' " .
+                            "data-id='{$data->id}' " .
+                            "data-type='{$data->type}' " .
+                            "data-item_id='{$data->item_id}' " .
+                            "data-quantity='{$data->quantity}' " .
+                            "data-outlet_id='{$data->outlet_id}' " .
+                            "data-action='" . route('stock-history.update', $data->id) . "' title='Edit Stok'>" .
+                            "<i class='fa-solid fa-pen'></i>" .
+                            "</button>";
+                    }
+                    if (auth()->user()->can('Delete Barang')) {
+                        if (auth()->user()->can('Edit Barang')) {
+                            $html .= '&nbsp;';
+                        }
+                        $html .= view('components.action.delete', ['action' => $actionDelete, 'id' => $data->id, 'name' => 'Stok'])->render();
+                    }
+                    $html .= "</div>";
+                    return $html;
                 })
                 ->rawColumns(['action', 'quantity'])
                 ->make(true);
@@ -126,11 +141,7 @@ class StockHistoryController extends Controller
 
             DB::commit();
 
-            if (request('mode') === 'outlet') {
-                return redirect()->route('stock-history.index', ['mode' => 'outlet'])->with('success', 'Data Stok Berhasil Ditambahkan');
-            } else {
-                return redirect()->route('item.index', ['mode' => 'kantin'])->with('success', 'Data Stok Berhasil Ditambahkan');
-            }
+            return redirect()->route('item.index', ['mode' => request('mode')])->with('success', 'Data Stok Berhasil Ditambahkan');
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error($e->getMessage());
@@ -208,11 +219,7 @@ class StockHistoryController extends Controller
 
             DB::commit();
 
-            if (request('mode') === 'outlet') {
-                return redirect()->route('stock-history.index', ['mode' => 'outlet'])->with('success', 'Data Stok Berhasil Diubah');
-            } else {
-                return redirect()->route('item.index', ['mode' => 'kantin'])->with('success', 'Data Stok Berhasil Diubah');
-            }
+            return redirect()->route('item.index', ['mode' => request('mode')])->with('success', 'Data Stok Berhasil Diubah');
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error($e->getMessage());

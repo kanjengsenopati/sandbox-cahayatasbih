@@ -9,6 +9,19 @@
         $modalOutlets = \App\Models\Outlet::where('is_active', 1)->get();
     }
     $categories = \App\Models\CategoryItem::all();
+    $modalItems = \App\Models\Item::when(auth()->user()->outlet_id, function($q) {
+        $q->where('outlet_id', auth()->user()->outlet_id);
+    })->when(!auth()->user()->outlet_id, function($q) use ($koperasiId) {
+        if (request('mode') === 'outlet') {
+            if (request()->filled('outlet_id')) {
+                $q->where('outlet_id', request('outlet_id'));
+            } else {
+                $q->where('outlet_id', '!=', $koperasiId);
+            }
+        } else {
+            $q->where('outlet_id', $koperasiId);
+        }
+    })->get();
 @endphp
 
 <div class="content d-flex flex-column flex-column-fluid" id="kt_content">
@@ -138,7 +151,9 @@
                                 <div></div>
                                 <div class="gap-2 d-flex align-items-end">
                                     @can('Create Barang')
-                                    <x-action.create name="Barang" label="Stok" action="{{ route('stock-history.create', ['mode' => request('mode')]) }}" />
+                                    <button type="button" class="btn btn-primary btn-sm btn-add-stock">
+                                        <i class="fa fa-plus me-1"></i> Stok
+                                    </button>
                                     @endcan
                                 </div>
                             </div>
@@ -350,6 +365,64 @@
         </div>
     </div>
 </div>
+
+<!-- Modal Form Stok (Wide/Compact Modal lg) -->
+<div class="modal fade" id="modalStockForm" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content border-0 shadow-lg rounded-24">
+            <form id="formStockModal" method="POST" action="">
+                @csrf
+                <div id="methodStockPut"></div>
+                <div class="modal-header py-3 px-5 border-0">
+                    <h5 class="modal-title fw-bolder fs-4" id="modalStockTitle">Tambah Stok</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body py-3 px-5">
+                    @if(!auth()->user()->outlet_id)
+                    <div class="fv-row mb-3">
+                        <label class="fs-7 fw-bold form-label required mb-1" for="modal_stock_outlet_id">Pilih Outlet</label>
+                        <select name="outlet_id" id="modal_stock_outlet_id" class="form-select form-select-solid form-select-sm" required>
+                            <option value="">Pilih Outlet...</option>
+                            @foreach($modalOutlets as $outlet)
+                                <option value="{{ $outlet->id }}">{{ $outlet->name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    @else
+                        <input type="hidden" name="outlet_id" id="modal_stock_outlet_id" value="{{ auth()->user()->outlet_id }}">
+                    @endif
+
+                    <div class="fv-row mb-3">
+                        <label class="fs-7 fw-bold form-label required mb-1" for="modal_stock_type">Tipe Stok</label>
+                        <select name="type" id="modal_stock_type" class="form-select form-select-solid form-select-sm" required>
+                            <option value="IN">Stok Masuk (+)</option>
+                            <option value="OUT">Stok Keluar (-)</option>
+                        </select>
+                    </div>
+
+                    <div class="fv-row mb-3">
+                        <label class="fs-7 fw-bold form-label required mb-1" for="modal_stock_item_id">Nama Barang</label>
+                        <select name="item_id" id="modal_stock_item_id" class="form-select form-select-solid form-select-sm" required>
+                            <option value="">Pilih Barang...</option>
+                            @foreach($modalItems as $itemOption)
+                                <option value="{{ $itemOption->id }}">{{ $itemOption->name }} ({{ $itemOption->code }})</option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    <div class="fv-row mb-3">
+                        <label class="fs-7 fw-bold form-label required mb-1" for="modal_stock_quantity">Jumlah Barang</label>
+                        <input type="number" name="quantity" id="modal_stock_quantity" class="form-control form-control-solid form-control-sm" placeholder="Masukkan Jumlah Barang" min="1" required />
+                    </div>
+                </div>
+                <div class="modal-footer py-2 px-5 border-0">
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Batal</button>
+                    <button type="submit" class="btn btn-primary btn-sm">Simpan</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
 @endsection
 
 @push('js')
@@ -421,6 +494,31 @@
             $('#modal_cat_outlet_id').val(btn.data('outlet_id'));
             
             $('#modalCategoryForm').modal('show');
+        });
+
+        // Click event: Add Stock Modal
+        $(document).on('click', '.btn-add-stock', function() {
+            $('#formStockModal')[0].reset();
+            $('#methodStockPut').html('');
+            $('#modalStockTitle').text('Tambah Stok');
+            $('#formStockModal').attr('action', "{{ route('stock-history.store', ['mode' => request('mode')]) }}");
+            $('#modalStockForm').modal('show');
+        });
+
+        // Click event: Edit Stock Modal
+        $(document).on('click', '.btn-edit-stock', function() {
+            var btn = $(this);
+            $('#formStockModal')[0].reset();
+            $('#methodStockPut').html('<input type="hidden" name="_method" value="PUT">');
+            $('#modalStockTitle').text('Edit Stok');
+            $('#formStockModal').attr('action', btn.data('action'));
+            
+            $('#modal_stock_type').val(btn.data('type'));
+            $('#modal_stock_item_id').val(btn.data('item_id'));
+            $('#modal_stock_quantity').val(btn.data('quantity'));
+            $('#modal_stock_outlet_id').val(btn.data('outlet_id'));
+            
+            $('#modalStockForm').modal('show');
         });
 
         // Init DataTable Barang
