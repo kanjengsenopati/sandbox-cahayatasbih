@@ -570,8 +570,19 @@
                 {
                     data: 'name',
                     name: 'name',
-                    render: function(data) {
-                        return data ? data : 'N/A';
+                    render: function(data, type, row) {
+                        var nameText = data ? data : 'N/A';
+                        var fallbackImg = "{{ asset('assets/media/svg/avatars/blank.svg') }}";
+                        var imgUrl = (row && row.image) ? "{{ asset('') }}" + row.image.replace(/^\//, '') : fallbackImg;
+
+                        return `
+                            <div class="d-flex flex-column align-items-start gap-1 py-1">
+                                <span class="fw-bolder text-gray-800 fs-6 mb-1">${nameText}</span>
+                                <div class="symbol symbol-45px rounded-12 overflow-hidden shadow-sm border border-gray-200">
+                                    <img src="${imgUrl}" alt="${nameText}" style="width: 45px; height: 45px; object-fit: cover; border-radius: 10px;" onerror="this.onerror=null;this.src='${fallbackImg}';" />
+                                </div>
+                            </div>
+                        `;
                     }
                 },
                 {
