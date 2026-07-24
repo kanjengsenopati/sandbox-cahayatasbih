@@ -257,18 +257,26 @@ class Student extends Model
         }
 
         // Tier 1: Check tb_bills generated for this student in this academic year (excluding PONDOK)
-        $billWithFormalClass = $this->bills()
+        // Group by classroom_id to pick the formal classroom used in this academic year
+        $billsInAy = $this->bills()
             ->where('academic_year_id', $academicYearId)
             ->whereNotNull('classroom_id')
             ->whereHas('classroom', function ($q) {
                 $q->where('name', '!=', 'PONDOK');
             })
             ->with('classroom.school')
-            ->latest()
-            ->first();
+            ->get();
 
-        if ($billWithFormalClass && $billWithFormalClass->classroom) {
-            return $billWithFormalClass->classroom;
+        if ($billsInAy->count() > 0) {
+            $mostFrequentClassId = $billsInAy->groupBy('classroom_id')
+                ->sortByDesc(fn($group) => $group->count())
+                ->keys()
+                ->first();
+
+            $billClass = $billsInAy->firstWhere('classroom_id', $mostFrequentClassId)?->classroom;
+            if ($billClass) {
+                return $billClass;
+            }
         }
 
         // Tier 2: Check StudentClassroomHistory (excluding PONDOK if possible)
@@ -288,7 +296,6 @@ class Student extends Model
             ->where('academic_year_id', $academicYearId)
             ->whereNotNull('classroom_id')
             ->with('classroom.school')
-            ->latest()
             ->first();
 
         if ($anyBillWithClass && $anyBillWithClass->classroom) {
@@ -300,7 +307,7 @@ class Student extends Model
     }
 
     /**
-     * Resolve precise Rombel / Class and UPT / School for a specific Bill
+     * Resolve precise Rombel / Class and UPT / School for a specific Bill / BillType
      */
     public function resolveBillRombelAndSchool($bill)
     {
@@ -322,12 +329,33 @@ class Student extends Model
             ];
         }
 
-        // Formal Bill (MA / SMP): First check if this specific bill record has a direct formal classroom_id
+        // Formal Bill (MA / SMP):
         $billClass = null;
+
+        // Step 1: If $bill is a single Bill model with classroom relation
         if ($bill->classroom_id && $bill->relationLoaded('classroom') && $bill->classroom && strtoupper($bill->classroom->name) !== 'PONDOK') {
             $billClass = $bill->classroom;
         }
 
+        // Step 2: If $bill is a BillType model (contains ->bills relation for this student)
+        if (!$billClass && isset($bill->bills) && count($bill->bills) > 0) {
+            $formalBills = $bill->bills
+                ->where('student_id', $this->id)
+                ->whereNotNull('classroom_id')
+                ->filter(fn($b) => $b->classroom && strtoupper($b->classroom->name) !== 'PONDOK');
+
+            if ($formalBills->count() > 0) {
+                // Get the most frequent formal classroom_id for this BillType
+                $mostFrequentClassId = $formalBills->groupBy('classroom_id')
+                    ->sortByDesc(fn($group) => $group->count())
+                    ->keys()
+                    ->first();
+
+                $billClass = $formalBills->firstWhere('classroom_id', $mostFrequentClassId)?->classroom;
+            }
+        }
+
+        // Step 3: Tiered fallback via getClassroomForAcademicYear
         if (!$billClass) {
             $billClass = $this->getClassroomForAcademicYear($ayId);
         }

@@ -5,36 +5,49 @@ $app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap();
 
 echo "=== SINKRONISASI PRESISI RIWAYAT KELAS (StudentClassroomHistory) ===\n";
 
-// 1. Scan tb_bills with formal classroom_id (excluding PONDOK) per student & academic_year
-$formalBillsWithClass = \App\Models\Bill::whereNotNull('classroom_id')
+// 1. Fetch formal bills (excluding PONDOK)
+$bills = \App\Models\Bill::whereNotNull('classroom_id')
     ->whereNotNull('academic_year_id')
     ->whereHas('classroom', function ($q) {
         $q->where('name', '!=', 'PONDOK');
     })
-    ->select('student_id', 'academic_year_id', 'classroom_id')
-    ->distinct()
-    ->get();
+    ->get()
+    ->groupBy(function ($b) {
+        return $b->student_id . '_' . $b->academic_year_id;
+    });
 
-echo "Discovered " . $formalBillsWithClass->count() . " formal (student, academic_year, classroom) pairs from tb_bills.\n";
+echo "Discovered " . $bills->count() . " unique (student, academic_year) groups from tb_bills.\n";
 
 $createdCount = 0;
 $updatedCount = 0;
 
-foreach ($formalBillsWithClass as $row) {
-    $existing = \App\Models\StudentClassroomHistory::where('student_id', $row->student_id)
-        ->where('academic_year_id', $row->academic_year_id)
+foreach ($bills as $key => $bGroup) {
+    $first = $bGroup->first();
+    $studentId = $first->student_id;
+    $ayId = $first->academic_year_id;
+
+    // Pick the classroom_id that appears most frequently in bills for this academic year
+    $bestClassroomId = $bGroup->groupBy('classroom_id')
+        ->sortByDesc(fn($g) => $g->count())
+        ->keys()
+        ->first();
+
+    if (!$bestClassroomId) continue;
+
+    $existing = \App\Models\StudentClassroomHistory::where('student_id', $studentId)
+        ->where('academic_year_id', $ayId)
         ->first();
 
     if (!$existing) {
         \App\Models\StudentClassroomHistory::create([
-            'student_id' => $row->student_id,
-            'academic_year_id' => $row->academic_year_id,
-            'classroom_id' => $row->classroom_id,
+            'student_id' => $studentId,
+            'academic_year_id' => $ayId,
+            'classroom_id' => $bestClassroomId,
         ]);
         $createdCount++;
     } else {
-        if ($existing->classroom_id !== $row->classroom_id) {
-            $existing->update(['classroom_id' => $row->classroom_id]);
+        if ($existing->classroom_id !== $bestClassroomId) {
+            $existing->update(['classroom_id' => $bestClassroomId]);
             $updatedCount++;
         }
     }
