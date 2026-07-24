@@ -1,0 +1,71 @@
+=== AUDIT DETAILS REPORT ===
+Academic Year 2026/2027 ID: 52f11471-6fb0-46ec-91d9-2a3998038232
+
+Bill Types in 2026/2027:
+ - ID: 1019d953-f375-4e69-8691-3e80a9249e67 | Name: BIAYA APLIKASI | Type: MONTHLY | InputType: FIXED
+ - ID: 14b9ba38-3305-4673-a848-99fa6dd1aa3f | Name: SYAHRIAH | Type: MONTHLY | InputType: FIXED
+ - ID: 2d0ec6f2-ef42-47db-9555-aa9cc04234d3 | Name: SYAHRIAH | Type: MONTHLY | InputType: FIXED
+ - ID: 4da85847-77ab-42f7-9cdb-6d185c29c81b | Name: ZARKASI | Type: MONTHLY | InputType: FIX
+ - ID: 4f3e60f5-64cc-4e8c-b4c5-2cd60f45bcdd | Name: SYAHRIAH | Type: MONTHLY | InputType: FIXED
+ - ID: 58d673c4-148a-401d-b453-3c28a4327553 | Name: SYAHRIAH | Type: MONTHLY | InputType: FIXED
+ - ID: 79ad1c5f-6993-4621-a2c1-f5c0565aa21f | Name: SYAHRIAH | Type: MONTHLY | InputType: FIXED
+ - ID: 862fd930-06b2-4701-9acc-2ba45fbc75e7 | Name: SYAHRIAH | Type: MONTHLY | InputType: FIXED
+ - ID: 92201c2f-d5e2-44cb-b28c-4f17be5c3616 | Name: BIAYA APLIKASI | Type: MONTHLY | InputType: FIXED
+ - ID: 9a2ded2b-5398-4ff4-8deb-89791083e93e | Name: BIAYA APLIKASI | Type: MONTHLY | InputType: FIXED
+ - ID: a8301203-d7a7-4e52-a3c6-e46c38da8227 | Name: SYAHRIAH | Type: MONTHLY | InputType: FIXED
+ - ID: c47cb1a5-3397-46f1-a73f-1fc830747cbc | Name: BIAYA APLIKASI | Type: MONTHLY | InputType: FIXED
+ - ID: d8ce5258-53ed-4de1-b30d-43b13cd4ee68 | Name: SYAHRIAH | Type: MONTHLY | InputType: FIXED
+ - ID: dca8c44b-490f-4b13-8c8b-dbf4bc1b4846 | Name: Registrasi Santri dan Siswa Baru 2026/2027 | Type: OTHER | InputType: FREE
+ - ID: e48ec1d2-41c5-4ae4-a58f-6e7f5f16e654 | Name: SYAHRIAH | Type: MONTHLY | InputType: FIXED
+ - ID: e95dde2e-87ee-4196-a3e7-c97c09ed92d8 | Name: SYAHRIAH | Type: MONTHLY | InputType: FIXED
+
+Payment Rates in 2026/2027:
+ - Rate ID: 07707ae7-186f-47d7-8c04-08c86a2714e2 | BillType ID: 92201c2f-d5e2-44cb-b28c-4f17be5c3616 (BIAYA APLIKASI) | Amount: 120000 | Gender: '' | Jamaah: '' | Type: REGULAR
+   Assigned Classes: [7G, 9A]
+ - Rate ID: 07912c4a-5105-4bae-af72-03d723df80ec | BillType ID: 4da85847-77ab-42f7-9cdb-6d185c29c81b (ZARKASI) | Amount: 550000 | Gender: '' | Jamaah: '' | Type: REGULAR
+   Assigned Classes: [7G, 9A]
+ - Rate ID: 110789fa-45eb-4b21-a8e5-470cf745d54e | BillType ID: 79ad1c5f-6993-4621-a2c1-f5c0565aa21f (SYAHRIAH) | Amount: 6000000 | Gender: '' | Jamaah: '' | Type: REGULAR
+   Assigned Classes: [7G, 9A, 10C]
+ - Rate ID: 175e200c-a0aa-4f8c-ac89-aa23ce7d8bc8 | BillType ID: dca8c44b-490f-4b13-8c8b-dbf4bc1b4846 (Registrasi Santri dan Siswa Baru 2026/2027) | Amount: 5000000 | Gender: '' | Jamaah: 'NON_JAMAAH' | Type: REGULAR
+   Assigned Classes: [7G]
+ - Rate ID: 1b129afc-df8d-471d-b3d3-d54480b5e9ac | BillType ID: c47cb1a5-3397-46f1-a73f-1fc830747cbc (BIAYA APLIKASI) | Amount: 120000 | Gender: '' | Jamaah: '' | Type: REGULAR
+   Assigned Classes: [7G, 10C, 9A]
+ - Rate ID: 2c199b88-ab1f-4647-91f7-e58e62281ac7 | BillType ID: dca8c44b-490f-4b13-8c8b-dbf4bc1b4846 (Registrasi Santri dan Siswa Baru 2026/2027) | Amount: 3000000 | Gender: '' | Jamaah: 'JAMAAH' | Type: REGULAR
+   Assigned Classes: [7G]
+ - Rate ID: 316ad85b-6a07-46b3-bcc2-1356ad1eefee | BillType ID: 2d0ec6f2-ef42-47db-9555-aa9cc04234d3 (SYAHRIAH) | Amount: 6000000 | Gender: '' | Jamaah: '' | Type: REGULAR
+   Assigned Classes: [9A, 7G]
+ - Rate ID: 409d2f62-2cc0-44cf-ab1a-4cc45d3e92d0 | BillType ID: 9a2ded2b-5398-4ff4-8deb-89791083e93e (BIAYA APLIKASI) | Amount: 120000 | Gender: '' | Jamaah: '' | Type: REGULAR
+   Assigned Classes: [9A, 7G, 10C]
+ - Rate ID: 49b55c7e-5597-4d35-8098-d4db08b5b74f | BillType ID: d8ce5258-53ed-4de1-b30d-43b13cd4ee68 (SYAHRIAH) | Amount: 6000000 | Gender: '' | Jamaah: '' | Type: REGULAR
+   Assigned Classes: [10C, 7G, 9A]
+ - Rate ID: 4a7e64e3-b449-4820-b8d8-ac92245b5ca1 | BillType ID: e95dde2e-87ee-4196-a3e7-c97c09ed92d8 (SYAHRIAH) | Amount: 6000000 | Gender: '' | Jamaah: '' | Type: REGULAR
+   Assigned Classes: [9A, 10C, 7G]
+ - Rate ID: 554f15b4-025c-462a-ad30-9bba0645a088 | BillType ID: 58d673c4-148a-401d-b453-3c28a4327553 (SYAHRIAH) | Amount: 6000000 | Gender: '' | Jamaah: '' | Type: REGULAR
+   Assigned Classes: [9A, 7G, 10C]
+ - Rate ID: 65fc5649-8676-4a8c-85d2-4bfeb4ff6ddf | BillType ID: 1019d953-f375-4e69-8691-3e80a9249e67 (BIAYA APLIKASI) | Amount: 120000 | Gender: '' | Jamaah: '' | Type: REGULAR
+   Assigned Classes: [9A, 7G, 10C]
+ - Rate ID: 7d819579-e6ac-4b42-969d-a8fc83dd08be | BillType ID: 862fd930-06b2-4701-9acc-2ba45fbc75e7 (SYAHRIAH) | Amount: 6000000 | Gender: '' | Jamaah: '' | Type: REGULAR
+   Assigned Classes: [9A, 7G, 10C]
+ - Rate ID: 8170fb0c-562f-4ade-887c-55bd3a7b3c0e | BillType ID: dca8c44b-490f-4b13-8c8b-dbf4bc1b4846 (Registrasi Santri dan Siswa Baru 2026/2027) | Amount: 1000000 | Gender: '' | Jamaah: 'MUKIMIN' | Type: REGULAR
+   Assigned Classes: [7G]
+ - Rate ID: 87398678-a555-4058-b125-00286067252e | BillType ID: 14b9ba38-3305-4673-a848-99fa6dd1aa3f (SYAHRIAH) | Amount: 6000000 | Gender: '' | Jamaah: '' | Type: REGULAR
+   Assigned Classes: [9A, 10C, 7G]
+ - Rate ID: 8a6a35fe-5213-4208-9035-f46d68589047 | BillType ID: a8301203-d7a7-4e52-a3c6-e46c38da8227 (SYAHRIAH) | Amount: 6000000 | Gender: '' | Jamaah: '' | Type: REGULAR
+   Assigned Classes: [9A, 10C, 7G]
+ - Rate ID: dd0b9bfd-9b72-4abb-acf3-e8d5a9cea998 | BillType ID: 4f3e60f5-64cc-4e8c-b4c5-2cd60f45bcdd (SYAHRIAH) | Amount: 6000000 | Gender: '' | Jamaah: '' | Type: REGULAR
+   Assigned Classes: [10C, 7G, 9A]
+ - Rate ID: f07ef469-395f-4811-a609-216ff7dfa82f | BillType ID: e48ec1d2-41c5-4ae4-a58f-6e7f5f16e654 (SYAHRIAH) | Amount: 6000000 | Gender: '' | Jamaah: '' | Type: REGULAR
+   Assigned Classes: [7G, 9A, 10C]
+
+Target Students Audit:
+Student 'LUTFIANA DWI CAHYANINGTYAS' NOT FOUND
+Student 'ALIFFIA MARSYALIMA PUTRI' NOT FOUND
+Student 'MUHAMMAD ABYAN PRATAMA' NOT FOUND
+Student 'MUHAMMAD CHALEO ARGAPRADITHA' NOT FOUND
+Student 'AZZAHIDI SIRADJ SEEHAN' NOT FOUND
+Student 'MUHAMMAD NAUFAL DZULKARNAIN' NOT FOUND
+
+Summary of active students and generated bills for 2026/2027 per class:
+  Class 10C: Active Students = 1 | Total 2026/2027 Bills = 1 | Syahriah Bills = 1
+  Class 7G: Active Students = 4 | Total 2026/2027 Bills = 124 | Syahriah Bills = 48
+  Class 9A: Active Students = 0 | Total 2026/2027 Bills = 0 | Syahriah Bills = 0

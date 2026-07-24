@@ -1,0 +1,60 @@
+=== TESTING ALL BILL TYPES SHOW METHOD WITH ACADEMIC_YEAR_ID FILTER ===
+Found 58 BillTypes in DB.
+[OK RESP] BillType ID: 1019d953-f375-4e69-8691-3e80a9249e67 (BIAYA APLIKASI) -> Illuminate\Http\RedirectResponse
+[OK RESP] BillType ID: 14b9ba38-3305-4673-a848-99fa6dd1aa3f (SYAHRIAH) -> Illuminate\Http\RedirectResponse
+[OK RESP] BillType ID: 172148df-174c-42b7-8dac-833e001c9f15 (APLIKASI CT - MA) -> Illuminate\Http\RedirectResponse
+[OK RESP] BillType ID: 17f79307-9add-48e7-a8e3-45fea577b77c (ZARKASI) -> Illuminate\Http\RedirectResponse
+[OK RESP] BillType ID: 1ad2813d-6464-4041-a15e-d35c3e600118 (BIAYA APLIKASI CT - SMP) -> Illuminate\Http\RedirectResponse
+[OK RESP] BillType ID: 1e45e4ab-1da9-4bc1-8c85-ac41041608f5 (ZARKASI) -> Illuminate\Http\RedirectResponse
+[OK RESP] BillType ID: 29fce704-136c-4c6f-b58c-fa17f35692c6 (SYAHRIAH SMP) -> Illuminate\Http\RedirectResponse
+[OK RESP] BillType ID: 2d0ec6f2-ef42-47db-9555-aa9cc04234d3 (SYAHRIAH) -> Illuminate\Http\RedirectResponse
+[OK RESP] BillType ID: 31f3bf9c-c178-40d0-9ad4-d64acbac574c (ZARKASI SMP) -> Illuminate\Http\RedirectResponse
+[OK RESP] BillType ID: 3bbbf775-3e82-47a3-bb44-1a2493890264 (ZARKASI) -> Illuminate\Http\RedirectResponse
+[OK RESP] BillType ID: 44a7df61-3d3f-47f1-96f2-ba36bfd26e8f (BIAYA APLIKASI CT - SMP) -> Illuminate\Http\RedirectResponse
+[OK RESP] BillType ID: 4595a7f7-f0df-4115-b243-94e5bfe1db61 (APLIKASI CT - MA) -> Illuminate\Http\RedirectResponse
+[OK RESP] BillType ID: 4b0324b4-d766-4155-9168-a2daf91b93f0 (SYAHRIAH MA) -> Illuminate\Http\RedirectResponse
+[OK RESP] BillType ID: 4da85847-77ab-42f7-9cdb-6d185c29c81b (ZARKASI) -> Illuminate\Http\RedirectResponse
+[OK RESP] BillType ID: 4f3e60f5-64cc-4e8c-b4c5-2cd60f45bcdd (SYAHRIAH) -> Illuminate\Http\RedirectResponse
+[OK RESP] BillType ID: 515aed94-be20-4650-bd00-d30718370e35 (ZARKASI) -> Illuminate\Http\RedirectResponse
+[OK RESP] BillType ID: 53f2bcfa-ea5e-4183-9adf-96d9b591a603 (SYAHRIAH MA) -> Illuminate\Http\RedirectResponse
+[OK RESP] BillType ID: 5636850e-135b-44ed-8c2d-62a1a0fa618b (SYAHRIAH SMP) -> Illuminate\Http\RedirectResponse
+[OK RESP] BillType ID: 572c4e65-6cae-461e-9607-c2471d8500cf (SYAHRIAH SMP) -> Illuminate\Http\RedirectResponse
+[OK RESP] BillType ID: 57e6eaa7-bd18-4553-b8ab-3aad24e88949 (APLIKASI CT - MA) -> Illuminate\Http\RedirectResponse
+[OK RESP] BillType ID: 58d673c4-148a-401d-b453-3c28a4327553 (SYAHRIAH) -> Illuminate\Http\RedirectResponse
+[OK RESP] BillType ID: 5cc5c8c9-ebaf-4a23-99d1-42cbd94938ca (BIAYA APLIKASI CT - SMP) -> Illuminate\Http\RedirectResponse
+[OK RESP] BillType ID: 5e73dfa3-85a8-4e07-82d1-fc12d5f856cb (SYAHRIAH MA) -> Illuminate\Http\RedirectResponse
+[OK RESP] BillType ID: 71a1ca88-224a-40eb-926f-9eb7f49545ca (ZARKASI SMP) -> Illuminate\Http\RedirectResponse
+[OK RESP] BillType ID: 71e77daa-22ca-49a6-835c-5e10c60665bd (BIAYA APLIKASI CT - MA) -> Illuminate\Http\RedirectResponse
+[OK RESP] BillType ID: 76cbf313-8ace-4d60-b406-8a6ac5a5db81 (ZARKASI SMP) -> Illuminate\Http\RedirectResponse
+[OK RESP] BillType ID: 79ad1c5f-6993-4621-a2c1-f5c0565aa21f (SYAHRIAH) -> Illuminate\Http\RedirectResponse
+[OK RESP] BillType ID: 7bc0739e-ca67-4e32-a229-3bffdda85f0f (ZARKASI SMP) -> Illuminate\Http\RedirectResponse
+[OK RESP] BillType ID: 7f84f6f5-06b8-452f-bdf2-ddf95de7ef00 (BIAYA APLIKASI CT - MA) -> Illuminate\Http\RedirectResponse
+[OK RESP] BillType ID: 828f2c1b-8e6a-40b3-8d12-4a5487f3cab5 (SYAHRIAH SMP) -> Illuminate\Http\RedirectResponse
+[OK RESP] BillType ID: 862fd930-06b2-4701-9acc-2ba45fbc75e7 (SYAHRIAH) -> Illuminate\Http\RedirectResponse
+[OK RESP] BillType ID: 89ba4b57-ebdc-4c8a-af62-8b26b5bbb09d (APLIKASI CT - MA) -> Illuminate\Http\RedirectResponse
+[OK RESP] BillType ID: 90bf6a3a-10ff-480b-adde-9428669e7ca5 (SYAHRIAH SMP) -> Illuminate\Http\RedirectResponse
+[OK RESP] BillType ID: 91349d8a-c275-4151-85e9-18e4510dbc85 (ZARKASI) -> Illuminate\Http\RedirectResponse
+[OK RESP] BillType ID: 92201c2f-d5e2-44cb-b28c-4f17be5c3616 (BIAYA APLIKASI) -> Illuminate\Http\RedirectResponse
+[OK RESP] BillType ID: 9485f870-e8c5-4391-965d-f01784ea3cb8 (SYAHRIAH MA) -> Illuminate\Http\RedirectResponse
+[OK RESP] BillType ID: 948f317e-3d03-4503-a272-8aac7adca100 (ZARKASI SMP) -> Illuminate\Http\RedirectResponse
+[OK RESP] BillType ID: 9a2ded2b-5398-4ff4-8deb-89791083e93e (BIAYA APLIKASI) -> Illuminate\Http\RedirectResponse
+[OK RESP] BillType ID: a026d903-4900-4e4e-b5dd-e000b81ccde7 (SYAHRIAH MA) -> Illuminate\Http\RedirectResponse
+[OK RESP] BillType ID: a0e72544-c755-45e7-bd94-b94649f55317 (SYAHRIAH SMP) -> Illuminate\Http\RedirectResponse
+[OK RESP] BillType ID: a2547ad4-c40d-4f4b-95a2-22e10c343b99 (BIAYA APLIKASI CT - MA) -> Illuminate\Http\RedirectResponse
+[OK RESP] BillType ID: a3e7c9e9-b7d3-480e-9695-12169359d1e0 (BIAYA APLIKASI CT - MA) -> Illuminate\Http\RedirectResponse
+[OK RESP] BillType ID: a8301203-d7a7-4e52-a3c6-e46c38da8227 (SYAHRIAH) -> Illuminate\Http\RedirectResponse
+[OK RESP] BillType ID: a91190ae-1420-427b-a041-f86e92081bb7 (BIAYA APLIKASI CT - SMP) -> Illuminate\Http\RedirectResponse
+[OK RESP] BillType ID: ac450969-1209-4036-aac5-047f6813bfcd (SYAHRIAH SMP) -> Illuminate\Http\RedirectResponse
+[OK RESP] BillType ID: b8114a0c-25d9-497c-970d-4db7aeab1599 (BIAYA APLIKASI CT - SMP) -> Illuminate\Http\RedirectResponse
+[OK RESP] BillType ID: bbc34425-c8da-4828-9c13-224a7817f266 (SYAHRIAH SMP) -> Illuminate\Http\RedirectResponse
+[OK RESP] BillType ID: c13eb355-8055-4c49-891f-87827081d381 (BIAYA APLIKASI CT - SMP) -> Illuminate\Http\RedirectResponse
+[OK RESP] BillType ID: c3afebd9-e081-42db-b419-6553c89d9b6c (BIAYA APLIKASI CT - SMP) -> Illuminate\Http\RedirectResponse
+[OK RESP] BillType ID: c47cb1a5-3397-46f1-a73f-1fc830747cbc (BIAYA APLIKASI) -> Illuminate\Http\RedirectResponse
+[OK RESP] BillType ID: c6d13038-ae23-4738-a512-5c55b4b0faf7 (BIAYA APLIKASI CT - SMP) -> Illuminate\Http\RedirectResponse
+[OK RESP] BillType ID: d8ce5258-53ed-4de1-b30d-43b13cd4ee68 (SYAHRIAH) -> Illuminate\Http\RedirectResponse
+[OK RESP] BillType ID: dca8c44b-490f-4b13-8c8b-dbf4bc1b4846 (Registrasi Santri dan Siswa Baru 2026/2027) -> Illuminate\Http\RedirectResponse
+[OK RESP] BillType ID: de0d0348-8d1d-4b9f-a145-5627f1db7926 (BIAYA APLIKASI CT - SMP) -> Illuminate\Http\RedirectResponse
+[OK RESP] BillType ID: e48ec1d2-41c5-4ae4-a58f-6e7f5f16e654 (SYAHRIAH) -> Illuminate\Http\RedirectResponse
+[OK RESP] BillType ID: e8d1526f-a75b-4208-a93d-d32b29ab8727 (BIAYA APLIKASI CT - MA) -> Illuminate\Http\RedirectResponse
+[OK RESP] BillType ID: e95dde2e-87ee-4196-a3e7-c97c09ed92d8 (SYAHRIAH) -> Illuminate\Http\RedirectResponse
+[OK RESP] BillType ID: f4c39253-96b3-44b9-b648-0272fa5d0464 (SYAHRIAH SMP) -> Illuminate\Http\RedirectResponse

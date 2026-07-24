@@ -85,7 +85,7 @@ class BillController extends Controller
                 if ($academicYearId) {
                     $query->where('academic_year_id', $academicYearId);
                 }
-                $query->with(['transactions.admin', 'transactions.user']);
+                $query->with(['classroom.school', 'transactions.admin', 'transactions.user']);
             }])
             ->where('type', $type)
             ->whereHas('bills', function ($query) use ($studentId, $academicYearId) {

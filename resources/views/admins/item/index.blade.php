@@ -61,7 +61,9 @@
                         <div class="tab-pane fade show active" id="tab_barang" role="tabpanel">
                             <div class="d-flex align-items-center justify-content-between mb-5">
                                 <div class="mb-0">
+                                    @can('Create Barang')
                                     <x-action.import target="#modalImport" name="Barang" />
+                                    @endcan
                                 </div>
                                 <div class="gap-2 d-flex align-items-end">
                                     @can('Create Barang')

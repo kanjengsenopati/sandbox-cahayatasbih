@@ -30,8 +30,18 @@ class ItemController extends Controller
             $koperasi = Outlet::where('name', 'Koperasi')->orWhere('code', 'KPR')->first();
             $koperasiId = $koperasi ? $koperasi->id : '6bc5b484-07f9-49cc-aefa-00a8cf47e8d7';
 
+            $user = auth()->user();
+            $authOutletIds = array_diff($user->getOutletIds(), [$koperasiId]);
+
             $data = Item::with(['categoryItem', 'outlet'])
-                ->when(auth()->user()->outlet_id, function($q) use ($koperasiId) {
+                ->when(!empty($authOutletIds) && ($user->isKasirOutlet() || request('mode') === 'outlet'), function($q) use ($authOutletIds) {
+                    if (request()->filled('outlet_id') && in_array(request('outlet_id'), $authOutletIds)) {
+                        $q->where('outlet_id', request('outlet_id'));
+                    } else {
+                        $q->whereIn('outlet_id', $authOutletIds);
+                    }
+                })
+                ->when(empty($authOutletIds) && ($user->outlet_id), function($q) use ($koperasiId) {
                     $outletId = auth()->user()->outlet_id;
                     $q->where(function($query) use ($outletId, $koperasiId) {
                         $query->where('outlet_id', $outletId);
@@ -40,12 +50,12 @@ class ItemController extends Controller
                         }
                     });
                 })
-                ->when(!auth()->user()->outlet_id, function($q) use ($koperasiId) {
+                ->when(empty($authOutletIds) && !$user->outlet_id, function($q) use ($koperasiId) {
                     if (request('mode') === 'outlet') {
                         if (request()->filled('outlet_id')) {
                             $q->where('outlet_id', request('outlet_id'));
                         } else {
-                            $q->where('outlet_id', '!=', $koperasiId);
+                            $q->where('outlet_id', '!=', $koperasiId)->whereNotNull('outlet_id');
                         }
                     } else {
                         $q->where(function($query) use ($koperasiId) {
@@ -65,10 +75,18 @@ class ItemController extends Controller
                 ->addColumn('action', function ($data) {
                     $actionEdit = route('item.edit', $data->id);
                     $actionDelete = route('item.destroy', $data->id);
-                    return "<div class='d-flex justify-content-center'>" .
-                        view('components.action.edit', ['action' => $actionEdit, 'name' => 'Barang']) . '&nbsp;' .
-                        view('components.action.delete', ['action' => $actionDelete, 'id' => $data->id, 'name' => 'Barang']) .
-                        "</div>";
+                    $html = "<div class='d-flex justify-content-center'>";
+                    if (auth()->user()->can('Edit Barang')) {
+                        $html .= view('components.action.edit', ['action' => $actionEdit, 'name' => 'Barang'])->render();
+                    }
+                    if (auth()->user()->can('Delete Barang')) {
+                        if (auth()->user()->can('Edit Barang')) {
+                            $html .= '&nbsp;';
+                        }
+                        $html .= view('components.action.delete', ['action' => $actionDelete, 'id' => $data->id, 'name' => 'Barang'])->render();
+                    }
+                    $html .= "</div>";
+                    return $html;
                 })
                 ->rawColumns(['action'])
                 ->make(true);
