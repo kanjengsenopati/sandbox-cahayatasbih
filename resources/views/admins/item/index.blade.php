@@ -99,11 +99,7 @@
                         <!--begin::Tab Pane Data Barang-->
                         <div class="tab-pane fade show active" id="tab_barang" role="tabpanel">
                             <div class="d-flex align-items-center justify-content-between mb-5">
-                                <div class="mb-0">
-                                    @can('Create Barang')
-                                    <x-action.import target="#modalImport" name="Barang" />
-                                    @endcan
-                                </div>
+                                <div class="mb-0"></div>
                                 <div class="gap-2 d-flex align-items-end">
                                     @can('Create Barang')
                                     <button type="button" class="btn btn-primary btn-sm btn-add-item">
@@ -177,9 +173,10 @@
                                     <thead>
                                         <tr class="text-start text-gray-400 fw-bolder fs-7 text-uppercase gs-0">
                                             <th style="width: 5%">No</th>
-                                            <th class="min-w-100px">Kategori</th>
                                             <th class="min-w-100px">Kode Barang</th>
                                             <th class="min-w-150px">Nama Barang</th>
+                                            <th class="min-w-100px">Kategori</th>
+                                            <th class="min-w-80px">Stok Saat Ini</th>
                                             <th class="min-w-120px">Tipe & Jumlah</th>
                                             <th class="min-w-100px">Admin</th>
                                             <th class="min-w-120px">Outlet</th>
@@ -709,16 +706,42 @@
                     }
                 },
                 {
+                    data: 'item.code',
+                    name: 'item.code',
+                    render: function(data, type, row) {
+                        return (row.item && row.item.code) ? row.item.code : 'N/A';
+                    }
+                },
+                {
+                    data: 'item.name',
+                    name: 'item.name',
+                    render: function(data, type, row) {
+                        var itemObj = row.item || {};
+                        var nameText = itemObj.name ? itemObj.name : 'N/A';
+                        var fallbackImg = "{{ asset('assets/media/svg/avatars/blank.svg') }}";
+                        var imgUrl = itemObj.image ? "{{ asset('') }}" + itemObj.image.replace(/^\//, '') : fallbackImg;
+
+                        return `
+                            <div class="d-flex flex-column align-items-start gap-1 py-1">
+                                <span class="fw-bolder text-gray-800 fs-6 mb-1">${nameText}</span>
+                                <div class="symbol symbol-45px rounded-12 overflow-hidden shadow-sm border border-gray-200">
+                                    <img src="${imgUrl}" alt="${nameText}" style="width: 45px; height: 45px; object-fit: cover; border-radius: 10px;" onerror="this.onerror=null;this.src='${fallbackImg}';" />
+                                </div>
+                            </div>
+                        `;
+                    }
+                },
+                {
                     data: 'item_category',
                     name: 'item_category'
                 },
                 {
-                    data: 'item.code',
-                    name: 'item.code'
-                },
-                {
-                    data: 'item.name',
-                    name: 'item.name'
+                    data: 'current_stock',
+                    name: 'current_stock',
+                    render: function(data, type, row) {
+                        var stockVal = (row.item && row.item.stock !== undefined) ? row.item.stock : (data !== undefined ? data : 0);
+                        return `<span class="fw-bold fs-6 text-gray-800">${stockVal}</span>`;
+                    }
                 },
                 {
                     data: 'quantity',

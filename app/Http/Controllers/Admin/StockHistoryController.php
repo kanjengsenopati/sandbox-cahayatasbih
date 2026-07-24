@@ -27,7 +27,7 @@ class StockHistoryController extends Controller
             $koperasi = Outlet::where('name', 'Koperasi')->orWhere('code', 'KPR')->first();
             $koperasiId = $koperasi ? $koperasi->id : '6bc5b484-07f9-49cc-aefa-00a8cf47e8d7';
 
-            $data = StockHistory::with(['item', 'admin', 'outlet'])
+            $data = StockHistory::with(['item.categoryItem', 'admin', 'outlet'])
                 ->when(auth()->user()->outlet_id, function($q) {
                     $q->where('outlet_id', auth()->user()->outlet_id);
                 })
@@ -52,6 +52,9 @@ class StockHistoryController extends Controller
                 })
                 ->addColumn('item_category', function ($data) {
                     return $data->item->categoryItem->name ?? 'Belum Ada Kategori';
+                })
+                ->addColumn('current_stock', function ($data) {
+                    return $data->item->stock ?? 0;
                 })
                 ->editColumn('quantity', function ($data) {
                     if ($data->type == StockHistory::TYPE_IN) {
