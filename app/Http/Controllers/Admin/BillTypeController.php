@@ -22,7 +22,7 @@ class BillTypeController extends Controller
      */
     public function index()
     {
-        if (!Auth::user()->can('Manage Jenis Bayar')) {
+        if (!Auth::user()?->can('Manage Jenis Bayar')) {
             return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
         }
 
@@ -83,7 +83,7 @@ class BillTypeController extends Controller
      */
     public function create()
     {
-        if (!Auth::user()->can('Create Jenis Bayar')) {
+        if (!Auth::user()?->can('Create Jenis Bayar')) {
             return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
         }
 
@@ -98,7 +98,7 @@ class BillTypeController extends Controller
      */
     public function store(BillTypeRequest $request)
     {
-        if (!Auth::user()->can('Create Jenis Bayar')) {
+        if (!Auth::user()?->can('Create Jenis Bayar')) {
             return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
         }
 
@@ -149,9 +149,13 @@ class BillTypeController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(BillType $billType)
+    public function show($billType)
     {
-        if (!Auth::user()->can('Manage Jenis Bayar')) {
+        if (!$billType instanceof BillType) {
+            $billType = BillType::findOrFail($billType);
+        }
+
+        if (!Auth::user()?->can('Manage Jenis Bayar')) {
             return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
         }
 
@@ -199,7 +203,7 @@ class BillTypeController extends Controller
             ->get();
 
         // Transfer Rates (Student Based)
-        $transferRates = PaymentRate::with(['billType.academicYear', 'paymentRateStudents.student'])
+        $transferRates = PaymentRate::with(['billType.academicYear', 'paymentRateStudents.student.classroom.school'])
             ->whereIn('bill_type_id', $relatedBillTypeIds)
             ->where('type', 'TRANSFER')
             ->when(!empty($academicYearIds), function ($query) use ($academicYearIds) {
@@ -220,7 +224,7 @@ class BillTypeController extends Controller
      */
     public function edit(BillType $billType)
     {
-        if (!Auth::user()->can('Edit Jenis Bayar')) {
+        if (!Auth::user()?->can('Edit Jenis Bayar')) {
             return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
         }
 
@@ -235,7 +239,7 @@ class BillTypeController extends Controller
      */
     public function update(BillTypeRequest $request, BillType $billType)
     {
-        if (!Auth::user()->can('Edit Jenis Bayar')) {
+        if (!Auth::user()?->can('Edit Jenis Bayar')) {
             return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
         }
 
@@ -276,7 +280,7 @@ class BillTypeController extends Controller
      */
     public function destroy(BillType $billType)
     {
-        if (!Auth::user()->can('Delete Jenis Bayar')) {
+        if (!Auth::user()?->can('Delete Jenis Bayar')) {
             return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
         }
 
