@@ -256,26 +256,46 @@ class Student extends Model
             return $this->classroom;
         }
 
-        // Tier 1: Check StudentClassroomHistory
+        // Tier 1: Check tb_bills generated for this student in this academic year (excluding PONDOK)
+        $billWithFormalClass = $this->bills()
+            ->where('academic_year_id', $academicYearId)
+            ->whereNotNull('classroom_id')
+            ->whereHas('classroom', function ($q) {
+                $q->where('name', '!=', 'PONDOK');
+            })
+            ->with('classroom.school')
+            ->latest()
+            ->first();
+
+        if ($billWithFormalClass && $billWithFormalClass->classroom) {
+            return $billWithFormalClass->classroom;
+        }
+
+        // Tier 2: Check StudentClassroomHistory (excluding PONDOK if possible)
         if ($this->relationLoaded('classroomHistories') || $this->classroomHistories()->exists()) {
-            $history = $this->classroomHistories->where('academic_year_id', $academicYearId)->first();
+            $history = $this->classroomHistories
+                ->where('academic_year_id', $academicYearId)
+                ->filter(fn($h) => $h->classroom && strtoupper($h->classroom->name) !== 'PONDOK')
+                ->first();
+
             if ($history && $history->classroom) {
                 return $history->classroom;
             }
         }
 
-        // Tier 2: Check tb_bills generated for this student in this academic year
-        $billWithClass = $this->bills()
+        // Tier 3: Any bill in tb_bills for this academic year
+        $anyBillWithClass = $this->bills()
             ->where('academic_year_id', $academicYearId)
             ->whereNotNull('classroom_id')
             ->with('classroom.school')
+            ->latest()
             ->first();
 
-        if ($billWithClass && $billWithClass->classroom) {
-            return $billWithClass->classroom;
+        if ($anyBillWithClass && $anyBillWithClass->classroom) {
+            return $anyBillWithClass->classroom;
         }
 
-        // Tier 3: Fallback to current classroom
+        // Tier 4: Fallback to current classroom
         return $this->classroom;
     }
 
@@ -302,20 +322,14 @@ class Student extends Model
             ];
         }
 
-        // Formal Bill (MA / SMP)
-        $billClass = $this->getClassroomForAcademicYear($ayId);
+        // Formal Bill (MA / SMP): First check if this specific bill record has a direct formal classroom_id
+        $billClass = null;
+        if ($bill->classroom_id && $bill->relationLoaded('classroom') && $bill->classroom && strtoupper($bill->classroom->name) !== 'PONDOK') {
+            $billClass = $bill->classroom;
+        }
 
-        // If resolved class happens to be 'PONDOK' for a formal bill, pick formal classroom
-        if ($billClass && strtoupper($billClass->name) === 'PONDOK') {
-            $formalHistory = $this->relationLoaded('classroomHistories')
-                ? $this->classroomHistories->where('academic_year_id', $ayId)->where('classroom.name', '!=', 'PONDOK')->first()
-                : null;
-
-            if ($formalHistory && $formalHistory->classroom) {
-                $billClass = $formalHistory->classroom;
-            } else {
-                $billClass = $this->classroom && strtoupper($this->classroom->name) !== 'PONDOK' ? $this->classroom : null;
-            }
+        if (!$billClass) {
+            $billClass = $this->getClassroomForAcademicYear($ayId);
         }
 
         $className = $billClass?->name ?? '-';
