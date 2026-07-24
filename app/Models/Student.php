@@ -307,7 +307,7 @@ class Student extends Model
     }
 
     /**
-     * Resolve precise Rombel / Class and UPT / School for a specific Bill / BillType
+     * Resolve precise Rombel / Class and UPT / School for a specific Bill or BillType
      */
     public function resolveBillRombelAndSchool($bill)
     {
@@ -329,36 +329,8 @@ class Student extends Model
             ];
         }
 
-        // Formal Bill (MA / SMP):
-        $billClass = null;
-
-        // Step 1: If $bill is a single Bill model with classroom relation
-        if ($bill->classroom_id && $bill->relationLoaded('classroom') && $bill->classroom && strtoupper($bill->classroom->name) !== 'PONDOK') {
-            $billClass = $bill->classroom;
-        }
-
-        // Step 2: If $bill is a BillType model (contains ->bills relation for this student)
-        if (!$billClass && isset($bill->bills) && count($bill->bills) > 0) {
-            $formalBills = $bill->bills
-                ->where('student_id', $this->id)
-                ->whereNotNull('classroom_id')
-                ->filter(fn($b) => $b->classroom && strtoupper($b->classroom->name) !== 'PONDOK');
-
-            if ($formalBills->count() > 0) {
-                // Get the most frequent formal classroom_id for this BillType
-                $mostFrequentClassId = $formalBills->groupBy('classroom_id')
-                    ->sortByDesc(fn($group) => $group->count())
-                    ->keys()
-                    ->first();
-
-                $billClass = $formalBills->firstWhere('classroom_id', $mostFrequentClassId)?->classroom;
-            }
-        }
-
-        // Step 3: Tiered fallback via getClassroomForAcademicYear
-        if (!$billClass) {
-            $billClass = $this->getClassroomForAcademicYear($ayId);
-        }
+        // Formal Bill (MA / SMP): Resolve student's unified formal classroom for this Academic Year
+        $billClass = $this->getClassroomForAcademicYear($ayId);
 
         $className = $billClass?->name ?? '-';
         $schoolName = $billClass?->school?->name ?? ($this->classroom?->school?->name ?? '');
