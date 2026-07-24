@@ -1,5 +1,7 @@
 <?php
-error_reporting(0);
+// Suppress PHP 8.4 deprecation warnings to prevent circular dependency crash
+// during Laravel bootstrap (Collection class not found due to Enumerable deprecation)
+error_reporting(E_ALL & ~E_DEPRECATED);
 ini_set('display_errors', 0);
 
 

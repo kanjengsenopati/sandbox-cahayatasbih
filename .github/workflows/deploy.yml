@@ -38,7 +38,7 @@ jobs:
             git reset --hard FETCH_HEAD
 
             echo "=== Refreshing Autoloader ==="
-            composer dump-autoload --optimize
+            /www/server/php/84/bin/php /usr/bin/composer dump-autoload --optimize
 
             echo "=== Installing dependencies & Building Assets ==="
             if [ ! -d "node_modules" ]; then npm ci; else npm install --prefer-offline --no-audit --no-fund; fi
