@@ -84,19 +84,11 @@
                     $hasAccess = true;
                 } else {
                     foreach ($permissions as $perm) {
-                        if (auth()->user()->can($perm)) {
+                        if (auth()->user()->can(trim($perm))) {
                             $hasAccess = true;
                             break;
                         }
                     }
-                }
-            }
-            
-            // Hardening: Cashier roles ONLY have access to the unified Unit Usaha menu (Pondok Mart & Koperasi / Koperasi Pesantren / Pondok Mart Outlet).
-            // All other parent menus (Dashboard, Master Data, Entri Data, Laporan, Akademik, etc.) are strictly hidden.
-            if (auth()->user()->isKasir()) {
-                if (!str_contains($menu->name, 'Pondok Mart') && !str_contains($menu->name, 'Koperasi')) {
-                    $hasAccess = false;
                 }
             }
         @endphp
@@ -120,23 +112,7 @@
                             return $roles->contains('super admin') || $roles->contains('superadmin') || auth()->user()->can('Manage Menu Aplikasi');
                         }
 
-                        // Restrict POS Kasir and Laporan POS menus based on role and mode URL parameter
                         $user = auth()->user();
-                        
-                        // Hardening: Cashier roles can ONLY access POS Kasir and Laporan POS/Laporan POS Multi Outlet.
-                        // All other submenus are strictly blocked.
-                        if ($user->isKasir()) {
-                            $isAllowedSub = false;
-                            if (str_contains($sub->url, 'order-item') && !str_contains($sub->url, 'mode=history')) {
-                                $isAllowedSub = true;
-                            }
-                            if (str_contains($sub->url, 'pos-transaction')) {
-                                $isAllowedSub = true;
-                            }
-                            if (!$isAllowedSub) {
-                                return false;
-                            }
-                        }
 
                         if (str_contains($sub->url, 'order-item') || str_contains($sub->url, 'pos-transaction')) {
                             if ($user->isKasirOutlet() && str_contains($sub->url, 'mode=kantin')) {
@@ -149,7 +125,7 @@
                             return true;
                         }
                         foreach ($subPerms as $perm) {
-                            if (auth()->user()->can($perm)) {
+                            if (auth()->user()->can(trim($perm))) {
                                 return true;
                             }
                         }

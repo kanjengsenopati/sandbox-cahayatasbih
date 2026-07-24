@@ -27,11 +27,20 @@ class DashboardController extends Controller
         try {
             $user = Auth::user();
             if ($user) {
-                if ($user->isKasirKoperasi()) {
-                    return redirect('/order-item?mode=kantin');
-                }
-                if ($user->isKasirOutlet() || $user->isKasir()) {
-                    return redirect('/order-item?mode=outlet');
+                // Only redirect to POS if user does NOT have higher management permissions
+                $hasManagement = $user->hasAnyPermission([
+                    'Manage Barang', 'Manage Outlet', 'Manage Shift', 'Manage Biometric', 
+                    'Manage Laporan Presensi', 'Manage Admin', 'Manage Sekolah', 'Manage Santri',
+                    'Manage Wali Santri', 'Manage Tagihan', 'Manage Audit dan Sinkron'
+                ]);
+
+                if (!$hasManagement) {
+                    if ($user->isKasirKoperasi()) {
+                        return redirect('/order-item?mode=kantin');
+                    }
+                    if ($user->isKasirOutlet() || $user->isKasir()) {
+                        return redirect('/order-item?mode=outlet');
+                    }
                 }
             }
             $isOutletUser = $user->hasRole('Kasir') || $user->hasRole('Karyawan Outlet ( Non Kasir )') || request()->input('mode') === 'outlet';
