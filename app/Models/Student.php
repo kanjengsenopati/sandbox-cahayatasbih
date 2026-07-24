@@ -247,6 +247,38 @@ class Student extends Model
         return $this->hasMany(StudentClassroomHistory::class);
     }
 
+    /**
+     * Tiered Resolution Engine to get student's classroom for a specific Academic Year
+     */
+    public function getClassroomForAcademicYear($academicYearId = null)
+    {
+        if (!$academicYearId) {
+            return $this->classroom;
+        }
+
+        // Tier 1: Check StudentClassroomHistory
+        if ($this->relationLoaded('classroomHistories') || $this->classroomHistories()->exists()) {
+            $history = $this->classroomHistories->where('academic_year_id', $academicYearId)->first();
+            if ($history && $history->classroom) {
+                return $history->classroom;
+            }
+        }
+
+        // Tier 2: Check tb_bills generated for this student in this academic year
+        $billWithClass = $this->bills()
+            ->where('academic_year_id', $academicYearId)
+            ->whereNotNull('classroom_id')
+            ->with('classroom.school')
+            ->first();
+
+        if ($billWithClass && $billWithClass->classroom) {
+            return $billWithClass->classroom;
+        }
+
+        // Tier 3: Fallback to current classroom
+        return $this->classroom;
+    }
+
     public function translatedStatus(): string
     {
         return match ($this->status) {

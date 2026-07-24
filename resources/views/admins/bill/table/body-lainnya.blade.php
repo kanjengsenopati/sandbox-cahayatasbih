@@ -74,8 +74,9 @@
                     <div class="col-md-3 col-12 my-2 my-md-0 d-flex align-items-center justify-content-start justify-content-md-center">
                         @php
                             $ayId = $bill->academic_year_id ?? $bill->academicYear?->id;
-                            $history = $student->classroomHistories ? $student->classroomHistories->where('academic_year_id', $ayId)->first() : null;
-                            $billClassName = $history && $history->classroom ? $history->classroom->name : ($student->classroom->name ?? '-');
+                            $billClass = $student->getClassroomForAcademicYear($ayId);
+                            $billClassName = $billClass?->name ?? '-';
+                            $billSchoolName = $billClass?->school?->name ?? '';
                         @endphp
                         <div class="d-flex align-items-center gap-2.5 px-3 py-1.5 rounded-3" 
                              style="background-color: #f8fafc; border: 1px solid #cbd5e1; box-shadow: 0 1px 3px rgba(0,0,0,0.03);">
@@ -85,8 +86,13 @@
                                 </span>
                             </div>
                             <div class="d-flex flex-column">
-                                <span class="text-slate-400 fw-bold text-uppercase" style="font-size: 10px; line-height: 1.1; letter-spacing: 0.5px;">Rombel / Kelas</span>
-                                <span class="fs-6 fw-boldest text-slate-800" style="line-height: 1.2;">Kelas {{ $billClassName }}</span>
+                                <span class="text-slate-400 fw-bold text-uppercase" style="font-size: 10px; line-height: 1.1; letter-spacing: 0.5px;">Rombel / UPT</span>
+                                <span class="fs-6 fw-boldest text-slate-800" style="line-height: 1.2;">
+                                    Kelas {{ $billClassName }}
+                                    @if($billSchoolName)
+                                        <span class="fs-9 text-slate-500 fw-normal">({{ $billSchoolName }})</span>
+                                    @endif
+                                </span>
                             </div>
                         </div>
                     </div>

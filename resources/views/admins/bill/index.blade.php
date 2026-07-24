@@ -313,23 +313,14 @@
                                         if ($filteredYearId) {
                                             $filteredYear = $academicYears->where('id', $filteredYearId)->first();
                                             $displayYearName = $filteredYear ? $filteredYear->name : 'Semua Tahun Ajaran';
-                                            
-                                            $history = $student->classroomHistories->where('academic_year_id', $filteredYearId)->first();
-                                            if ($history && $history->classroom) {
-                                                $displayClassName = $history->classroom->name;
-                                            } else {
-                                                // Jika tidak ada di history, dan tahun ajaran yang difilter adalah tahun ajaran aktif,
-                                                // gunakan kelas aktif siswa saat ini
-                                                if ($activeYear && $filteredYearId == $activeYear->id && $student->classroom) {
-                                                    $displayClassName = $student->classroom->name;
-                                                } else {
-                                                    $displayClassName = '-';
-                                                }
-                                            }
+                                            $resolvedClass = $student->getClassroomForAcademicYear($filteredYearId);
                                         } else {
                                             $displayYearName = $activeYear ? $activeYear->name : 'Semua Tahun Ajaran';
-                                            $displayClassName = $student->classroom->name ?? '-';
+                                            $resolvedClass = $student->classroom;
                                         }
+                                        
+                                        $displayClassName = $resolvedClass?->name ?? '-';
+                                        $displaySchoolName = $resolvedClass?->school?->name ?? '';
                                     @endphp
                                     <div class="card-body pt-3">
                                         <div class="card-information">
