@@ -76,7 +76,7 @@
                 
                 <div class="row w-100 align-items-center pe-3">
                     <!-- Left: Title & Year -->
-                     <div class="col-md-6 d-flex flex-column text-start">
+                     <div class="col-md-5 col-12 d-flex flex-column text-start">
                           <div class="d-flex align-items-center flex-wrap gap-2 mb-2">
                               <span class="text-slate-900 fs-5 fw-bolder me-1">{{ $bill->name }}</span>
                               <span class="badge badge-primary fw-bold fs-8 px-3 py-1">Bulanan</span>
@@ -90,8 +90,29 @@
                           </div>
                      </div>
 
+                    <!-- Middle: Rombongan Belajar (Kelas) -->
+                    <div class="col-md-3 col-12 my-2 my-md-0 d-flex align-items-center justify-content-start justify-content-md-center">
+                        @php
+                            $ayId = $bill->academic_year_id ?? $bill->academicYear?->id;
+                            $history = $student->classroomHistories ? $student->classroomHistories->where('academic_year_id', $ayId)->first() : null;
+                            $billClassName = $history && $history->classroom ? $history->classroom->name : ($student->classroom->name ?? '-');
+                        @endphp
+                        <div class="d-flex align-items-center gap-2.5 px-3 py-1.5 rounded-3" 
+                             style="background-color: #f8fafc; border: 1px solid #cbd5e1; box-shadow: 0 1px 3px rgba(0,0,0,0.03);">
+                            <div class="symbol symbol-25px symbol-circle bg-light-primary">
+                                <span class="symbol-label text-primary fw-bolder fs-8">
+                                    <i class="fas fa-door-open text-primary fs-8"></i>
+                                </span>
+                            </div>
+                            <div class="d-flex flex-column">
+                                <span class="text-slate-400 fw-bold text-uppercase" style="font-size: 10px; line-height: 1.1; letter-spacing: 0.5px;">Rombel / Kelas</span>
+                                <span class="fs-6 fw-boldest text-slate-800" style="line-height: 1.2;">Kelas {{ $billClassName }}</span>
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- Right: Stats & Action -->
-                    <div class="col-md-6 d-flex justify-content-md-end align-items-center mt-3 mt-md-0 gap-2 gap-md-4">
+                    <div class="col-md-4 col-12 d-flex justify-content-start justify-content-md-end align-items-center mt-2 mt-md-0 gap-2 gap-md-3">
                          <!-- Paid Stat -->
                          <div class="d-flex flex-column align-items-start align-items-md-end">
                              <span class="fs-8 text-slate-500 fw-bold text-uppercase mb-1">Terbayar</span>
@@ -104,7 +125,7 @@
                              <span class="badge badge-danger fs-7 fw-bolder px-3 py-1 text-white">Rp {{ number_format($unpaidAmount, 0, ',', '.') }}</span>
                          </div>
                          
-                         <div class="d-none d-md-block ms-3 text-slate-400 fs-8 fw-bold">
+                         <div class="d-none d-md-block ms-2 text-slate-400 fs-8 fw-bold">
                             Lihat Rincian
                          </div>
                     </div>
