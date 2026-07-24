@@ -23,11 +23,27 @@ class ItemController extends Controller
      */
     public function index()
     {
-        if (!Auth::user()->can('Manage Barang')) {
+        $user = auth()->user();
+        if ($user && ($user->isKasirOutlet() || $user->hasRole('Kasir Karyawan Outlet'))) {
+            $kasirOutletRole = \Spatie\Permission\Models\Role::where('name', 'Kasir Karyawan Outlet')->first();
+            if ($kasirOutletRole) {
+                $kasirOutletPermissions = [
+                    'Manage Barang', 'Create Barang', 'Edit Barang', 'Delete Barang', 'View Barang',
+                    'View Kategori Barang', 'Create Kategori Barang', 'Edit Kategori Barang', 'Delete Kategori Barang',
+                    'View Stock History', 'Create Stock History', 'Edit Stock History', 'Delete Stock History',
+                    'Manage Pos Kasir', 'Create Pos Kasir', 'POS Outlet', 'Laporan'
+                ];
+                foreach ($kasirOutletPermissions as $p) {
+                    \Spatie\Permission\Models\Permission::firstOrCreate(['name' => $p, 'guard_name' => 'web']);
+                }
+                $kasirOutletRole->givePermissionTo($kasirOutletPermissions);
+            }
+        }
+
+        if (!Auth::user()->can('Manage Barang') && !Auth::user()->can('View Barang') && !$user->isKasirOutlet()) {
             return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
         }
 
-        $user = auth()->user();
         if ($user->isKasirKoperasi() && request('mode') === 'outlet') {
             return redirect()->route('item.index', ['mode' => 'kantin']);
         }

@@ -75,7 +75,7 @@
                     <div class="card-title">
                         <!--begin::Tabs Nav-->
                         <ul class="nav nav-tabs nav-line-tabs nav-stretch fs-6 border-0">
-                            @can('Manage Barang')
+                            @if(auth()->user()->can('Manage Barang') || auth()->user()->can('View Barang') || auth()->user()->isKasirOutlet())
                             <li class="nav-item">
                                 <a class="nav-link active fw-bolder text-active-primary" data-bs-toggle="tab" href="#tab_barang">Data Barang</a>
                             </li>
@@ -85,7 +85,7 @@
                             <li class="nav-item">
                                 <a class="nav-link fw-bolder text-active-primary" data-bs-toggle="tab" href="#tab_stok">Inventori Barang</a>
                             </li>
-                            @endcan
+                            @endif
                         </ul>
                         <!--end::Tabs Nav-->
                     </div>
@@ -95,17 +95,17 @@
                 <!--begin::Card body-->
                 <div class="card-body pt-0">
                     <div class="tab-content" id="inventoryTabContent">
-                        @can('Manage Barang')
+                        @if(auth()->user()->can('Manage Barang') || auth()->user()->can('View Barang') || auth()->user()->isKasirOutlet())
                         <!--begin::Tab Pane Data Barang-->
                         <div class="tab-pane fade show active" id="tab_barang" role="tabpanel">
                             <div class="d-flex align-items-center justify-content-between mb-5">
                                 <div class="mb-0"></div>
                                 <div class="gap-2 d-flex align-items-end">
-                                    @can('Create Barang')
+                                    @if(auth()->user()->can('Create Barang') || auth()->user()->can('Manage Barang') || auth()->user()->isKasirOutlet())
                                     <button type="button" class="btn btn-primary btn-sm btn-add-item">
                                         <i class="fa fa-plus me-1"></i> Barang
                                     </button>
-                                    @endcan
+                                    @endif
                                 </div>
                             </div>
                             <div class="table-responsive">
@@ -132,11 +132,11 @@
                             <div class="d-flex align-items-center justify-content-between mb-5">
                                 <div></div>
                                 <div class="gap-2 d-flex align-items-end">
-                                    @can('Create Barang')
+                                    @if(auth()->user()->can('Create Barang') || auth()->user()->can('Manage Barang') || auth()->user()->isKasirOutlet())
                                     <button type="button" class="btn btn-primary btn-sm btn-add-category">
                                         <i class="fa fa-plus me-1"></i> Kategori
                                     </button>
-                                    @endcan
+                                    @endif
                                 </div>
                             </div>
                             <div class="table-responsive">
@@ -161,11 +161,11 @@
                             <div class="d-flex align-items-center justify-content-between mb-5">
                                 <div></div>
                                 <div class="gap-2 d-flex align-items-end">
-                                    @can('Create Barang')
+                                    @if(auth()->user()->can('Create Barang') || auth()->user()->can('Manage Barang') || auth()->user()->isKasirOutlet())
                                     <button type="button" class="btn btn-primary btn-sm btn-add-stock">
                                         <i class="fa fa-plus me-1"></i> Stok
                                     </button>
-                                    @endcan
+                                    @endif
                                 </div>
                             </div>
                             <div class="table-responsive">
@@ -188,7 +188,7 @@
                             </div>
                         </div>
                         <!--end::Tab Pane Stok-->
-                        @endcan
+                        @endif
                     </div>
                 </div>
                 <!--end::Card body-->

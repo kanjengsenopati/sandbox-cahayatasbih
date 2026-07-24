@@ -17,11 +17,10 @@ class CategoryItemController extends Controller
      */
     public function index()
     {
-        if (!Auth::user()->can('Manage Barang')) {
+        $user = auth()->user();
+        if (!Auth::user()->can('Manage Barang') && !Auth::user()->can('View Kategori Barang') && !$user->isKasirOutlet()) {
             return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
         }
-
-        $user = auth()->user();
         if ($user->isKasirKoperasi() && request('mode') === 'outlet') {
             return redirect()->route('item.index', ['mode' => 'kantin']);
         }

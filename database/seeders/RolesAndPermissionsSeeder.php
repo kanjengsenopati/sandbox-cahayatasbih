@@ -94,5 +94,21 @@ class RolesAndPermissionsSeeder extends Seeder
         $securityRole->syncPermissions([
             'Scan Perizinan'
         ]);
+
+        // Kasir Karyawan Outlet Role
+        $kasirOutletRole = Role::firstOrCreate([
+            'name' => 'Kasir Karyawan Outlet',
+            'guard_name' => 'web'
+        ]);
+        $kasirOutletPermissions = [
+            'Manage Barang', 'Create Barang', 'Edit Barang', 'Delete Barang', 'View Barang',
+            'View Kategori Barang', 'Create Kategori Barang', 'Edit Kategori Barang', 'Delete Kategori Barang',
+            'View Stock History', 'Create Stock History', 'Edit Stock History', 'Delete Stock History',
+            'Manage Pos Kasir', 'Create Pos Kasir', 'POS Outlet', 'Laporan'
+        ];
+        foreach ($kasirOutletPermissions as $p) {
+            Permission::firstOrCreate(['name' => $p, 'guard_name' => 'web']);
+        }
+        $kasirOutletRole->givePermissionTo(Permission::whereIn('name', $kasirOutletPermissions)->get());
     }
 }
