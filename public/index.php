@@ -38,6 +38,12 @@ if (file_exists($maintenance = __DIR__.'/../storage/framework/maintenance.php'))
 
 require __DIR__.'/../vendor/autoload.php';
 
+// Preload critical classes to prevent PHP 8.4 deprecation circular autoload deadlock
+class_exists(\Illuminate\Support\Collection::class);
+class_exists(\Illuminate\Support\Str::class);
+class_exists(\Illuminate\Support\Arr::class);
+class_exists(\Illuminate\Log\LogManager::class);
+
 /*
 |--------------------------------------------------------------------------
 | Run The Application
