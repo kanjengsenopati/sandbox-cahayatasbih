@@ -279,6 +279,55 @@ class Student extends Model
         return $this->classroom;
     }
 
+    /**
+     * Resolve precise Rombel / Class and UPT / School for a specific Bill
+     */
+    public function resolveBillRombelAndSchool($bill)
+    {
+        $billName = strtoupper($bill->name ?? '');
+        $isPondokBill = str_contains($billName, 'PONDOK') 
+                        || str_contains($billName, 'ZARKASI') 
+                        || str_contains($billName, 'SANTRI');
+
+        $ayId = $bill->academic_year_id ?? $bill->academicYear?->id;
+
+        if ($isPondokBill) {
+            $asrama = $this->asrama_name ?? $this->asrama?->name;
+            $rombelText = 'Pondok' . ($asrama && strtoupper($asrama) !== 'PONDOK' ? " ({$asrama})" : '');
+            
+            return [
+                'class_name' => $rombelText,
+                'school_name' => 'PPTQ CAHAYA TASBIH',
+                'is_pondok' => true
+            ];
+        }
+
+        // Formal Bill (MA / SMP)
+        $billClass = $this->getClassroomForAcademicYear($ayId);
+
+        // If resolved class happens to be 'PONDOK' for a formal bill, pick formal classroom
+        if ($billClass && strtoupper($billClass->name) === 'PONDOK') {
+            $formalHistory = $this->relationLoaded('classroomHistories')
+                ? $this->classroomHistories->where('academic_year_id', $ayId)->where('classroom.name', '!=', 'PONDOK')->first()
+                : null;
+
+            if ($formalHistory && $formalHistory->classroom) {
+                $billClass = $formalHistory->classroom;
+            } else {
+                $billClass = $this->classroom && strtoupper($this->classroom->name) !== 'PONDOK' ? $this->classroom : null;
+            }
+        }
+
+        $className = $billClass?->name ?? '-';
+        $schoolName = $billClass?->school?->name ?? ($this->classroom?->school?->name ?? '');
+
+        return [
+            'class_name' => 'Kelas ' . $className,
+            'school_name' => $schoolName,
+            'is_pondok' => false
+        ];
+    }
+
     public function translatedStatus(): string
     {
         return match ($this->status) {
