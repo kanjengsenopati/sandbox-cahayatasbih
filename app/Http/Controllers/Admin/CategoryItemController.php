@@ -33,15 +33,10 @@ class CategoryItemController extends Controller
             $koperasi = Outlet::where('name', 'Koperasi')->orWhere('code', 'KPR')->first();
             $koperasiId = $koperasi ? $koperasi->id : '6bc5b484-07f9-49cc-aefa-00a8cf47e8d7';
 
-            $user = auth()->user();
-            $authOutletIds = array_diff($user->getOutletIds(), [$koperasiId]);
-
             $data = CategoryItem::with('outlet')
-                ->when(request('mode') === 'outlet', function($q) use ($authOutletIds, $koperasiId) {
+                ->when(request('mode') === 'outlet', function($q) use ($koperasiId) {
                     if (request()->filled('outlet_id')) {
                         $q->where('outlet_id', request('outlet_id'));
-                    } elseif (!empty($authOutletIds)) {
-                        $q->whereIn('outlet_id', $authOutletIds);
                     } else {
                         $q->where(function($query) use ($koperasiId) {
                             $query->where('outlet_id', '!=', $koperasiId)
