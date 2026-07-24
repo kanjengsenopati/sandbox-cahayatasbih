@@ -20,6 +20,15 @@ class CategoryItemController extends Controller
         if (!Auth::user()->can('Manage Barang')) {
             return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
         }
+
+        $user = auth()->user();
+        if ($user->isKasirKoperasi() && request('mode') === 'outlet') {
+            return redirect()->route('item.index', ['mode' => 'kantin']);
+        }
+        if ($user->isKasirOutlet() && request('mode') === 'kantin') {
+            return redirect()->route('item.index', ['mode' => 'outlet']);
+        }
+
         if (request()->ajax()) {
             $koperasi = Outlet::where('name', 'Koperasi')->orWhere('code', 'KPR')->first();
             $koperasiId = $koperasi ? $koperasi->id : '6bc5b484-07f9-49cc-aefa-00a8cf47e8d7';

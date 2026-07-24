@@ -1,14 +1,17 @@
-@extends('layouts.master', ['title' => 'Manajemen Barang'])
+@extends('layouts.master', ['title' => request('mode') === 'outlet' ? 'Manajemen Barang Outlet' : 'Manajemen Barang Kantin'])
 @section('content')
 @php
     $koperasi = \App\Models\Outlet::where('name', 'Koperasi')->orWhere('code', 'KPR')->first();
     $koperasiId = $koperasi ? $koperasi->id : '6bc5b484-07f9-49cc-aefa-00a8cf47e8d7';
     if (request('mode') === 'outlet') {
         $modalOutlets = \App\Models\Outlet::where('is_active', 1)->where('id', '!=', $koperasiId)->get();
+        $categories = \App\Models\CategoryItem::where(function($q) use ($koperasiId) {
+            $q->where('outlet_id', '!=', $koperasiId)->orWhereNull('outlet_id');
+        })->get();
     } else {
-        $modalOutlets = \App\Models\Outlet::where('is_active', 1)->get();
+        $modalOutlets = \App\Models\Outlet::where('is_active', 1)->where('id', $koperasiId)->get();
+        $categories = \App\Models\CategoryItem::where('outlet_id', $koperasiId)->get();
     }
-    $categories = \App\Models\CategoryItem::all();
     $modalItems = \App\Models\Item::when(auth()->user()->outlet_id, function($q) {
         $q->where('outlet_id', auth()->user()->outlet_id);
     })->when(!auth()->user()->outlet_id, function($q) use ($koperasiId) {
@@ -31,16 +34,28 @@
             <div data-kt-swapper="true" data-kt-swapper-mode="prepend"
                 data-kt-swapper-parent="{default: '#kt_content_container', 'lg': '#kt_toolbar_container'}"
                 class="page-title d-flex align-items-center flex-wrap me-3 mb-5 mb-lg-0">
-                <h1 class="d-flex text-dark fw-bolder fs-3 align-items-center my-1">Manajemen Barang</h1>
+                <h1 class="d-flex text-dark fw-bolder fs-3 align-items-center my-1">
+                    @if(request('mode') === 'outlet')
+                        Manajemen Barang & Inventori Outlet
+                    @else
+                        Manajemen Barang & Inventori Kantin
+                    @endif
+                </h1>
                 <span class="h-20px border-gray-300 border-start mx-4"></span>
                 <ul class="breadcrumb breadcrumb-separatorless fw-bold fs-7 my-1">
                     <li class="breadcrumb-item text-muted">
-                        <a href="{{ route('item.index') }}" class="text-muted text-hover-primary">Barang</a>
+                        <a href="{{ route('item.index', ['mode' => request('mode')]) }}" class="text-muted text-hover-primary">Barang</a>
                     </li>
                     <li class="breadcrumb-item">
                         <span class="bullet bg-gray-300 w-5px h-2px"></span>
                     </li>
-                    <li class="breadcrumb-item text-dark">Manajemen Barang & Stok</li>
+                    <li class="breadcrumb-item text-dark">
+                        @if(request('mode') === 'outlet')
+                            Barang & Stok Outlet
+                        @else
+                            Barang & Stok Kantin / Koperasi
+                        @endif
+                    </li>
                 </ul>
             </div>
             <div class="d-flex align-items-center gap-2 gap-lg-3">

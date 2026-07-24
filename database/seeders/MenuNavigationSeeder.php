@@ -51,15 +51,16 @@ class MenuNavigationSeeder extends Seeder
 
         $subPondokMart = [
             ['name' => 'POS Kasir', 'url' => '/order-item?mode=outlet', 'permission' => 'Manage Pos Kasir', 'order' => 1],
-            ['name' => 'Barang & Inventory', 'url' => '/item?mode=outlet', 'permission' => 'Manage Barang', 'order' => 2],
-            ['name' => 'Laporan POS Kantin', 'url' => '/pos-transaction?mode=kantin', 'permission' => 'Manage Laporan Pos Kasir,Manage Laporan Pos Multi Outlet', 'order' => 3],
-            ['name' => 'Laporan POS Outlet', 'url' => '/pos-transaction?mode=outlet', 'permission' => 'Manage Laporan Pos Multi Outlet', 'order' => 4],
-            ['name' => 'Laporan POS Bisnis', 'url' => '/pos-transaction?mode=bisnis', 'permission' => 'Manage Laporan Pos Multi Outlet', 'order' => 5],
-            ['name' => 'Rugi Laba', 'url' => '/report-profit-loss?mode=outlet', 'permission' => 'Manage Laporan Rugi Laba', 'order' => 6],
-            ['name' => 'Data Karyawan & Payroll', 'url' => '/karyawan?mode=outlet', 'permission' => 'Manage Karyawan,Manage Shift', 'order' => 7],
-            ['name' => 'Presensi Karyawan', 'url' => '/report-attendance?mode=outlet', 'permission' => 'Manage Laporan Presensi', 'order' => 8],
-            ['name' => 'Kiosk Presensi Wajah', 'url' => '/biometric-mapping/kiosk', 'permission' => 'Manage Biometric', 'order' => 9],
-            ['name' => 'Data Outlet', 'url' => '/outlet', 'permission' => 'Manage Outlet', 'order' => 10],
+            ['name' => 'Barang & Inventory Kantin', 'url' => '/item?mode=kantin', 'permission' => 'Manage Barang', 'order' => 2],
+            ['name' => 'Barang & Inventory Outlet', 'url' => '/item?mode=outlet', 'permission' => 'Manage Barang', 'order' => 3],
+            ['name' => 'Laporan POS Kantin', 'url' => '/pos-transaction?mode=kantin', 'permission' => 'Manage Laporan Pos Kasir,Manage Laporan Pos Multi Outlet', 'order' => 4],
+            ['name' => 'Laporan POS Outlet', 'url' => '/pos-transaction?mode=outlet', 'permission' => 'Manage Laporan Pos Multi Outlet', 'order' => 5],
+            ['name' => 'Laporan POS Bisnis', 'url' => '/pos-transaction?mode=bisnis', 'permission' => 'Manage Laporan Pos Multi Outlet', 'order' => 6],
+            ['name' => 'Rugi Laba', 'url' => '/report-profit-loss?mode=outlet', 'permission' => 'Manage Laporan Rugi Laba', 'order' => 7],
+            ['name' => 'Data Karyawan & Payroll', 'url' => '/karyawan?mode=outlet', 'permission' => 'Manage Karyawan,Manage Shift', 'order' => 8],
+            ['name' => 'Presensi Karyawan', 'url' => '/report-attendance?mode=outlet', 'permission' => 'Manage Laporan Presensi', 'order' => 9],
+            ['name' => 'Kiosk Presensi Wajah', 'url' => '/biometric-mapping/kiosk', 'permission' => 'Manage Biometric', 'order' => 10],
+            ['name' => 'Data Outlet', 'url' => '/outlet', 'permission' => 'Manage Outlet', 'order' => 11],
         ];
 
         foreach ($subPondokMart as $sub) {
