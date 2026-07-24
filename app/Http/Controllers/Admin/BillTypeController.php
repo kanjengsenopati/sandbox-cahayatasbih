@@ -149,10 +149,17 @@ class BillTypeController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show($billType)
+    public function show($arg1, $arg2 = null)
     {
-        if (!$billType instanceof BillType) {
-            $billType = BillType::findOrFail($billType);
+        $targetId = $arg1 instanceof \Illuminate\Http\Request ? $arg2 : $arg1;
+
+        if ($targetId instanceof BillType) {
+            $billType = $targetId;
+        } else {
+            $billType = BillType::find($targetId);
+            if (!$billType) {
+                return redirect()->route('bill-type.index')->with('error', 'Data tipe pembayaran tidak ditemukan atau telah dihapus.');
+            }
         }
 
         if (!Auth::user()?->can('Manage Jenis Bayar')) {
