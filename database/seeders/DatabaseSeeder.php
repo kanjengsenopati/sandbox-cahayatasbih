@@ -17,6 +17,7 @@ class DatabaseSeeder extends Seeder
             SampleDataSeeder::class,
             KaryawanOutletSeeder::class,
             RegistrationPaymentRateSeeder::class,
+            PrecisionRoleSeeder::class,
         ]);
     }
 }
