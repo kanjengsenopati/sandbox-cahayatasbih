@@ -45,12 +45,26 @@ class CategoryItemController extends Controller
                     return $data->outlet->name ?? 'N/A';
                 })
                 ->addColumn('action', function ($data) {
-                    $actionEdit = route('category-item.edit', $data->id);
                     $actionDelete = route('category-item.destroy', $data->id);
-                    return "<div class='d-flex justify-content-center'>" .
-                        view('components.action.edit', ['action' => $actionEdit, 'name' => 'Barang']) . '&nbsp;' .
-                        view('components.action.delete', ['action' => $actionDelete, 'id' => $data->id, 'name' => 'Barang']) .
-                        "</div>";
+                    $html = "<div class='d-flex justify-content-center'>";
+                    if (auth()->user()->can('Edit Barang')) {
+                        $html .= "<button type='button' class='btn btn-icon btn-bg-light btn-active-color-primary btn-sm me-1 btn-edit-category' " .
+                            "data-id='{$data->id}' " .
+                            "data-name='" . e($data->name) . "' " .
+                            "data-code='" . e($data->code) . "' " .
+                            "data-outlet_id='{$data->outlet_id}' " .
+                            "data-action='" . route('category-item.update', $data->id) . "' title='Edit Kategori'>" .
+                            "<i class='fa-solid fa-pen'></i>" .
+                            "</button>";
+                    }
+                    if (auth()->user()->can('Delete Barang')) {
+                        if (auth()->user()->can('Edit Barang')) {
+                            $html .= '&nbsp;';
+                        }
+                        $html .= view('components.action.delete', ['action' => $actionDelete, 'id' => $data->id, 'name' => 'Kategori'])->render();
+                    }
+                    $html .= "</div>";
+                    return $html;
                 })
                 ->rawColumns(['action'])
                 ->make(true);

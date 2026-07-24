@@ -1,5 +1,16 @@
 @extends('layouts.master', ['title' => 'Manajemen Barang'])
 @section('content')
+@php
+    $koperasi = \App\Models\Outlet::where('name', 'Koperasi')->orWhere('code', 'KPR')->first();
+    $koperasiId = $koperasi ? $koperasi->id : '6bc5b484-07f9-49cc-aefa-00a8cf47e8d7';
+    if (request('mode') === 'outlet') {
+        $modalOutlets = \App\Models\Outlet::where('is_active', 1)->where('id', '!=', $koperasiId)->get();
+    } else {
+        $modalOutlets = \App\Models\Outlet::where('is_active', 1)->get();
+    }
+    $categories = \App\Models\CategoryItem::all();
+@endphp
+
 <div class="content d-flex flex-column flex-column-fluid" id="kt_content">
     <!--begin::Toolbar-->
     <div class="toolbar" id="kt_toolbar">
@@ -67,7 +78,9 @@
                                 </div>
                                 <div class="gap-2 d-flex align-items-end">
                                     @can('Create Barang')
-                                    <x-action.create name="Barang" action="{{ route('item.create', ['mode' => request('mode')]) }}" />
+                                    <button type="button" class="btn btn-primary btn-sm btn-add-item">
+                                        <i class="fa fa-plus me-1"></i> Barang
+                                    </button>
                                     @endcan
                                 </div>
                             </div>
@@ -96,7 +109,9 @@
                                 <div></div>
                                 <div class="gap-2 d-flex align-items-end">
                                     @can('Create Barang')
-                                    <x-action.create name="Barang" label="Kategori" action="{{ route('category-item.create', ['mode' => request('mode')]) }}" />
+                                    <button type="button" class="btn btn-primary btn-sm btn-add-category">
+                                        <i class="fa fa-plus me-1"></i> Kategori
+                                    </button>
                                     @endcan
                                 </div>
                             </div>
@@ -185,11 +200,225 @@
         </div>
     </div>
 </div>
+
+<!-- Modal Form Barang (Wide Modal xl) -->
+<div class="modal fade" id="modalItemForm" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-xl">
+        <div class="modal-content">
+            <form id="formItemModal" method="POST" action="" enctype="multipart/form-data">
+                @csrf
+                <div id="methodItemPut"></div>
+                <div class="modal-header">
+                    <h5 class="modal-title fw-bolder fs-4" id="modalItemTitle">Tambah Barang</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body py-5 px-lg-10">
+                    <div class="row g-4">
+                        <div class="col-12 text-center mb-2">
+                            <label class="form-label fs-6 fw-bold d-block">Foto Barang</label>
+                            <div class="image-input image-input-outline" data-kt-image-input="true">
+                                <div class="image-input-wrapper w-125px h-125px" id="modal_item_image_preview" style="background-image: url('{{ asset('assets/media/svg/avatars/blank.svg') }}')"></div>
+                                <label class="btn btn-icon btn-circle btn-active-color-primary w-25px h-25px bg-body shadow" data-kt-image-input-action="change" title="Ubah Foto">
+                                    <i class="bi bi-pencil-fill fs-7"></i>
+                                    <input type="file" name="image" accept=".png, .jpg, .jpeg" />
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            @if(!auth()->user()->outlet_id)
+                            <div class="mb-3">
+                                <label class="form-label fs-6 fw-bold required" for="modal_item_outlet_id">Pilih Outlet</label>
+                                <select name="outlet_id" id="modal_item_outlet_id" class="form-select form-select-solid" required>
+                                    <option value="">Pilih Outlet...</option>
+                                    @foreach($modalOutlets as $outlet)
+                                        <option value="{{ $outlet->id }}">{{ $outlet->name }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            @else
+                                <input type="hidden" name="outlet_id" id="modal_item_outlet_id" value="{{ auth()->user()->outlet_id }}">
+                            @endif
+
+                            <div class="mb-3">
+                                <label class="form-label fs-6 fw-bold required" for="modal_item_category_id">Kategori Barang</label>
+                                <select name="category_item_id" id="modal_item_category_id" class="form-select form-select-solid" required>
+                                    <option value="">Pilih Kategori...</option>
+                                    @foreach($categories as $cat)
+                                        <option value="{{ $cat->id }}">{{ $cat->name }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label fs-6 fw-bold required" for="modal_item_name">Nama Barang</label>
+                                <input type="text" name="name" id="modal_item_name" class="form-control form-control-solid" placeholder="Masukkan Nama Barang" required />
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label fs-6 fw-bold required" for="modal_item_selling_price">Harga Jual</label>
+                                <div class="input-group">
+                                    <span class="input-group-text">Rp</span>
+                                    <input type="text" name="selling_price" id="modal_item_selling_price" class="form-control form-control-solid input-money-modal" placeholder="Masukkan Harga Jual" required />
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label fs-6 fw-bold required" for="modal_item_code">Kode Barang</label>
+                                <input type="text" name="code" id="modal_item_code" class="form-control form-control-solid" placeholder="Masukkan Kode Barang" required />
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label fs-6 fw-bold required" for="modal_item_stock">Stok Barang</label>
+                                <input type="text" name="stock" id="modal_item_stock" class="form-control form-control-solid" placeholder="Masukkan Stok Barang" required />
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label fs-6 fw-bold required" for="modal_item_price">Harga Beli</label>
+                                <div class="input-group">
+                                    <span class="input-group-text">Rp</span>
+                                    <input type="text" name="price" id="modal_item_price" class="form-control form-control-solid input-money-modal" placeholder="Masukkan Harga Beli" required />
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label fs-6 fw-bold" for="modal_item_profit">Keuntungan</label>
+                                <div class="input-group">
+                                    <span class="input-group-text">Rp</span>
+                                    <input type="text" name="profit" id="modal_item_profit" class="form-control form-control-solid" placeholder="Keuntungan" readonly />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Batal</button>
+                    <button type="submit" class="btn btn-primary btn-sm">Simpan</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Form Kategori Barang (Wide Modal lg) -->
+<div class="modal fade" id="modalCategoryForm" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
+            <form id="formCategoryModal" method="POST" action="">
+                @csrf
+                <div id="methodCategoryPut"></div>
+                <div class="modal-header">
+                    <h5 class="modal-title fw-bolder fs-4" id="modalCategoryTitle">Tambah Kategori Barang</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body py-5 px-lg-10">
+                    @if(!auth()->user()->outlet_id)
+                    <div class="fv-row mb-5">
+                        <label class="fs-6 fw-bold form-label required" for="modal_cat_outlet_id">Pilih Outlet</label>
+                        <select name="outlet_id" id="modal_cat_outlet_id" class="form-select form-select-solid" required>
+                            <option value="">Pilih Outlet...</option>
+                            @foreach($modalOutlets as $outlet)
+                                <option value="{{ $outlet->id }}">{{ $outlet->name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    @else
+                        <input type="hidden" name="outlet_id" id="modal_cat_outlet_id" value="{{ auth()->user()->outlet_id }}">
+                    @endif
+
+                    <div class="fv-row mb-5">
+                        <label class="fs-6 fw-bold form-label required" for="modal_cat_name">Nama Kategori</label>
+                        <input type="text" name="name" id="modal_cat_name" class="form-control form-control-solid" placeholder="Nama Kategori" required />
+                    </div>
+
+                    <div class="fv-row mb-5">
+                        <label class="fs-6 fw-bold form-label required" for="modal_cat_code">Kode Kategori</label>
+                        <input type="text" name="code" id="modal_cat_code" class="form-control form-control-solid" placeholder="Kode Kategori (Contoh: 01)" required />
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Batal</button>
+                    <button type="submit" class="btn btn-primary btn-sm">Simpan</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
 @endsection
 
 @push('js')
 <script>
     $(document).ready(() => {
+        // Calculate profit dynamically inside modal
+        $(document).on('keyup change', '.input-money-modal', function() {
+            var sellingPrice = parseInt($('#modal_item_selling_price').val().replace(/\D/g, ''), 10) || 0;
+            var buyingPrice = parseInt($('#modal_item_price').val().replace(/\D/g, ''), 10) || 0;
+            var profit = sellingPrice - buyingPrice;
+            $('#modal_item_profit').val(profit > 0 ? profit.toLocaleString('id-ID') : 0);
+        });
+
+        // Click event: Add Item Modal
+        $(document).on('click', '.btn-add-item', function() {
+            $('#formItemModal')[0].reset();
+            $('#methodItemPut').html('');
+            $('#modalItemTitle').text('Tambah Barang');
+            $('#formItemModal').attr('action', "{{ route('item.store', ['mode' => request('mode')]) }}");
+            $('#modal_item_image_preview').css('background-image', "url('{{ asset('assets/media/svg/avatars/blank.svg') }}')");
+            $('#modalItemForm').modal('show');
+        });
+
+        // Click event: Edit Item Modal (from tableItem or tableStock)
+        $(document).on('click', '.btn-edit-item', function() {
+            var btn = $(this);
+            $('#formItemModal')[0].reset();
+            $('#methodItemPut').html('<input type="hidden" name="_method" value="PUT">');
+            $('#modalItemTitle').text('Edit Barang');
+            $('#formItemModal').attr('action', btn.data('action'));
+            
+            $('#modal_item_name').val(btn.data('name'));
+            $('#modal_item_code').val(btn.data('code'));
+            $('#modal_item_category_id').val(btn.data('category_item_id'));
+            $('#modal_item_price').val(btn.data('price'));
+            $('#modal_item_selling_price').val(btn.data('selling_price'));
+            $('#modal_item_profit').val(btn.data('profit'));
+            $('#modal_item_stock').val(btn.data('stock'));
+            $('#modal_item_outlet_id').val(btn.data('outlet_id'));
+            
+            if (btn.data('image')) {
+                $('#modal_item_image_preview').css('background-image', "url('" + btn.data('image') + "')");
+            } else {
+                $('#modal_item_image_preview').css('background-image', "url('{{ asset('assets/media/svg/avatars/blank.svg') }}')");
+            }
+            
+            $('#modalItemForm').modal('show');
+        });
+
+        // Click event: Add Category Modal
+        $(document).on('click', '.btn-add-category', function() {
+            $('#formCategoryModal')[0].reset();
+            $('#methodCategoryPut').html('');
+            $('#modalCategoryTitle').text('Tambah Kategori Barang');
+            $('#formCategoryModal').attr('action', "{{ route('category-item.store', ['mode' => request('mode')]) }}");
+            $('#modalCategoryForm').modal('show');
+        });
+
+        // Click event: Edit Category Modal
+        $(document).on('click', '.btn-edit-category', function() {
+            var btn = $(this);
+            $('#formCategoryModal')[0].reset();
+            $('#methodCategoryPut').html('<input type="hidden" name="_method" value="PUT">');
+            $('#modalCategoryTitle').text('Edit Kategori Barang');
+            $('#formCategoryModal').attr('action', btn.data('action'));
+            
+            $('#modal_cat_name').val(btn.data('name'));
+            $('#modal_cat_code').val(btn.data('code'));
+            $('#modal_cat_outlet_id').val(btn.data('outlet_id'));
+            
+            $('#modalCategoryForm').modal('show');
+        });
+
         // Init DataTable Barang
         var tableItem = $('#table-item').DataTable({
             ordering: true,

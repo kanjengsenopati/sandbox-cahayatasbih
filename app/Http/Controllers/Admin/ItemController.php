@@ -73,11 +73,24 @@ class ItemController extends Controller
                     return $data->outlet->name ?? 'N/A';
                 })
                 ->addColumn('action', function ($data) {
-                    $actionEdit = route('item.edit', $data->id);
                     $actionDelete = route('item.destroy', $data->id);
                     $html = "<div class='d-flex justify-content-center'>";
                     if (auth()->user()->can('Edit Barang')) {
-                        $html .= view('components.action.edit', ['action' => $actionEdit, 'name' => 'Barang'])->render();
+                        $imgUrl = $data->image ? asset($data->image) : '';
+                        $html .= "<button type='button' class='btn btn-icon btn-bg-light btn-active-color-primary btn-sm me-1 btn-edit-item' " .
+                            "data-id='{$data->id}' " .
+                            "data-name='" . e($data->name) . "' " .
+                            "data-code='" . e($data->code) . "' " .
+                            "data-category_item_id='{$data->category_item_id}' " .
+                            "data-price='{$data->price}' " .
+                            "data-selling_price='{$data->selling_price}' " .
+                            "data-profit='{$data->profit}' " .
+                            "data-stock='{$data->stock}' " .
+                            "data-outlet_id='{$data->outlet_id}' " .
+                            "data-image='{$imgUrl}' " .
+                            "data-action='" . route('item.update', $data->id) . "' title='Edit Barang'>" .
+                            "<i class='fa-solid fa-pen'></i>" .
+                            "</button>";
                     }
                     if (auth()->user()->can('Delete Barang')) {
                         if (auth()->user()->can('Edit Barang')) {
