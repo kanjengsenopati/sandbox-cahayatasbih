@@ -149,81 +149,86 @@ class BillTypeController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show($arg1, $arg2 = null)
+    public function show($billType)
     {
-        $targetId = $arg1 instanceof \Illuminate\Http\Request ? $arg2 : $arg1;
-
-        if ($targetId instanceof BillType) {
-            $billType = $targetId;
-        } else {
-            $billType = BillType::find($targetId);
-            if (!$billType) {
-                return redirect()->route('bill-type.index')->with('error', 'Data tipe pembayaran tidak ditemukan atau telah dihapus.');
+        try {
+            if (!$billType instanceof BillType) {
+                $found = BillType::find($billType);
+                if (!$found) {
+                    return redirect()->route('bill-type.index')->with('error', 'Data tipe pembayaran tidak ditemukan atau telah dihapus.');
+                }
+                $billType = $found;
             }
+
+            if (!Auth::user()?->can('Manage Jenis Bayar')) {
+                return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
+            }
+
+            $rawAcademicYearId = request('academic_year_id');
+            if ($rawAcademicYearId === 'all') {
+                $academicYearIds = [];
+            } elseif (is_array($rawAcademicYearId)) {
+                $academicYearIds = array_values(array_filter($rawAcademicYearId));
+            } elseif (is_string($rawAcademicYearId) && trim($rawAcademicYearId) !== '') {
+                $academicYearIds = array_values(array_filter(explode(',', $rawAcademicYearId)));
+            } else {
+                // Default to target bill type's academic year if no filter explicitly provided
+                $academicYearIds = !empty($billType->academic_year_id) ? [$billType->academic_year_id] : [];
+            }
+
+            // Get related bill types matching Pos Bayar, Nama Pembayaran, & Tipe Pembayaran for cross-year rate filtering
+            $relatedQuery = BillType::query()
+                ->where('name', $billType->name);
+
+            if (!empty($billType->bill_item_id)) {
+                $relatedQuery->where('bill_item_id', $billType->bill_item_id);
+            }
+            if (!empty($billType->type)) {
+                $relatedQuery->where('type', $billType->type);
+            }
+            if (!empty($billType->payment_input_type)) {
+                $relatedQuery->where('payment_input_type', $billType->payment_input_type);
+            }
+
+            $relatedBillTypeIds = $relatedQuery->pluck('id')->toArray();
+            if (empty($relatedBillTypeIds)) {
+                $relatedBillTypeIds = [$billType->id];
+            }
+
+            // Regular Rates (Classroom Based)
+            $regularRates = PaymentRate::with(['billType.academicYear', 'paymentRateClassrooms.classroom.school', 'paymentRateItems'])
+                ->whereIn('bill_type_id', $relatedBillTypeIds)
+                ->where('type', 'REGULAR')
+                ->when(!empty($academicYearIds), function ($query) use ($academicYearIds) {
+                    $query->whereHas('billType', function ($q) use ($academicYearIds) {
+                        $q->whereIn('academic_year_id', $academicYearIds);
+                    });
+                })
+                ->latest()
+                ->get();
+
+            // Transfer Rates (Student Based)
+            $transferRates = PaymentRate::with(['billType.academicYear', 'paymentRateStudents.student.classroom.school', 'paymentRateItems'])
+                ->whereIn('bill_type_id', $relatedBillTypeIds)
+                ->where('type', 'TRANSFER')
+                ->when(!empty($academicYearIds), function ($query) use ($academicYearIds) {
+                    $query->whereHas('billType', function ($q) use ($academicYearIds) {
+                        $q->whereIn('academic_year_id', $academicYearIds);
+                    });
+                })
+                ->latest()
+                ->get();
+
+            $academicYears = AcademicYear::orderBy('name', 'DESC')->get();
+
+            return view('admins.bill-type.show', compact('billType', 'academicYears', 'regularRates', 'transferRates', 'academicYearIds'));
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error("Error in BillTypeController@show: " . $e->getMessage(), [
+                'exception' => $e,
+                'request' => request()->all()
+            ]);
+            return redirect()->route('bill-type.index')->with('error', 'Terjadi kesalahan saat membuka data tarif: ' . $e->getMessage());
         }
-
-        if (!Auth::user()?->can('Manage Jenis Bayar')) {
-            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
-        }
-
-        $rawAcademicYearId = request('academic_year_id');
-        if ($rawAcademicYearId === 'all') {
-            $academicYearIds = [];
-        } elseif (is_array($rawAcademicYearId)) {
-            $academicYearIds = array_values(array_filter($rawAcademicYearId));
-        } elseif (is_string($rawAcademicYearId) && trim($rawAcademicYearId) !== '') {
-            $academicYearIds = array_values(array_filter(explode(',', $rawAcademicYearId)));
-        } else {
-            // Default to target bill type's academic year if no filter explicitly provided
-            $academicYearIds = !empty($billType->academic_year_id) ? [$billType->academic_year_id] : [];
-        }
-
-        // Get related bill types matching Pos Bayar, Nama Pembayaran, & Tipe Pembayaran for cross-year rate filtering
-        $relatedQuery = BillType::query()
-            ->where('name', $billType->name);
-
-        if (!empty($billType->bill_item_id)) {
-            $relatedQuery->where('bill_item_id', $billType->bill_item_id);
-        }
-        if (!empty($billType->type)) {
-            $relatedQuery->where('type', $billType->type);
-        }
-        if (!empty($billType->payment_input_type)) {
-            $relatedQuery->where('payment_input_type', $billType->payment_input_type);
-        }
-
-        $relatedBillTypeIds = $relatedQuery->pluck('id')->toArray();
-        if (empty($relatedBillTypeIds)) {
-            $relatedBillTypeIds = [$billType->id];
-        }
-
-        // Regular Rates (Classroom Based)
-        $regularRates = PaymentRate::with(['billType.academicYear', 'paymentRateClassrooms.classroom.school'])
-            ->whereIn('bill_type_id', $relatedBillTypeIds)
-            ->where('type', 'REGULAR')
-            ->when(!empty($academicYearIds), function ($query) use ($academicYearIds) {
-                $query->whereHas('billType', function ($q) use ($academicYearIds) {
-                    $q->whereIn('academic_year_id', $academicYearIds);
-                });
-            })
-            ->latest()
-            ->get();
-
-        // Transfer Rates (Student Based)
-        $transferRates = PaymentRate::with(['billType.academicYear', 'paymentRateStudents.student.classroom.school'])
-            ->whereIn('bill_type_id', $relatedBillTypeIds)
-            ->where('type', 'TRANSFER')
-            ->when(!empty($academicYearIds), function ($query) use ($academicYearIds) {
-                $query->whereHas('billType', function ($q) use ($academicYearIds) {
-                    $q->whereIn('academic_year_id', $academicYearIds);
-                });
-            })
-            ->latest()
-            ->get();
-
-        $academicYears = AcademicYear::orderBy('name', 'DESC')->get();
-
-        return view('admins.bill-type.show', compact('billType', 'academicYears', 'regularRates', 'transferRates', 'academicYearIds'));
     }
 
     /**
