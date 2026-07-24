@@ -168,6 +168,16 @@
                             @foreach($accessibleSubmenus as $sub)
                                 @php
                                     $subUrl = $sub->url;
+                                    $subName = $sub->name;
+                                    if (str_contains($subName, 'Multi Outlet') || str_contains($subName, 'Multi-Outlet') || str_contains($subUrl, 'pos-transaction')) {
+                                        if (str_contains($subUrl, 'mode=kantin') || auth()->user()->isKasirKoperasi()) {
+                                            $subName = 'Laporan POS Kantin';
+                                        } elseif (str_contains($subUrl, 'mode=outlet') || auth()->user()->isKasirOutlet()) {
+                                            $subName = 'Laporan POS Outlet';
+                                        } elseif (str_contains($subUrl, 'mode=bisnis')) {
+                                            $subName = 'Laporan POS Bisnis';
+                                        }
+                                    }
                                 @endphp
                                 <div class="menu-item">
                                     <a class="menu-link {{ $isUrlActive($subUrl) ? ' active' : '' }}"
@@ -175,7 +185,7 @@
                                         <span class="menu-bullet">
                                             <span class="bullet bullet-dot"></span>
                                         </span>
-                                        <span class="menu-title">{{ $sub->name }}</span>
+                                        <span class="menu-title">{{ $subName }}</span>
                                     </a>
                                 </div>
                             @endforeach
