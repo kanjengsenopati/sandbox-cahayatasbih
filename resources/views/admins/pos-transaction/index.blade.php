@@ -54,7 +54,15 @@
     <div class="toolbar py-5" id="kt_toolbar">
         <div id="kt_toolbar_container" class="container-fluid d-flex flex-stack px-5">
             <div class="page-title d-flex align-items-center flex-wrap me-3 mb-5 mb-lg-0">
-                <x-text.h1 class="my-1">Laporan Transaksi POS</x-text.h1>
+                <x-text.h1 class="my-1">
+                    @if(($mode ?? '') === 'kantin')
+                        Laporan POS Kantin
+                    @elseif(($mode ?? '') === 'outlet')
+                        Laporan POS Outlet
+                    @else
+                        Laporan POS Bisnis
+                    @endif
+                </x-text.h1>
                 <span class="h-20px border-gray-300 border-start mx-4"></span>
                 <ul class="breadcrumb breadcrumb-separatorless fw-bold fs-7 my-1">
                     <li class="breadcrumb-item text-muted">
@@ -63,7 +71,15 @@
                     <li class="breadcrumb-item">
                         <span class="bullet bg-gray-300 w-5px h-2px"></span>
                     </li>
-                    <li class="breadcrumb-item text-dark">{{ $isKasir ? (auth()->user()->isKasirKoperasi() ? 'Koperasi' : 'Outlet') : 'POS Multi-Outlet' }}</li>
+                    <li class="breadcrumb-item text-dark">
+                        @if(($mode ?? '') === 'kantin')
+                            Kantin / Koperasi
+                        @elseif(($mode ?? '') === 'outlet')
+                            POS Outlet
+                        @else
+                            POS Bisnis Multi-Outlet
+                        @endif
+                    </li>
                 </ul>
             </div>
         </div>
@@ -74,8 +90,8 @@
     <div class="post d-flex flex-column-fluid">
         <div id="kt_content_container" class="container-fluid px-0">
 
-            <!-- Navigasi Tab Utama -->
-            @if(!$isKasir)
+            <!-- Navigasi Tab Utama (Khusus Laporan POS Bisnis) -->
+            @if(($mode ?? '') === 'bisnis' && !$isKasir)
             <ul class="nav nav-tabs nav-tabs-custom mb-6" id="reportTabs" role="tablist">
                 <li class="nav-item" role="presentation">
                     <button class="nav-link active" id="transactions-tab" data-bs-toggle="tab" data-bs-target="#transactions-pane" type="button" role="tab" aria-controls="transactions-pane" aria-selected="true">
@@ -103,8 +119,8 @@
                 <!-- TAB 1: LAPORAN TRANSAKSI -->
                 <div class="tab-pane fade show active" id="transactions-pane" role="tabpanel" aria-labelledby="transactions-tab">
                     
-                    <!-- GRID REKAP HARI INI, MINGGU INI, BULAN INI -->
-                    @if(!$isKasir)
+                    <!-- GRID REKAP HARI INI, MINGGU INI, BULAN INI (Hanya Tampil di Mode POS Bisnis) -->
+                    @if(($mode ?? '') === 'bisnis' && !$isKasir)
                     <div class="row g-6 mb-6">
                         <!-- Hari Ini -->
                         <div class="col-md-4">
@@ -177,6 +193,21 @@
                             <div class="card-toolbar flex-wrap gap-4">
                                 <form action="#" id="form-filter" method="get">
                                     <div class="d-flex flex-wrap gap-4 align-items-end">
+                                        @if(($mode ?? '') !== 'bisnis')
+                                        <div>
+                                            <x-text.caption class="text-slate-500 d-block mb-1">Periode Transaksi</x-text.caption>
+                                            <div class="btn-group btn-group-sm" role="group" id="quick-period-group">
+                                                <button type="button" class="btn btn-sm btn-primary btn-period active" data-period="all">Semua</button>
+                                                <button type="button" class="btn btn-sm btn-outline-primary btn-period" data-period="today">Hari Ini</button>
+                                                <button type="button" class="btn btn-sm btn-outline-primary btn-period" data-period="week">Minggu Ini</button>
+                                                <button type="button" class="btn btn-sm btn-outline-primary btn-period" data-period="month">Bulan Ini</button>
+                                            </div>
+                                            <input type="hidden" id="filter_period" name="period" value="all">
+                                        </div>
+                                        @else
+                                            <input type="hidden" id="filter_period" name="period" value="">
+                                        @endif
+
                                         <div>
                                             <x-text.caption class="text-slate-500 d-block mb-1">Filter Tanggal</x-text.caption>
                                             <div id="dateRange" class="d-flex align-items-center justify-content-between" style="background: #fff; cursor: pointer; padding: 7px 12px; border: 1px solid #cbd5e1; border-radius: 12px;">
@@ -187,9 +218,20 @@
                                             <input type="text" id="end_date" name="end_date" hidden>
                                         </div>
 
+                                        @if(($mode ?? '') === 'bisnis')
+                                        <div>
+                                            <x-text.caption class="text-slate-500 d-block mb-1">Opsi Mode</x-text.caption>
+                                            <select name="mode_filter" class="form-select form-select-solid rounded-3 fs-7" id="filter_mode_filter" style="width: 170px; border: 1px solid #cbd5e1; height: 38px;">
+                                                <option value="all">Semua Unit</option>
+                                                <option value="kantin">Kantin / Koperasi</option>
+                                                <option value="outlet">Outlet Non-Koperasi</option>
+                                            </select>
+                                        </div>
+                                        @endif
+
                                         <div>
                                             <x-text.caption class="text-slate-500 d-block mb-1">Status</x-text.caption>
-                                            <select name="status" class="form-select form-select-solid rounded-3 fs-7" id="filter_status" style="width: 150px; border: 1px solid #cbd5e1; height: 38px;">
+                                            <select name="status" class="form-select form-select-solid rounded-3 fs-7" id="filter_status" style="width: 140px; border: 1px solid #cbd5e1; height: 38px;">
                                                 <option value="">Semua Status</option>
                                                 <option value="SUCCESS">Sukses</option>
                                                 <option value="PENDING">Pending</option>
@@ -197,10 +239,10 @@
                                             </select>
                                         </div>
 
-                                        @if(!$hasOutletRestriction || count($outlets) > 1)
+                                        @if(($mode ?? '') === 'bisnis' && (!$hasOutletRestriction || count($outlets) > 1))
                                         <div>
                                             <x-text.caption class="text-slate-500 d-block mb-1">Outlet</x-text.caption>
-                                            <select name="outlet_id" class="form-select form-select-solid rounded-3 fs-7" id="filter_outlet_id" style="width: 200px; border: 1px solid #cbd5e1; height: 38px;">
+                                            <select name="outlet_id" class="form-select form-select-solid rounded-3 fs-7" id="filter_outlet_id" style="width: 180px; border: 1px solid #cbd5e1; height: 38px;">
                                                 <option value="">Semua Outlet</option>
                                                 @foreach ($outlets as $outlet)
                                                 <option value="{{ $outlet->id }}" {{ request('outlet_id') == $outlet->id ? 'selected' : '' }}>{{ $outlet->name }}</option>
@@ -208,7 +250,7 @@
                                             </select>
                                         </div>
                                         @else
-                                            <input type="hidden" id="filter_outlet_id" value="{{ $outlets->first()->id ?? '' }}">
+                                            <input type="hidden" id="filter_outlet_id" value="{{ request('outlet_id') ?? ($outlets->first()->id ?? '') }}">
                                         @endif
                                     </div>
                                 </form>
@@ -789,6 +831,30 @@
             $('#handover_form_amount_real').val(numericVal);
         });
 
+        // Event listener untuk tombol filter periode cepat (Hari Ini, Minggu Ini, Bulan Ini)
+        $('.btn-period').on('click', function() {
+            $('.btn-period').removeClass('active btn-primary').addClass('btn-outline-primary');
+            $(this).removeClass('btn-outline-primary').addClass('active btn-primary');
+            var period = $(this).data('period');
+            $('#filter_period').val(period);
+
+            if (period !== 'all') {
+                $('#start_date').val('');
+                $('#end_date').val('');
+                $('#dateRange span').html('Filter Periode Cepat');
+            } else {
+                $('#start_date').val('');
+                $('#end_date').val('');
+                $('#dateRange span').html('Semua Tanggal');
+            }
+
+            reloadTransactions();
+        });
+
+        $('#filter_mode_filter').on('change', function() {
+            reloadTransactions();
+        });
+
         // Pastikan form menyinkronkan nominal sebelum submit
         $('#modal-add-handover form').on('submit', function() {
             var displayVal = $('#handover_form_amount_display').val();
@@ -807,6 +873,9 @@
                 url: "{{ route('pos-transaction.index') }}",
                 data: function(d) {
                     d.data = 'table';
+                    d.mode = '{{ $mode ?? "bisnis" }}';
+                    d.period = $('#filter_period').val();
+                    d.mode_filter = $('#filter_mode_filter').val();
                     d.start_date = $('#start_date').val();
                     d.end_date = $('#end_date').val();
                     d.status = $('#filter_status').val();
@@ -880,6 +949,9 @@
             dataType: 'json',
             data: {
                 data: 'total',
+                mode: '{{ $mode ?? "bisnis" }}',
+                period: $('#filter_period').val(),
+                mode_filter: $('#filter_mode_filter').val(),
                 start_date: $('#start_date').val(),
                 end_date: $('#end_date').val(),
                 status: $('#filter_status').val(),

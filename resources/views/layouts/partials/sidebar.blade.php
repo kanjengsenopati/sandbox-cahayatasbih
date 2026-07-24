@@ -115,7 +115,10 @@
                         $user = auth()->user();
 
                         if (str_contains($sub->url, 'order-item') || str_contains($sub->url, 'pos-transaction')) {
-                            if ($user->isKasirOutlet() && str_contains($sub->url, 'mode=kantin')) {
+                            if ($user->isKasirOutlet() && (str_contains($sub->url, 'mode=kantin') || str_contains($sub->url, 'mode=bisnis'))) {
+                                return false;
+                            }
+                            if ($user->isKasirKoperasi() && (str_contains($sub->url, 'mode=outlet') || str_contains($sub->url, 'mode=bisnis'))) {
                                 return false;
                             }
                         }
@@ -145,11 +148,7 @@
 
                     $isOpen = false;
                     foreach ($accessibleSubmenus as $sub) {
-                        $checkUrl = $sub->url;
-                        if (auth()->user()->isKasirKoperasi()) {
-                            $checkUrl = str_replace('mode=outlet', 'mode=kantin', $checkUrl);
-                        }
-                        if ($isUrlActive($checkUrl)) {
+                        if ($isUrlActive($sub->url)) {
                             $isOpen = true;
                             break;
                         }
@@ -169,9 +168,6 @@
                             @foreach($accessibleSubmenus as $sub)
                                 @php
                                     $subUrl = $sub->url;
-                                    if (auth()->user()->isKasirKoperasi()) {
-                                        $subUrl = str_replace('mode=outlet', 'mode=kantin', $subUrl);
-                                    }
                                 @endphp
                                 <div class="menu-item">
                                     <a class="menu-link {{ $isUrlActive($subUrl) ? ' active' : '' }}"

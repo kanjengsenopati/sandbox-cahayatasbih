@@ -25,17 +25,27 @@ class PosTransactionController extends Controller
         // Restrict report access by role and mode parameter
         $user = Auth::user();
         $mode = $request->input('mode');
-        if ($user->isKasirKoperasi() && $mode === 'outlet') {
-            if ($request->ajax()) {
-                return response()->json(['success' => false, 'message' => 'Maaf, Anda tidak memiliki akses.'], 403);
+
+        if ($user->isKasirKoperasi()) {
+            if ($mode && $mode !== 'kantin') {
+                if ($request->ajax()) {
+                    return response()->json(['success' => false, 'message' => 'Maaf, Anda tidak memiliki akses.'], 403);
+                }
+                return redirect()->route('pos-transaction.index', ['mode' => 'kantin'])->with('error', 'Maaf, Anda tidak memiliki akses untuk modul tersebut');
             }
-            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
-        }
-        if ($user->isKasirOutlet() && $mode !== 'outlet') {
-            if ($request->ajax()) {
-                return response()->json(['success' => false, 'message' => 'Maaf, Anda tidak memiliki akses.'], 403);
+            $mode = 'kantin';
+        } elseif ($user->isKasirOutlet()) {
+            if ($mode && $mode !== 'outlet') {
+                if ($request->ajax()) {
+                    return response()->json(['success' => false, 'message' => 'Maaf, Anda tidak memiliki akses.'], 403);
+                }
+                return redirect()->route('pos-transaction.index', ['mode' => 'outlet'])->with('error', 'Maaf, Anda tidak memiliki akses untuk modul tersebut');
             }
-            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
+            $mode = 'outlet';
+        } else {
+            if (!in_array($mode, ['kantin', 'outlet', 'bisnis'])) {
+                $mode = 'bisnis';
+            }
         }
 
         // Tentukan outlet_ids berdasarkan hak akses admin yang login
@@ -47,11 +57,13 @@ class PosTransactionController extends Controller
         $koperasiId = $koperasi ? $koperasi->id : '6bc5b484-07f9-49cc-aefa-00a8cf47e8d7';
 
         if (!$outletId && !$hasOutletRestriction) {
-            if ($request->input('mode') === 'outlet') {
+            if ($mode === 'outlet') {
                 $queryOutletId = Outlet::where('id', '!=', $koperasiId)->pluck('id')->toArray();
-            } else {
+            } elseif ($mode === 'kantin') {
                 $queryOutletId = $koperasiId;
                 $outletId = $koperasiId;
+            } else {
+                $queryOutletId = null;
             }
         } else {
             if ($hasOutletRestriction) {
@@ -75,6 +87,17 @@ class PosTransactionController extends Controller
                     ->when($startDate && $endDate, function($q) use ($startDate, $endDate) {
                         $q->whereDate('point_of_sale_transactions.created_at', '>=', $startDate)
                           ->whereDate('point_of_sale_transactions.created_at', '<=', $endDate);
+                    })
+                    ->when($mode === 'kantin', function($q) use ($koperasiId) {
+                        $q->where('point_of_sale_transactions.outlet_id', $koperasiId);
+                    })
+                    ->when($mode === 'outlet', function($q) use ($koperasiId, $hasOutletRestriction, $authOutletIds) {
+                        if ($hasOutletRestriction) {
+                            $allowed = array_diff($authOutletIds, [$koperasiId]);
+                            $q->whereIn('point_of_sale_transactions.outlet_id', $allowed);
+                        } else {
+                            $q->where('point_of_sale_transactions.outlet_id', '!=', $koperasiId);
+                        }
                     })
                     ->when($queryOutletId, function($q) use ($queryOutletId) {
                         if (is_array($queryOutletId)) {
@@ -101,33 +124,46 @@ class PosTransactionController extends Controller
             // Base query untuk tabel transaksi
             $data = PointOfSaleTransaction::with(['outlet', 'student', 'student.classroom', 'admins', 'pointOfSaleTransactionDetails.item']);
             
-            if ($user->isKasirKoperasi()) {
+            if ($mode === 'kantin' || $user->isKasirKoperasi()) {
                 $data->where('outlet_id', $koperasiId);
-            } elseif ($user->isKasirOutlet()) {
+            } elseif ($mode === 'outlet' || $user->isKasirOutlet()) {
                 if ($hasOutletRestriction) {
                     $data->whereIn('outlet_id', array_diff($authOutletIds, [$koperasiId]));
                 } else {
                     $data->where('outlet_id', '!=', $koperasiId);
                 }
             } else {
+                // mode = bisnis
+                $modeFilter = $request->input('mode_filter');
+                if ($modeFilter === 'kantin') {
+                    $data->where('outlet_id', $koperasiId);
+                } elseif ($modeFilter === 'outlet') {
+                    $data->where('outlet_id', '!=', $koperasiId);
+                }
+
                 $data->when($hasOutletRestriction, function ($q) use ($authOutletIds) {
                     $q->whereIn('outlet_id', $authOutletIds);
                 })
                 ->when(!$hasOutletRestriction && $request->filled('outlet_id'), function ($q) use ($request) {
                     $q->where('outlet_id', $request->outlet_id);
-                })
-                ->when($hasOutletRestriction && $request->filled('outlet_id'), function ($q) use ($request, $authOutletIds) {
-                    // Jika admin multi-outlet memilih filter outlet tertentu, pastikan outlet itu ada dalam daftar yang diassign
-                    if (in_array($request->outlet_id, $authOutletIds)) {
-                        $q->where('outlet_id', $request->outlet_id);
-                    }
                 });
             }
-            $data->when($request->filled('start_date') && $request->filled('end_date'), function ($query) use ($request) {
-                    $query->whereDate('created_at', '>=', $request->start_date)
-                        ->whereDate('created_at', '<=', $request->end_date);
-                })
-                ->when($request->filled('status'), function ($query) use ($request) {
+
+            // Filter Periode Cepat (Hari Ini, Minggu Ini, Bulan Ini) atau Custom Range
+            if ($request->filled('period')) {
+                if ($request->period === 'today') {
+                    $data->whereDate('created_at', Carbon::today());
+                } elseif ($request->period === 'week') {
+                    $data->whereBetween('created_at', [Carbon::now()->startOfWeek(), Carbon::now()->endOfWeek()]);
+                } elseif ($request->period === 'month') {
+                    $data->whereBetween('created_at', [Carbon::now()->startOfMonth(), Carbon::now()->endOfMonth()]);
+                }
+            } elseif ($request->filled('start_date') && $request->filled('end_date')) {
+                $data->whereDate('created_at', '>=', $request->start_date)
+                    ->whereDate('created_at', '<=', $request->end_date);
+            }
+
+            $data->when($request->filled('status'), function ($query) use ($request) {
                     $query->where('status', $request->status);
                 })
                 ->latest();
@@ -501,7 +537,8 @@ class PosTransactionController extends Controller
             'totalTransaction',
             'totalSales',
             'totalIncome',
-            'admins'
+            'admins',
+            'mode'
         ));
     }
 
