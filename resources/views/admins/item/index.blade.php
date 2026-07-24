@@ -201,35 +201,38 @@
     </div>
 </div>
 
-<!-- Modal Form Barang (Wide Modal xl) -->
+<!-- Modal Form Barang (Wide Modal xl - Compact 3 Column) -->
 <div class="modal fade" id="modalItemForm" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-xl">
-        <div class="modal-content">
+        <div class="modal-content border-0 shadow-lg rounded-24">
             <form id="formItemModal" method="POST" action="" enctype="multipart/form-data">
                 @csrf
                 <div id="methodItemPut"></div>
-                <div class="modal-header">
+                <div class="modal-header py-3 px-5 border-0">
                     <h5 class="modal-title fw-bolder fs-4" id="modalItemTitle">Tambah Barang</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-                <div class="modal-body py-5 px-lg-10">
-                    <div class="row g-4">
-                        <div class="col-12 text-center mb-2">
-                            <label class="form-label fs-6 fw-bold d-block">Foto Barang</label>
-                            <div class="image-input image-input-outline" data-kt-image-input="true">
-                                <div class="image-input-wrapper w-125px h-125px" id="modal_item_image_preview" style="background-image: url('{{ asset('assets/media/svg/avatars/blank.svg') }}')"></div>
+                <div class="modal-body py-2 px-5">
+                    <div class="row g-3 align-items-start">
+                        <!-- Column 1: Left - Foto Barang -->
+                        <div class="col-md-3 text-center border-end pe-md-4 mb-3 mb-md-0">
+                            <label class="form-label fs-7 fw-bold d-block text-muted text-uppercase tracking-wider mb-2">Foto Barang</label>
+                            <div class="image-input image-input-outline my-2" data-kt-image-input="true">
+                                <div class="image-input-wrapper w-140px h-140px rounded-16 shadow-sm" id="modal_item_image_preview" style="background-image: url('{{ asset('assets/media/svg/avatars/blank.svg') }}')"></div>
                                 <label class="btn btn-icon btn-circle btn-active-color-primary w-25px h-25px bg-body shadow" data-kt-image-input-action="change" title="Ubah Foto">
                                     <i class="bi bi-pencil-fill fs-7"></i>
                                     <input type="file" name="image" accept=".png, .jpg, .jpeg" />
                                 </label>
                             </div>
+                            <small class="text-muted fs-8 d-block mt-1">Format: JPG, PNG (Maks 2MB)</small>
                         </div>
 
-                        <div class="col-md-6">
+                        <!-- Column 2: Middle Inputs -->
+                        <div class="col-md-4">
                             @if(!auth()->user()->outlet_id)
-                            <div class="mb-3">
-                                <label class="form-label fs-6 fw-bold required" for="modal_item_outlet_id">Pilih Outlet</label>
-                                <select name="outlet_id" id="modal_item_outlet_id" class="form-select form-select-solid" required>
+                            <div class="mb-2">
+                                <label class="form-label fs-7 fw-bold mb-1 required" for="modal_item_outlet_id">Pilih Outlet</label>
+                                <select name="outlet_id" id="modal_item_outlet_id" class="form-select form-select-solid form-select-sm" required>
                                     <option value="">Pilih Outlet...</option>
                                     @foreach($modalOutlets as $outlet)
                                         <option value="{{ $outlet->id }}">{{ $outlet->name }}</option>
@@ -240,9 +243,9 @@
                                 <input type="hidden" name="outlet_id" id="modal_item_outlet_id" value="{{ auth()->user()->outlet_id }}">
                             @endif
 
-                            <div class="mb-3">
-                                <label class="form-label fs-6 fw-bold required" for="modal_item_category_id">Kategori Barang</label>
-                                <select name="category_item_id" id="modal_item_category_id" class="form-select form-select-solid" required>
+                            <div class="mb-2">
+                                <label class="form-label fs-7 fw-bold mb-1 required" for="modal_item_category_id">Kategori Barang</label>
+                                <select name="category_item_id" id="modal_item_category_id" class="form-select form-select-solid form-select-sm" required>
                                     <option value="">Pilih Kategori...</option>
                                     @foreach($categories as $cat)
                                         <option value="{{ $cat->id }}">{{ $cat->name }}</option>
@@ -250,50 +253,51 @@
                                 </select>
                             </div>
 
-                            <div class="mb-3">
-                                <label class="form-label fs-6 fw-bold required" for="modal_item_name">Nama Barang</label>
-                                <input type="text" name="name" id="modal_item_name" class="form-control form-control-solid" placeholder="Masukkan Nama Barang" required />
+                            <div class="mb-2">
+                                <label class="form-label fs-7 fw-bold mb-1 required" for="modal_item_name">Nama Barang</label>
+                                <input type="text" name="name" id="modal_item_name" class="form-control form-control-solid form-control-sm" placeholder="Masukkan Nama Barang" required />
                             </div>
 
-                            <div class="mb-3">
-                                <label class="form-label fs-6 fw-bold required" for="modal_item_selling_price">Harga Jual</label>
-                                <div class="input-group">
-                                    <span class="input-group-text">Rp</span>
+                            <div class="mb-2">
+                                <label class="form-label fs-7 fw-bold mb-1 required" for="modal_item_selling_price">Harga Jual</label>
+                                <div class="input-group input-group-sm">
+                                    <span class="input-group-text fw-bold">Rp</span>
                                     <input type="text" name="selling_price" id="modal_item_selling_price" class="form-control form-control-solid input-money-modal" placeholder="Masukkan Harga Jual" required />
                                 </div>
                             </div>
                         </div>
 
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label class="form-label fs-6 fw-bold required" for="modal_item_code">Kode Barang</label>
-                                <input type="text" name="code" id="modal_item_code" class="form-control form-control-solid" placeholder="Masukkan Kode Barang" required />
+                        <!-- Column 3: Right Inputs -->
+                        <div class="col-md-5">
+                            <div class="mb-2">
+                                <label class="form-label fs-7 fw-bold mb-1 required" for="modal_item_code">Kode Barang</label>
+                                <input type="text" name="code" id="modal_item_code" class="form-control form-control-solid form-control-sm" placeholder="Masukkan Kode Barang" required />
                             </div>
 
-                            <div class="mb-3">
-                                <label class="form-label fs-6 fw-bold required" for="modal_item_stock">Stok Barang</label>
-                                <input type="text" name="stock" id="modal_item_stock" class="form-control form-control-solid" placeholder="Masukkan Stok Barang" required />
+                            <div class="mb-2">
+                                <label class="form-label fs-7 fw-bold mb-1 required" for="modal_item_stock">Stok Barang</label>
+                                <input type="text" name="stock" id="modal_item_stock" class="form-control form-control-solid form-control-sm" placeholder="Masukkan Stok Barang" required />
                             </div>
 
-                            <div class="mb-3">
-                                <label class="form-label fs-6 fw-bold required" for="modal_item_price">Harga Beli</label>
-                                <div class="input-group">
-                                    <span class="input-group-text">Rp</span>
+                            <div class="mb-2">
+                                <label class="form-label fs-7 fw-bold mb-1 required" for="modal_item_price">Harga Beli</label>
+                                <div class="input-group input-group-sm">
+                                    <span class="input-group-text fw-bold">Rp</span>
                                     <input type="text" name="price" id="modal_item_price" class="form-control form-control-solid input-money-modal" placeholder="Masukkan Harga Beli" required />
                                 </div>
                             </div>
 
-                            <div class="mb-3">
-                                <label class="form-label fs-6 fw-bold" for="modal_item_profit">Keuntungan</label>
-                                <div class="input-group">
-                                    <span class="input-group-text">Rp</span>
-                                    <input type="text" name="profit" id="modal_item_profit" class="form-control form-control-solid" placeholder="Keuntungan" readonly />
+                            <div class="mb-2">
+                                <label class="form-label fs-7 fw-bold mb-1" for="modal_item_profit">Keuntungan (Laba)</label>
+                                <div class="input-group input-group-sm">
+                                    <span class="input-group-text fw-bold text-success">Rp</span>
+                                    <input type="text" name="profit" id="modal_item_profit" class="form-control form-control-solid text-success fw-bold" placeholder="Keuntungan" readonly />
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
-                <div class="modal-footer">
+                <div class="modal-footer py-2 px-5 border-0">
                     <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Batal</button>
                     <button type="submit" class="btn btn-primary btn-sm">Simpan</button>
                 </div>
@@ -302,22 +306,22 @@
     </div>
 </div>
 
-<!-- Modal Form Kategori Barang (Wide Modal lg) -->
+<!-- Modal Form Kategori Barang (Wide Modal lg - Compact) -->
 <div class="modal fade" id="modalCategoryForm" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-lg">
-        <div class="modal-content">
+        <div class="modal-content border-0 shadow-lg rounded-24">
             <form id="formCategoryModal" method="POST" action="">
                 @csrf
                 <div id="methodCategoryPut"></div>
-                <div class="modal-header">
+                <div class="modal-header py-3 px-5 border-0">
                     <h5 class="modal-title fw-bolder fs-4" id="modalCategoryTitle">Tambah Kategori Barang</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-                <div class="modal-body py-5 px-lg-10">
+                <div class="modal-body py-3 px-5">
                     @if(!auth()->user()->outlet_id)
-                    <div class="fv-row mb-5">
-                        <label class="fs-6 fw-bold form-label required" for="modal_cat_outlet_id">Pilih Outlet</label>
-                        <select name="outlet_id" id="modal_cat_outlet_id" class="form-select form-select-solid" required>
+                    <div class="fv-row mb-3">
+                        <label class="fs-7 fw-bold form-label required mb-1" for="modal_cat_outlet_id">Pilih Outlet</label>
+                        <select name="outlet_id" id="modal_cat_outlet_id" class="form-select form-select-solid form-select-sm" required>
                             <option value="">Pilih Outlet...</option>
                             @foreach($modalOutlets as $outlet)
                                 <option value="{{ $outlet->id }}">{{ $outlet->name }}</option>
@@ -328,17 +332,17 @@
                         <input type="hidden" name="outlet_id" id="modal_cat_outlet_id" value="{{ auth()->user()->outlet_id }}">
                     @endif
 
-                    <div class="fv-row mb-5">
-                        <label class="fs-6 fw-bold form-label required" for="modal_cat_name">Nama Kategori</label>
-                        <input type="text" name="name" id="modal_cat_name" class="form-control form-control-solid" placeholder="Nama Kategori" required />
+                    <div class="fv-row mb-3">
+                        <label class="fs-7 fw-bold form-label required mb-1" for="modal_cat_name">Nama Kategori</label>
+                        <input type="text" name="name" id="modal_cat_name" class="form-control form-control-solid form-control-sm" placeholder="Nama Kategori" required />
                     </div>
 
-                    <div class="fv-row mb-5">
-                        <label class="fs-6 fw-bold form-label required" for="modal_cat_code">Kode Kategori</label>
-                        <input type="text" name="code" id="modal_cat_code" class="form-control form-control-solid" placeholder="Kode Kategori (Contoh: 01)" required />
+                    <div class="fv-row mb-3">
+                        <label class="fs-7 fw-bold form-label required mb-1" for="modal_cat_code">Kode Kategori</label>
+                        <input type="text" name="code" id="modal_cat_code" class="form-control form-control-solid form-control-sm" placeholder="Kode Kategori (Contoh: 01)" required />
                     </div>
                 </div>
-                <div class="modal-footer">
+                <div class="modal-footer py-2 px-5 border-0">
                     <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Batal</button>
                     <button type="submit" class="btn btn-primary btn-sm">Simpan</button>
                 </div>
