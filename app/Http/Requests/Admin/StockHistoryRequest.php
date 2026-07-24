@@ -23,9 +23,10 @@ class StockHistoryRequest extends FormRequest
     {
         return [
             'item_id' => ['required', 'exists:items,id'],
-            'quantity' => ['required', 'numeric', 'min:1'],
-            'type' => ['required', 'in:IN,OUT'],
-            'outlet_id' => auth()->user()->outlet_id ? ['nullable', 'exists:outlets,id'] : ['required', 'exists:outlets,id'],
+            'quantity' => ['required', 'numeric', 'min:0'],
+            'type' => ['required', 'in:IN,OUT,ADJUSTMENT'],
+            'notes' => ['nullable', 'string', 'max:255'],
+            'outlet_id' => auth()->user()->outlet_id ? ['nullable', 'exists:outlets,id'] : ['nullable', 'exists:outlets,id'],
         ];
     }
 }

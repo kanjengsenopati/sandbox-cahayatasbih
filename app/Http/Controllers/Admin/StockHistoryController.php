@@ -54,7 +54,16 @@ class StockHistoryController extends Controller
                     return $data->item->categoryItem->name ?? 'Belum Ada Kategori';
                 })
                 ->editColumn('quantity', function ($data) {
-                    return $data->type == StockHistory::TYPE_IN ? '<span class="text-success">+' . $data->quantity . '</span>' : '<span class="text-danger">-' . $data->quantity . '</span>';
+                    if ($data->type == StockHistory::TYPE_IN) {
+                        return '<span class="badge bg-light-success text-success fw-bold">+ ' . $data->quantity . ' (Stok Masuk)</span>';
+                    } elseif ($data->type == StockHistory::TYPE_OUT) {
+                        return '<span class="badge bg-light-danger text-danger fw-bold">- ' . $data->quantity . ' (Stok Keluar)</span>';
+                    } else {
+                        return '<span class="badge bg-light-warning text-warning fw-bold">⚖️ ' . $data->quantity . ' (Stok Opname)</span>';
+                    }
+                })
+                ->addColumn('notes', function ($data) {
+                    return $data->notes ?? '-';
                 })
                 ->addColumn('action', function ($data) {
                     $actionDelete = route('stock-history.destroy', $data->id);
@@ -65,6 +74,7 @@ class StockHistoryController extends Controller
                             "data-type='{$data->type}' " .
                             "data-item_id='{$data->item_id}' " .
                             "data-quantity='{$data->quantity}' " .
+                            "data-notes='" . e($data->notes ?? '') . "' " .
                             "data-outlet_id='{$data->outlet_id}' " .
                             "data-action='" . route('stock-history.update', $data->id) . "' title='Edit Stok'>" .
                             "<i class='fa-solid fa-pen'></i>" .
@@ -126,13 +136,18 @@ class StockHistoryController extends Controller
             }
             $item = Item::findOrFail($data['item_id']);
 
-            if ($data['type'] == StockHistory::TYPE_OUT) {
+            if ($data['type'] == StockHistory::TYPE_ADJUSTMENT) {
+                $data['notes'] = $request->input('notes') ?? 'Stok Opname Physical Count';
+                $item->stock = $data['quantity'];
+            } elseif ($data['type'] == StockHistory::TYPE_OUT) {
                 if ($item->stock < $data['quantity']) {
                     return redirect()->back()->with('error', 'Stok Tidak Mencukupi');
                 }
                 $item->stock -= $data['quantity'];
+                $data['notes'] = $request->input('notes') ?? 'Stok Keluar';
             } else {
                 $item->stock += $data['quantity'];
+                $data['notes'] = $request->input('notes') ?? 'Stok Masuk';
             }
 
             $item->save();

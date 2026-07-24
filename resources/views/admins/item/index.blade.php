@@ -180,9 +180,10 @@
                                             <th class="min-w-100px">Kategori</th>
                                             <th class="min-w-100px">Kode Barang</th>
                                             <th class="min-w-150px">Nama Barang</th>
-                                            <th class="min-w-80px">Jumlah</th>
+                                            <th class="min-w-120px">Tipe & Jumlah</th>
                                             <th class="min-w-100px">Admin</th>
-                                            <th class="min-w-150px">Outlet</th>
+                                            <th class="min-w-120px">Outlet</th>
+                                            <th class="min-w-150px">Catatan / Alasan</th>
                                             <th class="text-center min-w-100px">Aksi</th>
                                         </tr>
                                     </thead>
@@ -412,6 +413,9 @@
                         <select name="type" id="modal_stock_type" class="form-select form-select-solid form-select-sm" required>
                             <option value="IN">Stok Masuk (+)</option>
                             <option value="OUT">Stok Keluar (-)</option>
+                            @if(request('mode') === 'outlet')
+                                <option value="ADJUSTMENT">⚖️ Stok Opname (Physical Count / Koreksi)</option>
+                            @endif
                         </select>
                     </div>
 
@@ -419,15 +423,20 @@
                         <label class="fs-7 fw-bold form-label required mb-1" for="modal_stock_item_id">Nama Barang</label>
                         <select name="item_id" id="modal_stock_item_id" class="form-select form-select-solid form-select-sm" required>
                             <option value="">Pilih Barang...</option>
-                            @foreach($modalItems as $itemOption)
-                                <option value="{{ $itemOption->id }}">{{ $itemOption->name }} ({{ $itemOption->code }})</option>
+                            @foreach($modalItems as $item)
+                                <option value="{{ $item->id }}">{{ $item->name }} (Kode: {{ $item->code }})</option>
                             @endforeach
                         </select>
                     </div>
 
                     <div class="fv-row mb-3">
-                        <label class="fs-7 fw-bold form-label required mb-1" for="modal_stock_quantity">Jumlah Barang</label>
-                        <input type="number" name="quantity" id="modal_stock_quantity" class="form-control form-control-solid form-control-sm" placeholder="Masukkan Jumlah Barang" min="1" required />
+                        <label class="fs-7 fw-bold form-label required mb-1" for="modal_stock_quantity">Jumlah Stok</label>
+                        <input type="number" name="quantity" id="modal_stock_quantity" class="form-control form-control-solid form-control-sm" placeholder="Jumlah" required />
+                    </div>
+
+                    <div class="fv-row mb-3">
+                        <label class="fs-7 fw-bold form-label mb-1" for="modal_stock_notes">Catatan / Alasan Koreksi (Opsional)</label>
+                        <input type="text" name="notes" id="modal_stock_notes" class="form-control form-control-solid form-control-sm" placeholder="Contoh: Stok Opname Fisik / Barang Expired" />
                     </div>
                 </div>
                 <div class="modal-footer py-2 px-5 border-0">
@@ -722,6 +731,13 @@
                     name: 'outlet',
                     render: function(data) {
                         return data ? data : 'N/A';
+                    }
+                },
+                {
+                    data: 'notes',
+                    name: 'notes',
+                    render: function(data) {
+                        return data ? data : '-';
                     }
                 },
                 {

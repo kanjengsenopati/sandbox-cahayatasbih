@@ -11,6 +11,7 @@ class StockHistory extends Model
 {
     const TYPE_IN = 'IN';
     const TYPE_OUT = 'OUT';
+    const TYPE_ADJUSTMENT = 'ADJUSTMENT';
     use HasFactory, UuidTrait, SoftDeletes;
 
     protected $fillable = [
@@ -19,6 +20,7 @@ class StockHistory extends Model
         'admin_id',
         'quantity',
         'type',
+        'notes',
     ];
 
     public function outlet()

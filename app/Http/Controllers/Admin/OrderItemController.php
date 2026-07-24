@@ -15,6 +15,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Auth;
 use App\Models\PointOfSaleTransaction;
 use App\Models\PointOfSaleTransactionDetail;
+use App\Models\StockHistory;
 use Illuminate\Support\Facades\Cache;
 
 class OrderItemController extends Controller
@@ -289,8 +290,32 @@ class OrderItemController extends Controller
 
             $transaction->pointOfSaleTransactionDetails()->createMany($transactionDetails);
 
-            // 6. OPTIMASI DELETE: Hapus bulk via Query Builder (1 Query)
-            // Jangan gunakan $carts->each->delete() (N Query)
+            // 6. KHUSUS MODE OUTLET: Pengurangan Stok Atomik & Log StockHistory (OUT)
+            $koperasi = \App\Models\Outlet::where('name', 'Koperasi')->orWhere('code', 'KPR')->first();
+            $koperasiId = $koperasi ? $koperasi->id : '6bc5b484-07f9-49cc-aefa-00a8cf47e8d7';
+
+            if ($outletId !== $koperasiId) {
+                foreach ($carts as $cart) {
+                    $item = Item::where('id', $cart->item_id)->lockForUpdate()->first();
+                    if ($item) {
+                        if ($item->stock < $cart->quantity) {
+                            throw new \Exception("Stok barang {$item->name} tidak mencukupi (sisa: {$item->stock})");
+                        }
+                        $item->decrement('stock', $cart->quantity);
+
+                        StockHistory::create([
+                            'item_id' => $cart->item_id,
+                            'outlet_id' => $outletId,
+                            'admin_id' => $adminId,
+                            'quantity' => $cart->quantity,
+                            'type' => StockHistory::TYPE_OUT,
+                            'notes' => 'Penjualan POS Outlet ' . $paymentCode,
+                        ]);
+                    }
+                }
+            }
+
+            // 7. OPTIMASI DELETE: Hapus bulk via Query Builder (1 Query)
             PointOfSaleCart::where('admin_id', $adminId)->delete();
 
             DB::commit();
