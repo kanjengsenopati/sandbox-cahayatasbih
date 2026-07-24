@@ -17,6 +17,9 @@ class BillController extends BaseWaliApiController
         $student->load('classroom.school');
 
         $allBills = Bill::with(['billType.billItem', 'billType.academicYear', 'academicYear'])
+            ->whereHas('billType', function ($q) {
+                $q->whereNull('deleted_at');
+            })
             ->where('student_id', $student->id)
             ->get();
 
@@ -119,6 +122,9 @@ class BillController extends BaseWaliApiController
                     $query->where('status', \App\Models\Transaction::STATUS_PENDING_CONFIRMATION);
                 });
             }])
+            ->whereHas('billType', function ($q) {
+                $q->whereNull('deleted_at');
+            })
             ->where('student_id', $student->id)
             ->where('bill_type_id', $id);
 
