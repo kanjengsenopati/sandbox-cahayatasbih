@@ -64,7 +64,10 @@ class ItemController extends Controller
                         if (request()->filled('outlet_id')) {
                             $q->where('outlet_id', request('outlet_id'));
                         } else {
-                            $q->where('outlet_id', '!=', $koperasiId)->whereNotNull('outlet_id');
+                            $q->where(function($query) use ($koperasiId) {
+                                $query->where('outlet_id', '!=', $koperasiId)
+                                      ->orWhereNull('outlet_id');
+                            });
                         }
                     } else {
                         $q->where(function($query) use ($koperasiId) {

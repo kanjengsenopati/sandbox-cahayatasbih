@@ -33,19 +33,41 @@ class CategoryItemController extends Controller
             $koperasi = Outlet::where('name', 'Koperasi')->orWhere('code', 'KPR')->first();
             $koperasiId = $koperasi ? $koperasi->id : '6bc5b484-07f9-49cc-aefa-00a8cf47e8d7';
 
+            $user = auth()->user();
+            $authOutletIds = array_diff($user->getOutletIds(), [$koperasiId]);
+
             $data = CategoryItem::with('outlet')
-                ->when(auth()->user()->outlet_id, function($q) {
-                    $q->where('outlet_id', auth()->user()->outlet_id);
+                ->when(!empty($authOutletIds) && ($user->isKasirOutlet() || request('mode') === 'outlet'), function($q) use ($authOutletIds) {
+                    if (request()->filled('outlet_id') && in_array(request('outlet_id'), $authOutletIds)) {
+                        $q->where('outlet_id', request('outlet_id'));
+                    } else {
+                        $q->whereIn('outlet_id', $authOutletIds);
+                    }
                 })
-                ->when(!auth()->user()->outlet_id, function($q) use ($koperasiId) {
+                ->when(empty($authOutletIds) && ($user->outlet_id), function($q) use ($koperasiId) {
+                    $outletId = auth()->user()->outlet_id;
+                    $q->where(function($query) use ($outletId, $koperasiId) {
+                        $query->where('outlet_id', $outletId);
+                        if ($outletId === $koperasiId) {
+                            $query->orWhereNull('outlet_id');
+                        }
+                    });
+                })
+                ->when(empty($authOutletIds) && !$user->outlet_id, function($q) use ($koperasiId) {
                     if (request('mode') === 'outlet') {
                         if (request()->filled('outlet_id')) {
                             $q->where('outlet_id', request('outlet_id'));
                         } else {
-                            $q->where('outlet_id', '!=', $koperasiId);
+                            $q->where(function($query) use ($koperasiId) {
+                                $query->where('outlet_id', '!=', $koperasiId)
+                                      ->orWhereNull('outlet_id');
+                            });
                         }
                     } else {
-                        $q->where('outlet_id', $koperasiId);
+                        $q->where(function($query) use ($koperasiId) {
+                            $query->where('outlet_id', $koperasiId)
+                                  ->orWhereNull('outlet_id');
+                        });
                     }
                 })
                 ->latest();
