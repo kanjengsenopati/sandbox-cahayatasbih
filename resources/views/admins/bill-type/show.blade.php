@@ -177,7 +177,13 @@
                                             <span class="badge badge-light-success fs-7 fw-bolder">Rp. {{ number_format($totalMasterAmount, 0, ',', '.') }}</span>
                                         </td>
                                         <td class="text-center">
-                                            <div class="d-flex justify-content-center gap-2">
+                                            <div class="d-flex justify-content-center align-items-center gap-2">
+                                                <form action="{{ route('payment-rate.generate', $rate->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Generate / Sinkronkan tagihan untuk tarif ini?');">
+                                                    @csrf
+                                                    <button type="submit" class="btn btn-sm btn-light-success btn-icon hover-scale" title="Generate / Sinkronkan Tagihan">
+                                                        <i class="fas fa-sync text-success"></i>
+                                                    </button>
+                                                </form>
                                                 @include('components.action.edit', ['action' => route('payment-rate.edit', $rate->id), 'name' => 'Jenis Bayar'])
                                                 @include('components.action.delete', ['action' => route('payment-rate.destroy', $rate->id), 'id' => $rate->id, 'name' => 'Jenis Bayar'])
                                             </div>
@@ -295,7 +301,13 @@
                                             <span class="badge badge-light-success fs-7 fw-bolder">Rp. {{ number_format($totalTransferMasterAmount, 0, ',', '.') }}</span>
                                         </td>
                                         <td class="text-center">
-                                            <div class="d-flex justify-content-center gap-2">
+                                            <div class="d-flex justify-content-center align-items-center gap-2">
+                                                <form action="{{ route('payment-rate.generate', $rate->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Generate / Sinkronkan tagihan untuk tarif susulan ini?');">
+                                                    @csrf
+                                                    <button type="submit" class="btn btn-sm btn-light-success btn-icon hover-scale" title="Generate / Sinkronkan Tagihan Susulan">
+                                                        <i class="fas fa-sync text-success"></i>
+                                                    </button>
+                                                </form>
                                                 @include('components.action.edit', ['action' => route('payment-rate.edit', $rate->id), 'name' => 'Jenis Bayar'])
                                                 @include('components.action.delete', ['action' => route('payment-rate.destroy', $rate->id), 'id' => $rate->id, 'name' => 'Jenis Bayar'])
                                             </div>

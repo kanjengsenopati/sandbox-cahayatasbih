@@ -395,8 +395,8 @@ class PaymentRateController extends Controller
             })
             ->addColumn('total_paid', fn($student) => $this->formatCurrency($student->total_paid ?? 0))
             ->addColumn('total', fn($student) => $this->formatCurrency($student->total ?? 0))
-            ->addColumn('status', function ($student) {
-                return $this->getPaymentStatus($student->total_paid ?? 0, $student->total ?? 0);
+            ->addColumn('status', function ($student) use ($paymentRate) {
+                return $this->getPaymentStatus($student->total_paid ?? 0, $student->total ?? 0, $student, $paymentRate);
             })
             ->addColumn('action', fn($student) => $this->renderActions($student, $paymentRate->bill_type_id))
             ->addColumn('id', fn($student) => $student->id)
@@ -404,9 +404,34 @@ class PaymentRateController extends Controller
             ->make(true);
     }
 
-    private function getPaymentStatus($paid, $total)
+    public function generate($id)
+    {
+        $paymentRate = PaymentRate::with(['billType', 'paymentRateItems'])->findOrFail($id);
+
+        \Artisan::call('bills:sync-rate', [
+            '--rate' => $id,
+            '--force' => true,
+        ]);
+
+        return redirect()->back()->with('success', "Berhasil me-generate / mengsinkronkan tagihan untuk tarif " . ($paymentRate->billType->name ?? ''));
+    }
+
+    private function getPaymentStatus($paid, $total, $student = null, $paymentRate = null)
     {
         if ($total == 0 || $total === null) {
+            if ($student && $paymentRate && $paymentRate->type === PaymentRate::TYPE_REGULAR) {
+                $hasTransferRate = DB::table('payment_rate_students')
+                    ->join('payment_rates', 'payment_rate_students.payment_rate_id', '=', 'payment_rates.id')
+                    ->where('payment_rates.bill_type_id', $paymentRate->bill_type_id)
+                    ->where('payment_rate_students.student_id', $student->id)
+                    ->whereNull('payment_rate_students.deleted_at')
+                    ->whereNull('payment_rates.deleted_at')
+                    ->exists();
+
+                if ($hasTransferRate) {
+                    return '<span class="badge badge-light-warning text-dark fw-bolder px-2 py-1" title="Siswa ini terdaftar di Tarif Susulan / Pindahan (Lihat Tab Siswa Pindahan)"><i class="fas fa-user-tag text-warning me-1"></i>Tarif Susulan</span>';
+                }
+            }
             return '<span class="badge badge-light-secondary text-gray-700 fw-bolder px-2 py-1" title="Tagihan belum di-generate oleh Admin"><i class="fas fa-exclamation-circle text-muted me-1"></i>Belum Di-generate</span>';
         } elseif ($paid == 0) {
             return '<span class="badge badge-light-danger fw-bolder px-2 py-1">Belum Bayar</span>';
