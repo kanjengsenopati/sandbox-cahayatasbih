@@ -23,6 +23,7 @@ import { Route as PerilakuRouteImport } from './routes/perilaku'
 import { Route as NilaiRouteImport } from './routes/nilai'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as LimitRouteImport } from './routes/limit'
+import { Route as LaporpakRouteImport } from './routes/laporpak'
 import { Route as LanjutUnitRouteImport } from './routes/lanjut-unit'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as BlokirSaldoRouteImport } from './routes/blokir-saldo'
@@ -38,6 +39,7 @@ import { Route as PenanggungJawabDashboardRouteImport } from './routes/penanggun
 import { Route as PembayaranPayIdRouteImport } from './routes/pembayaran.$payId'
 import { Route as KaryawanPresensiRouteImport } from './routes/karyawan.presensi'
 import { Route as BeritaNewsIdRouteImport } from './routes/berita.$newsId'
+import { Route as AdminLaporpakRouteImport } from './routes/admin.laporpak'
 import { Route as AdminApprovalRouteImport } from './routes/admin.approval'
 
 const TopupRoute = TopupRouteImport.update({
@@ -108,6 +110,11 @@ const LoginRoute = LoginRouteImport.update({
 const LimitRoute = LimitRouteImport.update({
   id: '/limit',
   path: '/limit',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LaporpakRoute = LaporpakRouteImport.update({
+  id: '/laporpak',
+  path: '/laporpak',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LanjutUnitRoute = LanjutUnitRouteImport.update({
@@ -186,6 +193,11 @@ const BeritaNewsIdRoute = BeritaNewsIdRouteImport.update({
   path: '/berita/$newsId',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminLaporpakRoute = AdminLaporpakRouteImport.update({
+  id: '/admin/laporpak',
+  path: '/admin/laporpak',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AdminApprovalRoute = AdminApprovalRouteImport.update({
   id: '/admin/approval',
   path: '/admin/approval',
@@ -197,6 +209,7 @@ export interface FileRoutesByFullPath {
   '/blokir-saldo': typeof BlokirSaldoRoute
   '/dashboard': typeof DashboardRoute
   '/lanjut-unit': typeof LanjutUnitRoute
+  '/laporpak': typeof LaporpakRoute
   '/limit': typeof LimitRoute
   '/login': typeof LoginRoute
   '/nilai': typeof NilaiRoute
@@ -212,6 +225,7 @@ export interface FileRoutesByFullPath {
   '/tahfidz': typeof TahfidzRoute
   '/topup': typeof TopupRoute
   '/admin/approval': typeof AdminApprovalRoute
+  '/admin/laporpak': typeof AdminLaporpakRoute
   '/berita/$newsId': typeof BeritaNewsIdRoute
   '/karyawan/presensi': typeof KaryawanPresensiRoute
   '/pembayaran/$payId': typeof PembayaranPayIdRoute
@@ -229,6 +243,7 @@ export interface FileRoutesByTo {
   '/blokir-saldo': typeof BlokirSaldoRoute
   '/dashboard': typeof DashboardRoute
   '/lanjut-unit': typeof LanjutUnitRoute
+  '/laporpak': typeof LaporpakRoute
   '/limit': typeof LimitRoute
   '/login': typeof LoginRoute
   '/nilai': typeof NilaiRoute
@@ -244,6 +259,7 @@ export interface FileRoutesByTo {
   '/tahfidz': typeof TahfidzRoute
   '/topup': typeof TopupRoute
   '/admin/approval': typeof AdminApprovalRoute
+  '/admin/laporpak': typeof AdminLaporpakRoute
   '/berita/$newsId': typeof BeritaNewsIdRoute
   '/karyawan/presensi': typeof KaryawanPresensiRoute
   '/pembayaran/$payId': typeof PembayaranPayIdRoute
@@ -262,6 +278,7 @@ export interface FileRoutesById {
   '/blokir-saldo': typeof BlokirSaldoRoute
   '/dashboard': typeof DashboardRoute
   '/lanjut-unit': typeof LanjutUnitRoute
+  '/laporpak': typeof LaporpakRoute
   '/limit': typeof LimitRoute
   '/login': typeof LoginRoute
   '/nilai': typeof NilaiRoute
@@ -277,6 +294,7 @@ export interface FileRoutesById {
   '/tahfidz': typeof TahfidzRoute
   '/topup': typeof TopupRoute
   '/admin/approval': typeof AdminApprovalRoute
+  '/admin/laporpak': typeof AdminLaporpakRoute
   '/berita/$newsId': typeof BeritaNewsIdRoute
   '/karyawan/presensi': typeof KaryawanPresensiRoute
   '/pembayaran/$payId': typeof PembayaranPayIdRoute
@@ -296,6 +314,7 @@ export interface FileRouteTypes {
     | '/blokir-saldo'
     | '/dashboard'
     | '/lanjut-unit'
+    | '/laporpak'
     | '/limit'
     | '/login'
     | '/nilai'
@@ -311,6 +330,7 @@ export interface FileRouteTypes {
     | '/tahfidz'
     | '/topup'
     | '/admin/approval'
+    | '/admin/laporpak'
     | '/berita/$newsId'
     | '/karyawan/presensi'
     | '/pembayaran/$payId'
@@ -328,6 +348,7 @@ export interface FileRouteTypes {
     | '/blokir-saldo'
     | '/dashboard'
     | '/lanjut-unit'
+    | '/laporpak'
     | '/limit'
     | '/login'
     | '/nilai'
@@ -343,6 +364,7 @@ export interface FileRouteTypes {
     | '/tahfidz'
     | '/topup'
     | '/admin/approval'
+    | '/admin/laporpak'
     | '/berita/$newsId'
     | '/karyawan/presensi'
     | '/pembayaran/$payId'
@@ -360,6 +382,7 @@ export interface FileRouteTypes {
     | '/blokir-saldo'
     | '/dashboard'
     | '/lanjut-unit'
+    | '/laporpak'
     | '/limit'
     | '/login'
     | '/nilai'
@@ -375,6 +398,7 @@ export interface FileRouteTypes {
     | '/tahfidz'
     | '/topup'
     | '/admin/approval'
+    | '/admin/laporpak'
     | '/berita/$newsId'
     | '/karyawan/presensi'
     | '/pembayaran/$payId'
@@ -393,6 +417,7 @@ export interface RootRouteChildren {
   BlokirSaldoRoute: typeof BlokirSaldoRoute
   DashboardRoute: typeof DashboardRoute
   LanjutUnitRoute: typeof LanjutUnitRoute
+  LaporpakRoute: typeof LaporpakRoute
   LimitRoute: typeof LimitRoute
   LoginRoute: typeof LoginRoute
   NilaiRoute: typeof NilaiRoute
@@ -408,6 +433,7 @@ export interface RootRouteChildren {
   TahfidzRoute: typeof TahfidzRoute
   TopupRoute: typeof TopupRoute
   AdminApprovalRoute: typeof AdminApprovalRoute
+  AdminLaporpakRoute: typeof AdminLaporpakRoute
   BeritaNewsIdRoute: typeof BeritaNewsIdRoute
   KaryawanPresensiRoute: typeof KaryawanPresensiRoute
   PembayaranPayIdRoute: typeof PembayaranPayIdRoute
@@ -521,6 +547,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LimitRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/laporpak': {
+      id: '/laporpak'
+      path: '/laporpak'
+      fullPath: '/laporpak'
+      preLoaderRoute: typeof LaporpakRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/lanjut-unit': {
       id: '/lanjut-unit'
       path: '/lanjut-unit'
@@ -626,6 +659,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof BeritaNewsIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/laporpak': {
+      id: '/admin/laporpak'
+      path: '/admin/laporpak'
+      fullPath: '/admin/laporpak'
+      preLoaderRoute: typeof AdminLaporpakRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/admin/approval': {
       id: '/admin/approval'
       path: '/admin/approval'
@@ -641,6 +681,7 @@ const rootRouteChildren: RootRouteChildren = {
   BlokirSaldoRoute: BlokirSaldoRoute,
   DashboardRoute: DashboardRoute,
   LanjutUnitRoute: LanjutUnitRoute,
+  LaporpakRoute: LaporpakRoute,
   LimitRoute: LimitRoute,
   LoginRoute: LoginRoute,
   NilaiRoute: NilaiRoute,
@@ -656,6 +697,7 @@ const rootRouteChildren: RootRouteChildren = {
   TahfidzRoute: TahfidzRoute,
   TopupRoute: TopupRoute,
   AdminApprovalRoute: AdminApprovalRoute,
+  AdminLaporpakRoute: AdminLaporpakRoute,
   BeritaNewsIdRoute: BeritaNewsIdRoute,
   KaryawanPresensiRoute: KaryawanPresensiRoute,
   PembayaranPayIdRoute: PembayaranPayIdRoute,

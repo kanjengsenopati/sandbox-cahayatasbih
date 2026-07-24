@@ -406,7 +406,9 @@ class PaymentRateController extends Controller
 
     private function getPaymentStatus($paid, $total)
     {
-        if ($paid == 0) {
+        if ($total == 0 || $total === null) {
+            return '<span class="badge badge-light-secondary text-gray-700 fw-bolder px-2 py-1" title="Tagihan belum di-generate oleh Admin"><i class="fas fa-exclamation-circle text-muted me-1"></i>Belum Di-generate</span>';
+        } elseif ($paid == 0) {
             return '<span class="badge badge-light-danger fw-bolder px-2 py-1">Belum Bayar</span>';
         } elseif ($paid >= $total && $total > 0) {
             return '<span class="badge badge-light-success fw-bolder px-2 py-1">Lunas</span>';
