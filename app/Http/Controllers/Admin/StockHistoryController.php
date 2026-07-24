@@ -27,67 +27,85 @@ class StockHistoryController extends Controller
             $koperasi = Outlet::where('name', 'Koperasi')->orWhere('code', 'KPR')->first();
             $koperasiId = $koperasi ? $koperasi->id : '6bc5b484-07f9-49cc-aefa-00a8cf47e8d7';
 
-            $data = StockHistory::with(['item.categoryItem', 'admin', 'outlet'])
-                ->when(auth()->user()->outlet_id, function($q) {
-                    $q->where('outlet_id', auth()->user()->outlet_id);
+            $user = auth()->user();
+            $authOutletIds = array_diff($user->getOutletIds(), [$koperasiId]);
+
+            $data = Item::with(['categoryItem', 'outlet', 'stockHistories' => function($q) {
+                    $q->latest()->with('admin');
+                }])
+                ->when(!empty($authOutletIds) && ($user->isKasirOutlet() || request('mode') === 'outlet'), function($q) use ($authOutletIds) {
+                    if (request()->filled('outlet_id') && in_array(request('outlet_id'), $authOutletIds)) {
+                        $q->where('outlet_id', request('outlet_id'));
+                    } else {
+                        $q->whereIn('outlet_id', $authOutletIds);
+                    }
                 })
-                ->when(!auth()->user()->outlet_id, function($q) use ($koperasiId) {
+                ->when(empty($authOutletIds) && ($user->outlet_id), function($q) use ($koperasiId) {
+                    $outletId = auth()->user()->outlet_id;
+                    $q->where(function($query) use ($outletId, $koperasiId) {
+                        $query->where('outlet_id', $outletId);
+                        if ($outletId === $koperasiId) {
+                            $query->orWhereNull('outlet_id');
+                        }
+                    });
+                })
+                ->when(empty($authOutletIds) && !$user->outlet_id, function($q) use ($koperasiId) {
                     if (request('mode') === 'outlet') {
                         if (request()->filled('outlet_id')) {
                             $q->where('outlet_id', request('outlet_id'));
                         } else {
-                            $q->where('outlet_id', '!=', $koperasiId);
+                            $q->where('outlet_id', '!=', $koperasiId)->whereNotNull('outlet_id');
                         }
                     } else {
-                        $q->where('outlet_id', $koperasiId);
+                        $q->where(function($query) use ($koperasiId) {
+                            $query->where('outlet_id', $koperasiId)
+                                  ->orWhereNull('outlet_id');
+                        });
                     }
                 })
                 ->latest();
+
             return DataTables::of($data)
-                ->addColumn('admin', function ($data) {
-                    return $data->admin->name ?? 'Belum Ada Admin';
+                ->addColumn('admin', function ($item) {
+                    $latestHistory = $item->stockHistories->first();
+                    return $latestHistory->admin->name ?? 'System';
                 })
-                ->addColumn('outlet', function ($data) {
-                    return $data->outlet->name ?? 'N/A';
+                ->addColumn('outlet', function ($item) {
+                    return $item->outlet->name ?? 'N/A';
                 })
-                ->addColumn('item_category', function ($data) {
-                    return $data->item->categoryItem->name ?? 'Belum Ada Kategori';
+                ->addColumn('item_category', function ($item) {
+                    return $item->categoryItem->name ?? 'Belum Ada Kategori';
                 })
-                ->addColumn('current_stock', function ($data) {
-                    return $data->item->stock ?? 0;
+                ->addColumn('current_stock', function ($item) {
+                    return $item->stock ?? 0;
                 })
-                ->editColumn('quantity', function ($data) {
-                    if ($data->type == StockHistory::TYPE_IN) {
-                        return '<span class="badge bg-light-success text-success fw-bold">+ ' . $data->quantity . ' (Stok Masuk)</span>';
-                    } elseif ($data->type == StockHistory::TYPE_OUT) {
-                        return '<span class="badge bg-light-danger text-danger fw-bold">- ' . $data->quantity . ' (Stok Keluar)</span>';
+                ->addColumn('quantity', function ($item) {
+                    $latestHistory = $item->stockHistories->first();
+                    if (!$latestHistory) {
+                        return '<span class="badge bg-light-secondary text-gray-600 fw-bold">Stok Awal: ' . $item->stock . '</span>';
+                    }
+                    if ($latestHistory->type == StockHistory::TYPE_IN) {
+                        return '<span class="badge bg-light-success text-success fw-bold">+ ' . $latestHistory->quantity . ' (Stok Masuk)</span>';
+                    } elseif ($latestHistory->type == StockHistory::TYPE_OUT) {
+                        return '<span class="badge bg-light-danger text-danger fw-bold">- ' . $latestHistory->quantity . ' (Stok Keluar)</span>';
                     } else {
-                        return '<span class="badge bg-light-warning text-warning fw-bold">⚖️ ' . $data->quantity . ' (Stok Opname)</span>';
+                        return '<span class="badge bg-light-warning text-warning fw-bold">⚖️ ' . $latestHistory->quantity . ' (Stok Opname)</span>';
                     }
                 })
-                ->addColumn('notes', function ($data) {
-                    return $data->notes ?? '-';
+                ->addColumn('notes', function ($item) {
+                    $latestHistory = $item->stockHistories->first();
+                    return $latestHistory ? ($latestHistory->notes ?? '-') : 'Inisialisasi Master Item';
                 })
-                ->addColumn('action', function ($data) {
-                    $actionDelete = route('stock-history.destroy', $data->id);
+                ->addColumn('action', function ($item) {
                     $html = "<div class='d-flex justify-content-center'>";
-                    if (auth()->user()->can('Edit Barang')) {
-                        $html .= "<button type='button' class='btn btn-icon btn-bg-light btn-active-color-primary btn-sm me-1 btn-edit-stock' " .
-                            "data-id='{$data->id}' " .
-                            "data-type='{$data->type}' " .
-                            "data-item_id='{$data->item_id}' " .
-                            "data-quantity='{$data->quantity}' " .
-                            "data-notes='" . e($data->notes ?? '') . "' " .
-                            "data-outlet_id='{$data->outlet_id}' " .
-                            "data-action='" . route('stock-history.update', $data->id) . "' title='Edit Stok'>" .
-                            "<i class='fa-solid fa-pen'></i>" .
+                    if (auth()->user()->can('Create Barang') || auth()->user()->can('Edit Barang')) {
+                        $html .= "<button type='button' class='btn btn-icon btn-bg-light btn-active-color-primary btn-sm me-1 btn-add-stock-item' " .
+                            "data-item_id='{$item->id}' " .
+                            "data-item_name='" . e($item->name) . "' " .
+                            "data-outlet_id='{$item->outlet_id}' " .
+                            "title='Tambah / Opname Stok'>" .
+                            "<i class='fa-solid fa-plus'></i>" .
                             "</button>";
-                    }
-                    if (auth()->user()->can('Delete Barang')) {
-                        if (auth()->user()->can('Edit Barang')) {
-                            $html .= '&nbsp;';
-                        }
-                        $html .= view('components.action.delete', ['action' => $actionDelete, 'id' => $data->id, 'name' => 'Stok'])->render();
                     }
                     $html .= "</div>";
                     return $html;

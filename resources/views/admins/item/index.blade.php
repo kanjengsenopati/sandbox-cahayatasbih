@@ -528,6 +528,20 @@
             $('#modalStockForm').modal('show');
         });
 
+        // Click event: Add Stock for specific Item
+        $(document).on('click', '.btn-add-stock-item', function() {
+            var btn = $(this);
+            $('#formStockModal')[0].reset();
+            $('#methodStockPut').html('');
+            $('#modalStockTitle').text('Tambah / Opname Stok - ' + btn.data('item_name'));
+            $('#formStockModal').attr('action', "{{ route('stock-history.store', ['mode' => request('mode')]) }}");
+            $('#modal_stock_item_id').val(btn.data('item_id'));
+            if (btn.data('outlet_id')) {
+                $('#modal_stock_outlet_id').val(btn.data('outlet_id'));
+            }
+            $('#modalStockForm').modal('show');
+        });
+
         // Click event: Edit Stock Modal
         $(document).on('click', '.btn-edit-stock', function() {
             var btn = $(this);
