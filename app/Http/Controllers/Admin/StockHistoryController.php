@@ -33,38 +33,23 @@ class StockHistoryController extends Controller
             $data = Item::with(['categoryItem', 'outlet', 'stockHistories' => function($q) {
                     $q->latest()->with('admin');
                 }])
-                ->when(!empty($authOutletIds) && ($user->isKasirOutlet() || request('mode') === 'outlet'), function($q) use ($authOutletIds) {
-                    if (request()->filled('outlet_id') && in_array(request('outlet_id'), $authOutletIds)) {
+                ->when(request('mode') === 'outlet', function($q) use ($authOutletIds, $koperasiId) {
+                    if (request()->filled('outlet_id')) {
                         $q->where('outlet_id', request('outlet_id'));
-                    } else {
+                    } elseif (!empty($authOutletIds)) {
                         $q->whereIn('outlet_id', $authOutletIds);
-                    }
-                })
-                ->when(empty($authOutletIds) && ($user->outlet_id), function($q) use ($koperasiId) {
-                    $outletId = auth()->user()->outlet_id;
-                    $q->where(function($query) use ($outletId, $koperasiId) {
-                        $query->where('outlet_id', $outletId);
-                        if ($outletId === $koperasiId) {
-                            $query->orWhereNull('outlet_id');
-                        }
-                    });
-                })
-                ->when(empty($authOutletIds) && !$user->outlet_id, function($q) use ($koperasiId) {
-                    if (request('mode') === 'outlet') {
-                        if (request()->filled('outlet_id')) {
-                            $q->where('outlet_id', request('outlet_id'));
-                        } else {
-                            $q->where(function($query) use ($koperasiId) {
-                                $query->where('outlet_id', '!=', $koperasiId)
-                                      ->orWhereNull('outlet_id');
-                            });
-                        }
                     } else {
                         $q->where(function($query) use ($koperasiId) {
-                            $query->where('outlet_id', $koperasiId)
+                            $query->where('outlet_id', '!=', $koperasiId)
                                   ->orWhereNull('outlet_id');
                         });
                     }
+                })
+                ->when(request('mode') !== 'outlet', function($q) use ($koperasiId) {
+                    $q->where(function($query) use ($koperasiId) {
+                        $query->where('outlet_id', $koperasiId)
+                              ->orWhereNull('outlet_id');
+                    });
                 })
                 ->latest();
 

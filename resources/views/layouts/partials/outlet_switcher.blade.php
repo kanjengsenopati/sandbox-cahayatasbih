@@ -1,4 +1,4 @@
-@if(!auth()->user()->outlet_id && request('mode') === 'outlet')
+@if(request('mode') === 'outlet')
     @php
         $user = auth()->user();
         $authOutletIds = $user->getOutletIds();
