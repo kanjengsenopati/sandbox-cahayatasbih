@@ -73,24 +73,13 @@ class StockHistoryController extends Controller
                 ->addColumn('outlet', function ($item) {
                     return $item->outlet->name ?? 'N/A';
                 })
-                ->addColumn('item_category', function ($item) {
-                    return $item->categoryItem->name ?? 'Belum Ada Kategori';
-                })
                 ->addColumn('current_stock', function ($item) {
                     return $item->stock ?? 0;
                 })
-                ->addColumn('quantity', function ($item) {
-                    $latestHistory = $item->stockHistories->first();
-                    if (!$latestHistory) {
-                        return '<span class="badge bg-light-secondary text-gray-600 fw-bold">Stok Awal: ' . $item->stock . '</span>';
-                    }
-                    if ($latestHistory->type == StockHistory::TYPE_IN) {
-                        return '<span class="badge bg-light-success text-success fw-bold">+ ' . $latestHistory->quantity . ' (Stok Masuk)</span>';
-                    } elseif ($latestHistory->type == StockHistory::TYPE_OUT) {
-                        return '<span class="badge bg-light-danger text-danger fw-bold">- ' . $latestHistory->quantity . ' (Stok Keluar)</span>';
-                    } else {
-                        return '<span class="badge bg-light-warning text-warning fw-bold">⚖️ ' . $latestHistory->quantity . ' (Stok Opname)</span>';
-                    }
+                ->addColumn('initial_stock', function ($item) {
+                    $firstHistory = $item->stockHistories->sortBy('created_at')->first();
+                    $initialVal = $firstHistory ? $firstHistory->quantity : $item->stock;
+                    return 'Stok Awal: ' . $initialVal;
                 })
                 ->addColumn('notes', function ($item) {
                     $latestHistory = $item->stockHistories->first();
@@ -104,13 +93,13 @@ class StockHistoryController extends Controller
                             "data-item_name='" . e($item->name) . "' " .
                             "data-outlet_id='{$item->outlet_id}' " .
                             "title='Tambah / Opname Stok'>" .
-                            "<i class='fa-solid fa-plus'></i>" .
+                            "<i class='fa-solid fa-pen'></i>" .
                             "</button>";
                     }
                     $html .= "</div>";
                     return $html;
                 })
-                ->rawColumns(['action', 'quantity'])
+                ->rawColumns(['action'])
                 ->make(true);
         }
         return view('admins.stock-history.index');

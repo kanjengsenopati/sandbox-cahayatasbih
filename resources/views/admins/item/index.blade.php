@@ -175,9 +175,8 @@
                                             <th style="width: 5%">No</th>
                                             <th class="min-w-100px">Kode Barang</th>
                                             <th class="min-w-150px">Nama Barang</th>
-                                            <th class="min-w-100px">Kategori</th>
                                             <th class="min-w-80px">Stok Saat Ini</th>
-                                            <th class="min-w-120px">Tipe & Jumlah</th>
+                                            <th class="min-w-100px">Stok Awal</th>
                                             <th class="min-w-100px">Admin</th>
                                             <th class="min-w-120px">Outlet</th>
                                             <th class="min-w-150px">Catatan / Alasan</th>
@@ -719,21 +718,29 @@
                         return meta.row + meta.settings._iDisplayStart + 1;
                     }
                 },
+            columns: [
                 {
-                    data: 'item.code',
-                    name: 'item.code',
-                    render: function(data, type, row) {
-                        return (row.item && row.item.code) ? row.item.code : 'N/A';
+                    "data": null,
+                    "sortable": false,
+                    "searchable": false,
+                    render: function(data, type, row, meta) {
+                        return meta.row + meta.settings._iDisplayStart + 1;
                     }
                 },
                 {
-                    data: 'item.name',
-                    name: 'item.name',
+                    data: 'code',
+                    name: 'code',
+                    render: function(data) {
+                        return data ? data : 'N/A';
+                    }
+                },
+                {
+                    data: 'name',
+                    name: 'name',
                     render: function(data, type, row) {
-                        var itemObj = row.item || {};
-                        var nameText = itemObj.name ? itemObj.name : 'N/A';
+                        var nameText = data ? data : 'N/A';
                         var fallbackImg = "{{ asset('assets/media/svg/avatars/blank.svg') }}";
-                        var imgUrl = itemObj.image ? "{{ asset('') }}" + itemObj.image.replace(/^\//, '') : fallbackImg;
+                        var imgUrl = (row && row.image) ? "{{ asset('') }}" + row.image.replace(/^\//, '') : fallbackImg;
 
                         return `
                             <div class="d-flex flex-column align-items-start gap-1 py-1">
@@ -746,20 +753,18 @@
                     }
                 },
                 {
-                    data: 'item_category',
-                    name: 'item_category'
-                },
-                {
                     data: 'current_stock',
                     name: 'current_stock',
-                    render: function(data, type, row) {
-                        var stockVal = (row.item && row.item.stock !== undefined) ? row.item.stock : (data !== undefined ? data : 0);
-                        return `<span class="fw-bold fs-6 text-gray-800">${stockVal}</span>`;
+                    render: function(data) {
+                        return `<span class="fw-bold fs-6 text-gray-800">${data !== undefined ? data : 0}</span>`;
                     }
                 },
                 {
-                    data: 'quantity',
-                    name: 'quantity'
+                    data: 'initial_stock',
+                    name: 'initial_stock',
+                    render: function(data) {
+                        return `<span class="text-gray-600 fw-bold fs-7">${data ? data : 'Stok Awal: 0'}</span>`;
+                    }
                 },
                 {
                     data: 'admin',
