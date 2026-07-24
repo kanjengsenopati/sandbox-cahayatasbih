@@ -76,16 +76,19 @@
                 
                 <div class="row w-100 align-items-center pe-3">
                     <!-- Left: Title & Year -->
-                    <div class="col-md-6 d-flex flex-column text-start">
-                         <div class="d-flex align-items-center mb-1">
-                             <span class="text-slate-900 fs-5 fw-bolder me-2">{{ $bill->name }}</span>
-                             <span class="badge badge-primary fw-bold fs-8 px-3 py-1">Bulanan</span>
-                         </div>
-                         <span class="text-slate-500 fs-7 fw-bold">
-                            <i class="fas fa-calendar-alt me-1 text-slate-400 fs-8"></i>
-                            Tahun Ajaran {{ $bill->academicYear->name ?? '-' }}
-                         </span>
-                    </div>
+                     <div class="col-md-6 d-flex flex-column text-start">
+                          <div class="d-flex align-items-center flex-wrap gap-2 mb-2">
+                              <span class="text-slate-900 fs-5 fw-bolder me-1">{{ $bill->name }}</span>
+                              <span class="badge badge-primary fw-bold fs-8 px-3 py-1">Bulanan</span>
+                          </div>
+                          <div>
+                              <span class="badge px-3 py-1.5 fw-bolder fs-7 d-inline-flex align-items-center gap-1.5" 
+                                    style="background-color: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; border-radius: 8px;">
+                                 <i class="fas fa-calendar-alt text-blue-600 fs-7"></i>
+                                 <span>Tahun Ajaran {{ $bill->academicYear->name ?? '-' }}</span>
+                              </span>
+                          </div>
+                     </div>
 
                     <!-- Right: Stats & Action -->
                     <div class="col-md-6 d-flex justify-content-md-end align-items-center mt-3 mt-md-0 gap-2 gap-md-4">

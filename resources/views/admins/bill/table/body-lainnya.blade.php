@@ -57,14 +57,17 @@
                 <div class="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center w-100 gap-3 pe-3">
                     <!-- Left: Title & Year -->
                     <div class="d-flex flex-column text-start">
-                         <div class="d-flex align-items-center flex-wrap gap-2 mb-1">
-                             <span class="text-slate-900 fs-5 fw-bolder">{{ $bill->name }}</span>
+                         <div class="d-flex align-items-center flex-wrap gap-2 mb-2">
+                             <span class="text-slate-900 fs-5 fw-bolder me-1">{{ $bill->name }}</span>
                              <span class="badge badge-warning fw-bold fs-8 px-3 py-1 text-white">Tagihan Lain</span>
                          </div>
-                         <span class="text-slate-500 fs-7 fw-bold">
-                            <i class="fas fa-calendar-alt me-1 text-slate-400 fs-8"></i>
-                            Tahun Ajaran {{ $bill->academicYear->name ?? '-' }}
-                         </span>
+                         <div>
+                             <span class="badge px-3 py-1.5 fw-bolder fs-7 d-inline-flex align-items-center gap-1.5" 
+                                   style="background-color: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; border-radius: 8px;">
+                                <i class="fas fa-calendar-alt text-blue-600 fs-7"></i>
+                                <span>Tahun Ajaran {{ $bill->academicYear->name ?? '-' }}</span>
+                             </span>
+                         </div>
                     </div>
 
                     <!-- Right: Stats & Action -->
