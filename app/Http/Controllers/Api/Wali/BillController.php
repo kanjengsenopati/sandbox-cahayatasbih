@@ -16,7 +16,7 @@ class BillController extends BaseWaliApiController
         // Load student's school for UPT filtering
         $student->load('classroom.school');
 
-        $allBills = Bill::with(['billType.billItem', 'billType.academicYear'])
+        $allBills = Bill::with(['billType.billItem', 'billType.academicYear', 'academicYear'])
             ->where('student_id', $student->id)
             ->get();
 
@@ -43,7 +43,7 @@ class BillController extends BaseWaliApiController
         $groupedBills = $filteredBills
             ->groupBy(function ($b) {
                 $name = strtoupper(trim($b->billType?->name ?? 'TAGIHAN'));
-                $ayId = $b->billType?->academic_year_id ?? $b->academic_year_id ?? 'default';
+                $ayId = $b->academic_year_id ?? $b->billType?->academic_year_id ?? 'default';
                 return "{$name}_{$ayId}";
             })
             ->map(function ($items) use ($student) {
@@ -81,14 +81,19 @@ class BillController extends BaseWaliApiController
                     })
                     ->filter(fn($p) => $p['amount'] > 0);
 
+                $academicYearName = $first->academicYear?->name 
+                    ?? $first->billType?->academicYear?->name 
+                    ?? '-';
+
                 return [
                     'bill_type_id' => $first->bill_type_id,
                     'bill_type_name' => $first->billType?->name ?? 'Tagihan',
                     'payment_input_type' => $first->billType?->payment_input_type ?? 'FIXED',
-                    'academic_year' => $first->billType?->academicYear?->name ?? '-',
+                    'academic_year' => $academicYearName,
+                    'academic_year_id' => $first->academic_year_id ?? $first->billType?->academic_year_id,
                     'total' => $items->sum('amount'),
                     'paid' => $items->sum('paid_amount'),
-                    'unpaid' => $items->sum(function($b) { return $b->amount - $b->paid_amount; }),
+                    'unpaid' => $items->sum(function($b) { return max(0, $b->amount - $b->paid_amount); }),
                     'items_count' => $items->count(),
                     'unpaid_count' => $items->where('status', 'UNPAID')->count(),
                     'payments' => $payments->values(),
@@ -107,15 +112,21 @@ class BillController extends BaseWaliApiController
         if (!$student) return response()->json(['error' => 'Student not found'], 404);
         
         $billType = BillType::with(['billItem', 'academicYear'])->findOrFail($id);
+        $academicYearId = request('academic_year_id');
         
-        $bills = Bill::with(['academicYear', 'transactionDetails' => function ($query) {
+        $query = Bill::with(['academicYear', 'transactionDetails' => function ($query) {
                 $query->whereHas('transaction', function ($query) {
                     $query->where('status', \App\Models\Transaction::STATUS_PENDING_CONFIRMATION);
                 });
             }])
             ->where('student_id', $student->id)
-            ->where('bill_type_id', $id)
-            ->orderBy('year', 'asc')
+            ->where('bill_type_id', $id);
+
+        if ($academicYearId) {
+            $query->where('academic_year_id', $academicYearId);
+        }
+
+        $bills = $query->orderBy('year', 'asc')
             ->orderBy('month', 'asc')
             ->get()
             ->map(function ($bill) {
@@ -123,9 +134,9 @@ class BillController extends BaseWaliApiController
                 return $bill;
             });
 
-        // Get academic year name from billType or from the first bill
-        $academicYearName = $billType->academicYear->name 
-            ?? $bills->first()?->academicYear?->name 
+        // Get academic year name from the first bill or billType fallback
+        $academicYearName = $bills->first()?->academicYear?->name 
+            ?? $billType->academicYear?->name 
             ?? null;
 
         return response()->json([
