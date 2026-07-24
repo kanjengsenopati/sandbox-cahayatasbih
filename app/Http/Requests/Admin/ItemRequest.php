@@ -25,7 +25,7 @@ class ItemRequest extends FormRequest
             'name' => 'required|string|max:255',
             'category_item_id' => 'required|exists:category_items,id',
             'price' => 'required',
-            'stock' => 'required|integer',
+            'stock' => 'nullable|integer',
             'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
             'code' => 'required|string|max:255',
             'selling_price' => 'required',

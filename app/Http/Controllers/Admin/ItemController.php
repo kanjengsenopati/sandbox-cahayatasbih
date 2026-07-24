@@ -144,6 +144,8 @@ class ItemController extends Controller
             return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
         }
         $data = $request->validated();
+        $data['stock'] = 0; // Single Source of Truth: Initial stock set to 0. Stock must be added via Inventori (StockHistory).
+
         if ($request->hasFile('image')) {
             $data['image'] = 'storage/' . $request->file('image')->store('images/item', 'public');
         }
@@ -154,7 +156,7 @@ class ItemController extends Controller
             $data['outlet_id'] = $koperasi ? $koperasi->id : '6bc5b484-07f9-49cc-aefa-00a8cf47e8d7';
         }
         Item::create($data);
-        return redirect()->route('item.index', ['mode' => request('mode')])->with('success', 'Barang berhasil ditambahkan');
+        return redirect()->route('item.index', ['mode' => request('mode')])->with('success', 'Barang berhasil ditambahkan. Silakan isi stok pada tab Inventori Barang.');
     }
 
     /**
@@ -199,6 +201,8 @@ class ItemController extends Controller
             return redirect()->back()->with('error', 'Anda tidak memiliki akses ke barang outlet lain');
         }
         $data = $request->validated();
+        unset($data['stock']); // Single Source of Truth: Prevent manual stock override from Edit Barang modal
+
         if ($request->hasFile('image')) {
             file_exists($item->image) ? unlink($item->image) : null;
             $data['image'] = 'storage/' . $request->file('image')->store('images/item', ['disk' => 'public']);

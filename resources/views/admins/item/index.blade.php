@@ -306,8 +306,9 @@
                             </div>
 
                             <div class="mb-2">
-                                <label class="form-label fs-7 fw-bold mb-1 required" for="modal_item_stock">Stok Barang</label>
-                                <input type="text" name="stock" id="modal_item_stock" class="form-control form-control-solid form-control-sm" placeholder="Masukkan Stok Barang" required />
+                                <label class="form-label fs-7 fw-bold mb-1" for="modal_item_stock">Stok Barang</label>
+                                <input type="text" id="modal_item_stock" class="form-control form-control-solid form-control-sm bg-light-secondary text-gray-700 fw-bold" value="0" readonly disabled />
+                                <small class="text-muted fs-8 d-block mt-1">* Stok diisi & dikelola khusus via tab <b>Inventori Barang</b></small>
                             </div>
 
                             <div class="mb-2">
@@ -466,6 +467,7 @@
             $('#methodItemPut').html('');
             $('#modalItemTitle').text('Tambah Barang');
             $('#formItemModal').attr('action', "{{ route('item.store', ['mode' => request('mode')]) }}");
+            $('#modal_item_stock').val('0 (Stok Awal)');
             $('#modal_item_image_preview').css('background-image', "url('{{ asset('assets/media/svg/avatars/blank.svg') }}')");
             $('#modalItemForm').modal('show');
         });
