@@ -61,21 +61,6 @@ jobs:
             cd $DEPLOY_PATH
             /www/server/php/84/bin/php artisan migrate --force
 
-            echo "=== Fixing Master Rates 2026/2027 ==="
-            /www/server/php/84/bin/php artisan bills:fix-rates-2026 || echo "Fix rates 2026 failed"
-
-            echo "=== Cleaning Up Cross School Rates ==="
-            /www/server/php/84/bin/php artisan bills:fix-cross-school-rates || echo "Fix cross school rates failed"
-
-            echo "=== Syncing Payment Rate Bills ==="
-            /www/server/php/84/bin/php artisan bills:sync-rate --force || echo "Sync rate failed"
-
-            echo "=== Cleaning Up Ghost & Duplicate Bills ==="
-            /www/server/php/84/bin/php artisan bills:cleanup-ghost-duplicates || echo "Ghost & Duplicate bills cleanup failed"
-
-            echo "=== Running Seeders ==="
-            /www/server/php/84/bin/php artisan db:seed --class=KaryawanOutletSeeder --force || echo "Seeder failed"
-
             echo "=== Creating Storage Symlink ==="
             /www/server/php/84/bin/php artisan storage:link || echo "Storage link may already exist"
 
@@ -83,15 +68,6 @@ jobs:
             /www/server/php/84/bin/php artisan config:cache
             /www/server/php/84/bin/php artisan route:cache
             /www/server/php/84/bin/php artisan view:cache
-
-            echo "=== Running Audit ==="
-            /www/server/php/84/bin/php artisan app:audit || echo "Audit failed"
-
-            echo "=== Cleaning Up Student Balances ==="
-            /www/server/php/84/bin/php artisan db:cleanup-balances || echo "Balance cleanup failed"
-
-            echo "=== Running Diagnostics ==="
-            /www/server/php/84/bin/php diagnose_perwalian.php || echo "Diagnostic failed"
 
             echo "=== Fixing Permissions (Targeted Fast Operation) ==="
             chown -R www:www $DEPLOY_PATH/storage $DEPLOY_PATH/bootstrap/cache $DEPLOY_PATH/public $DEPLOY_PATH/portalwalisantri/dist 2>/dev/null || true
