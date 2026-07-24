@@ -98,6 +98,20 @@ class PrecisionRoleSeeder extends Seeder
             $aini->syncRoles([$kasirOutletRole]);
         }
 
+        // Ensure permissions for Kasir Karyawan Outlet role
+        $itemPermissions = [
+            'View Barang', 'Create Barang', 'Edit Barang', 'Delete Barang',
+            'View Kategori Barang', 'Create Kategori Barang', 'Edit Kategori Barang', 'Delete Kategori Barang',
+            'View Stock History', 'Create Stock History', 'Edit Stock History', 'Delete Stock History',
+            'POS Outlet', 'Laporan', 'Manage Pos Kasir', 'Create Pos Kasir', 'Manage Barang'
+        ];
+
+        foreach ($itemPermissions as $pName) {
+            \Spatie\Permission\Models\Permission::firstOrCreate(['name' => $pName, 'guard_name' => 'web']);
+        }
+
+        $kasirOutletRole->givePermissionTo(\Spatie\Permission\Models\Permission::whereIn('name', $itemPermissions)->get());
+
         // 5. Sync Admin Outlets Scopes
         $outletUsers = Admin::whereNotIn('id', $superAdminIds)->get();
 
