@@ -64,10 +64,23 @@ jobs:
             echo "=== Creating Storage Symlink ==="
             /www/server/php/84/bin/php artisan storage:link || echo "Storage link may already exist"
 
-            echo "=== Optimizing & Caching Laravel ==="
+            echo "=== Clearing ALL Old Caches ==="
+            /www/server/php/84/bin/php artisan optimize:clear
+
+            echo "=== Rebuilding Laravel Caches ==="
             /www/server/php/84/bin/php artisan config:cache
             /www/server/php/84/bin/php artisan route:cache
             /www/server/php/84/bin/php artisan view:cache
+
+            echo "=== Clearing PHP OPcache ==="
+            /www/server/php/84/bin/php -r "if(function_exists('opcache_reset')){opcache_reset();echo 'OPcache cleared via CLI'.PHP_EOL;}else{echo 'OPcache not available via CLI'.PHP_EOL;}"
+
+            echo "=== Restarting PHP-FPM to flush OPcache ==="
+            systemctl restart php-fpm-84 2>/dev/null \
+              || service php-fpm-84 restart 2>/dev/null \
+              || /etc/init.d/php-fpm-84 restart 2>/dev/null \
+              || pkill -USR2 -f "php-fpm.*84" 2>/dev/null \
+              || echo "WARNING: Could not restart PHP-FPM. OPcache may still serve stale files."
 
             echo "=== Fixing Permissions (Targeted Fast Operation) ==="
             chown -R www:www $DEPLOY_PATH/storage $DEPLOY_PATH/bootstrap/cache $DEPLOY_PATH/public $DEPLOY_PATH/portalwalisantri/dist 2>/dev/null || true
