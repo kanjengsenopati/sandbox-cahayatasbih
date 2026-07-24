@@ -385,6 +385,35 @@
                                                             </span>
                                                         </span>
                                                     </div>
+                                                    <div class="info-item">
+                                                        <span class="info-label">Wali Siswa</span>
+                                                        <span class="info-colon">:</span>
+                                                        <span class="info-value">
+                                                            <span class="text-slate-800 fw-bold">{{ @$student->user->name ?? '-' }}</span>
+                                                        </span>
+                                                    </div>
+                                                    <div class="info-item">
+                                                        <span class="info-label">No. WA Wali</span>
+                                                        <span class="info-colon">:</span>
+                                                        <span class="info-value">
+                                                            @if(!empty(@$student->user->phone))
+                                                                @php
+                                                                    $cleanPhone = preg_replace('/[^0-9]/', '', $student->user->phone);
+                                                                    if (str_starts_with($cleanPhone, '0')) {
+                                                                        $waNumber = '62' . substr($cleanPhone, 1);
+                                                                    } else {
+                                                                        $waNumber = $cleanPhone;
+                                                                    }
+                                                                @endphp
+                                                                <a href="https://wa.me/{{ $waNumber }}" target="_blank" class="text-emerald-600 fw-bold text-hover-primary d-inline-flex align-items-center gap-1">
+                                                                    <i class="fab fa-whatsapp text-emerald-600 fs-6"></i>
+                                                                    {{ $student->user->phone }}
+                                                                </a>
+                                                            @else
+                                                                <span class="text-slate-500 fw-semibold">-</span>
+                                                            @endif
+                                                        </span>
+                                                    </div>
                                                 </div>
 
                                                 <!-- Right Side: Billing Cards (Total, Terbayar, Sisa Tagihan) -->
