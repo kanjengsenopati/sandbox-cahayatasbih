@@ -160,8 +160,11 @@ Route::prefix('ct-mobile')->group(function () {
 
 
 
-Route::get('/laporpak/{any?}', [WaliDashboardController::class, 'app'])->where('any', '.*')->name('laporpak');
-Route::get('/admin/laporpak/{any?}', [WaliDashboardController::class, 'app'])->where('any', '.*')->name('admin.laporpak');
+// Public Standalone Lapor Pak Form & Progress
+Route::get('/laporpak', [App\Http\Controllers\Public\LaporPakPublicController::class, 'index'])->name('public.laporpak.index');
+Route::post('/laporpak', [App\Http\Controllers\Public\LaporPakPublicController::class, 'store'])->name('public.laporpak.store');
+Route::get('/laporpak/search-students', [App\Http\Controllers\Public\LaporPakPublicController::class, 'searchStudents'])->name('public.laporpak.search-students');
+
 
 Route::get('/', function () {
     return view('admins.auth.login');
@@ -498,6 +501,14 @@ Route::group(['middleware' => ['auth']], function () {
     Route::get('report-profit-loss', [App\Http\Controllers\Admin\ProfitLossReportController::class, 'index'])->name('report-profit-loss.index');
     Route::post('report-profit-loss/store-expense', [App\Http\Controllers\Admin\ProfitLossReportController::class, 'storeExpense'])->name('report-profit-loss.store-expense');
     Route::delete('report-profit-loss/delete-expense/{id}', [App\Http\Controllers\Admin\ProfitLossReportController::class, 'destroyExpense'])->name('report-profit-loss.destroy-expense');
+
+    // Modul Admin Lapor Pak Backoffice
+    Route::get('admin/laporpak', [App\Http\Controllers\Admin\LaporPakAdminController::class, 'index'])->name('admin.laporpak.index');
+    Route::post('admin/laporpak/setting', [App\Http\Controllers\Admin\LaporPakAdminController::class, 'updateSetting'])->name('admin.laporpak.setting');
+    Route::post('admin/laporpak/{id}/toggle-status', [App\Http\Controllers\Admin\LaporPakAdminController::class, 'toggleStatus'])->name('admin.laporpak.toggle-status');
+    Route::delete('admin/laporpak/{id}', [App\Http\Controllers\Admin\LaporPakAdminController::class, 'destroy'])->name('admin.laporpak.destroy');
+
+
 });
 
 
