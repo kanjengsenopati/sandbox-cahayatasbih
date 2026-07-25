@@ -127,11 +127,6 @@ class LaporPakAdminController extends Controller
                 'sortBy',
                 'sortDir'
             ));
-        },
-                'categoryFilter',
-                'search',
-                'milestones'
-            ));
         }
     }
 
