@@ -258,7 +258,7 @@
                         $modalId = "bayarKilat{$bill->id}_{$month}";
                         $showModal = !$isPaid && $remainingAmount > 0 && $amount > 0;
                         
-                        $targetYear = $billDetail->year ?? ($month >= 7 ? 
+                        $targetYear = $billDetail?->year ?? ($month >= 7 ? 
                             ($bill->academicYear?->start_year ?? date('Y')) : 
                             ($bill->academicYear?->end_year ?? (date('Y') + 1)));
 
@@ -290,17 +290,17 @@
                                     <div class="fs-9 text-slate-400">Sisa dari Rp {{ number_format($billDetail->amount, 0, ',', '.') }}</div>
                                 @else
                                     <span class="fw-bolder fs-5 {{ $isPaid ? 'text-emerald-600' : ($remainingAmount > 0 ? 'text-amber-600' : 'text-slate-400') }}">
-                                        Rp {{ number_format($isPaid ? ($billDetail->paid_amount ?: $billDetail->amount) : $remainingAmount, 0, ',', '.') }}
+                                        Rp {{ number_format($isPaid ? ($billDetail?->paid_amount ?: ($billDetail?->amount ?? $amount)) : $remainingAmount, 0, ',', '.') }}
                                     </span>
                                 @endif
                                 @if($isPaid && $detailPayment)
                                     <div class="fs-9 text-slate-500 mt-2 pt-2 border-top border-gray-200">
                                         <div class="d-flex justify-content-center align-items-center mb-1 fw-bold">
                                             <i class="fas fa-calendar-alt me-1 fs-9"></i>
-                                            {{ !empty($billDetail->paid_date) ? date('d/m/y', strtotime($billDetail->paid_date)) : '-' }}
+                                            {{ !empty($billDetail?->paid_date) ? date('d/m/y', strtotime($billDetail->paid_date)) : '-' }}
                                         </div>
-                                        <div class="fw-bolder text-slate-700">{{ $billDetail->payment_method ?? '-' }}</div>
-                                        @if(strtoupper($billDetail->payment_method ?? '') == 'TUNAI' || strtoupper($billDetail->payment_method ?? '') == 'CASH')
+                                        <div class="fw-bolder text-slate-700">{{ $billDetail?->payment_method ?? '-' }}</div>
+                                        @if(strtoupper($billDetail?->payment_method ?? '') == 'TUNAI' || strtoupper($billDetail?->payment_method ?? '') == 'CASH')
                                             <div class="text-primary fw-bold fs-9">
                                                 <i class="fas fa-user-check me-1"></i>
                                                 {{ $detailPayment->admin->name ?? $detailPayment->user->name ?? 'Admin' }}
