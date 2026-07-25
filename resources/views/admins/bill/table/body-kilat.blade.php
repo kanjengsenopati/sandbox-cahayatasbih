@@ -64,6 +64,38 @@
     @php
         $paidAmount = $bill->bills->where('student_id', $student->id)->sum('paid_amount');
         $unpaidAmount = $bill->total_unpaid;
+        $ayName = $bill->academicYear->name ?? '-';
+
+        // Color theme map for distinct Academic Years
+        $ayColorThemes = [
+            '2026/2027' => [
+                'bg' => 'linear-gradient(135deg, #1d4ed8 0%, #2563eb 100%)',
+                'shadow' => 'rgba(37, 99, 235, 0.3)',
+            ],
+            '2025/2026' => [
+                'bg' => 'linear-gradient(135deg, #6d28d9 0%, #7c3aed 100%)',
+                'shadow' => 'rgba(124, 58, 237, 0.3)',
+            ],
+            '2024/2025' => [
+                'bg' => 'linear-gradient(135deg, #0f766e 0%, #0d9488 100%)',
+                'shadow' => 'rgba(13, 148, 136, 0.3)',
+            ],
+            '2023/2024' => [
+                'bg' => 'linear-gradient(135deg, #b45309 0%, #d97706 100%)',
+                'shadow' => 'rgba(217, 119, 6, 0.3)',
+            ],
+        ];
+
+        $fallbackPalettes = [
+            ['bg' => 'linear-gradient(135deg, #1d4ed8 0%, #2563eb 100%)', 'shadow' => 'rgba(37, 99, 235, 0.3)'],
+            ['bg' => 'linear-gradient(135deg, #6d28d9 0%, #7c3aed 100%)', 'shadow' => 'rgba(124, 58, 237, 0.3)'],
+            ['bg' => 'linear-gradient(135deg, #0f766e 0%, #0d9488 100%)', 'shadow' => 'rgba(13, 148, 136, 0.3)'],
+            ['bg' => 'linear-gradient(135deg, #b45309 0%, #d97706 100%)', 'shadow' => 'rgba(217, 119, 6, 0.3)'],
+            ['bg' => 'linear-gradient(135deg, #be123c 0%, #e11d48 100%)', 'shadow' => 'rgba(225, 29, 72, 0.3)'],
+            ['bg' => 'linear-gradient(135deg, #1e293b 0%, #334155 100%)', 'shadow' => 'rgba(51, 65, 85, 0.3)'],
+        ];
+
+        $currentAyTheme = $ayColorThemes[$ayName] ?? $fallbackPalettes[abs(crc32($ayName)) % count($fallbackPalettes)];
     @endphp
     
     <div class="accordion-item mb-5 border border-gray-300 shadow-sm rounded-3 overflow-hidden">
@@ -83,19 +115,14 @@
                           </div>
                      </div>
 
-                    <!-- Middle: Prominent Strong Solid Tahun Ajaran Badge -->
+                    <!-- Middle: Prominent Strong Solid 1-Line Tahun Ajaran Badge -->
                     <div class="col-md-3 col-12 my-2 my-md-0 d-flex align-items-center justify-content-start justify-content-md-center">
-                        <div class="px-3.5 py-2 d-flex align-items-center gap-2.5 shadow-sm" 
-                             style="background: linear-gradient(135deg, #1d4ed8 0%, #2563eb 100%); color: #ffffff; border-radius: 12px; box-shadow: 0 4px 14px rgba(37, 99, 235, 0.25);">
-                            <div class="d-flex align-items-center justify-content-center w-28px h-28px rounded-circle" style="background-color: rgba(255, 255, 255, 0.2);">
-                                <i class="fas fa-calendar-alt text-white fs-7"></i>
-                            </div>
-                            <div class="d-flex flex-column text-start">
-                                <span class="text-white text-opacity-80 fw-bolder text-uppercase" style="font-size: 9px; line-height: 1.1; letter-spacing: 0.8px;">TAHUN AJARAN</span>
-                                <span class="fs-6 fw-boldest text-white" style="line-height: 1.2;">
-                                    {{ $bill->academicYear->name ?? '-' }}
-                                </span>
-                            </div>
+                        <div class="px-3.5 py-2 d-inline-flex align-items-center gap-2 shadow-sm text-nowrap" 
+                             style="background: {{ $currentAyTheme['bg'] }}; color: #ffffff; border-radius: 12px; box-shadow: 0 4px 14px {{ $currentAyTheme['shadow'] }};">
+                            <i class="fas fa-calendar-alt text-white fs-7 me-0.5 opacity-90"></i>
+                            <span class="fs-7 fw-boldest text-white tracking-wide" style="letter-spacing: 0.4px;">
+                                TAHUN AJARAN {{ $ayName }}
+                            </span>
                         </div>
                     </div>
 
