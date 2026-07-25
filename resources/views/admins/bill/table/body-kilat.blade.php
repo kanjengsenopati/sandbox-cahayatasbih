@@ -62,8 +62,31 @@
 <div class="accordion" id="accordionKilatParent">
     @foreach ($billMonth as $bill)
     @php
-        $paidAmount = $bill->bills->where('student_id', $student->id)->sum('paid_amount');
-        $unpaidAmount = $bill->total_unpaid;
+        $existingBills = $bill->bills->where('student_id', $student->id);
+        $paidAmount = $existingBills->sum('paid_amount');
+        
+        // Find sample monthly amount from existing bills or billItem rate
+        $sampleBill = $existingBills->firstWhere('amount', '>', 0);
+        $sampleMonthlyAmount = $sampleBill ? $sampleBill->amount : ($bill->billItem->amount ?? 0);
+        if ($sampleMonthlyAmount <= 0) {
+            $sampleMonthlyAmount = \App\Models\Bill::where('bill_type_id', $bill->id)->where('amount', '>', 0)->value('amount') ?? 0;
+        }
+
+        // Calculate unpaid amount across all 12 months (existing DB rows + un-generated months)
+        $unpaidAmount = 0;
+        foreach (array_merge(range(7, 12), range(1, 6)) as $m) {
+            $bDet = $existingBills->firstWhere('month', (int)$m);
+            if (!$bDet) {
+                $bDet = $existingBills->firstWhere('month', (string)$m);
+            }
+
+            if ($bDet) {
+                $unpaidAmount += max(0, $bDet->amount - $bDet->paid_amount);
+            } else {
+                $unpaidAmount += $sampleMonthlyAmount;
+            }
+        }
+
         $ayName = $bill->academicYear->name ?? '-';
 
         // Color theme map for distinct Academic Years
@@ -133,7 +156,7 @@
                              <span class="fs-8 text-slate-500 fw-bold text-uppercase mb-1">Terbayar</span>
                              <span class="badge badge-success fs-7 fw-bolder px-3 py-1 text-white">Rp {{ number_format($paidAmount, 0, ',', '.') }}</span>
                          </div>
- 
+
                         <!-- Unpaid Stat -->
                          <div class="d-flex flex-column align-items-start align-items-md-end border-start border-gray-300 ps-3 ms-1">
                              <span class="fs-8 text-slate-500 fw-bold text-uppercase mb-1">Sisa Tagihan</span>
@@ -153,22 +176,31 @@
                 <div class="row g-3">
                     @foreach (array_merge(range(7, 12), range(1, 6)) as $month)
                     @php
-                        $billDetail = $bill->bills->where('month', $month)->where('student_id', $student->id)->first();
-                        $amount = $billDetail ? $billDetail->amount : 0;
-                        $remainingAmount = $billDetail ? ($billDetail->amount - $billDetail->paid_amount) : 0;
+                        $billDetail = $existingBills->firstWhere('month', (int)$month);
+                        if (!$billDetail) {
+                            $billDetail = $existingBills->firstWhere('month', (string)$month);
+                        }
+
+                        $amount = $billDetail ? $billDetail->amount : $sampleMonthlyAmount;
+                        $remainingAmount = $billDetail ? max(0, $billDetail->amount - $billDetail->paid_amount) : $sampleMonthlyAmount;
                         $status = $billDetail ? $billDetail->status : 'UNPAID';
                         $isPaid = $status == 'PAID' || ($billDetail && $remainingAmount <= 0 && $amount > 0);
                         $detailPayment = $billDetail ? $billDetail->transactions?->first() : null;
                         
                         $modalId = "bayarKilat{$bill->id}_{$month}";
-                        $showModal = $billDetail && !$isPaid && $remainingAmount > 0;
+                        $showModal = !$isPaid && $remainingAmount > 0;
                         
+                        $targetYear = $billDetail->year ?? ($month >= 7 ? 
+                            ($bill->academicYear->start_year ?? date('Y')) : 
+                            ($bill->academicYear->end_year ?? (date('Y') + 1)));
+
                         // Define classes based on status
                         $cardClass = $isPaid ? 'paid' : ($remainingAmount > 0 ? 'unpaid' : 'bg-secondary bg-opacity-10');
                         $textColor = $isPaid ? 'text-success' : ($remainingAmount > 0 ? 'text-warning' : 'text-muted');
+                        
+                        $autoBillId = $billDetail ? $billDetail->id : "auto_{$bill->id}_{$month}_{$targetYear}";
                     @endphp
 
-                    @if($billDetail)
                     <div class="col-6 col-md-4 col-lg-2">
                         <div class="month-card rounded-3 p-3 h-100 d-flex flex-column justify-content-between position-relative {{ $cardClass }} {{ $showModal ? 'cursor-pointer clickable-payment-card' : '' }}">
                             <!-- Header: Month & Year -->
@@ -177,16 +209,13 @@
                                     {{ \Carbon\Carbon::create()->month($month)->translatedFormat('F') }}
                                 </span>
                                 <span class="badge badge-secondary fs-9 text-slate-600 fw-bold">
-                                    {{ $billDetail->year ?? ($month >= 7 ? 
-                                        ($bill->academicYear->start_year ?? '-') : 
-                                        ($bill->academicYear->end_year ?? '-')) 
-                                    }}
+                                    {{ $targetYear }}
                                 </span>
                             </div>
 
                             <!-- Body: Amount -->
                             <div class="text-center my-2">
-                                @if($billDetail->paid_amount > 0 && !$isPaid)
+                                @if($billDetail && $billDetail->paid_amount > 0 && !$isPaid)
                                     <span class="fw-bolder fs-5 text-amber-600">
                                         Rp {{ number_format($remainingAmount, 0, ',', '.') }}
                                     </span>
@@ -203,7 +232,7 @@
                                             {{ !empty($billDetail->paid_date) ? date('d/m/y', strtotime($billDetail->paid_date)) : '-' }}
                                         </div>
                                         <div class="fw-bolder text-slate-700">{{ $billDetail->payment_method ?? '-' }}</div>
-                                        @if(strtoupper($billDetail->payment_method) == 'TUNAI' || strtoupper($billDetail->payment_method) == 'CASH')
+                                        @if(strtoupper($billDetail->payment_method ?? '') == 'TUNAI' || strtoupper($billDetail->payment_method ?? '') == 'CASH')
                                             <div class="text-primary fw-bold fs-9">
                                                 <i class="fas fa-user-check me-1"></i>
                                                 {{ $detailPayment->admin->name ?? $detailPayment->user->name ?? 'Admin' }}
@@ -226,9 +255,9 @@
                                             value="{{ $month }}"
                                             id="bill-month-{{ $bill->id }}-{{ $month }}"
                                             class="form-check-input bill-month-checkbox bill-{{ $bill->id }} cursor-pointer" 
-                                            data-bill-id="{{ $billDetail->id }}"
-                                            data-month="{{ $billDetail->translated_month }}" 
-                                            data-year="{{ $billDetail->year }}"
+                                            data-bill-id="{{ $autoBillId }}"
+                                            data-month="{{ \Carbon\Carbon::create()->month($month)->translatedFormat('F') }}" 
+                                            data-year="{{ $targetYear }}"
                                             data-bill-name="{{ $bill->name }}" 
                                             data-amount="{{ $remainingAmount }}"
                                             data-payment-input-type="{{ $bill->payment_input_type ?? 'FIXED' }}"
@@ -243,7 +272,7 @@
                             </div>
                         </div>
                     </div>
-                    @endif
+                    @endforeach
                     @endforeach
                 </div>
             </div>

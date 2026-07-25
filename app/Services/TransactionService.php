@@ -260,11 +260,13 @@ class TransactionService
 
                     if (($type ?? Transaction::TYPE_BILL) == Transaction::TYPE_BILL && $request->bill_ids) {
                         $customAmounts = $request->custom_amounts ?? [];
+                        $studentId = $request->student_id ?? $transaction->student_id;
                         foreach ($request->bill_ids as $billId) {
+                            $realBillId = self::ensureBillRecord($studentId, $billId);
                             $customAmount = isset($customAmounts[$billId]) ? intval($customAmounts[$billId]) : null;
                             TransactionDetail::create([
                                 'transaction_id' => $transaction->id,
-                                'bill_id' => $billId,
+                                'bill_id' => $realBillId,
                                 'amount' => $customAmount,
                             ]);
                         }
@@ -668,5 +670,76 @@ class TransactionService
                 'trace' => $e->getTraceAsString(),
             ]);
         }
+    }
+
+    public static function ensureBillRecord($studentId, $billIdOrDescriptor)
+    {
+        if (empty($billIdOrDescriptor)) {
+            return $billIdOrDescriptor;
+        }
+
+        if (strpos($billIdOrDescriptor, 'auto_') === false) {
+            $existing = \App\Models\Bill::find($billIdOrDescriptor);
+            if ($existing) {
+                return $existing->id;
+            }
+        }
+
+        // Descriptor format: auto_{billTypeId}_{month}_{year}
+        $parts = explode('_', $billIdOrDescriptor);
+        if (count($parts) >= 4 && $parts[0] === 'auto') {
+            $billTypeId = $parts[1];
+            $month = (string) $parts[2];
+            $year = (string) $parts[3];
+
+            $existingBill = \App\Models\Bill::where('student_id', $studentId)
+                ->where('bill_type_id', $billTypeId)
+                ->where('month', $month)
+                ->whereNull('deleted_at')
+                ->first();
+
+            if ($existingBill) {
+                return $existingBill->id;
+            }
+
+            $billType = \App\Models\BillType::with('billItem')->find($billTypeId);
+            $student = \App\Models\Student::find($studentId);
+
+            if (!$billType || !$student) {
+                return $billIdOrDescriptor;
+            }
+
+            $sampleBill = \App\Models\Bill::where('student_id', $studentId)
+                ->where('bill_type_id', $billTypeId)
+                ->where('amount', '>', 0)
+                ->first();
+
+            $amount = $sampleBill ? $sampleBill->amount : ($billType->billItem->amount ?? 0);
+            if ($amount <= 0) {
+                $amount = \App\Models\Bill::where('bill_type_id', $billTypeId)->where('amount', '>', 0)->value('amount') ?? 0;
+            }
+
+            $classroomId = $sampleBill ? $sampleBill->classroom_id : $student->classroom_id;
+            $academicYearId = $sampleBill ? $sampleBill->academic_year_id : $billType->academic_year_id;
+
+            $newBill = \App\Models\Bill::create([
+                'id' => \Illuminate\Support\Str::uuid()->toString(),
+                'bill_type_id' => $billTypeId,
+                'student_id' => $studentId,
+                'classroom_id' => $classroomId,
+                'academic_year_id' => $academicYearId,
+                'month' => $month,
+                'year' => $year,
+                'amount' => $amount,
+                'paid_amount' => 0,
+                'status' => 'UNPAID',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+
+            return $newBill->id;
+        }
+
+        return $billIdOrDescriptor;
     }
 }
