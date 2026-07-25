@@ -64,6 +64,7 @@
     @php
         $existingBills = $bill->bills->where('student_id', $student->id);
         $isZarkasi = str_contains(strtoupper($bill->name ?? ''), 'ZARKASI');
+        $isAplikasi = str_contains(strtoupper($bill->name ?? ''), 'APLIKASI');
         
         $zarkasiTargets = [
             7  => 100000,
@@ -91,6 +92,25 @@
                     $remPool = 0;
                 } else {
                     $zarkasiPaidAllocated[$m] = 0;
+                }
+            }
+        } elseif ($isAplikasi) {
+            $totalRawPaid = $existingBills->sum('paid_amount');
+            $paidAmount = min(120000, $totalRawPaid);
+            $unpaidAmount = max(0, 120000 - $paidAmount);
+
+            $aplikasiPaidAllocated = [];
+            $remPool = $totalRawPaid;
+            foreach (array_merge(range(7, 12), range(1, 6)) as $m) {
+                $t = 10000;
+                if ($remPool >= $t) {
+                    $aplikasiPaidAllocated[$m] = $t;
+                    $remPool -= $t;
+                } else if ($remPool > 0) {
+                    $aplikasiPaidAllocated[$m] = $remPool;
+                    $remPool = 0;
+                } else {
+                    $aplikasiPaidAllocated[$m] = 0;
                 }
             }
         } else {
@@ -219,6 +239,13 @@
                             $remainingAmount = max(0, $amount - $mPaid);
                             $isPaid = ($amount > 0) && ($remainingAmount == 0);
                             $status = $isPaid ? 'PAID' : ($amount > 0 ? 'UNPAID' : 'FREE');
+                            $detailPayment = $billDetail ? $billDetail->transactions?->first() : null;
+                        } elseif ($isAplikasi) {
+                            $amount = 10000;
+                            $mPaid = $aplikasiPaidAllocated[$month] ?? 0;
+                            $remainingAmount = max(0, $amount - $mPaid);
+                            $isPaid = ($amount > 0) && ($remainingAmount == 0);
+                            $status = $isPaid ? 'PAID' : 'UNPAID';
                             $detailPayment = $billDetail ? $billDetail->transactions?->first() : null;
                         } else {
                             $amount = $billDetail ? $billDetail->amount : $sampleMonthlyAmount;
