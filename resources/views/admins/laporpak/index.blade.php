@@ -256,12 +256,20 @@
                                         </td>
                                         <td class="text-center">
                                             <!-- DROPDOWN SELECTOR MILESTONE STATUS -->
+                                            @php
+                                                $statusBgClass = match($rep->status) {
+                                                    'Selesai', 'Teratasi' => 'bg-light-success text-success border-success',
+                                                    'Sedang Ditangani' => 'bg-light-primary text-primary border-primary',
+                                                    'Diterima' => 'bg-light-warning text-warning border-warning',
+                                                    default => 'bg-light-secondary text-gray-700',
+                                                };
+                                            @endphp
                                             <form action="{{ route('admin.laporpak.update-status', $rep->id) }}" method="POST" class="d-inline-block w-100">
                                                 @csrf
                                                 <select 
                                                     name="status" 
                                                     onchange="this.form.submit()" 
-                                                    class="form-select form-select-sm fw-bolder fs-8 py-1.5 px-2 rounded-2 shadow-xs border-0 {{ match($rep->status) { 'Selesai' => 'bg-light-success text-success border-success', 'Sedang Ditangani' => 'bg-light-primary text-primary border-primary', 'Diterima' => 'bg-light-warning text-warning border-warning', default => 'bg-light-secondary text-gray-700' } }}"
+                                                    class="form-select form-select-sm fw-bolder fs-8 py-1.5 px-2 rounded-2 shadow-xs border-0 {{ $statusBgClass }}"
                                                 >
                                                     <option value="Laporan Masuk" {{ $rep->status == 'Laporan Masuk' || $rep->status == 'Kendala' ? 'selected' : '' }}>1. Laporan Masuk</option>
                                                     <option value="Diterima" {{ $rep->status == 'Diterima' ? 'selected' : '' }}>2. Diterima</option>

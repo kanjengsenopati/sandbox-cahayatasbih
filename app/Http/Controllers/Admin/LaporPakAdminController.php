@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Models\LaporPakReport;
 use App\Models\LaporPakSetting;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Schema;
 
 class LaporPakAdminController extends Controller
 {
@@ -26,61 +28,91 @@ class LaporPakAdminController extends Controller
 
     public function index(Request $request)
     {
-        $setting = LaporPakSetting::getSetting();
+        try {
+            $setting = LaporPakSetting::getSetting();
 
-        // Parameter filter
-        $statusFilter = $request->query('status', 'all');
-        $categoryFilter = $request->query('category', 'all');
-        $search = trim($request->query('q', ''));
+            // Parameter filter
+            $statusFilter = $request->query('status', 'all');
+            $categoryFilter = $request->query('category', 'all');
+            $search = trim($request->query('q', ''));
 
-        $query = LaporPakReport::latest();
+            $query = LaporPakReport::latest();
 
-        if ($statusFilter !== 'all') {
-            $query->where('status', $statusFilter);
+            if ($statusFilter !== 'all') {
+                $query->where('status', $statusFilter);
+            }
+
+            if ($categoryFilter !== 'all') {
+                $query->where('kendala', $categoryFilter);
+            }
+
+            if (!empty($search)) {
+                $query->where(function ($q) use ($search) {
+                    $q->where('parent_name', 'like', "%{$search}%")
+                      ->orWhere('parent_phone', 'like', "%{$search}%")
+                      ->orWhere('student_name', 'like', "%{$search}%")
+                      ->orWhere('keterangan', 'like', "%{$search}%");
+                });
+            }
+
+            $reports = $query->paginate(25)->withQueryString();
+
+            // Total Statistik 4 Milestone
+            $allReports = Schema::hasTable('lapor_pak_reports') ? LaporPakReport::all() : collect([]);
+            $stats = [
+                'total' => $allReports->count(),
+                'masukCount' => $allReports->whereIn('status', ['Laporan Masuk', 'Kendala'])->count(),
+                'diterimaCount' => $allReports->where('status', 'Diterima')->count(),
+                'ditanganiCount' => $allReports->where('status', 'Sedang Ditangani')->count(),
+                'selesaiCount' => $allReports->whereIn('status', ['Selesai', 'Teratasi'])->count(),
+                'catBreakdown' => collect(self::KENDALA_OPTIONS)->map(function ($cat) use ($allReports) {
+                    return [
+                        'category' => $cat,
+                        'count' => $allReports->where('kendala', $cat)->count(),
+                    ];
+                }),
+            ];
+
+            $milestones = self::MILESTONE_STATUSES;
+
+            return view('admins.laporpak.index', compact(
+                'setting',
+                'reports',
+                'stats',
+                'statusFilter',
+                'categoryFilter',
+                'search',
+                'milestones'
+            ));
+        } catch (\Throwable $e) {
+            Log::error('Error rendering LaporPakAdminController index: ' . $e->getMessage() . ' | ' . $e->getTraceAsString());
+            
+            // Safety fallback return view or error response
+            $setting = LaporPakSetting::getSetting();
+            $reports = new \Illuminate\Pagination\LengthAwarePaginator([], 0, 25);
+            $stats = [
+                'total' => 0,
+                'masukCount' => 0,
+                'diterimaCount' => 0,
+                'ditanganiCount' => 0,
+                'selesaiCount' => 0,
+                'catBreakdown' => collect([]),
+            ];
+            $statusFilter = 'all';
+            $categoryFilter = 'all';
+            $search = '';
+            $milestones = self::MILESTONE_STATUSES;
+
+            return view('admins.laporpak.index', compact(
+                'setting',
+                'reports',
+                'stats',
+                'statusFilter',
+                'categoryFilter',
+                'search',
+                'milestones'
+            ));
         }
-
-        if ($categoryFilter !== 'all') {
-            $query->where('kendala', $categoryFilter);
-        }
-
-        if (!empty($search)) {
-            $query->where(function ($q) use ($search) {
-                $q->where('parent_name', 'like', "%{$search}%")
-                  ->orWhere('parent_phone', 'like', "%{$search}%")
-                  ->orWhere('student_name', 'like', "%{$search}%")
-                  ->orWhere('keterangan', 'like', "%{$search}%");
-            });
-        }
-
-        $reports = $query->paginate(25)->withQueryString();
-
-        // Total Statistik 4 Milestone
-        $allReports = LaporPakReport::all();
-        $stats = [
-            'total' => $allReports->count(),
-            'masukCount' => $allReports->where('status', 'Laporan Masuk')->count(),
-            'diterimaCount' => $allReports->where('status', 'Diterima')->count(),
-            'ditanganiCount' => $allReports->where('status', 'Sedang Ditangani')->count(),
-            'selesaiCount' => $allReports->where('status', 'Selesai')->count(),
-            'catBreakdown' => collect(self::KENDALA_OPTIONS)->map(function ($cat) use ($allReports) {
-                return [
-                    'category' => $cat,
-                    'count' => $allReports->where('kendala', $cat)->count(),
-                ];
-            }),
-        ];
-
-        $milestones = self::MILESTONE_STATUSES;
-
-        return view('admins.laporpak.index', compact(
-            'setting',
-            'reports',
-            'stats',
-            'statusFilter',
-            'categoryFilter',
-            'search',
-            'milestones'
-        ));
     }
 
     public function updateSetting(Request $request)
