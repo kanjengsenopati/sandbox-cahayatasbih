@@ -327,13 +327,13 @@ function BillCard({ bill }: { bill: any }) {
         {/* Pills */}
         <div className="mt-4 grid grid-cols-2 gap-2">
           <div>
-            <p className="text-[10px] text-slate-400 font-medium mb-1.5 uppercase tracking-wide">Sudah Dibayarkan</p>
+            <p className="text-[11px] text-slate-600 font-bold mb-1">Sudah Dibayarkan</p>
             <div className="rounded-xl bg-emerald-50 text-emerald-600 text-[13px] font-extrabold px-3 py-2 text-center truncate border border-emerald-100">
               {fmtIDR(bill.paid)}
             </div>
           </div>
           <div>
-            <p className="text-[10px] text-slate-400 font-medium mb-1.5 uppercase tracking-wide text-right">
+            <p className="text-[11px] text-slate-600 font-bold mb-1 text-right">
               {isPaid ? "Status" : "Kekurangan"}
             </p>
             <div
@@ -350,7 +350,7 @@ function BillCard({ bill }: { bill: any }) {
         {!isPaid && (
           <div className="mt-4">
             <div className="flex justify-between items-center mb-1.5 px-1">
-              <span className="text-[10px] font-bold text-slate-400">Progress Pembayaran</span>
+              <span className="text-[11px] font-bold text-slate-600">Progress Pembayaran</span>
               <span className="text-[10px] font-extrabold text-[#9b1de8]">{pct}%</span>
             </div>
             <div className="h-2 rounded-full bg-slate-100 overflow-hidden">
