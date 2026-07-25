@@ -201,10 +201,11 @@ class BiometricMappingController extends Controller
 
         $today = \Carbon\Carbon::today()->format('Y-m-d');
         
+        $user = Auth::user();
         $outletId = request('outlet_id');
-        // If the logged in user is tied to a specific outlet, enforce it
-        if (Auth::user()->outlet_id) {
-            $outletId = Auth::user()->outlet_id;
+        // If the logged in user is NOT Super Admin and is tied to a specific outlet, enforce it
+        if ($user && method_exists($user, 'isSuperAdmin') && !$user->isSuperAdmin() && $user->outlet_id) {
+            $outletId = $user->outlet_id;
         }
 
         // Query all karyawans with admin, outlet, working shift relations

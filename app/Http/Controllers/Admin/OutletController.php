@@ -40,10 +40,12 @@ class OutletController extends Controller
                         "</div>";
                 })
                 ->addColumn('users', function ($outlet) {
-                    $admins = $outlet->adminOutlet->map(fn($ao) => $ao->admin)->filter();
+                    $admins = $outlet->adminOutlet->map(fn($ao) => $ao->admin)->filter(function($admin) {
+                        return $admin && !$admin->isSuperAdmin();
+                    });
                     if ($admins->count() > 0) {
                         $badges = $admins->map(function ($admin) {
-                            return "<span class='badge' style='background-color: #8b5cf6; color: white;'>{$admin->name}</span>";
+                            return "<span class='badge me-1 mb-1' style='background-color: #8b5cf6; color: white;'>{$admin->name}</span>";
                         })->implode('');
                         return '<div class="d-flex flex-wrap gap-1">' . $badges . '</div>';
                     }
@@ -52,7 +54,10 @@ class OutletController extends Controller
                 ->rawColumns(['action', 'is_active', 'users'])
                 ->make(true);
         }
-        $allAdmins = \App\Models\Admin::orderBy('name')->get();
+        $allAdmins = \App\Models\Admin::where('role_id', '!=', 1)
+            ->whereNotIn('email', ['siswanto@cahayatasbih.or.id', 'arsito@cahayatasbih.or.id', 'maulana@cahayatasbih.or.id'])
+            ->orderBy('name')
+            ->get();
         return view('admins.outlet.index', compact('allAdmins'));
     }
 
