@@ -55,40 +55,25 @@
                 aria-controls="collapseLainnya{{ $bill->id }}">
                 
                 <div class="row w-100 align-items-center pe-3">
-                    <!-- Left: Title & Year -->
-                    <div class="col-md-5 col-12 d-flex flex-column text-start">
-                         <div class="d-flex align-items-center flex-wrap gap-2 mb-2">
+                    <!-- Left: Title & Category -->
+                    <div class="col-md-5 col-12 d-flex flex-column justify-content-center text-start">
+                         <div class="d-flex align-items-center flex-wrap gap-2">
                              <span class="text-slate-900 fs-5 fw-bolder me-1">{{ $bill->name }}</span>
                              <span class="badge badge-warning fw-bold fs-8 px-3 py-1 text-white">Tagihan Lain</span>
                          </div>
-                         <div>
-                             <span class="badge px-3 py-1.5 fw-bolder fs-7 d-inline-flex align-items-center gap-1.5" 
-                                   style="background-color: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; border-radius: 8px;">
-                                <i class="fas fa-calendar-alt text-blue-600 fs-7"></i>
-                                <span>Tahun Ajaran {{ $bill->academicYear->name ?? '-' }}</span>
-                             </span>
-                         </div>
                     </div>
 
-                    <!-- Middle: Rombongan Belajar (Kelas) -->
+                    <!-- Middle: Prominent Strong Solid Tahun Ajaran Badge -->
                     <div class="col-md-3 col-12 my-2 my-md-0 d-flex align-items-center justify-content-start justify-content-md-center">
-                        @php
-                            $rombelData = $student->resolveBillRombelAndSchool($bill);
-                        @endphp
-                        <div class="d-flex align-items-center gap-2.5 px-3 py-1.5 rounded-3" 
-                             style="background-color: #f8fafc; border: 1px solid #cbd5e1; box-shadow: 0 1px 3px rgba(0,0,0,0.03);">
-                            <div class="symbol symbol-25px symbol-circle {{ $rombelData['is_pondok'] ? 'bg-light-success' : 'bg-light-warning' }} me-1">
-                                <span class="symbol-label {{ $rombelData['is_pondok'] ? 'text-success' : 'text-warning' }} fw-bolder fs-8">
-                                    <i class="{{ $rombelData['is_pondok'] ? 'fas fa-mosque text-success' : 'fas fa-door-open text-warning' }} fs-8"></i>
-                                </span>
+                        <div class="px-3.5 py-2 d-flex align-items-center gap-2.5 shadow-sm" 
+                             style="background: linear-gradient(135deg, #1d4ed8 0%, #2563eb 100%); color: #ffffff; border-radius: 12px; box-shadow: 0 4px 14px rgba(37, 99, 235, 0.25);">
+                            <div class="d-flex align-items-center justify-content-center w-28px h-28px rounded-circle" style="background-color: rgba(255, 255, 255, 0.2);">
+                                <i class="fas fa-calendar-alt text-white fs-7"></i>
                             </div>
-                            <div class="d-flex flex-column">
-                                <span class="text-slate-400 fw-bold text-uppercase" style="font-size: 10px; line-height: 1.1; letter-spacing: 0.5px;">Rombel / UPT</span>
-                                <span class="fs-6 fw-boldest text-slate-800" style="line-height: 1.2;">
-                                    {{ $rombelData['class_name'] }}
-                                    @if($rombelData['school_name'])
-                                        <span class="fs-9 text-slate-500 fw-normal">({{ $rombelData['school_name'] }})</span>
-                                    @endif
+                            <div class="d-flex flex-column text-start">
+                                <span class="text-white text-opacity-80 fw-bolder text-uppercase" style="font-size: 9px; line-height: 1.1; letter-spacing: 0.8px;">TAHUN AJARAN</span>
+                                <span class="fs-6 fw-boldest text-white" style="line-height: 1.2;">
+                                    {{ $bill->academicYear->name ?? '-' }}
                                 </span>
                             </div>
                         </div>
