@@ -82,6 +82,42 @@
 
         <!-- CONTENT TAB 1: FORM LAPOR -->
         <main x-show="activeTab === 'form'" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 translate-y-1" x-transition:enter-end="opacity-100 translate-y-0" class="px-5 pt-4 space-y-5 flex-1">
+            <!-- Banner Info Periode Pelayanan -->
+            <div class="rounded-[24px] bg-slate-50 border border-slate-200/80 p-3.5 shadow-[0_8px_30px_rgb(0,0,0,0.04)] flex items-center justify-between gap-3">
+                <div class="flex items-center gap-3">
+                    <div class="w-8 h-8 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center flex-shrink-0">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2 2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                        </svg>
+                    </div>
+                    <div>
+                        <span class="text-[10px] font-bold uppercase tracking-widest text-slate-400 block">Periode Pelayanan</span>
+                        <span class="text-xs font-semibold text-slate-700">
+                            @if($setting->start_datetime && $setting->end_datetime)
+                                {{ $setting->start_datetime->format('d M Y, H:i') }} — {{ $setting->end_datetime->format('d M Y, H:i') }} WIB
+                            @elseif($setting->start_datetime)
+                                Mulai {{ $setting->start_datetime->format('d M Y, H:i') }} WIB
+                            @elseif($setting->end_datetime)
+                                Sampai {{ $setting->end_datetime->format('d M Y, H:i') }} WIB
+                            @else
+                                24/7 (Setiap Hari)
+                            @endif
+                        </span>
+                    </div>
+                </div>
+                <div class="flex-shrink-0">
+                    @if($setting->is_active)
+                        <span class="inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-600 border border-emerald-200/60">
+                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 me-1.5 animate-pulse"></span> Aktif
+                        </span>
+                    @else
+                        <span class="inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-bold bg-red-50 text-red-600 border border-red-200/60">
+                            Tutup
+                        </span>
+                    @endif
+                </div>
+            </div>
+
             <!-- Banner Informatif -->
             <div class="rounded-[24px] bg-blue-600 text-white p-4 shadow-[0_8px_30px_rgb(0,0,0,0.04)] relative overflow-hidden">
                 <div class="relative z-10">
@@ -396,7 +432,7 @@
                         @endphp
                         <div class="mt-3 pt-3 border-t border-slate-100/80">
                             <div class="flex items-center justify-between text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2">
-                                <span>Milestone Progress</span>
+                                <span>Pantau Tindak Lanjut</span>
                                 <span class="font-semibold text-blue-600 font-mono">{{ $rep->status }}</span>
                             </div>
 
