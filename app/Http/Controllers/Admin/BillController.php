@@ -50,7 +50,7 @@ class BillController extends Controller
         if ($studentId = request()->student_id) {
             $student = Student::with(['user', 'classroom.school', 'classroomHistories.classroom'])->find($studentId);
             if (!$student) {
-                return redirect()->route('bill.index')->with('error', 'Data siswa tidak ditemukan atau telah dihapus.');
+                return redirect()->to(route('bill.index'))->with('error', 'Data siswa tidak ditemukan atau telah dihapus.');
             }
 
             $academicYearId = request()->academic_year_id;
