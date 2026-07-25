@@ -503,11 +503,12 @@ Route::group(['middleware' => ['auth']], function () {
     Route::delete('report-profit-loss/delete-expense/{id}', [App\Http\Controllers\Admin\ProfitLossReportController::class, 'destroyExpense'])->name('report-profit-loss.destroy-expense');
 
     // Modul Admin Lapor Pak Backoffice
-    Route::get('laporpak', [App\Http\Controllers\Admin\LaporPakAdminController::class, 'index'])->name('admin.laporpak.index');
-    Route::post('laporpak/setting', [App\Http\Controllers\Admin\LaporPakAdminController::class, 'updateSetting'])->name('admin.laporpak.setting');
-    Route::post('laporpak/{id}/update-status', [App\Http\Controllers\Admin\LaporPakAdminController::class, 'updateStatus'])->name('admin.laporpak.update-status');
-    Route::post('laporpak/{id}/toggle-status', [App\Http\Controllers\Admin\LaporPakAdminController::class, 'toggleStatus'])->name('admin.laporpak.toggle-status');
-    Route::delete('laporpak/{id}', [App\Http\Controllers\Admin\LaporPakAdminController::class, 'destroy'])->name('admin.laporpak.destroy');
+    Route::get('report-laporpak', [App\Http\Controllers\Admin\LaporPakAdminController::class, 'index'])->name('admin.laporpak.index');
+    Route::post('report-laporpak/setting', [App\Http\Controllers\Admin\LaporPakAdminController::class, 'updateSetting'])->name('admin.laporpak.setting');
+    Route::post('report-laporpak/{id}/update-status', [App\Http\Controllers\Admin\LaporPakAdminController::class, 'updateStatus'])->name('admin.laporpak.update-status');
+    Route::post('report-laporpak/{id}/toggle-status', [App\Http\Controllers\Admin\LaporPakAdminController::class, 'toggleStatus'])->name('admin.laporpak.toggle-status');
+    Route::delete('report-laporpak/{id}', [App\Http\Controllers\Admin\LaporPakAdminController::class, 'destroy'])->name('admin.laporpak.destroy');
+
 
 
 
