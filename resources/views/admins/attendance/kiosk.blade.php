@@ -121,59 +121,96 @@
                 </div>
             </div>
 
-            <!-- Panel Presensi Manual Staf Dapur / Non-Kasir (Bawah) -->
-            <div class="card card-flush shadow-[0_8px_30px_rgb(0,0,0,0.04)] mt-5 rounded-[24px]">
-                <div class="card-header pt-5">
-                    <h3 class="card-title align-items-start flex-column">
-                        <span class="card-label fw-bold text-slate-900 fs-3">Presensi Manual Karyawan Outlet (Kasir & Non-Kasir)</span>
-                        <span class="text-muted mt-1 fw-semibold fs-7">Klik nama Anda untuk mengambil snapshot foto presensi harian sesuai jadwal shift</span>
-                    </h3>
+            <!-- Panel Presensi Manual Karyawan Outlet (Bawah) -->
+            <div class="card card-flush shadow-[0_8px_30px_rgb(0,0,0,0.04)] mt-5 rounded-[24px] border-0">
+                <div class="card-header pt-6 pb-2 px-8 border-0">
+                    <div class="d-flex align-items-center justify-content-between w-100 flex-wrap gap-3">
+                        <div class="d-flex flex-column">
+                            <h3 class="fw-bold text-slate-900 fs-3 mb-1">Presensi Manual Karyawan Outlet (Kasir & Non-Kasir)</h3>
+                            <span class="text-muted fw-semibold fs-7">Klik tombol status ON/OFF karyawan untuk mengambil snapshot foto presensi harian sesuai jadwal shift</span>
+                        </div>
+                        <span class="badge badge-light-primary fw-bold px-4 py-2 fs-7 rounded-pill">
+                            <i class="fa-solid fa-users me-1 text-primary"></i> Total: {{ count($staffList) }} Karyawan Outlet
+                        </span>
+                    </div>
                 </div>
-                <div class="card-body">
-                    @if($staffList->isEmpty())
-                        <div class="text-center py-5 text-gray-500 italic fs-6">
-                            Tidak ada karyawan outlet yang terjadwal shift aktif di outlet ini hari ini.
+                <div class="card-body p-8 pt-4">
+                    @if(empty($staffList) || count($staffList) === 0)
+                        <div class="text-center py-10 text-gray-500 italic fs-6">
+                            Tidak ada karyawan outlet yang terdaftar.
                         </div>
                     @else
                         <div class="row g-4">
                             @foreach($staffList as $staff)
-                                <div class="col-md-3 col-sm-6">
+                                <div class="col-xl-3 col-lg-4 col-md-6">
                                     @php
-                                        $btnClass = 'btn-light-primary';
-                                        $statusLabel = 'Presensi Masuk';
-                                        $icon = 'fa-arrow-right-to-bracket';
-                                        $disabled = '';
+                                        $status = $staff['attendance_status'];
+                                        $checkIn = $staff['check_in_time'];
+                                        $checkOut = $staff['check_out_time'];
+                                        
+                                        $badgeClass = 'bg-emerald-500/10 text-emerald-600 border border-emerald-500/20';
+                                        $badgeLabel = 'Belum Presensi';
+                                        $btnStyle = 'btn-emerald bg-emerald-600 text-white hover:bg-emerald-700 shadow-sm';
+                                        $btnIcon = 'fa-arrow-right-to-bracket';
+                                        $btnText = 'CHECK-IN (ON)';
                                         $targetAction = 'in';
+                                        $disabledAttr = '';
 
-                                        if ($staff['attendance_status'] === 'checked_in') {
-                                            $btnClass = 'btn-light-danger';
-                                            $statusLabel = 'Presensi Keluar';
-                                            $icon = 'fa-arrow-right-from-bracket';
+                                        if ($status === 'checked_in') {
+                                            $badgeClass = 'bg-amber-500/10 text-amber-600 border border-amber-500/20';
+                                            $badgeLabel = 'Sudah Masuk (' . $checkIn . ')';
+                                            $btnStyle = 'btn-danger bg-red-600 text-white hover:bg-red-700 shadow-sm';
+                                            $btnIcon = 'fa-arrow-right-from-bracket';
+                                            $btnText = 'CHECK-OUT (OFF)';
                                             $targetAction = 'out';
-                                        } elseif ($staff['attendance_status'] === 'done') {
-                                            $btnClass = 'btn-secondary text-gray-400';
-                                            $statusLabel = 'Sudah Selesai';
-                                            $icon = 'fa-check-double';
-                                            $disabled = 'disabled';
+                                        } elseif ($status === 'done') {
+                                            $badgeClass = 'bg-slate-500/10 text-slate-600 border border-slate-500/20';
+                                            $badgeLabel = 'Selesai (' . $checkIn . ' - ' . $checkOut . ')';
+                                            $btnStyle = 'btn-secondary bg-slate-100 text-slate-400 cursor-not-allowed';
+                                            $btnIcon = 'fa-check-circle';
+                                            $btnText = 'SELESAI';
                                             $targetAction = 'done';
+                                            $disabledAttr = 'disabled';
                                         }
                                     @endphp
-                                    <button type="button" 
-                                            class="btn w-100 h-100 p-5 d-flex flex-column align-items-center justify-content-center text-center rounded-[16px] {{ $btnClass }} btn-manual-staff" 
-                                            data-id="{{ $staff['id'] }}" 
-                                            data-type="{{ $staff['user_type'] }}"
-                                            data-action="{{ $targetAction }}"
-                                            data-name="{{ $staff['name'] }}"
-                                            {{ $disabled }}>
-                                        <i class="fa-solid {{ $icon }} fs-1 mb-2"></i>
-                                        <span class="fw-bolder fs-5 text-dark">{{ $staff['name'] }}</span>
-                                        <span class="fs-7 text-muted mt-1">{{ $staff['shift_name'] }}</span>
-                                        <span class="fs-8 mt-1 italic">{{ $staff['shift_time'] }}</span>
-                                        <span class="badge badge-sm mt-3 px-3 py-1 bg-opacity-10 fw-bold fs-9
-                                            {{ $staff['attendance_status'] === 'not_started' ? 'bg-primary text-primary' : ($staff['attendance_status'] === 'checked_in' ? 'bg-danger text-danger' : 'bg-secondary text-secondary') }}">
-                                            {{ $statusLabel }}
-                                        </span>
-                                    </button>
+                                    <div class="card h-100 border border-slate-100 shadow-[0_8px_30px_rgb(0,0,0,0.04)] rounded-[24px] p-5 transition-all hover:shadow-md position-relative">
+                                        <!-- Top-Right Action Cluster & Outlet Badge -->
+                                        <div class="d-flex align-items-center justify-content-between mb-3">
+                                            <span class="badge badge-light-info fw-bold fs-9 uppercase tracking-widest px-2.5 py-1 rounded-md">
+                                                {{ $staff['outlet_name'] }}
+                                            </span>
+                                            <span class="badge {{ $badgeClass }} fw-bold fs-9 px-2.5 py-1 rounded-md">
+                                                {{ $badgeLabel }}
+                                            </span>
+                                        </div>
+
+                                        <!-- Employee Name & Position -->
+                                        <div class="mb-3">
+                                            <h4 class="fw-bold text-slate-900 fs-4 mb-0 text-truncate" title="{{ $staff['name'] }}">{{ $staff['name'] }}</h4>
+                                            <span class="fs-8 fw-semibold text-slate-500 uppercase tracking-wider">{{ $staff['jabatan'] }}</span>
+                                        </div>
+
+                                        <!-- Shift Information -->
+                                        <div class="d-flex align-items-center gap-2 mb-4 bg-slate-50 p-2.5 rounded-[12px] border border-slate-100">
+                                            <i class="fa-regular fa-clock text-slate-400 fs-6"></i>
+                                            <div class="d-flex flex-column">
+                                                <span class="fs-8 fw-bold text-slate-700 mb-0.5">{{ $staff['shift_name'] }}</span>
+                                                <span class="fs-9 text-slate-500">{{ $staff['shift_time'] }}</span>
+                                            </div>
+                                        </div>
+
+                                        <!-- Action Button: Dynamic Check-In (ON) / Check-Out (OFF) -->
+                                        <button type="button" 
+                                                class="btn w-100 py-3 px-4 rounded-[16px] fw-bold fs-7 d-flex align-items-center justify-content-center gap-2 transition-all btn-manual-staff {{ $btnStyle }}" 
+                                                data-id="{{ $staff['id'] }}" 
+                                                data-type="{{ $staff['user_type'] }}"
+                                                data-action="{{ $targetAction }}"
+                                                data-name="{{ $staff['name'] }}"
+                                                {{ $disabledAttr }}>
+                                            <i class="fa-solid {{ $btnIcon }} fs-6"></i>
+                                            <span>{{ $btnText }}</span>
+                                        </button>
+                                    </div>
                                 </div>
                             @endforeach
                         </div>
@@ -221,8 +258,13 @@
 
             const staffId = $(this).data('id');
             const staffType = $(this).data('type');
-            const staffAction = $(this).data('action');
+            let staffAction = $(this).data('action');
             const staffName = $(this).data('name');
+
+            // Jika action masih 'in' / default dan user sedang memilih mode 'out' di header toggle
+            if (staffAction !== 'done' && kioskMode === 'out') {
+                staffAction = 'out';
+            }
 
             if (!stream) {
                 toastr.error('Kamera belum aktif. Silakan tunggu atau muat ulang halaman.');
@@ -242,7 +284,7 @@
                 tempCanvas.height = video.videoHeight > 0 ? video.videoHeight : 360;
                 const tempCtx = tempCanvas.getContext('2d');
 
-                // Mirror canvas horizontal agar foto yang dihasilkan menghadap depan dengan benar (karena video di-mirror)
+                // Mirror canvas horizontal agar foto yang dihasilkan menghadap depan dengan benar
                 tempCtx.translate(tempCanvas.width, 0);
                 tempCtx.scale(-1, 1);
                 tempCtx.drawImage(video, 0, 0, tempCanvas.width, tempCanvas.height);
@@ -262,9 +304,8 @@
                     },
                     success: (res) => {
                         if (res.success) {
-                            speakText("Presensi berhasil dicatat untuk " + staffName + ". Menunggu persetujuan admin.");
+                            speakText("Presensi berhasil dicatat untuk " + staffName);
                             
-                            // Mock user object untuk menampilkan detail presensi di card hasil kanan
                             const mockUser = {
                                 name: staffName,
                                 type: staffType === 'admin' ? 'Admin/Staff' : 'User/Officer',
@@ -272,27 +313,26 @@
                             };
                             showResultCard(mockUser, res.data);
 
-                            // Reload halaman agar status kehadiran/tombol terupdate
                             setTimeout(() => {
                                 window.location.reload();
                             }, 3500);
                         } else {
                             toastr.error(res.message);
                             isProcessing = false;
-                            $('#scanner-indicator').text('PEMINDAIAN AKTIF...');
+                            $('#scanner-indicator').text('KAMERA AKTIF...');
                         }
                     },
                     error: (xhr) => {
                         toastr.error(xhr.responseJSON?.message || 'Gagal mengirim presensi manual.');
                         isProcessing = false;
-                        $('#scanner-indicator').text('PEMINDAIAN AKTIF...');
+                        $('#scanner-indicator').text('KAMERA AKTIF...');
                     }
                 });
             } catch (err) {
                 console.error(err);
                 toastr.error('Gagal mengambil gambar dari webcam.');
                 isProcessing = false;
-                $('#scanner-indicator').text('PEMINDAIAN AKTIF...');
+                $('#scanner-indicator').text('KAMERA AKTIF...');
             }
         });
     });
@@ -325,7 +365,6 @@
             enrolledDescriptors = res || [];
             
             if (enrolledDescriptors.length > 0 && aiModelsLoaded) {
-                // Create LabeledFaceDescriptors for FaceMatcher
                 const labeledDescriptors = enrolledDescriptors.map(item => {
                     const floatArray = new Float32Array(item.descriptor);
                     return new faceapi.LabeledFaceDescriptors(item.id, [floatArray]);
@@ -355,8 +394,9 @@
                 video: { width: 480, height: 360, facingMode: 'user' } 
             });
             video.srcObject = stream;
-            video.onplay = () => {
-                $('#kiosk-overlay').fadeOut();
+            
+            const handlePlaying = () => {
+                $('#kiosk-overlay').fadeOut(200);
                 if (faceMatcher) {
                     $('#scanner-indicator').text('PEMINDAIAN OTOMATIS AKTIF...');
                 } else {
@@ -364,6 +404,21 @@
                 }
                 startRealTimeScanning();
             };
+
+            video.onloadeddata = handlePlaying;
+            video.onplay = handlePlaying;
+
+            try {
+                const playPromise = video.play();
+                if (playPromise !== undefined) {
+                    await playPromise;
+                    handlePlaying();
+                }
+            } catch(e) {
+                console.warn('Autoplay error handled:', e);
+                handlePlaying();
+            }
+
         } catch (err) {
             console.error(err);
             updateOverlayText('Kamera tidak ditemukan / Akses ditolak. Pastikan izin kamera aktif.');

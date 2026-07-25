@@ -202,60 +202,66 @@ class BiometricMappingController extends Controller
         $today = \Carbon\Carbon::today()->format('Y-m-d');
         
         $outletId = request('outlet_id');
-        if (!$outletId) {
-            $koperasiId = \App\Models\Outlet::where('name', 'like', '%koperasi%')->value('id');
-            $firstOutlet = \App\Models\Outlet::where('is_active', 1)
-                ->where('id', '!=', $koperasiId)
-                ->orderBy('name')
-                ->first();
-            $outletId = $firstOutlet ? $firstOutlet->id : null;
-        }
-
         // If the logged in user is tied to a specific outlet, enforce it
         if (Auth::user()->outlet_id) {
             $outletId = Auth::user()->outlet_id;
         }
 
-        $shiftsToday = \App\Models\EmployeeMonthlyShift::with(['presensiable', 'workingShift'])
-            ->where('date', $today)
-            ->whereNotNull('working_shift_id')
-            ->where('is_holiday', false)
-            ->get();
+        // Query all karyawans with admin, outlet, working shift relations
+        $karyawanQuery = \App\Models\Karyawan::with(['admin.roles', 'outlet']);
+        
+        if ($outletId) {
+            $karyawanQuery->where('outlet_id', $outletId);
+        }
 
-        $staffList = $shiftsToday->map(function ($shift) use ($outletId) {
-            $user = $shift->presensiable;
-            if (!$user) return null;
+        $karyawans = $karyawanQuery->get();
 
-            // Pastikan user (Admin) terdaftar di tabel karyawans
-            if ($user instanceof \App\Models\Admin) {
-                // Filter by outlet
-                if ($outletId && $user->outlet_id !== $outletId) {
-                    return null;
-                }
+        $staffList = $karyawans->map(function ($karyawan) use ($today) {
+            $admin = $karyawan->admin;
+            if (!$admin) return null;
 
-                $isKaryawan = \App\Models\Karyawan::where('admin_id', $user->id)->exists();
-                if (!$isKaryawan) {
-                    return null;
-                }
+            // Cari shift bulanan hari ini
+            $shiftToday = \App\Models\EmployeeMonthlyShift::with('workingShift')
+                ->where('presensiable_type', \App\Models\Admin::class)
+                ->where('presensiable_id', $admin->id)
+                ->where('date', $today)
+                ->first();
+
+            $hasShiftToday = $shiftToday && $shiftToday->working_shift_id && !$shiftToday->is_holiday;
+            
+            $shiftName = 'Weekdays';
+            $shiftTime = '08:00 - 16:00';
+
+            if ($shiftToday && $shiftToday->workingShift) {
+                $shiftName = $shiftToday->workingShift->name;
+                $shiftTime = \Carbon\Carbon::parse($shiftToday->workingShift->start_time)->format('H:i') . ' - ' . \Carbon\Carbon::parse($shiftToday->workingShift->end_time)->format('H:i');
             } else {
-                return null;
+                // Fallback shift berdasarkan section atau kamar
+                if (stripos($karyawan->section, 'weekend') !== false || in_array($admin->name, ['YUKA AZZAHRA', 'SELFI MAKHLIHATI', 'KHUROTU AINI', 'RINI', 'YUSRO', 'ISFI', 'ANIS', 'INDAH', 'FATHKUL', 'SAFIK'])) {
+                    $shiftName = 'Weekend & Event';
+                }
             }
 
             // Tentukan status presensi hari ini
-            $attendance = \App\Models\Attendance::where('presensiable_type', get_class($user))
-                ->where('presensiable_id', $user->id)
+            $attendance = \App\Models\Attendance::where('presensiable_type', \App\Models\Admin::class)
+                ->where('presensiable_id', $admin->id)
                 ->where('activity_type', 'work')
                 ->whereDate('check_in', \Carbon\Carbon::today())
                 ->first();
 
             return [
-                'id' => $user->id,
-                'name' => $user->name,
-                'type' => $user instanceof \App\Models\Admin ? 'Admin/Staff' : 'User/Officer',
-                'user_type' => $user instanceof \App\Models\Admin ? 'admin' : 'user',
-                'shift_name' => $shift->workingShift->name,
-                'shift_time' => \Carbon\Carbon::parse($shift->workingShift->start_time)->format('H:i') . ' - ' . \Carbon\Carbon::parse($shift->workingShift->end_time)->format('H:i'),
+                'id' => $admin->id,
+                'name' => $admin->name,
+                'jabatan' => $karyawan->jabatan ?? 'STAFF',
+                'outlet_name' => $karyawan->outlet ? $karyawan->outlet->name : 'OUTLET',
+                'type' => 'Admin/Staff',
+                'user_type' => 'admin',
+                'shift_name' => $shiftName,
+                'shift_time' => $shiftTime,
+                'has_shift_today' => $hasShiftToday,
                 'attendance_status' => $attendance ? ($attendance->check_out ? 'done' : 'checked_in') : 'not_started',
+                'check_in_time' => $attendance && $attendance->check_in ? \Carbon\Carbon::parse($attendance->check_in)->format('H:i') : null,
+                'check_out_time' => $attendance && $attendance->check_out ? \Carbon\Carbon::parse($attendance->check_out)->format('H:i') : null,
                 'attendance_id' => $attendance ? $attendance->id : null,
             ];
         })->filter()->values();
