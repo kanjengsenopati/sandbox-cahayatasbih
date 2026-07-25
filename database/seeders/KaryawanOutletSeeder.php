@@ -29,70 +29,80 @@ class KaryawanOutletSeeder extends Seeder
         ]);
 
         $kasirRole = Role::firstOrCreate([
-            'name' => 'Kasir',
+            'name' => 'Kasir Karyawan Outlet',
             'guard_name' => 'web'
         ]);
 
         // Ensure permissions exist
-        $manageBiometric = Permission::firstOrCreate([
-            'name' => 'Manage Biometric',
-            'guard_name' => 'web'
-        ]);
+        $requiredPerms = [
+            'Manage Pos Kasir',
+            'Create Pos Kasir',
+            'Manage Barang',
+            'Create Barang',
+            'Edit Barang',
+            'Manage Laporan Presensi',
+            'Manage Biometric',
+        ];
 
-        $manageLaporanPresensi = Permission::firstOrCreate([
-            'name' => 'Manage Laporan Presensi',
-            'guard_name' => 'web'
-        ]);
+        foreach ($requiredPerms as $perm) {
+            Permission::firstOrCreate(['name' => $perm, 'guard_name' => 'web']);
+        }
 
         // Assign permissions
-        $nonKasirRole->syncPermissions([$manageBiometric, $manageLaporanPresensi]);
-        $kasirRole->givePermissionTo($manageBiometric);
+        $kasirRole->syncPermissions($requiredPerms);
+        $nonKasirRole->syncPermissions([
+            Permission::firstOrCreate(['name' => 'Manage Biometric', 'guard_name' => 'web']),
+            Permission::firstOrCreate(['name' => 'Manage Laporan Presensi', 'guard_name' => 'web'])
+        ]);
 
-        // 2. Check Yogo to identify outlet and other default settings
-        // Look up case-insensitively for YOGO
+        // 2. Fetch / Create Outlets (Borealis Eatery & Angkringan)
+        $borealisOutlet = Outlet::firstOrCreate(
+            ['name' => 'Borealis Eatery'],
+            ['code' => 'BE', 'address' => 'Outlet Borealis Eatery', 'is_active' => true]
+        );
+
+        $angkringanOutlet = Outlet::firstOrCreate(
+            ['name' => 'Angkringan'],
+            ['code' => 'AK', 'address' => 'Outlet Angkringan', 'is_active' => true]
+        );
+
+        // 3. Check Yogo to identify outlet and default settings
         $yogoAdmin = Admin::where('name', 'like', '%yogo%')->first();
         
         if ($yogoAdmin) {
             $this->command->info("YOGO ditemukan di database: {$yogoAdmin->name}");
-            $outletId = $yogoAdmin->outlet_id;
+            $outletId = $angkringanOutlet->id;
             
             // Get Kamar & Scope from YOGO
             $yogoKaryawan = Karyawan::where('admin_id', $yogoAdmin->id)->first();
             $putraKamar = ($yogoKaryawan && $yogoKaryawan->kamar) ? $yogoKaryawan->kamar : 'B1';
             $accessScope = $yogoAdmin->access_scope ?? 'both';
             
-            // Ensure YOGO is updated to uppercase and correct role
             $yogoAdmin->update([
                 'name' => 'YOGO',
-                'role_id' => $kasirRole->id
+                'role_id' => $kasirRole->id,
+                'outlet_id' => $outletId,
             ]);
-            $yogoAdmin->syncRoles(['Kasir']);
+            $yogoAdmin->syncRoles(['Kasir Karyawan Outlet']);
 
-            // Update YOGO Karyawan details to match production style
+            \App\Models\AdminOutlet::updateOrCreate(
+                ['admin_id' => $yogoAdmin->id, 'outlet_id' => $outletId]
+            );
+
             if ($yogoKaryawan) {
                 $yogoKaryawan->update([
                     'kamar' => $putraKamar,
                     'jabatan' => 'KASIR',
                     'section' => 'ANGKRINGAN',
+                    'outlet_id' => $outletId,
                 ]);
             }
         } else {
-            // Local dev fallback: Create OUTLET and Yogo
-            $this->command->info("YOGO tidak ditemukan. Membuat data OUTLET dan YOGO default.");
-            
-            $outlet = Outlet::firstOrCreate(
-                ['name' => 'OUTLET'],
-                [
-                    'code' => 'OUT',
-                    'address' => 'Pusat Outlet',
-                    'is_active' => true,
-                ]
-            );
-            $outletId = $outlet->id;
+            $this->command->info("YOGO tidak ditemukan. Membuat data YOGO default.");
+            $outletId = $angkringanOutlet->id;
             $putraKamar = 'B1';
             $accessScope = 'both';
 
-            // Create YOGO Admin
             $yogoAdmin = Admin::create([
                 'id' => (string) Str::uuid(),
                 'name' => 'YOGO',
@@ -105,14 +115,13 @@ class KaryawanOutletSeeder extends Seeder
                 'access_scope' => $accessScope,
             ]);
 
-            $yogoAdmin->syncRoles(['Kasir']);
+            $yogoAdmin->syncRoles(['Kasir Karyawan Outlet']);
 
             \App\Models\AdminOutlet::create([
                 'admin_id' => $yogoAdmin->id,
                 'outlet_id' => $outletId,
             ]);
 
-            // Create YOGO Karyawan
             Karyawan::create([
                 'admin_id' => $yogoAdmin->id,
                 'kamar' => 'B1',
@@ -126,7 +135,6 @@ class KaryawanOutletSeeder extends Seeder
                 'potongan_absen' => 26600,
             ]);
 
-            // Create YOGO EmployeeSalary
             EmployeeSalary::create([
                 'presensiable_type' => Admin::class,
                 'presensiable_id' => $yogoAdmin->id,
@@ -140,7 +148,7 @@ class KaryawanOutletSeeder extends Seeder
             ]);
         }
 
-        // 3. Define employee data to seed
+        // 4. Define employee data to seed
         $employeesData = [
             // Putri (Borealis Eatery) - Kamar C4
             [
@@ -174,7 +182,7 @@ class KaryawanOutletSeeder extends Seeder
                 'gaji_hari' => 41500,
                 'hari_kerja' => 12,
                 'kamar' => 'C4',
-                'role' => 'Kasir',
+                'role' => 'Kasir Karyawan Outlet',
             ],
             [
                 'name' => 'Rini',
@@ -240,7 +248,7 @@ class KaryawanOutletSeeder extends Seeder
                 'gaji_hari' => 26600,
                 'hari_kerja' => 30,
                 'kamar' => 'C4',
-                'role' => 'Karyawan Outlet ( Non Kasir )',
+                'role' => 'Kasir Karyawan Outlet',
             ],
             [
                 'name' => 'Salsa',
@@ -254,7 +262,7 @@ class KaryawanOutletSeeder extends Seeder
                 'role' => 'Karyawan Outlet ( Non Kasir )',
             ],
 
-            // Putra (Angkringan) - Kamar mengikuti YOGO (B1)
+            // Putra (Angkringan) - Kamar B1
             [
                 'name' => 'Alam',
                 'jabatan' => 'HELPER',
@@ -293,14 +301,19 @@ class KaryawanOutletSeeder extends Seeder
         // Seed the other employees
         $createdAdmins = [];
         foreach ($employeesData as $empData) {
-            $roleObj = $empData['role'] === 'Kasir' ? $kasirRole : $nonKasirRole;
+            $targetOutletId = ($empData['establishment'] === 'BOREALIS EATERY') 
+                ? $borealisOutlet->id 
+                : $angkringanOutlet->id;
+
+            $roleObj = ($empData['role'] === 'Kasir Karyawan Outlet' || $empData['role'] === 'Kasir') 
+                ? $kasirRole 
+                : $nonKasirRole;
 
             // Check if admin already exists by email
             $email = str_replace(' ', '', strtolower($empData['name'])) . '@gmail.com';
             $admin = Admin::where('email', $email)->first();
 
             if (!$admin) {
-                // Ensure name is capitalized/uppercase
                 $admin = Admin::create([
                     'id' => (string) Str::uuid(),
                     'name' => strtoupper($empData['name']),
@@ -309,25 +322,22 @@ class KaryawanOutletSeeder extends Seeder
                     'avatar' => '',
                     'is_active' => true,
                     'role_id' => $roleObj->id,
-                    'outlet_id' => $outletId,
+                    'outlet_id' => $targetOutletId,
                     'access_scope' => $accessScope,
                 ]);
 
-                // Sync Spatie role
                 $admin->syncRoles([$roleObj->name]);
 
-                // Add to admin_outlets pivot
                 \App\Models\AdminOutlet::create([
                     'admin_id' => $admin->id,
-                    'outlet_id' => $outletId,
+                    'outlet_id' => $targetOutletId,
                 ]);
 
-                // Create Karyawan (uppercase fields to match live data style)
                 Karyawan::create([
                     'admin_id' => $admin->id,
                     'kamar' => strtoupper($empData['kamar']),
                     'jabatan' => strtoupper($empData['jabatan']),
-                    'outlet_id' => $outletId,
+                    'outlet_id' => $targetOutletId,
                     'section' => strtoupper($empData['establishment']),
                     'gaji_bulan' => $empData['gaji_bulan'],
                     'gaji_hari' => $empData['gaji_hari'],
@@ -336,7 +346,6 @@ class KaryawanOutletSeeder extends Seeder
                     'potongan_absen' => $empData['gaji_hari'],
                 ]);
 
-                // Create EmployeeSalary for payroll
                 EmployeeSalary::create([
                     'presensiable_type' => Admin::class,
                     'presensiable_id' => $admin->id,
@@ -349,15 +358,18 @@ class KaryawanOutletSeeder extends Seeder
                     'absence_penalty' => $empData['gaji_hari'],
                 ]);
 
-                $this->command->info("Karyawan {$empData['name']} berhasil ditambahkan.");
+                $this->command->info("Karyawan {$empData['name']} ({$empData['establishment']}) berhasil ditambahkan.");
             } else {
-                // If it already exists, make sure to uppercase its fields to match!
                 $admin->update([
                     'name' => strtoupper($admin->name),
-                    'outlet_id' => $outletId,
+                    'outlet_id' => $targetOutletId,
                     'role_id' => $roleObj->id
                 ]);
                 $admin->syncRoles([$roleObj->name]);
+
+                \App\Models\AdminOutlet::updateOrCreate(
+                    ['admin_id' => $admin->id, 'outlet_id' => $targetOutletId]
+                );
 
                 $karyawan = Karyawan::where('admin_id', $admin->id)->first();
                 if ($karyawan) {
@@ -365,14 +377,14 @@ class KaryawanOutletSeeder extends Seeder
                         'kamar' => strtoupper($empData['kamar']),
                         'jabatan' => strtoupper($empData['jabatan']),
                         'section' => strtoupper($empData['establishment']),
-                        'outlet_id' => $outletId,
+                        'outlet_id' => $targetOutletId,
                         'gaji_bulan' => $empData['gaji_bulan'],
                         'gaji_hari' => $empData['gaji_hari'],
                         'hari_kerja' => $empData['hari_kerja'],
                     ]);
                 }
                 
-                $this->command->info("Karyawan {$empData['name']} (Email: {$email}) sudah ada. Melakukan update data.");
+                $this->command->info("Karyawan {$empData['name']} ({$empData['establishment']}) sudah ada. Melakukan update data.");
             }
 
             $createdAdmins[] = [

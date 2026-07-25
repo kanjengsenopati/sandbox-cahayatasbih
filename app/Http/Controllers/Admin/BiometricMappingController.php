@@ -276,9 +276,17 @@ class BiometricMappingController extends Controller
                 $user = $mapping->presensiable;
                 if (!$user) return null;
 
-                // Saring agar Karyawan (Admin atau User) yang boleh scan wajah HANYA Kasir, Super Admin, atau yang punya hak POS
+                // Saring Karyawan (Admin atau User) yang terdaftar biometrik
                 if ($user instanceof \App\Models\Admin || $user instanceof \App\Models\User) {
-                    if (!$user->hasRole('Kasir') && !$user->hasRole('Super Admin') && !$user->can('Manage Pos Kasir') && !$user->can('Create Pos Kasir')) {
+                    $allowedRoles = ['Kasir', 'Kasir Karyawan Outlet', 'Karyawan Outlet ( Non Kasir )', 'Super Admin'];
+                    $hasAllowedRole = false;
+                    foreach ($allowedRoles as $r) {
+                        if ($user->hasRole($r)) {
+                            $hasAllowedRole = true;
+                            break;
+                        }
+                    }
+                    if (!$hasAllowedRole && !$user->can('Manage Pos Kasir') && !$user->can('Create Pos Kasir') && !$user->can('Manage Biometric')) {
                         return null;
                     }
                 }

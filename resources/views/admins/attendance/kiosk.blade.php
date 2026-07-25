@@ -125,14 +125,14 @@
             <div class="card card-flush shadow-[0_8px_30px_rgb(0,0,0,0.04)] mt-5 rounded-[24px]">
                 <div class="card-header pt-5">
                     <h3 class="card-title align-items-start flex-column">
-                        <span class="card-label fw-bold text-slate-900 fs-3">Presensi Manual Staff Dapur / Non-Kasir</span>
+                        <span class="card-label fw-bold text-slate-900 fs-3">Presensi Manual Karyawan Outlet (Kasir & Non-Kasir)</span>
                         <span class="text-muted mt-1 fw-semibold fs-7">Klik nama Anda untuk mengambil snapshot foto presensi harian sesuai jadwal shift</span>
                     </h3>
                 </div>
                 <div class="card-body">
                     @if($staffList->isEmpty())
                         <div class="text-center py-5 text-gray-500 italic fs-6">
-                            Tidak ada staff dapur / non-kasir yang terjadwal shift aktif hari ini.
+                            Tidak ada karyawan outlet yang terjadwal shift aktif di outlet ini hari ini.
                         </div>
                     @else
                         <div class="row g-4">
@@ -298,6 +298,7 @@
     });
 
     async function initKiosk() {
+        let aiModelsLoaded = false;
         try {
             // 1. Load Models
             const modelUrl = 'https://cdn.jsdelivr.net/npm/@vladmandic/face-api/model/';
@@ -307,39 +308,40 @@
                 faceapi.nets.faceLandmark68Net.loadFromUri(modelUrl),
                 faceapi.nets.faceRecognitionNet.loadFromUri(modelUrl)
             ]);
+            aiModelsLoaded = true;
+        } catch (err) {
+            console.warn('Modul AI Wajah tidak dapat dimuat (Offline/CDN Error). Presensi Manual Snapshot tetap dapat digunakan.', err);
+        }
 
+        try {
             // 2. Fetch Enrolled Descriptors
             updateOverlayText('Sinkronisasi database wajah...');
             const res = await $.ajax({
                 url: "{{ route('biometric-mapping.descriptors') }}",
                 type: "GET",
                 dataType: "json"
-            });
+            }).catch(err => []);
 
-            enrolledDescriptors = res;
+            enrolledDescriptors = res || [];
             
-            if (enrolledDescriptors.length === 0) {
-                updateOverlayText('Tidak ada database wajah terdaftar. Hubungkan wajah pengguna terlebih dahulu.');
-                return;
+            if (enrolledDescriptors.length > 0 && aiModelsLoaded) {
+                // Create LabeledFaceDescriptors for FaceMatcher
+                const labeledDescriptors = enrolledDescriptors.map(item => {
+                    const floatArray = new Float32Array(item.descriptor);
+                    return new faceapi.LabeledFaceDescriptors(item.id, [floatArray]);
+                });
+                faceMatcher = new faceapi.FaceMatcher(labeledDescriptors, 0.5);
+            } else {
+                faceMatcher = null;
             }
-
-            // Create LabeledFaceDescriptors for FaceMatcher
-            const labeledDescriptors = enrolledDescriptors.map(item => {
-                // Convert descriptor array back to Float32Array
-                const floatArray = new Float32Array(item.descriptor);
-                return new faceapi.LabeledFaceDescriptors(item.id, [floatArray]);
-            });
-
-            // Set up Face Matcher with threshold 0.5 (smaller threshold means stricter matching)
-            faceMatcher = new faceapi.FaceMatcher(labeledDescriptors, 0.5);
 
             // 3. Start Camera
             updateOverlayText('Membuka video stream...');
-            startCamera();
+            await startCamera();
 
         } catch (err) {
             console.error(err);
-            updateOverlayText('Inisialisasi kiosk gagal. Periksa koneksi internet atau kamera.');
+            updateOverlayText('Inisialisasi kiosk gagal. Periksa koneksi kamera web.');
         }
     }
 
@@ -355,42 +357,53 @@
             video.srcObject = stream;
             video.onplay = () => {
                 $('#kiosk-overlay').fadeOut();
-                $('#scanner-indicator').text('PEMINDAIAN AKTIF...');
+                if (faceMatcher) {
+                    $('#scanner-indicator').text('PEMINDAIAN OTOMATIS AKTIF...');
+                } else {
+                    $('#scanner-indicator').text('KAMERA AKTIF (PRESENSI MANUAL SNAPSHOT SIAP)');
+                }
                 startRealTimeScanning();
             };
         } catch (err) {
             console.error(err);
-            updateOverlayText('Kamera tidak ditemukan / Akses ditolak.');
+            updateOverlayText('Kamera tidak ditemukan / Akses ditolak. Pastikan izin kamera aktif.');
         }
     }
 
     function startRealTimeScanning() {
         const displaySize = { width: 480, height: 360 };
-        faceapi.matchDimensions(canvas, displaySize);
+        if (typeof faceapi !== 'undefined' && faceapi.matchDimensions) {
+            try { faceapi.matchDimensions(canvas, displaySize); } catch(e){}
+        }
 
         detectionInterval = setInterval(async () => {
-            if (isProcessing || !stream) return;
+            if (isProcessing || !stream || !faceMatcher) return;
 
-            const detections = await faceapi.detectAllFaces(video, new faceapi.SsdMobilenetv1Options({ minConfidence: 0.6 }))
-                .withFaceLandmarks()
-                .withFaceDescriptors();
+            try {
+                const detections = await faceapi.detectAllFaces(video, new faceapi.SsdMobilenetv1Options({ minConfidence: 0.6 }))
+                    .withFaceLandmarks()
+                    .withFaceDescriptors();
 
-            const resizedDetections = faceapi.resizeResults(detections, displaySize);
-            const ctx = canvas.getContext('2d');
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
+                const resizedDetections = faceapi.resizeResults(detections, displaySize);
+                const ctx = canvas.getContext('2d');
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-            // Draw box outlines
-            faceapi.draw.drawDetections(canvas, resizedDetections);
-
-            if (detections.length > 0 && faceMatcher) {
-                // Gunakan deteksi pertama
-                const bestMatch = faceMatcher.findBestMatch(detections[0].descriptor);
-                
-                if (bestMatch.label !== 'unknown') {
-                    isProcessing = true;
-                    $('#scanner-indicator').text('WAJAH COCOK. PROSES KEHADIRAN...');
-                    processKioskAttendance(bestMatch.label);
+                // Draw box outlines
+                if (faceapi.draw) {
+                    faceapi.draw.drawDetections(canvas, resizedDetections);
                 }
+
+                if (detections.length > 0 && faceMatcher) {
+                    const bestMatch = faceMatcher.findBestMatch(detections[0].descriptor);
+                    
+                    if (bestMatch.label !== 'unknown') {
+                        isProcessing = true;
+                        $('#scanner-indicator').text('WAJAH COCOK. PROSES KEHADIRAN...');
+                        processKioskAttendance(bestMatch.label);
+                    }
+                }
+            } catch(e) {
+                // Silent fail for detection loop iteration
             }
         }, 500);
     }
