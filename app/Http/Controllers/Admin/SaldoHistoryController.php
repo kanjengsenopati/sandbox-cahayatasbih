@@ -173,11 +173,10 @@ class SaldoHistoryController extends Controller
         }
 
         if (request()->ajax()) {
-            $students = Student::with('classroom')->hasSchool()
+            $students = Student::with(['classroom', 'latestSaldoHistory'])->hasSchool()
                 ->when(request('classroom_id'), function ($query, $classroomId) {
                     $query->where('classroom_id', $classroomId);
-                })
-                ->latest();
+                });
 
             return DataTables::of($students)
                 ->addColumn('nis', function ($student) {
@@ -189,6 +188,12 @@ class SaldoHistoryController extends Controller
                           ->orWhere('nisn', 'like', "%{$keyword}%");
                     });
                 })
+                ->orderColumn('nis', function ($query, $order) {
+                    $query->orderBy(DB::raw('COALESCE(students.nis, students.nisn)'), $order);
+                })
+                ->orderColumn('name', function ($query, $order) {
+                    $query->orderBy('students.name', $order);
+                })
                 ->addColumn('classroom', function ($student) {
                     return $student->classroom->name ?? 'Belum ada kelas';
                 })
@@ -197,8 +202,27 @@ class SaldoHistoryController extends Controller
                         $q->where('name', 'like', "%{$keyword}%");
                     });
                 })
+                ->orderColumn('classroom', function ($query, $order) {
+                    $query->leftJoin('classrooms', 'students.classroom_id', '=', 'classrooms.id')
+                          ->orderBy('classrooms.name', $order)
+                          ->select('students.*');
+                })
                 ->editColumn('saldo', function ($student) {
                     return $student->saldo ?? 0;
+                })
+                ->orderColumn('saldo', function ($query, $order) {
+                    $query->orderBy('students.saldo', $order);
+                })
+                ->orderColumn('saldo_sekarang', function ($query, $order) {
+                    $query->orderBy('students.saldo', $order);
+                })
+                ->addColumn('last_saldo_update_date', function ($student) {
+                    $lastUpdate = $student->latestSaldoHistory?->created_at ?? $student->updated_at;
+                    return $lastUpdate ? strtoupper($lastUpdate->format('d-M-Y')) : '-';
+                })
+                ->addColumn('last_saldo_update_time', function ($student) {
+                    $lastUpdate = $student->latestSaldoHistory?->created_at ?? $student->updated_at;
+                    return $lastUpdate ? $lastUpdate->format('H : i') : '-';
                 })
                 ->addColumn('status', function ($student) {
                     return $student->status;
@@ -286,12 +310,15 @@ class SaldoHistoryController extends Controller
             }
 
             if ($isAjax) {
+                $lastUpdate = $saldoHistoryRecord?->created_at ?? now();
                 return response()->json([
                     'code' => 200,
                     'message' => 'Berhasil penyesuaian saldo untuk santri ' . $student->name,
                     'student_id' => $student->id,
                     'new_saldo' => $student->saldo,
-                    'formatted_new_saldo' => 'Rp ' . number_format($student->saldo, 0, ',', '.')
+                    'formatted_new_saldo' => 'Rp ' . number_format($student->saldo, 0, ',', '.'),
+                    'updated_date' => strtoupper($lastUpdate->format('d-M-Y')),
+                    'updated_time' => $lastUpdate->format('H : i')
                 ]);
             }
 

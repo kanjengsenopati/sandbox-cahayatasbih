@@ -98,6 +98,11 @@ class Student extends Model
         return $this->hasMany(SaldoHistory::class);
     }
 
+    public function latestSaldoHistory()
+    {
+        return $this->hasOne(SaldoHistory::class)->latestOfMany();
+    }
+
     public function pointOfSaleTransactions()
     {
         return $this->hasMany(PointOfSaleTransaction::class);

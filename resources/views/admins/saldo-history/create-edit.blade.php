@@ -96,7 +96,8 @@
         var table = $('#table-adjust-saldo').DataTable({
             processing: true,
             serverSide: true,
-            ordering: false,
+            ordering: true,
+            order: [],
             ajax: {
                 url: "{{ route('saldo-history.create') }}",
                 data: function(d) {
@@ -116,6 +117,7 @@
             columns: [
                 {
                     data: null,
+                    orderable: false,
                     sortable: false,
                     searchable: false,
                     render: function(data, type, row, meta) {
@@ -125,6 +127,8 @@
                 {
                     data: 'nis',
                     name: 'nis',
+                    orderable: true,
+                    sortable: true,
                     searchable: true,
                     render: function(data) {
                         return `<span class="fw-bold text-gray-700 fs-7">${data ? data : '-'}</span>`;
@@ -133,6 +137,8 @@
                 {
                     data: 'name',
                     name: 'name',
+                    orderable: true,
+                    sortable: true,
                     searchable: true,
                     render: function(data, type, row) {
                         var avatar = row.avatar_url ? row.avatar_url : '{{ asset("assets/media/avatars/default.png") }}';
@@ -165,6 +171,8 @@
                 {
                     data: 'classroom',
                     name: 'classroom',
+                    orderable: true,
+                    sortable: true,
                     searchable: true,
                     render: function(data) {
                         return `<span class="badge badge-light-dark fs-7">${data}</span>`;
@@ -173,31 +181,54 @@
                 {
                     data: 'saldo',
                     name: 'saldo',
+                    orderable: true,
+                    sortable: true,
                     searchable: false,
                     render: function(data, type, row) {
                         var val = parseInt(data) || 0;
                         var formatted = formatRupiahVal(val);
                         var badgeClass = val < 0 
-                            ? 'bg-danger text-white fw-bolder px-3 py-2 fs-7' 
-                            : 'bg-light-primary text-primary fw-bolder fs-7';
-                        return `<span class="badge ${badgeClass}" id="saldo-awal-${row.id}" data-saldo="${val}">Rp ${formatted}</span>`;
+                            ? 'bg-danger text-white fw-bolder px-3 py-2 fs-7 mb-1' 
+                            : 'bg-light-primary text-primary fw-bolder fs-7 mb-1';
+                        var dateInfo = row.last_saldo_update_date || '-';
+                        var timeInfo = row.last_saldo_update_time || '-';
+
+                        return `
+                            <div class="d-flex flex-column align-items-start">
+                                <span class="badge ${badgeClass}" id="saldo-awal-${row.id}" data-saldo="${val}">Rp ${formatted}</span>
+                                <span class="text-slate-400 fst-italic mt-1" style="font-size: 11px; line-height: 1.3; color: #94a3b8;" id="date-awal-${row.id}">${dateInfo}</span>
+                                <span class="text-slate-400 fst-italic" style="font-size: 11px; line-height: 1.3; color: #94a3b8;" id="time-awal-${row.id}">${timeInfo}</span>
+                            </div>
+                        `;
                     }
                 },
                 {
                     data: 'saldo',
                     name: 'saldo_sekarang',
+                    orderable: true,
+                    sortable: true,
                     searchable: false,
                     render: function(data, type, row) {
                         var val = parseInt(data) || 0;
                         var formatted = formatRupiahVal(val);
                         var badgeClass = val < 0 
-                            ? 'bg-danger text-white fw-bolder px-3 py-2 fs-7' 
-                            : 'bg-light-success text-success fw-bolder fs-7';
-                        return `<span class="badge ${badgeClass}" id="saldo-sekarang-${row.id}">Rp ${formatted}</span>`;
+                            ? 'bg-danger text-white fw-bolder px-3 py-2 fs-7 mb-1' 
+                            : 'bg-light-success text-success fw-bolder fs-7 mb-1';
+                        var dateInfo = row.last_saldo_update_date || '-';
+                        var timeInfo = row.last_saldo_update_time || '-';
+
+                        return `
+                            <div class="d-flex flex-column align-items-start">
+                                <span class="badge ${badgeClass}" id="saldo-sekarang-${row.id}">Rp ${formatted}</span>
+                                <span class="text-slate-400 fst-italic mt-1" style="font-size: 11px; line-height: 1.3; color: #94a3b8;" id="date-sekarang-${row.id}">${dateInfo}</span>
+                                <span class="text-slate-400 fst-italic" style="font-size: 11px; line-height: 1.3; color: #94a3b8;" id="time-sekarang-${row.id}">${timeInfo}</span>
+                            </div>
+                        `;
                     }
                 },
                 {
                     data: null,
+                    orderable: false,
                     sortable: false,
                     searchable: false,
                     className: 'text-center',
@@ -285,9 +316,9 @@
         badgeElem.text('Rp ' + formatRupiahVal(newSaldo));
 
         if (newSaldo < 0) {
-            badgeElem.attr('class', 'badge bg-danger text-white fw-bolder px-3 py-2 fs-7');
+            badgeElem.attr('class', 'badge bg-danger text-white fw-bolder px-3 py-2 fs-7 mb-1');
         } else {
-            badgeElem.attr('class', 'badge bg-light-success text-success fw-bolder fs-7');
+            badgeElem.attr('class', 'badge bg-light-success text-success fw-bolder fs-7 mb-1');
         }
     }
 
@@ -343,9 +374,17 @@
                 var awalBadge = $('#saldo-awal-' + rowId);
                 awalBadge.attr('data-saldo', newSaldo).text('Rp ' + formatRupiahVal(newSaldo));
                 if (newSaldo < 0) {
-                    awalBadge.attr('class', 'badge bg-danger text-white fw-bolder px-3 py-2 fs-7');
+                    awalBadge.attr('class', 'badge bg-danger text-white fw-bolder px-3 py-2 fs-7 mb-1');
                 } else {
-                    awalBadge.attr('class', 'badge bg-light-primary text-primary fw-bolder fs-7');
+                    awalBadge.attr('class', 'badge bg-light-primary text-primary fw-bolder fs-7 mb-1');
+                }
+
+                // Update date & time under Saldo Awal and Saldo Sekarang
+                if (resData.updated_date && resData.updated_time) {
+                    $('#date-awal-' + rowId).text(resData.updated_date);
+                    $('#time-awal-' + rowId).text(resData.updated_time);
+                    $('#date-sekarang-' + rowId).text(resData.updated_date);
+                    $('#time-sekarang-' + rowId).text(resData.updated_time);
                 }
                 
                 // Clear input fields and recalculate
