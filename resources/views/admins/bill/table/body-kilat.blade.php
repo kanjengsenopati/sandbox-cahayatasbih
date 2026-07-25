@@ -63,34 +63,56 @@
     @foreach ($billMonth as $bill)
     @php
         $existingBills = $bill->bills->where('student_id', $student->id);
-        $paidAmount = $existingBills->sum('paid_amount');
         $isZarkasi = str_contains(strtoupper($bill->name ?? ''), 'ZARKASI');
         
-        // Find sample monthly amount from existing bills or billItem rate
-        $sampleBill = $existingBills->firstWhere('amount', '>', 0);
-        $sampleMonthlyAmount = $sampleBill ? $sampleBill->amount : ($bill->billItem->amount ?? 0);
-        if ($sampleMonthlyAmount <= 0) {
-            $sampleMonthlyAmount = \App\Models\Bill::where('bill_type_id', $bill->id)->where('amount', '>', 0)->value('amount') ?? 0;
-        }
+        $zarkasiTargets = [
+            7  => 100000,
+            8  => 100000,
+            9  => 100000,
+            10 => 100000,
+            11 => 100000,
+            12 => 50000,
+        ];
 
-        // Calculate unpaid amount across all 12 months (existing DB rows + un-generated months)
-        $unpaidAmount = 0;
-        foreach (array_merge(range(7, 12), range(1, 6)) as $m) {
-            $bDet = $existingBills->firstWhere('month', (int)$m);
-            if (!$bDet) {
-                $bDet = $existingBills->firstWhere('month', (string)$m);
+        if ($isZarkasi) {
+            $totalRawPaid = $existingBills->sum('paid_amount');
+            $paidAmount = min(550000, $totalRawPaid);
+            $unpaidAmount = max(0, 550000 - $paidAmount);
+
+            $zarkasiPaidAllocated = [];
+            $remPool = $totalRawPaid;
+            foreach ([7, 8, 9, 10, 11, 12] as $m) {
+                $t = $zarkasiTargets[$m];
+                if ($remPool >= $t) {
+                    $zarkasiPaidAllocated[$m] = $t;
+                    $remPool -= $t;
+                } else if ($remPool > 0) {
+                    $zarkasiPaidAllocated[$m] = $remPool;
+                    $remPool = 0;
+                } else {
+                    $zarkasiPaidAllocated[$m] = 0;
+                }
+            }
+        } else {
+            $paidAmount = $existingBills->sum('paid_amount');
+            
+            // Find sample monthly amount from existing bills or billItem rate
+            $sampleBill = $existingBills->firstWhere('amount', '>', 0);
+            $sampleMonthlyAmount = $sampleBill ? $sampleBill->amount : ($bill->billItem->amount ?? 0);
+            if ($sampleMonthlyAmount <= 0) {
+                $sampleMonthlyAmount = \App\Models\Bill::where('bill_type_id', $bill->id)->where('amount', '>', 0)->value('amount') ?? 0;
             }
 
-            if ($bDet) {
-                $unpaidAmount += max(0, $bDet->amount - $bDet->paid_amount);
-            } else {
-                if ($isZarkasi) {
-                    if ($m >= 7 && $m <= 11) {
-                        $unpaidAmount += 100000;
-                    } elseif ($m == 12) {
-                        $unpaidAmount += 50000;
-                    }
-                    // Months 1-6 add 0 for Zarkasi
+            // Calculate unpaid amount across all 12 months (existing DB rows + un-generated months)
+            $unpaidAmount = 0;
+            foreach (array_merge(range(7, 12), range(1, 6)) as $m) {
+                $bDet = $existingBills->firstWhere('month', (int)$m);
+                if (!$bDet) {
+                    $bDet = $existingBills->firstWhere('month', (string)$m);
+                }
+
+                if ($bDet) {
+                    $unpaidAmount += max(0, $bDet->amount - $bDet->paid_amount);
                 } else {
                     $unpaidAmount += $sampleMonthlyAmount;
                 }
@@ -192,23 +214,20 @@
                         }
 
                         if ($isZarkasi) {
-                            if ($month >= 7 && $month <= 11) {
-                                $expectedMonthlyAmount = 100000;
-                            } elseif ($month == 12) {
-                                $expectedMonthlyAmount = 50000;
-                            } else {
-                                $expectedMonthlyAmount = 0;
-                            }
-                            $amount = $billDetail ? $billDetail->amount : $expectedMonthlyAmount;
+                            $amount = $zarkasiTargets[$month] ?? 0;
+                            $mPaid = $zarkasiPaidAllocated[$month] ?? 0;
+                            $remainingAmount = max(0, $amount - $mPaid);
+                            $isPaid = ($amount > 0) && ($remainingAmount == 0);
+                            $status = $isPaid ? 'PAID' : ($amount > 0 ? 'UNPAID' : 'FREE');
+                            $detailPayment = $billDetail ? $billDetail->transactions?->first() : null;
                         } else {
                             $amount = $billDetail ? $billDetail->amount : $sampleMonthlyAmount;
+                            $remainingAmount = $billDetail ? max(0, $billDetail->amount - $billDetail->paid_amount) : $amount;
+                            $status = $billDetail ? $billDetail->status : ($amount > 0 ? 'UNPAID' : 'FREE');
+                            $isPaid = $status == 'PAID' || ($billDetail && $remainingAmount <= 0 && $amount > 0);
+                            $detailPayment = $billDetail ? $billDetail->transactions?->first() : null;
                         }
 
-                        $remainingAmount = $billDetail ? max(0, $billDetail->amount - $billDetail->paid_amount) : $amount;
-                        $status = $billDetail ? $billDetail->status : ($amount > 0 ? 'UNPAID' : 'FREE');
-                        $isPaid = $status == 'PAID' || ($billDetail && $remainingAmount <= 0 && $amount > 0);
-                        $detailPayment = $billDetail ? $billDetail->transactions?->first() : null;
-                        
                         $modalId = "bayarKilat{$bill->id}_{$month}";
                         $showModal = !$isPaid && $remainingAmount > 0 && $amount > 0;
                         
