@@ -21,6 +21,7 @@ class LaporPakReport extends Model
         'is_parent_updated',
         'kendala',
         'keterangan',
+        'admin_note',
         'status',
     ];
 

@@ -139,12 +139,19 @@ class LaporPakAdminController extends Controller
     {
         $validated = $request->validate([
             'status' => 'required|string|in:Laporan Masuk,Diterima,Sedang Ditangani,Selesai',
+            'admin_note' => 'nullable|string|max:1000',
         ]);
 
         $report = LaporPakReport::findOrFail($id);
-        $report->update(['status' => $validated['status']]);
+        $updateData = ['status' => $validated['status']];
+        
+        if ($request->has('admin_note')) {
+            $updateData['admin_note'] = $validated['admin_note'];
+        }
 
-        return redirect()->back()->with('success', "Status laporan ID #{$report->id} berhasil diperbarui menjadi '{$validated['status']}'.");
+        $report->update($updateData);
+
+        return redirect()->back()->with('success', "Status & catatan laporan ID #{$report->id} berhasil diperbarui.");
     }
 
     public function toggleStatus($id)
