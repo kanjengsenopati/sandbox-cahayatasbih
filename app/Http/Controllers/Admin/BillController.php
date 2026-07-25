@@ -48,7 +48,11 @@ class BillController extends Controller
         $academicYears = \App\Models\AcademicYear::orderBy('start_year', 'desc')->get();
 
         if ($studentId = request()->student_id) {
-            $student = Student::with(['user', 'classroom.school', 'classroomHistories.classroom'])->findOrFail($studentId);
+            $student = Student::with(['user', 'classroom.school', 'classroomHistories.classroom'])->find($studentId);
+            if (!$student) {
+                return redirect()->route('bill.index')->with('error', 'Data siswa tidak ditemukan atau telah dihapus.');
+            }
+
             $academicYearId = request()->academic_year_id;
 
             // Reset academicYearId if it starts before student's entry year
@@ -502,7 +506,10 @@ class BillController extends Controller
     {
 
         $id = request()->student_id;
-        $student = Student::findOrFail($id);
+        $student = Student::find($id);
+        if (!$student) {
+            return redirect()->route('bill.index')->with('error', 'Data siswa tidak ditemukan.');
+        }
 
         // Mengambil tagihan bulanan
         $billMonth = BillType::with('billItem', 'academicYear')
