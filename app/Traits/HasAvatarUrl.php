@@ -22,7 +22,11 @@ trait HasAvatarUrl
             return $value;
         }
 
-        return storage_asset($value);
+        if (function_exists('storage_asset')) {
+            return \storage_asset($value);
+        }
+
+        return asset('storage/' . ltrim($value, '/'));
     }
 
     public function getAvatarFallbackUrlAttribute(): string
