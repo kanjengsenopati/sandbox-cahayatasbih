@@ -62,7 +62,7 @@
                     <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
                     </svg>
-                    <span>Progress Laporan</span>
+                    <span>Pantau Aduan</span>
                 </button>
             </div>
         </header>
@@ -515,7 +515,7 @@
                         <!-- Footer Timestamp -->
                         <div class="pt-1.5 text-[10px] text-slate-400 font-mono flex justify-between items-center border-t border-slate-100/60">
                             <span>Lapor: {{ $rep->created_at ? $rep->created_at->format('d M Y, H:i') : '-' }} WIB</span>
-                            <span class="text-slate-300">#{{ $index + 1 }}</span>
+                            <span class="text-slate-300">#{{ (method_exists($reports, 'firstItem') ? ($reports->firstItem() ?? 1) : 1) + $index }}</span>
                         </div>
                     </div>
                 @empty
@@ -526,6 +526,51 @@
                         <p class="text-xs text-slate-500 font-medium">Belum ada data pengaduan yang sesuai.</p>
                     </div>
                 @endforelse
+
+                <!-- PAKRT NATIVE PAGINATION -->
+                @if(method_exists($reports, 'hasPages') && $reports->hasPages())
+                    <div class="pt-4 flex flex-col sm:flex-row items-center justify-between gap-3 border-t border-slate-200/60 mt-4">
+                        <div class="text-[11px] font-medium text-slate-500">
+                            Menampilkan <span class="font-bold text-slate-800">{{ $reports->firstItem() }}</span> - <span class="font-bold text-slate-800">{{ $reports->lastItem() }}</span> dari <span class="font-bold text-slate-800">{{ $reports->total() }}</span> aduan
+                        </div>
+                        <div class="flex items-center gap-1.5 flex-wrap justify-center">
+                            {{-- Previous Page Link --}}
+                            @if ($reports->onFirstPage())
+                                <span class="px-3 py-1.5 rounded-[24px] bg-slate-100 text-slate-400 text-xs font-semibold cursor-not-allowed select-none">
+                                    &laquo; Prev
+                                </span>
+                            @else
+                                <a href="{{ $reports->previousPageUrl() }}" class="px-3 py-1.5 rounded-[24px] bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 text-xs font-semibold transition active:scale-95 shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
+                                    &laquo; Prev
+                                </a>
+                            @endif
+
+                            {{-- Page Links --}}
+                            @foreach ($reports->getUrlRange(1, $reports->lastPage()) as $page => $url)
+                                @if ($page == $reports->currentPage())
+                                    <span class="w-8 h-8 rounded-[24px] bg-blue-600 text-white text-xs font-bold flex items-center justify-center shadow-md">
+                                        {{ $page }}
+                                    </span>
+                                @else
+                                    <a href="{{ $url }}" class="w-8 h-8 rounded-[24px] bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 text-xs font-semibold flex items-center justify-center transition active:scale-95 shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
+                                        {{ $page }}
+                                    </a>
+                                @endif
+                            @endforeach
+
+                            {{-- Next Page Link --}}
+                            @if ($reports->hasMorePages())
+                                <a href="{{ $reports->nextPageUrl() }}" class="px-3 py-1.5 rounded-[24px] bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 text-xs font-semibold transition active:scale-95 shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
+                                    Next &raquo;
+                                </a>
+                            @else
+                                <span class="px-3 py-1.5 rounded-[24px] bg-slate-100 text-slate-400 text-xs font-semibold cursor-not-allowed select-none">
+                                    Next &raquo;
+                                </span>
+                            @endif
+                        </div>
+                    </div>
+                @endif
             </div>
         </main>
 
@@ -565,7 +610,7 @@
                         @click="isSuccessModalOpen = false; activeTab = 'progress';"
                         class="w-full py-3 rounded-[24px] bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-md transition active:scale-95"
                     >
-                        Lihat Progress Laporan
+                        Lihat Pantau Aduan
                     </button>
                 </div>
             </div>

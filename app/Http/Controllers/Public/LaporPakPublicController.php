@@ -34,7 +34,7 @@ class LaporPakPublicController extends Controller
             return view('public.laporpak.closed', compact('setting'));
         }
 
-        // Search pada Tab 2 (Progress Laporan) berdasarkan Nama Wali atau Nama Siswa
+        // Search pada Tab 2 (Pantau Aduan) berdasarkan Nama Wali atau Nama Siswa
         $search = trim($request->query('search', ''));
         $tab = $request->query('tab', 'form');
 
@@ -49,11 +49,9 @@ class LaporPakPublicController extends Controller
                         $q->where('parent_name', 'like', "%{$search}%")
                           ->orWhere('student_name', 'like', "%{$search}%");
                     });
-                } else {
-                    $reportsQuery->take(5);
                 }
 
-                $reports = $reportsQuery->get();
+                $reports = $reportsQuery->paginate(5)->withQueryString();
             }
         } catch (\Throwable $e) {
             Log::error('Error fetching LaporPak reports: ' . $e->getMessage());
