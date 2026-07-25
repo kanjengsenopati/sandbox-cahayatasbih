@@ -44,7 +44,7 @@
         @php
             $paidAmount = $bill->bills->where('student_id', $student->id)->sum('paid_amount');
             $unpaidAmount = $bill->total_unpaid;
-            $ayName = $bill->academicYear->name ?? '-';
+            $ayName = $bill->academicYear?->name ?? '-';
 
             // Color theme map for distinct Academic Years
             $ayColorThemes = [
@@ -162,8 +162,8 @@
                                                 </span>
                                                 <span class="badge badge-secondary fs-9 text-slate-600 fw-bold">
                                                     {{ $billDetail->year ?? ($month >= 7 ? 
-                                                        ($bill->academicYear->start_year ?? '-') : 
-                                                        ($bill->academicYear->end_year ?? '-')) 
+                                                        ($bill->academicYear?->start_year ?? '-') : 
+                                                        ($bill->academicYear?->end_year ?? '-')) 
                                                     }}
                                                 </span>
                                             </div>
@@ -313,8 +313,8 @@
                                         </span>
                                         <span class="badge badge-secondary fs-9 text-slate-600 fw-bold">
                                             {{ $billDetail->year ?? ($month >= 7 ? 
-                                                ($bill->academicYear->start_year ?? '-') : 
-                                                ($bill->academicYear->end_year ?? '-')) 
+                                                ($bill->academicYear?->start_year ?? '-') : 
+                                                ($bill->academicYear?->end_year ?? '-')) 
                                             }}
                                         </span>
                                     </div>

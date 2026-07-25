@@ -119,7 +119,7 @@
             }
         }
 
-        $ayName = $bill->academicYear->name ?? '-';
+        $ayName = $bill->academicYear?->name ?? '-';
 
         // Color theme map for distinct Academic Years
         $ayColorThemes = [
@@ -232,8 +232,8 @@
                         $showModal = !$isPaid && $remainingAmount > 0 && $amount > 0;
                         
                         $targetYear = $billDetail->year ?? ($month >= 7 ? 
-                            ($bill->academicYear->start_year ?? date('Y')) : 
-                            ($bill->academicYear->end_year ?? (date('Y') + 1)));
+                            ($bill->academicYear?->start_year ?? date('Y')) : 
+                            ($bill->academicYear?->end_year ?? (date('Y') + 1)));
 
                         // Define classes based on status
                         $cardClass = $isPaid ? 'paid' : ($remainingAmount > 0 ? 'unpaid' : 'bg-secondary bg-opacity-10');
