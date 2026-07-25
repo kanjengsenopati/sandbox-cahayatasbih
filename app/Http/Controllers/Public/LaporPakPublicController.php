@@ -105,8 +105,10 @@ class LaporPakPublicController extends Controller
             'is_parent_updated' => 'nullable|boolean',
         ]);
 
+        $studentId = !empty($validated['student_id']) ? (string)$validated['student_id'] : null;
+
         $report = LaporPakReport::create([
-            'student_id' => $validated['student_id'] ?? null,
+            'student_id' => $studentId,
             'student_name' => $validated['student_name'],
             'school' => $validated['school'],
             'class_name' => $validated['class_name'],
@@ -118,15 +120,17 @@ class LaporPakPublicController extends Controller
             'status' => 'Kendala',
         ]);
 
-        if ($request->wantsJson()) {
+        if ($request->wantsJson() || $request->ajax() || $request->expectsJson()) {
             return response()->json([
                 'success' => true,
                 'message' => 'Laporan Anda telah berhasil terkirim.',
                 'data' => $report,
+                'created_at_formatted' => $report->created_at ? $report->created_at->format('d M Y, H:i') : '-',
             ]);
         }
 
         return redirect()->route('public.laporpak.index', ['tab' => 'progress', 'search' => $report->parent_name])
             ->with('success', 'Laporan Anda telah berhasil terkirim!');
     }
+
 }

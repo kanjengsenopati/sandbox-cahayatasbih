@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('lapor_pak_reports', function (Blueprint $table) {
             $table->id();
-            $table->unsignedBigInteger('student_id')->nullable();
+            $table->string('student_id')->nullable();
             $table->string('student_name');
             $table->string('school');
             $table->string('class_name');

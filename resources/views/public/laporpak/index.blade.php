@@ -67,19 +67,18 @@
             </div>
         </header>
 
-        <!-- FLASH SUCCESS NOTIFICATION -->
-        @if(session('success'))
-            <div class="px-5 pt-4">
-                <div class="rounded-[24px] bg-emerald-500/10 border border-emerald-500/20 p-4 flex items-center gap-3 text-emerald-700">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+        <!-- ERROR ALERT BANNER -->
+        <div x-show="errorMessage" x-transition class="px-5 pt-4">
+            <div class="rounded-[24px] bg-red-500/10 border border-red-500/20 p-4 flex items-center justify-between gap-3 text-red-700">
+                <div class="flex items-center gap-2 text-xs font-semibold">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 shrink-0 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
-                    <div class="text-xs font-semibold">
-                        {{ session('success') }}
-                    </div>
+                    <span x-text="errorMessage"></span>
                 </div>
+                <button type="button" @click="errorMessage = ''" class="text-red-500 hover:text-red-700 text-xs font-bold">×</button>
             </div>
-        @endif
+        </div>
 
         <!-- CONTENT TAB 1: FORM LAPOR -->
         <main x-show="activeTab === 'form'" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 translate-y-1" x-transition:enter-end="opacity-100 translate-y-0" class="px-5 pt-4 space-y-5 flex-1">
@@ -93,13 +92,16 @@
                 </div>
             </div>
 
-            <!-- Form Utama -->
-            <form action="{{ route('public.laporpak.store') }}" method="POST" @submit="handleSubmit" class="space-y-5">
-                @csrf
+            <!-- Form Utama (AJAX Submitted) -->
+            <form @submit.prevent="submitForm" class="space-y-5">
+                <!-- TOP-LEVEL HIDDEN INPUTS (TIDAK BOLEH DI DALAM <TEMPLATE>) -->
                 <input type="hidden" name="student_id" :value="selectedStudent ? selectedStudent.id : ''">
                 <input type="hidden" name="student_name" :value="selectedStudent ? selectedStudent.name : ''">
                 <input type="hidden" name="school" :value="selectedStudent ? selectedStudent.school : ''">
                 <input type="hidden" name="class_name" :value="selectedStudent ? selectedStudent.class : ''">
+                <input type="hidden" name="parent_name" :value="parentName">
+                <input type="hidden" name="parent_phone" :value="parentPhone">
+                <input type="hidden" name="is_parent_updated" :value="isEditParent ? '1' : '0'">
 
                 <!-- LANGKAH 1: PILIH JENIS KENDALA -->
                 <div class="rounded-[24px] bg-white p-5 shadow-[0_8px_30px_rgb(0,0,0,0.04)] space-y-3 border border-slate-200/60">
@@ -222,60 +224,64 @@
                         </button>
                     </div>
 
-                    <template x-if="!isEditParent">
-                        <div class="bg-slate-50 rounded-[24px] p-4 space-y-2 border border-slate-200/80">
-                            <div class="flex justify-between items-center text-xs">
-                                <span class="text-[11px] font-bold uppercase tracking-widest text-slate-400">Nama Wali</span>
-                                <span class="font-bold text-slate-800" x-text="parentName"></span>
-                            </div>
-                            <div class="flex justify-between items-center text-xs">
-                                <span class="text-[11px] font-bold uppercase tracking-widest text-slate-400">No. WhatsApp</span>
-                                <span class="font-bold text-slate-800 font-mono" x-text="parentPhone"></span>
-                            </div>
-                            <input type="hidden" name="parent_name" :value="parentName">
-                            <input type="hidden" name="parent_phone" :value="parentPhone">
-                            <p class="text-[11px] text-slate-400 italic pt-1">*Data wali terhubung otomatis dari sistem perwalian.</p>
+                    <div x-show="!isEditParent" class="bg-slate-50 rounded-[24px] p-4 space-y-2 border border-slate-200/80">
+                        <div class="flex justify-between items-center text-xs">
+                            <span class="text-[11px] font-bold uppercase tracking-widest text-slate-400">Nama Wali</span>
+                            <span class="font-bold text-slate-800" x-text="parentName"></span>
                         </div>
-                    </template>
+                        <div class="flex justify-between items-center text-xs">
+                            <span class="text-[11px] font-bold uppercase tracking-widest text-slate-400">No. WhatsApp</span>
+                            <span class="font-bold text-slate-800 font-mono" x-text="parentPhone"></span>
+                        </div>
+                        <p class="text-[11px] text-slate-400 italic pt-1">*Data wali terhubung otomatis dari sistem perwalian.</p>
+                    </div>
 
-                    <template x-if="isEditParent">
-                        <div class="space-y-3 bg-blue-50/50 p-4 rounded-[24px] border border-blue-200">
-                            <input type="hidden" name="is_parent_updated" value="1">
-                            <div>
-                                <label class="text-[11px] font-bold uppercase tracking-widest text-slate-600 block mb-1">Nama Lengkap Wali</label>
-                                <input 
-                                    type="text" 
-                                    name="parent_name" 
-                                    x-model="parentName" 
-                                    class="w-full px-3.5 py-2.5 rounded-[24px] bg-white border border-slate-200 text-xs font-semibold text-slate-800 focus:outline-none focus:border-blue-600"
-                                    placeholder="Nama Wali"
-                                >
-                            </div>
-                            <div>
-                                <label class="text-[11px] font-bold uppercase tracking-widest text-slate-600 block mb-1">No. WhatsApp Aktif</label>
-                                <input 
-                                    type="text" 
-                                    name="parent_phone" 
-                                    x-model="parentPhone" 
-                                    class="w-full px-3.5 py-2.5 rounded-[24px] bg-white border border-slate-200 text-xs font-semibold text-slate-800 focus:outline-none focus:border-blue-600 font-mono"
-                                    placeholder="Contoh: 081234567890"
-                                >
-                            </div>
+                    <div x-show="isEditParent" class="space-y-3 bg-blue-50/50 p-4 rounded-[24px] border border-blue-200">
+                        <div>
+                            <label class="text-[11px] font-bold uppercase tracking-widest text-slate-600 block mb-1">Nama Lengkap Wali</label>
+                            <input 
+                                type="text" 
+                                x-model="parentName" 
+                                class="w-full px-3.5 py-2.5 rounded-[24px] bg-white border border-slate-200 text-xs font-semibold text-slate-800 focus:outline-none focus:border-blue-600"
+                                placeholder="Nama Wali"
+                            >
                         </div>
-                    </template>
+                        <div>
+                            <label class="text-[11px] font-bold uppercase tracking-widest text-slate-600 block mb-1">No. WhatsApp Aktif</label>
+                            <input 
+                                type="text" 
+                                x-model="parentPhone" 
+                                class="w-full px-3.5 py-2.5 rounded-[24px] bg-white border border-slate-200 text-xs font-semibold text-slate-800 focus:outline-none focus:border-blue-600 font-mono"
+                                placeholder="Contoh: 081234567890"
+                            >
+                        </div>
+                    </div>
                 </div>
 
                 <!-- SUBMIT BUTTON -->
                 <div class="pt-2">
                     <button 
                         type="submit" 
-                        :disabled="!selectedKendala || !selectedStudent"
+                        :disabled="isSubmitting || !selectedKendala || !selectedStudent"
                         class="w-full py-3.5 rounded-[24px] bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-[0_8px_30px_rgb(37,99,235,0.25)] transition active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                     >
-                        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-                        </svg>
-                        <span>Kirim Pengaduan Lapor Pak</span>
+                        <template x-if="isSubmitting">
+                            <span class="flex items-center gap-2">
+                                <svg class="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
+                                <span>Mengirimkan Pengaduan...</span>
+                            </span>
+                        </template>
+                        <template x-if="!isSubmitting">
+                            <span class="flex items-center gap-2">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                                </svg>
+                                <span>Kirim Pengaduan Lapor Pak</span>
+                            </span>
+                        </template>
                     </button>
                 </div>
             </form>
@@ -375,6 +381,48 @@
                 @endforelse
             </div>
         </main>
+
+        <!-- MODAL RESI SUKSES INSTAN -->
+        <div x-show="isSuccessModalOpen" x-transition class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm" style="display: none;">
+            <div class="bg-white rounded-[24px] shadow-2xl w-full max-w-sm p-6 text-center space-y-4 border border-slate-200">
+                <div class="w-14 h-14 bg-emerald-500/10 text-emerald-600 rounded-full flex items-center justify-center mx-auto">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+                    </svg>
+                </div>
+
+                <div>
+                    <span class="text-[11px] font-bold uppercase tracking-widest text-emerald-600 block mb-1">Berhasil Terkirim</span>
+                    <h2 class="text-[18px] font-bold text-slate-900 leading-snug">Pengaduan Berhasil Terdaftar</h2>
+                    <p class="text-xs text-slate-500 mt-1">Laporan Anda telah berhasil masuk ke sistem petugas Lapor Pak.</p>
+                </div>
+
+                <div class="bg-slate-50 rounded-[24px] p-4 text-left space-y-2 text-xs border border-slate-200/80" x-show="submittedData">
+                    <div class="flex justify-between items-center">
+                        <span class="text-slate-400 font-medium">Nama Wali</span>
+                        <span class="font-bold text-slate-800" x-text="submittedData ? submittedData.parent_name : ''"></span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-slate-400 font-medium">Nama Siswa</span>
+                        <span class="font-bold text-slate-800" x-text="submittedData ? submittedData.student_name : ''"></span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-slate-400 font-medium">Kendala</span>
+                        <span class="px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-600 font-bold text-[10px]" x-text="submittedData ? submittedData.kendala : ''"></span>
+                    </div>
+                </div>
+
+                <div class="pt-2">
+                    <button 
+                        type="button" 
+                        @click="isSuccessModalOpen = false; activeTab = 'progress';"
+                        class="w-full py-3 rounded-[24px] bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-md transition active:scale-95"
+                    >
+                        Lihat Progress Laporan
+                    </button>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- ALPINE JS LOGIC -->
@@ -398,6 +446,10 @@
                 parentName: "",
                 parentPhone: "",
                 isEditParent: false,
+                isSubmitting: false,
+                errorMessage: "",
+                isSuccessModalOpen: false,
+                submittedData: null,
 
                 fetchStudents() {
                     if (this.studentQuery.trim().length === 0) {
@@ -423,22 +475,71 @@
                     this.isEditParent = false;
                 },
 
-                handleSubmit(e) {
+                submitForm() {
                     if (!this.selectedKendala) {
                         alert("Harap pilih salah satu jenis kendala.");
-                        e.preventDefault();
                         return;
                     }
                     if (!this.selectedStudent) {
                         alert("Harap pilih data siswa dari hasil pencarian.");
-                        e.preventDefault();
                         return;
                     }
                     if (!this.parentName.trim() || !this.parentPhone.trim()) {
                         alert("Harap lengkapi nama wali dan nomor WhatsApp.");
-                        e.preventDefault();
                         return;
                     }
+
+                    this.isSubmitting = true;
+                    this.errorMessage = "";
+
+                    const formData = new FormData();
+                    const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+                    formData.append('_token', csrfToken);
+                    formData.append('kendala', this.selectedKendala);
+                    formData.append('keterangan', this.keterangan || '');
+                    formData.append('student_id', this.selectedStudent ? this.selectedStudent.id : '');
+                    formData.append('student_name', this.selectedStudent ? this.selectedStudent.name : '');
+                    formData.append('school', this.selectedStudent ? this.selectedStudent.school : '');
+                    formData.append('class_name', this.selectedStudent ? this.selectedStudent.class : '');
+                    formData.append('parent_name', this.parentName.trim());
+                    formData.append('parent_phone', this.parentPhone.trim());
+                    if (this.isEditParent) {
+                        formData.append('is_parent_updated', '1');
+                    }
+
+                    fetch('{{ route("public.laporpak.store") }}', {
+                        method: 'POST',
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'Accept': 'application/json',
+                        },
+                        body: formData
+                    })
+                    .then(async (res) => {
+                        const data = await res.json();
+                        if (!res.ok || !data.success) {
+                            throw new Error(data.message || 'Gagal mengirim pengaduan. Silakan periksa kembali data Anda.');
+                        }
+                        return data;
+                    })
+                    .then(data => {
+                        this.isSubmitting = false;
+                        this.submittedData = data.data;
+                        this.isSuccessModalOpen = true;
+
+                        // Reset form
+                        this.selectedKendala = "";
+                        this.keterangan = "";
+                        this.studentQuery = "";
+                        this.selectedStudent = null;
+                        this.parentName = "";
+                        this.parentPhone = "";
+                        this.isEditParent = false;
+                    })
+                    .catch(err => {
+                        this.isSubmitting = false;
+                        this.errorMessage = err.message || "Terjadi kesalahan saat menghubungi server. Silakan coba lagi.";
+                    });
                 }
             }
         }
