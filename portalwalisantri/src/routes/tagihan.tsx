@@ -259,11 +259,11 @@ function Tagihan() {
         {grouped.map(([cat, items]) => (
           <section key={cat}>
             <div className="rounded-2xl bg-primary px-4 py-2.5 flex items-center justify-between text-primary-foreground shadow-[var(--shadow-soft)] mt-4 mb-3">
-              <span className="text-xs font-extrabold tracking-widest uppercase text-white">
+              <span className="text-xs font-bold tracking-tight text-white">
                 Tahun Ajaran {cat}
               </span>
-              <span className="px-2.5 py-0.5 rounded-full bg-white/20 text-[10px] font-bold uppercase tracking-wider text-white">
-                {items.length} item
+              <span className="px-2.5 py-0.5 rounded-full bg-white/20 text-[10px] font-bold tracking-tight text-white">
+                {items.length} Item
               </span>
             </div>
 
