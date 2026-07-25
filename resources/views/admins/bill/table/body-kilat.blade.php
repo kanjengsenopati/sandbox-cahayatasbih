@@ -64,6 +64,7 @@
     @php
         $existingBills = $bill->bills->where('student_id', $student->id);
         $paidAmount = $existingBills->sum('paid_amount');
+        $isZarkasi = str_contains(strtoupper($bill->name ?? ''), 'ZARKASI');
         
         // Find sample monthly amount from existing bills or billItem rate
         $sampleBill = $existingBills->firstWhere('amount', '>', 0);
@@ -83,7 +84,16 @@
             if ($bDet) {
                 $unpaidAmount += max(0, $bDet->amount - $bDet->paid_amount);
             } else {
-                $unpaidAmount += $sampleMonthlyAmount;
+                if ($isZarkasi) {
+                    if ($m >= 7 && $m <= 11) {
+                        $unpaidAmount += 100000;
+                    } elseif ($m == 12) {
+                        $unpaidAmount += 50000;
+                    }
+                    // Months 1-6 add 0 for Zarkasi
+                } else {
+                    $unpaidAmount += $sampleMonthlyAmount;
+                }
             }
         }
 
@@ -181,14 +191,26 @@
                             $billDetail = $existingBills->firstWhere('month', (string)$month);
                         }
 
-                        $amount = $billDetail ? $billDetail->amount : $sampleMonthlyAmount;
-                        $remainingAmount = $billDetail ? max(0, $billDetail->amount - $billDetail->paid_amount) : $sampleMonthlyAmount;
-                        $status = $billDetail ? $billDetail->status : 'UNPAID';
+                        if ($isZarkasi) {
+                            if ($month >= 7 && $month <= 11) {
+                                $expectedMonthlyAmount = 100000;
+                            } elseif ($month == 12) {
+                                $expectedMonthlyAmount = 50000;
+                            } else {
+                                $expectedMonthlyAmount = 0;
+                            }
+                            $amount = $billDetail ? $billDetail->amount : $expectedMonthlyAmount;
+                        } else {
+                            $amount = $billDetail ? $billDetail->amount : $sampleMonthlyAmount;
+                        }
+
+                        $remainingAmount = $billDetail ? max(0, $billDetail->amount - $billDetail->paid_amount) : $amount;
+                        $status = $billDetail ? $billDetail->status : ($amount > 0 ? 'UNPAID' : 'FREE');
                         $isPaid = $status == 'PAID' || ($billDetail && $remainingAmount <= 0 && $amount > 0);
                         $detailPayment = $billDetail ? $billDetail->transactions?->first() : null;
                         
                         $modalId = "bayarKilat{$bill->id}_{$month}";
-                        $showModal = !$isPaid && $remainingAmount > 0;
+                        $showModal = !$isPaid && $remainingAmount > 0 && $amount > 0;
                         
                         $targetYear = $billDetail->year ?? ($month >= 7 ? 
                             ($bill->academicYear->start_year ?? date('Y')) : 
@@ -244,7 +266,9 @@
 
                             <!-- Footer: Action/Status -->
                             <div class="mt-2 d-flex justify-content-center align-items-center">
-                                @if($isPaid)
+                                @if($amount == 0)
+                                    <span class="badge badge-light text-slate-400 fs-9 fw-bold">Rp 0 (Bebas)</span>
+                                @elseif($isPaid)
                                     <span class="badge badge-success fw-bolder px-3 py-1 text-white">
                                         <i class="fas fa-check-circle me-1 text-white"></i> Lunas
                                     </span>

@@ -709,14 +709,26 @@ class TransactionService
                 return $billIdOrDescriptor;
             }
 
-            $sampleBill = \App\Models\Bill::where('student_id', $studentId)
-                ->where('bill_type_id', $billTypeId)
-                ->where('amount', '>', 0)
-                ->first();
+            $isZarkasi = str_contains(strtoupper($billType->name ?? ''), 'ZARKASI');
+            if ($isZarkasi) {
+                $m = (int)$month;
+                if ($m >= 7 && $m <= 11) {
+                    $amount = 100000;
+                } elseif ($m == 12) {
+                    $amount = 50000;
+                } else {
+                    $amount = 0;
+                }
+            } else {
+                $sampleBill = \App\Models\Bill::where('student_id', $studentId)
+                    ->where('bill_type_id', $billTypeId)
+                    ->where('amount', '>', 0)
+                    ->first();
 
-            $amount = $sampleBill ? $sampleBill->amount : ($billType->billItem->amount ?? 0);
-            if ($amount <= 0) {
-                $amount = \App\Models\Bill::where('bill_type_id', $billTypeId)->where('amount', '>', 0)->value('amount') ?? 0;
+                $amount = $sampleBill ? $sampleBill->amount : ($billType->billItem->amount ?? 0);
+                if ($amount <= 0) {
+                    $amount = \App\Models\Bill::where('bill_type_id', $billTypeId)->where('amount', '>', 0)->value('amount') ?? 0;
+                }
             }
 
             $classroomId = $sampleBill ? $sampleBill->classroom_id : $student->classroom_id;
