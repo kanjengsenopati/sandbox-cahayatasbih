@@ -64,13 +64,14 @@ jobs:
             echo "=== Creating Storage Symlink ==="
             /www/server/php/84/bin/php artisan storage:link || echo "Storage link may already exist"
 
-            echo "=== Clearing ALL Old Caches ==="
+            echo "=== Clearing ALL Old Caches & View Storage ==="
             /www/server/php/84/bin/php artisan optimize:clear
+            /www/server/php/84/bin/php artisan view:clear
+            rm -rf $DEPLOY_PATH/storage/framework/views/*.php 2>/dev/null || true
 
             echo "=== Rebuilding Laravel Caches ==="
             /www/server/php/84/bin/php artisan config:cache
             /www/server/php/84/bin/php artisan route:cache
-            /www/server/php/84/bin/php artisan view:cache
 
             echo "=== Clearing PHP OPcache ==="
             /www/server/php/84/bin/php -r "if(function_exists('opcache_reset')){opcache_reset();echo 'OPcache cleared via CLI'.PHP_EOL;}else{echo 'OPcache not available via CLI'.PHP_EOL;}"
