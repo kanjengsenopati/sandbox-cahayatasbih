@@ -77,34 +77,38 @@
                                 <span class="text-muted fs-7">Kelola, update status tindak lanjut, & catatan untuk wali santri</span>
                             </div>
                             
-                            <!-- Filter Toolbar -->
-                            <div class="card-toolbar gap-3 flex-wrap">
-                                <form action="{{ route('admin.laporpak.index') }}" method="GET" class="d-flex gap-2 flex-wrap">
-                                    <!-- Status Filter -->
-                                    <select name="status" class="form-select form-select-sm form-select-solid w-160px" onchange="this.form.submit()">
+                            <!-- Filter Toolbar 1 Baris Sejajar -->
+                            <div class="card-toolbar w-100 mt-4 mt-md-0">
+                                <form action="{{ route('admin.laporpak.index') }}" method="GET" class="d-flex align-items-center gap-2 flex-wrap flex-md-nowrap w-100 justify-content-md-end">
+                                    <input type="hidden" name="sort_by" value="{{ $sortBy ?? 'created_at' }}">
+                                    <input type="hidden" name="sort_dir" value="{{ $sortDir ?? 'desc' }}">
+
+                                    <!-- 1. Status Filter -->
+                                    <select name="status" class="form-select form-select-sm form-select-solid w-150px" onchange="this.form.submit()">
                                         <option value="all" {{ $statusFilter == 'all' ? 'selected' : '' }}>Semua Status</option>
                                         @foreach($milestones as $ms)
                                             <option value="{{ $ms }}" {{ $statusFilter == $ms ? 'selected' : '' }}>{{ $ms }}</option>
                                         @endforeach
                                     </select>
 
-                                    <!-- Category Filter -->
-                                    <select name="category" class="form-select form-select-sm form-select-solid w-180px" onchange="this.form.submit()">
+                                    <!-- 2. Category Filter -->
+                                    <select name="category" class="form-select form-select-sm form-select-solid w-170px" onchange="this.form.submit()">
                                         <option value="all" {{ $categoryFilter == 'all' ? 'selected' : '' }}>Semua Kendala</option>
                                         @foreach(\App\Http\Controllers\Admin\LaporPakAdminController::KENDALA_OPTIONS as $opt)
                                             <option value="{{ $opt }}" {{ $categoryFilter == $opt ? 'selected' : '' }}>{{ $opt }}</option>
                                         @endforeach
                                     </select>
 
-                                    <!-- Search Input -->
-                                    <div class="d-flex align-items-center position-relative">
-                                        <input type="text" name="q" value="{{ $search }}" class="form-control form-control-sm form-control-solid w-200px ps-9" placeholder="Cari Wali/Siswa..." />
+                                    <!-- 3. Search Input -->
+                                    <div class="d-flex align-items-center position-relative w-200px">
+                                        <input type="text" name="q" value="{{ $search }}" class="form-control form-control-sm form-control-solid ps-9" placeholder="Cari Wali/Siswa..." />
                                         <i class="bi bi-search position-absolute ms-3 text-gray-400"></i>
                                     </div>
 
-                                    <button type="submit" class="btn btn-sm btn-light-primary">Filter</button>
-                                    @if($statusFilter != 'all' || $categoryFilter != 'all' || !empty($search))
-                                        <a href="{{ route('admin.laporpak.index') }}" class="btn btn-sm btn-light-danger">Reset</a>
+                                    <!-- 4. Action Buttons -->
+                                    <button type="submit" class="btn btn-sm btn-light-primary text-nowrap">Filter</button>
+                                    @if($statusFilter != 'all' || $categoryFilter != 'all' || !empty($search) || ($sortBy ?? 'created_at') != 'created_at' || ($sortDir ?? 'desc') != 'desc')
+                                        <a href="{{ route('admin.laporpak.index') }}" class="btn btn-sm btn-light-danger text-nowrap">Reset</a>
                                     @endif
                                 </form>
                             </div>
@@ -115,11 +119,60 @@
                                 <table class="table align-middle table-row-dashed fs-7 gy-3">
                                     <thead>
                                         <tr class="text-start text-gray-400 fw-bolder fs-8 text-uppercase gs-0">
-                                            <th style="width: 5%">No</th>
-                                            <th>Nama Wali</th>
-                                            <th>Nama Siswa</th>
-                                            <th>Jenis Kendala</th>
-                                            <th>Waktu Lapor</th>
+                                            <th style="width: 4%">No</th>
+
+                                            <!-- SORTABLE HEADER: NAMA WALI -->
+                                            <th>
+                                                <a href="{{ request()->fullUrlWithQuery(['sort_by' => 'parent_name', 'sort_dir' => ($sortBy == 'parent_name' && $sortDir == 'asc') ? 'desc' : 'asc']) }}" 
+                                                   class="text-gray-400 text-hover-primary text-uppercase fw-bolder fs-8 d-inline-flex align-items-center">
+                                                    Nama Wali
+                                                    @if(($sortBy ?? '') == 'parent_name')
+                                                        <i class="bi bi-arrow-{{ $sortDir == 'asc' ? 'up' : 'down' }} text-primary ms-1"></i>
+                                                    @else
+                                                        <i class="bi bi-arrow-down-up text-gray-400 ms-1 fs-9 opacity-50"></i>
+                                                    @endif
+                                                </a>
+                                            </th>
+
+                                            <!-- SORTABLE HEADER: NAMA SISWA -->
+                                            <th>
+                                                <a href="{{ request()->fullUrlWithQuery(['sort_by' => 'student_name', 'sort_dir' => ($sortBy == 'student_name' && $sortDir == 'asc') ? 'desc' : 'asc']) }}" 
+                                                   class="text-gray-400 text-hover-primary text-uppercase fw-bolder fs-8 d-inline-flex align-items-center">
+                                                    Nama Siswa
+                                                    @if(($sortBy ?? '') == 'student_name')
+                                                        <i class="bi bi-arrow-{{ $sortDir == 'asc' ? 'up' : 'down' }} text-primary ms-1"></i>
+                                                    @else
+                                                        <i class="bi bi-arrow-down-up text-gray-400 ms-1 fs-9 opacity-50"></i>
+                                                    @endif
+                                                </a>
+                                            </th>
+
+                                            <!-- SORTABLE HEADER: JENIS KENDALA -->
+                                            <th>
+                                                <a href="{{ request()->fullUrlWithQuery(['sort_by' => 'kendala', 'sort_dir' => ($sortBy == 'kendala' && $sortDir == 'asc') ? 'desc' : 'asc']) }}" 
+                                                   class="text-gray-400 text-hover-primary text-uppercase fw-bolder fs-8 d-inline-flex align-items-center">
+                                                    Jenis Kendala
+                                                    @if(($sortBy ?? '') == 'kendala')
+                                                        <i class="bi bi-arrow-{{ $sortDir == 'asc' ? 'up' : 'down' }} text-primary ms-1"></i>
+                                                    @else
+                                                        <i class="bi bi-arrow-down-up text-gray-400 ms-1 fs-9 opacity-50"></i>
+                                                    @endif
+                                                </a>
+                                            </th>
+
+                                            <!-- SORTABLE HEADER: WAKTU LAPOR -->
+                                            <th>
+                                                <a href="{{ request()->fullUrlWithQuery(['sort_by' => 'created_at', 'sort_dir' => ($sortBy == 'created_at' && $sortDir == 'asc') ? 'desc' : 'asc']) }}" 
+                                                   class="text-gray-400 text-hover-primary text-uppercase fw-bolder fs-8 d-inline-flex align-items-center">
+                                                    Waktu Lapor
+                                                    @if(($sortBy ?? 'created_at') == 'created_at')
+                                                        <i class="bi bi-arrow-{{ $sortDir == 'asc' ? 'up' : 'down' }} text-primary ms-1"></i>
+                                                    @else
+                                                        <i class="bi bi-arrow-down-up text-gray-400 ms-1 fs-9 opacity-50"></i>
+                                                    @endif
+                                                </a>
+                                            </th>
+
                                             <th class="text-center min-w-180px">Status & Catatan Petugas</th>
                                             <th class="text-end min-w-120px">Aksi</th>
                                         </tr>

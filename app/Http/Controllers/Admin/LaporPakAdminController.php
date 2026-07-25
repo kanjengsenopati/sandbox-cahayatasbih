@@ -31,12 +31,19 @@ class LaporPakAdminController extends Controller
         try {
             $setting = LaporPakSetting::getSetting();
 
-            // Parameter filter
+            // Parameter filter & sorting
             $statusFilter = $request->query('status', 'all');
             $categoryFilter = $request->query('category', 'all');
             $search = trim($request->query('q', ''));
+            $sortBy = $request->query('sort_by', 'created_at');
+            $sortDir = strtolower($request->query('sort_dir', 'desc')) === 'asc' ? 'asc' : 'desc';
 
-            $query = LaporPakReport::latest();
+            $allowedSorts = ['parent_name', 'student_name', 'kendala', 'created_at'];
+            if (!in_array($sortBy, $allowedSorts)) {
+                $sortBy = 'created_at';
+            }
+
+            $query = LaporPakReport::query();
 
             if ($statusFilter !== 'all') {
                 $query->where('status', $statusFilter);
@@ -54,6 +61,8 @@ class LaporPakAdminController extends Controller
                       ->orWhere('keterangan', 'like', "%{$search}%");
                 });
             }
+
+            $query->orderBy($sortBy, $sortDir);
 
             $reports = $query->paginate(25)->withQueryString();
 
@@ -82,7 +91,9 @@ class LaporPakAdminController extends Controller
                 'statusFilter',
                 'categoryFilter',
                 'search',
-                'milestones'
+                'milestones',
+                'sortBy',
+                'sortDir'
             ));
         } catch (\Throwable $e) {
             Log::error('Error rendering LaporPakAdminController index: ' . $e->getMessage() . ' | ' . $e->getTraceAsString());
@@ -101,6 +112,8 @@ class LaporPakAdminController extends Controller
             $statusFilter = 'all';
             $categoryFilter = 'all';
             $search = '';
+            $sortBy = 'created_at';
+            $sortDir = 'desc';
             $milestones = self::MILESTONE_STATUSES;
 
             return view('admins.laporpak.index', compact(
@@ -108,6 +121,13 @@ class LaporPakAdminController extends Controller
                 'reports',
                 'stats',
                 'statusFilter',
+                'categoryFilter',
+                'search',
+                'milestones',
+                'sortBy',
+                'sortDir'
+            ));
+        },
                 'categoryFilter',
                 'search',
                 'milestones'
