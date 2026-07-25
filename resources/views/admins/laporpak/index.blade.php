@@ -230,7 +230,7 @@
                                     @endphp
                                     <tr>
                                         <td class="text-center fw-bolder text-gray-400">
-                                            {{ $reports->firstItem() + $index }}
+                                            {{ ($reports->firstItem() ?? 1) + $index }}
                                         </td>
                                         <td>
                                             <div class="fw-bolder text-gray-800 fs-7">{{ $rep->parent_name }}</div>
