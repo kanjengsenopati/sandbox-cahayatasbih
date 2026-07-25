@@ -249,7 +249,7 @@
                                                     <select class="form-select payment-method-select"
                                                         name="payment_method" required>
                                                         <option value="">Metode Pembayaran</option>
-                                                        @if ($student->saldo > $amount)
+                                                        @if ($student->saldo >= $displayAmount)
                                                         <option value="BALANCE">Saldo</option>
                                                         @endif
                                                         <option value="CASH">Tunai</option>
