@@ -36,31 +36,31 @@
                 </div>
             @endif
 
-            <!-- NAV TABS 2 MODUL -->
-            <div class="d-flex align-items-center justify-content-between mb-5 border-bottom border-gray-200 pb-3">
-                <ul class="nav nav-tabs nav-line-tabs nav-line-tabs-2x fs-6 border-0 fw-bolder">
+            <!-- HEADER NAV TABS METRONIC (PROPER SPLIT) -->
+            <div class="mb-6 border-bottom border-gray-200">
+                <ul class="nav nav-custom nav-tabs nav-line-tabs nav-line-tabs-2x border-0 fs-6 fw-bolder">
                     <li class="nav-item">
                         <a href="javascript:void(0)" 
                            @click="activeTab = 'data'" 
-                           :class="{ 'active text-primary border-primary': activeTab === 'data', 'text-gray-500 hover:text-gray-700': activeTab !== 'data' }" 
-                           class="nav-link py-3 px-4 me-3 font-bold border-bottom-3">
-                            <i class="bi bi-card-list me-2 fs-5"></i> Tab 1: Daftar Pengaduan
+                           :class="{ 'active text-primary border-primary': activeTab === 'data', 'text-gray-500 border-transparent': activeTab !== 'data' }" 
+                           class="nav-link py-3 px-5 border-bottom-3 me-2">
+                            <i class="bi bi-card-list me-2 fs-4"></i> Tab 1: Daftar Pengaduan
                             <span class="badge badge-light-primary ms-2">{{ $stats['total'] }}</span>
                         </a>
                     </li>
                     <li class="nav-item">
                         <a href="javascript:void(0)" 
                            @click="activeTab = 'settings'" 
-                           :class="{ 'active text-primary border-primary': activeTab === 'settings', 'text-gray-500 hover:text-gray-700': activeTab !== 'settings' }" 
-                           class="nav-link py-3 px-4 font-bold border-bottom-3">
-                            <i class="bi bi-gear-fill me-2 fs-5"></i> Tab 2: Pengaturan & Ringkasan
+                           :class="{ 'active text-primary border-primary': activeTab === 'settings', 'text-gray-500 border-transparent': activeTab !== 'settings' }" 
+                           class="nav-link py-3 px-5 border-bottom-3">
+                            <i class="bi bi-gear-fill me-2 fs-4"></i> Tab 2: Pengaturan & Ringkasan
                         </a>
                     </li>
                 </ul>
             </div>
 
-            <!-- TAB 1: DAFTAR PENGADUAN LAPOR PAK -->
-            <div x-show="activeTab === 'data'" class="space-y-5">
+            <!-- TAB 1: DAFTAR PENGADUAN LAPOR PAK (D-NONE IF NOT ACTIVE) -->
+            <div :class="{ 'd-none': activeTab !== 'data' }">
                 <div class="card shadow-sm border border-slate-200">
                     <div class="card-header border-0 pt-6">
                         <div class="card-title flex-column">
@@ -253,8 +253,8 @@
                 </div>
             </div>
 
-            <!-- TAB 2: PENGATURAN PERIODE AKSES & RINGKASAN STATISTIK -->
-            <div x-show="activeTab === 'settings'" class="space-y-5">
+            <!-- TAB 2: PENGATURAN PERIODE AKSES & RINGKASAN STATISTIK (D-NONE IF NOT ACTIVE) -->
+            <div :class="{ 'd-none': activeTab !== 'settings' }">
                 <!-- CARD 1: PENGATURAN PERIODE AKSES FORM LAPOR PAK -->
                 <div class="card mb-7 shadow-sm border border-slate-200">
                     <div class="card-header bg-light-primary border-0 pt-5">
