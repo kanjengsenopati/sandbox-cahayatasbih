@@ -17,6 +17,13 @@ class LaporPakAdminController extends Controller
         'Kendala Lainnya',
     ];
 
+    public const MILESTONE_STATUSES = [
+        'Laporan Masuk',
+        'Diterima',
+        'Sedang Ditangani',
+        'Selesai',
+    ];
+
     public function index(Request $request)
     {
         $setting = LaporPakSetting::getSetting();
@@ -47,12 +54,14 @@ class LaporPakAdminController extends Controller
 
         $reports = $query->paginate(25)->withQueryString();
 
-        // Total Statistik
+        // Total Statistik 4 Milestone
         $allReports = LaporPakReport::all();
         $stats = [
             'total' => $allReports->count(),
-            'kendalaCount' => $allReports->where('status', 'Kendala')->count(),
-            'teratasiCount' => $allReports->where('status', 'Teratasi')->count(),
+            'masukCount' => $allReports->where('status', 'Laporan Masuk')->count(),
+            'diterimaCount' => $allReports->where('status', 'Diterima')->count(),
+            'ditanganiCount' => $allReports->where('status', 'Sedang Ditangani')->count(),
+            'selesaiCount' => $allReports->where('status', 'Selesai')->count(),
             'catBreakdown' => collect(self::KENDALA_OPTIONS)->map(function ($cat) use ($allReports) {
                 return [
                     'category' => $cat,
@@ -61,13 +70,16 @@ class LaporPakAdminController extends Controller
             }),
         ];
 
+        $milestones = self::MILESTONE_STATUSES;
+
         return view('admins.laporpak.index', compact(
             'setting',
             'reports',
             'stats',
             'statusFilter',
             'categoryFilter',
-            'search'
+            'search',
+            'milestones'
         ));
     }
 
@@ -91,10 +103,27 @@ class LaporPakAdminController extends Controller
         return redirect()->back()->with('success', 'Pengaturan periode pengaduan Lapor Pak berhasil diperbarui.');
     }
 
+    public function updateStatus(Request $request, $id)
+    {
+        $validated = $request->validate([
+            'status' => 'required|string|in:Laporan Masuk,Diterima,Sedang Ditangani,Selesai',
+        ]);
+
+        $report = LaporPakReport::findOrFail($id);
+        $report->update(['status' => $validated['status']]);
+
+        return redirect()->back()->with('success', "Status laporan ID #{$report->id} berhasil diperbarui menjadi '{$validated['status']}'.");
+    }
+
     public function toggleStatus($id)
     {
         $report = LaporPakReport::findOrFail($id);
-        $nextStatus = $report->status === 'Kendala' ? 'Teratasi' : 'Kendala';
+        $nextStatus = match($report->status) {
+            'Laporan Masuk' => 'Diterima',
+            'Diterima' => 'Sedang Ditangani',
+            'Sedang Ditangani' => 'Selesai',
+            default => 'Laporan Masuk',
+        };
         $report->update(['status' => $nextStatus]);
 
         return redirect()->back()->with('success', "Status laporan ID #{$report->id} berhasil diubah menjadi {$nextStatus}.");

@@ -88,55 +88,63 @@
                 </div>
             </div>
 
-            <!-- ROW 2: SUMMARY CARDS & STATISTIK -->
+            <!-- ROW 2: SUMMARY CARDS & STATISTIK 4 MILESTONE -->
             <div class="row g-5 mb-7">
                 <!-- Card 1: Total Pengaduan -->
-                <div class="col-md-4">
+                <div class="col-md-3">
                     <div class="card card-flush h-100 shadow-sm border border-slate-200">
-                        <div class="card-header pt-5">
+                        <div class="card-header pt-4">
                             <div class="card-title d-flex flex-column">
                                 <span class="fs-2hx fw-bolder text-dark me-2 lh-1 font-mono">{{ $stats['total'] }}</span>
-                                <span class="text-gray-400 pt-1 fw-bold fs-7">Total Pengaduan Masuk</span>
+                                <span class="text-gray-400 pt-1 fw-bold fs-7">Total Pengaduan</span>
                             </div>
                         </div>
                         <div class="card-body pt-0 d-flex align-items-end">
-                            <div class="d-flex align-items-center justify-content-between w-100">
-                                <span class="badge badge-light-danger fw-bolder px-3 py-2">
-                                    <i class="bi bi-exclamation-triangle-fill me-1 text-danger"></i> {{ $stats['kendalaCount'] }} Pending Kendala
-                                </span>
-                                <span class="badge badge-light-success fw-bolder px-3 py-2">
-                                    <i class="bi bi-check-circle-fill me-1 text-success"></i> {{ $stats['teratasiCount'] }} Teratasi
-                                </span>
-                            </div>
+                            <span class="badge badge-light-primary fw-bolder px-3 py-1.5 fs-8">
+                                <i class="bi bi-inbox me-1"></i> {{ $stats['masukCount'] }} Laporan Masuk
+                            </span>
                         </div>
                     </div>
                 </div>
 
-                <!-- Card 2: Status Progress Breakdown -->
-                <div class="col-md-4">
+                <!-- Card 2: Status Progress 4 Milestone Breakdown -->
+                <div class="col-md-5">
                     <div class="card card-flush h-100 shadow-sm border border-slate-200">
-                        <div class="card-header pt-5">
-                            <h3 class="card-title fw-bolder text-dark fs-5">Rasio Penanganan</h3>
+                        <div class="card-header pt-4">
+                            <h3 class="card-title fw-bolder text-dark fs-6">Milestone Progress Status</h3>
                         </div>
                         <div class="card-body pt-0">
-                            <div class="d-flex flex-column">
-                                <div class="d-flex justify-content-between mb-2 fs-7 fw-bold">
-                                    <span class="text-danger">Kendala ({{ $stats['kendalaCount'] }})</span>
-                                    <span class="text-success">Teratasi ({{ $stats['teratasiCount'] }})</span>
+                            <div class="row g-2 text-center">
+                                <div class="col-3">
+                                    <div class="bg-light-secondary rounded p-2 border border-dashed border-gray-300">
+                                        <span class="fs-6 fw-bolder text-gray-700 font-mono block">{{ $stats['masukCount'] }}</span>
+                                        <span class="text-gray-500 fs-9 font-bold block">1. Masuk</span>
+                                    </div>
                                 </div>
-                                <div class="progress h-8px bg-light-danger rounded">
-                                    @php
-                                        $teratasiPercent = $stats['total'] > 0 ? round(($stats['teratasiCount'] / $stats['total']) * 100) : 0;
-                                    @endphp
-                                    <div class="progress-bar bg-success rounded" role="progressbar" style="width: {{ $teratasiPercent }}%" aria-valuenow="{{ $teratasiPercent }}" aria-valuemin="0" aria-valuemax="100"></div>
+                                <div class="col-3">
+                                    <div class="bg-light-warning rounded p-2 border border-dashed border-warning">
+                                        <span class="fs-6 fw-bolder text-warning font-mono block">{{ $stats['diterimaCount'] }}</span>
+                                        <span class="text-warning fs-9 font-bold block">2. Diterima</span>
+                                    </div>
                                 </div>
-                                <span class="text-muted fs-8 mt-2 italic text-center">{{ $teratasiPercent }}% Keluhan telah berhasil diselesaikan</span>
+                                <div class="col-3">
+                                    <div class="bg-light-primary rounded p-2 border border-dashed border-primary">
+                                        <span class="fs-6 fw-bolder text-primary font-mono block">{{ $stats['ditanganiCount'] }}</span>
+                                        <span class="text-primary fs-9 font-bold block">3. Ditangani</span>
+                                    </div>
+                                </div>
+                                <div class="col-3">
+                                    <div class="bg-light-success rounded p-2 border border-dashed border-success">
+                                        <span class="fs-6 fw-bolder text-success font-mono block">{{ $stats['selesaiCount'] }}</span>
+                                        <span class="text-success fs-9 font-bold block">4. Selesai</span>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Card 3: Breakdown Jenis Kendala -->
+                <!-- Card 3: Breakdown Kategori -->
                 <div class="col-md-4">
                     <div class="card card-flush h-100 shadow-sm border border-slate-200">
                         <div class="card-header pt-4">
@@ -159,7 +167,7 @@
                 <div class="card-header border-0 pt-6">
                     <div class="card-title flex-column">
                         <h3 class="fw-bolder fs-3 text-dark">Daftar Pengaduan Lapor Pak</h3>
-                        <span class="text-muted fs-7">Kelola & tindak lanjuti laporan pengaduan wali santri</span>
+                        <span class="text-muted fs-7">Kelola & update milestone status laporan pengaduan wali santri</span>
                     </div>
                     
                     <!-- Filter Toolbar -->
@@ -167,10 +175,11 @@
                         <!-- Filter Form -->
                         <form action="{{ route('admin.laporpak.index') }}" method="GET" class="d-flex gap-2 flex-wrap">
                             <!-- Status Filter -->
-                            <select name="status" class="form-select form-select-sm form-select-solid w-150px" onchange="this.form.submit()">
+                            <select name="status" class="form-select form-select-sm form-select-solid w-160px" onchange="this.form.submit()">
                                 <option value="all" {{ $statusFilter == 'all' ? 'selected' : '' }}>Semua Status</option>
-                                <option value="Kendala" {{ $statusFilter == 'Kendala' ? 'selected' : '' }}>Kendala</option>
-                                <option value="Teratasi" {{ $statusFilter == 'Teratasi' ? 'selected' : '' }}>Teratasi</option>
+                                @foreach($milestones as $ms)
+                                    <option value="{{ $ms }}" {{ $statusFilter == $ms ? 'selected' : '' }}>{{ $ms }}</option>
+                                @endforeach
                             </select>
 
                             <!-- Category Filter -->
@@ -205,8 +214,8 @@
                                     <th>Nama Siswa</th>
                                     <th>Jenis Kendala</th>
                                     <th>Waktu Lapor</th>
-                                    <th class="text-center">Status</th>
-                                    <th class="text-end min-w-180px">Aksi Kelola</th>
+                                    <th class="text-center min-w-160px">Milestone Status</th>
+                                    <th class="text-end min-w-120px">Aksi</th>
                                 </tr>
                             </thead>
                             <tbody class="text-gray-600 fw-bold">
@@ -217,7 +226,7 @@
                                         if (str_starts_with($phoneFormatted, '0')) {
                                             $phoneFormatted = '62' . substr($phoneFormatted, 1);
                                         }
-                                        $waMessage = rawurlencode("Assalamu'alaikum Bapak/Ibu {$rep->parent_name}, menindaklanjuti pengaduan Lapor Pak untuk santri {$rep->student_name} mengenai [{$rep->kendala}].");
+                                        $waMessage = rawurlencode("Assalamu'alaikum Bapak/Ibu {$rep->parent_name}, menindaklanjuti pengaduan Lapor Pak untuk santri {$rep->student_name} mengenai [{$rep->kendala}]. Status saat ini: {$rep->status}.");
                                     @endphp
                                     <tr>
                                         <td class="text-center fw-bolder text-gray-400">
@@ -246,15 +255,20 @@
                                             {{ $rep->created_at ? $rep->created_at->format('d M Y H:i') : '-' }}
                                         </td>
                                         <td class="text-center">
-                                            @if($rep->status === 'Kendala')
-                                                <span class="badge badge-light-danger fs-8 fw-bolder px-3 py-1.5">
-                                                    <i class="bi bi-exclamation-triangle-fill text-danger me-1"></i> Kendala
-                                                </span>
-                                            @else
-                                                <span class="badge badge-light-success fs-8 fw-bolder px-3 py-1.5">
-                                                    <i class="bi bi-check-circle-fill text-success me-1"></i> Teratasi
-                                                </span>
-                                            @endif
+                                            <!-- DROPDOWN SELECTOR MILESTONE STATUS -->
+                                            <form action="{{ route('admin.laporpak.update-status', $rep->id) }}" method="POST" class="d-inline-block w-100">
+                                                @csrf
+                                                <select 
+                                                    name="status" 
+                                                    onchange="this.form.submit()" 
+                                                    class="form-select form-select-sm fw-bolder fs-8 py-1.5 px-2 rounded-2 shadow-xs border-0 {{ match($rep->status) { 'Selesai' => 'bg-light-success text-success border-success', 'Sedang Ditangani' => 'bg-light-primary text-primary border-primary', 'Diterima' => 'bg-light-warning text-warning border-warning', default => 'bg-light-secondary text-gray-700' } }}"
+                                                >
+                                                    <option value="Laporan Masuk" {{ $rep->status == 'Laporan Masuk' || $rep->status == 'Kendala' ? 'selected' : '' }}>1. Laporan Masuk</option>
+                                                    <option value="Diterima" {{ $rep->status == 'Diterima' ? 'selected' : '' }}>2. Diterima</option>
+                                                    <option value="Sedang Ditangani" {{ $rep->status == 'Sedang Ditangani' ? 'selected' : '' }}>3. Sedang Ditangani</option>
+                                                    <option value="Selesai" {{ $rep->status == 'Selesai' || $rep->status == 'Teratasi' ? 'selected' : '' }}>4. Selesai</option>
+                                                </select>
+                                            </form>
                                         </td>
                                         <td class="text-end">
                                             <div class="d-flex justify-content-end align-items-center gap-2">
@@ -264,14 +278,6 @@
                                                         <i class="bi bi-whatsapp"></i> WA
                                                     </a>
                                                 @endif
-
-                                                <!-- Toggle Status Button -->
-                                                <form action="{{ route('admin.laporpak.toggle-status', $rep->id) }}" method="POST" class="d-inline">
-                                                    @csrf
-                                                    <button type="submit" class="btn btn-sm {{ $rep->status === 'Kendala' ? 'btn-success' : 'btn-light-warning' }} px-3 py-1.5 fw-bold fs-8">
-                                                        {{ $rep->status === 'Kendala' ? 'Selesaikan' : 'Tandai Kendala' }}
-                                                    </button>
-                                                </form>
 
                                                 <!-- Delete Button -->
                                                 <form action="{{ route('admin.laporpak.destroy', $rep->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Hapus laporan pengaduan ini?')">

@@ -134,7 +134,7 @@ class LaporPakPublicController extends Controller
                 'is_parent_updated' => !empty($request->is_parent_updated) && $request->is_parent_updated !== '0',
                 'kendala' => $validated['kendala'],
                 'keterangan' => $validated['keterangan'] ?? null,
-                'status' => 'Kendala',
+                'status' => 'Laporan Masuk',
             ]);
 
             if ($request->wantsJson() || $request->ajax() || $request->expectsJson()) {

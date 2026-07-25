@@ -505,8 +505,10 @@ Route::group(['middleware' => ['auth']], function () {
     // Modul Admin Lapor Pak Backoffice
     Route::get('admin/laporpak', [App\Http\Controllers\Admin\LaporPakAdminController::class, 'index'])->name('admin.laporpak.index');
     Route::post('admin/laporpak/setting', [App\Http\Controllers\Admin\LaporPakAdminController::class, 'updateSetting'])->name('admin.laporpak.setting');
+    Route::post('admin/laporpak/{id}/update-status', [App\Http\Controllers\Admin\LaporPakAdminController::class, 'updateStatus'])->name('admin.laporpak.update-status');
     Route::post('admin/laporpak/{id}/toggle-status', [App\Http\Controllers\Admin\LaporPakAdminController::class, 'toggleStatus'])->name('admin.laporpak.toggle-status');
     Route::delete('admin/laporpak/{id}', [App\Http\Controllers\Admin\LaporPakAdminController::class, 'destroy'])->name('admin.laporpak.destroy');
+
 
 
 });
