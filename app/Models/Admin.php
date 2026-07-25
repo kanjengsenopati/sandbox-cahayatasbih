@@ -254,5 +254,27 @@ class Admin extends Authenticatable
     {
         return $this->morphMany(EmployeeMonthlyShift::class, 'presensiable');
     }
+
+    /**
+     * Check if admin is Super Admin
+     */
+    public function isSuperAdmin(): bool
+    {
+        if ($this->role_id == 1) {
+            return true;
+        }
+
+        if (in_array(strtolower($this->email), ['siswanto@cahayatasbih.or.id', 'arsito@cahayatasbih.or.id', 'maulana@cahayatasbih.or.id'])) {
+            return true;
+        }
+
+        if ($this->roles && $this->roles->contains(function ($role) {
+            return strtolower($role->name) === 'super admin';
+        })) {
+            return true;
+        }
+
+        return $this->hasRole('Super Admin') || $this->hasRole('super admin');
+    }
 }
 

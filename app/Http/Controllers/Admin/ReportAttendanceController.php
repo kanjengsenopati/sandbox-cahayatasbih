@@ -180,7 +180,9 @@ class ReportAttendanceController extends Controller
                         return $badges[$row->approval_status] ?? '<span class="badge badge-light-secondary">' . $row->approval_status . '</span>';
                     })
                     ->addColumn('action', function ($row) {
-                        $isSuperAdmin = Auth::user()->hasRole('Super Admin');
+                        $user = Auth::user();
+                        $isSuperAdmin = $user && (method_exists($user, 'isSuperAdmin') ? $user->isSuperAdmin() : ($user->hasRole('Super Admin') || $user->role_id == 1));
+                        
                         if ($row->approval_status === 'pending') {
                             if ($isSuperAdmin) {
                                 return '<div class="d-flex gap-2 justify-content-center">' .
@@ -210,7 +212,9 @@ class ReportAttendanceController extends Controller
             return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
         }
 
-        if (!Auth::user()->hasRole('Super Admin')) {
+        $user = Auth::user();
+        $isSuperAdmin = $user && (method_exists($user, 'isSuperAdmin') ? $user->isSuperAdmin() : ($user->hasRole('Super Admin') || $user->role_id == 1));
+        if (!$isSuperAdmin) {
             return response()->json(['success' => false, 'message' => 'Hanya Super Admin yang berhak menyetujui laporan presensi.'], 403);
         }
 
@@ -232,7 +236,9 @@ class ReportAttendanceController extends Controller
             return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
         }
 
-        if (!Auth::user()->hasRole('Super Admin')) {
+        $user = Auth::user();
+        $isSuperAdmin = $user && (method_exists($user, 'isSuperAdmin') ? $user->isSuperAdmin() : ($user->hasRole('Super Admin') || $user->role_id == 1));
+        if (!$isSuperAdmin) {
             return response()->json(['success' => false, 'message' => 'Hanya Super Admin yang berhak menolak laporan presensi.'], 403);
         }
 

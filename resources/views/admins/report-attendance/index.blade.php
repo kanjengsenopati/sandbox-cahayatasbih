@@ -160,7 +160,7 @@
                                             <th class="text-center">Status</th>
                                             <th>Keterlambatan</th>
                                             <th class="text-center">Bukti Foto</th>
-                                            <th class="text-center">Persetujuan</th>
+                                            <th class="text-center">Status</th>
                                             <th class="text-center" width="10%">Aksi</th>
                                         </tr>
                                     </thead>
