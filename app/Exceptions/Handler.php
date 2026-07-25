@@ -44,5 +44,11 @@ class Handler extends ExceptionHandler
         $this->reportable(function (Throwable $e) {
             //
         });
+
+        $this->renderable(function (\Illuminate\Session\TokenMismatchException $e, $request) {
+            return redirect()->back()
+                ->withInput($request->except('password', 'password_confirmation'))
+                ->with('error', 'Sesi login telah kedaluwarsa. Token CSRF baru telah dibuat, silakan coba tekan tombol Masuk kembali.');
+        });
     }
 }

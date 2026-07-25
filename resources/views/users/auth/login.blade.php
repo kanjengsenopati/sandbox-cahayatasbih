@@ -63,6 +63,12 @@
 </div>
 
 <script>
+    window.addEventListener('pageshow', function (event) {
+        if (event.persisted) {
+            window.location.reload();
+        }
+    });
+
     function togglePassword() {
         const input = document.getElementById('password');
         const icon = document.getElementById('eye-icon');

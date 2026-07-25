@@ -256,7 +256,13 @@
                                                     </select>
                                                     @endif
                                                 </td>
-                                                <td>{{ $status }}</td>
+                                                <td>
+                                                    @if ($isPaid)
+                                                        <span class="badge badge-success px-3 py-2 fs-8 fw-bolder">LUNAS</span>
+                                                    @else
+                                                        <span class="badge badge-danger px-3 py-2 fs-8 fw-bolder">Belum Lunas</span>
+                                                    @endif
+                                                </td>
                                                 <td>
                                                     @php
                                                         $user = Auth::user();
@@ -278,26 +284,30 @@
                                                             }
                                                         }
                                                     @endphp
-                                                    @if ($canEditStatus)
-                                                        @if ($billForMonth)
-                                                            @if ($isPaid)
-                                                            <a onclick="changeStatus('{{ $billForMonth->id }}', 'UNPAID')"
-                                                                class="btn btn-danger btn-sm">Batalkan</a>
+                                                    <div class="d-flex align-items-center gap-2">
+                                                        @if ($isPaid)
+                                                            @if ($canEditStatus && $billForMonth)
+                                                                <a onclick="changeStatus('{{ $billForMonth->id }}', 'UNPAID')"
+                                                                    class="btn btn-danger btn-sm text-nowrap">
+                                                                    <i class="fas fa-undo me-1"></i> Batalkan
+                                                                </a>
                                                             @else
-                                                            <a onclick="changeStatus('{{ $billForMonth->id }}', 'PAID')"
-                                                                class="btn btn-success btn-sm">Ubah Status</a>
+                                                                <span class="badge badge-light-success fs-9 fw-bold">Terbayar</span>
                                                             @endif
                                                         @else
-                                                        <span>-</span>
+                                                            @if ($canEditStatus && $billForMonth)
+                                                                <a onclick="changeStatus('{{ $billForMonth->id }}', 'PAID')"
+                                                                    class="btn btn-success btn-sm text-nowrap">
+                                                                    <i class="fas fa-check me-1"></i> Ubah Status
+                                                                </a>
+                                                            @endif
+                                                            @if ($isUnpaid && $paymentLink)
+                                                                <a href="{{ $paymentLink }}" class="btn btn-primary btn-sm text-nowrap">Ke Halaman Pembayaran</a>
+                                                            @else
+                                                                <button type="button" class="btn btn-primary btn-bayar btn-sm text-nowrap">Bayar</button>
+                                                            @endif
                                                         @endif
-                                                    @endif
-                                                    @if ($isPaid)
-                                                    @elseif ($isUnpaid && $paymentLink)
-                                                    <a href="{{ $paymentLink }}" class="btn btn-primary btn-sm">Ke
-                                                        Halaman Pembayaran</a>
-                                                    @elseif ($billForMonth)
-                                                    <button type="button" class="btn btn-primary btn-bayar btn-sm">Bayar</button>
-                                                    @endif
+                                                    </div>
                                                 </td>
                                             </form>
                                         </tr>
