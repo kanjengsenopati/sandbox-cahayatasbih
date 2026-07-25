@@ -88,17 +88,39 @@ class BillController extends BaseWaliApiController
                     ?? $first->billType?->academicYear?->name 
                     ?? '-';
 
+                $btNameUpper = strtoupper($first->billType?->name ?? '');
+                $isZarkasi = str_contains($btNameUpper, 'ZARKASI');
+                $isAplikasi = str_contains($btNameUpper, 'APLIKASI');
+                $isSyahriah = str_contains($btNameUpper, 'SYAHR');
+
+                if ($isSyahriah) {
+                    $totalBill = 6000000;
+                    $itemsCount = 12;
+                } elseif ($isAplikasi) {
+                    $totalBill = 120000;
+                    $itemsCount = 12;
+                } elseif ($isZarkasi) {
+                    $totalBill = 550000;
+                    $itemsCount = 6;
+                } else {
+                    $totalBill = $items->sum('amount');
+                    $itemsCount = $items->count();
+                }
+
+                $totalPaid = $items->sum('paid_amount');
+                $totalUnpaid = max(0, $totalBill - $totalPaid);
+
                 return [
                     'bill_type_id' => $first->bill_type_id,
                     'bill_type_name' => $first->billType?->name ?? 'Tagihan',
                     'payment_input_type' => $first->billType?->payment_input_type ?? 'FIXED',
                     'academic_year' => $academicYearName,
                     'academic_year_id' => $first->academic_year_id ?? $first->billType?->academic_year_id,
-                    'total' => $items->sum('amount'),
-                    'paid' => $items->sum('paid_amount'),
-                    'unpaid' => $items->sum(function($b) { return max(0, $b->amount - $b->paid_amount); }),
-                    'items_count' => $items->count(),
-                    'unpaid_count' => $items->where('status', 'UNPAID')->count(),
+                    'total' => $totalBill,
+                    'paid' => $totalPaid,
+                    'unpaid' => $totalUnpaid,
+                    'items_count' => $itemsCount,
+                    'unpaid_count' => $items->where('status', 'UNPAID')->count() + ($itemsCount - $items->count()),
                     'payments' => $payments->values(),
                 ];
             });
@@ -140,19 +162,79 @@ class BillController extends BaseWaliApiController
                 return $bill;
             });
 
+        $isZarkasi = str_contains(strtoupper($billType->name ?? ''), 'ZARKASI');
+        $isAplikasi = str_contains(strtoupper($billType->name ?? ''), 'APLIKASI');
+        $isSyahriah = str_contains(strtoupper($billType->name ?? ''), 'SYAHR');
+        $isMonthly = $isZarkasi || $isAplikasi || $isSyahriah || ($billType->type === 'MONTHLY');
+
+        if ($isMonthly) {
+            $existingBills = $bills;
+            $sampleBill = $existingBills->first();
+            $academicYear = $sampleBill?->academicYear ?? $billType->academicYear;
+            $startYear = $academicYear?->start_year ?? date('Y');
+            
+            $monthSequence = [7, 8, 9, 10, 11, 12, 1, 2, 3, 4, 5, 6];
+            $fullBills = collect();
+
+            foreach ($monthSequence as $m) {
+                $year = ($m >= 7) ? (int)$startYear : (int)$startYear + 1;
+                $found = $existingBills->first(function ($b) use ($m, $year) {
+                    return (int)$b->month === (int)$m && (int)$b->year === (int)$year;
+                });
+
+                if (!$found) {
+                    // Fallback amount determination
+                    if ($isSyahriah) {
+                        $amt = 500000;
+                    } elseif ($isAplikasi) {
+                        $amt = 10000;
+                    } elseif ($isZarkasi) {
+                        $amt = ($m >= 7 && $m <= 11) ? 100000 : ($m == 12 ? 50000 : 0);
+                    } else {
+                        $amt = $billType->billItem->amount ?? 0;
+                    }
+
+                    $found = new Bill([
+                        'id' => "generated_{$billType->id}_{$student->id}_{$m}_{$year}",
+                        'bill_type_id' => $billType->id,
+                        'student_id' => $student->id,
+                        'academic_year_id' => $academicYear?->id,
+                        'month' => $m,
+                        'year' => $year,
+                        'amount' => $amt,
+                        'paid_amount' => 0,
+                        'remaining_amount' => $amt,
+                        'status' => 'UNPAID',
+                    ]);
+                    $found->setAttribute('is_pending_confirmation', false);
+                } else {
+                    if ($found->amount <= 0 && $isSyahriah) {
+                        $found->amount = 500000;
+                        $found->remaining_amount = max(0, 500000 - $found->paid_amount);
+                    }
+                }
+                $fullBills->push($found);
+            }
+            $bills = $fullBills;
+        }
+
         // Get academic year name from the first bill or billType fallback
         $academicYearName = $bills->first()?->academicYear?->name 
             ?? $billType->academicYear?->name 
             ?? null;
+
+        $totalBill = $isSyahriah ? 6000000 : ($isAplikasi ? 120000 : ($isZarkasi ? 550000 : $bills->sum('amount')));
+        $totalPaid = $bills->sum('paid_amount');
+        $totalUnpaid = max(0, $totalBill - $totalPaid);
 
         return response()->json([
             'billType' => $billType,
             'academic_year_name' => $academicYearName,
             'bills' => $bills,
             'summary' => [
-                'total' => $bills->sum('amount'),
-                'paid' => $bills->sum('paid_amount'),
-                'unpaid' => $bills->sum('remaining_amount'),
+                'total' => $totalBill,
+                'paid' => $totalPaid,
+                'unpaid' => $totalUnpaid,
             ]
         ]);
     }
