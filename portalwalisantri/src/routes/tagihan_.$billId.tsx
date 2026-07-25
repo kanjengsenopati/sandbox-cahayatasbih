@@ -18,6 +18,11 @@ export const Route = createFileRoute("/tagihan_/$billId")({
 const fmt = (n: number) =>
   new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0 }).format(n);
 
+const toTitleCase = (str: string) => {
+  if (!str) return "";
+  return str.split(" ").map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(" ");
+};
+
 const formatThousand = (n: number | undefined | null) => {
   if (n === undefined || n === null) return "";
   if (n === 0) return "";
@@ -46,7 +51,7 @@ function BillDetail() {
     
     const mappedInstallments = detailData.bills.map((d: any) => ({
       id: String(d.id),
-      label: d.translated_month ? `${d.translated_month} ${d.year}` : (d.name || ''),
+      label: d.translated_month ? `${toTitleCase(d.translated_month)} ${d.year}` : toTitleCase(d.name || ''),
       month: d.translated_month || '',
       monthNum: Number(d.month),
       year: Number(d.year),
@@ -330,7 +335,7 @@ function BillDetail() {
                 Detail {bill.shortName}
               </h3>
               {bill.academicYear && (
-                <span className="px-3 py-1 rounded-full bg-primary text-white text-[11px] font-bold tracking-widest shadow-sm">
+                <span className="px-3 py-1 rounded-full bg-primary text-white text-[11px] font-bold tracking-tight shadow-sm">
                   {bill.academicYear}
                 </span>
               )}
@@ -380,7 +385,7 @@ function BillDetail() {
 
                       <div className="flex-1 min-w-0">
                         {it.label && (
-                          <p className="text-[11px] font-bold text-primary uppercase tracking-widest mb-1">{it.label}</p>
+                          <p className="text-[11px] font-bold text-primary tracking-tight mb-1">{toTitleCase(it.label)}</p>
                         )}
                         <p className="text-base font-bold text-foreground tabular-nums leading-tight">{fmt(it.amount)}</p>
                         {it.paidAmount > 0 && !it.paid && (
