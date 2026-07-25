@@ -15,6 +15,22 @@ class ItemRequest extends FormRequest
     }
 
     /**
+     * Prepare the data for validation.
+     */
+    protected function prepareForValidation(): void
+    {
+        $cleanPrice = $this->price !== null ? (int) preg_replace('/\D/', '', (string) $this->price) : 0;
+        $cleanSellingPrice = $this->selling_price !== null ? (int) preg_replace('/\D/', '', (string) $this->selling_price) : 0;
+        $profit = max(0, $cleanSellingPrice - $cleanPrice);
+
+        $this->merge([
+            'price' => $cleanPrice,
+            'selling_price' => $cleanSellingPrice,
+            'profit' => $profit,
+        ]);
+    }
+
+    /**
      * Get the validation rules that apply to the request.
      *
      * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
@@ -24,12 +40,12 @@ class ItemRequest extends FormRequest
         return [
             'name' => 'required|string|max:255',
             'category_item_id' => 'required|exists:category_items,id',
-            'price' => 'required',
+            'price' => 'required|numeric',
             'stock' => 'nullable|integer',
             'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
             'code' => 'required|string|max:255',
-            'selling_price' => 'required',
-            'profit' => 'nullable',
+            'selling_price' => 'required|numeric',
+            'profit' => 'nullable|numeric',
             'outlet_id' => auth()->user()->outlet_id ? 'nullable|exists:outlets,id' : 'required|exists:outlets,id',
         ];
     }

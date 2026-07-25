@@ -76,6 +76,7 @@ class StockHistoryController extends Controller
                             "data-item_id='{$item->id}' " .
                             "data-item_name='" . e($item->name) . "' " .
                             "data-outlet_id='{$item->outlet_id}' " .
+                            "data-stock='{$item->stock}' " .
                             "title='Tambah / Opname Stok'>" .
                             "<i class='fa-solid fa-pen'></i>" .
                             "</button>";

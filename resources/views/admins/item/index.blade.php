@@ -421,7 +421,7 @@
                         <select name="item_id" id="modal_stock_item_id" class="form-select form-select-solid form-select-sm" required>
                             <option value="">Pilih Barang...</option>
                             @foreach($modalItems as $item)
-                                <option value="{{ $item->id }}">{{ $item->name }} (Kode: {{ $item->code }})</option>
+                                <option value="{{ $item->id }}" data-stock="{{ $item->stock }}">{{ $item->name }} (Kode: {{ $item->code }})</option>
                             @endforeach
                         </select>
                     </div>
@@ -449,12 +449,27 @@
 @push('js')
 <script>
     $(document).ready(() => {
-        // Calculate profit dynamically inside modal
-        $(document).on('keyup change', '.input-money-modal', function() {
+        // Calculate profit dynamically inside modal and auto format money inputs with thousand separator
+        $(document).on('input keyup change', '.input-money-modal', function() {
+            var valStr = $(this).val().replace(/\D/g, '');
+            if (valStr !== '') {
+                $(this).val(parseInt(valStr, 10).toLocaleString('id-ID'));
+            } else {
+                $(this).val('');
+            }
+
             var sellingPrice = parseInt($('#modal_item_selling_price').val().replace(/\D/g, ''), 10) || 0;
             var buyingPrice = parseInt($('#modal_item_price').val().replace(/\D/g, ''), 10) || 0;
             var profit = sellingPrice - buyingPrice;
             $('#modal_item_profit').val(profit > 0 ? profit.toLocaleString('id-ID') : 0);
+        });
+
+        // Auto pre-fill recent stock when selecting item in stock modal
+        $(document).on('change', '#modal_stock_item_id', function() {
+            var selectedStock = $(this).find(':selected').data('stock');
+            if (selectedStock !== undefined && selectedStock !== '') {
+                $('#modal_stock_quantity').val(selectedStock);
+            }
         });
 
         // Click event: Add Item Modal
@@ -479,9 +494,14 @@
             $('#modal_item_name').val(btn.data('name'));
             $('#modal_item_code').val(btn.data('code'));
             $('#modal_item_category_id').val(btn.data('category_item_id'));
-            $('#modal_item_price').val(btn.data('price'));
-            $('#modal_item_selling_price').val(btn.data('selling_price'));
-            $('#modal_item_profit').val(btn.data('profit'));
+            
+            var buyingPrice = parseInt(btn.data('price'), 10) || 0;
+            var sellingPrice = parseInt(btn.data('selling_price'), 10) || 0;
+            var profit = sellingPrice - buyingPrice;
+
+            $('#modal_item_price').val(buyingPrice > 0 ? buyingPrice.toLocaleString('id-ID') : 0);
+            $('#modal_item_selling_price').val(sellingPrice > 0 ? sellingPrice.toLocaleString('id-ID') : 0);
+            $('#modal_item_profit').val(profit > 0 ? profit.toLocaleString('id-ID') : 0);
             $('#modal_item_stock').val(btn.data('stock'));
             $('#modal_item_outlet_id').val(btn.data('outlet_id'));
             
@@ -524,6 +544,10 @@
             $('#methodStockPut').html('');
             $('#modalStockTitle').text('Tambah Stok');
             $('#formStockModal').attr('action', "{{ route('stock-history.store', ['mode' => request('mode')]) }}");
+            var selectedStock = $('#modal_stock_item_id').find(':selected').data('stock');
+            if (selectedStock !== undefined && selectedStock !== '') {
+                $('#modal_stock_quantity').val(selectedStock);
+            }
             $('#modalStockForm').modal('show');
         });
 
@@ -538,6 +562,14 @@
             if (btn.data('outlet_id')) {
                 $('#modal_stock_outlet_id').val(btn.data('outlet_id'));
             }
+            if (btn.data('stock') !== undefined && btn.data('stock') !== '') {
+                $('#modal_stock_quantity').val(btn.data('stock'));
+            } else {
+                var selStock = $('#modal_stock_item_id').find(':selected').data('stock');
+                if (selStock !== undefined && selStock !== '') {
+                    $('#modal_stock_quantity').val(selStock);
+                }
+            }
             $('#modalStockForm').modal('show');
         });
 
@@ -551,7 +583,9 @@
             
             $('#modal_stock_type').val(btn.data('type'));
             $('#modal_stock_item_id').val(btn.data('item_id'));
-            $('#modal_stock_quantity').val(btn.data('quantity'));
+            if (btn.data('quantity') !== undefined && btn.data('quantity') !== '') {
+                $('#modal_stock_quantity').val(btn.data('quantity'));
+            }
             $('#modal_stock_outlet_id').val(btn.data('outlet_id'));
             
             $('#modalStockForm').modal('show');
