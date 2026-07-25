@@ -107,8 +107,30 @@ class BillController extends Controller
     private function calculateBillTotals($item, $studentId)
     {
         $bills = $item->bills;
+        $upperName = strtoupper($item->name ?? '');
 
-        $item->total_bill = $bills->sum('amount');
+        $isZarkasi = str_contains($upperName, 'ZARKASI');
+        $isAplikasi = str_contains($upperName, 'APLIKASI');
+        $isSyahriah = str_contains($upperName, 'SYAHR');
+
+        if ($isZarkasi) {
+            $item->total_bill = 550000;
+        } elseif ($isAplikasi) {
+            $item->total_bill = 120000;
+        } elseif ($isSyahriah) {
+            $item->total_bill = 6000000;
+        } else {
+            if ($item->type === 'MONTHLY') {
+                $sampleAmount = $bills->where('amount', '>', 0)->first()?->amount ?? 0;
+                if ($sampleAmount <= 0) {
+                    $sampleAmount = \App\Models\Bill::where('bill_type_id', $item->id)->where('amount', '>', 0)->value('amount') ?? 0;
+                }
+                $item->total_bill = $sampleAmount > 0 ? ($sampleAmount * 12) : $bills->sum('amount');
+            } else {
+                $item->total_bill = $bills->sum('amount');
+            }
+        }
+
         $item->total_paid = $bills->sum('paid_amount');
         $item->total_unpaid = max(0, $item->total_bill - $item->total_paid);
 

@@ -117,27 +117,33 @@ class PaymentCheckController extends Controller
                 $bill = $filteredBills->where('month', $m)->where('year', $year)->first();
                 
                 $status = 'unpaid';
-                $amount = 0;
                 $paidDate = '-';
 
                 // Check if this month is Due (Past or Current Month)
-                // Logic: Year < CurrentYear OR (Year == CurrentYear AND Month <= CurrentMonth)
                 $isDue = ($year < $realNow->year) || ($year == $realNow->year && $m <= $realNow->month);
+
+                // Fallback amount: always 500k for Syahriah even if no DB record
+                $fallbackAmount = 500000;
                 
                 if ($bill) {
-                    $amount = $bill->amount;
+                    $amount = $bill->amount > 0 ? $bill->amount : $fallbackAmount;
                     if ($bill->status === 'PAID') {
                         $status = 'paid';
-                        $totalPaid += $bill->amount;
+                        $totalPaid += $amount;
                         $paidDate = $bill->paid_date ? Carbon::parse($bill->paid_date)->format('d/m/Y') : '-';
                     } else {
-                        // Unpaid and Due/Overdue
                         if ($isDue) {
-                             $currentDue += $bill->amount;
+                             $currentDue += $amount;
                         }
                     }
-                    $totalBill += $bill->amount;
+                } else {
+                    // No DB record for this month - use fallback rate
+                    $amount = $fallbackAmount;
+                    if ($isDue) {
+                        $currentDue += $amount;
+                    }
                 }
+                $totalBill += $amount;
 
                 $monthNames = [
                     1 => 'Jan', 2 => 'Feb', 3 => 'Mar', 4 => 'Apr', 5 => 'Mei', 6 => 'Jun',
