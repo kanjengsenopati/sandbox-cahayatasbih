@@ -91,7 +91,7 @@
                         </svg>
                     </div>
                     <div>
-                        <span class="text-[10px] font-bold uppercase tracking-widest text-slate-400 block">Periode Pelayanan</span>
+                        <span class="text-[11px] font-semibold text-slate-500 block mb-0.5">Periode Pelayanan</span>
                         <span class="text-xs font-semibold text-slate-700">
                             @if($setting->start_datetime && $setting->end_datetime)
                                 {{ $setting->start_datetime->format('d M Y, H:i') }} — {{ $setting->end_datetime->format('d M Y, H:i') }} WIB
@@ -327,8 +327,9 @@
         <main x-show="activeTab === 'progress'" x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 translate-y-1" x-transition:enter-end="opacity-100 translate-y-0" class="px-5 pt-4 space-y-4 flex-1">
             
             <!-- Filter Search Bar Progress (Berdasarkan Nama Wali / Nama Siswa) -->
-            <div class="bg-white p-4 rounded-[24px] shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-200/60 space-y-2">
-                <span class="text-[11px] font-bold uppercase tracking-widest text-slate-400 block">Cari Status Pengaduan</span>
+            <!-- Card Cari Status Pengaduan -->
+            <div class="bg-white p-3.5 sm:p-4 rounded-[24px] shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-200/60 space-y-1.5">
+                <span class="text-[11px] font-semibold text-slate-500 block mb-0.5">Cari Status Pengaduan</span>
                 <form action="{{ route('public.laporpak.index') }}" method="GET" class="relative flex items-center">
                     <input type="hidden" name="tab" value="progress">
                     <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 absolute left-3.5 text-slate-400 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -352,9 +353,9 @@
                 @forelse($reports as $index => $rep)
                     <div class="bg-white p-3.5 sm:p-4 rounded-[24px] shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-200/50 space-y-2">
                         <!-- Top Header: Wali & Status Badge -->
-                        <div class="flex items-center justify-between gap-2 border-b border-slate-100 pb-2">
+                        <div class="flex items-center justify-between gap-2 border-b border-slate-100 pb-1.5">
                             <div>
-                                <span class="text-[10px] font-bold uppercase tracking-widest text-slate-400 block">Wali Santri</span>
+                                <span class="text-[11px] font-semibold text-slate-500 block mb-0">Wali Santri</span>
                                 <h3 class="text-xs font-bold text-slate-800 flex items-center gap-1">
                                     {{ $rep->parent_name }}
                                     @if($rep->is_parent_updated)
@@ -394,7 +395,7 @@
                         <div class="space-y-1 text-xs">
                             <div class="flex items-center justify-between gap-2">
                                 <div class="truncate">
-                                    <span class="text-[10px] font-bold uppercase tracking-widest text-slate-400 me-1">Siswa:</span>
+                                    <span class="text-[11px] font-medium text-slate-500 me-1">Siswa:</span>
                                     <span class="font-bold text-slate-800 text-xs">{{ $rep->student_name }}</span>
                                     <span class="text-[11px] text-slate-500 ms-1">({{ $rep->school }} — {{ $rep->class_name }})</span>
                                 </div>
@@ -431,8 +432,8 @@
                                 default => '18%',
                             };
                         @endphp
-                        <div class="pt-2 border-t border-slate-100">
-                            <div class="flex items-center justify-between text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">
+                        <div class="pt-1.5 border-t border-slate-100">
+                            <div class="flex items-center justify-between text-[11px] font-semibold text-slate-500 mb-1">
                                 <span>Pantau Tindak Lanjut</span>
                                 <span class="font-semibold text-blue-600 font-mono">{{ $rep->status }}</span>
                             </div>
