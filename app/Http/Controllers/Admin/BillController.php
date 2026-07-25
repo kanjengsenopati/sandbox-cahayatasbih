@@ -569,7 +569,29 @@ class BillController extends Controller
             ->orderBy('month')
             ->get();
 
-        $totalBill   = $bills->sum('amount');
+        $isZarkasi = str_contains(strtoupper($billType->name ?? ''), 'ZARKASI');
+        $isAplikasi = str_contains(strtoupper($billType->name ?? ''), 'APLIKASI');
+        $isSyahriah = str_contains(strtoupper($billType->name ?? ''), 'SYAHR');
+
+        if ($isZarkasi) {
+            $totalBill = 550000;
+        } elseif ($isAplikasi) {
+            $totalBill = 120000;
+        } elseif ($isSyahriah) {
+            $totalBill = 6000000;
+        } else {
+            if ($billType->type === 'MONTHLY') {
+                $sampleBill = $bills->firstWhere('amount', '>', 0);
+                $sampleAmount = $sampleBill ? $sampleBill->amount : ($billType->billItem->amount ?? 0);
+                if ($sampleAmount <= 0) {
+                    $sampleAmount = \App\Models\Bill::where('bill_type_id', $billType->id)->where('amount', '>', 0)->value('amount') ?? 0;
+                }
+                $totalBill = $sampleAmount > 0 ? ($sampleAmount * 12) : $bills->sum('amount');
+            } else {
+                $totalBill = $bills->sum('amount');
+            }
+        }
+
         $totalPaid   = $bills->sum('paid_amount');
         $totalUnpaid = max(0, $totalBill - $totalPaid);
 

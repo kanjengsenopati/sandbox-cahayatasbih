@@ -167,8 +167,36 @@
                                     <tbody class="text-gray-600">
                                         @foreach (array_merge(range(7, 12), range(1, 6)) as $month)
                                         @php
-                                        $billForMonth = $bills->where('month', $month)->first();
-                                        $amount = $billForMonth ? number_format($billForMonth->amount, 0, ',', '.') : 0;
+                                        $billForMonth = $bills->firstWhere('month', (int)$month) ?? $bills->firstWhere('month', (string)$month);
+                                        
+                                        $isZarkasi = str_contains(strtoupper($billType->name ?? ''), 'ZARKASI');
+                                        $isAplikasi = str_contains(strtoupper($billType->name ?? ''), 'APLIKASI');
+                                        $isSyahriah = str_contains(strtoupper($billType->name ?? ''), 'SYAHR');
+
+                                        if ($isZarkasi) {
+                                            $targetZarkasi = [7=>100000, 8=>100000, 9=>100000, 10=>100000, 11=>100000, 12=>50000];
+                                            $rawAmount = $targetZarkasi[$month] ?? 0;
+                                        } elseif ($isAplikasi) {
+                                            $rawAmount = 10000;
+                                        } elseif ($isSyahriah) {
+                                            $rawAmount = 500000;
+                                        } else {
+                                            $rawAmount = $billForMonth ? $billForMonth->amount : ($billType->billItem->amount ?? 0);
+                                            if ($rawAmount <= 0) {
+                                                $rawAmount = \App\Models\Bill::where('bill_type_id', $billType->id)->where('amount', '>', 0)->value('amount') ?? 0;
+                                            }
+                                        }
+
+                                        $displayAmount = $billForMonth ? $billForMonth->amount : $rawAmount;
+                                        if ($displayAmount <= 0 && $rawAmount > 0) {
+                                            $displayAmount = $rawAmount;
+                                        }
+
+                                        $targetYear = $billForMonth?->year ?? ($month >= 7 ? 
+                                            ($billType->academicYear?->start_year ?? date('Y')) : 
+                                            ($billType->academicYear?->end_year ?? (date('Y') + 1)));
+
+                                        $amountFormatted = number_format($displayAmount, 0, ',', '.');
                                         $transaction = $billForMonth?->transactions?->first();
                                         $adminName = $transaction?->admin?->name ?? '';
                                         $paidAt = $transaction?->paid_at;
@@ -176,8 +204,9 @@
                                         $paymentMethodName = $transaction?->paymentMethod?->name ?? '';
                                         $status = $billForMonth ? $billForMonth->translated_status : 'UNPAID';
                                         $isPaid = $billForMonth && $billForMonth->status == 'PAID';
-                                        $isUnpaid = $billForMonth && $billForMonth->status == 'UNPAID';
+                                        $isUnpaid = !$isPaid;
                                         $paymentLink = $billForMonth?->transactions?->first()?->payment_link;
+                                        $autoBillId = $billForMonth ? $billForMonth->id : "auto_{$billType->id}_{$month}_{$targetYear}";
                                         @endphp
 
                                         <tr>
@@ -187,15 +216,15 @@
                                                 <td>{{ $loop->iteration }}</td>
                                                 <th class="min-w-125px">
                                                     {{ \Carbon\Carbon::create()->month($month)->translatedFormat('F') }}
-                                                    - {{ $billForMonth->year ?? '' }}
+                                                    - {{ $targetYear }}
                                                 </th>
 
                                                 <input type="hidden" name="bill_ids[]"
-                                                    value="{{ $billForMonth->id ?? '' }}">
+                                                    value="{{ $autoBillId }}">
                                                 <input type="hidden" name="pay_amount"
-                                                    value="{{ $billForMonth->amount ?? '' }}">
+                                                    value="{{ $displayAmount }}">
                                                 <input type="hidden" name="student_id" value="{{ $student->id ?? '' }}">
-                                                <td>Rp {{ $amount }}</td>
+                                                <td>Rp {{ $amountFormatted }}</td>
                                                 <td>
                                                     @if ($isPaid)
                                                     <span class="badge badge-success">

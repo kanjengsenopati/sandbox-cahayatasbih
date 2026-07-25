@@ -711,6 +711,7 @@ class TransactionService
 
             $isZarkasi = str_contains(strtoupper($billType->name ?? ''), 'ZARKASI');
             $isAplikasi = str_contains(strtoupper($billType->name ?? ''), 'APLIKASI');
+            $isSyahriah = str_contains(strtoupper($billType->name ?? ''), 'SYAHR');
             if ($isZarkasi) {
                 $m = (int)$month;
                 if ($m >= 7 && $m <= 11) {
@@ -722,6 +723,8 @@ class TransactionService
                 }
             } elseif ($isAplikasi) {
                 $amount = 10000;
+            } elseif ($isSyahriah) {
+                $amount = 500000;
             } else {
                 $sampleBill = \App\Models\Bill::where('student_id', $studentId)
                     ->where('bill_type_id', $billTypeId)
