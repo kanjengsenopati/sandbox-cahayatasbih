@@ -347,41 +347,42 @@
                 </form>
             </div>
 
-            <!-- List Progress Table / Mobile Cards (TANPA ID TIKET) -->
+            <!-- List Progress Table / Mobile Cards (5 TERKINI DEFAULTS) -->
             <div class="space-y-3">
                 @forelse($reports as $index => $rep)
-                    <div class="bg-white p-4 rounded-[24px] shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-200/60 space-y-2.5">
-                        <div class="flex items-start justify-between gap-2 border-b border-slate-100 pb-2">
+                    <div class="bg-white p-3.5 sm:p-4 rounded-[24px] shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-200/50 space-y-2">
+                        <!-- Top Header: Wali & Status Badge -->
+                        <div class="flex items-center justify-between gap-2 border-b border-slate-100 pb-2">
                             <div>
-                                <span class="text-[11px] font-bold uppercase tracking-widest text-slate-400 block">Wali Santri</span>
+                                <span class="text-[10px] font-bold uppercase tracking-widest text-slate-400 block">Wali Santri</span>
                                 <h3 class="text-xs font-bold text-slate-800 flex items-center gap-1">
                                     {{ $rep->parent_name }}
                                     @if($rep->is_parent_updated)
-                                        <span class="text-[9px] bg-blue-500/10 text-blue-600 px-1.5 py-0.2 rounded font-semibold">Diupdate</span>
+                                        <span class="text-[9px] bg-blue-50 text-blue-600 px-1.5 py-0.2 rounded-full font-semibold">Diupdate</span>
                                     @endif
                                 </h3>
                             </div>
                             <!-- Status Milestone Badge -->
-                            <div>
+                            <div class="flex-shrink-0">
                                 @if($rep->status === 'Selesai' || $rep->status === 'Teratasi')
-                                    <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-600 text-[10px] font-bold border border-emerald-500/20">
-                                        <svg xmlns="http://www.w3.org/2000/svg" class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                                    <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-600 text-[10px] font-bold border border-emerald-200/60">
+                                        <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                                             <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
                                         </svg>
                                         Selesai
                                     </span>
                                 @elseif($rep->status === 'Sedang Ditangani')
-                                    <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-blue-500/10 text-blue-600 text-[10px] font-bold border border-blue-500/20">
+                                    <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-blue-50 text-blue-600 text-[10px] font-bold border border-blue-200/60">
                                         <span class="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse"></span>
                                         Sedang Ditangani
                                     </span>
                                 @elseif($rep->status === 'Diterima')
-                                    <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-amber-500/10 text-amber-600 text-[10px] font-bold border border-amber-500/20">
+                                    <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-amber-50 text-amber-600 text-[10px] font-bold border border-amber-200/60">
                                         <span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
                                         Diterima
                                     </span>
                                 @else
-                                    <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-slate-500/10 text-slate-600 text-[10px] font-bold border border-slate-500/20">
+                                    <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-600 text-[10px] font-bold border border-slate-200/60">
                                         <span class="w-1.5 h-1.5 rounded-full bg-slate-400"></span>
                                         Laporan Masuk
                                     </span>
@@ -389,29 +390,29 @@
                             </div>
                         </div>
 
-                        <!-- Details -->
+                        <!-- Compact Details Row -->
                         <div class="space-y-1 text-xs">
-                            <div class="flex justify-between items-center text-slate-600">
-                                <span class="text-[11px] font-bold uppercase tracking-widest text-slate-400">Siswa:</span>
-                                <span class="font-bold text-slate-800">{{ $rep->student_name }}</span>
+                            <div class="flex items-center justify-between gap-2">
+                                <div class="truncate">
+                                    <span class="text-[10px] font-bold uppercase tracking-widest text-slate-400 me-1">Siswa:</span>
+                                    <span class="font-bold text-slate-800 text-xs">{{ $rep->student_name }}</span>
+                                    <span class="text-[11px] text-slate-500 ms-1">({{ $rep->school }} — {{ $rep->class_name }})</span>
+                                </div>
+                                <div class="flex-shrink-0">
+                                    <span class="inline-block px-2 py-0.5 rounded-full bg-blue-50 text-blue-600 text-[10px] font-bold">
+                                        {{ $rep->kendala }}
+                                    </span>
+                                </div>
                             </div>
-                            <div class="flex justify-between items-center text-slate-500 text-[11px]">
-                                <span>Unit/Kelas:</span>
-                                <span>{{ $rep->school }} — {{ $rep->class_name }}</span>
-                            </div>
-                            <div class="pt-1">
-                                <span class="inline-block px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-600 text-[10px] font-bold mb-0.5">
-                                    {{ $rep->kendala }}
-                                </span>
-                                @if($rep->keterangan)
-                                    <p class="text-slate-600 text-xs bg-slate-50 p-2.5 rounded-[24px] border border-slate-100 leading-relaxed mt-1">
-                                        {{ $rep->keterangan }}
-                                    </p>
-                                @endif
-                            </div>
+                            
+                            @if($rep->keterangan)
+                                <p class="text-slate-600 text-[11px] bg-slate-50 p-2 rounded-[16px] border border-slate-100 leading-relaxed">
+                                    {{ $rep->keterangan }}
+                                </p>
+                            @endif
                         </div>
 
-                        <!-- VISUAL MILESTONE PROGRESS TRACKER -->
+                        <!-- VISUAL STEPPER: PANTAU TINDAK LANJUT -->
                         @php
                             $statusStepMap = [
                                 'Laporan Masuk' => 1,
@@ -430,87 +431,88 @@
                                 default => '18%',
                             };
                         @endphp
-                        <div class="mt-3 pt-3 border-t border-slate-100/80">
-                            <div class="flex items-center justify-between text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2">
+                        <div class="pt-2 border-t border-slate-100">
+                            <div class="flex items-center justify-between text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-1.5">
                                 <span>Pantau Tindak Lanjut</span>
                                 <span class="font-semibold text-blue-600 font-mono">{{ $rep->status }}</span>
                             </div>
 
-                            <div class="relative py-2 px-2">
-                                <!-- Background Connecting Line -->
-                                <div class="absolute top-[18px] left-6 right-6 h-1 bg-slate-200/80 rounded-full z-0"></div>
+                            <div class="relative py-1 px-1">
+                                <!-- Background Line -->
+                                <div class="absolute top-[14px] left-5 right-5 h-0.5 bg-slate-200 rounded-full z-0"></div>
                                 <!-- Active Progress Line -->
-                                <div class="absolute top-[18px] left-6 h-1 bg-gradient-to-r from-blue-600 via-blue-500 to-emerald-500 rounded-full z-0 transition-all duration-500" style="width: calc({{ $progressPct }} - 24px);"></div>
+                                <div class="absolute top-[14px] left-5 h-0.5 bg-gradient-to-r from-blue-600 via-blue-500 to-emerald-500 rounded-full z-0 transition-all duration-500" style="width: calc({{ $progressPct }} - 20px);"></div>
 
-                                <!-- 4 Milestone Step Nodes -->
+                                <!-- 4 Step Nodes -->
                                 <div class="relative z-10 flex items-center justify-between">
-                                    <!-- Node 1: Laporan Masuk -->
-                                    <div class="flex flex-col items-center gap-1">
-                                        <div class="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold transition-all duration-300 {{ $currentStep >= 1 ? 'bg-blue-600 text-white shadow-md shadow-blue-600/30' : 'bg-slate-200 text-slate-400' }}">
+                                    <!-- Node 1 -->
+                                    <div class="flex flex-col items-center gap-0.5">
+                                        <div class="w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-bold transition-all duration-300 {{ $currentStep >= 1 ? 'bg-blue-600 text-white shadow-sm' : 'bg-slate-200 text-slate-400' }}">
                                             @if($currentStep > 1)
-                                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                                                <svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
                                             @else
                                                 1
                                             @endif
                                         </div>
-                                        <span class="text-[9px] font-bold text-center leading-tight {{ $currentStep >= 1 ? 'text-blue-600' : 'text-slate-400' }}">Laporan<br>Masuk</span>
+                                        <span class="text-[8px] font-bold text-center leading-tight {{ $currentStep >= 1 ? 'text-blue-600' : 'text-slate-400' }}">Laporan<br>Masuk</span>
                                     </div>
 
-                                    <!-- Node 2: Diterima -->
-                                    <div class="flex flex-col items-center gap-1">
-                                        <div class="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold transition-all duration-300 {{ $currentStep >= 2 ? 'bg-blue-600 text-white shadow-md shadow-blue-600/30' : 'bg-slate-200 text-slate-400' }}">
+                                    <!-- Node 2 -->
+                                    <div class="flex flex-col items-center gap-0.5">
+                                        <div class="w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-bold transition-all duration-300 {{ $currentStep >= 2 ? 'bg-blue-600 text-white shadow-sm' : 'bg-slate-200 text-slate-400' }}">
                                             @if($currentStep > 2)
-                                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                                                <svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
                                             @else
                                                 2
                                             @endif
                                         </div>
-                                        <span class="text-[9px] font-bold text-center leading-tight {{ $currentStep >= 2 ? 'text-blue-600' : 'text-slate-400' }}">Diterima</span>
+                                        <span class="text-[8px] font-bold text-center leading-tight {{ $currentStep >= 2 ? 'text-blue-600' : 'text-slate-400' }}">Diterima</span>
                                     </div>
 
-                                    <!-- Node 3: Sedang Ditangani -->
-                                    <div class="flex flex-col items-center gap-1">
-                                        <div class="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold transition-all duration-300 {{ $currentStep >= 3 ? 'bg-blue-600 text-white shadow-md shadow-blue-600/30' : 'bg-slate-200 text-slate-400' }}">
+                                    <!-- Node 3 -->
+                                    <div class="flex flex-col items-center gap-0.5">
+                                        <div class="w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-bold transition-all duration-300 {{ $currentStep >= 3 ? 'bg-blue-600 text-white shadow-sm' : 'bg-slate-200 text-slate-400' }}">
                                             @if($currentStep > 3)
-                                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                                                <svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
                                             @else
                                                 3
                                             @endif
                                         </div>
-                                        <span class="text-[9px] font-bold text-center leading-tight {{ $currentStep >= 3 ? 'text-blue-600' : 'text-slate-400' }}">Sedang<br>Ditangani</span>
+                                        <span class="text-[8px] font-bold text-center leading-tight {{ $currentStep >= 3 ? 'text-blue-600' : 'text-slate-400' }}">Sedang<br>Ditangani</span>
                                     </div>
 
-                                    <!-- Node 4: Selesai -->
-                                    <div class="flex flex-col items-center gap-1">
-                                        <div class="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold transition-all duration-300 {{ $currentStep >= 4 ? 'bg-emerald-600 text-white shadow-md shadow-emerald-600/30' : 'bg-slate-200 text-slate-400' }}">
+                                    <!-- Node 4 -->
+                                    <div class="flex flex-col items-center gap-0.5">
+                                        <div class="w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-bold transition-all duration-300 {{ $currentStep >= 4 ? 'bg-emerald-600 text-white shadow-sm' : 'bg-slate-200 text-slate-400' }}">
                                             @if($currentStep >= 4)
-                                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                                                <svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
                                             @else
                                                 4
                                             @endif
                                         </div>
-                                        <span class="text-[9px] font-bold text-center leading-tight {{ $currentStep >= 4 ? 'text-emerald-600' : 'text-slate-400' }}">Selesai</span>
+                                        <span class="text-[8px] font-bold text-center leading-tight {{ $currentStep >= 4 ? 'text-emerald-600' : 'text-slate-400' }}">Selesai</span>
+                                    </div>
                                 </div>
                             </div>
 
                             <!-- Catatan Petugas (Jika ada admin_note) -->
                             @if(!empty($rep->admin_note))
-                                <div class="mt-3 p-3 rounded-[16px] bg-blue-50/80 border border-blue-200/60 text-left space-y-1">
-                                    <div class="flex items-center gap-1.5 text-blue-600">
-                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <div class="mt-2 p-2.5 rounded-[14px] bg-blue-50/80 border border-blue-200/60 text-left space-y-0.5">
+                                    <div class="flex items-center gap-1 text-blue-600">
+                                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
                                         </svg>
-                                        <span class="text-[10px] font-bold uppercase tracking-widest text-blue-600">Catatan Petugas</span>
+                                        <span class="text-[9px] font-bold uppercase tracking-widest text-blue-600">Catatan Petugas</span>
                                     </div>
-                                    <p class="text-xs text-slate-700 font-medium leading-relaxed">
+                                    <p class="text-[11px] text-slate-700 font-medium leading-relaxed">
                                         {{ $rep->admin_note }}
                                     </p>
                                 </div>
                             @endif
                         </div>
 
-                        <!-- Timestamp Bottom -->
-                        <div class="pt-1 text-[10px] text-slate-400 italic font-mono flex justify-between items-center">
+                        <!-- Footer Timestamp -->
+                        <div class="pt-1.5 text-[10px] text-slate-400 font-mono flex justify-between items-center border-t border-slate-100/60">
                             <span>Lapor: {{ $rep->created_at ? $rep->created_at->format('d M Y, H:i') : '-' }} WIB</span>
                             <span class="text-slate-300">#{{ $index + 1 }}</span>
                         </div>

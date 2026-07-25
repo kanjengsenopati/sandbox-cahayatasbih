@@ -49,6 +49,8 @@ class LaporPakPublicController extends Controller
                         $q->where('parent_name', 'like', "%{$search}%")
                           ->orWhere('student_name', 'like', "%{$search}%");
                     });
+                } else {
+                    $reportsQuery->take(5);
                 }
 
                 $reports = $reportsQuery->get();
