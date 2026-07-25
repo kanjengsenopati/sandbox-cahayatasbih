@@ -183,7 +183,7 @@
                 
                 <div class="row w-100 align-items-center pe-3">
                     <!-- Left: Title & Category -->
-                     <div class="col-md-5 col-12 d-flex flex-column justify-content-center text-start">
+                     <div class="col-md-4 col-12 d-flex flex-column justify-content-center text-start">
                           <div class="d-flex align-items-center flex-wrap gap-2">
                               <span class="text-slate-900 fs-5 fw-bolder me-1">{{ $bill->name }}</span>
                               <span class="badge badge-primary fw-bold fs-8 px-3 py-1">Bulanan</span>
@@ -191,8 +191,8 @@
                      </div>
 
                     <!-- Middle: Prominent Strong Solid 1-Line Tahun Ajaran Badge -->
-                    <div class="col-md-3 col-12 my-2 my-md-0 d-flex align-items-center justify-content-start justify-content-md-center">
-                        <div class="px-3.5 py-2 d-inline-flex align-items-center gap-2 shadow-sm text-nowrap" 
+                    <div class="col-md-4 col-12 my-2 my-md-0 d-flex align-items-center justify-content-start justify-content-md-center px-md-4">
+                        <div class="px-4 py-2 d-inline-flex align-items-center gap-2 shadow-sm text-nowrap" 
                              style="background: {{ $currentAyTheme['bg'] }}; color: #ffffff; border-radius: 12px; box-shadow: 0 4px 14px {{ $currentAyTheme['shadow'] }};">
                             <i class="fas fa-calendar-alt text-white fs-7 me-0.5 opacity-90"></i>
                             <span class="fs-7 fw-boldest text-white tracking-wide" style="letter-spacing: 0.4px;">
