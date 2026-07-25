@@ -513,9 +513,17 @@
                         </div>
 
                         <!-- Footer Timestamp -->
-                        <div class="pt-1.5 text-[10px] text-slate-400 font-mono flex justify-between items-center border-t border-slate-100/60">
-                            <span>Lapor: {{ $rep->created_at ? $rep->created_at->format('d M Y, H:i') : '-' }} WIB</span>
-                            <span class="text-slate-300">#{{ (method_exists($reports, 'firstItem') ? ($reports->firstItem() ?? 1) : 1) + $index }}</span>
+                        <div class="pt-2 flex justify-between items-center border-t border-slate-100">
+                            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-100/90 text-slate-700 text-[11px] font-medium border border-slate-200/80 shadow-xs">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 text-blue-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                                <span class="text-slate-400 font-medium">Lapor:</span>
+                                <span class="font-bold text-slate-800">{{ $rep->created_at ? $rep->created_at->format('d M Y, H:i') : '-' }} WIB</span>
+                            </span>
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full bg-slate-50 text-slate-400 text-[10px] font-mono font-bold border border-slate-200/60">
+                                #{{ (method_exists($reports, 'firstItem') ? ($reports->firstItem() ?? 1) : 1) + $index }}
+                            </span>
                         </div>
                     </div>
                 @empty
