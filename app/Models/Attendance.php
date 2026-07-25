@@ -54,4 +54,19 @@ class Attendance extends Model
     {
         return $this->belongsTo(Admin::class, 'approved_by');
     }
+
+    public static function formatLateMinutes(?int $minutes): string
+    {
+        if (!$minutes || $minutes <= 0) {
+            return '-';
+        }
+        $hours = floor($minutes / 60);
+        $mins = $minutes % 60;
+        return sprintf('%02d Jam, %02d Menit', $hours, $mins);
+    }
+
+    public function getFormattedLateTimeAttribute(): string
+    {
+        return static::formatLateMinutes($this->late_minutes);
+    }
 }

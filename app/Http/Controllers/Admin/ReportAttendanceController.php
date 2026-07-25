@@ -90,7 +90,7 @@ class ReportAttendanceController extends Controller
                         return $badges[$row->status] ?? $row->status;
                     })
                     ->addColumn('late_label', function ($row) {
-                        return $row->late_minutes > 0 ? $row->late_minutes . ' Menit' : '-';
+                        return $row->formatted_late_time;
                     })
                     ->rawColumns(['activity_type_label', 'status_badge'])
                     ->make(true);
@@ -161,7 +161,7 @@ class ReportAttendanceController extends Controller
                         return $badges[$row->status] ?? $row->status;
                     })
                     ->addColumn('late_label', function ($row) {
-                        return $row->late_minutes > 0 ? $row->late_minutes . ' Menit' : '-';
+                        return $row->formatted_late_time;
                     })
                     ->addColumn('photo_url_html', function ($row) {
                         if ($row->photo_path) {
@@ -180,11 +180,16 @@ class ReportAttendanceController extends Controller
                         return $badges[$row->approval_status] ?? '<span class="badge badge-light-secondary">' . $row->approval_status . '</span>';
                     })
                     ->addColumn('action', function ($row) {
+                        $isSuperAdmin = Auth::user()->hasRole('Super Admin');
                         if ($row->approval_status === 'pending') {
-                            return '<div class="d-flex gap-2 justify-content-center">' .
-                                   '<button class="btn btn-sm btn-icon btn-light-success btn-approve-attendance" data-id="' . $row->id . '"><i class="fa fa-check p-0"></i></button>' .
-                                   '<button class="btn btn-sm btn-icon btn-light-danger btn-reject-attendance" data-id="' . $row->id . '"><i class="fa fa-times p-0"></i></button>' .
-                                   '</div>';
+                            if ($isSuperAdmin) {
+                                return '<div class="d-flex gap-2 justify-content-center">' .
+                                       '<button class="btn btn-sm btn-icon btn-light-success btn-approve-attendance" data-id="' . $row->id . '" title="Setujui Presensi"><i class="fa fa-check p-0"></i></button>' .
+                                       '<button class="btn btn-sm btn-icon btn-light-danger btn-reject-attendance" data-id="' . $row->id . '" title="Tolak Presensi"><i class="fa fa-times p-0"></i></button>' .
+                                       '</div>';
+                            } else {
+                                return '<span class="badge badge-light-warning">Menunggu persetujuan Super Admin</span>';
+                            }
                         }
                         
                         $approver = $row->approvedBy ? $row->approvedBy->name : 'System';
@@ -205,6 +210,10 @@ class ReportAttendanceController extends Controller
             return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
         }
 
+        if (!Auth::user()->hasRole('Super Admin')) {
+            return response()->json(['success' => false, 'message' => 'Hanya Super Admin yang berhak menyetujui laporan presensi.'], 403);
+        }
+
         $attendance = Attendance::findOrFail($id);
         $attendance->update([
             'approval_status' => 'approved',
@@ -221,6 +230,10 @@ class ReportAttendanceController extends Controller
     {
         if (!Auth::user()->can('Manage Laporan Presensi')) {
             return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
+        }
+
+        if (!Auth::user()->hasRole('Super Admin')) {
+            return response()->json(['success' => false, 'message' => 'Hanya Super Admin yang berhak menolak laporan presensi.'], 403);
         }
 
         $attendance = Attendance::findOrFail($id);
