@@ -14,7 +14,7 @@ class CleanupBalances extends Command
      *
      * @var string
      */
-    protected $signature = 'db:cleanup-balances {--dry-run : Only simulate changes without writing to database}';
+    protected $signature = 'db:cleanup-balances {--dry-run : Only simulate changes without writing to database} {--draft : Generate draft audit simulation table}';
 
     /**
      * The console command description.
@@ -29,6 +29,20 @@ class CleanupBalances extends Command
     public function handle()
     {
         $dryRun = $this->option('dry-run');
+        $isDraft = $this->option('draft');
+
+        if ($isDraft) {
+            $this->info("=== GENERATING DRAFT AUDIT SIMULATION (NO DATABASE WRITE TO STUDENTS) ===");
+            $service = new \App\Services\SaldoSimulationService();
+            $result = $service->runSimulation();
+            $this->info("Draft simulation completed successfully.");
+            $this->info("  - Processed: {$result['total_processed']} students");
+            $this->info("  - Mismatches: {$result['total_mismatches']} students");
+            $this->info("  - Negatives: {$result['total_negatives']} students");
+            $this->info("View details in Admin Panel: /admin/audit/simulation");
+            return 0;
+        }
+
         if ($dryRun) {
             $this->info("=== RUNNING IN DRY-RUN MODE (NO DATABASE WRITE) ===");
         }

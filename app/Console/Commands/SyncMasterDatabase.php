@@ -14,7 +14,7 @@ class SyncMasterDatabase extends Command
      *
      * @var string
      */
-    protected $signature = 'db:sync-master {--all : Sync all records instead of only last 30 days} {--tables= : Comma-separated list of tables to sync}';
+    protected $signature = 'db:sync-master {--all : Sync all records instead of only last 30 days} {--tables= : Comma-separated list of tables to sync} {--dry-run : Simulate synchronization without writing to database}';
 
     /**
      * The console command description.
@@ -33,6 +33,11 @@ class SyncMasterDatabase extends Command
         $oneMonthAgo = now()->subDays(30)->toDateTimeString();
         $syncAll = $this->option('all');
         $syncTablesOption = $this->option('tables');
+        $dryRun = $this->option('dry-run');
+
+        if ($dryRun) {
+            $this->info('=== RUNNING IN DRY-RUN / SIMULATION MODE (NO DATABASE WRITE) ===');
+        }
 
         $tables = [
             'schools',
@@ -317,7 +322,7 @@ class SyncMasterDatabase extends Command
                 $minTimestamp = null;
                 $maxTimestamp = null;
 
-                $processChunk = function ($rows) use ($table, $commonColumns, &$inserted, &$minTimestamp, &$maxTimestamp, $classroomMapping, $studentMapping, $targetColumns, $defaultOutletId, &$localBillsMap) {
+                $processChunk = function ($rows) use ($table, $commonColumns, &$inserted, &$minTimestamp, &$maxTimestamp, $classroomMapping, $studentMapping, $targetColumns, $defaultOutletId, &$localBillsMap, $dryRun) {
                     $data = $rows->map(fn($row) => (array) $row)->toArray();
                     if (!empty($data)) {
                         // Map student IDs first to use local IDs everywhere
@@ -476,10 +481,12 @@ class SyncMasterDatabase extends Command
                             unset($row);
                         }
 
-                        // Run upsert operation
-                        DB::connection('mysql')
-                            ->table($table)
-                            ->upsert($data, ['id'], $columnsToUpdate);
+                        // Run upsert operation if not in dry-run mode
+                        if (!$dryRun) {
+                            DB::connection('mysql')
+                                ->table($table)
+                                ->upsert($data, ['id'], $columnsToUpdate);
+                        }
                         $inserted += count($data);
 
                         // After upsert, update the in-memory bills map with the current chunk's data
@@ -515,8 +522,9 @@ class SyncMasterDatabase extends Command
                 ];
             }
 
-            // Recalculate bill paid_amount and status to maintain consistency and integrity
-            $this->info("Recalculating paid_amount and status for all bills...");
+            if (!$dryRun) {
+                // Recalculate bill paid_amount and status to maintain consistency and integrity
+                $this->info("Recalculating paid_amount and status for all bills...");
             
             // 1. Recalculate paid_amount for all bills using successful transaction details
             DB::connection('mysql')->statement("
@@ -668,6 +676,7 @@ class SyncMasterDatabase extends Command
                         }
                     }
                 }
+            }
             }
  
             DB::connection('mysql')->statement('SET FOREIGN_KEY_CHECKS=1;');

@@ -99,6 +99,10 @@ Route::prefix('admin')->middleware(['auth'])->group(function () {
     Route::get('audit/diagnostics', [App\Http\Controllers\Admin\AuditController::class, 'diagnosticsIndex'])->name('admin.audit.diagnostics');
     Route::get('audit/diagnostics/ai-insight', [App\Http\Controllers\Admin\AuditController::class, 'ajaxAiInsight'])->name('admin.audit.diagnostics.ai-insight');
     Route::get('audit/duplicate-students', [App\Http\Controllers\Admin\AuditController::class, 'duplicatesIndex'])->name('admin.audit.duplicates');
+    Route::get('audit/simulation', [App\Http\Controllers\Admin\AuditController::class, 'simulationIndex'])->name('admin.audit.simulation');
+    Route::post('audit/run-simulation', [App\Http\Controllers\Admin\AuditController::class, 'runSimulation'])->name('admin.audit.run-simulation');
+    Route::post('audit/apply-simulation', [App\Http\Controllers\Admin\AuditController::class, 'applySimulation'])->name('admin.audit.apply-simulation');
+    Route::post('audit/rollback-simulation', [App\Http\Controllers\Admin\AuditController::class, 'rollbackSimulation'])->name('admin.audit.rollback-simulation');
 
     // Redirect old route for compatibility
     Route::get('audit', function() {

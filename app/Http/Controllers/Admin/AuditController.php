@@ -345,5 +345,96 @@ class AuditController extends Controller
             return redirect()->back()->with('error', "Gagal menggabungkan data siswa: " . $e->getMessage());
         }
     }
+
+    /**
+     * Show draft simulation audit UI.
+     */
+    public function simulationIndex(Request $request)
+    {
+        if (!Auth::user()->can('Manage Audit dan Sinkron')) {
+            return redirect()->route('dashboard')->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
+        }
+
+        $search = $request->input('search');
+        $query = \Illuminate\Support\Facades\DB::table('saldo_audit_simulations')
+            ->orderBy('saldo_diff', 'desc')
+            ->orderBy('student_name', 'asc');
+
+        if (!empty($search)) {
+            $query->where(function ($q) use ($search) {
+                $q->where('student_name', 'like', "%{$search}%")
+                  ->orWhere('student_nis', 'like', "%{$search}%");
+            });
+        }
+
+        $simulations = $query->paginate(15)->withQueryString();
+
+        $stats = [
+            'total' => \Illuminate\Support\Facades\DB::table('saldo_audit_simulations')->count(),
+            'mismatches' => \Illuminate\Support\Facades\DB::table('saldo_audit_simulations')->where('saldo_diff', '!=', 0)->count(),
+            'applied' => \Illuminate\Support\Facades\DB::table('saldo_audit_simulations')->where('status', 'APPLIED')->count(),
+            'negatives' => \Illuminate\Support\Facades\DB::table('saldo_audit_simulations')->where('issue_type', 'NEGATIVE_BALANCE')->count(),
+        ];
+
+        return view('admins.admin.audit.simulation', compact('simulations', 'stats', 'search'));
+    }
+
+    /**
+     * Trigger fresh draft simulation.
+     */
+    public function runSimulation(Request $request)
+    {
+        if (!Auth::user()->can('Manage Audit dan Sinkron')) {
+            return redirect()->route('dashboard')->with('error', 'Maaf, Anda tidak memiliki akses untuk tindakan ini');
+        }
+
+        try {
+            $service = new \App\Services\SaldoSimulationService();
+            $res = $service->runSimulation();
+            return redirect()->route('admin.audit.simulation')
+                ->with('success', "Simulasi draft berhasil diperbarui! ({$res['total_processed']} siswa diproses, {$res['total_mismatches']} selisih terdeteksi).");
+        } catch (\Throwable $e) {
+            return redirect()->route('admin.audit.simulation')
+                ->with('error', "Gagal menjalankan simulasi: " . $e->getMessage());
+        }
+    }
+
+    /**
+     * Apply simulation fix for a specific student.
+     */
+    public function applySimulation(Request $request)
+    {
+        if (!Auth::user()->can('Manage Audit dan Sinkron')) {
+            return redirect()->route('dashboard')->with('error', 'Maaf, Anda tidak memiliki akses untuk tindakan ini');
+        }
+
+        $studentId = $request->input('student_id');
+        try {
+            $service = new \App\Services\SaldoSimulationService();
+            $service->applyFixForStudent($studentId, Auth::id());
+            return redirect()->back()->with('success', 'Perbaikan saldo siswa berhasil diterapkan dan snapshot backup telah disimpan!');
+        } catch (\Throwable $e) {
+            return redirect()->back()->with('error', 'Gagal menerapkan perbaikan: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Rollback applied fix for a specific student.
+     */
+    public function rollbackSimulation(Request $request)
+    {
+        if (!Auth::user()->can('Manage Audit dan Sinkron')) {
+            return redirect()->route('dashboard')->with('error', 'Maaf, Anda tidak memiliki akses untuk tindakan ini');
+        }
+
+        $studentId = $request->input('student_id');
+        try {
+            $service = new \App\Services\SaldoSimulationService();
+            $service->rollbackFixForStudent($studentId);
+            return redirect()->back()->with('success', 'Saldo siswa berhasil dikembalikan (rollback) ke kondisi snapshot sebelum perbaikan!');
+        } catch (\Throwable $e) {
+            return redirect()->back()->with('error', 'Gagal mengembalikan saldo: ' . $e->getMessage());
+        }
+    }
 }
 
