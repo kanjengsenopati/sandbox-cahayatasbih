@@ -55,19 +55,17 @@ class ReportTransactionController extends Controller
                 ->hasSchool()
                 ->latest();
             if (request()->data == 'total') {
-                // Fetch all types of transactions and sum them separately
-                $totals = $data->selectRaw("
-                SUM(CASE WHEN type = '" . Transaction::TYPE_BILL . "' THEN pay_amount ELSE 0 END) as total_bill,
-                SUM(CASE WHEN type = '" . Transaction::TYPE_SAVING . "' THEN pay_amount ELSE 0 END) as saldo_saving
-            ")
-                    ->first();
+                // Fetch all types of transactions and sum them in a single fast query
+                $totals = (clone $data)->selectRaw("
+                    SUM(CASE WHEN type = '" . Transaction::TYPE_BILL . "' THEN pay_amount ELSE 0 END) as total_bill,
+                    SUM(CASE WHEN type = '" . Transaction::TYPE_SALDO . "' THEN pay_amount ELSE 0 END) as total_saldo,
+                    SUM(CASE WHEN type = '" . Transaction::TYPE_SAVING . "' THEN pay_amount ELSE 0 END) as saldo_saving
+                ")->first();
 
                 return response()->json([
-                    'total_bill' => number_format($totals->total_bill, 0, ',', '.'),
-                    'total_saldo' => number_format($data->where('type', Transaction::TYPE_SALDO)->whereHas('transactionDetails.saldoHistory', function ($query) {
-                        $query->where('type', SaldoHistory::TYPE_IN);
-                    })->sum('pay_amount'), 0, ',', '.'),
-                    'saldo_saving' => number_format($totals->saldo_saving, 0, ',', '.'),
+                    'total_bill' => number_format($totals->total_bill ?? 0, 0, ',', '.'),
+                    'total_saldo' => number_format($totals->total_saldo ?? 0, 0, ',', '.'),
+                    'saldo_saving' => number_format($totals->saldo_saving ?? 0, 0, ',', '.'),
                 ]);
             } elseif (request()->data == 'table') {
                 return DataTables::of($data)
@@ -114,7 +112,7 @@ class ReportTransactionController extends Controller
                         }
                     })
                     ->addColumn('details', function ($data) {
-                        return $data->transactionDetails->map(function ($detail) use ($data) {
+                        $mapped = $data->transactionDetails->map(function ($detail) use ($data) {
                             if ($data->type == Transaction::TYPE_BILL) {
                                 $bill = $detail->bill;
                                 $billType = $bill?->billType?->name ?? 'Lain-lain';
@@ -162,7 +160,9 @@ class ReportTransactionController extends Controller
                                 'description' => 'Detail Transaksi',
                                 'amount' => (int) $data->pay_amount,
                             ];
-                        })->values();
+                        })->toArray();
+
+                        return array_values($mapped);
                     })
                     ->addColumn('item', function ($data) {
                         $details = $data->transactionDetails;

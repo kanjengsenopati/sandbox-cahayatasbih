@@ -268,106 +268,119 @@
     }
 
     function formatExpandablePanel(rowData) {
-        let details = rowData.details || [];
-        let grandTotal = 0;
-        let groups = {};
-
-        details.forEach(function(item) {
-            let key = item.bill_type || 'Tagihan Lainnya';
-            if (!groups[key]) {
-                groups[key] = {
-                    title: key,
-                    items: [],
-                    subtotal: 0
-                };
+        try {
+            let detailsRaw = rowData ? rowData.details : [];
+            let details = [];
+            if (Array.isArray(detailsRaw)) {
+                details = detailsRaw;
+            } else if (typeof detailsRaw === 'object' && detailsRaw !== null) {
+                details = Object.values(detailsRaw);
             }
-            groups[key].items.push(item);
-            groups[key].subtotal += (item.amount || 0);
-            grandTotal += (item.amount || 0);
-        });
 
-        let groupKeys = Object.keys(groups);
+            let grandTotal = 0;
+            let groups = {};
 
-        let html = `
-        <div class="expandable-panel-card p-5 my-2 text-start">
-            <!-- Header Panel -->
-            <div class="d-flex align-items-center justify-content-between mb-4 pb-3 border-bottom border-gray-200">
-                <div class="d-flex align-items-center gap-3">
-                    <span class="bullet bg-primary w-10px h-10px rounded-circle"></span>
-                    <span class="fs-6 fw-bolder text-gray-800">Rincian Item Transaksi (${details.length} Item)</span>
-                    <span class="badge badge-light-primary fw-bold px-3 py-1 fs-8">${rowData.payment_code || '-'}</span>
-                </div>
-                <div class="d-flex align-items-center gap-2">
-                    <span class="fs-7 fw-bold text-gray-500 text-uppercase tracking-wider">Total Nominal Item:</span>
-                    <span class="fs-6 fw-bolder text-success">Rp ${formatNumber(grandTotal)}</span>
-                </div>
-            </div>
-        `;
-
-        if (groupKeys.length === 0) {
-            html += `
-            <div class="text-center py-4 text-gray-500 fs-7 fst-italic">
-                Tidak ada rincian item tambahan untuk transaksi ini.
-            </div>`;
-        } else {
-            groupKeys.forEach(function(groupName) {
-                let group = groups[groupName];
-                html += `
-                <div class="group-item-card p-4 mb-3 shadow-sm">
-                    <!-- Group Title & Subtotal -->
-                    <div class="d-flex align-items-center justify-content-between mb-3 pb-2 border-bottom border-gray-100">
-                        <div class="d-flex align-items-center gap-2">
-                            <i class="fas fa-layer-group text-primary fs-7"></i>
-                            <span class="fw-bolder fs-7 text-gray-800 text-uppercase tracking-wider">${group.title}</span>
-                            <span class="badge badge-secondary text-gray-600 rounded-pill fs-8 px-2 py-1">${group.items.length} Periode/Item</span>
-                        </div>
-                        <div class="fs-7 fw-bolder text-success">
-                            Subtotal: Rp ${formatNumber(group.subtotal)}
-                        </div>
-                    </div>
-
-                    <!-- Mini Data Table -->
-                    <div class="table-responsive">
-                        <table class="table table-sm table-row-dashed align-middle mb-0 gs-2 gy-2">
-                            <thead>
-                                <tr class="text-gray-400 fw-bold fs-8 text-uppercase tracking-widest border-bottom">
-                                    <th style="width: 5%" class="ps-2">#</th>
-                                    <th>Jenis Tagihan / Detail</th>
-                                    <th>Periode / Bulan</th>
-                                    <th class="pe-2 text-end">Nominal</th>
-                                </tr>
-                            </thead>
-                            <tbody>`;
-
-                group.items.forEach(function(item, idx) {
-                    let periodText = item.period && item.period !== '-' ? item.period : (item.description || '-');
-                    html += `
-                                <tr class="hover-bg-light">
-                                    <td class="ps-2 text-gray-400 fs-7 font-mono">${idx + 1}</td>
-                                    <td>
-                                        <span class="fw-bold text-gray-700 fs-7">${group.title}</span>
-                                    </td>
-                                    <td>
-                                        <span class="badge badge-light text-gray-700 fw-semibold fs-8 px-2.5 py-1">
-                                            <i class="far fa-calendar-alt me-1 fs-9 text-gray-400"></i>${periodText}
-                                        </span>
-                                    </td>
-                                    <td class="pe-2 text-end font-mono fw-bolder text-success fs-7">
-                                        Rp ${formatNumber(item.amount)}
-                                    </td>
-                                </tr>`;
-                });
-
-                html += `
-                            </tbody>
-                        </table>
-                    </div>
-                </div>`;
+            details.forEach(function(item) {
+                if (!item || typeof item !== 'object') return;
+                let key = item.bill_type || 'Tagihan Lainnya';
+                if (!groups[key]) {
+                    groups[key] = {
+                        title: key,
+                        items: [],
+                        subtotal: 0
+                    };
+                }
+                groups[key].items.push(item);
+                groups[key].subtotal += (item.amount || 0);
+                grandTotal += (item.amount || 0);
             });
-        }
 
-        html += `</div>`;
-        return html;
+            let groupKeys = Object.keys(groups);
+
+            let html = `
+            <div class="expandable-panel-card p-5 my-2 text-start">
+                <!-- Header Panel -->
+                <div class="d-flex align-items-center justify-content-between mb-4 pb-3 border-bottom border-gray-200">
+                    <div class="d-flex align-items-center gap-3">
+                        <span class="bullet bg-primary w-10px h-10px rounded-circle"></span>
+                        <span class="fs-6 fw-bolder text-gray-800">Rincian Item Transaksi (${details.length} Item)</span>
+                        <span class="badge badge-light-primary fw-bold px-3 py-1 fs-8">${(rowData && rowData.payment_code) || '-'}</span>
+                    </div>
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="fs-7 fw-bold text-gray-500 text-uppercase tracking-wider">Total Nominal Item:</span>
+                        <span class="fs-6 fw-bolder text-success">Rp ${formatNumber(grandTotal)}</span>
+                    </div>
+                </div>
+            `;
+
+            if (groupKeys.length === 0) {
+                html += `
+                <div class="text-center py-4 text-gray-500 fs-7 fst-italic">
+                    Tidak ada rincian item tambahan untuk transaksi ini.
+                </div>`;
+            } else {
+                groupKeys.forEach(function(groupName) {
+                    let group = groups[groupName];
+                    html += `
+                    <div class="group-item-card p-4 mb-3 shadow-sm">
+                        <!-- Group Title & Subtotal -->
+                        <div class="d-flex align-items-center justify-content-between mb-3 pb-2 border-bottom border-gray-100">
+                            <div class="d-flex align-items-center gap-2">
+                                <i class="fas fa-layer-group text-primary fs-7"></i>
+                                <span class="fw-bolder fs-7 text-gray-800 text-uppercase tracking-wider">${group.title}</span>
+                                <span class="badge badge-secondary text-gray-600 rounded-pill fs-8 px-2 py-1">${group.items.length} Periode/Item</span>
+                            </div>
+                            <div class="fs-7 fw-bolder text-success">
+                                Subtotal: Rp ${formatNumber(group.subtotal)}
+                            </div>
+                        </div>
+
+                        <!-- Mini Data Table -->
+                        <div class="table-responsive">
+                            <table class="table table-sm table-row-dashed align-middle mb-0 gs-2 gy-2">
+                                <thead>
+                                    <tr class="text-gray-400 fw-bold fs-8 text-uppercase tracking-widest border-bottom">
+                                        <th style="width: 5%" class="ps-2">#</th>
+                                        <th>Jenis Tagihan / Detail</th>
+                                        <th>Periode / Bulan</th>
+                                        <th class="pe-2 text-end">Nominal</th>
+                                    </tr>
+                                </thead>
+                                <tbody>`;
+
+                    group.items.forEach(function(item, idx) {
+                        let periodText = item.period && item.period !== '-' ? item.period : (item.description || '-');
+                        html += `
+                                    <tr class="hover-bg-light">
+                                        <td class="ps-2 text-gray-400 fs-7 font-mono">${idx + 1}</td>
+                                        <td>
+                                            <span class="fw-bold text-gray-700 fs-7">${group.title}</span>
+                                        </td>
+                                        <td>
+                                            <span class="badge badge-light text-gray-700 fw-semibold fs-8 px-2.5 py-1">
+                                                <i class="far fa-calendar-alt me-1 fs-9 text-gray-400"></i>${periodText}
+                                            </span>
+                                        </td>
+                                        <td class="pe-2 text-end font-mono fw-bolder text-success fs-7">
+                                            Rp ${formatNumber(item.amount)}
+                                        </td>
+                                    </tr>`;
+                    });
+
+                    html += `
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>`;
+                });
+            }
+
+            html += `</div>`;
+            return html;
+        } catch (err) {
+            console.error('Error rendering expandable panel:', err);
+            return '<div class="p-4 text-center text-muted fs-7">Gagal memuat detail item transaksi.</div>';
+        }
     }
 
     $(document).ready(function() {
@@ -444,7 +457,7 @@
                 tr.removeClass('expanded');
             } else {
                 var rowData = row.data();
-                if (rowData && rowData.details && rowData.details.length > 0) {
+                if (rowData) {
                     row.child(formatExpandablePanel(rowData)).show();
                     tr.addClass('expanded');
                 }
@@ -513,15 +526,29 @@
                 { data: 'action', name: 'action', orderable: false, searchable: false, responsivePriority: -1 }
             ],
             drawCallback: function(settings) {
-                var api = this.api();
-                api.rows().every(function() {
-                    var rowData = this.data();
-                    if (rowData && rowData.details && rowData.details.length > 0) {
-                        var childHtml = formatExpandablePanel(rowData);
-                        this.child(childHtml).show();
-                        $(this.node()).addClass('expanded');
-                    }
-                });
+                try {
+                    var api = this.api();
+                    api.rows().every(function() {
+                        var rowData = this.data();
+                        if (rowData) {
+                            var detailsRaw = rowData.details;
+                            var count = 0;
+                            if (Array.isArray(detailsRaw)) {
+                                count = detailsRaw.length;
+                            } else if (typeof detailsRaw === 'object' && detailsRaw !== null) {
+                                count = Object.keys(detailsRaw).length;
+                            }
+
+                            if (count > 0) {
+                                var childHtml = formatExpandablePanel(rowData);
+                                this.child(childHtml).show();
+                                $(this.node()).addClass('expanded');
+                            }
+                        }
+                    });
+                } catch (e) {
+                    console.error('DataTables drawCallback error:', e);
+                }
             }
         });
     }
