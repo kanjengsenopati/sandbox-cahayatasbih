@@ -92,7 +92,7 @@
             border: 1px solid #E2E8F0;
             border-radius: 8px;
             padding: 12px 16px;
-            margin-bottom: 24px;
+            margin-bottom: 20px;
         }
 
         .info-card-header {
@@ -179,7 +179,7 @@
             padding: 11px 14px;
             font-size: 12px;
             color: #334155;
-            vertical-align: middle;
+            vertical-align: top;
             border-bottom: 1px solid #F1F5F9;
         }
 
@@ -196,6 +196,39 @@
             color: #4D0C7A;
         }
 
+        .item-count-badge {
+            font-size: 10px;
+            color: #64748B;
+            font-weight: 600;
+            margin-top: 2px;
+        }
+
+        .period-year-row {
+            margin-bottom: 4px;
+            line-height: 1.4;
+        }
+
+        .period-year-row:last-child {
+            margin-bottom: 0;
+        }
+
+        .period-year-badge {
+            background-color: #E2E8F0;
+            color: #334155;
+            font-weight: 700;
+            font-size: 10px;
+            padding: 2px 6px;
+            border-radius: 4px;
+            display: inline-block;
+            margin-right: 4px;
+        }
+
+        .period-months-text {
+            font-size: 11px;
+            color: #475569;
+            font-weight: 500;
+        }
+
         .item-desc {
             color: #64748B;
             font-size: 11px;
@@ -205,7 +238,7 @@
         .summary-wrapper {
             width: 100%;
             margin-top: 10px;
-            margin-bottom: 24px;
+            margin-bottom: 20px;
         }
 
         .summary-table {
@@ -280,8 +313,8 @@
         /* Footer */
         .footer-divider {
             border-top: 1px solid #E2E8F0;
-            margin-top: 20px;
-            padding-top: 16px;
+            margin-top: 16px;
+            padding-top: 14px;
         }
 
         .footer-table {
@@ -306,7 +339,7 @@
         }
 
         .timestamp {
-            margin-top: 12px;
+            margin-top: 10px;
             text-align: right;
             font-size: 10px;
             color: #94A3B8;
@@ -382,7 +415,7 @@
             </table>
         </div>
 
-        <!-- Modern Data Table -->
+        <!-- Modern Data Table (Grouped Compact Layout) -->
         <main>
             <table class="data-table">
                 @if ($data->type == 'SALDO')
@@ -436,32 +469,65 @@
                     @endforelse
                 </tbody>
                 @else
+                @php
+                    // Group transaction details by Bill Type Name
+                    $groupedDetails = $data->transactionDetails->groupBy(function($detail) {
+                        return $detail->bill?->billType?->name ?? 'Pembayaran Tagihan';
+                    });
+                @endphp
                 <thead>
                     <tr>
                         <th width="8%" class="text-center">No</th>
-                        <th width="40%">Item Tagihan</th>
-                        <th class="text-end" width="16%">Bulan</th>
-                        <th class="text-end" width="14%">Tahun</th>
-                        <th class="text-end" width="22%">Nominal</th>
+                        <th width="35%">Item Tagihan</th>
+                        <th width="35%">Periode Tagihan (Bulan & Tahun)</th>
+                        <th class="text-end" width="22%">Total Nominal</th>
                     </tr>
                 </thead>
                 <tbody>
-                    @forelse ($data->transactionDetails as $transaction_detail)
-                    <tr>
-                        <td class="text-center" style="color: #64748B; font-weight: 600;">{{ $loop->iteration }}</td>
-                        <td>
-                            <span class="item-name">{{ $transaction_detail?->bill?->billType?->name ?? 'Pembayaran Tagihan' }}</span>
-                        </td>
-                        <td class="text-end">{{ $transaction_detail?->bill?->translated_month ?? '-' }}</td>
-                        <td class="text-end">{{ $transaction_detail?->bill?->year ?? '-' }}</td>
-                        <td class="text-end">Rp {{ number_format($transaction_detail?->bill?->amount ?? 0, 0, ',', '.') }}</td>
-                    </tr>
+                    @forelse ($groupedDetails as $billTypeName => $detailsGroup)
+                        @php
+                            $groupTotal = $detailsGroup->sum(function($d) { return $d->bill?->amount ?? 0; });
+                            // Group items by year
+                            $byYear = $detailsGroup->groupBy(function($d) {
+                                return $d->bill?->year ?? '-';
+                            })->sortKeys();
+                        @endphp
+                        <tr>
+                            <td class="text-center" style="color: #64748B; font-weight: 600; padding-top: 12px;">{{ $loop->iteration }}</td>
+                            <td style="padding-top: 12px;">
+                                <span class="item-name">{{ $billTypeName }}</span>
+                                @if ($detailsGroup->count() > 1)
+                                    <div class="item-count-badge">({{ $detailsGroup->count() }} Bulan)</div>
+                                @endif
+                            </td>
+                            <td style="padding-top: 10px;">
+                                @foreach ($byYear as $year => $yearItems)
+                                    @php
+                                        // Sort months in numerical order (1..12)
+                                        $sortedItems = $yearItems->sortBy(function($d) {
+                                            return (int) ($d->bill?->month ?? 0);
+                                        });
+                                        $monthNames = $sortedItems->map(function($d) {
+                                            return $d->bill?->translated_month ?? '';
+                                        })->filter()->implode(', ');
+                                    @endphp
+                                    <div class="period-year-row">
+                                        <span class="period-year-badge">{{ $year }}</span>
+                                        <span class="period-months-text">{{ $monthNames }}</span>
+                                    </div>
+                                @endforeach
+                            </td>
+                            <td class="text-end" style="padding-top: 12px; font-weight: 700; color: #0F172A;">
+                                Rp {{ number_format($groupTotal, 0, ',', '.') }}
+                            </td>
+                        </tr>
                     @empty
-                    <tr>
-                        <td class="text-center" style="color: #64748B; font-weight: 600;">1</td>
-                        <td colspan="3"><span class="item-name">Pembayaran Tagihan</span></td>
-                        <td class="text-end">Rp {{ number_format($data->pay_amount ?? 0, 0, ',', '.') }}</td>
-                    </tr>
+                        <tr>
+                            <td class="text-center" style="color: #64748B; font-weight: 600;">1</td>
+                            <td><span class="item-name">Pembayaran Tagihan</span></td>
+                            <td>-</td>
+                            <td class="text-end">Rp {{ number_format($data->pay_amount ?? 0, 0, ',', '.') }}</td>
+                        </tr>
                     @endforelse
                 </tbody>
                 @endif
@@ -548,7 +614,7 @@
                 </tr>
             </table>
 
-            <table class="footer-table" style="margin-top: 16px;">
+            <table class="footer-table" style="margin-top: 14px;">
                 <tr>
                     <td width="65%" class="footer-note">
                         Invoice bukti pembayaran ini sah dan telah diproses secara otomatis oleh sistem kami.<br />
@@ -557,7 +623,7 @@
                     </td>
                     <td width="35%" class="text-end">
                         <img src="data:image/svg+xml;base64,{!! base64_encode(QrCode::format('svg')->size(90)->generate(route('transaction.invoice', $data->id))) !!}"
-                            alt="QR Verification" style="display: inline-block; width: 85px; height: 85px;" />
+                            alt="QR Verification" style="display: inline-block; width: 80px; height: 80px;" />
                     </td>
                 </tr>
             </table>
