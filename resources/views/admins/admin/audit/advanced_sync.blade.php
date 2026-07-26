@@ -114,9 +114,15 @@
                                 <tr class="text-start text-muted fw-bolder fs-7 text-uppercase gs-0">
                                     <th>Siswa</th>
                                     <th>Kelas/UPT</th>
-                                    <th>Saldo Lokal Awal</th>
+                                    <th>
+                                        Saldo Aplikasi Baru
+                                        <i class="fas fa-question-circle ms-1 fs-7 text-primary cursor-pointer" data-bs-toggle="tooltip" title="Saldo siswa saat ini di aplikasi lokal yang sedang Anda gunakan"></i>
+                                    </th>
                                     <th>Riwayat Tertunda</th>
-                                    <th>Saldo Master</th>
+                                    <th>
+                                        Saldo Aplikasi Lama
+                                        <i class="fas fa-question-circle ms-1 fs-7 text-primary cursor-pointer" data-bs-toggle="tooltip" title="Saldo siswa yang tercatat di database server lama (master)"></i>
+                                    </th>
                                     <th>Estimasi Saldo Akhir</th>
                                     <th>Status</th>
                                 </tr>
@@ -137,6 +143,9 @@
 
     // Filter UPT -> Kelas Cascade
     $(document).ready(function() {
+        // Initialize tooltips
+        $('[data-bs-toggle="tooltip"]').tooltip();
+
         $('#school_id').on('change', function() {
             var schoolId = $(this).val();
             var classroomSelect = $('#classroom_id');
