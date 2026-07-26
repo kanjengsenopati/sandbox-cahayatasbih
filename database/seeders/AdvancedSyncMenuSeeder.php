@@ -26,7 +26,7 @@ class AdvancedSyncMenuSeeder extends Seeder
                 [
                     'name' => 'Advanced Sync Saldo',
                     'is_active' => 1,
-                    'permission' => 'Super Admin',
+                    'permission' => 'Manage Audit dan Sinkron',
                     'order' => 6,
                 ]
             );
