@@ -5,5 +5,11 @@
     "raleway": {
         "normal": "D:\\Laravel\\cahaya-tasbih\\storage\\fonts\/raleway_normal_66266c4632471de398a14bdec8413bb7",
         "bold": "raleway_bold_5b9f5983585810045c0c5c7240f79ea2"
+    },
+    "inter": {
+        "normal": "F:\\Antigravity\\Projects\\cahayatasbih\\storage\\fonts\/inter_normal_42eaf866a3506cc35fcf46dde34dce0e",
+        "600": "F:\\Antigravity\\Projects\\cahayatasbih\\storage\\fonts\/inter_600_dff4108895d55bec3cb4c01638b2dff4",
+        "bold": "F:\\Antigravity\\Projects\\cahayatasbih\\storage\\fonts\/inter_bold_bbe46995ddd0c3cdcf75fbf1e20a5f73",
+        "800": "inter_800_3bd7dd0d3a5fa714b3f51d4c014753b7"
     }
 }
