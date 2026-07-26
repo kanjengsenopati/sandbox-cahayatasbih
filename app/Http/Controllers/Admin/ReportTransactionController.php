@@ -30,7 +30,7 @@ class ReportTransactionController extends Controller
         }
         if (request()->ajax()) {
             $data = Transaction::where('status', Transaction::STATUS_PAID)
-                ->with('student', 'student.classroom', 'paymentMethod', 'admin')
+                ->with(['student', 'student.classroom', 'paymentMethod', 'admin', 'transactionDetails.bill.billType', 'transactionDetails.saldoHistory', 'transactionDetails.savingHistory'])
                 ->when(request()->filled('start_date'), function ($query) {
                     $query->whereDate('created_at', '>=', request()->start_date);
                 })
@@ -89,7 +89,7 @@ class ReportTransactionController extends Controller
                         if ($data->type == Transaction::TYPE_BILL) {
                             return '<span class="badge badge-primary">Tagihan</span>';
                         } elseif ($data->type == Transaction::TYPE_SALDO) {
-                            if ($data->transactionDetails?->first()->saldoHistory?->type == SaldoHistory::TYPE_IN) {
+                            if ($data->transactionDetails?->first()?->saldoHistory?->type == SaldoHistory::TYPE_IN) {
                                 return '<span class="badge badge-success">Top Up Saldo</span>';
                             } else {
                                 return '<span class="badge badge-danger">Tarik Saldo</span>';
@@ -113,32 +113,89 @@ class ReportTransactionController extends Controller
                             return '-';
                         }
                     })
+                    ->addColumn('details', function ($data) {
+                        return $data->transactionDetails->map(function ($detail) use ($data) {
+                            if ($data->type == Transaction::TYPE_BILL) {
+                                $bill = $detail->bill;
+                                $billType = $bill?->billType?->name ?? 'Lain-lain';
+                                $monthName = '-';
+                                if (!empty($bill?->month)) {
+                                    try {
+                                        $monthName = Carbon::createFromFormat('m', $bill->month)->translatedFormat('F');
+                                    } catch (\Exception $e) {
+                                        $monthName = (string)$bill->month;
+                                    }
+                                }
+                                $year = $bill?->year ?? '-';
+                                $amount = $detail->amount ?? ($bill?->amount ?? 0);
+                                return [
+                                    'type' => 'BILL',
+                                    'bill_type' => $billType,
+                                    'period' => $monthName . ' ' . $year,
+                                    'month' => $monthName,
+                                    'year' => $year,
+                                    'amount' => (int) $amount,
+                                ];
+                            } elseif ($data->type == Transaction::TYPE_SALDO) {
+                                $amount = $detail->amount ?? $data->pay_amount;
+                                return [
+                                    'type' => 'SALDO',
+                                    'bill_type' => 'Top Up / Tarik Saldo',
+                                    'period' => '-',
+                                    'description' => $detail->saldoHistory?->description ?? 'Transaksi Saldo',
+                                    'amount' => (int) $amount,
+                                ];
+                            } elseif ($data->type == Transaction::TYPE_SAVING) {
+                                $amount = $detail->amount ?? $data->pay_amount;
+                                return [
+                                    'type' => 'SAVING',
+                                    'bill_type' => 'Tabungan',
+                                    'period' => '-',
+                                    'description' => $detail->savingHistory?->description ?? 'Transaksi Tabungan',
+                                    'amount' => (int) $amount,
+                                ];
+                            }
+                            return [
+                                'type' => 'OTHER',
+                                'bill_type' => 'Lainnya',
+                                'period' => '-',
+                                'description' => 'Detail Transaksi',
+                                'amount' => (int) $data->pay_amount,
+                            ];
+                        })->values();
+                    })
                     ->addColumn('item', function ($data) {
-                        $transaction_details = TransactionDetail::where('transaction_id', $data->id)->get();
-                        if ($data->type == Transaction::TYPE_BILL) {
-                            $item = '';
-                            foreach ($transaction_details as $index => $detail) {
-                                $billType = $detail->bill?->billType?->name ?? '-';
-                                $month = Carbon::createFromFormat('m', $detail->bill?->month)->translatedFormat('F');
-                                $year = $detail->bill?->year ?? '-';
-                                $item .= ($index + 1) . '. ' . $billType . ' ' . $month . ' ' . $year . '<br>';
-                            }
-                            return $item ?: '-';
-                        } elseif ($data->type == Transaction::TYPE_SALDO) {
-                            $item = '';
-                            foreach ($transaction_details as $index => $detail) {
-                                $item .= ($index + 1) . '. ' . ($detail->saldoHistory?->description ?? '-') . '<br>';
-                            }
-                            return $item ?: '-';
-                        } elseif ($data->type == Transaction::TYPE_SAVING) {
-                            $item = '';
-                            foreach ($transaction_details as $index => $detail) {
-                                $item .= ($index + 1) . '. ' . ($detail->savingHistory?->description ?? '-') . '<br>';
-                            }
-                            return $item ?: '-';
-                        } else {
-                            return '-';
+                        $details = $data->transactionDetails;
+                        $totalCount = $details->count();
+                        if ($totalCount == 0) {
+                            return '<span class="text-muted fs-7">-</span>';
                         }
+
+                        if ($data->type == Transaction::TYPE_BILL) {
+                            $billTypeNames = $details->map(function ($d) {
+                                return $d->bill?->billType?->name;
+                            })->filter()->unique();
+
+                            if ($billTypeNames->count() == 1) {
+                                $summaryText = $totalCount . ' Item (' . $billTypeNames->first() . ')';
+                            } elseif ($billTypeNames->count() > 1) {
+                                $summaryText = $totalCount . ' Item (' . $billTypeNames->count() . ' Jenis Tagihan)';
+                            } else {
+                                $summaryText = $totalCount . ' Item Tagihan';
+                            }
+                        } elseif ($data->type == Transaction::TYPE_SALDO) {
+                            $summaryText = '1 Detail (Saldo)';
+                        } elseif ($data->type == Transaction::TYPE_SAVING) {
+                            $summaryText = '1 Detail (Tabungan)';
+                        } else {
+                            $summaryText = $totalCount . ' Item';
+                        }
+
+                        return "<button type='button' class='btn btn-sm btn-light-primary btn-flex align-items-center py-1.5 px-3 fs-7 fw-bold btn-toggle-detail' data-id='{$data->id}'>
+                            <i class='fas fa-list-ul me-2 text-primary fs-8'></i>
+                            <span class='me-2'>{$summaryText}</span>
+                            <i class='fas fa-chevron-down fs-8 toggle-arrow text-primary transition-transform'></i>
+                        </button>";
                     })
                     ->addColumn('admin', function ($data) {
                         return $data->admin?->name ?? '<span class="badge badge-primary">CT-PAY</span>';

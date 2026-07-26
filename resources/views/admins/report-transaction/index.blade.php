@@ -238,10 +238,137 @@
     <!--end::Post-->
 </div>
 
+<style>
+    .transition-transform {
+        transition: transform 0.2s ease-in-out;
+    }
+    #table-saldo tbody tr.expanded .toggle-arrow {
+        transform: rotate(180deg);
+    }
+    .expandable-panel-card {
+        border-radius: 24px !important;
+        background-color: #f8fafc;
+        border: 1px solid #e2e8f0;
+        box-shadow: 0 8px 30px rgba(0, 0, 0, 0.04);
+    }
+    .group-item-card {
+        border-radius: 16px !important;
+        border: 1px solid #edf2f7;
+        background-color: #ffffff;
+    }
+</style>
+
 @endsection
 @push('js')
 <script>
     var saldoTable;
+
+    function formatNumber(num) {
+        return new Intl.NumberFormat('id-ID').format(num || 0);
+    }
+
+    function formatExpandablePanel(rowData) {
+        let details = rowData.details || [];
+        let grandTotal = 0;
+        let groups = {};
+
+        details.forEach(function(item) {
+            let key = item.bill_type || 'Tagihan Lainnya';
+            if (!groups[key]) {
+                groups[key] = {
+                    title: key,
+                    items: [],
+                    subtotal: 0
+                };
+            }
+            groups[key].items.push(item);
+            groups[key].subtotal += (item.amount || 0);
+            grandTotal += (item.amount || 0);
+        });
+
+        let groupKeys = Object.keys(groups);
+
+        let html = `
+        <div class="expandable-panel-card p-5 my-2 text-start">
+            <!-- Header Panel -->
+            <div class="d-flex align-items-center justify-content-between mb-4 pb-3 border-bottom border-gray-200">
+                <div class="d-flex align-items-center gap-3">
+                    <span class="bullet bg-primary w-10px h-10px rounded-circle"></span>
+                    <span class="fs-6 fw-bolder text-gray-800">Rincian Item Transaksi (${details.length} Item)</span>
+                    <span class="badge badge-light-primary fw-bold px-3 py-1 fs-8">${rowData.payment_code || '-'}</span>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                    <span class="fs-7 fw-bold text-gray-500 text-uppercase tracking-wider">Total Nominal Item:</span>
+                    <span class="fs-6 fw-bolder text-success">Rp ${formatNumber(grandTotal)}</span>
+                </div>
+            </div>
+        `;
+
+        if (groupKeys.length === 0) {
+            html += `
+            <div class="text-center py-4 text-gray-500 fs-7 fst-italic">
+                Tidak ada rincian item tambahan untuk transaksi ini.
+            </div>`;
+        } else {
+            groupKeys.forEach(function(groupName) {
+                let group = groups[groupName];
+                html += `
+                <div class="group-item-card p-4 mb-3 shadow-sm">
+                    <!-- Group Title & Subtotal -->
+                    <div class="d-flex align-items-center justify-content-between mb-3 pb-2 border-bottom border-gray-100">
+                        <div class="d-flex align-items-center gap-2">
+                            <i class="fas fa-layer-group text-primary fs-7"></i>
+                            <span class="fw-bolder fs-7 text-gray-800 text-uppercase tracking-wider">${group.title}</span>
+                            <span class="badge badge-secondary text-gray-600 rounded-pill fs-8 px-2 py-1">${group.items.length} Periode/Item</span>
+                        </div>
+                        <div class="fs-7 fw-bolder text-success">
+                            Subtotal: Rp ${formatNumber(group.subtotal)}
+                        </div>
+                    </div>
+
+                    <!-- Mini Data Table -->
+                    <div class="table-responsive">
+                        <table class="table table-sm table-row-dashed align-middle mb-0 gs-2 gy-2">
+                            <thead>
+                                <tr class="text-gray-400 fw-bold fs-8 text-uppercase tracking-widest border-bottom">
+                                    <th style="width: 5%" class="ps-2">#</th>
+                                    <th>Jenis Tagihan / Detail</th>
+                                    <th>Periode / Bulan</th>
+                                    <th class="pe-2 text-end">Nominal</th>
+                                </tr>
+                            </thead>
+                            <tbody>`;
+
+                group.items.forEach(function(item, idx) {
+                    let periodText = item.period && item.period !== '-' ? item.period : (item.description || '-');
+                    html += `
+                                <tr class="hover-bg-light">
+                                    <td class="ps-2 text-gray-400 fs-7 font-mono">${idx + 1}</td>
+                                    <td>
+                                        <span class="fw-bold text-gray-700 fs-7">${group.title}</span>
+                                    </td>
+                                    <td>
+                                        <span class="badge badge-light text-gray-700 fw-semibold fs-8 px-2.5 py-1">
+                                            <i class="far fa-calendar-alt me-1 fs-9 text-gray-400"></i>${periodText}
+                                        </span>
+                                    </td>
+                                    <td class="pe-2 text-end font-mono fw-bolder text-success fs-7">
+                                        Rp ${formatNumber(item.amount)}
+                                    </td>
+                                </tr>`;
+                });
+
+                html += `
+                            </tbody>
+                        </table>
+                    </div>
+                </div>`;
+            });
+        }
+
+        html += `</div>`;
+        return html;
+    }
 
     $(document).ready(function() {
         // Fetch classroom data on school_id change
@@ -266,11 +393,8 @@
         });
 
         // Event handlers to reload the table
-        $(document).ready(function() {
-            $('#filter_school_id, #filter_classroom_id, #filter_status, #filter_admin, #filter_tipe_tagihan').on('change',
-            function() {
-                reloadTable();
-            });
+        $('#filter_school_id, #filter_classroom_id, #filter_status, #filter_admin, #filter_tipe_tagihan').on('change', function() {
+            reloadTable();
         });
 
         var start = moment().startOf('month');
@@ -308,6 +432,24 @@
 
         // Initial total saldo calculation
         getTotalSaldo();
+
+        // Toggle click listener for Expandable Panel
+        $('#table-saldo tbody').on('click', '.btn-toggle-detail', function(e) {
+            e.preventDefault();
+            var tr = $(this).closest('tr');
+            var row = saldoTable.row(tr);
+
+            if (row.child.isShown()) {
+                row.child.hide();
+                tr.removeClass('expanded');
+            } else {
+                var rowData = row.data();
+                if (rowData && rowData.details && rowData.details.length > 0) {
+                    row.child(formatExpandablePanel(rowData)).show();
+                    tr.addClass('expanded');
+                }
+            }
+        });
     });
 
     function initializeTable() {
@@ -342,14 +484,14 @@
                 },
                 { data: 'date', name: 'date', orderable: true, searchable: true },
                 { data: 'payment_code', name: 'payment_code', orderable: true, searchable: true },
-                 {
+                {
                     data: 'student',
                     name: 'student.name',
                     orderable: true,
                     searchable: true,
-                        render: function(data, type, row) {
-                            let studentName = data && data.name ? data.name : 'N/A';
-                            let classroomName = data && data.classroom && data.classroom.name
+                    render: function(data, type, row) {
+                        let studentName = data && data.name ? data.name : 'N/A';
+                        let classroomName = data && data.classroom && data.classroom.name
                             ? data.classroom.name
                             : '';
                     
@@ -365,12 +507,22 @@
                     render: function(data, type, row) {
                         return data ? data : 'CT-PAY';
                     },
-                 orderable: true, searchable: true },
+                    orderable: true, searchable: true
+                },
                 { data: 'item', name: 'item', orderable: true, searchable: true },
-                { data: 'action', name: 'action', orderable: false, searchable: false,
-                responsivePriority: -1
-                }
-            ]
+                { data: 'action', name: 'action', orderable: false, searchable: false, responsivePriority: -1 }
+            ],
+            drawCallback: function(settings) {
+                var api = this.api();
+                api.rows().every(function() {
+                    var rowData = this.data();
+                    if (rowData && rowData.details && rowData.details.length > 0) {
+                        var childHtml = formatExpandablePanel(rowData);
+                        this.child(childHtml).show();
+                        $(this.node()).addClass('expanded');
+                    }
+                });
+            }
         });
     }
 
