@@ -101,7 +101,7 @@
                         <div class="row align-items-center mt-2">
                             @if (Auth::user()->can('Create Kelulusan Santri'))
                             <div class="col-md-auto">
-                                <button type="submit" class="btn btn-primary" id="btn_change_classroom">Proses
+                                <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modal-proses-kelulusan" id="btn_change_classroom">Proses
                                     Kelulusan</button>
                             </div>
                             @endif
@@ -112,8 +112,42 @@
             </div>
             <!--end::Card-->
             <!--begin::Modals-->
-
-        </div>
+            <div class="modal fade" tabindex="-1" id="modal-proses-kelulusan">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">Opsi Kelulusan Siswa</h5>
+                            <!--begin::Close-->
+                            <div class="btn btn-icon btn-sm btn-active-light-primary ms-2" data-bs-dismiss="modal" aria-label="Close">
+                                <span class="svg-icon svg-icon-2x">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none">
+                                        <rect opacity="0.5" x="6" y="17.3137" width="16" height="2" rx="1" transform="rotate(-45 6 17.3137)" fill="black"></rect>
+                                        <rect x="7.41422" y="6" width="16" height="2" rx="1" transform="rotate(45 7.41422 6)" fill="black"></rect>
+                                    </svg>
+                                </span>
+                            </div>
+                            <!--end::Close-->
+                        </div>
+            
+                        <div class="modal-body">
+                            <p>Tentukan aksi kelulusan untuk siswa yang dipilih:</p>
+                            <div class="mb-5">
+                                <label class="form-label fw-bold">Lanjut Kemana?</label>
+                                <select class="form-select form-select-solid" name="next_action" required form="form-grade-promotion">
+                                    <option value="" disabled selected>Pilih Opsi...</option>
+                                    <option value="lanjut_pondok">Lulus & Lanjut Pondok (Otomatis masuk PPTQ CAHAYA TASBIH)</option>
+                                    <option value="keluar">Lulus & Keluar (Tidak berlanjut)</option>
+                                </select>
+                            </div>
+                        </div>
+            
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-light" data-bs-dismiss="modal">Batal</button>
+                            <button type="submit" form="form-grade-promotion" class="btn btn-primary">Simpan Kelulusan</button>
+                        </div>
+                    </div>
+                </div>
+            </div>        </div>
         <!--end::Container-->
     </div>
     <!--end::Post-->

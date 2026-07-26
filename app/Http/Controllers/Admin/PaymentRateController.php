@@ -445,7 +445,7 @@ class PaymentRateController extends Controller
     private function getTotalData(string $id, array $dateRange)
     {
         $billQuery = Bill::where('bill_type_id', $id)
-            ->whereHas('student', fn($q) => $q->where('status', Student::STATUS_ACTIVE))
+            ->whereHas('student', fn($q) => $q->whereIn('status', [Student::STATUS_ACTIVE, Student::STATUS_GRADUATED]))
             ->when(request()->school_id && request()->school_id !== 'null', $this->schoolBillFilter())
             ->when(request()->classroom_id && request()->classroom_id !== 'null', $this->classroomBillFilter())
             ->when(request()->status === 'UNPAID', fn($query) => $query->where('status', Bill::STATUS_UNPAID))
@@ -1209,7 +1209,7 @@ class PaymentRateController extends Controller
 
     private function generateBillsForStudent($student, &$billsToInsert, $months, $billType, $request, $rateItemsMap, $timestamp, $existingBillKeys)
     {
-        if ($student->status !== Student::STATUS_ACTIVE) {
+        if (!in_array($student->status, [Student::STATUS_ACTIVE, Student::STATUS_GRADUATED])) {
             return;
         }
 

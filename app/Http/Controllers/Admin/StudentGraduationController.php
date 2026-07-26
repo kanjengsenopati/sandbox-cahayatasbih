@@ -157,10 +157,30 @@ class StudentGraduationController extends Controller
     {
         $data = $request->validated();
         $students = Student::whereIn('id', $data['student_ids'])->get();
+        
+        $pondokClassroomId = null;
+        if (isset($data['next_action']) && $data['next_action'] === 'lanjut_pondok') {
+            $pondokSchool = School::where('type', 'PONDOK')
+                ->orWhere('name', 'like', '%PPTQ%')
+                ->orWhere('name', 'like', '%PONDOK%')
+                ->first();
+                
+            if ($pondokSchool) {
+                $pondokClass = \App\Models\Classroom::where('school_id', $pondokSchool->id)
+                    ->where('name', 'like', '%PONDOK%')
+                    ->first();
+                $pondokClassroomId = $pondokClass ? $pondokClass->id : null;
+            }
+        }
+
         foreach ($students as $student) {
-            $student->update([
-                'status' => Student::STATUS_GRADUATED,
-            ]);
+            $updateData = ['status' => Student::STATUS_GRADUATED];
+            
+            if (isset($data['next_action']) && $data['next_action'] === 'lanjut_pondok' && $pondokClassroomId) {
+                $updateData['classroom_id'] = $pondokClassroomId;
+            }
+            
+            $student->update($updateData);
             $student->cleanupFutureUnpaidBills();
         }
         return redirect()->back()->with('success', 'Berhasil Memproses Kelulusan Siswa');

@@ -23,6 +23,7 @@ class StudentGraduationRequest extends FormRequest
     {
         return [
             'student_ids' => ['required', 'array'],
+            'next_action' => ['required', 'in:lanjut_pondok,keluar'],
         ];
     }
 }

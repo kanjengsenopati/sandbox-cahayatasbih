@@ -217,7 +217,20 @@ class SyncPaymentRateBills extends Command
      */
     private function getStudentsForRate(PaymentRate $paymentRate): \Illuminate\Support\Collection
     {
-        $query = Student::query()->where('status', 'ACTIVE');
+        $billType = $paymentRate->billType;
+        $isPondok = false;
+        
+        if ($billType) {
+            $nameToCheck = strtoupper($billType->name . ' ' . ($billType->billItem?->name ?? ''));
+            $isPondok = str_contains($nameToCheck, 'PONDOK') || str_contains($nameToCheck, 'PPTQ');
+        }
+
+        $query = Student::query();
+        if ($isPondok) {
+            $query->whereIn('status', ['ACTIVE', 'GRADUATED']);
+        } else {
+            $query->where('status', 'ACTIVE');
+        }
         
         if ($this->option('user-id')) {
             $query->where('user_id', $this->option('user-id'));
