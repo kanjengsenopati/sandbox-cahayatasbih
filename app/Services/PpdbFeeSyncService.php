@@ -84,5 +84,13 @@ class PpdbFeeSyncService
                 Log::info("PPDB Fee Auto-Update: Berhasil mengupdate transaksi tagihan PPDB Wali {$user->name} menjadi Rp. {$newPayAmount} karena perubahan status jamaah.");
             }
         }
+
+        // Sinkronisasi tagihan (Bills) untuk semua murid terkait user ini,
+        // apabila user ini telah menjadi Jamaah/Non Jamaah, tagihan lain 
+        // seperti pendaftaran yang digenerate sebagai Bill juga harus diupdate.
+        \Illuminate\Support\Facades\Artisan::queue('bills:sync-rate', [
+            '--user-id' => $user->id,
+            '--force' => true
+        ]);
     }
 }

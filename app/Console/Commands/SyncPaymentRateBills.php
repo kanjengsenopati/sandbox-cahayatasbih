@@ -20,6 +20,7 @@ class SyncPaymentRateBills extends Command
     protected $signature = 'bills:sync-rate
                             {--rate= : Specific PaymentRate ID to sync}
                             {--bill-type= : Specific BillType ID to sync}
+                            {--user-id= : Specific User ID to sync}
                             {--dry-run : Show what would be done without making changes}
                             {--force : Also update UNPAID bills with wrong amount/rate_item}';
 
@@ -217,6 +218,10 @@ class SyncPaymentRateBills extends Command
     private function getStudentsForRate(PaymentRate $paymentRate): \Illuminate\Support\Collection
     {
         $query = Student::query()->where('status', 'ACTIVE');
+        
+        if ($this->option('user-id')) {
+            $query->where('user_id', $this->option('user-id'));
+        }
 
         // Filter by classroom or specific students
         if ($paymentRate->type === PaymentRate::TYPE_REGULAR) {
