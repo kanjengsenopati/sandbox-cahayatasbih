@@ -30,11 +30,23 @@
         <div id="kt_content_container" class="container-xxl">
 
             @if (session('success'))
-                <x-alert.success>{{ session('success') }}</x-alert.success>
+                <div class="alert alert-success d-flex align-items-center p-5 mb-6 rounded-[24px]">
+                    <i class="fas fa-check-circle fs-2hx text-success me-4"></i>
+                    <div class="d-flex flex-column">
+                        <h4 class="mb-1 text-success">Sukses</h4>
+                        <span>{{ session('success') }}</span>
+                    </div>
+                </div>
             @endif
 
             @if (session('error'))
-                <x-alert.danger>{{ session('error') }}</x-alert.danger>
+                <div class="alert alert-danger d-flex align-items-center p-5 mb-6 rounded-[24px]">
+                    <i class="fas fa-exclamation-triangle fs-2hx text-danger me-4"></i>
+                    <div class="d-flex flex-column">
+                        <h4 class="mb-1 text-danger">Gagal</h4>
+                        <span>{{ session('error') }}</span>
+                    </div>
+                </div>
             @endif
 
             <!-- FILTER CARD -->
