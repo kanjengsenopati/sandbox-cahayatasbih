@@ -69,8 +69,8 @@
                             </div>
                             <div class="col-md-3">
                                 <x-text.label>Sekolah / UPT</x-text.label>
-                                <select name="school_id" id="school_id" class="form-select form-select-solid rounded-[12px]" data-control="select2" data-placeholder="Pilih Sekolah (Opsional)">
-                                    <option value=""></option>
+                                <select name="school_id" id="school_id" class="form-select form-select-solid rounded-[12px]" data-control="select2" data-placeholder="Semua Sekolah / UPT">
+                                    <option value="">Semua Sekolah / UPT</option>
                                     @foreach($schools as $school)
                                         <option value="{{ $school->id }}">{{ $school->name }}</option>
                                     @endforeach
@@ -78,8 +78,8 @@
                             </div>
                             <div class="col-md-3">
                                 <x-text.label>Kelas</x-text.label>
-                                <select name="classroom_id" id="classroom_id" class="form-select form-select-solid rounded-[12px]" data-control="select2" data-placeholder="Pilih Kelas (Opsional)">
-                                    <option value=""></option>
+                                <select name="classroom_id" id="classroom_id" class="form-select form-select-solid rounded-[12px]" data-control="select2" data-placeholder="Semua Kelas">
+                                    <option value="">Semua Kelas</option>
                                       @foreach($classrooms as $classroom)
                                           <option value="{{ $classroom->id }}" data-school-id="{{ $classroom->school_id }}">{{ $classroom->name }} ({{ $classroom->school->name ?? '-' }})</option>
                                       @endforeach
@@ -159,8 +159,15 @@
                 classroomSelect.append(options);
             }
             
-            classroomSelect.val('').trigger('change.select2');
+            classroomSelect.val(classroomSelect.val()).trigger('change.select2'); // Keep selected value if valid, else reset
         });
+
+        // Trigger on load to apply initial filter if browser autocomplete filled it
+        setTimeout(function() {
+            if ($('#school_id').val()) {
+                $('#school_id').trigger('change');
+            }
+        }, 100);
     });
 
     function loadPreview() {
