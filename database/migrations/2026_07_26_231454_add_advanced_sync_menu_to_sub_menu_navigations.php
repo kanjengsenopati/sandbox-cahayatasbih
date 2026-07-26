@@ -24,7 +24,6 @@ return new class extends Migration
                     'menu_navigation_id' => $auditMenu->id,
                     'name' => 'Advanced Sync Saldo',
                     'url' => '/admin/audit/advanced-sync',
-                    'icon' => 'fa-solid fa-sync',
                     'permission' => 'Manage Audit dan Sinkron',
                     'is_active' => true,
                     'order' => 6,
