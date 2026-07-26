@@ -30,7 +30,7 @@ class ReportTransactionController extends Controller
         }
         if (request()->ajax()) {
             $data = Transaction::where('status', Transaction::STATUS_PAID)
-                ->with(['student', 'student.classroom', 'paymentMethod', 'admin', 'transactionDetails.bill.billType', 'transactionDetails.bill.academicYear', 'transactionDetails.saldoHistory', 'transactionDetails.savingHistory'])
+                ->with(['student.user', 'student.classroom', 'paymentMethod', 'admin', 'transactionDetails.bill.billType', 'transactionDetails.bill.academicYear', 'transactionDetails.saldoHistory', 'transactionDetails.savingHistory'])
                 ->when(request()->filled('start_date'), function ($query) {
                     $query->whereDate('created_at', '>=', request()->start_date);
                 })
@@ -141,7 +141,7 @@ class ReportTransactionController extends Controller
                                 $amount = $detail->amount ?? $data->pay_amount;
                                 return [
                                     'type' => 'SALDO',
-                                    'bill_type' => 'Top Up / Tarik Saldo',
+                                    'bill_type' => 'Saldo',
                                     'academic_year' => '-',
                                     'period_month' => $detail->saldoHistory?->description ?? 'Transaksi Saldo',
                                     'amount' => (int) $amount,
@@ -205,13 +205,25 @@ class ReportTransactionController extends Controller
                     })
                     ->addColumn('action', function ($data) {
                         $actionDelete = route('report-transaction.destroy', $data->id);
+
+                        $rawPhone = $data->student?->user?->phone;
+                        $waButton = '';
+                        if (!empty($rawPhone)) {
+                            $phone = preg_replace('/\D/', '', $rawPhone);
+                            if (str_starts_with($phone, '0')) {
+                                $phone = '62' . substr($phone, 1);
+                            }
+                            $waMessage = \App\Services\SendNotifWaService::sendMessageBillNotification($data);
+                            $waUrl = 'https://wa.me/' . $phone . '?text=' . rawurlencode($waMessage);
+                            $parentName = htmlspecialchars($data->student?->user?->name ?? 'Wali Santri', ENT_QUOTES);
+                            $waButton = "<a href='" . $waUrl . "' target='_blank' class='btn btn-sm btn-success me-1' title='Kirim WA ke Wali Santri ({$parentName})'><i class='fab fa-whatsapp'></i></a>";
+                        }
+
                         return "<div class='d-flex gap-2 flex-nowrap justify-content-center'>" .
-                            // add icon print invoice
                             "<a href='" . route('transaction.invoice', $data->id) . "' target='_blank' class='btn btn-sm btn-primary' title='Cetak Invoice'><i class='fas fa-print'></i></a>" .
-                            // add icon delete
+                            $waButton .
                             view('components.action.delete', ['action' => $actionDelete, 'id' => $data->id, 'name' => 'Laporan Transaksi']) .
                             "</div>";
-                        // add delete action
                     })
                     ->rawColumns(['date', 'type', 'payment_method', 'item', 'action', 'admin'])
                     ->make(true);
