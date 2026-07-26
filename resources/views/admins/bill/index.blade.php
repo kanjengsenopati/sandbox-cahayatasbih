@@ -379,8 +379,22 @@
                                                     <div class="info-item">
                                                         <span class="info-label">Wali Siswa</span>
                                                         <span class="info-colon">:</span>
-                                                        <span class="info-value">
+                                                        <span class="info-value d-flex align-items-center gap-2">
                                                             <span class="text-slate-800 fw-bold">{{ @$student->user->name ?? '-' }}</span>
+                                                            @if(@$student->user->jamaah_status)
+                                                                @php
+                                                                    $jamaahClass = match(@$student->user->jamaah_status) {
+                                                                        'JAMAAH' => 'badge-success',
+                                                                        'NON_JAMAAH' => 'badge-danger',
+                                                                        'MUKIMIN' => 'badge-primary',
+                                                                        default => 'bg-secondary text-white',
+                                                                    };
+                                                                    $jamaahLabel = str_replace('_', ' ', @$student->user->jamaah_status);
+                                                                @endphp
+                                                                <span class="badge {{ $jamaahClass }} fw-bold" style="font-size: 10px; padding: 4px 6px; border-radius: 6px; line-height: 1;">
+                                                                    {{ $jamaahLabel }}
+                                                                </span>
+                                                            @endif
                                                         </span>
                                                     </div>
                                                     <div class="info-item">
