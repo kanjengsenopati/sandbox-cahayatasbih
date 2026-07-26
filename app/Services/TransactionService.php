@@ -162,21 +162,25 @@ class TransactionService
             'payment_method_id' => PaymentMethod::where('type', PaymentMethod::TYPE_BALANCE)->first()?->id,
         ]);
 
-        // Loop untuk menambahkan detail transaksi jika belum ada
+        // Loop untuk menambahkan detail transaksi jika belum ada atau update saldo_history_id
         $customAmounts = $request->custom_amounts ?? [];
-        foreach ($request->bill_ids as $billId) {
-            // Cek apakah transaction detail sudah ada
-            $exists = $transaction->transactionDetails()
-                ->where('bill_id', $billId)
-                ->exists();
+        if ($request->bill_ids) {
+            foreach ($request->bill_ids as $billId) {
+                $realBillId = self::ensureBillRecord($student->id, $billId);
+                $detail = $transaction->transactionDetails()
+                    ->where('bill_id', $realBillId)
+                    ->first();
 
-            if (!$exists) {
-                $customAmount = isset($customAmounts[$billId]) ? intval($customAmounts[$billId]) : null;
-                $transaction->transactionDetails()->create([
-                    'bill_id' => $billId,
-                    'amount' => $customAmount,
-                    'saldo_history_id' => $saldoHistory->id,
-                ]);
+                if ($detail) {
+                    $detail->update(['saldo_history_id' => $saldoHistory->id]);
+                } else {
+                    $customAmount = isset($customAmounts[$billId]) ? intval($customAmounts[$billId]) : null;
+                    $transaction->transactionDetails()->create([
+                        'bill_id' => $realBillId,
+                        'amount' => $customAmount,
+                        'saldo_history_id' => $saldoHistory->id,
+                    ]);
+                }
             }
         }
 
@@ -214,7 +218,7 @@ class TransactionService
                     if ($request->custom_amounts) {
                         $pay_amount = array_sum($request->custom_amounts);
                     } else {
-                        $pay_amount = $request->bill_ids != null ? self::getTotalPayAmount($request->bill_ids) : $request->amount;
+                        $pay_amount = $request->bill_ids != null ? self::getTotalPayAmount($request->bill_ids, $request->student_id) : $request->amount;
                     }
 
                     $transactionData = [
@@ -312,10 +316,7 @@ class TransactionService
                         // Pessimistic lock: cegah double debit pada concurrent requests
                         $student = Student::where('id', $request->student_id)->lockForUpdate()->first();
                         if (!$student || $student->saldo < $payAmount) {
-                            return response()->json([
-                                'status' => 'error',
-                                'message' => 'Saldo tidak mencukupi'
-                            ], 400);
+                            throw new \Exception('Saldo tidak mencukupi');
                         }
                         TransactionService::payWithBalance($student, $payAmount, $transaction, $request);
                     } elseif ($paymentMethodType == PaymentMethod::TYPE_CASH) {
@@ -337,12 +338,17 @@ class TransactionService
 
 
 
-    public static function getTotalPayAmount($billIds)
+    public static function getTotalPayAmount($billIds, $studentId = null)
     {
-        $bills = Bill::whereIn('id', $billIds)->get();
-        return $bills->sum(function ($bill) {
-            return $bill->remaining_amount;
-        });
+        $total = 0;
+        foreach ((array)$billIds as $billId) {
+            $realId = $studentId ? self::ensureBillRecord($studentId, $billId) : $billId;
+            $bill = Bill::find($realId);
+            if ($bill) {
+                $total += $bill->remaining_amount;
+            }
+        }
+        return $total;
     }
 
     public static function dispatchNotifications($transaction)
@@ -709,6 +715,11 @@ class TransactionService
                 return $billIdOrDescriptor;
             }
 
+            $sampleBill = \App\Models\Bill::where('student_id', $studentId)
+                ->where('bill_type_id', $billTypeId)
+                ->where('amount', '>', 0)
+                ->first();
+
             $isZarkasi = str_contains(strtoupper($billType->name ?? ''), 'ZARKASI');
             $isAplikasi = str_contains(strtoupper($billType->name ?? ''), 'APLIKASI');
             $isSyahriah = str_contains(strtoupper($billType->name ?? ''), 'SYAHR');
@@ -726,11 +737,6 @@ class TransactionService
             } elseif ($isSyahriah) {
                 $amount = 500000;
             } else {
-                $sampleBill = \App\Models\Bill::where('student_id', $studentId)
-                    ->where('bill_type_id', $billTypeId)
-                    ->where('amount', '>', 0)
-                    ->first();
-
                 $amount = $sampleBill ? $sampleBill->amount : ($billType->billItem->amount ?? 0);
                 if ($amount <= 0) {
                     $amount = \App\Models\Bill::where('bill_type_id', $billTypeId)->where('amount', '>', 0)->value('amount') ?? 0;
