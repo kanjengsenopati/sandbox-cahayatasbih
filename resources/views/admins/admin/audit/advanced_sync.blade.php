@@ -132,9 +132,6 @@
         </div>
     </div>
 </div>
-@endsection
-
-@push('scripts')
 <script>
     var previewTable = null;
 
@@ -294,4 +291,4 @@
         window.location.href = "{{ route('admin.audit.sync') }}";
     });
 </script>
-@endpush
+@endsection
