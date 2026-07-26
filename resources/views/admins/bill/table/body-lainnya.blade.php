@@ -97,10 +97,10 @@
 
                     <!-- Middle: Prominent Strong Solid 1-Line Tahun Ajaran Badge -->
                     <div class="col-md-4 col-12 my-2 my-md-0 d-flex align-items-center justify-content-start justify-content-md-center px-md-4">
-                        <div class="px-3.5 py-1.5 d-inline-flex align-items-center gap-1.5 shadow-sm text-nowrap" 
-                             style="background: {{ $currentAyTheme['bg'] }}; color: #ffffff; border-radius: 20px; box-shadow: 0 3px 10px {{ $currentAyTheme['shadow'] }};">
-                            <i class="fas fa-calendar-alt text-white fs-8 me-0.5 opacity-90"></i>
-                            <span class="fs-7 fw-bold text-white tracking-tight" style="letter-spacing: -0.2px;">
+                        <div class="d-inline-flex align-items-center shadow-sm text-nowrap" 
+                             style="background: {{ $currentAyTheme['bg'] }}; color: #ffffff; border-radius: 20px; box-shadow: 0 3px 10px {{ $currentAyTheme['shadow'] }}; padding: 6px 14px; gap: 8px;">
+                            <i class="fas fa-calendar-alt text-white fs-7 opacity-90 me-1"></i>
+                            <span class="fs-7 fw-bold text-white">
                                 Tahun Ajaran {{ $ayName }}
                             </span>
                         </div>
