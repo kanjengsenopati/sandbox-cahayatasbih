@@ -102,6 +102,11 @@ Route::prefix('admin')->middleware(['auth'])->group(function () {
     Route::get('audit/simulation', [App\Http\Controllers\Admin\AuditController::class, 'simulationIndex'])->name('admin.audit.simulation');
     Route::post('audit/run-simulation', [App\Http\Controllers\Admin\AuditController::class, 'runSimulation'])->name('admin.audit.run-simulation');
     Route::post('audit/apply-simulation', [App\Http\Controllers\Admin\AuditController::class, 'applySimulation'])->name('admin.audit.apply-simulation');
+    
+    // Advanced Sync Saldo & POS
+    Route::get('audit/advanced-sync', [App\Http\Controllers\Admin\AdvancedSyncController::class, 'index'])->name('admin.audit.advanced-sync');
+    Route::post('audit/advanced-sync/preview', [App\Http\Controllers\Admin\AdvancedSyncController::class, 'preview'])->name('admin.audit.advanced-sync.preview');
+    Route::post('audit/advanced-sync/execute', [App\Http\Controllers\Admin\AdvancedSyncController::class, 'execute'])->name('admin.audit.advanced-sync.execute');
     Route::post('audit/rollback-simulation', [App\Http\Controllers\Admin\AuditController::class, 'rollbackSimulation'])->name('admin.audit.rollback-simulation');
 
     // Redirect old route for compatibility
