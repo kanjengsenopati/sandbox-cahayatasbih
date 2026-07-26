@@ -17,8 +17,9 @@
                 <form action="{{ route('admin.audit.advanced-sync.execute') }}" method="POST" id="form-execute-sync" class="d-none">
                     @csrf
                     <input type="hidden" name="preview_id" id="execute_preview_id">
+                    <div id="selected-students-container"></div>
                     <button type="button" class="btn btn-sm btn-primary fw-bolder rounded-[24px]" id="btn-execute-sync">
-                        <i class="fas fa-link me-1"></i> Gabungkan Data
+                        <i class="fas fa-link me-1"></i> Gabungkan Data <span id="selected-count" class="badge badge-circle badge-white ms-2 d-none text-primary">0</span>
                     </button>
                 </form>
             </div>
@@ -112,6 +113,12 @@
                         <table class="table align-middle table-row-dashed fs-6 gy-5" id="table-preview">
                             <thead>
                                 <tr class="text-start text-muted fw-bolder fs-7 text-uppercase gs-0">
+                                    <th class="w-10px pe-2">
+                                        <div class="form-check form-check-sm form-check-custom form-check-solid me-3">
+                                            <input class="form-check-input" type="checkbox" data-kt-check="true" data-kt-check-target="#table-preview .row-checkbox" id="check-all" />
+                                        </div>
+                                    </th>
+                                    <th class="w-20px">No</th>
                                     <th>Siswa</th>
                                     <th>Kelas/UPT</th>
                                     <th>
@@ -138,6 +145,45 @@
         </div>
     </div>
 </div>
+
+<!-- History Modal -->
+<div class="modal fade" tabindex="-1" id="historyModal">
+    <div class="modal-dialog modal-dialog-centered modal-xl">
+        <div class="modal-content rounded-[24px] shadow-lg border-0">
+            <div class="modal-header border-0 pt-8 px-8">
+                <h3 class="modal-title">
+                    <x-text.h2>Riwayat Transaksi Tertunda</x-text.h2>
+                    <div class="text-muted fs-7 fw-normal mt-1" id="history-modal-subtitle">Detail transaksi dari server master</div>
+                </h3>
+                <div class="btn btn-icon btn-sm btn-active-light-primary ms-2" data-bs-dismiss="modal" aria-label="Close">
+                    <i class="fas fa-times fs-2"></i>
+                </div>
+            </div>
+            <div class="modal-body px-8 py-4">
+                <div class="table-responsive">
+                    <table class="table align-middle table-row-dashed fs-6 gy-4">
+                        <thead>
+                            <tr class="text-start text-muted fw-bolder fs-7 text-uppercase gs-0">
+                                <th>Waktu</th>
+                                <th>Tipe</th>
+                                <th>Penggunaan</th>
+                                <th>Nominal</th>
+                                <th>Keterangan</th>
+                            </tr>
+                        </thead>
+                        <tbody id="history-modal-body" class="text-gray-600 fw-bold">
+                            <!-- Populated via JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer border-0 pb-8 px-8 justify-content-end">
+                <button type="button" class="btn btn-light rounded-[24px]" data-bs-dismiss="modal">Tutup</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
     var previewTable = null;
 
@@ -238,6 +284,24 @@
             columns: [
                 {
                     data: null,
+                    orderable: false,
+                    className: 'text-center',
+                    render: function(data, type, row) {
+                        return '<div class="form-check form-check-sm form-check-custom form-check-solid">' +
+                               '<input class="form-check-input row-checkbox" type="checkbox" value="' + row.student_id + '" />' +
+                               '</div>';
+                    }
+                },
+                {
+                    data: null,
+                    orderable: false,
+                    className: 'text-center',
+                    render: function (data, type, row, meta) {
+                        return meta.row + 1;
+                    }
+                },
+                {
+                    data: null,
                     render: function(data, type, row) {
                         return '<div class="d-flex flex-column">' +
                                '<span class="text-gray-800 font-medium text-[14px]">' + row.name + '</span>' +
@@ -265,8 +329,15 @@
                     render: function(data, type, row) {
                         let totalIn = new Intl.NumberFormat('id-ID').format(row.total_in_added);
                         let totalOut = new Intl.NumberFormat('id-ID').format(row.total_out_added);
+                        
+                        window.previewHistories = window.previewHistories || {};
+                        window.previewHistories[row.student_id] = {
+                            name: row.name,
+                            histories: row.histories_to_insert
+                        };
+
                         return '<div class="d-flex flex-column gap-1">' +
-                               '<span class="badge badge-light-primary fw-bolder">' + data + ' Transaksi</span>' +
+                               '<span class="badge badge-light-primary fw-bolder cursor-pointer history-hover-trigger" data-student-id="' + row.student_id + '">' + data + ' Transaksi <i class="fas fa-eye ms-1 text-primary fs-8"></i></span>' +
                                '<span class="text-[12px] text-emerald-600">+ Rp ' + totalIn + '</span>' +
                                '<span class="text-[12px] text-red-600">- Rp ' + totalOut + '</span>' +
                                '</div>';
@@ -301,10 +372,30 @@
     $('#btn-execute-sync').on('click', function(e) {
         e.preventDefault();
         var form = $('#form-execute-sync');
+        var checkedBoxes = $('.row-checkbox:checked');
+        var container = $('#selected-students-container');
+        
+        container.empty();
+        
+        if (checkedBoxes.length === 0) {
+            Swal.fire({
+                title: 'Tidak Ada Siswa Terpilih',
+                text: 'Harap centang minimal satu siswa yang ingin Anda gabungkan datanya. Gunakan checkbox di sebelah kiri nama siswa.',
+                icon: 'warning',
+                buttonsStyling: false,
+                confirmButtonText: "Ok, Mengerti",
+                customClass: { confirmButton: "btn btn-primary rounded-[24px]" }
+            });
+            return;
+        }
+
+        checkedBoxes.each(function() {
+            container.append('<input type="hidden" name="selected_students[]" value="' + $(this).val() + '">');
+        });
         
         Swal.fire({
             title: 'Apakah Anda Yakin?',
-            html: 'Sistem akan menggabungkan <b>semua transaksi dari master</b> dan menghitung ulang saldo lokal. Aksi ini tidak dapat dibatalkan.',
+            html: 'Sistem akan menggabungkan <b>transaksi dari ' + checkedBoxes.length + ' siswa terpilih</b> dan menghitung ulang saldo lokal. Aksi ini tidak dapat dibatalkan.',
             icon: 'warning',
             showCancelButton: true,
             confirmButtonText: 'Ya, Gabungkan Data!',
@@ -329,6 +420,107 @@
                 form.submit();
             }
         });
+    });
+
+    // Checkbox count logic
+    $(document).on('change', '.row-checkbox, #check-all', function() {
+        var count = $('.row-checkbox:checked').length;
+        var badge = $('#selected-count');
+        if (count > 0) {
+            badge.removeClass('d-none').text(count);
+        } else {
+            badge.addClass('d-none');
+        }
+    });
+
+    // History Hover Modal Logic
+    var historyModalTimeout;
+    $(document).on('mouseenter', '.history-hover-trigger', function() {
+        var studentId = $(this).data('student-id');
+        var data = window.previewHistories[studentId];
+        if (!data || !data.histories) return;
+        
+        clearTimeout(historyModalTimeout);
+        
+        // Render Modal Content
+        $('#history-modal-subtitle').text('Siswa: ' + data.name);
+        var bodyHtml = '';
+        
+        data.histories.forEach(function(h) {
+            var color = (h.type === 'IN' || h.type === 'UNBLOCKED') ? 'success' : 'danger';
+            var sign = (h.type === 'IN' || h.type === 'UNBLOCKED') ? '+' : '-';
+            
+            bodyHtml += '<tr>';
+            bodyHtml += '<td>' + new Date(h.created_at).toLocaleString('id-ID') + '</td>';
+            bodyHtml += '<td><span class="badge badge-light-' + color + '">' + h.type + '</span></td>';
+            bodyHtml += '<td>' + (h.usage || '-') + '</td>';
+            bodyHtml += '<td class="text-' + color + '">' + sign + ' Rp ' + new Intl.NumberFormat('id-ID').format(h.amount) + '</td>';
+            bodyHtml += '<td><div style="max-width:300px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="' + (h.description || '-') + '">' + (h.description || '-') + '</div></td>';
+            bodyHtml += '</tr>';
+        });
+        
+        if(data.histories.length === 0) {
+            bodyHtml = '<tr><td colspan="5" class="text-center text-muted">Tidak ada riwayat</td></tr>';
+        }
+        
+        $('#history-modal-body').html(bodyHtml);
+        
+        historyModalTimeout = setTimeout(function() {
+            var myModal = new bootstrap.Modal(document.getElementById('historyModal'), {
+                backdrop: true,
+                keyboard: true
+            });
+            myModal.show();
+        }, 300); // 300ms delay to prevent accidental hovers
+    });
+
+    // Close any previous modal cleanly when a new one opens, because we are instantiating new modals on hover.
+    // Better yet, use a single instance.
+    var historyModalInstance = null;
+    document.getElementById('historyModal').addEventListener('hidden.bs.modal', function () {
+        historyModalInstance = null; // reset
+    });
+
+    // Modify the hover trigger to use a single instance
+    $(document).off('mouseenter', '.history-hover-trigger').on('mouseenter', '.history-hover-trigger', function() {
+        var studentId = $(this).data('student-id');
+        var data = window.previewHistories[studentId];
+        if (!data || !data.histories) return;
+        
+        clearTimeout(historyModalTimeout);
+        
+        $('#history-modal-subtitle').text('Siswa: ' + data.name);
+        var bodyHtml = '';
+        
+        data.histories.forEach(function(h) {
+            var color = (h.type === 'IN' || h.type === 'UNBLOCKED') ? 'success' : 'danger';
+            var sign = (h.type === 'IN' || h.type === 'UNBLOCKED') ? '+' : '-';
+            
+            bodyHtml += '<tr>';
+            bodyHtml += '<td>' + new Date(h.created_at).toLocaleString('id-ID') + '</td>';
+            bodyHtml += '<td><span class="badge badge-light-' + color + '">' + h.type + '</span></td>';
+            bodyHtml += '<td>' + (h.usage || '-') + '</td>';
+            bodyHtml += '<td class="text-' + color + '">' + sign + ' Rp ' + new Intl.NumberFormat('id-ID').format(h.amount) + '</td>';
+            bodyHtml += '<td><div style="max-width:300px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="' + (h.description || '-') + '">' + (h.description || '-') + '</div></td>';
+            bodyHtml += '</tr>';
+        });
+        
+        if(data.histories.length === 0) {
+            bodyHtml = '<tr><td colspan="5" class="text-center text-muted">Tidak ada riwayat</td></tr>';
+        }
+        
+        $('#history-modal-body').html(bodyHtml);
+        
+        historyModalTimeout = setTimeout(function() {
+            if (!historyModalInstance) {
+                historyModalInstance = new bootstrap.Modal(document.getElementById('historyModal'));
+            }
+            historyModalInstance.show();
+        }, 400); // 400ms hover delay
+    });
+
+    $(document).on('mouseleave', '.history-hover-trigger', function() {
+        clearTimeout(historyModalTimeout);
     });
 
     $('#btn-back').on('click', function() {

@@ -52,12 +52,16 @@ class AdvancedSyncController extends Controller
     public function execute(Request $request)
     {
         $request->validate([
-            'preview_id' => 'required|string'
+            'preview_id' => 'required|string',
+            'selected_students' => 'nullable|array',
+            'selected_students.*' => 'string'
         ]);
 
         $adminId = Auth::id(); // Get currently logged in admin ID
         
-        $result = $this->syncService->executeSync($request->preview_id, $adminId);
+        $selectedStudents = $request->input('selected_students');
+        
+        $result = $this->syncService->executeSync($request->preview_id, $adminId, $selectedStudents);
 
         if ($result['status']) {
             return redirect()->back()->with('success', $result['message']);

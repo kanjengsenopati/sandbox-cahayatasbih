@@ -147,9 +147,10 @@ class AdvancedSyncService
      * 
      * @param string $previewId
      * @param string $adminId
+     * @param array|null $selectedStudentIds
      * @return array result status
      */
-    public function executeSync(string $previewId, string $adminId)
+    public function executeSync(string $previewId, string $adminId, ?array $selectedStudentIds = null)
     {
         $previewData = Cache::get($previewId);
 
@@ -164,6 +165,11 @@ class AdvancedSyncService
 
             foreach ($previewData as $data) {
                 $studentId = $data['student_id'];
+                
+                // If specific students are selected, skip those not in the list
+                if ($selectedStudentIds !== null && !in_array((string)$studentId, $selectedStudentIds)) {
+                    continue;
+                }
                 
                 // Ensure student exists locally
                 $studentExists = DB::connection('mysql')->table('students')->where('id', $studentId)->exists();
