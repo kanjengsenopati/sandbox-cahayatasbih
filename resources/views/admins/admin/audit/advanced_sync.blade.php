@@ -184,6 +184,7 @@
     </div>
 </div>
 
+@push('js')
 <script>
     var previewTable = null;
 
@@ -527,4 +528,5 @@
         window.location.href = "{{ route('admin.audit.sync') }}";
     });
 </script>
+@endpush
 @endsection
