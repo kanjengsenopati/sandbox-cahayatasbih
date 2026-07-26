@@ -86,7 +86,7 @@
             margin-top: 2px;
         }
 
-        /* Information Box */
+        /* Information Box (2 Columns Layout) */
         .info-card {
             background-color: #F8FAFC;
             border: 1px solid #E2E8F0;
@@ -120,12 +120,12 @@
         .label-cell {
             color: #64748B;
             font-weight: 500;
-            width: 140px;
         }
 
         .colon-cell {
             color: #64748B;
-            width: 15px;
+            width: 12px;
+            text-align: center;
         }
 
         .value-cell {
@@ -163,6 +163,10 @@
             text-align: right;
         }
 
+        .data-table thead th.text-center {
+            text-align: center;
+        }
+
         .data-table tbody tr {
             border-bottom: 1px solid #F1F5F9;
         }
@@ -181,6 +185,10 @@
 
         .data-table tbody td.text-end {
             text-align: right;
+        }
+
+        .data-table tbody td.text-center {
+            text-align: center;
         }
 
         .item-name {
@@ -308,6 +316,10 @@
         .text-end {
             text-align: right !important;
         }
+
+        .text-center {
+            text-align: center !important;
+        }
     </style>
 </head>
 
@@ -333,29 +345,39 @@
             </tr>
         </table>
 
-        <!-- Transaction Information Card -->
+        <!-- Transaction Information Card (2 Columns Layout) -->
         <div class="info-card">
             <div class="info-card-header">Informasi Transaksi</div>
             <table class="info-table">
                 <tr>
-                    <td class="label-cell">Tanggal Transaksi</td>
-                    <td class="colon-cell">:</td>
-                    <td class="value-cell">{{ \Carbon\Carbon::parse($data->created_at)->locale('id_ID')->isoFormat('D MMMM YYYY HH:mm') }}</td>
-                </tr>
-                <tr>
-                    <td class="label-cell">Nama Siswa / Santri</td>
-                    <td class="colon-cell">:</td>
-                    <td class="value-cell">{{ $data->student?->name ?? '-' }}</td>
-                </tr>
-                <tr>
-                    <td class="label-cell">Kelas</td>
-                    <td class="colon-cell">:</td>
-                    <td class="value-cell">{{ $data->student?->classroom?->name ?? '-' }}</td>
-                </tr>
-                <tr>
-                    <td class="label-cell">Lembaga</td>
-                    <td class="colon-cell">:</td>
-                    <td class="value-cell">{{ $data->student?->classroom?->school?->name ?? '-' }}</td>
+                    <td width="55%" style="vertical-align: top;">
+                        <table width="100%">
+                            <tr>
+                                <td class="label-cell" style="width: 130px;">Tanggal Transaksi</td>
+                                <td class="colon-cell">:</td>
+                                <td class="value-cell">{{ \Carbon\Carbon::parse($data->created_at)->locale('id_ID')->isoFormat('D MMMM YYYY HH:mm') }}</td>
+                            </tr>
+                            <tr>
+                                <td class="label-cell" style="width: 130px;">Nama Siswa / Santri</td>
+                                <td class="colon-cell">:</td>
+                                <td class="value-cell">{{ $data->student?->name ?? '-' }}</td>
+                            </tr>
+                        </table>
+                    </td>
+                    <td width="45%" style="vertical-align: top; padding-left: 15px;">
+                        <table width="100%">
+                            <tr>
+                                <td class="label-cell" style="width: 75px;">Kelas</td>
+                                <td class="colon-cell">:</td>
+                                <td class="value-cell">{{ $data->student?->classroom?->name ?? '-' }}</td>
+                            </tr>
+                            <tr>
+                                <td class="label-cell" style="width: 75px;">Lembaga</td>
+                                <td class="colon-cell">:</td>
+                                <td class="value-cell">{{ $data->student?->classroom?->school?->name ?? '-' }}</td>
+                            </tr>
+                        </table>
+                    </td>
                 </tr>
             </table>
         </div>
@@ -366,7 +388,8 @@
                 @if ($data->type == 'SALDO')
                 <thead>
                     <tr>
-                        <th width="50%">Nama Pembayaran</th>
+                        <th width="8%" class="text-center">No</th>
+                        <th width="42%">Nama Pembayaran</th>
                         <th class="text-end" width="25%">Jumlah</th>
                         <th class="text-end" width="25%">Keterangan</th>
                     </tr>
@@ -374,6 +397,7 @@
                 <tbody>
                     @forelse ($data->transactionDetails as $transaction_detail)
                     <tr>
+                        <td class="text-center" style="color: #64748B; font-weight: 600;">{{ $loop->iteration }}</td>
                         <td>
                             <span class="item-name">Top Up Saldo</span>
                         </td>
@@ -382,14 +406,15 @@
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="3" class="text-center">Tidak ada detail transaksi</td>
+                        <td colspan="4" class="text-center">Tidak ada detail transaksi</td>
                     </tr>
                     @endforelse
                 </tbody>
                 @elseif ($data->type == 'SAVING')
                 <thead>
                     <tr>
-                        <th width="50%">Nama Pembayaran</th>
+                        <th width="8%" class="text-center">No</th>
+                        <th width="42%">Nama Pembayaran</th>
                         <th class="text-end" width="25%">Jumlah</th>
                         <th class="text-end" width="25%">Keterangan</th>
                     </tr>
@@ -397,6 +422,7 @@
                 <tbody>
                     @forelse ($data->transactionDetails as $transaction_detail)
                     <tr>
+                        <td class="text-center" style="color: #64748B; font-weight: 600;">{{ $loop->iteration }}</td>
                         <td>
                             <span class="item-name">Setoran Tabungan</span>
                         </td>
@@ -405,22 +431,24 @@
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="3" class="text-center">Tidak ada detail transaksi</td>
+                        <td colspan="4" class="text-center">Tidak ada detail transaksi</td>
                     </tr>
                     @endforelse
                 </tbody>
                 @else
                 <thead>
                     <tr>
-                        <th width="45%">Item Tagihan</th>
-                        <th class="text-end" width="18%">Bulan</th>
-                        <th class="text-end" width="15%">Tahun</th>
+                        <th width="8%" class="text-center">No</th>
+                        <th width="40%">Item Tagihan</th>
+                        <th class="text-end" width="16%">Bulan</th>
+                        <th class="text-end" width="14%">Tahun</th>
                         <th class="text-end" width="22%">Nominal</th>
                     </tr>
                 </thead>
                 <tbody>
                     @forelse ($data->transactionDetails as $transaction_detail)
                     <tr>
+                        <td class="text-center" style="color: #64748B; font-weight: 600;">{{ $loop->iteration }}</td>
                         <td>
                             <span class="item-name">{{ $transaction_detail?->bill?->billType?->name ?? 'Pembayaran Tagihan' }}</span>
                         </td>
@@ -430,7 +458,9 @@
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="4" class="text-end">Rp {{ number_format($data->pay_amount ?? 0, 0, ',', '.') }}</td>
+                        <td class="text-center" style="color: #64748B; font-weight: 600;">1</td>
+                        <td colspan="3"><span class="item-name">Pembayaran Tagihan</span></td>
+                        <td class="text-end">Rp {{ number_format($data->pay_amount ?? 0, 0, ',', '.') }}</td>
                     </tr>
                     @endforelse
                 </tbody>
