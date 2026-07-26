@@ -43,8 +43,7 @@ return new class extends Migration
                     ->where('status', 'UNPAID')
                     ->where('amount', 500000)
                     ->update([
-                        'amount' => 400000,
-                        'remaining_amount' => 400000
+                        'amount' => 400000
                     ]);
             }
         }
