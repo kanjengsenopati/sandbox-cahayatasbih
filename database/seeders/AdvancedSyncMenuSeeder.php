@@ -21,7 +21,7 @@ class AdvancedSyncMenuSeeder extends Seeder
             SubMenuNavigation::updateOrCreate(
                 [
                     'menu_navigation_id' => $auditMenu->id,
-                    'url' => url('admin/audit/advanced-sync'),
+                    'url' => '/admin/audit/advanced-sync',
                 ],
                 [
                     'name' => 'Advanced Sync Saldo',
