@@ -4,62 +4,11 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet"
-        integrity="sha384-rbsA2VBKQhggwzxH7pPCaAqO46MgnOM80zW1RWuH61DGLwZJEdK2Kadq2F9CUG65" crossorigin="anonymous" />
     <title>Invoice</title>
     <style>
-        @font-face {
-            font-family: "Plus Jakarta Sans";
-            src: url("{{ asset('assets/font/PlusJakartaSans/PlusJakartaSans-Regular.ttf') }}");
-            font-weight: 400;
-            font-style: normal;
-        }
-
-        @font-face {
-            font-family: "Plus Jakarta Sans";
-            src: url("{{ asset('assets/font/PlusJakartaSans/PlusJakartaSans-Medium.ttf') }}");
-            font-weight: 500;
-            font-style: normal;
-        }
-
-        @font-face {
-            font-family: "Plus Jakarta Sans";
-            src: url("{{ asset('assets/font/PlusJakartaSans/PlusJakartaSans-Italic.ttf') }}");
-            font-weight: 400;
-            font-style: italic;
-        }
-
-        @font-face {
-            font-family: "Plus Jakarta Sans";
-            src: url("{{ asset('assets/font/PlusJakartaSans/PlusJakartaSans-SemiBold.ttf') }}");
-            font-weight: 600;
-            font-style: normal;
-        }
-
-        @font-face {
-            font-family: "Plus Jakarta Sans";
-            src: url("{{ asset('assets/font/PlusJakartaSans/PlusJakartaSans-SemiBoldItalic.ttf') }}");
-            font-weight: 600;
-            font-style: italic;
-        }
-
-        @font-face {
-            font-family: "Plus Jakarta Sans";
-            src: url("{{ asset('assets/font/PlusJakartaSans/PlusJakartaSans-Bold.ttf') }}");
-            font-weight: 700;
-            font-style: normal;
-        }
-
-        @font-face {
-            font-family: "Plus Jakarta Sans";
-            src: url("{{ asset('assets/font/PlusJakartaSans/PlusJakartaSans-ExtraBold.ttf') }}");
-            font-weight: 800;
-            font-style: normal;
-        }
-
         * {
             box-sizing: border-box;
-            font-family: "Plus Jakarta Sans", sans-serif !important;
+            font-family: sans-serif !important;
         }
 
         /* header */
@@ -140,6 +89,19 @@
             /* Menambah sedikit bayangan untuk dimensi */
         }
 
+        .badge-danger {
+            margin-top: 5px !important;
+            background-color: #dc3545 !important;
+            color: #ffffff !important;
+            width: max-content;
+            height: max-content;
+            padding: 4px 8px;
+            border-radius: 4px !important;
+            font-weight: 700;
+            font-size: 16px !important;
+            text-transform: uppercase;
+        }
+
         tr td.badge-secondary {
             background-color: #f0f2f6 !important;
             color: #6d7487 !important;
@@ -157,10 +119,6 @@
             vertical-align: center;
             padding: 4px 0;
         }
-
-        /* table.table-tagihan tr td {
-            line-height: 28px;
-        } */
 
         main table tbody tr {
             padding: 8px 0;
@@ -184,8 +142,28 @@
             text-align: right !important;
         }
 
+        .text-muted {
+            color: #6c757d !important;
+        }
+
         .text-primary {
             color: #4D0C7A !important;
+        }
+
+        .mt-3 {
+            margin-top: 1rem !important;
+        }
+
+        .mt-4 {
+            margin-top: 1.5rem !important;
+        }
+
+        .mt-5 {
+            margin-top: 3rem !important;
+        }
+
+        .text-decoration-none {
+            text-decoration: none !important;
         }
     </style>
 </head>
@@ -197,7 +175,14 @@
             <table width="100%" cellspacing="0" cellpadding="0">
                 <tr>
                     <td>
-                        <img src="{{ asset('assets/media/logos/logo-full.png') }}" width="200" alt="" />
+                        @php
+                            $logoPath = public_path('assets/media/logos/logo-full.png');
+                        @endphp
+                        @if (file_exists($logoPath))
+                            <img src="{{ $logoPath }}" width="200" alt="Logo" />
+                        @else
+                            <h2 style="color: #4D0C7A; margin: 0;">PPTQ CAHAYA TASBIH</h2>
+                        @endif
                     </td>
                     <td align="right">
                         <h1>INVOICE BUKTI PEMBAYARAN</h1>
@@ -213,8 +198,7 @@
                             <tr>
                                 <td style="white-space: nowrap" width="15%" class="text-muted">Tanggal</td>
                                 <td width="2%">:</td>
-                                <td><strong>{{ \Carbon\Carbon::parse($data->created_at)->locale('id_ID')->isoFormat('D
-                                        MMMM YYYY H:mm') }}</strong></td>
+                                <td><strong>{{ \Carbon\Carbon::parse($data->created_at)->locale('id_ID')->isoFormat('D MMMM YYYY H:mm') }}</strong></td>
                             </tr>
                             <tr>
                                 <td style="white-space: nowrap" width="15%" class="text-muted">Nama Siswa/Santri</td>
@@ -257,10 +241,9 @@
                         <td class="text-primary" width="40%">
                             <span>Saldo</span>
                         </td>
-                        <td align="right">Rp. {{ number_format($transaction_detail->saldoHistory->amount, 0, ',', '.')
-                            }}
+                        <td align="right">Rp. {{ number_format($transaction_detail->saldoHistory?->amount ?? 0, 0, ',', '.') }}
                         </td>
-                        <td align="right">{{ $transaction_detail->saldoHistory->description ?? '' }}</td>
+                        <td align="right">{{ $transaction_detail->saldoHistory?->description ?? '' }}</td>
                     </tr>
                     @endforeach
                 </tbody>
@@ -276,10 +259,9 @@
                         <td class="text-primary" width="50%">
                             <span>Tabungan</span>
                         </td>
-                        <td align="right">Rp. {{ number_format($transaction_detail->savingHistory->amount, 0, ',', '.')
-                            }}
+                        <td align="right">Rp. {{ number_format($transaction_detail->savingHistory?->amount ?? 0, 0, ',', '.') }}
                         </td>
-                        <td align="right">{{ $transaction_detail->savingHistory->description ?? '' }}</td>
+                        <td align="right">{{ $transaction_detail->savingHistory?->description ?? '' }}</td>
                     </tr>
                     @endforeach
                 </tbody>
@@ -298,7 +280,7 @@
                         </td>
                         <td align="right">{{ $transaction_detail?->bill?->translated_month ?? '' }}</td>
                         <td align="right">{{ $transaction_detail?->bill?->year ?? '' }}</td>
-                        <td align="right">Rp{{ number_format($transaction_detail?->bill?->amount, 0, ',', '.') }}</td>
+                        <td align="right">Rp{{ number_format($transaction_detail?->bill?->amount ?? 0, 0, ',', '.') }}</td>
                     </tr>
                     @endforeach
                 </tbody>
@@ -309,11 +291,13 @@
                     <td>SUB TOTAL</td>
                     <td align="right">
                         @if ($data->type == 'BILL')
-                        Rp{{ number_format($data->transactionDetails->sum('bill.amount'), 0, ',', '.') }}
+                        Rp{{ number_format($data->transactionDetails->sum(function($d) { return $d->bill?->amount ?? 0; }), 0, ',', '.') }}
                         @elseif ($data->type == 'SAVING')
-                        Rp{{ number_format($data->transactionDetails->sum('savingHistory.amount'), 0, ',', '.') }}
+                        Rp{{ number_format($data->transactionDetails->sum(function($d) { return $d->savingHistory?->amount ?? 0; }), 0, ',', '.') }}
                         @elseif ($data->type == 'SALDO')
-                        Rp{{ number_format($data->transactionDetails->sum('saldoHistory.amount'), 0, ',', '.') }}
+                        Rp{{ number_format($data->transactionDetails->sum(function($d) { return $d->saldoHistory?->amount ?? 0; }), 0, ',', '.') }}
+                        @else
+                        Rp{{ number_format($data->pay_amount ?? 0, 0, ',', '.') }}
                         @endif
                     </td>
                 </tr>
@@ -343,9 +327,9 @@
                 <tr class="text-strong border-table">
                     <td>TOTAL TAGIHAN</td>
                     @php
-                    $total = $data->pay_amount;
+                    $total = $data->pay_amount ?? 0;
                     if ($data->xendit_fee > 0) {
-                    $total += $data->xendit_fee + $data->app_fee;
+                        $total += $data->xendit_fee + ($data->app_fee ?? 0);
                     }
                     @endphp
                     <td align="right">Rp{{ number_format($total, 0, ',', '.') }}</td>
@@ -387,15 +371,15 @@
                             TASBIH</a> jika Anda membutuhkan bantuan lebih lanjut.
                     </td>
                     <td width="40%" align="right" style="vertical-align: top;">
-                        <img src="data:image/png;base64, {!! base64_encode(QrCode::format('png')->size(100)->generate(route('transaction.invoice', $data->id))) !!}"
-                            alt="qrcode" style="display: block; margin-left: auto; margin-bottom: 10px;" />
+                        <img src="data:image/svg+xml;base64,{!! base64_encode(QrCode::format('svg')->size(100)->generate(route('transaction.invoice', $data->id))) !!}"
+                            alt="qrcode" style="display: block; margin-left: auto; margin-bottom: 10px; width: 100px; height: 100px;" />
                     </td>
                 </tr>
             </table>
             <table width="100%" style="margin-top: 10px;">
                 <tr>
                     <td align="right">
-                        <i style="font-family: 'Plus Jakarta Sans', sans-serif !important;">Terakhir diupdate:
+                        <i style="font-style: italic;">Terakhir diupdate:
                             {{ \Carbon\Carbon::now()->locale('id_ID')->isoFormat('D MMMM YYYY H:mm') }}</i>
                     </td>
                 </tr>

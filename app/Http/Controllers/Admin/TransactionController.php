@@ -109,12 +109,16 @@ class TransactionController extends Controller
 
     public function invoice($id)
     {
-        $data = Transaction::findOrFail($id);
+        $data = Transaction::with([
+            'student.classroom.school',
+            'transactionDetails.bill.billType',
+            'transactionDetails.saldoHistory',
+            'transactionDetails.savingHistory',
+            'paymentMethod',
+            'admin'
+        ])->findOrFail($id);
 
-        // tampilkan data tanpa download
-        // return view('admins.pdf.transaction-invoice', compact('data'));
-        // $date = date('d/m/Y', strtotime($data->start_date)) . " - " . date('d/m/Y', strtotime($data->end_date));
         $pdf = Pdf::loadView('admins.pdf.transaction-invoice', compact('data'));
-        return $pdf->stream("Invoice {$data->payment_code}" . '.pdf');
+        return $pdf->stream("Invoice {$data->payment_code}.pdf");
     }
 }
