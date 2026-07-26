@@ -237,13 +237,24 @@ class UserController extends Controller
 
         // Check for double entry (excluding the current user being updated)
         $duplicate = User::checkDoubleEntry($data['name'], $data['phone']);
+        $oldJamaahStatus = $user->jamaah_status;
+        
         if ($duplicate && $duplicate->id !== $user->id) {
             $data['status'] = 'VERIFICATION';
             $user->update($data);
+            
+            if (isset($data['jamaah_status']) && $data['jamaah_status'] !== $oldJamaahStatus) {
+                \App\Services\PpdbFeeSyncService::syncFeeForUser($user);
+            }
+            
             return redirect()->route('user.index')->with('warning', 'Data Wali Santri terdeteksi ganda dengan data sebelumnya. Status diatur ke "Butuh Verifikasi".');
         }
 
         $user->update($data);
+        
+        if (isset($data['jamaah_status']) && $data['jamaah_status'] !== $oldJamaahStatus) {
+            \App\Services\PpdbFeeSyncService::syncFeeForUser($user);
+        }
         return redirect()->route('user.index')->with('success', 'Berhasil mengubah data user');
     }
 
@@ -284,6 +295,12 @@ class UserController extends Controller
 
             $updatedCount = User::whereIn('id', $request->ids)
                 ->update(['jamaah_status' => $request->jamaah_status]);
+
+            // Sync PPDB fees for the updated users
+            $users = User::whereIn('id', $request->ids)->get();
+            foreach ($users as $user) {
+                \App\Services\PpdbFeeSyncService::syncFeeForUser($user);
+            }
 
             DB::commit();
 
