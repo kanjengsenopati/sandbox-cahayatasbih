@@ -50,9 +50,15 @@
     $isUrlActive = function($url) {
         $parsed = parse_url($url);
         $path = ltrim($parsed['path'] ?? '', '/');
-        if (!request()->is($path . '*')) {
+        if (request()->is($path)) {
+            // Exact match
+        } elseif (($path === 'admin' || $path === '') && request()->is($path . '/*')) {
+            // Prevent /admin from matching /admin/anything
+            return false;
+        } elseif (!request()->is($path . '/*')) {
             return false;
         }
+        
         if (isset($parsed['query'])) {
             parse_str($parsed['query'], $queryArr);
             foreach ($queryArr as $key => $val) {

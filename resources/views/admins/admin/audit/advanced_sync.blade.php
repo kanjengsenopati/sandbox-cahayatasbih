@@ -80,9 +80,9 @@
                                 <x-text.label>Kelas</x-text.label>
                                 <select name="classroom_id" id="classroom_id" class="form-select form-select-solid rounded-[12px]" data-control="select2" data-placeholder="Pilih Kelas (Opsional)">
                                     <option value=""></option>
-                                    @foreach($classrooms as $classroom)
-                                        <option value="{{ $classroom->id }}">{{ $classroom->name }} ({{ $classroom->school->name ?? '-' }})</option>
-                                    @endforeach
+                                      @foreach($classrooms as $classroom)
+                                          <option value="{{ $classroom->id }}" data-school-id="{{ $classroom->school_id }}">{{ $classroom->name }} ({{ $classroom->school->name ?? '-' }})</option>
+                                      @endforeach
                                 </select>
                             </div>
                             <div class="col-md-6">
@@ -134,6 +134,34 @@
 </div>
 <script>
     var previewTable = null;
+
+    // Filter UPT -> Kelas Cascade
+    $(document).ready(function() {
+        $('#school_id').on('change', function() {
+            var schoolId = $(this).val();
+            var classroomSelect = $('#classroom_id');
+            
+            if (!classroomSelect.data('options')) {
+                classroomSelect.data('options', classroomSelect.find('option').clone());
+            }
+            
+            var options = classroomSelect.data('options');
+            classroomSelect.empty();
+            
+            if (schoolId) {
+                var filteredOptions = options.filter(function() {
+                    var val = $(this).val();
+                    if (val === '') return true;
+                    return $(this).data('school-id') == schoolId;
+                });
+                classroomSelect.append(filteredOptions);
+            } else {
+                classroomSelect.append(options);
+            }
+            
+            classroomSelect.val('').trigger('change.select2');
+        });
+    });
 
     function loadPreview() {
         var btn = $('#btn-generate-preview');
