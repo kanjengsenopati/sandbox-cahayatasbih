@@ -26,10 +26,6 @@ class PpdbFeeSyncService
             ->whereIn('status', [PpdbRegistration::STATUS_PENDING, PpdbRegistration::STATUS_KTA_REVISION])
             ->get();
 
-        if ($registrations->isEmpty()) {
-            return;
-        }
-
         // Tentukan target tipe registrasi berdasarkan jamaah_status wali
         $targetRegistrationType = $user->jamaah_status === 'JAMAAH' 
             ? PpdbTrack::TYPE_JAMAAH 
@@ -88,7 +84,7 @@ class PpdbFeeSyncService
         // Sinkronisasi tagihan (Bills) untuk semua murid terkait user ini,
         // apabila user ini telah menjadi Jamaah/Non Jamaah, tagihan lain 
         // seperti pendaftaran yang digenerate sebagai Bill juga harus diupdate.
-        \Illuminate\Support\Facades\Artisan::queue('bills:sync-rate', [
+        \Illuminate\Support\Facades\Artisan::call('bills:sync-rate', [
             '--user-id' => $user->id,
             '--force' => true
         ]);
