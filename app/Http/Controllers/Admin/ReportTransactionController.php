@@ -30,7 +30,7 @@ class ReportTransactionController extends Controller
         }
         if (request()->ajax()) {
             $data = Transaction::where('status', Transaction::STATUS_PAID)
-                ->with(['student', 'student.classroom', 'paymentMethod', 'admin', 'transactionDetails.bill.billType', 'transactionDetails.saldoHistory', 'transactionDetails.savingHistory'])
+                ->with(['student', 'student.classroom', 'paymentMethod', 'admin', 'transactionDetails.bill.billType', 'transactionDetails.bill.academicYear', 'transactionDetails.saldoHistory', 'transactionDetails.savingHistory'])
                 ->when(request()->filled('start_date'), function ($query) {
                     $query->whereDate('created_at', '>=', request()->start_date);
                 })
@@ -116,6 +116,7 @@ class ReportTransactionController extends Controller
                             if ($data->type == Transaction::TYPE_BILL) {
                                 $bill = $detail->bill;
                                 $billType = $bill?->billType?->name ?? 'Lain-lain';
+                                $academicYear = $bill?->academicYear?->name ?? ($bill?->year ? (string)$bill->year : '-');
                                 $monthName = '-';
                                 if (!empty($bill?->month)) {
                                     try {
@@ -124,12 +125,14 @@ class ReportTransactionController extends Controller
                                         $monthName = (string)$bill->month;
                                     }
                                 }
-                                $year = $bill?->year ?? '-';
+                                $year = $bill?->year ?? '';
+                                $periodMonth = $monthName . ($year ? ' ' . $year : '');
                                 $amount = $detail->amount ?? ($bill?->amount ?? 0);
                                 return [
                                     'type' => 'BILL',
                                     'bill_type' => $billType,
-                                    'period' => $monthName . ' ' . $year,
+                                    'academic_year' => $academicYear,
+                                    'period_month' => $periodMonth,
                                     'month' => $monthName,
                                     'year' => $year,
                                     'amount' => (int) $amount,
@@ -139,8 +142,8 @@ class ReportTransactionController extends Controller
                                 return [
                                     'type' => 'SALDO',
                                     'bill_type' => 'Top Up / Tarik Saldo',
-                                    'period' => '-',
-                                    'description' => $detail->saldoHistory?->description ?? 'Transaksi Saldo',
+                                    'academic_year' => '-',
+                                    'period_month' => $detail->saldoHistory?->description ?? 'Transaksi Saldo',
                                     'amount' => (int) $amount,
                                 ];
                             } elseif ($data->type == Transaction::TYPE_SAVING) {
@@ -148,16 +151,16 @@ class ReportTransactionController extends Controller
                                 return [
                                     'type' => 'SAVING',
                                     'bill_type' => 'Tabungan',
-                                    'period' => '-',
-                                    'description' => $detail->savingHistory?->description ?? 'Transaksi Tabungan',
+                                    'academic_year' => '-',
+                                    'period_month' => $detail->savingHistory?->description ?? 'Transaksi Tabungan',
                                     'amount' => (int) $amount,
                                 ];
                             }
                             return [
                                 'type' => 'OTHER',
                                 'bill_type' => 'Lainnya',
-                                'period' => '-',
-                                'description' => 'Detail Transaksi',
+                                'academic_year' => '-',
+                                'period_month' => 'Detail Transaksi',
                                 'amount' => (int) $data->pay_amount,
                             ];
                         })->toArray();

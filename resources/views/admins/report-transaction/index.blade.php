@@ -278,108 +278,93 @@
             }
 
             let grandTotal = 0;
-            let groups = {};
-
             details.forEach(function(item) {
-                if (!item || typeof item !== 'object') return;
-                let key = item.bill_type || 'Tagihan Lainnya';
-                if (!groups[key]) {
-                    groups[key] = {
-                        title: key,
-                        items: [],
-                        subtotal: 0
-                    };
+                if (item && typeof item === 'object') {
+                    grandTotal += (item.amount || 0);
                 }
-                groups[key].items.push(item);
-                groups[key].subtotal += (item.amount || 0);
-                grandTotal += (item.amount || 0);
             });
 
-            let groupKeys = Object.keys(groups);
-
             let html = `
-            <div class="expandable-panel-card p-5 my-2 text-start">
+            <div class="expandable-panel-card p-4 my-2 text-start">
                 <!-- Header Panel -->
-                <div class="d-flex align-items-center justify-content-between mb-4 pb-3 border-bottom border-gray-200">
+                <div class="d-flex align-items-center justify-content-between mb-3 pb-2 border-bottom border-gray-200">
                     <div class="d-flex align-items-center gap-3">
-                        <span class="bullet bg-primary w-10px h-10px rounded-circle"></span>
-                        <span class="fs-6 fw-bolder text-gray-800">Rincian Item Transaksi (${details.length} Item)</span>
-                        <span class="badge badge-light-primary fw-bold px-3 py-1 fs-8">${(rowData && rowData.payment_code) || '-'}</span>
+                        <span class="bullet bg-primary w-8px h-8px rounded-circle"></span>
+                        <span class="fs-7 fw-bolder text-gray-800">Rincian Item Transaksi (${details.length} Item)</span>
+                        <span class="badge badge-light-primary fw-bold px-2.5 py-0.5 fs-8">${(rowData && rowData.payment_code) || '-'}</span>
                     </div>
                     <div class="d-flex align-items-center gap-2">
-                        <span class="fs-7 fw-bold text-gray-500 text-uppercase tracking-wider">Total Nominal Item:</span>
-                        <span class="fs-6 fw-bolder text-success">Rp ${formatNumber(grandTotal)}</span>
+                        <span class="fs-8 fw-bold text-gray-500 text-uppercase tracking-wider">Total Nominal:</span>
+                        <span class="fs-7 fw-bolder text-success font-mono">Rp ${formatNumber(grandTotal)}</span>
                     </div>
                 </div>
-            `;
 
-            if (groupKeys.length === 0) {
+                <!-- Single Compact & Dense Data Table -->
+                <div class="table-responsive">
+                    <table class="table table-sm table-striped border align-middle mb-0 gs-3 gy-2 rounded">
+                        <thead>
+                            <tr class="bg-light text-gray-600 fw-bolder fs-8 text-uppercase tracking-wider border-bottom">
+                                <th style="width: 5%" class="text-center">No</th>
+                                <th style="width: 35%">Nama Tagihan</th>
+                                <th style="width: 18%">Tahun Ajaran</th>
+                                <th style="width: 22%">Periode Bulan Tagihan</th>
+                                <th style="width: 20%" class="text-end pe-3">Nominal</th>
+                            </tr>
+                        </thead>
+                        <tbody>`;
+
+            if (details.length === 0) {
                 html += `
-                <div class="text-center py-4 text-gray-500 fs-7 fst-italic">
-                    Tidak ada rincian item tambahan untuk transaksi ini.
-                </div>`;
+                            <tr>
+                                <td colspan="5" class="text-center py-3 text-gray-500 fs-7 fst-italic">
+                                    Tidak ada rincian item tambahan.
+                                </td>
+                            </tr>`;
             } else {
-                groupKeys.forEach(function(groupName) {
-                    let group = groups[groupName];
-                    html += `
-                    <div class="group-item-card p-4 mb-3 shadow-sm">
-                        <!-- Group Title & Subtotal -->
-                        <div class="d-flex align-items-center justify-content-between mb-3 pb-2 border-bottom border-gray-100">
-                            <div class="d-flex align-items-center gap-2">
-                                <i class="fas fa-layer-group text-primary fs-7"></i>
-                                <span class="fw-bolder fs-7 text-gray-800 text-uppercase tracking-wider">${group.title}</span>
-                                <span class="badge badge-secondary text-gray-600 rounded-pill fs-8 px-2 py-1">${group.items.length} Periode/Item</span>
-                            </div>
-                            <div class="fs-7 fw-bolder text-success">
-                                Subtotal: Rp ${formatNumber(group.subtotal)}
-                            </div>
-                        </div>
-
-                        <!-- Mini Data Table -->
-                        <div class="table-responsive">
-                            <table class="table table-sm table-row-dashed align-middle mb-0 gs-2 gy-2">
-                                <thead>
-                                    <tr class="text-gray-400 fw-bold fs-8 text-uppercase tracking-widest border-bottom">
-                                        <th style="width: 5%" class="ps-2">#</th>
-                                        <th>Jenis Tagihan / Detail</th>
-                                        <th>Periode / Bulan</th>
-                                        <th class="pe-2 text-end">Nominal</th>
-                                    </tr>
-                                </thead>
-                                <tbody>`;
-
-                    group.items.forEach(function(item, idx) {
-                        let periodText = item.period && item.period !== '-' ? item.period : (item.description || '-');
-                        html += `
-                                    <tr class="hover-bg-light">
-                                        <td class="ps-2 text-gray-400 fs-7 font-mono">${idx + 1}</td>
-                                        <td>
-                                            <span class="fw-bold text-gray-700 fs-7">${group.title}</span>
-                                        </td>
-                                        <td>
-                                            <span class="badge badge-light text-gray-700 fw-semibold fs-8 px-2.5 py-1">
-                                                <i class="far fa-calendar-alt me-1 fs-9 text-gray-400"></i>${periodText}
-                                            </span>
-                                        </td>
-                                        <td class="pe-2 text-end font-mono fw-bolder text-success fs-7">
-                                            Rp ${formatNumber(item.amount)}
-                                        </td>
-                                    </tr>`;
-                    });
+                details.forEach(function(item, idx) {
+                    let billName = item.bill_type || '-';
+                    let academicYear = item.academic_year || '-';
+                    let periodMonth = item.period_month || item.period || '-';
+                    let amount = item.amount || 0;
 
                     html += `
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>`;
+                            <tr class="hover-bg-light fs-7">
+                                <td class="text-center text-gray-400 font-mono py-2">${idx + 1}</td>
+                                <td class="py-2">
+                                    <span class="fw-bold text-gray-800">${billName}</span>
+                                </td>
+                                <td class="py-2">
+                                    <span class="badge badge-light-secondary text-gray-700 fw-semibold fs-8 px-2 py-0.5">${academicYear}</span>
+                                </td>
+                                <td class="py-2">
+                                    <span class="badge badge-light-primary text-primary fw-semibold fs-8 px-2 py-0.5">
+                                        <i class="far fa-calendar-alt me-1 fs-9 text-primary"></i>${periodMonth}
+                                    </span>
+                                </td>
+                                <td class="text-end font-mono fw-bolder text-success py-2 pe-3">
+                                    Rp ${formatNumber(amount)}
+                                </td>
+                            </tr>`;
                 });
             }
 
-            html += `</div>`;
+            html += `
+                        </tbody>
+                        ${details.length > 1 ? `
+                        <tfoot>
+                            <tr class="bg-light-success fw-bolder fs-7 border-top">
+                                <td colspan="4" class="text-end py-2">Total:</td>
+                                <td class="text-end text-success font-mono py-2 pe-3">Rp ${formatNumber(grandTotal)}</td>
+                            </tr>
+                        </tfoot>` : ''}
+                    </table>
+                </div>
+            </div>`;
+
             return html;
         } catch (err) {
             console.error('Error rendering expandable panel:', err);
-            return '<div class="p-4 text-center text-muted fs-7">Gagal memuat detail item transaksi.</div>';
+            return '<div class="p-3 text-center text-muted fs-7">Gagal memuat detail item transaksi.</div>';
         }
     }
 
