@@ -131,7 +131,21 @@ class BillController extends Controller
             }
         }
 
-        $item->total_paid = $bills->sum('paid_amount');
+        if ($isZarkasi || $isAplikasi || $isSyahriah) {
+            // Include payments from past/other bill types of the same generic category
+            $matchingBills = \App\Models\Bill::where('student_id', $studentId)
+                ->whereHas('billType', function ($query) use ($isZarkasi, $isAplikasi, $isSyahriah) {
+                    $query->where(function ($q) use ($isZarkasi, $isAplikasi, $isSyahriah) {
+                        if ($isZarkasi) $q->orWhere('name', 'like', '%ZARKASI%');
+                        if ($isAplikasi) $q->orWhere('name', 'like', '%APLIKASI%');
+                        if ($isSyahriah) $q->orWhere('name', 'like', '%SYAHR%');
+                    });
+                })->get();
+            $item->total_paid = $matchingBills->sum('paid_amount');
+        } else {
+            $item->total_paid = $bills->sum('paid_amount');
+        }
+
         $item->total_unpaid = max(0, $item->total_bill - $item->total_paid);
 
         return $item;
