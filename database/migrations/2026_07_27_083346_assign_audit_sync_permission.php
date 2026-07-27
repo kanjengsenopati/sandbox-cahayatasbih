@@ -3,7 +3,7 @@
 use Illuminate\Database\Migrations\Migration;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
-use App\Models\User;
+use App\Models\Admin;
 
 return new class extends Migration
 {
@@ -22,20 +22,20 @@ return new class extends Migration
         ]);
 
         // 2. Assign ke Role Super Admin
-        $superAdminRole = Role::where('name', 'Super Admin')->first();
+        $superAdminRole = Role::where('name', 'Super Admin')->where('guard_name', 'web')->first();
         if ($superAdminRole) {
             $superAdminRole->givePermissionTo($permission);
         }
 
         // 3. Assign ke Role KOORDINATOR CAHAYA MART
-        $koordinatorRole = Role::where('name', 'KOORDINATOR CAHAYA MART')->first();
+        $koordinatorRole = Role::where('name', 'KOORDINATOR CAHAYA MART')->where('guard_name', 'web')->first();
         if ($koordinatorRole) {
             $koordinatorRole->givePermissionTo($permission);
         }
 
         // 4. Secara spesifik assign ke 3 orang tersebut dan super admin by name
         // Meskipun mereka sudah punya Role di atas, memberikannya secara langsung memastikan akses mereka
-        $users = User::whereIn('name', [
+        $admins = Admin::whereIn('name', [
             'Siswanto', 
             'Arsito Ari', 
             'AMBAR EKA WATI', 
@@ -43,8 +43,8 @@ return new class extends Migration
             'MAULANA SYARIF'
         ])->get();
 
-        foreach ($users as $user) {
-            $user->givePermissionTo($permission);
+        foreach ($admins as $admin) {
+            $admin->givePermissionTo($permission);
         }
     }
 
@@ -58,18 +58,18 @@ return new class extends Migration
         $permission = Permission::where('name', 'Manage Audit dan Sinkron')->where('guard_name', 'web')->first();
         if ($permission) {
             // Remove assignment from roles
-            $superAdminRole = Role::where('name', 'Super Admin')->first();
+            $superAdminRole = Role::where('name', 'Super Admin')->where('guard_name', 'web')->first();
             if ($superAdminRole) {
                 $superAdminRole->revokePermissionTo($permission);
             }
 
-            $koordinatorRole = Role::where('name', 'KOORDINATOR CAHAYA MART')->first();
+            $koordinatorRole = Role::where('name', 'KOORDINATOR CAHAYA MART')->where('guard_name', 'web')->first();
             if ($koordinatorRole) {
                 $koordinatorRole->revokePermissionTo($permission);
             }
 
-            // Remove assignment from specific users
-            $users = User::whereIn('name', [
+            // Remove assignment from specific admins
+            $admins = Admin::whereIn('name', [
                 'Siswanto', 
                 'Arsito Ari', 
                 'AMBAR EKA WATI', 
@@ -77,8 +77,8 @@ return new class extends Migration
                 'MAULANA SYARIF'
             ])->get();
 
-            foreach ($users as $user) {
-                $user->revokePermissionTo($permission);
+            foreach ($admins as $admin) {
+                $admin->revokePermissionTo($permission);
             }
         }
     }
