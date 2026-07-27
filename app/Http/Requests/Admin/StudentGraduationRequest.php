@@ -23,7 +23,23 @@ class StudentGraduationRequest extends FormRequest
     {
         return [
             'student_ids' => ['required', 'array'],
-            'next_action' => ['required', 'in:lanjut_pondok,keluar'],
+            'student_ids.*' => ['required', 'exists:students,id'],
+            'graduation_option' => ['nullable', 'in:lanjut_studi,keluar'],
+            'next_action' => ['nullable', 'in:lanjut_studi,lanjut_pondok,keluar'],
+        ];
+    }
+
+    /**
+     * Get custom messages for validator errors.
+     *
+     * @return array<string, string>
+     */
+    public function messages(): array
+    {
+        return [
+            'student_ids.required' => 'Silakan pilih setidaknya satu siswa untuk diproses kelulusannya.',
+            'student_ids.array' => 'Data siswa terpilih tidak valid.',
+            'student_ids.*.exists' => 'Salah satu siswa yang dipilih tidak ditemukan di database.',
         ];
     }
 }

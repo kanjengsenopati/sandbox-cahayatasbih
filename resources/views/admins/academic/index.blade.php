@@ -419,32 +419,51 @@
                             <!--begin::Tab Student Graduation-->
                             @can('Manage Kelulusan Santri')
                             <div class="tab-pane fade @if($activeTab == 'student-graduation') show active @endif" id="tab-student-graduation" role="tabpanel">
-                                <div class="d-flex align-items-center justify-content-between mb-5">
-                                    <x-text.h2>Proses Kelulusan Siswa Akhir</x-text.h2>
-                                </div>
-
-                                <!-- Filters -->
-                                <div class="row g-5 mb-6 align-items-end">
-                                    <div class="col-md-4">
-                                        <x-text.label class="d-block mb-2">UPT / Pendidikan</x-text.label>
-                                        <select name="school_id" class="form-select" id="filter_school_id_grad">
-                                            <option value="">Pilih Pendidikan</option>
-                                            @foreach ($schoolsGraduation as $school)
-                                            <option value="{{ $school->id }}">{{ $school->name }}</option>
-                                            @endforeach
-                                        </select>
-                                    </div>
-                                    <div class="col-md-4">
-                                        <x-text.label class="d-block mb-2">Kelas Akhir</x-text.label>
-                                        <select name="classroom_id" class="form-select" id="filter_classroom_id_grad">
-                                            <option value="">Pilih Kelas</option>
-                                        </select>
-                                    </div>
-                                </div>
-
                                 <form action="{{ route('student-graduation.store') }}" method="POST" id="form-student-graduation">
                                     @csrf
                                     <x-alert.alert-validation />
+
+                                    <!-- Top Control Bar Card for Graduation -->
+                                    <div class="card p-5 mb-6 shadow-sm border-0" style="border-radius: 20px; background-color: #f8fafc; border: 1px solid #e2e8f0 !important;">
+                                        <div class="row g-4 align-items-end">
+                                            <div class="col-lg-3 col-md-6">
+                                                <label class="d-block mb-2 fw-bold" style="font-size: 12px; color: #334155; letter-spacing: -0.01em; text-transform: none;">UPT / Pendidikan</label>
+                                                <select name="school_id" class="form-select bg-white" id="filter_school_id_grad">
+                                                    <option value="">Pilih Pendidikan</option>
+                                                    @foreach ($schoolsGraduation as $school)
+                                                    <option value="{{ $school->id }}" data-type="{{ $school->type }}">{{ $school->name }}</option>
+                                                    @endforeach
+                                                </select>
+                                            </div>
+                                            <div class="col-lg-3 col-md-6">
+                                                <label class="d-block mb-2 fw-bold" style="font-size: 12px; color: #334155; letter-spacing: -0.01em; text-transform: none;">Kelas Akhir</label>
+                                                <select name="classroom_id" class="form-select bg-white" id="filter_classroom_id_grad">
+                                                    <option value="">Pilih Kelas Akhir</option>
+                                                </select>
+                                            </div>
+                                            <div class="col-lg-3 col-md-6">
+                                                <label class="d-block mb-2 fw-bold" style="font-size: 12px; color: #334155; letter-spacing: -0.01em; text-transform: none;">Opsi Kelulusan</label>
+                                                <select name="graduation_option" id="filter_graduation_option" class="form-select bg-white" required>
+                                                    <option value="lanjut_studi" selected>🎓 Lanjut Studi (Ke UPT Berikutnya & Kelas Transit)</option>
+                                                    <option value="keluar">🚪 Keluar / Lulus Murni</option>
+                                                </select>
+                                            </div>
+                                            @if (Auth::user()->can('Create Kelulusan Santri'))
+                                            <div class="col-lg-3 col-md-12">
+                                                <button type="submit" class="btn btn-primary w-100 py-3" id="btn_process_graduation">
+                                                    <i class="fa-solid fa-user-graduate me-1"></i> <span id="btn_grad_label">Proses Kelulusan Siswa</span>
+                                                </button>
+                                            </div>
+                                            @endif
+                                        </div>
+
+                                        <!-- Dynamic Destination Helper Badge -->
+                                        <div class="mt-4 pt-3 border-top d-flex align-items-center gap-2" id="graduation_destination_container">
+                                            <i class="fa-solid fa-circle-info text-primary"></i>
+                                            <span class="fs-7 fw-bold text-gray-700" id="graduation_destination_badge">SMP $\rightarrow$ Otomatis Lanjut ke MA (Kelas 10-Transit) | MA $\rightarrow$ Otomatis Lanjut ke Pondok (Kelas Pondok-Transit)</span>
+                                        </div>
+                                    </div>
+
                                     <div class="table-responsive">
                                         <table id="table-student-graduation" class="table align-middle table-row-dashed w-100">
                                             <thead>
@@ -460,16 +479,6 @@
                                             </thead>
                                             <tbody class="text-gray-600 fw-bold"></tbody>
                                         </table>
-                                    </div>
-
-                                    <div class="row align-items-center mt-5">
-                                        @if (Auth::user()->can('Create Kelulusan Santri'))
-                                        <div class="col-md-auto">
-                                            <button type="submit" class="btn btn-primary" id="btn_process_graduation">
-                                                <i class="fa-solid fa-user-graduate me-2"></i> Proses Kelulusan Siswa
-                                            </button>
-                                        </div>
-                                        @endif
                                     </div>
                                 </form>
                             </div>
@@ -519,6 +528,49 @@
                         </button>
                     </div>
                 </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Wide Data Table Detail Tunggakan -->
+    <div class="modal fade" id="modal_unpaid_bills_detail" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content rounded-[24px]" style="border-radius: 24px;">
+                <div class="modal-header pb-3 border-0">
+                    <div>
+                        <h3 class="fw-bolder text-gray-900 mb-1" id="modal_unpaid_student_name">Detail Tunggakan Siswa</h3>
+                        <span class="text-gray-600 fs-7 fw-bold" id="modal_unpaid_student_nis">NIS: -</span>
+                    </div>
+                    <div class="btn btn-icon btn-sm btn-active-icon-primary" data-bs-dismiss="modal">
+                        <i class="fa-solid fa-xmark fs-4"></i>
+                    </div>
+                </div>
+                <div class="modal-body scroll-y mx-5 my-2">
+                    <div class="table-responsive">
+                        <table class="table align-middle table-row-dashed table-striped w-100">
+                            <thead>
+                                <tr class="text-start text-slate-700 fw-bolder fs-7 text-uppercase gs-0">
+                                    <th style="width: 5%">No</th>
+                                    <th>Nama Tagihan</th>
+                                    <th>Bulan</th>
+                                    <th>Tahun Ajaran</th>
+                                    <th class="text-end">Nominal</th>
+                                </tr>
+                            </thead>
+                            <tbody id="unpaid_bills_tbody" class="fw-bold text-gray-800">
+                            </tbody>
+                            <tfoot>
+                                <tr class="border-top border-2 border-gray-300">
+                                    <td colspan="4" class="text-end fw-bolder text-dark fs-6">Total Tunggakan:</td>
+                                    <td class="text-end fw-bolder text-danger fs-5" id="unpaid_bills_total">Rp 0</td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                </div>
+                <div class="modal-footer border-0 justify-content-center pb-6">
+                    <button type="button" class="btn btn-light-primary fw-bold px-6" data-bs-dismiss="modal">Tutup</button>
+                </div>
             </div>
         </div>
     </div>
@@ -1180,6 +1232,77 @@
                 }
             }
 
+            // Wide Data Table Modal Click Handler for Unpaid Bills Details
+            $(document).on('click', '.btn-unpaid-details', function() {
+                var studentName = $(this).data('student-name') || 'Siswa';
+                var studentNis = $(this).data('student-nis') || '-';
+                var rawBills = $(this).attr('data-bills');
+                var bills = [];
+
+                try {
+                    bills = typeof rawBills === 'string' ? JSON.parse(rawBills) : rawBills;
+                } catch(e) {
+                    console.error('Failed to parse bills JSON', e);
+                }
+
+                $('#modal_unpaid_student_name').text('Detail Tunggakan: ' + studentName);
+                $('#modal_unpaid_student_nis').text('NIS: ' + studentNis);
+
+                var $tbody = $('#unpaid_bills_tbody');
+                $tbody.empty();
+
+                var totalAmount = 0;
+
+                if (bills && bills.length > 0) {
+                    $.each(bills, function(index, bill) {
+                        var no = index + 1;
+                        var amount = parseFloat(bill.amount) || 0;
+                        totalAmount += amount;
+                        var formattedAmount = bill.formatted_amount || ('Rp ' + amount.toLocaleString('id-ID'));
+
+                        var rowHtml = `<tr>
+                            <td>${no}</td>
+                            <td class="text-gray-900 fw-bolder">${bill.name || '-'}</td>
+                            <td><span class="badge bg-light-primary text-primary fw-bold">${bill.month || '-'}</span></td>
+                            <td>${bill.academic_year || '-'}</td>
+                            <td class="text-end text-danger fw-bolder">${formattedAmount}</td>
+                        </tr>`;
+
+                        $tbody.append(rowHtml);
+                    });
+                } else {
+                    $tbody.append('<tr><td colspan="5" class="text-center text-gray-500 py-4">Tidak ada detail tunggakan</td></tr>');
+                }
+
+                var formattedTotal = 'Rp ' + totalAmount.toLocaleString('id-ID');
+                $('#unpaid_bills_total').text(formattedTotal);
+
+                $('#modal_unpaid_bills_detail').modal('show');
+            });
+
+            // Dynamic Destination Badge Helper for Graduation
+            function updateGraduationDestinationBadge() {
+                var schoolOption = $('#filter_school_id_grad option:selected');
+                var schoolType = schoolOption.data('type') || '';
+                var option = $('#filter_graduation_option').val();
+
+                if (option === 'keluar') {
+                    $('#graduation_destination_badge').text('Siswa berstatus LULUS / KELUAR. Tunggakan masa lalu tetap tersimpan utuh sampai dilunasi, dan tidak akan ditagih tagihan baru.');
+                } else {
+                    if (schoolType === 'SMP') {
+                        $('#graduation_destination_badge').text('SMP ➔ Otomatis Lanjut ke MA (Di-plot ke Kelas 10-Transit). Status tetap AKTIF & NIS Lokal Permanen.');
+                    } else if (schoolType === 'MA') {
+                        $('#graduation_destination_badge').text('MA ➔ Otomatis Lanjut ke Pondok (Di-plot ke Kelas Pondok-Transit). Status tetap AKTIF & NIS Lokal Permanen.');
+                    } else {
+                        $('#graduation_destination_badge').text('SMP ➔ Otomatis Lanjut ke MA (Kelas 10-Transit) | MA ➔ Otomatis Lanjut ke Pondok (Kelas Pondok-Transit). Status tetap AKTIF & NIS Lokal Permanen.');
+                    }
+                }
+            }
+
+            $('#filter_school_id_grad, #filter_graduation_option').on('change', function() {
+                updateGraduationDestinationBadge();
+            });
+
             // Watch filters for graduation
             $('#filter_school_id_grad').on('change', function() {
                 var val = $(this).val();
@@ -1207,6 +1330,7 @@
                 getClassroomBySchoolIdGrad($('#filter_school_id_grad').val());
                 searchGraduation();
             }
+            updateGraduationDestinationBadge();
             @endcan
         });
     </script>

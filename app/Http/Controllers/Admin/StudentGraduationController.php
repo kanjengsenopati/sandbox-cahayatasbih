@@ -10,6 +10,8 @@ use Yajra\DataTables\DataTables;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\StudentGraduationRequest;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class StudentGraduationController extends Controller
 {
@@ -22,7 +24,7 @@ class StudentGraduationController extends Controller
             return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
         }
         if (request()->ajax()) {
-            $data = Student::with(['user', 'classroom.school', 'bills.billType'])
+            $data = Student::with(['user', 'classroom.school', 'bills.billType', 'bills.academicYear'])
                 ->whereHas('classroom.school', function ($query) {
                     $query->whereIn('type', [School::TYPE_SMP, School::TYPE_MA]);
                 })
@@ -55,6 +57,7 @@ class StudentGraduationController extends Controller
                 ->whereNot('status', Student::STATUS_GRADUATED)
                 ->hasSchool()
                 ->latest();
+
             return DataTables::of($data)
                 ->editColumn('saldo', function ($data) {
                     return '<span class="badge bg-success">Rp ' . number_format($data->saldo, 0, ',', '.') . '</span>';
@@ -84,18 +87,33 @@ class StudentGraduationController extends Controller
                 ->addColumn('unpaid_bills', function ($data) {
                     $unpaid = $data->bills->where('status', \App\Models\Bill::STATUS_UNPAID);
                     if ($unpaid->isEmpty()) {
-                        return '<span class="badge bg-light-success text-success">Bersih</span>';
+                        return '<span class="badge bg-light-success text-success fw-bolder px-3 py-1">Lunas / Bersih</span>';
                     }
-                    
-                    $details = [];
+
+                    $billsArray = [];
                     foreach ($unpaid as $bill) {
                         $billName = $bill->billType->name ?? 'Tagihan';
-                        $monthName = $bill->month ? \Carbon\Carbon::parse($bill->year . '-' . $bill->month . '-01')->translatedFormat('F') : '';
-                        $details[] = "• {$billName} {$monthName} ({$bill->year}): Rp " . number_format($bill->amount, 0, ',', '.');
+                        $monthName = $bill->month ? \Carbon\Carbon::parse($bill->year . '-' . sprintf('%02d', $bill->month) . '-01')->translatedFormat('F') : '-';
+                        $ayName = $bill->academicYear->name ?? ($bill->year ?? '-');
+                        $billsArray[] = [
+                            'name' => $billName,
+                            'month' => $monthName,
+                            'academic_year' => $ayName,
+                            'amount' => (float) $bill->amount,
+                            'formatted_amount' => 'Rp ' . number_format($bill->amount, 0, ',', '.')
+                        ];
                     }
-                    
-                    $detailsHtml = implode('<br>', $details);
-                    return '<span class="badge bg-light-danger text-danger cursor-pointer" style="font-weight: 700;" data-bs-toggle="tooltip" data-bs-html="true" title="' . e($detailsHtml) . '">Tunggakan (' . $unpaid->count() . ')</span>';
+
+                    $billsJson = htmlspecialchars(json_encode($billsArray), ENT_QUOTES, 'UTF-8');
+                    $studentName = htmlspecialchars($data->name, ENT_QUOTES, 'UTF-8');
+                    $studentNis = htmlspecialchars($data->nis ?? '-', ENT_QUOTES, 'UTF-8');
+
+                    return '<button type="button" class="btn btn-sm btn-light-danger btn-unpaid-details fw-bolder px-3 py-1 shadow-sm" ' .
+                        'data-student-name="' . $studentName . '" ' .
+                        'data-student-nis="' . $studentNis . '" ' .
+                        'data-bills=\'' . $billsJson . '\'>' .
+                        '<i class="fa-solid fa-list-check me-1"></i> Tunggakan (' . $unpaid->count() . ')' .
+                        '</button>';
                 })
                 ->addColumn('action', function ($data) {
                     $actionEdit = route('student.edit', $data->id);
@@ -123,9 +141,9 @@ class StudentGraduationController extends Controller
     {
         $schoolId = $request->school_id;
         $school = School::find($schoolId);
-        
+
         $query = \App\Models\Classroom::where('school_id', $schoolId);
-        
+
         if ($school) {
             if ($school->type === School::TYPE_SMP) {
                 $query->where('name', 'like', '9%');
@@ -133,7 +151,7 @@ class StudentGraduationController extends Controller
                 $query->where('name', 'like', '12%');
             }
         }
-        
+
         $classrooms = $query->orderByRaw("CAST(name AS UNSIGNED) ASC, name ASC")->get();
         return response()->json([
             'code' => '200',
@@ -143,78 +161,97 @@ class StudentGraduationController extends Controller
     }
 
     /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
-    {
-        //
-    }
-
-    /**
      * Store a newly created resource in storage.
      */
     public function store(StudentGraduationRequest $request)
     {
         $data = $request->validated();
-        $students = Student::whereIn('id', $data['student_ids'])->get();
-        
-        $pondokClassroomId = null;
-        if (isset($data['next_action']) && $data['next_action'] === 'lanjut_pondok') {
-            $pondokSchool = School::where('type', 'PONDOK')
+        $studentIds = $data['student_ids'];
+        $graduationOption = $request->input('graduation_option') ?? $request->input('next_action') ?? 'lanjut_studi';
+
+        DB::beginTransaction();
+        try {
+            $students = Student::with(['classroom.school'])->whereIn('id', $studentIds)->get();
+
+            // Cache schools and transit classrooms
+            $maSchool = School::where('type', School::TYPE_MA)
+                ->orWhere('name', 'like', '%ALIYAH%')
+                ->orWhere('name', 'like', '%MA%')
+                ->first();
+
+            $maTransitClassId = null;
+            if ($maSchool) {
+                $maClass = \App\Models\Classroom::firstOrCreate(
+                    ['school_id' => $maSchool->id, 'name' => '10-Transit'],
+                    ['created_at' => now(), 'updated_at' => now()]
+                );
+                $maTransitClassId = $maClass->id;
+            }
+
+            $pondokSchool = School::where('type', School::TYPE_PONDOK)
                 ->orWhere('name', 'like', '%PPTQ%')
                 ->orWhere('name', 'like', '%PONDOK%')
                 ->first();
-                
+
+            $pondokTransitClassId = null;
             if ($pondokSchool) {
-                $pondokClass = \App\Models\Classroom::where('school_id', $pondokSchool->id)
-                    ->where('name', 'like', '%PONDOK%')
-                    ->first();
-                $pondokClassroomId = $pondokClass ? $pondokClass->id : null;
+                $pondokClass = \App\Models\Classroom::firstOrCreate(
+                    ['school_id' => $pondokSchool->id, 'name' => 'Pondok-Transit'],
+                    ['created_at' => now(), 'updated_at' => now()]
+                );
+                $pondokTransitClassId = $pondokClass->id;
             }
-        }
 
-        foreach ($students as $student) {
-            $updateData = ['status' => Student::STATUS_GRADUATED];
-            
-            if (isset($data['next_action']) && $data['next_action'] === 'lanjut_pondok' && $pondokClassroomId) {
-                $updateData['classroom_id'] = $pondokClassroomId;
+            $countProcessed = 0;
+
+            foreach ($students as $student) {
+                $schoolType = $student->classroom->school->type ?? null;
+
+                if ($graduationOption === 'lanjut_studi' || $graduationOption === 'lanjut_pondok') {
+                    // Mode Lanjut Studi (Melanjutkan ke UPT Berikutnya)
+                    if ($schoolType === School::TYPE_SMP) {
+                        // SMP -> MA (Kelas 10-Transit)
+                        if ($maTransitClassId) {
+                            $student->update([
+                                'classroom_id' => $maTransitClassId,
+                                'status' => Student::STATUS_ACTIVE,
+                            ]);
+                        }
+                    } elseif ($schoolType === School::TYPE_MA) {
+                        // MA -> Pondok (Kelas Pondok-Transit)
+                        if ($pondokTransitClassId) {
+                            $student->update([
+                                'classroom_id' => $pondokTransitClassId,
+                                'status' => Student::STATUS_ACTIVE,
+                            ]);
+                        }
+                    } else {
+                        // Fallback if Pondok / Other
+                        if ($pondokTransitClassId) {
+                            $student->update([
+                                'classroom_id' => $pondokTransitClassId,
+                                'status' => Student::STATUS_ACTIVE,
+                            ]);
+                        }
+                    }
+                } else {
+                    // Mode Keluar (Lulus Murni / Selesai)
+                    $student->update([
+                        'status' => Student::STATUS_GRADUATED,
+                    ]);
+                    // Cleanup future unbilled months beyond graduation date, while preserving all past unpaid bills
+                    $student->cleanupFutureUnpaidBills();
+                }
+
+                $countProcessed++;
             }
-            
-            $student->update($updateData);
-            $student->cleanupFutureUnpaidBills();
+
+            DB::commit();
+            return redirect()->back()->with('success', "Berhasil memproses kelulusan $countProcessed siswa.");
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Error processing student graduation: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'Terjadi kesalahan saat memproses kelulusan siswa: ' . $e->getMessage());
         }
-        return redirect()->back()->with('success', 'Berhasil Memproses Kelulusan Siswa');
-    }
-
-    /**
-     * Display the specified resource.
-     */
-    public function show(string $id)
-    {
-        //
-    }
-
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(string $id)
-    {
-        //
-    }
-
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, string $id)
-    {
-        //
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(string $id)
-    {
-        //
     }
 }
