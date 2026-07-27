@@ -254,7 +254,7 @@
                                 <div class="table-responsive">
                                     <table id="table-academic-year" class="table align-middle table-row-dashed w-100">
                                         <thead>
-                                            <tr class="text-start text-gray-400 fw-bolder fs-7 text-uppercase gs-0">
+                                            <tr class="text-start text-slate-700 fw-bolder fs-7 text-uppercase gs-0">
                                                 <th style="width: 5%">No</th>
                                                 <th>Tahun Ajaran</th>
                                                 <th>Mulai</th>
@@ -399,7 +399,7 @@
                                     <div class="table-responsive">
                                         <table id="table-grade-promotion" class="table align-middle table-row-dashed w-100">
                                             <thead>
-                                                <tr class="text-start text-gray-400 fw-bolder fs-7 text-uppercase gs-0">
+                                                <tr class="text-start text-slate-700 fw-bolder fs-7 text-uppercase gs-0">
                                                     <th style="width: 5%">No</th>
                                                     <th>NIS</th>
                                                     <th>Nama Siswa</th>
@@ -448,7 +448,7 @@
                                     <div class="table-responsive">
                                         <table id="table-student-graduation" class="table align-middle table-row-dashed w-100">
                                             <thead>
-                                                <tr class="text-start text-gray-400 fw-bolder fs-7 text-uppercase gs-0">
+                                                <tr class="text-start text-slate-700 fw-bolder fs-7 text-uppercase gs-0">
                                                     <th style="width: 5%">No</th>
                                                     <th>NIS</th>
                                                     <th>Nama Siswa</th>

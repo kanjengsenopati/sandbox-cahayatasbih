@@ -329,8 +329,75 @@
         z-index: 1052 !important;
     }
 
-    @keyframes dt-spin {
-        to { transform: rotate(360deg); }
+    /* ==========================================================================
+       GLOBAL TYPOGRAPHY & TABLE READABILITY ENHANCEMENTS (DARKER GRAY CONTRAST)
+       ========================================================================== */
+    /* Table Headers: Darker gray (#334155 Slate-700 / #1e293b Slate-800), bold, high contrast */
+    table thead tr th,
+    table thead th,
+    table.dataTable thead th,
+    table.dataTable thead td,
+    .table thead th,
+    .table-row-dashed thead tr th,
+    .table-row-dashed thead th,
+    .text-gray-400.fw-bolder,
+    .text-gray-400.fw-bold {
+        color: #334155 !important; /* Slate-700 - Darker Gray for Headers */
+        font-weight: 700 !important;
+        letter-spacing: 0.01em !important;
+    }
+
+    /* Table Body Data: Crisp dark gray (#1e293b Slate-800) for maximum readability */
+    table tbody tr td,
+    table tbody td,
+    table.dataTable tbody td,
+    .table tbody td,
+    .table-row-dashed tbody tr td,
+    .table-row-dashed tbody td {
+        color: #1e293b !important; /* Slate-800 - Crisp Dark Text for Body Data */
+        font-weight: 600 !important;
+    }
+
+    /* Global Text Gray Override for Better Contrast */
+    .text-gray-400 {
+        color: #475569 !important; /* Upgrade from faint #a1a5b7 to Slate-600 */
+    }
+    .text-gray-500 {
+        color: #334155 !important; /* Upgrade from #7e8299 to Slate-700 */
+    }
+    .text-gray-600 {
+        color: #1e293b !important; /* Upgrade from #5e6278 to Slate-800 */
+    }
+
+    /* DataTables Controls, Search, and Length Labels */
+    .dataTables_wrapper .dataTables_info,
+    .dataTables_wrapper .dataTables_length,
+    .dataTables_wrapper .dataTables_filter {
+        color: #334155 !important; /* Slate-700 */
+        font-weight: 600 !important;
+    }
+    .dataTables_wrapper .dataTables_filter input {
+        border: 1px solid #cbd5e1 !important;
+        color: #0f172a !important;
+        border-radius: 8px !important;
+        padding: 6px 12px !important;
+    }
+
+    /* Typography Components Override */
+    .typography-label {
+        font-size: 11px !important;
+        font-weight: 700 !important;
+        text-transform: uppercase !important;
+        letter-spacing: 0.02em !important;
+        color: #334155 !important; /* Slate-700 - Darker Gray */
+        font-family: 'Outfit', 'Inter', sans-serif !important;
+    }
+    .typography-caption {
+        font-size: 12px !important;
+        font-weight: 500 !important;
+        font-style: italic !important;
+        color: #475569 !important; /* Slate-600 */
+        font-family: 'Inter', sans-serif !important;
     }
 </style>
 
