@@ -196,6 +196,16 @@ class StudentController extends Controller
 
         if (request()->ajax()) {
             try {
+                // Validate scope before processing ajax
+                $student = Student::with('classroom')->findOrFail($id);
+                $admin = Auth::guard('web')->user();
+                if ($admin && !$admin->hasRole('Super Admin')) {
+                    $schoolIds = $admin->getSchoolIds();
+                    if ($student->classroom && !in_array($student->classroom->school_id, $schoolIds)) {
+                        return response()->json(['error' => 'Akses ditolak: Santri berada di luar cakupan UPT Anda.'], 403);
+                    }
+                }
+
                 if (request()->type === 'saldo') {
                     $data = SaldoHistory::with('student')->where('student_id', $id)->latest();
                     return DataTables::of($data)
@@ -307,6 +317,14 @@ class StudentController extends Controller
 
 
         $student = Student::with('user', 'classroom.school')->findOrFail($id);
+        $admin = Auth::guard('web')->user();
+        if ($admin && !$admin->hasRole('Super Admin')) {
+            $schoolIds = $admin->getSchoolIds();
+            if ($student->classroom && !in_array($student->classroom->school_id, $schoolIds)) {
+                return redirect()->back()->with('error', 'Akses ditolak: Santri berada di luar cakupan UPT Anda.');
+            }
+        }
+
         $saldo = [
             'IN' => SaldoHistory::where('student_id', $student->id)
                 ->where('type', SaldoHistory::TYPE_IN)->sum('amount'),
@@ -324,6 +342,14 @@ class StudentController extends Controller
         if (!Auth::user()->can('Edit Santri')) {
             return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
         }
+        $admin = Auth::guard('web')->user();
+        if ($admin && !$admin->hasRole('Super Admin')) {
+            $schoolIds = $admin->getSchoolIds();
+            if ($student->classroom && !in_array($student->classroom->school_id, $schoolIds)) {
+                return redirect()->back()->with('error', 'Akses ditolak: Santri berada di luar cakupan UPT Anda.');
+            }
+        }
+
         $schools = School::hasSchool()->orderBy('name')->get();
         $hosts = Admin::orderBy('name')->get();
         $saldo = [
@@ -343,6 +369,14 @@ class StudentController extends Controller
         if (!Auth::user()->can('Edit Santri')) {
             return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
         }
+        $admin = Auth::guard('web')->user();
+        if ($admin && !$admin->hasRole('Super Admin')) {
+            $schoolIds = $admin->getSchoolIds();
+            if ($student->classroom && !in_array($student->classroom->school_id, $schoolIds)) {
+                return redirect()->back()->with('error', 'Akses ditolak: Santri berada di luar cakupan UPT Anda.');
+            }
+        }
+
         $data = $request->validated();
         if ($request->hasFile('avatar')) {
             file_exists($student->avatar) ? unlink($student->avatar) : '';
@@ -364,6 +398,14 @@ class StudentController extends Controller
         if (!Auth::user()->can('Delete Santri')) {
             return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
         }
+        $admin = Auth::guard('web')->user();
+        if ($admin && !$admin->hasRole('Super Admin')) {
+            $schoolIds = $admin->getSchoolIds();
+            if ($student->classroom && !in_array($student->classroom->school_id, $schoolIds)) {
+                return redirect()->back()->with('error', 'Akses ditolak: Santri berada di luar cakupan UPT Anda.');
+            }
+        }
+
         file_exists($student->avatar) ? unlink($student->avatar) : '';
         $student->delete();
         return redirect()->route('student.index')->with('success', 'Siswa berhasil dihapus');

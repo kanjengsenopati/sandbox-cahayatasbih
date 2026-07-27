@@ -179,6 +179,11 @@ class Admin extends Authenticatable
      */
     public function getEffectiveOutletId(?string $mode, ?string $requestOutletId = null): ?string
     {
+        if ($this->hasRole('Super Admin')) {
+            if ($requestOutletId) return $requestOutletId;
+            return null;
+        }
+
         $koperasi = \App\Models\Outlet::where('name', 'Koperasi')->orWhere('code', 'KPR')->first();
         $koperasiId = $koperasi ? $koperasi->id : '6bc5b484-07f9-49cc-aefa-00a8cf47e8d7';
 
@@ -198,35 +203,26 @@ class Admin extends Authenticatable
                 return $allowedOutletIds[0];
             }
 
-            // Fallback to first non-koperasi outlet in database
-            $firstNonKoperasi = \App\Models\Outlet::where('id', '!=', $koperasiId)->where('is_active', 1)->orderBy('name')->first();
-            return $firstNonKoperasi ? $firstNonKoperasi->id : null;
+            return null;
         }
 
-        // Default behavior for other roles (Super Admin, etc.)
         if ($this->outlet_id) {
             return $this->outlet_id;
         }
 
         if ($mode === 'outlet') {
-            if ($requestOutletId) {
+            $authOutletIds = $this->getOutletIds();
+            
+            if ($requestOutletId && in_array($requestOutletId, $authOutletIds)) {
                 return $requestOutletId;
             }
-
-            $authOutletIds = $this->getOutletIds();
-            $query = \App\Models\Outlet::where('is_active', 1);
-
+            
             if (!empty($authOutletIds)) {
-                $query->whereIn('id', $authOutletIds);
-            } elseif (!$this->hasRole('Super Admin')) {
-                $query->where('id', $this->outlet_id);
+                return $authOutletIds[0];
             }
-
-            $firstOutlet = $query->orderBy('name')->first();
-            return $firstOutlet ? $firstOutlet->id : null;
         }
 
-        return $koperasiId;
+        return null;
     }
 
 

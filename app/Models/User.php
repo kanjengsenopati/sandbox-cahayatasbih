@@ -52,123 +52,7 @@ class User extends Authenticatable
         return $this->hasOne(Officer::class);
     }
 
-    public function adminSchool()
-    {
-        return $this->hasMany(AdminSchool::class, 'admin_id');
-    }
 
-    public function getSchoolIds(): array
-    {
-        $schoolIds = $this->adminSchool ? $this->adminSchool->pluck('school_id')->toArray() : [];
-        if (isset($this->school_id) && $this->school_id && !in_array($this->school_id, $schoolIds)) {
-            $schoolIds[] = $this->school_id;
-        }
-        return $schoolIds;
-    }
-
-    public function adminOutlet()
-    {
-        return $this->hasMany(AdminOutlet::class, 'admin_id');
-    }
-
-    public function getOutletIds(): array
-    {
-        $outletIds = $this->adminOutlet ? $this->adminOutlet->pluck('outlet_id')->toArray() : [];
-        if (isset($this->outlet_id) && $this->outlet_id && !in_array($this->outlet_id, $outletIds)) {
-            $outletIds[] = $this->outlet_id;
-        }
-        return $outletIds;
-    }
-
-    public function isKasir(): bool
-    {
-        $roles = $this->roles->pluck('name')->map(fn($r) => strtolower($r));
-        foreach ($roles as $role) {
-            if (str_contains($role, 'kasir')) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    public function isKasirKoperasi(): bool
-    {
-        $roles = $this->roles->pluck('name')->map(fn($r) => strtolower($r));
-        foreach ($roles as $role) {
-            if (str_contains($role, 'kasir') && (str_contains($role, 'koperasi') || str_contains($role, 'kantin'))) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    public function isKasirOutlet(): bool
-    {
-        $roles = $this->roles->pluck('name')->map(fn($r) => strtolower($r));
-        foreach ($roles as $role) {
-            if (str_contains($role, 'kasir') && str_contains($role, 'outlet')) {
-                return true;
-            }
-        }
-        foreach ($roles as $role) {
-            if (str_contains($role, 'kasir') && !str_contains($role, 'koperasi') && !str_contains($role, 'kantin')) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    public function getEffectiveOutletId(?string $mode, ?string $requestOutletId = null): ?string
-    {
-        $koperasi = \App\Models\Outlet::where('name', 'Koperasi')->orWhere('code', 'KPR')->first();
-        $koperasiId = $koperasi ? $koperasi->id : '6bc5b484-07f9-49cc-aefa-00a8cf47e8d7';
-
-        if ($this->isKasirKoperasi()) {
-            return $koperasiId;
-        }
-
-        if ($this->isKasirOutlet()) {
-            $authOutletIds = $this->getOutletIds();
-            $allowedOutletIds = array_diff($authOutletIds, [$koperasiId]);
-
-            if ($requestOutletId && in_array($requestOutletId, $allowedOutletIds)) {
-                return $requestOutletId;
-            }
-
-            if (!empty($allowedOutletIds)) {
-                return $allowedOutletIds[0];
-            }
-
-            $firstNonKoperasi = \App\Models\Outlet::where('id', '!=', $koperasiId)->where('is_active', 1)->orderBy('name')->first();
-            return $firstNonKoperasi ? $firstNonKoperasi->id : null;
-        }
-
-        if (isset($this->outlet_id) && $this->outlet_id) {
-            return $this->outlet_id;
-        }
-
-        if ($mode === 'outlet') {
-            if ($requestOutletId) {
-                return $requestOutletId;
-            }
-
-            $authOutletIds = $this->getOutletIds();
-            $query = \App\Models\Outlet::where('is_active', 1);
-
-            if (!empty($authOutletIds)) {
-                $query->whereIn('id', $authOutletIds);
-            } elseif (!$this->hasRole('Super Admin')) {
-                if (isset($this->outlet_id) && $this->outlet_id) {
-                    $query->where('id', $this->outlet_id);
-                }
-            }
-
-            $firstOutlet = $query->orderBy('name')->first();
-            return $firstOutlet ? $firstOutlet->id : null;
-        }
-
-        return $koperasiId;
-    }
 
 
     /**
@@ -203,7 +87,7 @@ class User extends Authenticatable
 
     public function scopeHasSchool($query)
     {
-        $admin = Auth::user();
+        $admin = Auth::guard('web')->user();
         if ($admin?->hasRole('Super Admin')) {
             return;
         }

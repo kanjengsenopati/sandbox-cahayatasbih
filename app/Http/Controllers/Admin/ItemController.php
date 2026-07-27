@@ -57,13 +57,23 @@ class ItemController extends Controller
 
             $data = Item::with(['categoryItem', 'outlet'])
                 ->when(request('mode') === 'outlet', function($q) use ($koperasiId) {
-                    if (request()->filled('outlet_id')) {
-                        $q->where('outlet_id', request('outlet_id'));
+                    $admin = Auth::guard('web')->user();
+                    if ($admin && $admin->hasRole('Super Admin')) {
+                        if (request()->filled('outlet_id')) {
+                            $q->where('outlet_id', request('outlet_id'));
+                        } else {
+                            $q->where(function($query) use ($koperasiId) {
+                                $query->where('outlet_id', '!=', $koperasiId)
+                                      ->orWhereNull('outlet_id');
+                            });
+                        }
                     } else {
-                        $q->where(function($query) use ($koperasiId) {
-                            $query->where('outlet_id', '!=', $koperasiId)
-                                  ->orWhereNull('outlet_id');
-                        });
+                        $allowedOutletIds = array_diff($admin ? $admin->getOutletIds() : [], [$koperasiId]);
+                        if (request()->filled('outlet_id') && in_array(request('outlet_id'), $allowedOutletIds)) {
+                            $q->where('outlet_id', request('outlet_id'));
+                        } else {
+                            $q->whereIn('outlet_id', $allowedOutletIds);
+                        }
                     }
                 })
                 ->when(request('mode') !== 'outlet', function($q) use ($koperasiId) {

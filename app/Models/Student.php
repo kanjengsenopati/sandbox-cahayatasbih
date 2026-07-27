@@ -228,7 +228,7 @@ class Student extends Model
 
     public function scopeHasSchool($query)
     {
-        $admin = Auth::user();
+        $admin = Auth::guard('web')->user();
         if ($admin?->hasRole('Super Admin')) {
             return;
         }
