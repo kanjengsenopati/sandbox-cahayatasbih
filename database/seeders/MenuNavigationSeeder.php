@@ -149,7 +149,7 @@ class MenuNavigationSeeder extends Seeder
             ['name' => 'Kehadiran Siswa', 'url' => '/report-attendance?mode=kantin', 'permission' => 'Manage Laporan Presensi', 'order' => 4],
             ['name' => 'Rapor Siswa', 'url' => '/report-student', 'permission' => 'Manage Laporan Santri', 'order' => 5],
             ['name' => 'Catatan Wali Kelas', 'url' => '/report-student-counseling-score', 'permission' => 'Manage Laporan Perilaku Siswa', 'order' => 6],
-            ['name' => 'Tabungan & Saldo', 'url' => '/report-saldo', 'permission' => 'Manage Laporan Saldo Santri', 'order' => 7],
+            ['name' => 'Saldo Santri', 'url' => '/report-saldo', 'permission' => 'Manage Laporan Saldo Santri', 'order' => 7],
             ['name' => 'Fee Aplikasi', 'url' => '/report-app-fee', 'permission' => 'Manage Laporan Fee Aplikasi', 'order' => 8],
             ['name' => 'Audit Log', 'url' => '/report-audit', 'permission' => 'Manage Laporan Audit Log', 'order' => 9],
         ];
