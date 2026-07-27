@@ -1297,7 +1297,7 @@
                             <td class="align-top pt-4">${no}</td>
                             <td class="align-top pt-4">
                                 <div class="fw-bolder text-gray-900 fs-6 mb-1">${group.name}</div>
-                                <span class="badge bg-light-secondary text-gray-700 fs-8 fw-bold">TA ${group.academic_year}</span>
+                                <span class="badge bg-light-primary text-primary border border-primary border-opacity-25 fs-7 fw-bolder px-3 py-1 mt-1 shadow-xs"><i class="fa-solid fa-calendar-days me-1 fs-8 text-primary"></i> TA ${group.academic_year}</span>
                             </td>
                             <td class="align-top pt-4">${monthBadgesHtml}</td>
                             <td class="align-top pt-4 text-end text-danger fw-bolder fs-6">${formattedTotal}</td>
