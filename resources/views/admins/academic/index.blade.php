@@ -551,17 +551,16 @@
                             <thead>
                                 <tr class="text-start text-slate-700 fw-bolder fs-7 text-uppercase gs-0">
                                     <th style="width: 5%">No</th>
-                                    <th>Nama Tagihan</th>
-                                    <th>Bulan</th>
-                                    <th>Tahun Ajaran</th>
-                                    <th class="text-end">Nominal</th>
+                                    <th style="width: 35%">Nama Tagihan & Tahun Ajaran</th>
+                                    <th style="width: 40%">Bulan Menunggak</th>
+                                    <th style="width: 20%" class="text-end">Nominal Total</th>
                                 </tr>
                             </thead>
                             <tbody id="unpaid_bills_tbody" class="fw-bold text-gray-800">
                             </tbody>
                             <tfoot>
                                 <tr class="border-top border-2 border-gray-300">
-                                    <td colspan="4" class="text-end fw-bolder text-dark fs-6">Total Tunggakan:</td>
+                                    <td colspan="3" class="text-end fw-bolder text-dark fs-6">Total Tunggakan Keseluruhan:</td>
                                     <td class="text-end fw-bolder text-danger fs-5" id="unpaid_bills_total">Rp 0</td>
                                 </tr>
                             </tfoot>
@@ -1232,7 +1231,7 @@
                 }
             }
 
-            // Wide Data Table Modal Click Handler for Unpaid Bills Details
+            // Wide Data Table Modal Click Handler for Unpaid Bills Details (Grouped Layout)
             $(document).on('click', '.btn-unpaid-details', function() {
                 var studentName = $(this).data('student-name') || 'Siswa';
                 var studentNis = $(this).data('student-nis') || '-';
@@ -1251,31 +1250,68 @@
                 var $tbody = $('#unpaid_bills_tbody');
                 $tbody.empty();
 
-                var totalAmount = 0;
+                var totalGrandAmount = 0;
 
                 if (bills && bills.length > 0) {
+                    // Group bills by bill name & academic year
+                    var groupedBills = {};
+
                     $.each(bills, function(index, bill) {
-                        var no = index + 1;
+                        var name = bill.name || 'Tagihan';
+                        var ay = bill.academic_year || '-';
+                        var key = name + '___' + ay;
+
+                        if (!groupedBills[key]) {
+                            groupedBills[key] = {
+                                name: name,
+                                academic_year: ay,
+                                months: [],
+                                total_amount: 0
+                            };
+                        }
+
+                        if (bill.month) {
+                            groupedBills[key].months.push(bill.month);
+                        }
                         var amount = parseFloat(bill.amount) || 0;
-                        totalAmount += amount;
-                        var formattedAmount = bill.formatted_amount || ('Rp ' + amount.toLocaleString('id-ID'));
+                        groupedBills[key].total_amount += amount;
+                        totalGrandAmount += amount;
+                    });
+
+                    var no = 1;
+                    $.each(groupedBills, function(key, group) {
+                        var monthBadgesHtml = '';
+                        if (group.months.length > 0) {
+                            monthBadgesHtml = '<div class="d-grid gap-2" style="grid-template-columns: repeat(3, minmax(0, 1fr)); max-width: 360px;">';
+                            $.each(group.months, function(i, monthName) {
+                                monthBadgesHtml += `<span class="badge bg-light-primary text-primary fs-8 fw-bold text-center px-2 py-1 border border-primary border-opacity-10">${monthName}</span>`;
+                            });
+                            monthBadgesHtml += '</div>';
+                        } else {
+                            monthBadgesHtml = '<span class="text-gray-400 fs-8 fw-normal">-</span>';
+                        }
+
+                        var formattedTotal = 'Rp ' + group.total_amount.toLocaleString('id-ID');
 
                         var rowHtml = `<tr>
-                            <td>${no}</td>
-                            <td class="text-gray-900 fw-bolder">${bill.name || '-'}</td>
-                            <td><span class="badge bg-light-primary text-primary fw-bold">${bill.month || '-'}</span></td>
-                            <td>${bill.academic_year || '-'}</td>
-                            <td class="text-end text-danger fw-bolder">${formattedAmount}</td>
+                            <td class="align-top pt-4">${no}</td>
+                            <td class="align-top pt-4">
+                                <div class="fw-bolder text-gray-900 fs-6 mb-1">${group.name}</div>
+                                <span class="badge bg-light-secondary text-gray-700 fs-8 fw-bold">TA ${group.academic_year}</span>
+                            </td>
+                            <td class="align-top pt-4">${monthBadgesHtml}</td>
+                            <td class="align-top pt-4 text-end text-danger fw-bolder fs-6">${formattedTotal}</td>
                         </tr>`;
 
                         $tbody.append(rowHtml);
+                        no++;
                     });
                 } else {
-                    $tbody.append('<tr><td colspan="5" class="text-center text-gray-500 py-4">Tidak ada detail tunggakan</td></tr>');
+                    $tbody.append('<tr><td colspan="4" class="text-center text-gray-500 py-4">Tidak ada detail tunggakan</td></tr>');
                 }
 
-                var formattedTotal = 'Rp ' + totalAmount.toLocaleString('id-ID');
-                $('#unpaid_bills_total').text(formattedTotal);
+                var formattedGrandTotal = 'Rp ' + totalGrandAmount.toLocaleString('id-ID');
+                $('#unpaid_bills_total').text(formattedGrandTotal);
 
                 $('#modal_unpaid_bills_detail').modal('show');
             });
