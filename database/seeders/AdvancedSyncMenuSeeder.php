@@ -34,5 +34,11 @@ class AdvancedSyncMenuSeeder extends Seeder
         } else {
             $this->command->error('Audit Menu not found!');
         }
+
+        // Ensure the permission exists in Spatie Permission
+        \Spatie\Permission\Models\Permission::firstOrCreate([
+            'name' => 'Manage Audit dan Sinkron',
+            'guard_name' => 'web'
+        ]);
     }
 }
