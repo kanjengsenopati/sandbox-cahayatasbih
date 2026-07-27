@@ -38,6 +38,9 @@ class GradePromotionController extends Controller
                 })
                 ->when(request('status'), function ($query) {
                     $query->where('status', request('status'));
+                }, function ($query) {
+                    // Default to ACTIVE students for migration if no status filter provided
+                    $query->where('status', Student::STATUS_ACTIVE);
                 })
                 ->hasSchool()
                 ->latest();
@@ -87,41 +90,30 @@ class GradePromotionController extends Controller
     }
 
     /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
-    {
-        //
-    }
-
-    /**
      * Store a newly created resource in storage.
      */
-
     public function store(GradePromotionRequest $request)
     {
         if (!Auth::user()->can('Create Kenaikan Kelas')) {
-            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
+            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk tindakan tersebut');
         }
-        // Start the database transaction
+
         DB::beginTransaction();
 
         try {
             $data = $request->validated();
+            $migrationType = $data['migration_type']; // 'transfer' or 'promotion'
+            $studentIds = array_unique($data['student_ids']);
+            $newClassroomId = $data['new_classroom_id'];
+            $academicYearId = $data['academic_year_id'];
 
-            // 1. Hapus tagihan belum bayar (UNPAID) siswa pada tahun ajaran target untuk menghindari duplikasi
-            Bill::whereIn('student_id', $data['student_ids'])
-                ->where('academic_year_id', $data['academic_year_id'])
-                ->where('status', Bill::STATUS_UNPAID)
-                ->delete();
-
-            // 2. Ambil tarif pembayaran (PaymentRate) reguler untuk kelas baru di tahun ajaran target
+            // Fetch payment rates for the new classroom & target academic year
             $paymentRates = PaymentRate::where('type', PaymentRate::TYPE_REGULAR)
-                ->whereHas('paymentRateClassrooms', function ($q) use ($data) {
-                    $q->where('classroom_id', $data['new_classroom_id']);
+                ->whereHas('paymentRateClassrooms', function ($q) use ($newClassroomId) {
+                    $q->where('classroom_id', $newClassroomId);
                 })
-                ->whereHas('billType', function ($q) use ($data) {
-                    $q->where('academic_year_id', $data['academic_year_id']);
+                ->whereHas('billType', function ($q) use ($academicYearId) {
+                    $q->where('academic_year_id', $academicYearId);
                 })
                 ->with(['paymentRateItems', 'billType'])
                 ->get();
@@ -129,119 +121,199 @@ class GradePromotionController extends Controller
             $billsToInsert = [];
             $timestamp = now();
 
-            foreach ($data['student_ids'] as $studentId) {
+            foreach ($studentIds as $studentId) {
                 $student = Student::with('user')->find($studentId);
                 if (!$student) continue;
 
-                // Update kelas dan set status aktif agar tampil di backoffice dan PWA
+                // Process only active students to protect inactive/graduated student states
+                if ($student->status !== Student::STATUS_ACTIVE && $migrationType === 'transfer') {
+                    continue;
+                }
+
+                // 1. Update Student Classroom & ensure Active status for promotion
                 $student->update([
-                    'classroom_id' => $data['new_classroom_id'],
-                    'status' => Student::STATUS_ACTIVE,
+                    'classroom_id' => $newClassroomId,
+                    'status'       => Student::STATUS_ACTIVE,
                 ]);
 
-                // Buat riwayat kelas siswa
-                StudentClassroomHistory::create([
-                    'student_id' => $studentId,
-                    'classroom_id' => $data['new_classroom_id'],
-                    'academic_year_id' => $data['academic_year_id'],
-                ]);
+                // 2. Upsert Student Classroom History (Prevent duplicate history records)
+                StudentClassroomHistory::updateOrCreate(
+                    [
+                        'student_id'       => $studentId,
+                        'academic_year_id' => $academicYearId,
+                    ],
+                    [
+                        'classroom_id'     => $newClassroomId,
+                    ]
+                );
 
-                // Generate tagihan baru berdasarkan tarif kelas baru
-                foreach ($paymentRates as $paymentRate) {
-                    // Prevent generating bills for years before the student's entry year
-                    $startYear = $paymentRate->billType?->academicYear?->getStartYearSafe();
-                    if ($startYear !== null && $student->getEntryYear() > $startYear) {
-                        continue;
+                if ($migrationType === 'transfer') {
+                    // --- MODE 1: PINDAH KELAS / PLOTTING (Tahun Ajaran Sama) ---
+                    
+                    // 3a. Update classroom_id on ALL existing bills of the student for this academic year
+                    Bill::where('student_id', $studentId)
+                        ->where('academic_year_id', $academicYearId)
+                        ->update(['classroom_id' => $newClassroomId]);
+
+                    // Fetch current bills for checking missing rate items
+                    $existingBills = Bill::where('student_id', $studentId)
+                        ->where('academic_year_id', $academicYearId)
+                        ->get();
+
+                    $existingMap = [];
+                    foreach ($existingBills as $eb) {
+                        $key = $eb->bill_type_id . '_' . $eb->month . '_' . $eb->year;
+                        $existingMap[$key] = $eb;
                     }
 
-                    // Filter berdasarkan gender jika ada
-                    if ($paymentRate->gender) {
-                        $allowedGenders = array_map('trim', explode(',', $paymentRate->gender));
-                        if (!in_array($student->gender, $allowedGenders)) {
+                    // Generate missing payment rate items for the new classroom if any
+                    foreach ($paymentRates as $paymentRate) {
+                        $startYear = $paymentRate->billType?->academicYear?->getStartYearSafe();
+                        if ($startYear !== null && $student->getEntryYear() > $startYear) {
                             continue;
+                        }
+
+                        if ($paymentRate->gender) {
+                            $allowedGenders = array_map('trim', explode(',', $paymentRate->gender));
+                            if (!in_array($student->gender, $allowedGenders)) {
+                                continue;
+                            }
+                        }
+
+                        if ($paymentRate->jamaah_status && $student->user) {
+                            $allowedStatuses = array_map('trim', explode(',', $paymentRate->jamaah_status));
+                            if (!in_array($student->user->jamaah_status, $allowedStatuses)) {
+                                continue;
+                            }
+                        }
+
+                        foreach ($paymentRate->paymentRateItems as $item) {
+                            if ($item->amount <= 0) continue;
+
+                            $key = $paymentRate->bill_type_id . '_' . $item->month . '_' . $item->year;
+
+                            if (!isset($existingMap[$key])) {
+                                // Missing bill for new classroom rate: Create sterile unpaid bill
+                                $billsToInsert[] = [
+                                    'id'                   => \Illuminate\Support\Str::uuid()->toString(),
+                                    'bill_type_id'         => $paymentRate->bill_type_id,
+                                    'student_id'           => $student->id,
+                                    'classroom_id'         => $newClassroomId,
+                                    'academic_year_id'     => $academicYearId,
+                                    'month'                => $item->month,
+                                    'amount'               => $item->amount,
+                                    'paid_amount'          => 0,
+                                    'status'               => Bill::STATUS_UNPAID,
+                                    'year'                 => $item->year,
+                                    'payment_rate_item_id' => $item->id,
+                                    'created_at'           => $timestamp,
+                                    'updated_at'           => $timestamp,
+                                ];
+                            } else {
+                                // If bill exists and is purely UNPAID with amount mismatch, update amount to new class rate
+                                $existingBill = $existingMap[$key];
+                                if ($existingBill->status === Bill::STATUS_UNPAID && (int)$existingBill->paid_amount === 0 && (int)$existingBill->amount !== (int)$item->amount) {
+                                    $existingBill->update([
+                                        'amount'               => $item->amount,
+                                        'payment_rate_item_id' => $item->id,
+                                    ]);
+                                }
+                            }
                         }
                     }
 
-                    // Filter berdasarkan status jamaah wali jika ada
-                    if ($paymentRate->jamaah_status && $student->user) {
-                        $allowedStatuses = array_map('trim', explode(',', $paymentRate->jamaah_status));
-                        if (!in_array($student->user->jamaah_status, $allowedStatuses)) {
-                            continue;
-                        }
+                } else {
+                    // --- MODE 2: KENAIKAN KELAS (Tahun Ajaran Baru) ---
+
+                    // 3b. Delete ONLY pure UNPAID bills (paid_amount == 0) for target academic year in case of re-run
+                    Bill::where('student_id', $studentId)
+                        ->where('academic_year_id', $academicYearId)
+                        ->where('status', Bill::STATUS_UNPAID)
+                        ->where('paid_amount', 0)
+                        ->delete();
+
+                    // Fetch existing PAID / PARTIAL bills to prevent double billing
+                    $existingPaidBills = Bill::where('student_id', $studentId)
+                        ->where('academic_year_id', $academicYearId)
+                        ->get();
+
+                    $paidKeys = [];
+                    foreach ($existingPaidBills as $pb) {
+                        $key = $pb->bill_type_id . '_' . $pb->month . '_' . $pb->year;
+                        $paidKeys[$key] = true;
                     }
 
-                    // Tambahkan tagihan untuk setiap item pembayaran
-                    foreach ($paymentRate->paymentRateItems as $item) {
-                        if ($item->amount <= 0) continue;
+                    // Generate new bills for target academic year
+                    foreach ($paymentRates as $paymentRate) {
+                        $startYear = $paymentRate->billType?->academicYear?->getStartYearSafe();
+                        if ($startYear !== null && $student->getEntryYear() > $startYear) {
+                            continue;
+                        }
 
-                        $billsToInsert[] = [
-                            'id'                   => \Illuminate\Support\Str::uuid()->toString(),
-                            'bill_type_id'         => $paymentRate->bill_type_id,
-                            'student_id'           => $student->id,
-                            'classroom_id'         => $data['new_classroom_id'],
-                            'academic_year_id'     => $data['academic_year_id'],
-                            'month'                => $item->month,
-                            'amount'               => $item->amount,
-                            'paid_amount'          => 0,
-                            'status'               => Bill::STATUS_UNPAID,
-                            'year'                 => $item->year,
-                            'payment_rate_item_id' => $item->id,
-                            'created_at'           => $timestamp,
-                            'updated_at'           => $timestamp,
-                        ];
+                        if ($paymentRate->gender) {
+                            $allowedGenders = array_map('trim', explode(',', $paymentRate->gender));
+                            if (!in_array($student->gender, $allowedGenders)) {
+                                continue;
+                            }
+                        }
+
+                        if ($paymentRate->jamaah_status && $student->user) {
+                            $allowedStatuses = array_map('trim', explode(',', $paymentRate->jamaah_status));
+                            if (!in_array($student->user->jamaah_status, $allowedStatuses)) {
+                                continue;
+                            }
+                        }
+
+                        foreach ($paymentRate->paymentRateItems as $item) {
+                            if ($item->amount <= 0) continue;
+
+                            $key = $paymentRate->bill_type_id . '_' . $item->month . '_' . $item->year;
+
+                            // STRICT ANTI-DUPLICATE: Skip if a bill already exists for this exact tuple
+                            if (isset($paidKeys[$key])) {
+                                continue;
+                            }
+
+                            $billsToInsert[] = [
+                                'id'                   => \Illuminate\Support\Str::uuid()->toString(),
+                                'bill_type_id'         => $paymentRate->bill_type_id,
+                                'student_id'           => $student->id,
+                                'classroom_id'         => $newClassroomId,
+                                'academic_year_id'     => $academicYearId,
+                                'month'                => $item->month,
+                                'amount'               => $item->amount,
+                                'paid_amount'          => 0,
+                                'status'               => Bill::STATUS_UNPAID,
+                                'year'                 => $item->year,
+                                'payment_rate_item_id' => $item->id,
+                                'created_at'           => $timestamp,
+                                'updated_at'           => $timestamp,
+                            ];
+                        }
                     }
                 }
             }
 
-            // Bulk Insert tagihan untuk performa optimal
+            // Bulk Insert new bills safely in chunks
             if (!empty($billsToInsert)) {
                 foreach (array_chunk($billsToInsert, 500) as $chunk) {
                     Bill::insert($chunk);
                 }
             }
 
-            // Commit the transaction
             DB::commit();
 
-            return redirect()->route('grade-promotion.index')->with('success', 'Berhasil Mengubah Kelas Siswa');
+            $msg = $migrationType === 'transfer' ? 'Berhasil Memindahkan Kelas Siswa' : 'Berhasil Memproses Kenaikan Kelas Siswa';
+            return redirect()->route('academic.index', ['tab' => 'grade-promotion'])->with('success', $msg);
+
         } catch (\Exception $e) {
-            // Rollback the transaction if an exception occurs
-            Log::error($e);
             DB::rollback();
-            return redirect()->back()->with('error', 'Gagal Mengubah Kelas Siswa');
+            Log::error('Grade Promotion Error: ' . $e->getMessage(), [
+                'exception' => $e,
+                'request'   => $request->all(),
+            ]);
+
+            return redirect()->back()->with('error', 'Gagal Memproses Migrasi Siswa: ' . $e->getMessage());
         }
-    }
-
-
-    /**
-     * Display the specified resource.
-     */
-    public function show(string $id)
-    {
-        //
-    }
-
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(string $id)
-    {
-        //
-    }
-
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, string $id)
-    {
-        //
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(string $id)
-    {
-        //
     }
 }

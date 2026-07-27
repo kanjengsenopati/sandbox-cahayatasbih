@@ -121,7 +121,7 @@
                             @endcan
                             @can('Manage Kenaikan Kelas')
                             <li class="nav-item">
-                                <a class="nav-link @if($activeTab == 'grade-promotion') active @endif" data-bs-toggle="tab" href="#tab-grade-promotion" role="tab">Kenaikan Kelas</a>
+                                <a class="nav-link @if($activeTab == 'grade-promotion') active @endif" data-bs-toggle="tab" href="#tab-grade-promotion" role="tab">Migrasi Siswa</a>
                             </li>
                             @endcan
                             @can('Manage Kelulusan Santri')
@@ -318,35 +318,56 @@
                             @endcan
                             <!--end::Tab Study-->
 
-                            <!--begin::Tab Grade Promotion-->
+                            <!--begin::Tab Migrasi Siswa-->
                             @can('Manage Kenaikan Kelas')
                             <div class="tab-pane fade @if($activeTab == 'grade-promotion') show active @endif" id="tab-grade-promotion" role="tabpanel">
                                 <div class="d-flex align-items-center justify-content-between mb-5">
-                                    <x-text.h2>Proses Kenaikan Kelas Siswa</x-text.h2>
+                                    <x-text.h2>Proses Migrasi Siswa (Pindah Kelas & Kenaikan Kelas)</x-text.h2>
+                                    <span id="selected_count_badge" class="badge bg-light-info text-info fw-bolder fs-7 px-4 py-2 border border-info rounded-pill">0 Siswa Terpilih</span>
                                 </div>
                                 
-                                <!-- Filters -->
-                                <div class="row g-5 mb-6 align-items-end">
-                                    <div class="col-md-4">
-                                        <x-text.label class="d-block mb-2">UPT / Pendidikan</x-text.label>
-                                        <select name="school_id" class="form-select" id="filter_school_id">
-                                            <option value="">Pilih Pendidikan</option>
-                                            @foreach ($schools as $school)
-                                            <option value="{{ $school->id }}">{{ $school->name }}</option>
-                                            @endforeach
-                                        </select>
-                                    </div>
-                                    <div class="col-md-4">
-                                        <x-text.label class="d-block mb-2">Kelas Saat Ini</x-text.label>
-                                        <select name="classroom_id" class="form-select" id="filter_classroom_id">
-                                            <option value="">Pilih Kelas</option>
-                                        </select>
-                                    </div>
-                                </div>
-
                                 <form action="{{ route('grade-promotion.store') }}" method="post" id="form-grade-promotion">
                                     @csrf
                                     <x-alert.alert-validation />
+
+                                    <!-- Selection Box for Migration Type -->
+                                    <div class="card bg-light-primary border border-primary border-dashed p-4 mb-6" style="border-radius: 16px;">
+                                        <x-text.label class="d-block mb-3 text-primary fw-bolder fs-7">PILIH JENIS MIGRASI SISWA :</x-text.label>
+                                        <div class="d-flex flex-wrap gap-6 align-items-center">
+                                            <div class="form-check form-check-custom form-check-solid">
+                                                <input class="form-check-input me-2" type="radio" name="migration_type" value="transfer" id="migration_type_transfer" checked />
+                                                <label class="form-check-label fw-bold text-gray-800 cursor-pointer" for="migration_type_transfer">
+                                                    <i class="fa-solid fa-right-left me-1 text-primary"></i> <strong>Pindah Kelas</strong> <span class="text-muted fs-8">(Plotting / Penyebaran dalam Tahun Ajaran yang Sama)</span>
+                                                </label>
+                                            </div>
+                                            <div class="form-check form-check-custom form-check-solid">
+                                                <input class="form-check-input me-2" type="radio" name="migration_type" value="promotion" id="migration_type_promotion" />
+                                                <label class="form-check-label fw-bold text-gray-800 cursor-pointer" for="migration_type_promotion">
+                                                    <i class="fa-solid fa-graduation-cap me-1 text-success"></i> <strong>Kenaikan Kelas</strong> <span class="text-muted fs-8">(Promosi Kenaikan Tingkat ke Tahun Ajaran Baru)</span>
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Filters -->
+                                    <div class="row g-5 mb-6 align-items-end">
+                                        <div class="col-md-4">
+                                            <x-text.label class="d-block mb-2">UPT / Pendidikan</x-text.label>
+                                            <select name="school_id" class="form-select" id="filter_school_id">
+                                                <option value="">Pilih Pendidikan</option>
+                                                @foreach ($schools as $school)
+                                                <option value="{{ $school->id }}">{{ $school->name }}</option>
+                                                @endforeach
+                                            </select>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <x-text.label class="d-block mb-2">Kelas Saat Ini</x-text.label>
+                                            <select name="classroom_id" class="form-select" id="filter_classroom_id">
+                                                <option value="">Pilih Kelas</option>
+                                            </select>
+                                        </div>
+                                    </div>
+
                                     <div class="table-responsive">
                                         <table id="table-grade-promotion" class="table align-middle table-row-dashed w-100">
                                             <thead>
@@ -365,16 +386,16 @@
 
                                     <div class="row align-items-center mt-5 g-4">
                                         <div class="col-md-auto">
-                                            <x-text.body class="fw-bold">Pindah / Naik Ke Kelas :</x-text.body>
+                                            <x-text.body class="fw-bold" id="label_target_classroom">Pindah Ke Kelas :</x-text.body>
                                         </div>
                                         <div class="col-md-3">
-                                            <select name="new_classroom_id" id="filter_new_classroom" class="form-select">
+                                            <select name="new_classroom_id" id="filter_new_classroom" class="form-select" required>
                                                 <option value="">Pilih Kelas Baru</option>
                                             </select>
                                         </div>
                                         <div class="col-md-3">
-                                            <select name="academic_year_id" id="filter_academic_year_id" class="form-select">
-                                                <option value="">Pilih Tahun Ajaran Baru</option>
+                                            <select name="academic_year_id" id="filter_academic_year_id" class="form-select" required>
+                                                <option value="">Pilih Tahun Ajaran</option>
                                                 @foreach ($academicYears as $academicYear)
                                                 <option value="{{ $academicYear->id }}">{{ $academicYear->name }}</option>
                                                 @endforeach
@@ -383,7 +404,7 @@
                                         @if (Auth::user()->can('Create Kenaikan Kelas'))
                                         <div class="col-md-auto">
                                             <button type="submit" class="btn btn-primary" id="btn_change_classroom">
-                                                <i class="fa-solid fa-graduation-cap me-2"></i> Proses Kenaikan Kelas
+                                                <i class="fa-solid fa-paper-plane me-2"></i> <span id="btn_change_label">Proses Pindah Kelas</span>
                                             </button>
                                         </div>
                                         @endif
@@ -391,7 +412,7 @@
                                 </form>
                             </div>
                             @endcan
-                            <!--end::Tab Grade Promotion-->
+                            <!--end::Tab Migrasi Siswa-->
 
                             <!--begin::Tab Student Graduation-->
                             @can('Manage Kelulusan Santri')
@@ -789,9 +810,16 @@
             });
             @endcan
 
-            // -------------------- Tab 5: Grade Promotion --------------------
+            // -------------------- Tab 5: Migrasi Siswa --------------------
             @can('Manage Kenaikan Kelas')
             var tablePromotion;
+            let selectedStudentIds = new Set();
+
+            function updateSelectedCounter() {
+                const count = selectedStudentIds.size;
+                $('#selected_count_badge').text(count + ' Siswa Terpilih');
+            }
+
             function searchPromotion() {
                 if ($.fn.DataTable.isDataTable('#table-grade-promotion')) {
                     tablePromotion.ajax.reload();
@@ -806,6 +834,23 @@
                                 d.school_id = $('#filter_school_id').val();
                                 d.classroom_id = $('#filter_classroom_id').val();
                             }
+                        },
+                        drawCallback: function() {
+                            // Re-apply checked state for selected student IDs across pages
+                            $('#table-grade-promotion input[name="student_ids_page[]"]').each(function() {
+                                if (selectedStudentIds.has($(this).val())) {
+                                    $(this).prop('checked', true);
+                                } else {
+                                    $(this).prop('checked', false);
+                                }
+                            });
+
+                            // Update header select all status
+                            const allPageChecked = $('#table-grade-promotion input[name="student_ids_page[]"]').length > 0 &&
+                                $('#table-grade-promotion input[name="student_ids_page[]"]:checked').length === $('#table-grade-promotion input[name="student_ids_page[]"]').length;
+                            $('#select_all').prop('checked', allPageChecked);
+
+                            updateSelectedCounter();
                         },
                         columns: [
                             {
@@ -826,7 +871,7 @@
                                 orderable: false,
                                 searchable: false,
                                 render: function(data) {
-                                    return `<input type="checkbox" name="student_ids[]" value="${data}">`;
+                                    return `<input type="checkbox" class="checkbox-student" name="student_ids_page[]" value="${data}">`;
                                 }
                             }
                         ],
@@ -842,9 +887,51 @@
                 }
             }
 
+            // Individual checkbox toggle
+            $(document).on('change', '.checkbox-student', function() {
+                const val = $(this).val();
+                if ($(this).is(':checked')) {
+                    selectedStudentIds.add(val);
+                } else {
+                    selectedStudentIds.delete(val);
+                }
+                updateSelectedCounter();
+            });
+
+            // Select All visible rows toggle
+            $('#select_all').on('click', function() {
+                const isChecked = $(this).is(':checked');
+                $('#table-grade-promotion input[name="student_ids_page[]"]').each(function() {
+                    $(this).prop('checked', isChecked);
+                    const val = $(this).val();
+                    if (isChecked) {
+                        selectedStudentIds.add(val);
+                    } else {
+                        selectedStudentIds.delete(val);
+                    }
+                });
+                updateSelectedCounter();
+            });
+
+            // Dynamic Migration Type Mode Switcher
+            $('input[name="migration_type"]').on('change', function() {
+                const mode = $(this).val();
+                if (mode === 'transfer') {
+                    $('#label_target_classroom').text('Pindah Ke Kelas :');
+                    $('#btn_change_label').text('Proses Pindah Kelas');
+                    $('#btn_change_classroom i').attr('class', 'fa-solid fa-paper-plane me-2');
+                } else {
+                    $('#label_target_classroom').text('Naik Ke Kelas :');
+                    $('#btn_change_label').text('Proses Kenaikan Kelas');
+                    $('#btn_change_classroom i').attr('class', 'fa-solid fa-graduation-cap me-2');
+                }
+            });
+
             // Watch filters
             $('#filter_school_id').on('change', function() {
                 var val = $(this).val();
+                selectedStudentIds.clear();
+                updateSelectedCounter();
                 if (val) {
                     getClassroomBySchoolId(val);
                     searchPromotion();
@@ -859,11 +946,44 @@
             });
 
             $('#filter_classroom_id').on('change', function() {
+                selectedStudentIds.clear();
+                updateSelectedCounter();
                 searchPromotion();
             });
 
-            $('#select_all').on('click', function() {
-                $('input[name="student_ids[]"]').prop('checked', $(this).is(':checked'));
+            // Form Submit Guard & Payload Injector
+            $('#form-grade-promotion').on('submit', function(e) {
+                // Remove pre-existing hidden student_ids inputs
+                $(this).find('input[name="student_ids[]"]').remove();
+
+                if (selectedStudentIds.size === 0) {
+                    e.preventDefault();
+                    if (typeof toastr !== 'undefined') {
+                        toastr.error('Silakan pilih setidaknya satu siswa untuk dipindahkan!');
+                    } else {
+                        alert('Silakan pilih setidaknya satu siswa untuk dipindahkan!');
+                    }
+                    return false;
+                }
+
+                if (!$('#filter_new_classroom').val()) {
+                    e.preventDefault();
+                    toastr.error('Silakan pilih Kelas Tujuan!');
+                    return false;
+                }
+
+                if (!$('#filter_academic_year_id').val()) {
+                    e.preventDefault();
+                    toastr.error('Silakan pilih Tahun Ajaran Target!');
+                    return false;
+                }
+
+                // Inject selected student IDs into form
+                selectedStudentIds.forEach(function(studentId) {
+                    $('#form-grade-promotion').append(`<input type="hidden" name="student_ids[]" value="${studentId}">`);
+                });
+
+                return true;
             });
 
             // Initial load of classrooms if school pre-selected
