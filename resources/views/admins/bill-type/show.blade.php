@@ -1031,6 +1031,60 @@
                 renderStudentTable(rateId);
             }
         });
+
+        // Handle single student generate bill button
+        $(document).on('click', '.generate-single-student-btn', function(e) {
+            e.stopPropagation(); // Stop row toggle event
+            var btn = $(this);
+            var studentId = btn.data('student-id');
+            var rateId = btn.data('rate-id');
+
+            Swal.fire({
+                title: 'Generate Tagihan Siswa?',
+                text: 'Sistem akan me-generate tagihan secara sinkron dan atomic khusus untuk siswa ini.',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonText: 'Ya, Generate',
+                cancelButtonText: 'Batal',
+                customClass: {
+                    confirmButton: 'btn btn-primary',
+                    cancelButton: 'btn btn-light'
+                }
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin me-1"></i>Proses...');
+                    
+                    $.ajax({
+                        url: "{{ route('payment-rate.generate-student') }}",
+                        type: 'POST',
+                        data: {
+                            _token: '{{ csrf_token() }}',
+                            payment_rate_id: rateId,
+                            student_id: studentId
+                        },
+                        success: function(res) {
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Berhasil!',
+                                text: res.message || 'Tagihan berhasil di-generate!'
+                            });
+                            // Reload detail data for this rate to update student total and status
+                            delete loadedPanels[rateId];
+                            loadDetailData(rateId);
+                        },
+                        error: function(xhr) {
+                            btn.prop('disabled', false).html('<i class="fas fa-sync-alt text-primary me-1"></i>Generate');
+                            var msg = xhr.responseJSON && xhr.responseJSON.message ? xhr.responseJSON.message : 'Gagal me-generate tagihan.';
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Gagal!',
+                                text: msg
+                            });
+                        }
+                    });
+                }
+            });
+        });
     });
 </script>
 @endpush

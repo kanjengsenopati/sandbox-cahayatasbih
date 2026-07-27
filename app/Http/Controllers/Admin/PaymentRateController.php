@@ -416,6 +416,40 @@ class PaymentRateController extends Controller
         return redirect()->back()->with('success', "Berhasil me-generate / mengsinkronkan tagihan untuk tarif " . ($paymentRate->billType->name ?? ''));
     }
 
+    public function generateStudent(Request $request)
+    {
+        $request->validate([
+            'payment_rate_id' => 'required|exists:payment_rates,id',
+            'student_id' => 'required|exists:students,id',
+        ]);
+
+        $rateId = $request->payment_rate_id;
+        $studentId = $request->student_id;
+
+        $paymentRate = PaymentRate::with(['billType'])->findOrFail($rateId);
+        $student = Student::findOrFail($studentId);
+
+        try {
+            DB::transaction(function () use ($rateId, $studentId) {
+                \Artisan::call('bills:sync-rate', [
+                    '--rate' => $rateId,
+                    '--student-id' => $studentId,
+                    '--force' => true,
+                ]);
+            });
+
+            return response()->json([
+                'status' => 'success',
+                'message' => "Berhasil me-generate tagihan secara sinkron & atomic untuk {$student->name}."
+            ]);
+        } catch (\Throwable $e) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Gagal me-generate tagihan: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
     private function getPaymentStatus($paid, $total, $student = null, $paymentRate = null)
     {
         if ($total == 0 || $total === null) {
@@ -432,7 +466,13 @@ class PaymentRateController extends Controller
                     return '<span class="badge badge-light-warning text-dark fw-bolder px-2 py-1" title="Siswa ini terdaftar di Tarif Susulan / Pindahan (Lihat Tab Siswa Pindahan)"><i class="fas fa-user-tag text-warning me-1"></i>Tarif Susulan</span>';
                 }
             }
-            return '<span class="badge badge-light-secondary text-gray-700 fw-bolder px-2 py-1" title="Tagihan belum di-generate oleh Admin"><i class="fas fa-exclamation-circle text-muted me-1"></i>Belum Di-generate</span>';
+            $generateBtn = '';
+            if ($student && $paymentRate) {
+                $generateBtn = ' <button type="button" class="btn btn-xs btn-light-primary generate-single-student-btn ms-1 py-1 px-2 hover-scale" data-student-id="' . $student->id . '" data-rate-id="' . $paymentRate->id . '" title="Generate Tagihan Siswa Ini">' .
+                    '<i class="fas fa-sync-alt text-primary me-1"></i>Generate' .
+                    '</button>';
+            }
+            return '<div class="d-inline-flex align-items-center"><span class="badge badge-light-secondary text-gray-700 fw-bolder px-2 py-1" title="Tagihan belum di-generate oleh Admin"><i class="fas fa-exclamation-circle text-muted me-1"></i>Belum Di-generate</span>' . $generateBtn . '</div>';
         } elseif ($paid == 0) {
             return '<span class="badge badge-light-danger fw-bolder px-2 py-1">Belum Bayar</span>';
         } elseif ($paid >= $total && $total > 0) {

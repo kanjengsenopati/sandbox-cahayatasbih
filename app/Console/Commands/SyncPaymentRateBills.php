@@ -21,6 +21,7 @@ class SyncPaymentRateBills extends Command
                             {--rate= : Specific PaymentRate ID to sync}
                             {--bill-type= : Specific BillType ID to sync}
                             {--user-id= : Specific User ID to sync}
+                            {--student-id= : Specific Student ID to sync}
                             {--dry-run : Show what would be done without making changes}
                             {--force : Also update UNPAID bills with wrong amount/rate_item}';
 
@@ -234,6 +235,10 @@ class SyncPaymentRateBills extends Command
         
         if ($this->option('user-id')) {
             $query->where('user_id', $this->option('user-id'));
+        }
+
+        if ($this->option('student-id')) {
+            $query->where('id', $this->option('student-id'));
         }
 
         // Filter by classroom or specific students

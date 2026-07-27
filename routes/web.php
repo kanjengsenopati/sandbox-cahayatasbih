@@ -309,6 +309,8 @@ Route::group(['middleware' => ['auth']], function () {
         ->name('payment-rate.update-bill');
     Route::post('payment-rate/{id}/generate', [PaymentRateController::class, 'generate'])
         ->name('payment-rate.generate');
+    Route::post('payment-rate/generate-student', [PaymentRateController::class, 'generateStudent'])
+        ->name('payment-rate.generate-student');
     Route::resource('payment-rate', PaymentRateController::class);
     Route::get('bill/download-template', [BillController::class, 'downloadTemplate'])->name('bill.download-template');
     Route::post('bill/preview-import', [BillController::class, 'previewImport'])->name('bill.preview-import');
