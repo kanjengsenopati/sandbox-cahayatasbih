@@ -97,6 +97,19 @@
                     }
                 }
             }
+
+            $isOutletStaffOrKasir = auth()->user()->isKasir() || 
+                                    auth()->user()->isKasirOutlet() || 
+                                    auth()->user()->isKasirKoperasi() || 
+                                    auth()->user()->hasRole('Karyawan Outlet ( Non Kasir )') || 
+                                    auth()->user()->hasRole('Kasir Karyawan Outlet') || 
+                                    auth()->user()->hasRole('Kasir');
+
+            if ($isOutletStaffOrKasir) {
+                if ($menu->name === 'Dashboard' || str_contains(strtolower($menu->name), 'entri data') || str_contains(strtolower($menu->name), 'entry data')) {
+                    $hasAccess = false;
+                }
+            }
         @endphp
         
         @if($hasAccess)
