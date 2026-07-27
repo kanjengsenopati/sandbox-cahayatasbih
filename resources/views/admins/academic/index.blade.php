@@ -321,53 +321,72 @@
                             <!--begin::Tab Migrasi Siswa-->
                             @can('Manage Kenaikan Kelas')
                             <div class="tab-pane fade @if($activeTab == 'grade-promotion') show active @endif" id="tab-grade-promotion" role="tabpanel">
-                                <div class="d-flex align-items-center justify-content-between mb-5">
-                                    <x-text.h2>Proses Migrasi Siswa (Pindah Kelas & Kenaikan Kelas)</x-text.h2>
-                                    <span id="selected_count_badge" class="badge bg-light-info text-info fw-bolder fs-7 px-4 py-2 border border-info rounded-pill">0 Siswa Terpilih</span>
-                                </div>
-                                
                                 <form action="{{ route('grade-promotion.store') }}" method="post" id="form-grade-promotion">
                                     @csrf
+                                    <input type="hidden" name="migration_type" id="input_migration_type" value="transfer">
                                     <x-alert.alert-validation />
 
-                                    <!-- Selection Box for Migration Type -->
-                                    <div class="card bg-light-primary border border-primary border-dashed p-4 mb-6" style="border-radius: 16px;">
-                                        <x-text.label class="d-block mb-3 text-primary fw-bolder fs-7">PILIH JENIS MIGRASI SISWA :</x-text.label>
-                                        <div class="d-flex flex-wrap gap-6 align-items-center">
-                                            <div class="form-check form-check-custom form-check-solid">
-                                                <input class="form-check-input me-2" type="radio" name="migration_type" value="transfer" id="migration_type_transfer" checked />
-                                                <label class="form-check-label fw-bold text-gray-800 cursor-pointer" for="migration_type_transfer">
-                                                    <i class="fa-solid fa-right-left me-1 text-primary"></i> <strong>Pindah Kelas</strong> <span class="text-muted fs-8">(Plotting / Penyebaran dalam Tahun Ajaran yang Sama)</span>
-                                                </label>
+                                    <!-- Sub-Tab Navigation Pills for Migration Type -->
+                                    <div class="d-flex flex-wrap align-items-center justify-content-between mb-5 gap-3">
+                                        <ul class="nav nav-pills nav-pills-custom gap-2" role="tablist">
+                                            <li class="nav-item" role="presentation">
+                                                <button class="nav-link active fw-bolder px-5 py-3 rounded-pill btn-subtab-migration shadow-sm" id="subtab_transfer" data-type="transfer" type="button" style="transition: all 0.2s ease;">
+                                                    <i class="fa-solid fa-right-left me-2"></i> Pindah Kelas <span class="fs-8 opacity-75 fw-normal">(Plotting / Tahun Ajaran Sama)</span>
+                                                </button>
+                                            </li>
+                                            <li class="nav-item" role="presentation">
+                                                <button class="nav-link fw-bolder px-5 py-3 rounded-pill text-gray-700 bg-light btn-subtab-migration" id="subtab_promotion" data-type="promotion" type="button" style="transition: all 0.2s ease;">
+                                                    <i class="fa-solid fa-graduation-cap me-2"></i> Kenaikan Kelas <span class="fs-8 opacity-75 fw-normal">(Promosi / Tahun Ajaran Baru)</span>
+                                                </button>
+                                            </li>
+                                        </ul>
+                                        <span id="selected_count_badge" class="badge bg-light-info text-info fw-bolder fs-7 px-4 py-2 border border-info rounded-pill">0 Siswa Terpilih</span>
+                                    </div>
+
+                                    <!-- Top Control Bar Card -->
+                                    <div class="card p-5 mb-6 shadow-sm border-0" style="border-radius: 20px; background-color: #f8fafc; border: 1px solid #e2e8f0 !important;">
+                                        <div class="row g-4 align-items-end">
+                                            <div class="col-lg-3 col-md-6">
+                                                <x-text.label class="d-block mb-2 text-dark">UPT / PENDIDIKAN</x-text.label>
+                                                <select name="school_id" class="form-select bg-white" id="filter_school_id">
+                                                    <option value="">Pilih Pendidikan</option>
+                                                    @foreach ($schools as $school)
+                                                    <option value="{{ $school->id }}">{{ $school->name }}</option>
+                                                    @endforeach
+                                                </select>
                                             </div>
-                                            <div class="form-check form-check-custom form-check-solid">
-                                                <input class="form-check-input me-2" type="radio" name="migration_type" value="promotion" id="migration_type_promotion" />
-                                                <label class="form-check-label fw-bold text-gray-800 cursor-pointer" for="migration_type_promotion">
-                                                    <i class="fa-solid fa-graduation-cap me-1 text-success"></i> <strong>Kenaikan Kelas</strong> <span class="text-muted fs-8">(Promosi Kenaikan Tingkat ke Tahun Ajaran Baru)</span>
-                                                </label>
+                                            <div class="col-lg-2 col-md-6">
+                                                <x-text.label class="d-block mb-2 text-dark">KELAS SAAT INI</x-text.label>
+                                                <select name="classroom_id" class="form-select bg-white" id="filter_classroom_id">
+                                                    <option value="">Pilih Kelas</option>
+                                                </select>
                                             </div>
+                                            <div class="col-lg-3 col-md-6">
+                                                <x-text.label class="d-block mb-2 text-dark" id="label_target_classroom">KELAS TUJUAN (PARALEL TINGKAT SAMA)</x-text.label>
+                                                <select name="new_classroom_id" id="filter_new_classroom" class="form-select bg-white" required disabled>
+                                                    <option value="">Pilih Kelas Tujuan</option>
+                                                </select>
+                                            </div>
+                                            <div class="col-lg-2 col-md-6">
+                                                <x-text.label class="d-block mb-2 text-dark" id="label_target_academic_year">TAHUN AJARAN TARGET</x-text.label>
+                                                <select name="academic_year_id" id="filter_academic_year_id" class="form-select bg-white" required>
+                                                    <option value="">Pilih Tahun Ajaran</option>
+                                                    @foreach ($academicYears as $academicYear)
+                                                    <option value="{{ $academicYear->id }}">{{ $academicYear->name }}</option>
+                                                    @endforeach
+                                                </select>
+                                            </div>
+                                            @if (Auth::user()->can('Create Kenaikan Kelas'))
+                                            <div class="col-lg-2 col-md-12">
+                                                <button type="submit" class="btn btn-primary w-100 py-3" id="btn_change_classroom">
+                                                    <i class="fa-solid fa-paper-plane me-1"></i> <span id="btn_change_label">Proses Pindah</span>
+                                                </button>
+                                            </div>
+                                            @endif
                                         </div>
                                     </div>
 
-                                    <!-- Filters -->
-                                    <div class="row g-5 mb-6 align-items-end">
-                                        <div class="col-md-4">
-                                            <x-text.label class="d-block mb-2">UPT / Pendidikan</x-text.label>
-                                            <select name="school_id" class="form-select" id="filter_school_id">
-                                                <option value="">Pilih Pendidikan</option>
-                                                @foreach ($schools as $school)
-                                                <option value="{{ $school->id }}">{{ $school->name }}</option>
-                                                @endforeach
-                                            </select>
-                                        </div>
-                                        <div class="col-md-4">
-                                            <x-text.label class="d-block mb-2">Kelas Saat Ini</x-text.label>
-                                            <select name="classroom_id" class="form-select" id="filter_classroom_id">
-                                                <option value="">Pilih Kelas</option>
-                                            </select>
-                                        </div>
-                                    </div>
-
+                                    <!-- Table Area -->
                                     <div class="table-responsive">
                                         <table id="table-grade-promotion" class="table align-middle table-row-dashed w-100">
                                             <thead>
@@ -382,32 +401,6 @@
                                             </thead>
                                             <tbody class="text-gray-600 fw-bold"></tbody>
                                         </table>
-                                    </div>
-
-                                    <div class="row align-items-center mt-5 g-4">
-                                        <div class="col-md-auto">
-                                            <x-text.body class="fw-bold" id="label_target_classroom">Pindah Ke Kelas :</x-text.body>
-                                        </div>
-                                        <div class="col-md-3">
-                                            <select name="new_classroom_id" id="filter_new_classroom" class="form-select" required>
-                                                <option value="">Pilih Kelas Baru</option>
-                                            </select>
-                                        </div>
-                                        <div class="col-md-3">
-                                            <select name="academic_year_id" id="filter_academic_year_id" class="form-select" required>
-                                                <option value="">Pilih Tahun Ajaran</option>
-                                                @foreach ($academicYears as $academicYear)
-                                                <option value="{{ $academicYear->id }}">{{ $academicYear->name }}</option>
-                                                @endforeach
-                                            </select>
-                                        </div>
-                                        @if (Auth::user()->can('Create Kenaikan Kelas'))
-                                        <div class="col-md-auto">
-                                            <button type="submit" class="btn btn-primary" id="btn_change_classroom">
-                                                <i class="fa-solid fa-paper-plane me-2"></i> <span id="btn_change_label">Proses Pindah Kelas</span>
-                                            </button>
-                                        </div>
-                                        @endif
                                     </div>
                                 </form>
                             </div>
@@ -524,6 +517,91 @@
 
 @push('js')
     <script>
+        var currentSchoolClassrooms = [];
+
+        function extractClassLevel(className) {
+            if (!className) return null;
+            var str = className.trim();
+            
+            var digitMatch = str.match(/^(10|11|12|[789])/i);
+            if (digitMatch) {
+                return parseInt(digitMatch[0]);
+            }
+            
+            var upper = str.toUpperCase();
+            if (upper.startsWith('VII')) return 7;
+            if (upper.startsWith('VIII')) return 8;
+            if (upper.startsWith('IX')) return 9;
+            if (upper.startsWith('XII')) return 12;
+            if (upper.startsWith('XI')) return 11;
+            if (upper.startsWith('X')) return 10;
+
+            return null;
+        }
+
+        function updateTargetClassroomOptions() {
+            var mode = $('#input_migration_type').val() || 'transfer';
+            var selectedCurrentClassId = $('#filter_classroom_id').val();
+            
+            $('#filter_new_classroom').empty();
+
+            if (!selectedCurrentClassId || !currentSchoolClassrooms || currentSchoolClassrooms.length === 0) {
+                $('#filter_new_classroom').append('<option value="">Pilih Kelas Tujuan</option>').prop('disabled', true);
+                return;
+            }
+
+            var selectedClass = currentSchoolClassrooms.find(function(c) { return c.id == selectedCurrentClassId; });
+            if (!selectedClass) {
+                $('#filter_new_classroom').append('<option value="">Pilih Kelas Tujuan</option>').prop('disabled', true);
+                return;
+            }
+
+            var currentLevel = extractClassLevel(selectedClass.name);
+
+            if (mode === 'transfer') {
+                $('#label_target_classroom').text('KELAS TUJUAN (PARALEL TINGKAT SAMA)');
+            } else {
+                $('#label_target_classroom').text('KELAS TUJUAN (TINGKAT 1 LEVEL DI ATAS)');
+            }
+
+            $('#filter_new_classroom').append('<option value="">Pilih Kelas Tujuan</option>');
+            var countAdded = 0;
+
+            $.each(currentSchoolClassrooms, function(index, cls) {
+                var clsLevel = extractClassLevel(cls.name);
+
+                if (mode === 'transfer') {
+                    // Mode Pindah Kelas (Plotting): Level HARUS SAMA & bukan kelas yang sedang dipilih
+                    if (currentLevel !== null && clsLevel !== null) {
+                        if (clsLevel === currentLevel && cls.id != selectedCurrentClassId) {
+                            $('#filter_new_classroom').append('<option value="' + cls.id + '">' + cls.name + '</option>');
+                            countAdded++;
+                        }
+                    } else if (cls.id != selectedCurrentClassId) {
+                        $('#filter_new_classroom').append('<option value="' + cls.id + '">' + cls.name + '</option>');
+                        countAdded++;
+                    }
+                } else {
+                    // Mode Kenaikan Kelas (Promosi): Level HARUS SATU STRATA DI ATASNYA (currentLevel + 1)
+                    if (currentLevel !== null && clsLevel !== null) {
+                        if (clsLevel === (currentLevel + 1)) {
+                            $('#filter_new_classroom').append('<option value="' + cls.id + '">' + cls.name + '</option>');
+                            countAdded++;
+                        }
+                    } else {
+                        $('#filter_new_classroom').append('<option value="' + cls.id + '">' + cls.name + '</option>');
+                        countAdded++;
+                    }
+                }
+            });
+
+            if (countAdded > 0) {
+                $('#filter_new_classroom').prop('disabled', false);
+            } else {
+                $('#filter_new_classroom').append('<option value="">Tidak ada kelas tujuan yang sesuai</option>').prop('disabled', true);
+            }
+        }
+
         // Relational classroom filters for Grade Promotion
         function getClassroomBySchoolId(schoolId) {
             $.ajax({
@@ -532,12 +610,13 @@
                 data: { school_id: schoolId },
                 success: function(response) {
                     $('#filter_classroom_id').empty();
-                    $('#filter_new_classroom').empty();
-                    if (response.data.length > 0) {
-                        $('#filter_classroom_id').append('<option value="">Semua Kelas</option>');
-                        $.each(response.data, function(key, value) {
+                    $('#filter_new_classroom').empty().append('<option value="">Pilih Kelas Tujuan</option>').prop('disabled', true);
+                    currentSchoolClassrooms = response.data || [];
+
+                    if (currentSchoolClassrooms.length > 0) {
+                        $('#filter_classroom_id').append('<option value="">Pilih Kelas Saat Ini</option>');
+                        $.each(currentSchoolClassrooms, function(key, value) {
                             $('#filter_classroom_id').append('<option value="' + value.id + '">' + value.name + '</option>');
-                            $('#filter_new_classroom').append('<option value="' + value.id + '">' + value.name + '</option>');
                         });
                     } else {
                         $('#filter_classroom_id').append('<option value="">Tidak ada kelas</option>');
@@ -913,18 +992,23 @@
                 updateSelectedCounter();
             });
 
-            // Dynamic Migration Type Mode Switcher
-            $('input[name="migration_type"]').on('change', function() {
-                const mode = $(this).val();
+            // Sub-Tab Migration Mode Button Click Handler
+            $('.btn-subtab-migration').on('click', function() {
+                $('.btn-subtab-migration').removeClass('active shadow-sm text-white').addClass('text-gray-700 bg-light');
+                $(this).addClass('active shadow-sm text-white').removeClass('text-gray-700 bg-light');
+
+                const mode = $(this).data('type');
+                $('#input_migration_type').val(mode);
+
                 if (mode === 'transfer') {
-                    $('#label_target_classroom').text('Pindah Ke Kelas :');
-                    $('#btn_change_label').text('Proses Pindah Kelas');
-                    $('#btn_change_classroom i').attr('class', 'fa-solid fa-paper-plane me-2');
+                    $('#btn_change_label').text('Proses Pindah');
+                    $('#btn_change_classroom i').attr('class', 'fa-solid fa-paper-plane me-1');
                 } else {
-                    $('#label_target_classroom').text('Naik Ke Kelas :');
-                    $('#btn_change_label').text('Proses Kenaikan Kelas');
-                    $('#btn_change_classroom i').attr('class', 'fa-solid fa-graduation-cap me-2');
+                    $('#btn_change_label').text('Proses Kenaikan');
+                    $('#btn_change_classroom i').attr('class', 'fa-solid fa-graduation-cap me-1');
                 }
+
+                updateTargetClassroomOptions();
             });
 
             // Watch filters
@@ -937,7 +1021,8 @@
                     searchPromotion();
                 } else {
                     $('#filter_classroom_id').empty().append('<option value="">Pilih Kelas</option>');
-                    $('#filter_new_classroom').empty().append('<option value="">Pilih Kelas Baru</option>');
+                    $('#filter_new_classroom').empty().append('<option value="">Pilih Kelas Tujuan</option>').prop('disabled', true);
+                    currentSchoolClassrooms = [];
                     if ($.fn.DataTable.isDataTable('#table-grade-promotion')) {
                         tablePromotion.destroy();
                         $('#table-grade-promotion tbody').empty();
@@ -948,6 +1033,7 @@
             $('#filter_classroom_id').on('change', function() {
                 selectedStudentIds.clear();
                 updateSelectedCounter();
+                updateTargetClassroomOptions();
                 searchPromotion();
             });
 
