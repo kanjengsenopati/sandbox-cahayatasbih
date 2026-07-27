@@ -343,11 +343,20 @@
                                         <span id="selected_count_badge" class="badge bg-light-info text-info fw-bolder fs-7 px-4 py-2 border border-info rounded-pill">0 Siswa Terpilih</span>
                                     </div>
 
+                                    <!-- Warning Banner if Next Academic Year is missing -->
+                                    <div id="ay_warning_banner" class="alert alert-dismissible bg-light-warning border border-warning border-dashed d-flex align-items-center p-4 mb-5 d-none" style="border-radius: 14px;">
+                                        <i class="fa-solid fa-triangle-exclamation fs-2 text-warning me-4"></i>
+                                        <div class="d-flex flex-column">
+                                            <span class="fw-bolder text-gray-900 fs-6">Tahun Ajaran Berikutnya Belum Dibuat</span>
+                                            <span class="text-gray-700 fs-7">Tahun Ajaran Baru (berikutnya) belum tersedia di sistem. Silakan buat Tahun Ajaran Baru terlebih dahulu di Tab <strong>'Tahun Ajaran'</strong> untuk memproses Kenaikan Kelas.</span>
+                                        </div>
+                                    </div>
+
                                     <!-- Top Control Bar Card -->
                                     <div class="card p-5 mb-6 shadow-sm border-0" style="border-radius: 20px; background-color: #f8fafc; border: 1px solid #e2e8f0 !important;">
                                         <div class="row g-4 align-items-end">
                                             <div class="col-lg-3 col-md-6">
-                                                <x-text.label class="d-block mb-2 text-dark">UPT / PENDIDIKAN</x-text.label>
+                                                <label class="d-block mb-2 fw-bold" style="font-size: 12px; color: #334155; letter-spacing: -0.01em; text-transform: none;">UPT / Pendidikan</label>
                                                 <select name="school_id" class="form-select bg-white" id="filter_school_id">
                                                     <option value="">Pilih Pendidikan</option>
                                                     @foreach ($schools as $school)
@@ -356,19 +365,19 @@
                                                 </select>
                                             </div>
                                             <div class="col-lg-2 col-md-6">
-                                                <x-text.label class="d-block mb-2 text-dark">KELAS SAAT INI</x-text.label>
+                                                <label class="d-block mb-2 fw-bold" style="font-size: 12px; color: #334155; letter-spacing: -0.01em; text-transform: none;">Kelas Saat Ini</label>
                                                 <select name="classroom_id" class="form-select bg-white" id="filter_classroom_id">
                                                     <option value="">Pilih Kelas</option>
                                                 </select>
                                             </div>
                                             <div class="col-lg-3 col-md-6">
-                                                <x-text.label class="d-block mb-2 text-dark" id="label_target_classroom">KELAS TUJUAN (PARALEL TINGKAT SAMA)</x-text.label>
+                                                <label class="d-block mb-2 fw-bold" style="font-size: 12px; color: #334155; letter-spacing: -0.01em; text-transform: none;" id="label_target_classroom">Kelas Tujuan (Paralel Tingkat Sama)</label>
                                                 <select name="new_classroom_id" id="filter_new_classroom" class="form-select bg-white" required disabled>
                                                     <option value="">Pilih Kelas Tujuan</option>
                                                 </select>
                                             </div>
                                             <div class="col-lg-2 col-md-6">
-                                                <x-text.label class="d-block mb-2 text-dark" id="label_target_academic_year">TAHUN AJARAN TARGET</x-text.label>
+                                                <label class="d-block mb-2 fw-bold" style="font-size: 12px; color: #334155; letter-spacing: -0.01em; text-transform: none;" id="label_target_academic_year">Tahun Ajaran Target</label>
                                                 <select name="academic_year_id" id="filter_academic_year_id" class="form-select bg-white" required>
                                                     <option value="">Pilih Tahun Ajaran</option>
                                                     @foreach ($academicYears as $academicYear)
@@ -518,6 +527,37 @@
 @push('js')
     <script>
         var currentSchoolClassrooms = [];
+        var activeAY = @json($activeAcademicYear);
+        var nextAY = @json($nextAcademicYear);
+
+        function updateAcademicYearOptions() {
+            var mode = $('#input_migration_type').val() || 'transfer';
+            var $aySelect = $('#filter_academic_year_id');
+            $aySelect.empty();
+            $('#ay_warning_banner').addClass('d-none');
+            $('#btn_change_classroom').prop('disabled', false);
+
+            if (mode === 'transfer') {
+                // Mode Pindah Kelas (Plotting): HANYA TAHUN AJARAN AKTIF SAAT INI
+                if (activeAY) {
+                    $aySelect.append('<option value="' + activeAY.id + '" selected>' + activeAY.name + '</option>');
+                    $aySelect.prop('disabled', false);
+                } else {
+                    $aySelect.append('<option value="">Belum ada Tahun Ajaran Aktif</option>').prop('disabled', true);
+                    $('#btn_change_classroom').prop('disabled', true);
+                }
+            } else {
+                // Mode Kenaikan Kelas (Promosi): HANYA TAHUN AJARAN BERIKUTNYA
+                if (nextAY) {
+                    $aySelect.append('<option value="' + nextAY.id + '" selected>' + nextAY.name + '</option>');
+                    $aySelect.prop('disabled', false);
+                } else {
+                    $aySelect.append('<option value="">Tahun Ajaran Berikutnya Belum Dibuat</option>').prop('disabled', true);
+                    $('#ay_warning_banner').removeClass('d-none');
+                    $('#btn_change_classroom').prop('disabled', true);
+                }
+            }
+        }
 
         function extractClassLevel(className) {
             if (!className) return null;
@@ -559,9 +599,9 @@
             var currentLevel = extractClassLevel(selectedClass.name);
 
             if (mode === 'transfer') {
-                $('#label_target_classroom').text('KELAS TUJUAN (PARALEL TINGKAT SAMA)');
+                $('#label_target_classroom').text('Kelas Tujuan (Paralel Tingkat Sama)');
             } else {
-                $('#label_target_classroom').text('KELAS TUJUAN (TINGKAT 1 LEVEL DI ATAS)');
+                $('#label_target_classroom').text('Kelas Tujuan (Tingkat 1 Level di Atas)');
             }
 
             $('#filter_new_classroom').append('<option value="">Pilih Kelas Tujuan</option>');
@@ -1009,7 +1049,11 @@
                 }
 
                 updateTargetClassroomOptions();
+                updateAcademicYearOptions();
             });
+
+            // Initial load of Academic Year Options
+            updateAcademicYearOptions();
 
             // Watch filters
             $('#filter_school_id').on('change', function() {

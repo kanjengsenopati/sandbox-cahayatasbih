@@ -28,10 +28,38 @@ class AcademicController extends Controller
             
         $academicYears = AcademicYear::orderBy('name', 'asc')->get();
         
+        // Find active and next academic year for strict migration & graduation filtering
+        $activeAcademicYear = AcademicYear::where('is_active', true)->first();
+        $nextAcademicYear = null;
+
+        if ($activeAcademicYear) {
+            $startYear = $activeAcademicYear->getStartYearSafe();
+            if ($startYear) {
+                $nextAcademicYear = AcademicYear::where('start_year', '>', $startYear)
+                    ->orWhere('name', 'LIKE', ($startYear + 1) . '/%')
+                    ->orderBy('name', 'asc')
+                    ->first();
+            }
+            if (!$nextAcademicYear) {
+                $nextAcademicYear = AcademicYear::where('id', '!=', $activeAcademicYear->id)
+                    ->where('created_at', '>', $activeAcademicYear->created_at)
+                    ->orderBy('name', 'asc')
+                    ->first();
+            }
+        }
+        
         $allAdmins = \App\Models\Admin::orderBy('name')->get();
         
         $activeTab = $request->input('tab', 'school');
 
-        return view('admins.academic.index', compact('schools', 'schoolsGraduation', 'academicYears', 'allAdmins', 'activeTab'));
+        return view('admins.academic.index', compact(
+            'schools',
+            'schoolsGraduation',
+            'academicYears',
+            'activeAcademicYear',
+            'nextAcademicYear',
+            'allAdmins',
+            'activeTab'
+        ));
     }
 }
