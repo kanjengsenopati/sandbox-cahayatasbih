@@ -101,9 +101,17 @@
         
         @if($hasAccess)
             @if($menu->url)
+                @php
+                    $menuUrl = $menu->url;
+                    if ($menu->name === 'Dashboard' && auth()->user()->isKasir()) {
+                        $mode = auth()->user()->isKasirKoperasi() ? 'kantin' : 'outlet';
+                        $effectiveOutletId = auth()->user()->getEffectiveOutletId($mode);
+                        $menuUrl = '/order-item?mode=' . $mode . ($effectiveOutletId ? '&outlet_id=' . $effectiveOutletId : '');
+                    }
+                @endphp
                 <div class="menu-item">
-                    <a class="menu-link {{ $isUrlActive($menu->url) ? ' active' : '' }}"
-                        href="{{ $menu->url }}">
+                    <a class="menu-link {{ $isUrlActive($menuUrl) ? ' active' : '' }}"
+                        href="{{ $menuUrl }}">
                         <span class="menu-icon">
                             <i class="{{ $menu->icon ?? 'fa-solid fa-circle' }}" style="color: #ffffff;"></i>
                         </span>
@@ -120,7 +128,7 @@
 
                         $user = auth()->user();
 
-                        if (str_contains($sub->url, 'order-item') || str_contains($sub->url, 'pos-transaction')) {
+                        if (str_contains($sub->url, 'pos-transaction')) {
                             if ($user->isKasirOutlet() && (str_contains($sub->url, 'mode=kantin') || str_contains($sub->url, 'mode=bisnis'))) {
                                 return false;
                             }
@@ -175,7 +183,15 @@
                                 @php
                                     $subUrl = $sub->url;
                                     $subName = $sub->name;
-                                    if (str_contains($subName, 'Multi Outlet') || str_contains($subName, 'Multi-Outlet') || str_contains($subUrl, 'pos-transaction')) {
+                                    if (str_contains($subUrl, 'order-item')) {
+                                        if (auth()->user()->isKasirKoperasi()) {
+                                            $effectiveOutletId = auth()->user()->getEffectiveOutletId('kantin');
+                                            $subUrl = '/order-item?mode=kantin' . ($effectiveOutletId ? '&outlet_id=' . $effectiveOutletId : '');
+                                        } elseif (auth()->user()->isKasirOutlet() || auth()->user()->isKasir()) {
+                                            $effectiveOutletId = auth()->user()->getEffectiveOutletId('outlet');
+                                            $subUrl = '/order-item?mode=outlet' . ($effectiveOutletId ? '&outlet_id=' . $effectiveOutletId : '');
+                                        }
+                                    } elseif (str_contains($subName, 'Multi Outlet') || str_contains($subName, 'Multi-Outlet') || str_contains($subUrl, 'pos-transaction')) {
                                         if (str_contains($subUrl, 'mode=kantin') || auth()->user()->isKasirKoperasi()) {
                                             $subName = 'Laporan POS Kantin';
                                         } elseif (str_contains($subUrl, 'mode=outlet') || auth()->user()->isKasirOutlet()) {

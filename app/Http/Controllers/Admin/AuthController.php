@@ -11,6 +11,15 @@ class AuthController extends Controller
 {
     public function index()
     {
+        if (Auth::guard('web')->check()) {
+            $user = Auth::guard('web')->user();
+            if ($user->isKasir()) {
+                $mode = $user->isKasirKoperasi() ? 'kantin' : 'outlet';
+                $effectiveOutletId = $user->getEffectiveOutletId($mode);
+                return redirect('/order-item?mode=' . $mode . ($effectiveOutletId ? '&outlet_id=' . $effectiveOutletId : ''));
+            }
+            return redirect()->route('dashboard');
+        }
         return view('admins.auth.login');
     }
 
@@ -26,7 +35,12 @@ class AuthController extends Controller
                 $user->update([
                     'last_login_at' => now(),
                 ]);
-                return  redirect()->intended('dashboard');
+                if ($user->isKasir()) {
+                    $mode = $user->isKasirKoperasi() ? 'kantin' : 'outlet';
+                    $effectiveOutletId = $user->getEffectiveOutletId($mode);
+                    return redirect('/order-item?mode=' . $mode . ($effectiveOutletId ? '&outlet_id=' . $effectiveOutletId : ''));
+                }
+                return redirect()->intended('dashboard');
             } else {
                 Auth::guard('web')->logout();
                 return back()->with(['warning' => 'Maaf akun tidak aktif / diblokir, silakan hubungi administrator !!'])->withInput($request->only('email'));
