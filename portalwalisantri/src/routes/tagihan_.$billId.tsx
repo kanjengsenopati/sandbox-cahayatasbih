@@ -125,12 +125,18 @@ function BillDetail() {
   const [method, setMethod] = useState<string>("");
 
   const { data: methodsRes, isLoading: isLoadingMethods } = useQuery({
-    queryKey: ["payment-methods", "BILL", Array.from(picked)],
+    queryKey: ["payment-methods", "BILL", Array.from(picked), bill?.installments?.[0]?.id],
     queryFn: async () => {
-      const res = await fetchPaymentMethods({ type: "BILL", bill_ids: Array.from(picked) });
+      const billIds =
+        Array.from(picked).length > 0
+          ? Array.from(picked)
+          : bill?.installments?.[0]?.id
+          ? [bill.installments[0].id]
+          : [];
+      const res = await fetchPaymentMethods({ type: "BILL", bill_ids: billIds });
       return res.data;
     },
-    enabled: picked.size > 0,
+    enabled: !!bill,
   });
 
   const methods = useMemo(() => {
@@ -326,9 +332,82 @@ function BillDetail() {
           </div>
         </div>
 
-        <div className="px-5 pt-2">
+        {/* Payment Methods Section (2 Columns, directly under Tagihan main card) */}
+        <div className="px-4 pt-4">
+          <Text.Label className="block mb-2 px-1 text-slate-400">
+            METODE PEMBAYARAN
+          </Text.Label>
 
-          {/* Installments */}
+          {isLoadingMethods ? (
+            <div className="bg-white rounded-[24px] border border-slate-100 p-6 flex flex-col items-center justify-center gap-2 shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
+              <Loader2 className="animate-spin text-blue-600" size={24} />
+              <Text.Caption className="text-slate-500 font-semibold not-italic">Memuat metode pembayaran...</Text.Caption>
+            </div>
+          ) : methods.length === 0 ? (
+            <div className="bg-white rounded-[24px] border border-slate-100 p-6 text-center shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
+              <Text.Caption className="text-slate-400 not-italic">Tidak ada metode pembayaran tersedia untuk tagihan ini.</Text.Caption>
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 gap-3">
+              {methods.map((m: any) => {
+                const Icon = m.icon;
+                const isActive = method === m.id;
+                return (
+                  <button
+                    key={m.id}
+                    type="button"
+                    onClick={() => setMethod(m.id)}
+                    className={`relative flex flex-col justify-between p-3.5 rounded-[24px] transition-all text-left border-2 ${
+                      isActive
+                        ? "border-blue-600 bg-blue-50/60 shadow-[0_8px_30px_rgb(37,99,235,0.12)] ring-1 ring-blue-600/30"
+                        : "border-slate-100 bg-white hover:bg-slate-50/80 shadow-[0_8px_30px_rgb(0,0,0,0.04)]"
+                    }`}
+                  >
+                    {/* Top Row: Icon + Radio Indicator */}
+                    <div className="flex items-start justify-between w-full mb-2">
+                      <div
+                        className={`w-10 h-10 rounded-[16px] flex items-center justify-center transition-all ${
+                          isActive
+                            ? "bg-blue-600 text-white shadow-xs"
+                            : "bg-slate-100 text-blue-600"
+                        }`}
+                      >
+                        <Icon size={18} strokeWidth={2} />
+                      </div>
+
+                      {/* Radio Indicator */}
+                      <div
+                        className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all shrink-0 mt-0.5 ${
+                          isActive ? "border-blue-600 bg-blue-600" : "border-slate-300 bg-white"
+                        }`}
+                      >
+                        {isActive && <div className="w-2 h-2 rounded-full bg-white" />}
+                      </div>
+                    </div>
+
+                    {/* Label & Details */}
+                    <div>
+                      <Text.Body className="font-bold text-slate-900 leading-tight text-sm truncate">
+                        {m.label}
+                      </Text.Body>
+                      <Text.Caption className="text-[11px] text-slate-500 mt-1 line-clamp-2 leading-snug not-italic block">
+                        {m.desc} · {m.fee === 0 ? "Gratis" : `Biaya ${fmt(m.fee)}`}
+                      </Text.Caption>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+
+          <div className="mt-2.5 flex items-center gap-2 text-[11px] text-slate-400 px-1">
+            <ShieldCheck size={14} className="text-emerald-600 shrink-0" />
+            <Text.Caption className="not-italic text-slate-500">Transaksi dijamin aman & terenkripsi.</Text.Caption>
+          </div>
+        </div>
+
+        {/* Installments Detail List */}
+        <div className="px-5 pt-2">
           <div className="mt-5">
             <div className="flex items-center gap-3">
               <h3 className="text-base font-bold text-foreground">
@@ -425,7 +504,9 @@ function BillDetail() {
                           {checkoutMutation.isPending ? <Loader2 className="animate-spin" size={14} /> : "Bayar Sekarang"}
                         </button>
                       )}
-                    </div>                    {/* Custom Amount input field for FREE input type */}
+                    </div>
+
+                    {/* Custom Amount input field for FREE input type */}
                     {detailData?.billType?.payment_input_type === 'FREE' && checked && (
                       <div className="mt-3 pt-3 border-t border-border w-full" onClick={(e) => e.stopPropagation()}>
                         {/* Segment selector Lunas / Angsur */}
@@ -501,72 +582,7 @@ function BillDetail() {
               })}
             </div>
           </div>
-
-          {/* Payment Methods Section */}
-          {picked.size > 0 && (
-            <div className="mt-8">
-              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 px-1">
-                Metode Pembayaran
-              </p>
-              <div className="bg-card rounded-2xl border border-border divide-y divide-border overflow-hidden shadow-[var(--shadow-soft)]">
-                {isLoadingMethods ? (
-                  <div className="p-8 flex flex-col items-center justify-center gap-3">
-                    <Loader2 className="animate-spin text-primary" size={24} />
-                    <p className="text-xs text-muted-foreground">Memuat metode pembayaran...</p>
-                  </div>
-                ) : methods.length === 0 ? (
-                  <div className="p-8 text-center">
-                    <p className="text-xs text-muted-foreground">Tidak ada metode pembayaran tersedia untuk tagihan ini.</p>
-                  </div>
-                ) : (
-                  methods.map((m: any) => {
-                    const Icon = m.icon;
-                    const active = method === m.id;
-                    return (
-                      <button
-                        key={m.id}
-                        onClick={() => setMethod(m.id)}
-                        className={`w-full flex items-center gap-3 p-4 transition text-left ${
-                          active ? "bg-primary/5" : "active:bg-secondary"
-                        }`}
-                      >
-                        <div
-                          className={`w-11 h-11 rounded-xl flex items-center justify-center transition ${
-                            active
-                              ? "text-white shadow-[var(--shadow-glow)] ring-2 ring-primary/30"
-                              : "bg-secondary text-primary"
-                          }`}
-                          style={active ? { background: "var(--gradient-card)" } : undefined}
-                        >
-                          <Icon size={18} />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-bold text-foreground">{m.label}</p>
-                          <p className="text-[11px] text-muted-foreground">
-                            {m.desc} · {m.fee === 0 ? "Gratis" : `Biaya ${fmt(m.fee)}`}
-                          </p>
-                        </div>
-                        <div
-                          className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
-                            active ? "border-primary bg-primary" : "border-border"
-                          }`}
-                        >
-                          {active && <div className="w-2 h-2 rounded-full bg-primary-foreground" />}
-                        </div>
-                      </button>
-                    );
-                  })
-                )}
-              </div>
-              <div className="mt-3 flex items-center gap-2 text-[11px] text-muted-foreground px-1">
-                <ShieldCheck size={14} className="text-success" />
-                Transaksi dijamin aman & terenkripsi.
-              </div>
-            </div>
-          )}
         </div>
-
-        {/* Sticky pay bar — compact */}
         {unpaid.length > 0 && (
           <div className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-md px-3 pb-3 pt-2 bg-gradient-to-t from-background via-background to-background/0 z-40">
             <div className="rounded-xl border border-border bg-card shadow-[var(--shadow-card)] px-3 py-2 flex items-center gap-3">
