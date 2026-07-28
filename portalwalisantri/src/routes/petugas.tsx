@@ -1,7 +1,9 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { ArrowLeft, Loader2, Phone, MessageCircle, HelpCircle } from "lucide-react";
+import { ArrowLeft, Loader2, MessageCircle, HelpCircle, Search, X } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { fetchOfficers } from "@/lib/api";
+import { useState, useMemo } from "react";
+import { Text } from "@/components/Text";
 
 export const Route = createFileRoute("/petugas")({
   component: PetugasPage,
@@ -10,6 +12,7 @@ export const Route = createFileRoute("/petugas")({
 
 function PetugasPage() {
   const navigate = useNavigate();
+  const [searchQuery, setSearchQuery] = useState("");
 
   const { data: officersRes, isLoading } = useQuery({
     queryKey: ["officers"],
@@ -20,14 +23,26 @@ function PetugasPage() {
   });
 
   const studentName = officersRes?.student_name ?? "Santri";
-  const officers = officersRes?.data ?? [];
+  const officers: any[] = officersRes?.data ?? [];
+
+  // Filter officers based on search query (name or position or duty)
+  const filteredOfficers = useMemo(() => {
+    if (!searchQuery.trim()) return officers;
+    const q = searchQuery.toLowerCase().trim();
+    return officers.filter(
+      (officer) =>
+        (officer?.name || "").toLowerCase().includes(q) ||
+        (officer?.position || "").toLowerCase().includes(q) ||
+        (officer?.duty || "").toLowerCase().includes(q)
+    );
+  }, [officers, searchQuery]);
 
   return (
     <div className="min-h-screen w-full flex justify-center bg-secondary">
-      <div className="relative w-full max-w-md min-h-screen bg-background pb-32">
-        {/* Hero */}
+      <div className="relative w-full max-w-4xl min-h-screen bg-background pb-32">
+        {/* Hero Header */}
         <div
-          className="relative px-6 pt-12 pb-24 rounded-b-[2rem] overflow-hidden"
+          className="relative px-5 pt-10 pb-20 rounded-b-[24px] overflow-hidden"
           style={{ background: "var(--gradient-hero)" }}
         >
           <div className="absolute -top-20 -right-10 w-56 h-56 rounded-full bg-primary-glow/30 blur-3xl" />
@@ -43,101 +58,160 @@ function PetugasPage() {
           <div className="relative flex items-center gap-3">
             <button
               onClick={() => navigate({ to: "/dashboard" })}
-              className="w-10 h-10 rounded-xl bg-white/15 backdrop-blur-md border border-white/20 flex items-center justify-center text-white"
+              className="w-10 h-10 rounded-2xl bg-white/15 backdrop-blur-md border border-white/20 flex items-center justify-center text-white hover:bg-white/25 transition-all"
             >
               <ArrowLeft size={18} />
             </button>
             <div>
-              <p className="text-[11px] text-white/70 font-semibold uppercase tracking-wider">Layanan Wali</p>
-              <p className="text-base font-bold text-white">Hubungi Petugas Pesantren dan Sekolah</p>
+              <Text.Label className="text-white/70">Layanan Wali</Text.Label>
+              <Text.H1 className="text-white text-lg sm:text-xl">Hubungi Petugas Pesantren dan Sekolah</Text.H1>
             </div>
           </div>
 
-          <div className="relative mt-6 text-white">
-            <p className="text-xs text-white/70 uppercase tracking-widest font-semibold">Wali dari</p>
-            <p className="text-xl font-bold mt-1 tracking-tight">{studentName}</p>
-            <p className="text-[11px] text-white/70 mt-1">
+          <div className="relative mt-5 text-white">
+            <Text.Label className="text-white/70">Wali dari</Text.Label>
+            <p className="text-lg sm:text-xl font-bold mt-0.5 tracking-tight text-white">{studentName}</p>
+            <Text.Caption className="text-white/80 not-italic mt-1 block">
               Hubungi pengurus untuk konsultasi, perizinan, atau administrasi santri.
-            </p>
+            </Text.Caption>
           </div>
         </div>
 
-        {/* Officers list */}
-        <section className="px-6 -mt-10 relative z-10 space-y-4">
-          {isLoading ? (
-            <div className="bg-card rounded-3xl border border-border p-8 flex flex-col items-center justify-center shadow-[var(--shadow-card)]">
-              <Loader2 className="animate-spin text-primary mb-2" size={28} />
-              <p className="text-xs font-semibold text-muted-foreground">Memuat data petugas...</p>
+        {/* Search Box & Header Toolbar */}
+        <div className="relative -mt-7 px-5 z-20 mb-6">
+          <div className="bg-white/90 backdrop-blur-md rounded-[24px] shadow-[0_8px_30px_rgb(0,0,0,0.04)] p-2.5 px-4 flex items-center gap-3 border border-slate-100 transition-all focus-within:ring-2 focus-within:ring-blue-500/30">
+            <Search className="w-5 h-5 text-slate-400 shrink-0" strokeWidth={2} />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Cari berdasarkan nama atau jabatan..."
+              className="w-full bg-transparent text-sm text-slate-800 placeholder-slate-400 focus:outline-none font-medium"
+            />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery("")}
+                className="p-1 rounded-full hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors"
+                title="Hapus pencarian"
+              >
+                <X className="w-4 h-4" strokeWidth={2} />
+              </button>
+            )}
+          </div>
+
+          {/* Result Count metadata */}
+          {!isLoading && officers.length > 0 && (
+            <div className="flex items-center justify-between px-2 mt-3">
+              <Text.Label className="text-slate-400">
+                {searchQuery ? `Hasil Pencarian (${filteredOfficers.length})` : `Semua Petugas (${officers.length})`}
+              </Text.Label>
             </div>
-          ) : officers.length === 0 ? (
-            <div className="bg-card rounded-3xl border border-border p-8 text-center shadow-[var(--shadow-card)]">
-              <HelpCircle className="mx-auto text-muted-foreground mb-3" size={32} />
-              <p className="text-sm font-bold text-foreground">Tidak Ada Petugas</p>
-              <p className="text-xs text-muted-foreground mt-1">
-                Data petugas belum dikonfigurasi di panel admin.
-              </p>
+          )}
+        </div>
+
+        {/* Officers Grid (3 Columns) */}
+        <section className="px-5 relative z-10">
+          {isLoading ? (
+            <div className="bg-white rounded-[24px] p-8 flex flex-col items-center justify-center shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
+              <Loader2 className="animate-spin text-blue-600 mb-2" size={28} />
+              <Text.Body className="text-slate-500 text-xs font-semibold">Memuat data petugas...</Text.Body>
+            </div>
+          ) : filteredOfficers.length === 0 ? (
+            <div className="bg-white rounded-[24px] p-8 text-center shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
+              <HelpCircle className="mx-auto text-slate-400 mb-2" size={32} />
+              <Text.H2 className="text-slate-800 text-sm">
+                {searchQuery ? "Petugas tidak ditemukan" : "Tidak Ada Petugas"}
+              </Text.H2>
+              <Text.Caption className="text-slate-400 mt-1 block">
+                {searchQuery
+                  ? `Tidak ada nama atau jabatan yang cocok dengan "${searchQuery}"`
+                  : "Data petugas belum dikonfigurasi di panel admin."}
+              </Text.Caption>
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery("")}
+                  className="mt-4 px-4 py-2 rounded-xl bg-blue-50 text-blue-600 font-semibold text-xs hover:bg-blue-100 transition-colors"
+                >
+                  Reset Pencarian
+                </button>
+              )}
             </div>
           ) : (
-            officers.map((officer: any) => {
-              // Extract initials if photo is absent
-              const officerName = officer?.name || "Petugas Pesantren";
-              const initials = officerName
-                .split(" ")
-                .filter((n: string) => !n.includes(".") && n.length > 0)
-                .slice(0, 2)
-                .map((n: string) => n[0])
-                .join("")
-                .toUpperCase() || "ST";
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3.5">
+              {filteredOfficers.map((officer: any) => {
+                // Extract initials if photo is absent
+                const officerName = officer?.name || "Petugas Pesantren";
+                const initials =
+                  officerName
+                    .split(" ")
+                    .filter((n: string) => !n.includes(".") && n.length > 0)
+                    .slice(0, 2)
+                    .map((n: string) => n[0])
+                    .join("")
+                    .toUpperCase() || "ST";
 
-              // WA link preparation (using international format)
-              const cleanWa = (officer?.phone || "").replace(/[^0-9]/g, "");
+                // WA link preparation
+                const cleanWa = (officer?.phone || "").replace(/[^0-9]/g, "");
 
-              return (
-                <div 
-                  key={officer.id}
-                  className="bg-card rounded-3xl border border-border shadow-[var(--shadow-soft)] p-5 hover:shadow-[var(--shadow-card)] transition-all duration-300"
-                >
-                  <div className="flex items-start gap-4">
-                    {officer.photo ? (
-                      <img 
-                        src={`/${officer.photo}`} 
-                        alt={officerName} 
-                        className="w-12 h-12 rounded-2xl object-cover shrink-0 border border-border"
-                      />
-                    ) : (
-                      <div className="w-12 h-12 rounded-2xl bg-primary/10 text-primary font-bold text-sm flex items-center justify-center shrink-0 border border-primary/20">
-                        {initials}
-                      </div>
-                    )}
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-bold text-foreground leading-tight truncate">{officer.name}</p>
-                      <span className="inline-flex mt-1.5 px-2 py-0.5 rounded-md bg-primary/5 text-primary text-[10px] font-bold uppercase tracking-wider">
-                        {officer.position}
-                      </span>
-                      <p className="text-xs text-muted-foreground mt-2 leading-relaxed">
-                        {officer.duty}
-                      </p>
-                    </div>
-                  </div>
-
-                  <a 
-                    href={`https://wa.me/${cleanWa}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="mt-4 w-full py-3 rounded-2xl font-bold text-xs flex items-center justify-center gap-2 transition active:scale-[0.98] shadow-sm hover:opacity-90"
-                    style={{ 
-                      background: "linear-gradient(135deg, #25D366 0%, #128C7E 100%)", 
-                      color: "#FFFFFF" 
-                    }}
+                return (
+                  <div
+                    key={officer.id}
+                    className="bg-white rounded-[24px] shadow-[0_8px_30px_rgb(0,0,0,0.04)] p-4 flex flex-col justify-between hover:shadow-[0_12px_36px_rgb(0,0,0,0.08)] transition-all duration-200 group border-0"
                   >
-                    <MessageCircle size={16} /> Hubungi via WhatsApp
-                  </a>
-                </div>
-              );
-            })
+                    <div>
+                      {/* Top Row: Avatar & Position Badge */}
+                      <div className="flex items-start justify-between gap-2 mb-3">
+                        {officer.photo ? (
+                          <img
+                            src={`/${officer.photo}`}
+                            alt={officerName}
+                            className="w-11 h-11 rounded-[16px] object-cover shrink-0 border border-slate-100 shadow-xs"
+                          />
+                        ) : (
+                          <div className="w-11 h-11 rounded-[16px] bg-blue-600/10 text-blue-600 font-bold text-xs flex items-center justify-center shrink-0 border border-blue-600/20 shadow-xs">
+                            {initials}
+                          </div>
+                        )}
+
+                        {/* Top-Right Action / Tag Cluster */}
+                        {officer.position && (
+                          <span className="inline-flex items-center px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-700 text-[10px] font-bold uppercase tracking-wider max-w-[65%] truncate text-right">
+                            {officer.position}
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Content: Name & Duty */}
+                      <div className="space-y-1 mb-3">
+                        <Text.H2 className="text-slate-900 font-bold text-sm leading-tight line-clamp-1 group-hover:text-blue-600 transition-colors">
+                          {officer.name}
+                        </Text.H2>
+                        {officer.duty && (
+                          <Text.Body className="text-slate-500 text-xs leading-snug line-clamp-2 font-normal">
+                            {officer.duty}
+                          </Text.Body>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* WhatsApp Action CTA */}
+                    <a
+                      href={`https://wa.me/${cleanWa}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="w-full py-2.5 px-3 rounded-[16px] bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-sm active:scale-[0.97] transition-all"
+                    >
+                      <MessageCircle size={15} strokeWidth={2.2} />
+                      <span>Hubungi via WA</span>
+                    </a>
+                  </div>
+                );
+              })}
+            </div>
           )}
         </section>
       </div>
     </div>
   );
 }
+
