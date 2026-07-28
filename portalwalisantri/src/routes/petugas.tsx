@@ -137,7 +137,7 @@ function PetugasPage() {
               )}
             </div>
           ) : (
-            <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 gap-3 sm:gap-3.5">
+            <div className="grid grid-cols-2 gap-3 sm:gap-3.5">
               {filteredOfficers.map((officer: any) => {
                 // Extract initials if photo is absent
                 const officerName = officer?.name || "Petugas Pesantren";

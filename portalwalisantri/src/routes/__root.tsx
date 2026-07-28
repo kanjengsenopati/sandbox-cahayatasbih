@@ -114,7 +114,7 @@ function RootShell({ children }: { children: React.ReactNode }) {
   );
 }
 
-const APP_VERSION = "1.1.1"; // Increment this to force update and purge caches
+const APP_VERSION = "1.2.0"; // Increment this to force update and purge caches
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();

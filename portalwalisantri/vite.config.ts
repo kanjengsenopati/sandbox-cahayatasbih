@@ -43,6 +43,7 @@ export default defineConfig({
   build: {
     manifest: 'vite-manifest.json',
     outDir: '../public/portalwalisantri/dist',
+    emptyOutDir: true,
     rollupOptions: {
       input: 'index.html',
     }
