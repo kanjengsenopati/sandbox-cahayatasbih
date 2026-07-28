@@ -66,6 +66,44 @@
         .transition-all {
             transition: all 0.2s ease-in-out !important;
         }
+        /* 3-Column Dropdown Class Picker Button Styles & Contrast Fixes */
+        .btn-select-current-class,
+        .btn-select-target-class {
+            color: #2563eb !important;
+            background-color: #f1f5f9 !important;
+            border: 1px solid transparent !important;
+            transition: all 0.15s ease-in-out !important;
+        }
+        .btn-select-current-class *,
+        .btn-select-target-class * {
+            color: inherit !important;
+        }
+        .btn-select-current-class:hover,
+        .btn-select-target-class:hover,
+        .btn-select-current-class:focus,
+        .btn-select-target-class:focus,
+        .btn-select-current-class.active,
+        .btn-select-target-class.active {
+            color: #ffffff !important;
+            background-color: #2563eb !important;
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3) !important;
+        }
+        .btn-select-current-class:hover *,
+        .btn-select-target-class:hover *,
+        .btn-select-current-class:focus *,
+        .btn-select-target-class:focus *,
+        .btn-select-current-class.active *,
+        .btn-select-target-class.active * {
+            color: #ffffff !important;
+        }
+        .btn-select-current-class.disabled,
+        .btn-select-target-class.disabled {
+            color: #94a3b8 !important;
+            background-color: #f8fafc !important;
+            opacity: 0.55 !important;
+            box-shadow: none !important;
+            cursor: not-allowed !important;
+        }
     </style>
 @endpush
 
