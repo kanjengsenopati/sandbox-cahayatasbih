@@ -62,9 +62,22 @@
 <div class="accordion" id="accordionKilatParent">
     @foreach ($billMonth as $bill)
     @php
-        $existingBills = $bill->bills->where('student_id', $student->id);
         $isZarkasi = str_contains(strtoupper($bill->name ?? ''), 'ZARKASI');
         $isAplikasi = str_contains(strtoupper($bill->name ?? ''), 'APLIKASI');
+        $isSyahriah = str_contains(strtoupper($bill->name ?? ''), 'SYAHR');
+
+        if ($isZarkasi || $isAplikasi || $isSyahriah) {
+            $existingBills = \App\Models\Bill::where('student_id', $student->id)
+                ->whereHas('billType', function ($query) use ($isZarkasi, $isAplikasi, $isSyahriah) {
+                    $query->where(function ($q) use ($isZarkasi, $isAplikasi, $isSyahriah) {
+                        if ($isZarkasi) $q->orWhere('name', 'like', '%ZARKASI%');
+                        if ($isAplikasi) $q->orWhere('name', 'like', '%APLIKASI%');
+                        if ($isSyahriah) $q->orWhere('name', 'like', '%SYAHR%');
+                    });
+                })->get();
+        } else {
+            $existingBills = $bill->bills->where('student_id', $student->id);
+        }
         
         $zarkasiTargets = [
             7  => 100000,

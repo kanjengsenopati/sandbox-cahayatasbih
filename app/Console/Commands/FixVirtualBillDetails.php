@@ -62,7 +62,8 @@ class FixVirtualBillDetails extends Command
                             $bill = Bill::find($realBillId);
 
                             if ($bill && $isPaidTx) {
-                                $paidVal = $detail->amount ?? $bill->remaining_amount;
+                                $detailAmount = intval($detail->amount ?? 0);
+                                $paidVal = $detailAmount > 0 ? $detailAmount : ($bill->amount > 0 ? $bill->amount : 10000);
                                 $bill->paid_amount = min($bill->amount, $bill->paid_amount + $paidVal);
                                 if ($bill->paid_amount >= $bill->amount) {
                                     $bill->status = Bill::STATUS_PAID;

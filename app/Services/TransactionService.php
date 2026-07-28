@@ -835,7 +835,7 @@ class TransactionService
             $paidTransactions = Transaction::with(['transactionDetails', 'student'])
                 ->where('student_id', $studentId)
                 ->where('type', Transaction::TYPE_BILL)
-                ->whereIn('status', [Transaction::STATUS_PAID, 'approved', 'SUCCESS'])
+                ->whereIn('status', [Transaction::STATUS_PAID, 'paid', 'PAID', 'approved', 'APPROVED', 'SUCCESS', 'success', 'LUNAS', 'lunas'])
                 ->get();
 
             foreach ($paidTransactions as $tx) {
@@ -855,7 +855,8 @@ class TransactionService
                     }
 
                     if ($bill) {
-                        $paidVal = $detail->amount ?? $bill->remaining_amount;
+                        $detailAmount = intval($detail->amount ?? 0);
+                        $paidVal = $detailAmount > 0 ? $detailAmount : ($bill->amount > 0 ? $bill->amount : 10000);
                         if ($bill->paid_amount < $bill->amount) {
                             $bill->paid_amount = min($bill->amount, $bill->paid_amount + $paidVal);
                             if ($bill->paid_amount >= $bill->amount) {
