@@ -109,7 +109,7 @@ function PetugasPage() {
           )}
         </div>
 
-        {/* Officers Grid (3 Columns) */}
+        {/* Officers Grid (2 Columns) */}
         <section className="px-5 relative z-10">
           {isLoading ? (
             <div className="bg-white rounded-[24px] p-8 flex flex-col items-center justify-center shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
@@ -137,7 +137,7 @@ function PetugasPage() {
               )}
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3.5">
+            <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 gap-3 sm:gap-3.5">
               {filteredOfficers.map((officer: any) => {
                 // Extract initials if photo is absent
                 const officerName = officer?.name || "Petugas Pesantren";
@@ -156,11 +156,11 @@ function PetugasPage() {
                 return (
                   <div
                     key={officer.id}
-                    className="bg-white rounded-[24px] shadow-[0_8px_30px_rgb(0,0,0,0.04)] p-4 flex flex-col justify-between hover:shadow-[0_12px_36px_rgb(0,0,0,0.08)] transition-all duration-200 group border-0"
+                    className="bg-white rounded-[24px] shadow-[0_8px_30px_rgb(0,0,0,0.04)] p-3.5 sm:p-4 flex flex-col justify-between hover:shadow-[0_12px_36px_rgb(0,0,0,0.08)] transition-all duration-200 group border-0"
                   >
                     <div>
                       {/* Top Row: Avatar & Position Badge */}
-                      <div className="flex items-start justify-between gap-2 mb-3">
+                      <div className="flex items-start justify-between gap-1.5 mb-3">
                         {officer.photo ? (
                           <img
                             src={`/${officer.photo}`}
@@ -175,7 +175,7 @@ function PetugasPage() {
 
                         {/* Top-Right Action / Tag Cluster */}
                         {officer.position && (
-                          <span className="inline-flex items-center px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-700 text-[10px] font-bold uppercase tracking-wider max-w-[65%] truncate text-right">
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-700 text-[10px] font-bold uppercase tracking-wider shrink-0 max-w-[70%] truncate text-right">
                             {officer.position}
                           </span>
                         )}
@@ -183,11 +183,11 @@ function PetugasPage() {
 
                       {/* Content: Name & Duty */}
                       <div className="space-y-1 mb-3">
-                        <Text.H2 className="text-slate-900 font-bold text-sm leading-tight line-clamp-1 group-hover:text-blue-600 transition-colors">
+                        <Text.H2 className="text-slate-900 font-bold text-xs sm:text-sm leading-tight line-clamp-2 min-h-[2.25rem] group-hover:text-blue-600 transition-colors">
                           {officer.name}
                         </Text.H2>
                         {officer.duty && (
-                          <Text.Body className="text-slate-500 text-xs leading-snug line-clamp-2 font-normal">
+                          <Text.Body className="text-slate-500 text-[11px] sm:text-xs leading-snug line-clamp-2 font-normal">
                             {officer.duty}
                           </Text.Body>
                         )}
@@ -195,15 +195,25 @@ function PetugasPage() {
                     </div>
 
                     {/* WhatsApp Action CTA */}
-                    <a
-                      href={`https://wa.me/${cleanWa}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="w-full py-2.5 px-3 rounded-[16px] bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-sm active:scale-[0.97] transition-all"
-                    >
-                      <MessageCircle size={15} strokeWidth={2.2} />
-                      <span>Hubungi via WA</span>
-                    </a>
+                    {cleanWa ? (
+                      <a
+                        href={`https://wa.me/${cleanWa}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="w-full py-2.5 px-2.5 rounded-[16px] bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[11px] sm:text-xs flex items-center justify-center gap-1.5 shadow-sm active:scale-[0.97] transition-all shrink-0"
+                      >
+                        <MessageCircle size={15} strokeWidth={2.2} className="shrink-0" />
+                        <span className="truncate">Hubungi via WA</span>
+                      </a>
+                    ) : (
+                      <button
+                        disabled
+                        className="w-full py-2.5 px-2.5 rounded-[16px] bg-slate-100 text-slate-400 font-bold text-[11px] sm:text-xs flex items-center justify-center gap-1.5 cursor-not-allowed shrink-0"
+                      >
+                        <MessageCircle size={15} strokeWidth={2.2} className="shrink-0" />
+                        <span className="truncate">No. WA Tdk Ada</span>
+                      </button>
+                    )}
                   </div>
                 );
               })}
