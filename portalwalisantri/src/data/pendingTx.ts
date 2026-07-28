@@ -51,7 +51,7 @@ export function getPendingTx(id: string): PendingTx | undefined {
 
 export function createPendingTx(input: Omit<PendingTx, "id" | "status" | "createdAt" | "updatedAt" | "uniqueCode" | "amount"> & { baseAmount: number }) {
   const list = read();
-  const uniqueCode = Math.floor(100 + Math.random() * 900); // 3 digits
+  const uniqueCode = Math.floor(111 + Math.random() * 189); // 3 digits range 111-299
   const now = new Date().toISOString();
   const tx: PendingTx = {
     ...input,

@@ -162,8 +162,11 @@ function TopupPage() {
 
   const selected = useMemo(() => methods.find((m: any) => m.id === method), [method, methods]);
 
-  const uniqueCode = useMemo(() => Math.floor(100 + Math.random() * 900), [amount, method]);
-  const uniqueAmount = amount + uniqueCode;
+  const [serverTxData, setServerTxData] = useState<any>(null);
+  const fallbackUniqueCode = useMemo(() => Math.floor(111 + Math.random() * 189), [amount, method]);
+  
+  const uniqueCode = serverTxData?.unique_payment ? Number(serverTxData.unique_payment) : fallbackUniqueCode;
+  const uniqueAmount = serverTxData?.pay_amount ? Number(serverTxData.pay_amount) : (amount + uniqueCode);
   const total = uniqueAmount + (selected?.fee || 0);
 
   const topupMutation = useMutation({
@@ -180,6 +183,7 @@ function TopupPage() {
       return res.data;
     },
     onSuccess: (data) => {
+      setServerTxData(data.transaction);
       setPaymentId(data.transaction.id);
       setRefId(data.transaction.payment_code);
       setStep("confirm");

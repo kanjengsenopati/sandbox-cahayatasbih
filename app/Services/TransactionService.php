@@ -278,8 +278,8 @@ class TransactionService
 
                     // Logika untuk jenis pembayaran
                     if ($paymentMethodType == PaymentMethod::TYPE_TRANSFER) {
-                        // Generate unique payment 3 digits
-                        $uniquePayment = str_pad(rand(1, 300), 3, '0', STR_PAD_LEFT);
+                        // Generate unique payment 3 digits starting from 111 to 299
+                        $uniquePayment = rand(111, 299);
                         $transaction->update([
                             'status' => Transaction::STATUS_PENDING_PAYMENT,
                             'paid_at' => null,
