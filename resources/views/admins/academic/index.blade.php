@@ -378,40 +378,40 @@
                                                     <span id="label_selected_target_classroom" class="text-muted fs-7">Pilih Kelas Tujuan</span>
                                                 </button>
                                                 
-                                                <div class="dropdown-menu p-4 shadow-lg border-0" id="dropdown_menu_target_classroom" style="width: 580px; max-width: 90vw; border-radius: 20px; z-index: 1050; background-color: #ffffff;">
-                                                    <div class="d-flex align-items-center justify-content-between mb-3 pb-2 border-bottom">
-                                                        <span class="fw-bolder fs-7 text-gray-800"><i class="fa-solid fa-layer-group me-2 text-primary"></i>Pilih Kelas Tujuan</span>
-                                                        <span class="badge bg-light-primary text-primary fs-8 fw-bold px-3 py-1 rounded-pill" id="target_class_mode_badge">3 Kolom Tingkat</span>
+                                                <div class="dropdown-menu p-3 shadow-lg border-0" id="dropdown_menu_target_classroom" style="width: 360px; max-width: 95vw; border-radius: 16px; z-index: 1050; background-color: #ffffff;">
+                                                    <div class="d-flex align-items-center justify-content-between mb-2 pb-2 border-bottom">
+                                                        <span class="fw-bolder fs-8 text-gray-800"><i class="fa-solid fa-layer-group me-1 text-primary"></i>Pilih Kelas Tujuan</span>
+                                                        <span class="badge bg-light-primary text-primary fs-9 fw-bold px-2 py-1 rounded-pill" id="target_class_mode_badge">3 Kolom</span>
                                                     </div>
                                                     
-                                                    <div class="row g-3" id="container_3col_classrooms">
+                                                    <div class="row g-2" id="container_3col_classrooms">
                                                         <!-- Column 1 -->
                                                         <div class="col-4 border-end pe-2">
                                                             <div class="d-flex align-items-center justify-content-between mb-2">
-                                                                <span class="badge bg-light-primary text-primary fw-bolder px-2 py-1 fs-8 rounded-pill w-100 text-center" id="col1_title">Kelas 7</span>
+                                                                <span class="badge bg-light-primary text-primary fw-bolder px-1 py-1 fs-9 rounded-pill w-100 text-center" id="col1_title">Kelas 7</span>
                                                             </div>
-                                                            <div class="d-flex flex-column gap-1 overflow-auto pe-1" id="col1_class_list" style="max-height: 220px;">
-                                                                <span class="text-muted fs-8 italic text-center py-3">Pilih kelas saat ini</span>
+                                                            <div class="d-flex flex-column gap-1 overflow-auto pe-1" id="col1_class_list" style="max-height: 200px;">
+                                                                <span class="text-muted fs-9 italic text-center py-2">Pilih kelas</span>
                                                             </div>
                                                         </div>
                                                         
                                                         <!-- Column 2 -->
                                                         <div class="col-4 border-end px-2">
                                                             <div class="d-flex align-items-center justify-content-between mb-2">
-                                                                <span class="badge bg-light-info text-info fw-bolder px-2 py-1 fs-8 rounded-pill w-100 text-center" id="col2_title">Kelas 8</span>
+                                                                <span class="badge bg-light-info text-info fw-bolder px-1 py-1 fs-9 rounded-pill w-100 text-center" id="col2_title">Kelas 8</span>
                                                             </div>
-                                                            <div class="d-flex flex-column gap-1 overflow-auto pe-1" id="col2_class_list" style="max-height: 220px;">
-                                                                <span class="text-muted fs-8 italic text-center py-3">Pilih kelas saat ini</span>
+                                                            <div class="d-flex flex-column gap-1 overflow-auto pe-1" id="col2_class_list" style="max-height: 200px;">
+                                                                <span class="text-muted fs-9 italic text-center py-2">Pilih kelas</span>
                                                             </div>
                                                         </div>
                                                         
                                                         <!-- Column 3 -->
                                                         <div class="col-4 ps-2">
                                                             <div class="d-flex align-items-center justify-content-between mb-2">
-                                                                <span class="badge bg-light-success text-success fw-bolder px-2 py-1 fs-8 rounded-pill w-100 text-center" id="col3_title">Kelas 9</span>
+                                                                <span class="badge bg-light-success text-success fw-bolder px-1 py-1 fs-9 rounded-pill w-100 text-center" id="col3_title">Kelas 9</span>
                                                             </div>
-                                                            <div class="d-flex flex-column gap-1 overflow-auto pe-1" id="col3_class_list" style="max-height: 220px;">
-                                                                <span class="text-muted fs-8 italic text-center py-3">Pilih kelas saat ini</span>
+                                                            <div class="d-flex flex-column gap-1 overflow-auto pe-1" id="col3_class_list" style="max-height: 200px;">
+                                                                <span class="text-muted fs-9 italic text-center py-2">Pilih kelas</span>
                                                             </div>
                                                         </div>
                                                     </div>
@@ -753,18 +753,17 @@
                 if (isCurrent) {
                     btnClass = 'btn-light-warning text-warning border border-warning border-opacity-25 opacity-75 disabled';
                 } else if (isSelectable) {
-                    btnClass = 'btn-outline-primary btn-active-primary';
+                    btnClass = 'btn-light-primary text-primary hover-elevate-up';
                 } else {
-                    btnClass = 'btn-light text-muted opacity-50 disabled';
+                    btnClass = 'btn-light text-muted opacity-40 disabled';
                 }
 
                 var disabledAttr = (isSelectable && !isCurrent) ? '' : 'disabled';
-                var currentBadge = isCurrent ? '<span class="badge bg-warning text-dark fs-9 px-1 ms-1">Saat Ini</span>' : '';
 
                 var itemHtml = `
-                    <button type="button" class="btn btn-sm ${btnClass} text-start py-2 px-3 btn-select-target-class rounded-3 mb-1 w-100 fs-7 d-flex align-items-center justify-content-between" data-id="${cls.id}" data-name="${cls.name}" ${disabledAttr}>
-                        <span class="text-truncate">${cls.name}</span>
-                        ${currentBadge}
+                    <button type="button" class="btn btn-sm ${btnClass} text-center justify-content-center py-1 px-1 btn-select-target-class rounded-2 mb-1 w-100 fs-8 fw-bolder d-flex align-items-center" data-id="${cls.id}" data-name="${cls.name}" ${disabledAttr}>
+                        <span>${cls.name}</span>
+                        ${isCurrent ? '<i class="fa-solid fa-user-lock ms-1 fs-9" title="Kelas Saat Ini"></i>' : ''}
                     </button>
                 `;
 
@@ -1237,8 +1236,8 @@
                     .html(`<i class="fa-solid fa-circle-check text-success me-1"></i><span class="text-gray-900 fw-bolder">${className}</span>`)
                     .removeClass('text-muted');
 
-                $('.btn-select-target-class').removeClass('active btn-primary text-white').addClass('btn-outline-primary');
-                $(this).addClass('active btn-primary text-white').removeClass('btn-outline-primary');
+                $('.btn-select-target-class').removeClass('active bg-primary text-white shadow-xs').addClass('btn-light-primary text-primary');
+                $(this).addClass('active bg-primary text-white shadow-xs').removeClass('btn-light-primary text-primary');
 
                 // Hide Bootstrap Dropdown Menu
                 var $triggerBtn = $('#btn_trigger_target_classroom');
