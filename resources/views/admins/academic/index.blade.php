@@ -364,11 +364,52 @@
                                                     @endforeach
                                                 </select>
                                             </div>
-                                            <div class="col-lg-2 col-md-6">
+                                            <div class="col-lg-2 col-md-6 dropdown">
                                                 <label class="d-block mb-2 fw-bold" style="font-size: 12px; color: #334155; letter-spacing: -0.01em; text-transform: none;">Kelas Saat Ini</label>
-                                                <select name="classroom_id" class="form-select bg-white" id="filter_classroom_id">
-                                                    <option value="">Pilih Kelas</option>
-                                                </select>
+                                                <input type="hidden" name="classroom_id" id="filter_classroom_id">
+                                                
+                                                <button type="button" class="form-select bg-white d-flex align-items-center justify-content-between text-start w-100" id="btn_trigger_current_classroom" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false" disabled style="height: 42px; border-radius: 10px;">
+                                                    <span id="label_selected_current_classroom" class="text-muted fs-7">Pilih Kelas</span>
+                                                </button>
+                                                
+                                                <div class="dropdown-menu p-3 shadow-lg border-0" id="dropdown_menu_current_classroom" style="width: 360px; max-width: 95vw; border-radius: 16px; z-index: 1050; background-color: #ffffff;">
+                                                    <div class="d-flex align-items-center justify-content-between mb-2 pb-2 border-bottom">
+                                                        <span class="fw-bolder fs-8 text-gray-800"><i class="fa-solid fa-chalkboard-user me-1 text-primary"></i>Pilih Kelas Saat Ini</span>
+                                                        <span class="badge bg-light-primary text-primary fs-9 fw-bold px-2 py-1 rounded-pill">3 Kolom</span>
+                                                    </div>
+                                                    
+                                                    <div class="row g-2" id="container_3col_current_classrooms">
+                                                        <!-- Column 1 -->
+                                                        <div class="col-4 border-end pe-2">
+                                                            <div class="d-flex align-items-center justify-content-between mb-2">
+                                                                <span class="badge bg-light-primary text-primary fw-bolder px-1 py-1 fs-9 rounded-pill w-100 text-center" id="col1_current_title">Kelas 7</span>
+                                                            </div>
+                                                            <div class="d-flex flex-column gap-1 overflow-auto pe-1" id="col1_current_class_list" style="max-height: 200px;">
+                                                                <span class="text-muted fs-9 italic text-center py-2">Pilih UPT</span>
+                                                            </div>
+                                                        </div>
+                                                        
+                                                        <!-- Column 2 -->
+                                                        <div class="col-4 border-end px-2">
+                                                            <div class="d-flex align-items-center justify-content-between mb-2">
+                                                                <span class="badge bg-light-info text-info fw-bolder px-1 py-1 fs-9 rounded-pill w-100 text-center" id="col2_current_title">Kelas 8</span>
+                                                            </div>
+                                                            <div class="d-flex flex-column gap-1 overflow-auto pe-1" id="col2_current_class_list" style="max-height: 200px;">
+                                                                <span class="text-muted fs-9 italic text-center py-2">Pilih UPT</span>
+                                                            </div>
+                                                        </div>
+                                                        
+                                                        <!-- Column 3 -->
+                                                        <div class="col-4 ps-2">
+                                                            <div class="d-flex align-items-center justify-content-between mb-2">
+                                                                <span class="badge bg-light-success text-success fw-bolder px-1 py-1 fs-9 rounded-pill w-100 text-center" id="col3_current_title">Kelas 9</span>
+                                                            </div>
+                                                            <div class="d-flex flex-column gap-1 overflow-auto pe-1" id="col3_current_class_list" style="max-height: 200px;">
+                                                                <span class="text-muted fs-9 italic text-center py-2">Pilih UPT</span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
                                             </div>
                                             <div class="col-lg-3 col-md-6 dropdown">
                                                 <label class="d-block mb-2 fw-bold" style="font-size: 12px; color: #334155; letter-spacing: -0.01em; text-transform: none;" id="label_target_classroom">Kelas Tujuan</label>
@@ -806,6 +847,82 @@
             }
         }
 
+        function renderCurrentClassroomOptions() {
+            $('#col1_current_class_list, #col2_current_class_list, #col3_current_class_list').empty();
+
+            if (!currentSchoolClassrooms || currentSchoolClassrooms.length === 0) {
+                $('#btn_trigger_current_classroom').prop('disabled', true);
+                $('#col1_current_class_list, #col2_current_class_list, #col3_current_class_list').html('<span class="text-muted fs-9 italic text-center py-2">Tidak ada kelas</span>');
+                return;
+            }
+
+            // Determine level layout (SMP: 7, 8, 9 vs MA: 10, 11, 12 or dynamic)
+            var levelsSet = new Set();
+            $.each(currentSchoolClassrooms, function(i, cls) {
+                var lvl = extractClassLevel(cls.name);
+                if (lvl !== null) levelsSet.add(lvl);
+            });
+            var sortedLevels = Array.from(levelsSet).sort(function(a, b) { return a - b; });
+
+            var level1 = 7, level2 = 8, level3 = 9; // Default SMP
+            if (sortedLevels.some(function(l) { return l >= 10; })) {
+                // MA / High School levels
+                level1 = 10; level2 = 11; level3 = 12;
+            } else if (sortedLevels.length > 0) {
+                level1 = sortedLevels[0] || 7;
+                level2 = sortedLevels[1] || (level1 + 1);
+                level3 = sortedLevels[2] || (level2 + 1);
+            }
+
+            $('#col1_current_title').text('Kelas ' + level1);
+            $('#col2_current_title').text('Kelas ' + level2);
+            $('#col3_current_title').text('Kelas ' + level3);
+
+            var countCol1 = 0, countCol2 = 0, countCol3 = 0;
+            var selectedCurrentId = $('#filter_classroom_id').val();
+
+            $.each(currentSchoolClassrooms, function(index, cls) {
+                var clsLevel = extractClassLevel(cls.name);
+                var isSelected = (cls.id == selectedCurrentId);
+
+                var btnClass = isSelected ? 'active bg-primary text-white shadow-xs' : 'btn-light-primary text-primary hover-elevate-up';
+
+                var itemHtml = `
+                    <button type="button" class="btn btn-sm ${btnClass} text-center justify-content-center py-1 px-1 btn-select-current-class rounded-2 mb-1 w-100 fs-8 fw-bolder d-flex align-items-center" data-id="${cls.id}" data-name="${cls.name}">
+                        <span>${cls.name}</span>
+                    </button>
+                `;
+
+                if (clsLevel === level1) {
+                    $('#col1_current_class_list').append(itemHtml);
+                    countCol1++;
+                } else if (clsLevel === level2) {
+                    $('#col2_current_class_list').append(itemHtml);
+                    countCol2++;
+                } else if (clsLevel === level3) {
+                    $('#col3_current_class_list').append(itemHtml);
+                    countCol3++;
+                } else {
+                    if (clsLevel !== null && clsLevel < level1) {
+                        $('#col1_current_class_list').append(itemHtml);
+                        countCol1++;
+                    } else if (clsLevel !== null && clsLevel > level3) {
+                        $('#col3_current_class_list').append(itemHtml);
+                        countCol3++;
+                    } else {
+                        $('#col1_current_class_list').append(itemHtml);
+                        countCol1++;
+                    }
+                }
+            });
+
+            if (countCol1 === 0) $('#col1_current_class_list').html('<span class="text-muted fs-8 italic text-center py-2">- Kosong -</span>');
+            if (countCol2 === 0) $('#col2_current_class_list').html('<span class="text-muted fs-8 italic text-center py-2">- Kosong -</span>');
+            if (countCol3 === 0) $('#col3_current_class_list').html('<span class="text-muted fs-8 italic text-center py-2">- Kosong -</span>');
+
+            $('#btn_trigger_current_classroom').prop('disabled', false);
+        }
+
         // Relational classroom filters for Grade Promotion
         function getClassroomBySchoolId(schoolId) {
             $.ajax({
@@ -813,7 +930,11 @@
                 type: "GET",
                 data: { school_id: schoolId },
                 success: function(response) {
-                    $('#filter_classroom_id').empty();
+                    $('#filter_classroom_id').val('');
+                    $('#label_selected_current_classroom').text('Pilih Kelas').removeClass('text-gray-900 fw-bolder').addClass('text-muted');
+                    $('#btn_trigger_current_classroom').prop('disabled', true);
+                    $('#col1_current_class_list, #col2_current_class_list, #col3_current_class_list').empty();
+
                     $('#filter_new_classroom').val('');
                     $('#label_selected_target_classroom').text('Pilih Kelas Tujuan').removeClass('text-gray-900 fw-bolder').addClass('text-muted');
                     $('#btn_trigger_target_classroom').prop('disabled', true);
@@ -822,12 +943,9 @@
                     currentSchoolClassrooms = response.data || [];
 
                     if (currentSchoolClassrooms.length > 0) {
-                        $('#filter_classroom_id').append('<option value="">Pilih Kelas Saat Ini</option>');
-                        $.each(currentSchoolClassrooms, function(key, value) {
-                            $('#filter_classroom_id').append('<option value="' + value.id + '">' + value.name + '</option>');
-                        });
+                        renderCurrentClassroomOptions();
                     } else {
-                        $('#filter_classroom_id').append('<option value="">Tidak ada kelas</option>');
+                        $('#col1_current_class_list, #col2_current_class_list, #col3_current_class_list').html('<span class="text-muted fs-9 italic text-center py-2">- Tidak ada -</span>');
                     }
                 }
             });
@@ -1223,6 +1341,37 @@
             // Initial load of Academic Year Options
             updateAcademicYearOptions();
 
+            // Selection handler for 3-Column Current Classroom Picker items
+            $(document).on('click', '.btn-select-current-class', function(e) {
+                e.preventDefault();
+                if ($(this).prop('disabled')) return;
+
+                var classId = $(this).data('id');
+                var className = $(this).data('name');
+
+                $('#filter_classroom_id').val(classId);
+                $('#label_selected_current_classroom')
+                    .html(`<i class="fa-solid fa-circle-check text-success me-1"></i><span class="text-gray-900 fw-bolder">${className}</span>`)
+                    .removeClass('text-muted');
+
+                $('.btn-select-current-class').removeClass('active bg-primary text-white shadow-xs').addClass('btn-light-primary text-primary');
+                $(this).addClass('active bg-primary text-white shadow-xs').removeClass('btn-light-primary text-primary');
+
+                // Hide Bootstrap Dropdown Menu
+                var $triggerBtn = $('#btn_trigger_current_classroom');
+                if (typeof bootstrap !== 'undefined' && bootstrap.Dropdown) {
+                    var dropdownInstance = bootstrap.Dropdown.getInstance($triggerBtn[0]) || new bootstrap.Dropdown($triggerBtn[0]);
+                    if (dropdownInstance) dropdownInstance.hide();
+                } else if ($.fn.dropdown) {
+                    $triggerBtn.dropdown('hide');
+                }
+
+                selectedStudentIds.clear();
+                updateSelectedCounter();
+                updateTargetClassroomOptions();
+                searchPromotion();
+            });
+
             // Selection handler for 3-Column Target Classroom Picker items
             $(document).on('click', '.btn-select-target-class', function(e) {
                 e.preventDefault();
@@ -1258,7 +1407,11 @@
                     getClassroomBySchoolId(val);
                     searchPromotion();
                 } else {
-                    $('#filter_classroom_id').empty().append('<option value="">Pilih Kelas</option>');
+                    $('#filter_classroom_id').val('');
+                    $('#label_selected_current_classroom').text('Pilih Kelas').removeClass('text-gray-900 fw-bolder').addClass('text-muted');
+                    $('#btn_trigger_current_classroom').prop('disabled', true);
+                    $('#col1_current_class_list, #col2_current_class_list, #col3_current_class_list').html('<span class="text-muted fs-8 italic text-center py-3">Pilih UPT</span>');
+
                     $('#filter_new_classroom').val('');
                     $('#label_selected_target_classroom').text('Pilih Kelas Tujuan').removeClass('text-gray-900 fw-bolder').addClass('text-muted');
                     $('#btn_trigger_target_classroom').prop('disabled', true);
