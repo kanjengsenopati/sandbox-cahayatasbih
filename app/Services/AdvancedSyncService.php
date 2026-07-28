@@ -153,7 +153,7 @@ class AdvancedSyncService
                 'total_in_added' => $newIn,
                 'total_out_added' => $newOut,
                 'conflict_status' => $conflictStatus,
-                'histories_to_insert' => $newMasterHistories->toArray()
+                'histories_to_insert' => $newMasterHistories->values()->toArray()
             ];
         }
 

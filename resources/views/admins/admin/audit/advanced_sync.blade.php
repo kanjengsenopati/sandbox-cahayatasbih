@@ -452,66 +452,26 @@
         }
     });
 
-    // History Hover Modal Logic
+    // History Modal Trigger Logic (Click & Hover support with defensive data handling)
     var historyModalTimeout;
-    $(document).on('mouseenter', '.history-hover-trigger', function() {
-        var studentId = $(this).data('student-id');
-        var data = window.previewHistories[studentId];
-        if (!data || !data.histories) return;
-        
-        clearTimeout(historyModalTimeout);
-        
-        // Render Modal Content
-        $('#history-modal-subtitle').text('Siswa: ' + data.name);
-        var bodyHtml = '';
-        
-        data.histories.forEach(function(h) {
-            var color = (h.type === 'IN' || h.type === 'UNBLOCKED') ? 'success' : 'danger';
-            var sign = (h.type === 'IN' || h.type === 'UNBLOCKED') ? '+' : '-';
-            
-            bodyHtml += '<tr>';
-            bodyHtml += '<td>' + new Date(h.created_at).toLocaleString('id-ID') + '</td>';
-            bodyHtml += '<td><span class="badge badge-light-' + color + '">' + h.type + '</span></td>';
-            bodyHtml += '<td>' + (h.usage || '-') + '</td>';
-            bodyHtml += '<td class="text-' + color + '">' + sign + ' Rp ' + new Intl.NumberFormat('id-ID').format(h.amount) + '</td>';
-            bodyHtml += '<td><div style="max-width:300px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="' + (h.description || '-') + '">' + (h.description || '-') + '</div></td>';
-            bodyHtml += '</tr>';
-        });
-        
-        if(data.histories.length === 0) {
-            bodyHtml = '<tr><td colspan="5" class="text-center text-muted">Tidak ada riwayat</td></tr>';
-        }
-        
-        $('#history-modal-body').html(bodyHtml);
-        
-        historyModalTimeout = setTimeout(function() {
-            var myModal = new bootstrap.Modal(document.getElementById('historyModal'), {
-                backdrop: true,
-                keyboard: true
-            });
-            myModal.show();
-        }, 300); // 300ms delay to prevent accidental hovers
-    });
-
-    // Close any previous modal cleanly when a new one opens, because we are instantiating new modals on hover.
-    // Better yet, use a single instance.
     var historyModalInstance = null;
+
     document.getElementById('historyModal').addEventListener('hidden.bs.modal', function () {
-        historyModalInstance = null; // reset
+        historyModalInstance = null; // reset instance on hidden
     });
 
-    // Modify the hover trigger to use a single instance
-    $(document).off('mouseenter', '.history-hover-trigger').on('mouseenter', '.history-hover-trigger', function() {
-        var studentId = $(this).data('student-id');
-        var data = window.previewHistories[studentId];
+    function showHistoryModal(studentId, immediate) {
+        var data = window.previewHistories ? window.previewHistories[studentId] : null;
         if (!data || !data.histories) return;
-        
+
         clearTimeout(historyModalTimeout);
-        
+
         $('#history-modal-subtitle').text('Siswa: ' + data.name);
         var bodyHtml = '';
         
-        data.histories.forEach(function(h) {
+        var historiesList = Array.isArray(data.histories) ? data.histories : Object.values(data.histories || {});
+
+        historiesList.forEach(function(h) {
             var color = (h.type === 'IN' || h.type === 'UNBLOCKED') ? 'success' : 'danger';
             var sign = (h.type === 'IN' || h.type === 'UNBLOCKED') ? '+' : '-';
             
@@ -524,18 +484,35 @@
             bodyHtml += '</tr>';
         });
         
-        if(data.histories.length === 0) {
+        if (historiesList.length === 0) {
             bodyHtml = '<tr><td colspan="5" class="text-center text-muted">Tidak ada riwayat</td></tr>';
         }
-        
+
         $('#history-modal-body').html(bodyHtml);
-        
-        historyModalTimeout = setTimeout(function() {
+
+        var triggerShow = function() {
             if (!historyModalInstance) {
                 historyModalInstance = new bootstrap.Modal(document.getElementById('historyModal'));
             }
             historyModalInstance.show();
-        }, 400); // 400ms hover delay
+        };
+
+        if (immediate) {
+            triggerShow();
+        } else {
+            historyModalTimeout = setTimeout(triggerShow, 300);
+        }
+    }
+
+    $(document).on('click', '.history-hover-trigger', function(e) {
+        e.preventDefault();
+        var studentId = $(this).data('student-id');
+        showHistoryModal(studentId, true);
+    });
+
+    $(document).on('mouseenter', '.history-hover-trigger', function() {
+        var studentId = $(this).data('student-id');
+        showHistoryModal(studentId, false);
     });
 
     $(document).on('mouseleave', '.history-hover-trigger', function() {
