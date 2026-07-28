@@ -197,6 +197,48 @@
 
 <script>
     (function() {
+        // Initialize Select2 for Wali Santri in modal
+        var $modalUserSelect = $('#modal_user_id');
+        if ($modalUserSelect.length) {
+            if ($modalUserSelect.data('select2')) {
+                $modalUserSelect.select2('destroy');
+            }
+            $modalUserSelect.select2({
+                dropdownParent: $('#modalEditSiswa').length ? $('#modalEditSiswa') : $modalUserSelect.closest('.modal'),
+                placeholder: "Pilih Wali Siswa",
+                allowClear: true,
+                ajax: {
+                    url: "{{ route('select2') }}",
+                    dataType: 'json',
+                    delay: 300,
+                    data: function (params) {
+                        return {
+                            search: params.term,
+                            data_type: "USER"
+                        };
+                    },
+                    processResults: function (data) {
+                        return {
+                            results: $.map(data, function (item) {
+                                var statusText = 'Non Jamaah';
+                                if (item.jamaah_status === 'JAMAAH') {
+                                    statusText = 'Jamaah';
+                                } else if (item.jamaah_status === 'MUKIMIN') {
+                                    statusText = 'Mukimin';
+                                }
+                                var phoneText = item.phone ? ' - ' + item.phone : '';
+                                return {
+                                    text: item.name + ' [' + statusText + ']' + phoneText,
+                                    id: item.id
+                                };
+                            })
+                        };
+                    },
+                    cache: true
+                }
+            });
+        }
+
         $('#modal_school_id').on('change', function () {
             var school_id = $(this).val();
             if (school_id) {
