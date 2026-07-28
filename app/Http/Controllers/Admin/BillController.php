@@ -48,6 +48,7 @@ class BillController extends Controller
         $academicYears = \App\Models\AcademicYear::orderBy('start_year', 'desc')->get();
 
         if ($studentId = request()->student_id) {
+            TransactionService::syncStudentBillsFromPaidTransactions($studentId);
             $student = Student::with(['user', 'classroom.school', 'classroomHistories.classroom'])->find($studentId);
             if (!$student) {
                 return redirect()->to(route('bill.index'))->with('error', 'Data siswa tidak ditemukan atau telah dihapus.');

@@ -799,4 +799,48 @@ class TransactionService
 
         return $billIdOrDescriptor;
     }
+
+    public static function syncStudentBillsFromPaidTransactions($studentId)
+    {
+        if (empty($studentId)) return;
+
+        try {
+            $paidTransactions = Transaction::with(['transactionDetails', 'student'])
+                ->where('student_id', $studentId)
+                ->where('type', Transaction::TYPE_BILL)
+                ->whereIn('status', [Transaction::STATUS_PAID, 'approved', 'SUCCESS'])
+                ->get();
+
+            foreach ($paidTransactions as $tx) {
+                foreach ($tx->transactionDetails as $detail) {
+                    $billId = $detail->bill_id;
+                    if (empty($billId)) continue;
+
+                    $bill = $detail->bill;
+                    $isVirtual = str_starts_with($billId, 'generated_') || str_starts_with($billId, 'auto_');
+
+                    if (!$bill || $isVirtual) {
+                        $realBillId = self::ensureBillRecord($studentId, $billId);
+                        if ($realBillId && $realBillId !== $billId) {
+                            $detail->update(['bill_id' => $realBillId]);
+                            $bill = Bill::find($realBillId);
+                        }
+                    }
+
+                    if ($bill) {
+                        $paidVal = $detail->amount ?? $bill->remaining_amount;
+                        if ($bill->paid_amount < $bill->amount) {
+                            $bill->paid_amount = min($bill->amount, $bill->paid_amount + $paidVal);
+                            if ($bill->paid_amount >= $bill->amount) {
+                                $bill->status = Bill::STATUS_PAID;
+                            }
+                            $bill->save();
+                        }
+                    }
+                }
+            }
+        } catch (\Throwable $e) {
+            Log::error("[syncStudentBillsFromPaidTransactions] Error for student {$studentId}: " . $e->getMessage());
+        }
+    }
 }

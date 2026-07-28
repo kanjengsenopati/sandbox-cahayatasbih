@@ -13,6 +13,8 @@ class BillController extends BaseWaliApiController
         $student = $this->resolveActiveStudent();
         if (!$student) return response()->json(['unpaid' => [], 'paid' => []]);
 
+        \App\Services\TransactionService::syncStudentBillsFromPaidTransactions($student->id);
+
         // Load student's school for UPT filtering
         $student->load('classroom.school');
 
@@ -136,6 +138,8 @@ class BillController extends BaseWaliApiController
         $student = $this->resolveActiveStudent();
         if (!$student) return response()->json(['error' => 'Student not found'], 404);
         
+        \App\Services\TransactionService::syncStudentBillsFromPaidTransactions($student->id);
+
         $billType = BillType::with(['billItem', 'academicYear'])->findOrFail($id);
         $academicYearId = request('academic_year_id');
         
