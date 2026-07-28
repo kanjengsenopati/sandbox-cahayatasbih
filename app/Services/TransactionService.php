@@ -731,16 +731,6 @@ class TransactionService
                 return $billIdOrDescriptor;
             }
 
-            $existingBill = \App\Models\Bill::where('student_id', $studentId)
-                ->where('bill_type_id', $billTypeId)
-                ->where('month', $month)
-                ->whereNull('deleted_at')
-                ->first();
-
-            if ($existingBill) {
-                return $existingBill->id;
-            }
-
             $billType = \App\Models\BillType::with('billItem')->find($billTypeId);
             $student = \App\Models\Student::find($studentId);
 
@@ -748,14 +738,50 @@ class TransactionService
                 return $billIdOrDescriptor;
             }
 
-            $sampleBill = \App\Models\Bill::where('student_id', $studentId)
-                ->where('bill_type_id', $billTypeId)
-                ->where('amount', '>', 0)
-                ->first();
+            $upperBtName = strtoupper($billType->name ?? '');
+            $isZarkasi = str_contains($upperBtName, 'ZARKASI');
+            $isAplikasi = str_contains($upperBtName, 'APLIKASI');
+            $isSyahriah = str_contains($upperBtName, 'SYAHR');
 
-            $isZarkasi = str_contains(strtoupper($billType->name ?? ''), 'ZARKASI');
-            $isAplikasi = str_contains(strtoupper($billType->name ?? ''), 'APLIKASI');
-            $isSyahriah = str_contains(strtoupper($billType->name ?? ''), 'SYAHR');
+            $existingBillQuery = \App\Models\Bill::where('student_id', $studentId)
+                ->where('month', (string)$month)
+                ->whereNull('deleted_at');
+
+            if ($isZarkasi || $isAplikasi || $isSyahriah) {
+                $existingBillQuery->whereHas('billType', function ($q) use ($isZarkasi, $isAplikasi, $isSyahriah) {
+                    $q->where(function ($qq) use ($isZarkasi, $isAplikasi, $isSyahriah) {
+                        if ($isZarkasi) $qq->orWhere('name', 'like', '%ZARKASI%');
+                        if ($isAplikasi) $qq->orWhere('name', 'like', '%APLIKASI%');
+                        if ($isSyahriah) $qq->orWhere('name', 'like', '%SYAHR%');
+                    });
+                });
+            } else {
+                $existingBillQuery->where('bill_type_id', $billTypeId);
+            }
+
+            $existingBill = $existingBillQuery->first();
+
+            if ($existingBill) {
+                return $existingBill->id;
+            }
+
+            $sampleBillQuery = \App\Models\Bill::where('student_id', $studentId)
+                ->where('amount', '>', 0);
+
+            if ($isZarkasi || $isAplikasi || $isSyahriah) {
+                $sampleBillQuery->whereHas('billType', function ($q) use ($isZarkasi, $isAplikasi, $isSyahriah) {
+                    $q->where(function ($qq) use ($isZarkasi, $isAplikasi, $isSyahriah) {
+                        if ($isZarkasi) $qq->orWhere('name', 'like', '%ZARKASI%');
+                        if ($isAplikasi) $qq->orWhere('name', 'like', '%APLIKASI%');
+                        if ($isSyahriah) $qq->orWhere('name', 'like', '%SYAHR%');
+                    });
+                });
+            } else {
+                $sampleBillQuery->where('bill_type_id', $billTypeId);
+            }
+
+            $sampleBill = $sampleBillQuery->first();
+
             if ($isZarkasi) {
                 $m = (int)$month;
                 if ($m >= 7 && $m <= 11) {
@@ -776,12 +802,13 @@ class TransactionService
                 }
             }
 
+            $targetBillTypeId = $sampleBill ? $sampleBill->bill_type_id : $billTypeId;
             $classroomId = $sampleBill ? $sampleBill->classroom_id : $student->classroom_id;
             $academicYearId = $sampleBill ? $sampleBill->academic_year_id : $billType->academic_year_id;
 
             $newBill = \App\Models\Bill::create([
                 'id' => \Illuminate\Support\Str::uuid()->toString(),
-                'bill_type_id' => $billTypeId,
+                'bill_type_id' => $targetBillTypeId,
                 'student_id' => $studentId,
                 'classroom_id' => $classroomId,
                 'academic_year_id' => $academicYearId,
