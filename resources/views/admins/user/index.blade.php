@@ -311,6 +311,32 @@
     <!--end::Post-->
 </div>
 <!--end::Content-->
+
+<!-- Modal Reset Password Success -->
+<div class="modal fade" id="modalResetPasswordSuccess" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered mw-450px">
+        <div class="modal-content" style="border-radius: 24px; box-shadow: 0 10px 40px rgba(0,0,0,0.1);">
+            <div class="modal-header border-0 pb-0 pt-6 px-6">
+                <h5 class="modal-title fw-bolder text-dark">Informasi Reset Password</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body text-center py-6 px-6">
+                <div class="mb-4">
+                    <div class="symbol symbol-60px symbol-circle bg-light-success d-inline-flex align-items-center justify-content-center mx-auto" style="width: 60px; height: 60px;">
+                        <i class="fa fa-check-circle fs-1 text-success"></i>
+                    </div>
+                </div>
+                <h4 class="fw-bolder text-gray-800 mb-3" id="resetPasswordUserName">Wali Santri</h4>
+                <div class="alert alert-custom bg-light-success p-4 rounded-3 text-success fw-bolder fs-5 mb-0" style="border: 1px dashed #10B981;">
+                    Berhasil Reset Password 12345678
+                </div>
+            </div>
+            <div class="modal-footer border-0 pt-0 pb-6 px-6 justify-content-center">
+                <button type="button" class="btn btn-primary px-8" style="border-radius: 12px;" data-bs-dismiss="modal">OK</button>
+            </div>
+        </div>
+    </div>
+</div>
 @endsection
 @push('js')
 <script>
@@ -764,6 +790,67 @@
                          },
                          error: function(xhr) {
                              var errMsg = 'Terjadi kesalahan saat memproses verifikasi.';
+                             if (xhr.responseJSON && xhr.responseJSON.message) {
+                                 errMsg = xhr.responseJSON.message;
+                             }
+                             Swal.fire({
+                                 icon: 'error',
+                                 title: 'Gagal',
+                                 text: errMsg,
+                                 customClass: {
+                                     confirmButton: 'btn btn-danger'
+                                 }
+                             });
+                         }
+                     });
+                 }
+             });
+         });
+
+         // Handler for Reset Password button click
+         $(document).on('click', '.btn-reset-password', function() {
+             var url = $(this).data('url');
+             var userName = $(this).data('name') || 'Wali Santri';
+
+             Swal.fire({
+                 title: 'Reset Password?',
+                 text: "Apakah Anda yakin ingin mereset password untuk Wali Santri '" + userName + "'?",
+                 icon: 'warning',
+                 showCancelButton: true,
+                 confirmButtonColor: '#f59e0b',
+                 cancelButtonColor: '#64748b',
+                 confirmButtonText: 'Ya, Reset Password!',
+                 cancelButtonText: 'Batal',
+                 customClass: {
+                     confirmButton: 'btn btn-warning text-white',
+                     cancelButton: 'btn btn-secondary'
+                 }
+             }).then((result) => {
+                 if (result.isConfirmed) {
+                     $.ajax({
+                         url: url,
+                         type: 'POST',
+                         data: {
+                             _token: '{{ csrf_token() }}'
+                         },
+                         success: function(response) {
+                             if (response.status === 'success') {
+                                 $('#resetPasswordUserName').text(response.user_name || userName);
+                                 $('#modalResetPasswordSuccess').modal('show');
+                                 table.ajax.reload();
+                             } else {
+                                 Swal.fire({
+                                     icon: 'error',
+                                     title: 'Gagal',
+                                     text: response.message || 'Gagal mereset password.',
+                                     customClass: {
+                                         confirmButton: 'btn btn-danger'
+                                     }
+                                 });
+                             }
+                         },
+                         error: function(xhr) {
+                             var errMsg = 'Terjadi kesalahan saat mereset password.';
                              if (xhr.responseJSON && xhr.responseJSON.message) {
                                  errMsg = xhr.responseJSON.message;
                              }

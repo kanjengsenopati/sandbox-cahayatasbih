@@ -148,6 +148,7 @@ class UserController extends Controller
     {
         $actionEdit = route('user.edit', $data->id);
         $actionDelete = route('user.destroy', $data->id);
+        $actionReset = route('user.reset-password', $data->id);
 
         $buttons = "<div class='d-flex justify-content-center align-items-center gap-1'>";
 
@@ -155,6 +156,8 @@ class UserController extends Controller
             $actionVerify = route('user.verify', $data->id);
             $buttons .= "<button type='button' class='btn btn-icon btn-sm btn-light-success btn-verify me-1' data-url='{$actionVerify}' title='Verifikasi Wali Santri'><i class='fa fa-check fs-6'></i></button>";
         }
+
+        $buttons .= "<button type='button' class='btn btn-icon btn-sm btn-light-warning btn-reset-password me-1' data-url='{$actionReset}' data-name='{$data->name}' title='Reset Password'><i class='fa fa-key fs-6 text-warning'></i></button>";
 
         $buttons .= view('components.action.edit', ['action' => $actionEdit, 'name' => 'Wali Santri']) . '&nbsp;' .
             view('components.action.delete', ['action' => $actionDelete, 'id' => $data->id, 'name' => 'Wali Santri']) .
@@ -388,6 +391,37 @@ class UserController extends Controller
             return response()->json([
                 'status' => 'error',
                 'message' => 'Terjadi kesalahan saat memverify data.'
+            ], 500);
+        }
+    }
+
+    /**
+     * Reset password of a Wali Santri to 12345678.
+     */
+    public function resetPassword(User $user)
+    {
+        if (!Auth::user()->can('Edit Wali Santri')) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Maaf, Anda tidak memiliki akses untuk reset password Wali Santri.'
+            ], 403);
+        }
+
+        try {
+            $user->update([
+                'password' => bcrypt('12345678')
+            ]);
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Berhasil Reset Password 12345678',
+                'user_name' => $user->name
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Reset password failed: ' . $e->getMessage());
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Terjadi kesalahan saat mereset password.'
             ], 500);
         }
     }
