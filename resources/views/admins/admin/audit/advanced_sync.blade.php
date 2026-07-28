@@ -322,7 +322,14 @@
                 {
                     data: 'current_local_saldo',
                     render: function(data, type, row) {
-                        return '<span class="text-slate-600 font-medium">Rp ' + new Intl.NumberFormat('id-ID').format(data) + '</span>';
+                        let html = '<div class="d-flex flex-column">' +
+                                   '<span class="text-slate-600 font-medium">Rp ' + new Intl.NumberFormat('id-ID').format(data) + '</span>';
+                        if (row.local_saldo_date && row.local_saldo_time) {
+                            html += '<span class="text-[11px] text-slate-400 font-normal mt-1">' + row.local_saldo_date + '</span>' +
+                                    '<span class="text-[11px] text-slate-400 font-normal">' + row.local_saldo_time + '</span>';
+                        }
+                        html += '</div>';
+                        return html;
                     }
                 },
                 {
@@ -347,7 +354,14 @@
                 {
                     data: 'master_saldo',
                     render: function(data, type, row) {
-                        return '<span class="text-slate-600 font-medium">Rp ' + new Intl.NumberFormat('id-ID').format(data) + '</span>';
+                        let html = '<div class="d-flex flex-column">' +
+                                   '<span class="text-slate-600 font-medium">Rp ' + new Intl.NumberFormat('id-ID').format(data) + '</span>';
+                        if (row.master_saldo_date && row.master_saldo_time) {
+                            html += '<span class="text-[11px] text-slate-400 font-normal mt-1">' + row.master_saldo_date + '</span>' +
+                                    '<span class="text-[11px] text-slate-400 font-normal">' + row.master_saldo_time + '</span>';
+                        }
+                        html += '</div>';
+                        return html;
                     }
                 },
                 {

@@ -20,7 +20,7 @@ class AdvancedSyncService
         $previewId = 'sync_preview_' . (string) Str::uuid();
         
         $masterQuery = DB::connection('mysql_master')->table('students')
-            ->select('students.id', 'students.name', 'students.nis', 'students.saldo', 'students.saving', 'classrooms.name as classroom_name', 'schools.name as school_name')
+            ->select('students.id', 'students.name', 'students.nis', 'students.saldo', 'students.saving', 'students.created_at', 'students.updated_at', 'classrooms.name as classroom_name', 'schools.name as school_name')
             ->leftJoin('classrooms', 'students.classroom_id', '=', 'classrooms.id')
             ->leftJoin('schools', 'classrooms.school_id', '=', 'schools.id')
             ->whereNull('students.deleted_at');
@@ -114,6 +114,28 @@ class AdvancedSyncService
                 $conflictStatus = 'CONFLICT_DETECTED';
             }
 
+            // Determine timestamp for local saldo
+            $localSaldoTimestamp = null;
+            if ($localHistories->isNotEmpty()) {
+                $localSaldoTimestamp = $localHistories->sortByDesc('created_at')->first()->created_at;
+            } elseif ($localStudent) {
+                $localSaldoTimestamp = $localStudent->updated_at ?? $localStudent->created_at;
+            }
+
+            // Determine timestamp for master saldo
+            $masterSaldoTimestamp = null;
+            if ($masterHistories->isNotEmpty()) {
+                $masterSaldoTimestamp = $masterHistories->sortByDesc('created_at')->first()->created_at;
+            } else {
+                $masterSaldoTimestamp = $masterStudent->updated_at ?? $masterStudent->created_at;
+            }
+
+            $localSaldoDate = $localSaldoTimestamp ? \Carbon\Carbon::parse($localSaldoTimestamp)->format('d-M-Y') : null;
+            $localSaldoTime = $localSaldoTimestamp ? \Carbon\Carbon::parse($localSaldoTimestamp)->format('H : i : s') : null;
+
+            $masterSaldoDate = $masterSaldoTimestamp ? \Carbon\Carbon::parse($masterSaldoTimestamp)->format('d-M-Y') : null;
+            $masterSaldoTime = $masterSaldoTimestamp ? \Carbon\Carbon::parse($masterSaldoTimestamp)->format('H : i : s') : null;
+
             $previewData[] = [
                 'student_id' => $studentId,
                 'nis' => $masterStudent->nis ?? '-',
@@ -121,7 +143,11 @@ class AdvancedSyncService
                 'classroom' => $masterStudent->classroom_name ?? '-',
                 'school' => $masterStudent->school_name ?? '-',
                 'current_local_saldo' => $currentLocalSaldo,
+                'local_saldo_date' => $localSaldoDate,
+                'local_saldo_time' => $localSaldoTime,
                 'master_saldo' => $masterStudent->saldo,
+                'master_saldo_date' => $masterSaldoDate,
+                'master_saldo_time' => $masterSaldoTime,
                 'simulated_saldo' => $simulatedSaldo,
                 'new_histories_count' => $newMasterHistories->count(),
                 'total_in_added' => $newIn,
