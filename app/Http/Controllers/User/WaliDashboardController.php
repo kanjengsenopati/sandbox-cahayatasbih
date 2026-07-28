@@ -186,10 +186,31 @@ class WaliDashboardController extends Controller
     {
         $request->validate([
             'bill_ids' => 'required|array',
-            'bill_ids.*' => 'exists:bills,id'
+            'bill_ids.*' => [
+                'required',
+                'string',
+                function ($attribute, $value, $fail) {
+                    if (str_starts_with($value, 'generated_') || str_starts_with($value, 'auto_')) {
+                        return;
+                    }
+                    if (!\App\Models\Bill::where('id', $value)->exists()) {
+                        $fail("Tagihan dengan ID {$value} tidak ditemukan.");
+                    }
+                }
+            ]
         ]);
 
-        $bills = Bill::whereIn('id', $request->bill_ids)->get();
+        $student = $this->resolveActiveStudent();
+        if (!$student) {
+            return redirect()->route('wali.app')->with('error', 'Santri tidak ditemukan');
+        }
+
+        $realBillIds = [];
+        foreach ($request->bill_ids as $bId) {
+            $realBillIds[] = TransactionService::ensureBillRecord($student->id, $bId);
+        }
+
+        $bills = Bill::whereIn('id', $realBillIds)->get();
         $totalAmount = $bills->sum('amount');
         
         $uniqueDigits = rand(111, 299);

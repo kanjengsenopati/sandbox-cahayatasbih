@@ -42,6 +42,13 @@ class TransactionService
             if ($transaction->transactionDetails->count() > 0) {
                 foreach ($transaction->transactionDetails as $detail) {
                     $bill = $detail->bill;
+                    if (!$bill && !empty($detail->bill_id)) {
+                        $realBillId = self::ensureBillRecord($transaction->student_id, $detail->bill_id);
+                        if ($realBillId && $realBillId !== $detail->bill_id) {
+                            $detail->update(['bill_id' => $realBillId]);
+                            $bill = Bill::find($realBillId);
+                        }
+                    }
                     if ($bill) {
                         $paidVal = $detail->amount ?? $bill->remaining_amount;
                         $bill->paid_amount = min($bill->amount, $bill->paid_amount + $paidVal);
@@ -58,16 +65,17 @@ class TransactionService
                 $customAmounts = request()->custom_amounts ?? [];
                 $billIds = request()->bill_ids ?? [];
                 foreach ($billIds as $billId) {
+                    $realBillId = self::ensureBillRecord($transaction->student_id, $billId);
                     // Cek apakah detail dengan bill_id ini sudah ada
                     $exists = $transaction->transactionDetails()
-                        ->where('bill_id', $billId)
+                        ->where('bill_id', $realBillId)
                         ->exists();
 
                     if (!$exists) {
                         $customAmount = isset($customAmounts[$billId]) ? intval($customAmounts[$billId]) : null;
                         TransactionDetail::create([
                             'transaction_id' => $transaction->id,
-                            'bill_id' => $billId,
+                            'bill_id' => $realBillId,
                             'amount' => $customAmount,
                         ]);
                     }
@@ -77,6 +85,13 @@ class TransactionService
                 // Update status bill setelah transaction details dibuat
                 foreach ($transaction->transactionDetails as $detail) {
                     $bill = $detail->bill;
+                    if (!$bill && !empty($detail->bill_id)) {
+                        $realBillId = self::ensureBillRecord($transaction->student_id, $detail->bill_id);
+                        if ($realBillId && $realBillId !== $detail->bill_id) {
+                            $detail->update(['bill_id' => $realBillId]);
+                            $bill = Bill::find($realBillId);
+                        }
+                    }
                     if ($bill) {
                         $paidVal = $detail->amount ?? $bill->remaining_amount;
                         $bill->paid_amount = min($bill->amount, $bill->paid_amount + $paidVal);
@@ -492,8 +507,15 @@ class TransactionService
                 }
                 // change bill status to paid
                 if ($transaction->type == Transaction::TYPE_BILL) {
-                    $transaction->transactionDetails->each(function ($detail) {
+                    $transaction->transactionDetails->each(function ($detail) use ($transaction) {
                         $bill = $detail->bill;
+                        if (!$bill && !empty($detail->bill_id)) {
+                            $realBillId = self::ensureBillRecord($transaction->student_id, $detail->bill_id);
+                            if ($realBillId && $realBillId !== $detail->bill_id) {
+                                $detail->update(['bill_id' => $realBillId]);
+                                $bill = Bill::find($realBillId);
+                            }
+                        }
                         if ($bill) {
                             $paidVal = $detail->amount ?? $bill->remaining_amount;
                             $bill->paid_amount = min($bill->amount, $bill->paid_amount + $paidVal);
@@ -684,19 +706,30 @@ class TransactionService
             return $billIdOrDescriptor;
         }
 
-        if (strpos($billIdOrDescriptor, 'auto_') === false) {
+        if (strpos($billIdOrDescriptor, 'auto_') === false && strpos($billIdOrDescriptor, 'generated_') === false) {
             $existing = \App\Models\Bill::find($billIdOrDescriptor);
             if ($existing) {
                 return $existing->id;
             }
         }
 
-        // Descriptor format: auto_{billTypeId}_{month}_{year}
+        // Descriptor format:
+        // 1. auto_{billTypeId}_{month}_{year}
+        // 2. generated_{billTypeId}_{studentId}_{month}_{year}
         $parts = explode('_', $billIdOrDescriptor);
-        if (count($parts) >= 4 && $parts[0] === 'auto') {
-            $billTypeId = $parts[1];
-            $month = (string) $parts[2];
-            $year = (string) $parts[3];
+        if (count($parts) >= 4) {
+            $prefix = $parts[0];
+            if ($prefix === 'generated' && count($parts) >= 5) {
+                $billTypeId = $parts[1];
+                $month = (string) $parts[3];
+                $year = (string) $parts[4];
+            } elseif ($prefix === 'auto' || $prefix === 'generated') {
+                $billTypeId = $parts[1];
+                $month = (string) $parts[2];
+                $year = (string) $parts[3];
+            } else {
+                return $billIdOrDescriptor;
+            }
 
             $existingBill = \App\Models\Bill::where('student_id', $studentId)
                 ->where('bill_type_id', $billTypeId)

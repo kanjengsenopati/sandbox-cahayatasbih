@@ -26,7 +26,18 @@ class CheckoutController extends BaseWaliApiController
         try {
             $request->validate([
                 'bill_ids' => 'required|array',
-                'bill_ids.*' => 'exists:bills,id',
+                'bill_ids.*' => [
+                    'required',
+                    'string',
+                    function ($attribute, $value, $fail) {
+                        if (str_starts_with($value, 'generated_') || str_starts_with($value, 'auto_')) {
+                            return;
+                        }
+                        if (!\App\Models\Bill::where('id', $value)->exists()) {
+                            $fail("Tagihan dengan ID {$value} tidak ditemukan.");
+                        }
+                    }
+                ],
                 'payment_method_id' => 'required|exists:payment_methods,id',
                 'student_id' => 'required|exists:students,id'
             ]);
