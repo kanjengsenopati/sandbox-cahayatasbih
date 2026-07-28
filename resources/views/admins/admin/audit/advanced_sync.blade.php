@@ -325,9 +325,9 @@
                         let html = '<div class="d-flex flex-column align-items-start gap-1">' +
                                    '<span class="text-slate-600 font-medium">Rp ' + new Intl.NumberFormat('id-ID').format(data) + '</span>';
                         if (row.local_saldo_date && row.local_saldo_time) {
-                            html += '<div class="badge badge-light-secondary text-slate-600 d-inline-flex flex-column align-items-start py-1 px-2.5 mt-1 border border-slate-200" style="font-size: 70%; border-radius: 8px; line-height: 1.35; width: fit-content;">' +
-                                    '<span class="fw-bold text-slate-600">' + row.local_saldo_date + '</span>' +
-                                    '<span class="fw-medium text-slate-400">' + row.local_saldo_time + '</span>' +
+                            html += '<div class="badge d-inline-flex flex-column align-items-start py-1 px-2.5 mt-1" style="font-size: 70%; border-radius: 8px; line-height: 1.35; width: fit-content; background-color: #EFF6FF; border: 1px solid #BFDBFE;">' +
+                                    '<span class="fw-bold" style="color: #1D4ED8 !important;">' + row.local_saldo_date + '</span>' +
+                                    '<span class="fw-semibold" style="color: #2563EB !important;">' + row.local_saldo_time + '</span>' +
                                     '</div>';
                         }
                         html += '</div>';
@@ -359,9 +359,9 @@
                         let html = '<div class="d-flex flex-column align-items-start gap-1">' +
                                    '<span class="text-slate-600 font-medium">Rp ' + new Intl.NumberFormat('id-ID').format(data) + '</span>';
                         if (row.master_saldo_date && row.master_saldo_time) {
-                            html += '<div class="badge badge-light-secondary text-slate-600 d-inline-flex flex-column align-items-start py-1 px-2.5 mt-1 border border-slate-200" style="font-size: 70%; border-radius: 8px; line-height: 1.35; width: fit-content;">' +
-                                    '<span class="fw-bold text-slate-600">' + row.master_saldo_date + '</span>' +
-                                    '<span class="fw-medium text-slate-400">' + row.master_saldo_time + '</span>' +
+                            html += '<div class="badge d-inline-flex flex-column align-items-start py-1 px-2.5 mt-1" style="font-size: 70%; border-radius: 8px; line-height: 1.35; width: fit-content; background-color: #EFF6FF; border: 1px solid #BFDBFE;">' +
+                                    '<span class="fw-bold" style="color: #1D4ED8 !important;">' + row.master_saldo_date + '</span>' +
+                                    '<span class="fw-semibold" style="color: #2563EB !important;">' + row.master_saldo_time + '</span>' +
                                     '</div>';
                         }
                         html += '</div>';
@@ -380,7 +380,7 @@
                         if (data === 'OK') {
                             return '<span class="badge badge-light-success px-3 py-2">OK</span>';
                         }
-                        return '<span class="badge badge-light-warning px-3 py-2">CONFLICT MERGED</span>';
+                        return '<span class="badge px-3 py-2 fw-bolder" style="background-color: #5A306B; color: #ffffff; border-radius: 8px; letter-spacing: 0.02em;">CONFLICT MERGED</span>';
                     }
                 }
             ]
