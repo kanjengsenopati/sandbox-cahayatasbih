@@ -322,11 +322,13 @@
                 {
                     data: 'current_local_saldo',
                     render: function(data, type, row) {
-                        let html = '<div class="d-flex flex-column">' +
+                        let html = '<div class="d-flex flex-column align-items-start gap-1">' +
                                    '<span class="text-slate-600 font-medium">Rp ' + new Intl.NumberFormat('id-ID').format(data) + '</span>';
                         if (row.local_saldo_date && row.local_saldo_time) {
-                            html += '<span class="text-[11px] text-slate-400 font-normal mt-1">' + row.local_saldo_date + '</span>' +
-                                    '<span class="text-[11px] text-slate-400 font-normal">' + row.local_saldo_time + '</span>';
+                            html += '<div class="badge badge-light-secondary text-slate-600 d-inline-flex flex-column align-items-start py-1 px-2.5 mt-1 border border-slate-200" style="font-size: 70%; border-radius: 8px; line-height: 1.35; width: fit-content;">' +
+                                    '<span class="fw-bold text-slate-600">' + row.local_saldo_date + '</span>' +
+                                    '<span class="fw-medium text-slate-400">' + row.local_saldo_time + '</span>' +
+                                    '</div>';
                         }
                         html += '</div>';
                         return html;
@@ -354,11 +356,13 @@
                 {
                     data: 'master_saldo',
                     render: function(data, type, row) {
-                        let html = '<div class="d-flex flex-column">' +
+                        let html = '<div class="d-flex flex-column align-items-start gap-1">' +
                                    '<span class="text-slate-600 font-medium">Rp ' + new Intl.NumberFormat('id-ID').format(data) + '</span>';
                         if (row.master_saldo_date && row.master_saldo_time) {
-                            html += '<span class="text-[11px] text-slate-400 font-normal mt-1">' + row.master_saldo_date + '</span>' +
-                                    '<span class="text-[11px] text-slate-400 font-normal">' + row.master_saldo_time + '</span>';
+                            html += '<div class="badge badge-light-secondary text-slate-600 d-inline-flex flex-column align-items-start py-1 px-2.5 mt-1 border border-slate-200" style="font-size: 70%; border-radius: 8px; line-height: 1.35; width: fit-content;">' +
+                                    '<span class="fw-bold text-slate-600">' + row.master_saldo_date + '</span>' +
+                                    '<span class="fw-medium text-slate-400">' + row.master_saldo_time + '</span>' +
+                                    '</div>';
                         }
                         html += '</div>';
                         return html;
