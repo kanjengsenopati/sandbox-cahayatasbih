@@ -133,12 +133,18 @@ class StudentController extends Controller
                 })
                 ->addColumn('action', function ($data) {
                     $actionShow = route('student.show', $data->id);
-                    // $actionEdit = route('student.edit', $data->id);
+                    $actionEdit = route('student.edit', $data->id);
                     $actionDelete = route('student.destroy', $data->id);
                     $actionPrint = route('student.generate-student-card', $data->id);
-                    return "<div class='d-flex justify-content-center'>" .
-                        // view('components.action.edit', ['action' => $actionEdit]) .
-                        view('components.action.show', ['action' => $actionShow]) .
+
+                    $editBtnHtml = '';
+                    if (Auth::user()->can('Edit Santri')) {
+                        $editBtnHtml = "<button type='button' class='btn btn-icon btn-active-light-primary w-30px h-30px me-3 btn-edit-student' data-id='{$data->id}' data-url='{$actionEdit}' title='Edit Siswa'><i class='fas fa-edit'></i></button>";
+                    }
+
+                    return "<div class='d-flex justify-content-center align-items-center'>" .
+                        "<button type='button' class='btn btn-icon btn-active-light-primary w-30px h-30px me-3 btn-detail-student' data-id='{$data->id}' data-url='{$actionShow}' title='Detail Siswa'><i class='fa fa-info-circle fs-3'></i></button>" .
+                        $editBtnHtml .
                         view('components.action.qr-code', ['action' => $actionPrint, 'label' => 'Cetak Kartu']) .
                         view('components.action.delete', ['action' => $actionDelete, 'id' => $data->id, 'name' => 'Santri']) .
                         "</div>";
@@ -169,6 +175,9 @@ class StudentController extends Controller
     public function store(StudentRequest $request)
     {
         if (!Auth::user()->can('Create Santri')) {
+            if ($request->ajax()) {
+                return response()->json(['error' => 'Maaf, Anda tidak memiliki akses untuk tindakan tersebut.'], 403);
+            }
             return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
         }
         $data = $request->validated();
@@ -179,6 +188,9 @@ class StudentController extends Controller
             $data['nickname'] = explode(' ', trim($data['name']))[0];
         }
         Student::create($data);
+        if ($request->ajax()) {
+            return response()->json(['success' => true, 'message' => 'Siswa berhasil ditambahkan']);
+        }
         return redirect()->route('student.index')->with('success', 'Siswa berhasil ditambahkan');
     }
 
@@ -309,6 +321,17 @@ class StudentController extends Controller
                         ->rawColumns(['link'])
                         ->make(true);
                 }
+
+                // If AJAX request without type parameter, return partial modal body HTML
+                $student = Student::with(['user', 'classroom.school', 'asramaHost', 'asrama.hostAdmin'])->findOrFail($id);
+                $saldo = [
+                    'IN' => SaldoHistory::where('student_id', $student->id)->where('type', SaldoHistory::TYPE_IN)->sum('amount'),
+                    'OUT' => SaldoHistory::where('student_id', $student->id)->where('type', SaldoHistory::TYPE_OUT)->sum('amount'),
+                ];
+                return response()->json([
+                    'html' => view('admins.student.partials.detail-modal-body', compact('student', 'saldo'))->render()
+                ]);
+
             } catch (\Exception $e) {
                 Log::error('Student detail tabs AJAX error: ' . $e->getMessage() . "\n" . $e->getTraceAsString());
                 return response()->json(['error' => 'Internal server error: ' . $e->getMessage()], 500);
@@ -340,12 +363,18 @@ class StudentController extends Controller
     public function edit(Student $student)
     {
         if (!Auth::user()->can('Edit Santri')) {
+            if (request()->ajax()) {
+                return response()->json(['error' => 'Maaf, Anda tidak memiliki akses untuk halaman tersebut.'], 403);
+            }
             return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
         }
         $admin = Auth::guard('web')->user();
         if ($admin && !$admin->hasRole('Super Admin')) {
             $schoolIds = $admin->getSchoolIds();
             if ($student->classroom && !in_array($student->classroom->school_id, $schoolIds)) {
+                if (request()->ajax()) {
+                    return response()->json(['error' => 'Akses ditolak: Santri berada di luar cakupan UPT Anda.'], 403);
+                }
                 return redirect()->back()->with('error', 'Akses ditolak: Santri berada di luar cakupan UPT Anda.');
             }
         }
@@ -360,6 +389,13 @@ class StudentController extends Controller
             'OUT' => SaldoHistory::where('student_id', $student->id)
                 ->where('type', SaldoHistory::TYPE_OUT)->sum('amount'),
         ];
+
+        if (request()->ajax()) {
+            return response()->json([
+                'html' => view('admins.student.partials.edit-modal-body', compact('student', 'schools', 'saldo', 'hosts'))->render()
+            ]);
+        }
+
         return view('admins.student.create-edit', compact('student', 'schools', 'saldo', 'hosts'));
     }
 
@@ -369,12 +405,18 @@ class StudentController extends Controller
     public function update(StudentRequest $request, Student $student)
     {
         if (!Auth::user()->can('Edit Santri')) {
+            if ($request->ajax()) {
+                return response()->json(['error' => 'Maaf, Anda tidak memiliki akses untuk halaman tersebut.'], 403);
+            }
             return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
         }
         $admin = Auth::guard('web')->user();
         if ($admin && !$admin->hasRole('Super Admin')) {
             $schoolIds = $admin->getSchoolIds();
             if ($student->classroom && !in_array($student->classroom->school_id, $schoolIds)) {
+                if ($request->ajax()) {
+                    return response()->json(['error' => 'Akses ditolak: Santri berada di luar cakupan UPT Anda.'], 403);
+                }
                 return redirect()->back()->with('error', 'Akses ditolak: Santri berada di luar cakupan UPT Anda.');
             }
         }
@@ -389,6 +431,14 @@ class StudentController extends Controller
         if ($student->status !== Student::STATUS_ACTIVE && $oldStatus !== $student->status) {
             $student->cleanupFutureUnpaidBills();
         }
+
+        if ($request->ajax()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Siswa berhasil diubah'
+            ]);
+        }
+
         return redirect()->route('student.index')->with('success', 'Siswa berhasil diubah');
     }
 

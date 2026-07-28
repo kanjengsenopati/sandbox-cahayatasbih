@@ -157,6 +157,28 @@
         </div>
     </div>
 </div>
+
+<!-- Modal Detail Siswa (Wide Modal) -->
+<div class="modal fade" id="modalDetailSiswa" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-xl">
+        <div class="modal-content rounded-[24px] shadow-[0_8px_30px_rgb(0,0,0,0.04)] border-0" id="modalDetailSiswaContent">
+            <div class="p-10 text-center text-muted">
+                <span class="spinner-border spinner-border-sm me-2"></span> Memuat Detail Siswa...
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Edit Siswa (Wide Modal) -->
+<div class="modal fade" id="modalEditSiswa" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-xl">
+        <div class="modal-content rounded-[24px] shadow-[0_8px_30px_rgb(0,0,0,0.04)] border-0" id="modalEditSiswaContent">
+            <div class="p-10 text-center text-muted">
+                <span class="spinner-border spinner-border-sm me-2"></span> Memuat Form Edit Siswa...
+            </div>
+        </div>
+    </div>
+</div>
 @endsection
 @push('js')
 <script>
@@ -352,6 +374,116 @@
                                 'error'
                             );
                         }
+                    });
+                }
+            });
+        });
+
+        // Handle Detail Siswa Click (Wide Modal)
+        $(document).on('click', '.btn-detail-student', function(e) {
+            e.preventDefault();
+            var url = $(this).data('url');
+            var modalContent = $('#modalDetailSiswaContent');
+
+            modalContent.html('<div class="p-10 text-center text-muted"><span class="spinner-border spinner-border-sm me-2"></span> Memuat Detail Siswa...</div>');
+            var detailModal = new bootstrap.Modal(document.getElementById('modalDetailSiswa'));
+            detailModal.show();
+
+            $.get(url, function(response) {
+                if (response.html) {
+                    modalContent.html(response.html);
+                } else {
+                    modalContent.html('<div class="p-6 text-danger text-center">Gagal memuat detail siswa.</div>');
+                }
+            }).fail(function() {
+                modalContent.html('<div class="p-6 text-danger text-center">Terjadi kesalahan saat memuat data.</div>');
+            });
+        });
+
+        // Handle Edit Siswa Click (Wide Modal)
+        $(document).on('click', '.btn-edit-student, .btn-open-edit-modal', function(e) {
+            e.preventDefault();
+            var id = $(this).data('id');
+            var url = $(this).data('url') || "{{ route('student.edit', ':id') }}".replace(':id', id);
+            var modalContent = $('#modalEditSiswaContent');
+
+            // Hide detail modal if open
+            var detailModalEl = document.getElementById('modalDetailSiswa');
+            var detailModalInst = bootstrap.Modal.getInstance(detailModalEl);
+            if (detailModalInst) {
+                detailModalInst.hide();
+            }
+
+            modalContent.html('<div class="p-10 text-center text-muted"><span class="spinner-border spinner-border-sm me-2"></span> Memuat Form Edit Siswa...</div>');
+            var editModal = new bootstrap.Modal(document.getElementById('modalEditSiswa'));
+            editModal.show();
+
+            $.get(url, function(response) {
+                if (response.html) {
+                    modalContent.html(response.html);
+                } else {
+                    modalContent.html('<div class="p-6 text-danger text-center">Gagal memuat form edit.</div>');
+                }
+            }).fail(function() {
+                modalContent.html('<div class="p-6 text-danger text-center">Terjadi kesalahan saat memuat form.</div>');
+            });
+        });
+
+        // Handle Form Submit for Edit Siswa Modal
+        $(document).on('submit', '#form-edit-student-modal', function(e) {
+            e.preventDefault();
+            var form = $(this);
+            var btn = $('#btn-save-edit-student');
+            var formData = new FormData(this);
+
+            btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-1"></span> Menyimpan...');
+
+            $.ajax({
+                url: form.attr('action'),
+                type: 'POST',
+                data: formData,
+                contentType: false,
+                processData: false,
+                success: function(response) {
+                    btn.prop('disabled', false).html('<i class="fa fa-save me-1"></i> Simpan Perubahan');
+                    if (response.success) {
+                        var editModalEl = document.getElementById('modalEditSiswa');
+                        var editModalInst = bootstrap.Modal.getInstance(editModalEl);
+                        if (editModalInst) {
+                            editModalInst.hide();
+                        }
+                        Swal.fire({
+                            text: response.message || "Data Siswa berhasil diperbarui.",
+                            icon: "success",
+                            buttonsStyling: false,
+                            confirmButtonText: "Ok, Mengerti",
+                            customClass: { confirmButton: "btn btn-primary rounded-[24px]" }
+                        });
+                        table.ajax.reload(null, false);
+                    } else {
+                        Swal.fire({
+                            text: response.error || "Gagal memperbarui data siswa.",
+                            icon: "error",
+                            buttonsStyling: false,
+                            confirmButtonText: "Ok, Mengerti",
+                            customClass: { confirmButton: "btn btn-primary rounded-[24px]" }
+                        });
+                    }
+                },
+                error: function(xhr) {
+                    btn.prop('disabled', false).html('<i class="fa fa-save me-1"></i> Simpan Perubahan');
+                    var msg = "Terjadi kesalahan saat menyimpan data.";
+                    if (xhr.responseJSON && xhr.responseJSON.errors) {
+                        msg = Object.values(xhr.responseJSON.errors).flat().join('<br>');
+                    } else if (xhr.responseJSON && xhr.responseJSON.message) {
+                        msg = xhr.responseJSON.message;
+                    }
+                    Swal.fire({
+                        html: msg,
+                        icon: "error",
+                        buttonsStyling: false,
+                        confirmButtonText: "Ok, Mengerti",
+                        customClass: { confirmButton: "btn btn-primary rounded-[24px]" }
                     });
                 }
             });
