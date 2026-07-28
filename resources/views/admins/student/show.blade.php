@@ -109,96 +109,120 @@
                                             @endcan
                                         </div>
                                         <div class="ms-5 ps-3 w-100">
-                                            <table class="profile table">
-                                                <tr>
-                                                    <td class="grey" width="20%">Nama</td>
-                                                    <td class="pe-3"></td>
-                                                    <td>{{ $student->name ?? 'Belum diatur' }}</td>
-                                                </tr>
-                                                <tr>
-                                                    <td class="grey" width="20%">Nama Panggilan</td>
-                                                    <td></td>
-                                                    <td>{{ $student->nickname ?? '-' }}</td>
-                                                </tr>
-                                                <tr>
-                                                    <td class="grey" width="20%">Tempat, Tanggal Lahir</td>
-                                                    <td></td>
-                                                    <td>{{ $student->born_place ?? 'Belum diatur' }},
-                                                        {{ $student->birth_date ?? 'Belum diatur' }}</td>
-                                                </tr>
-                                                <tr>
-                                                    <td class="grey" width="20%">NIS</td>
-                                                    <td></td>
-                                                    <td>{{ $student->nis ?? 'Belum diatur' }}</td>
-                                                </tr>
-                                                <tr>
-                                                    <td class="grey" width="20%">NISN</td>
-                                                    <td></td>
-                                                    <td>{{ $student->nisn ?? 'Belum diatur' }}</td>
-                                                </tr>
-                                                <tr>
-                                                    <td class="grey" width="20%">Saldo</td>
-                                                    <td></td>
-                                                    <td>Rp. {{ number_format($student->saldo, 0, ',', '.') }}</td>
-                                                </tr>
-                                                <tr>
-                                                    <td class="grey" width="20%">Tabungan</td>
-                                                    <td></td>
-                                                    <td>Rp. {{ number_format($student->saving, 0, ',', '.') }}</td>
-                                                </tr>
-                                                <tr>
-                                                    <td class="grey" width="20%">Jenis Kelamin</td>
-                                                    <td></td>
-                                                    <td>{{ $student->gender == 'L' ? 'Laki-laki' : 'Perempuan' }}</td>
-                                                </tr>
-                                                <tr>
-                                                    <td class="grey" width="20%">Wali Siswa</td>
-                                                    <td></td>
-                                                    <td>
-                                                        {{ $student->user->name ?? 'Belum diatur' }}
-                                                        @if($student->user && $student->user->jamaah_status)
-                                                            @php
-                                                                $status = $student->user->jamaah_status;
-                                                                $badgeClass = match($status) {
-                                                                    'JAMAAH' => 'badge-light-success',
-                                                                    'NON_JAMAAH' => 'badge-light-danger',
-                                                                    'MUKIMIN' => 'badge-light-primary',
-                                                                    default => 'badge-light-danger'
-                                                                };
-                                                                $statusLabel = match($status) {
-                                                                    'JAMAAH' => 'Jamaah',
-                                                                    'NON_JAMAAH' => 'Non Jamaah',
-                                                                    'MUKIMIN' => 'Mukimin',
-                                                                    default => 'Non Jamaah'
-                                                                };
-                                                            @endphp
-                                                            <span class="badge {{ $badgeClass }} fw-bolder ms-2 px-2 py-1">
-                                                                {{ $statusLabel }}
-                                                            </span>
-                                                        @endif
-                                                    </td>
-                                                </tr>
-                                                <tr>
-                                                    <td class="grey" width="20%">UPT</td>
-                                                    <td></td>
-                                                    <td>{{ $student->classroom?->school?->name ?? 'Belum diatur' }}</td>
-                                                </tr>
-                                                <tr>
-                                                    <td class="grey" width="20%">Alamat</td>
-                                                    <td></td>
-                                                    <td>{{ $student->address ?? 'Belum diatur' }}</td>
-                                                </tr>
-                                                <tr>
-                                                    <td class="grey" width="20%">Kota / Kabupaten</td>
-                                                    <td></td>
-                                                    <td>{{ $student->city ?? '-' }}</td>
-                                                </tr>
-                                                <tr>
-                                                    <td class="grey" width="20%">Provinsi</td>
-                                                    <td></td>
-                                                    <td>{{ $student->province ?? '-' }}</td>
-                                                </tr>
-                                            </table>
+                                            <div class="row">
+                                                <div class="col-md-6">
+                                                    <table class="profile table">
+                                                        <tr>
+                                                            <td class="grey" style="width: 40%">Nama</td>
+                                                            <td class="pe-2" style="width: 5%">:</td>
+                                                            <td>{{ $student->name ?? 'Belum diatur' }}</td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td class="grey">Nama Panggilan</td>
+                                                            <td class="pe-2">:</td>
+                                                            <td>{{ $student->nickname ?? '-' }}</td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td class="grey">Tempat, Tanggal Lahir</td>
+                                                            <td class="pe-2">:</td>
+                                                            <td>
+                                                                {{ $student->born_place ?? 'Belum diatur' }},
+                                                                @if(!empty($student->birth_date))
+                                                                    {{ \Carbon\Carbon::parse($student->birth_date)->format('d-M-Y') }}
+                                                                @else
+                                                                    Belum diatur
+                                                                @endif
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td class="grey">NIS</td>
+                                                            <td class="pe-2">:</td>
+                                                            <td>{{ $student->nis ?? 'Belum diatur' }}</td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td class="grey">NISN</td>
+                                                            <td class="pe-2">:</td>
+                                                            <td>{{ $student->nisn ?? 'Belum diatur' }}</td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td class="grey">Saldo</td>
+                                                            <td class="pe-2">:</td>
+                                                            <td class="text-success fw-bold">Rp. {{ number_format($student->saldo, 0, ',', '.') }}</td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td class="grey">Tabungan</td>
+                                                            <td class="pe-2">:</td>
+                                                            <td class="text-success fw-bold">Rp. {{ number_format($student->saving, 0, ',', '.') }}</td>
+                                                        </tr>
+                                                    </table>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <table class="profile table">
+                                                        <tr>
+                                                            <td class="grey" style="width: 45%">Jenis Kelamin</td>
+                                                            <td class="pe-2" style="width: 5%">:</td>
+                                                            <td>{{ $student->gender == 'L' ? 'Laki-laki' : 'Perempuan' }}</td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td class="grey">Wali Siswa</td>
+                                                            <td class="pe-2">:</td>
+                                                            <td>
+                                                                {{ $student->user->name ?? 'Belum diatur' }}
+                                                                @if($student->user && $student->user->jamaah_status)
+                                                                    @php
+                                                                        $status = $student->user->jamaah_status;
+                                                                        $badgeClass = match($status) {
+                                                                            'JAMAAH' => 'badge-light-success',
+                                                                            'NON_JAMAAH' => 'badge-light-danger',
+                                                                            'MUKIMIN' => 'badge-light-primary',
+                                                                            default => 'badge-light-danger'
+                                                                        };
+                                                                        $statusLabel = match($status) {
+                                                                            'JAMAAH' => 'Jamaah',
+                                                                            'NON_JAMAAH' => 'Non Jamaah',
+                                                                            'MUKIMIN' => 'Mukimin',
+                                                                            default => 'Non Jamaah'
+                                                                        };
+                                                                    @endphp
+                                                                    <span class="badge {{ $badgeClass }} fw-bolder ms-2 px-2 py-1">
+                                                                        {{ $statusLabel }}
+                                                                    </span>
+                                                                @endif
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td class="grey">UPT</td>
+                                                            <td class="pe-2">:</td>
+                                                            <td>{{ $student->classroom?->school?->name ?? 'Belum diatur' }}</td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td class="grey">Alamat</td>
+                                                            <td class="pe-2">:</td>
+                                                            <td>{{ $student->address ?? 'Belum diatur' }}</td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td class="grey">Kota / Kabupaten</td>
+                                                            <td class="pe-2">:</td>
+                                                            <td>{{ $student->city ?? '-' }}</td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td class="grey">Provinsi</td>
+                                                            <td class="pe-2">:</td>
+                                                            <td>{{ $student->province ?? '-' }}</td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td class="grey">Penanggung Jawab / Ustadz Kamar</td>
+                                                            <td class="pe-2">:</td>
+                                                            <td>{{ $student->asramaHost->name ?? ($student->asrama?->hostAdmin?->name ?? '-') }}</td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td class="grey">Nama Kamar</td>
+                                                            <td class="pe-2">:</td>
+                                                            <td>{{ $student->asrama_name ?? ($student->asrama?->name ?? '-') }}</td>
+                                                        </tr>
+                                                    </table>
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>

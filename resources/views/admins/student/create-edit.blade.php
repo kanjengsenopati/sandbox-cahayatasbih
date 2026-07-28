@@ -147,31 +147,26 @@
                                         </select>
                                     </div>
                                     <div class="fv-row mb-6">
-                                        <label class="fs-6 fw-bold form-label" for="asrama_host_id">
+                                        <label class="fs-6 fw-bold form-label" for="asrama_host_display">
                                             <span>Penanggung Jawab / Ustadz Kamar</span>
                                             <i class="fas fa-exclamation-circle ms-1 fs-7" data-bs-toggle="tooltip"
-                                                title="Pilih Penanggung Jawab / Ustadz Pembimbing Santri"></i>
+                                                title="Penanggung Jawab / Ustadz Kamar otomatis tersinkron dari Data Asrama"></i>
                                         </label>
-                                        <select name="asrama_host_id" class="form-select form-select-solid" id="asrama_host_id"
-                                            data-control="select2" data-placeholder="Pilih Penanggung Jawab Kamar"
-                                            data-allow-clear="true">
-                                            <option value="">Tidak ada penanggung jawab</option>
-                                            @foreach ($hosts as $host)
-                                            <option value="{{ $host->id }}" {{ @$student->asrama_host_id == $host->id ? 'selected' : '' }}>
-                                                {{ $host->name }}
-                                            </option>
-                                            @endforeach
-                                        </select>
+                                        <input type="text" class="form-control form-control-solid bg-light" id="asrama_host_display"
+                                            value="{{ @$student->asramaHost->name ?? (@$student->asrama?->hostAdmin?->name ?? '-') }}"
+                                            readonly disabled />
+                                        <span class="form-text text-muted fs-8">Otomatis terisi dari Data Asrama (Single Source of Truth)</span>
                                     </div>
                                     <div class="fv-row mb-6">
-                                        <label class="fs-6 fw-bold form-label" for="asrama_name">
+                                        <label class="fs-6 fw-bold form-label" for="asrama_name_display">
                                             <span>Nama Kamar</span>
                                             <i class="fas fa-exclamation-circle ms-1 fs-7" data-bs-toggle="tooltip"
-                                                title="Masukkan Nama Kamar Santri"></i>
+                                                title="Nama Kamar Santri otomatis tersinkron dari Data Asrama"></i>
                                         </label>
-                                        <input type="text" class="form-control form-control-solid" id="asrama_name"
-                                            name="asrama_name" placeholder="Masukkan Nama Kamar"
-                                            value="{{ @$student->asrama_name ?? old('asrama_name') }}" />
+                                        <input type="text" class="form-control form-control-solid bg-light" id="asrama_name_display"
+                                            value="{{ @$student->asrama_name ?? (@$student->asrama?->name ?? '-') }}"
+                                            readonly disabled />
+                                        <span class="form-text text-muted fs-8">Otomatis terisi dari Data Asrama (Single Source of Truth)</span>
                                     </div>
                                 </div>
                                 <div class="col-md-6">

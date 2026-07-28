@@ -316,7 +316,7 @@ class StudentController extends Controller
         }
 
 
-        $student = Student::with('user', 'classroom.school')->findOrFail($id);
+        $student = Student::with(['user', 'classroom.school', 'asramaHost', 'asrama.hostAdmin'])->findOrFail($id);
         $admin = Auth::guard('web')->user();
         if ($admin && !$admin->hasRole('Super Admin')) {
             $schoolIds = $admin->getSchoolIds();
@@ -349,6 +349,8 @@ class StudentController extends Controller
                 return redirect()->back()->with('error', 'Akses ditolak: Santri berada di luar cakupan UPT Anda.');
             }
         }
+
+        $student->load(['user', 'classroom.school', 'asramaHost', 'asrama.hostAdmin']);
 
         $schools = School::hasSchool()->orderBy('name')->get();
         $hosts = Admin::orderBy('name')->get();
