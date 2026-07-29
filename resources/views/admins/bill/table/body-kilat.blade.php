@@ -131,19 +131,23 @@
             $startYear = $bill->academicYear?->start_year ?? date('Y');
             $endYear = $bill->academicYear?->end_year ?? ($startYear + 1);
 
-            // Calculate unpaid amount across all 12 months (existing DB rows + resolved student rates for un-generated months)
-            $unpaidAmount = 0;
+            $totalBillAmount = 0;
             foreach (array_merge(range(7, 12), range(1, 6)) as $m) {
                 $y = ($m >= 7) ? $startYear : $endYear;
                 $bDet = $existingBills->firstWhere('month', (int)$m) ?? $existingBills->firstWhere('month', (string)$m);
 
-                if ($bDet) {
-                    $unpaidAmount += max(0, $bDet->amount - $bDet->paid_amount);
+                if ($bDet && $bDet->amount > 0) {
+                    $totalBillAmount += $bDet->amount;
                 } else {
-                    $resolvedRate = \App\Services\TransactionService::resolveStudentRateForBillType($student, $bill, $m, $y);
-                    $unpaidAmount += $resolvedRate;
+                    $totalBillAmount += \App\Services\TransactionService::resolveStudentRateForBillType($student, $bill, $m, $y);
                 }
             }
+            $unpaidAmount = max(0, $totalBillAmount - $paidAmount);
+        }
+
+        // Hide Rp 0 / Rp 0 dummy bill cards (e.g. REGISTRASI for senior classes)
+        if (($totalBillAmount ?? $paidAmount) == 0 && $paidAmount == 0 && $unpaidAmount == 0) {
+            continue;
         }
 
         $ayName = $bill->academicYear?->name ?? '-';
@@ -257,9 +261,10 @@
                         } else {
                             $targetYearTemp = $billDetail?->year ?? ($month >= 7 ? ($bill->academicYear?->start_year ?? date('Y')) : ($bill->academicYear?->end_year ?? (date('Y') + 1)));
                             $amount = ($billDetail && $billDetail->amount > 0) ? $billDetail->amount : \App\Services\TransactionService::resolveStudentRateForBillType($student, $bill, $month, $targetYearTemp);
-                            $remainingAmount = $billDetail ? max(0, $billDetail->amount - $billDetail->paid_amount) : $amount;
-                            $status = $billDetail ? $billDetail->status : ($amount > 0 ? 'UNPAID' : 'FREE');
-                            $isPaid = $status == 'PAID' || ($billDetail && $remainingAmount <= 0 && $amount > 0);
+                            
+                            $isPaid = ($billDetail && $billDetail->status == 'PAID') || ($unpaidAmount == 0 && $paidAmount >= ($totalBillAmount ?? 0) && $amount > 0);
+                            $remainingAmount = $isPaid ? 0 : ($billDetail ? max(0, $billDetail->amount - $billDetail->paid_amount) : $amount);
+                            $status = $isPaid ? 'PAID' : ($amount > 0 ? 'UNPAID' : 'FREE');
                             $detailPayment = $billDetail ? $billDetail->transactions?->first() : null;
                         }
 
