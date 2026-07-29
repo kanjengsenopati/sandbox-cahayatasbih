@@ -782,27 +782,9 @@ class TransactionService
 
             $sampleBill = $sampleBillQuery->first();
 
-            if ($isZarkasi) {
-                $m = (int)$month;
-                if ($m >= 7 && $m <= 11) {
-                    $amount = 100000;
-                } elseif ($m == 12) {
-                    $amount = 50000;
-                } else {
-                    $amount = 0;
-                }
-            } elseif ($isAplikasi) {
-                $amount = 10000;
-            } elseif ($isSyahriah) {
-                $studentSchoolName = strtoupper($student->classroom?->school?->name ?? '');
-                $btNameUpper = strtoupper($billType->name ?? '');
-                $isPondok = str_contains($studentSchoolName, 'PONDOK') || str_contains($studentSchoolName, 'PPTQ') || str_contains($btNameUpper, 'PONDOK') || str_contains($btNameUpper, 'PPTQ');
-                $amount = $isPondok ? 400000 : 500000;
-            } else {
-                $amount = $sampleBill ? $sampleBill->amount : ($billType->billItem->amount ?? 0);
-                if ($amount <= 0) {
-                    $amount = \App\Models\Bill::where('bill_type_id', $billTypeId)->where('amount', '>', 0)->value('amount') ?? 0;
-                }
+            $amount = self::resolveStudentRateForBillType($student, $billType, $month, $year);
+            if ($amount <= 0 && $sampleBill) {
+                $amount = $sampleBill->amount;
             }
 
             $targetBillTypeId = $sampleBill ? $sampleBill->bill_type_id : $billTypeId;
@@ -934,19 +916,19 @@ class TransactionService
             }
         }
 
-        // 3. Fallbacks based on category rules or bill item
-        if ($isZarkasi) {
-            $m = (int)$month;
-            return ($m >= 7 && $m <= 11) ? 100000 : (($m == 12) ? 50000 : 0);
-        } elseif ($isAplikasi) {
-            return 10000;
-        } elseif ($isSyahriah) {
-            $studentSchoolName = strtoupper($student->classroom?->school?->name ?? '');
-            $btNameUpper = strtoupper($billType->name ?? '');
-            $isPondok = str_contains($studentSchoolName, 'PONDOK') || str_contains($studentSchoolName, 'PPTQ') || str_contains($btNameUpper, 'PONDOK') || str_contains($btNameUpper, 'PPTQ');
-            return $isPondok ? 400000 : 500000;
+        // 3. Fallback: Query any active PaymentRate or PaymentRateItem in database for this BillType
+        $genericRate = \App\Models\PaymentRate::where('bill_type_id', $billType->id)
+            ->whereNull('deleted_at')
+            ->with(['paymentRateItems' => fn($q) => $q->where('month', $month)->where('year', $year)])
+            ->first();
+
+        if ($genericRate) {
+            $item = $genericRate->paymentRateItems->first();
+            if ($item) return (int) $item->amount;
+            if ($genericRate->amount > 0) return (int) ($genericRate->amount / 12);
         }
 
+        // 4. Final Fallback: BillItem default amount in database
         return (int) ($billType->billItem?->amount ?? 0);
     }
 
