@@ -14,6 +14,7 @@ class BillController extends BaseWaliApiController
         if (!$student) return response()->json(['unpaid' => [], 'paid' => []]);
 
         \App\Services\TransactionService::syncStudentBillsFromPaidTransactions($student->id);
+        \App\Services\TransactionService::ensureStudentBillsSyncedFromRate($student->id);
 
         // Load student's school for UPT filtering
         $student->load('classroom.school');
@@ -95,15 +96,20 @@ class BillController extends BaseWaliApiController
                 $isAplikasi = str_contains($btNameUpper, 'APLIKASI');
                 $isSyahriah = str_contains($btNameUpper, 'SYAHR');
 
-                if ($isSyahriah) {
-                    $totalBill = 6000000;
+                if ($first->billType?->type === 'MONTHLY') {
+                    $totalBill = 0;
+                    $startYear = $first->academicYear?->start_year ?? date('Y');
+                    $endYear = $first->academicYear?->end_year ?? ($startYear + 1);
+                    foreach (array_merge(range(7, 12), range(1, 6)) as $m) {
+                        $y = ($m >= 7) ? $startYear : $endYear;
+                        $bDet = $items->firstWhere('month', (int)$m) ?? $items->firstWhere('month', (string)$m);
+                        if ($bDet && $bDet->amount > 0) {
+                            $totalBill += $bDet->amount;
+                        } else {
+                            $totalBill += \App\Services\TransactionService::resolveStudentRateForBillType($student, $first->billType, $m, $y);
+                        }
+                    }
                     $itemsCount = 12;
-                } elseif ($isAplikasi) {
-                    $totalBill = 120000;
-                    $itemsCount = 12;
-                } elseif ($isZarkasi) {
-                    $totalBill = 550000;
-                    $itemsCount = 6;
                 } else {
                     $totalBill = $items->sum('amount');
                     $itemsCount = $items->count();

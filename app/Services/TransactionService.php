@@ -871,4 +871,127 @@ class TransactionService
             Log::error("[syncStudentBillsFromPaidTransactions] Error for student {$studentId}: " . $e->getMessage());
         }
     }
+
+    public static function resolveStudentRateForBillType($studentId, $billTypeId, $month, $year)
+    {
+        $student = is_object($studentId) ? $studentId : Student::with(['user', 'classroom'])->find($studentId);
+        if (!$student) return 0;
+
+        $billType = is_object($billTypeId) ? $billTypeId : \App\Models\BillType::with('billItem')->find($billTypeId);
+        if (!$billType) return 0;
+
+        $upperName = strtoupper($billType->name ?? '');
+        $isZarkasi = str_contains($upperName, 'ZARKASI');
+        $isAplikasi = str_contains($upperName, 'APLIKASI');
+        $isSyahriah = str_contains($upperName, 'SYAHR');
+
+        // 1. Try to find matching TRANSFER rate for this student
+        $transferRate = \App\Models\PaymentRate::where('bill_type_id', $billType->id)
+            ->where('type', \App\Models\PaymentRate::TYPE_TRANSFER)
+            ->whereNull('deleted_at')
+            ->whereHas('paymentRateStudents', fn($q) => $q->where('student_id', $student->id))
+            ->with(['paymentRateItems' => fn($q) => $q->where('month', $month)->where('year', $year)])
+            ->first();
+
+        if ($transferRate) {
+            $item = $transferRate->paymentRateItems->first();
+            if ($item) return (int) $item->amount;
+            if ($transferRate->amount > 0) return (int) ($transferRate->amount / 12);
+        }
+
+        // 2. Try to find matching REGULAR rate for student's classroom
+        if ($student->classroom_id) {
+            $regularRates = \App\Models\PaymentRate::where('bill_type_id', $billType->id)
+                ->where('type', \App\Models\PaymentRate::TYPE_REGULAR)
+                ->whereNull('deleted_at')
+                ->whereHas('paymentRateClassrooms', fn($q) => $q->where('classroom_id', $student->classroom_id))
+                ->with(['paymentRateItems' => fn($q) => $q->where('month', $month)->where('year', $year)])
+                ->get();
+
+            foreach ($regularRates as $rate) {
+                // Filter by gender if set
+                if (!empty($rate->gender)) {
+                    $genders = array_map('trim', explode(',', $rate->gender));
+                    if (!in_array($student->gender, $genders)) {
+                        continue;
+                    }
+                }
+                // Filter by jamaah_status if set
+                if (!empty($rate->jamaah_status)) {
+                    $statuses = array_map('trim', explode(',', $rate->jamaah_status));
+                    $studentStatus = $student->user?->jamaah_status ?? 'NON_JAMAAH';
+                    if (!in_array($studentStatus, $statuses)) {
+                        continue;
+                    }
+                }
+
+                $item = $rate->paymentRateItems->first();
+                if ($item) return (int) $item->amount;
+                if ($rate->amount > 0) return (int) ($rate->amount / 12);
+            }
+        }
+
+        // 3. Fallbacks based on category rules or bill item
+        if ($isZarkasi) {
+            $m = (int)$month;
+            return ($m >= 7 && $m <= 11) ? 100000 : (($m == 12) ? 50000 : 0);
+        } elseif ($isAplikasi) {
+            return 10000;
+        } elseif ($isSyahriah) {
+            return 500000;
+        }
+
+        return (int) ($billType->billItem?->amount ?? 0);
+    }
+
+    public static function ensureStudentBillsSyncedFromRate($studentId, $academicYearId = null)
+    {
+        if (empty($studentId)) return;
+        $student = Student::with(['user', 'classroom'])->find($studentId);
+        if (!$student) return;
+
+        $billTypesQuery = \App\Models\BillType::whereNull('deleted_at');
+        if ($academicYearId) {
+            $billTypesQuery->where('academic_year_id', $academicYearId);
+        }
+        $billTypes = $billTypesQuery->get();
+
+        foreach ($billTypes as $bt) {
+            if ($bt->type === 'MONTHLY') {
+                $months = array_merge(range(7, 12), range(1, 6));
+                $startYear = $bt->academicYear?->start_year ?? date('Y');
+                $endYear = $bt->academicYear?->end_year ?? ($startYear + 1);
+
+                foreach ($months as $m) {
+                    $y = ($m >= 7) ? $startYear : $endYear;
+
+                    $existingBill = Bill::where('student_id', $student->id)
+                        ->where('bill_type_id', $bt->id)
+                        ->where('month', $m)
+                        ->where('year', $y)
+                        ->whereNull('deleted_at')
+                        ->first();
+
+                    $expectedAmount = self::resolveStudentRateForBillType($student, $bt, $m, $y);
+
+                    if (!$existingBill) {
+                        Bill::create([
+                            'id' => \Illuminate\Support\Str::uuid()->toString(),
+                            'bill_type_id' => $bt->id,
+                            'student_id' => $student->id,
+                            'classroom_id' => $student->classroom_id,
+                            'academic_year_id' => $bt->academic_year_id,
+                            'month' => $m,
+                            'year' => $y,
+                            'amount' => $expectedAmount,
+                            'paid_amount' => 0,
+                            'status' => Bill::STATUS_UNPAID,
+                        ]);
+                    } elseif ($existingBill->status === Bill::STATUS_UNPAID && $existingBill->paid_amount == 0 && $existingBill->amount != $expectedAmount) {
+                        $existingBill->update(['amount' => $expectedAmount]);
+                    }
+                }
+            }
+        }
+    }
 }

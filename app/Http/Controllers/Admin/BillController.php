@@ -49,6 +49,7 @@ class BillController extends Controller
 
         if ($studentId = request()->student_id) {
             TransactionService::syncStudentBillsFromPaidTransactions($studentId);
+            TransactionService::ensureStudentBillsSyncedFromRate($studentId);
             $student = Student::with(['user', 'classroom.school', 'classroomHistories.classroom'])->find($studentId);
             if (!$student) {
                 return redirect()->to(route('bill.index'))->with('error', 'Data siswa tidak ditemukan atau telah dihapus.');
@@ -114,22 +115,22 @@ class BillController extends Controller
         $isAplikasi = str_contains($upperName, 'APLIKASI');
         $isSyahriah = str_contains($upperName, 'SYAHR');
 
-        if ($isZarkasi) {
-            $item->total_bill = 550000;
-        } elseif ($isAplikasi) {
-            $item->total_bill = 120000;
-        } elseif ($isSyahriah) {
-            $item->total_bill = 6000000;
-        } else {
-            if ($item->type === 'MONTHLY') {
-                $sampleAmount = $bills->where('amount', '>', 0)->first()?->amount ?? 0;
-                if ($sampleAmount <= 0) {
-                    $sampleAmount = \App\Models\Bill::where('bill_type_id', $item->id)->where('amount', '>', 0)->value('amount') ?? 0;
+        if ($item->type === 'MONTHLY') {
+            $totalBill = 0;
+            $startYear = $item->academicYear?->start_year ?? date('Y');
+            $endYear = $item->academicYear?->end_year ?? ($startYear + 1);
+            foreach (array_merge(range(7, 12), range(1, 6)) as $m) {
+                $y = ($m >= 7) ? $startYear : $endYear;
+                $bDet = $bills->firstWhere('month', (int)$m) ?? $bills->firstWhere('month', (string)$m);
+                if ($bDet && $bDet->amount > 0) {
+                    $totalBill += $bDet->amount;
+                } else {
+                    $totalBill += TransactionService::resolveStudentRateForBillType($studentId, $item, $m, $y);
                 }
-                $item->total_bill = $sampleAmount > 0 ? ($sampleAmount * 12) : $bills->sum('amount');
-            } else {
-                $item->total_bill = $bills->sum('amount');
             }
+            $item->total_bill = $totalBill;
+        } else {
+            $item->total_bill = $bills->sum('amount');
         }
 
         if ($isZarkasi || $isAplikasi || $isSyahriah) {
