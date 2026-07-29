@@ -142,38 +142,31 @@ class CleanupGhostAndDuplicateBills extends Command
                         }
                     }
 
-                    // Check 1b: Full 3-UPT Cross-School Leakage Detection (SMP, MA, PONDOK)
-                    $studentSchoolName = strtoupper($student->classroom?->school?->name ?? '');
-                    $isStudentSmp = str_contains($studentSchoolName, 'SMP');
-                    $isStudentMa = str_contains($studentSchoolName, 'MA') || str_contains($studentSchoolName, 'ALIYAH');
-                    $isStudentPondok = str_contains($studentSchoolName, 'PONDOK') || str_contains($studentSchoolName, 'PPTQ');
+                    // Check 1b: Full 3-UPT Cross-School Leakage Detection (Global Guard Rule)
+                    $studentSchoolName = $student->classroom?->school?->name ?? '';
+                    $entryYear = $student->getEntryYear() ?? date('Y');
 
-                    $isBillForPondok = str_contains($billTypeName, 'PONDOK') || str_contains($billItemName, 'PONDOK');
-                    $isBillForSmp = str_contains($billTypeName, 'SMP') || str_contains($billItemName, 'SMP');
-                    $isBillForMa = (str_contains($billTypeName, ' MA') || str_contains($billItemName, ' MA')
-                                 || str_contains($billTypeName, 'ALIYAH') || str_contains($billItemName, 'ALIYAH'));
-
-                    $isCrossUpt = false;
-                    $crossUptDetail = '';
-
-                    if ($isBillForPondok && !$isStudentPondok) {
-                        $isCrossUpt = true;
-                        $crossUptDetail = "Bill UPT=PONDOK, Student UPT={$studentSchoolName}";
-                    } elseif ($isBillForSmp && !$isStudentSmp) {
-                        $isCrossUpt = true;
-                        $crossUptDetail = "Bill UPT=SMP, Student UPT={$studentSchoolName}";
-                    } elseif ($isBillForMa && !$isStudentMa) {
-                        $isCrossUpt = true;
-                        $crossUptDetail = "Bill UPT=MA, Student UPT={$studentSchoolName}";
-                    }
-
-                    if ($isCrossUpt) {
-                        $this->warn("  [CROSS-UPT LEAKAGE] Bill #{$bill->id} ({$billType?->name} - {$bill->academicYear?->name}) — {$crossUptDetail}");
+                    if (!\App\Services\TransactionService::isBillTypeMatchingStudentSchoolUnit($billTypeName, $studentSchoolName)) {
+                        $this->warn("  [CROSS-UPT LEAKAGE] Bill #{$bill->id} ({$billType?->name} - {$bill->academicYear?->name}) — UPT Mismatch for {$studentSchoolName}");
                         if (!$isDryRun) {
                             $bill->delete();
                         }
                         $totalGhostDeleted++;
                         continue;
+                    }
+
+                    // Check 1c: Academic Year Filter Check (Before Entry Year)
+                    $ay = $bill->billType?->academicYear ?? $bill->academicYear;
+                    if ($ay) {
+                        $startYear = $ay->getStartYearSafe();
+                        if ($startYear !== null && $startYear < $entryYear) {
+                            $this->warn("  [ACADEMIC YEAR LEAKAGE] Bill #{$bill->id} ({$billType?->name}) — AY {$ay->name} is before Entry Year {$entryYear}");
+                            if (!$isDryRun) {
+                                $bill->delete();
+                            }
+                            $totalGhostDeleted++;
+                            continue;
+                        }
                     }
 
                     // Check 2: Parallel category payment matching in same academic year

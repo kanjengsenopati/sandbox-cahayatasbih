@@ -994,4 +994,69 @@ class TransactionService
             }
         }
     }
+
+    public static function isBillTypeMatchingStudentSchoolUnit($billTypeName, $studentSchoolName)
+    {
+        $bName = strtoupper($billTypeName ?? '');
+        $sName = strtoupper($studentSchoolName ?? '');
+
+        $hasSmp = str_contains($bName, 'SMP');
+        $hasMa = str_contains($bName, 'MA') || str_contains($bName, 'ALIYAH');
+        $hasPondok = str_contains($bName, 'PONDOK') || str_contains($bName, 'PPTQ');
+
+        // Jika tagihan generic (tidak ada flag unit), dianggap aman untuk semua
+        if (!$hasSmp && !$hasMa && !$hasPondok) return true;
+
+        $isStudentSmp = str_contains($sName, 'SMP');
+        $isStudentMa = str_contains($sName, 'MA') || str_contains($sName, 'ALIYAH');
+        $isStudentPondok = str_contains($sName, 'PONDOK') || str_contains($sName, 'PPTQ');
+
+        if ($isStudentSmp && $hasSmp) return true;
+        if ($isStudentMa && $hasMa) return true;
+        if ($isStudentPondok && $hasPondok) return true;
+
+        return false;
+    }
+
+    public static function cleanupGhostBillsForStudent($studentId)
+    {
+        if (empty($studentId)) return;
+        $student = Student::with(['classroom.school'])->find($studentId);
+        if (!$student) return;
+
+        $studentSchoolName = $student->classroom?->school?->name ?? '';
+        $entryYear = $student->getEntryYear();
+
+        $unpaidBills = Bill::with(['billType.academicYear', 'academicYear'])
+            ->where('student_id', $studentId)
+            ->where('status', Bill::STATUS_UNPAID)
+            ->where('paid_amount', 0)
+            ->whereNull('deleted_at')
+            ->get();
+
+        foreach ($unpaidBills as $bill) {
+            $shouldDelete = false;
+
+            // 1. Cross-UPT Check
+            $bName = $bill->billType?->name ?? '';
+            if (!self::isBillTypeMatchingStudentSchoolUnit($bName, $studentSchoolName)) {
+                $shouldDelete = true;
+            }
+
+            // 2. Academic Year Filter Check (Before Entry Year)
+            $ay = $bill->billType?->academicYear ?? $bill->academicYear;
+            if (!$shouldDelete && $ay) {
+                $ayStartYear = $ay->getStartYearSafe();
+                if ($ayStartYear !== null && $ayStartYear < $entryYear) {
+                    $shouldDelete = true;
+                }
+            }
+
+            if ($shouldDelete) {
+                $bill->delete(); // Soft delete
+                Log::info("[GhostCleanup] Soft-deleted UNPAID ghost bill ID: {$bill->id} for Student ID: {$studentId} (EntryYear: {$entryYear}, School: {$studentSchoolName})");
+            }
+        }
+    }
 }
+

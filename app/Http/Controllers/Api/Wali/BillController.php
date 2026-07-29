@@ -13,6 +13,7 @@ class BillController extends BaseWaliApiController
         $student = $this->resolveActiveStudent();
         if (!$student) return response()->json(['unpaid' => [], 'paid' => []]);
 
+        \App\Services\TransactionService::cleanupGhostBillsForStudent($student->id);
         \App\Services\TransactionService::syncStudentBillsFromPaidTransactions($student->id);
         \App\Services\TransactionService::ensureStudentBillsSyncedFromRate($student->id);
 
@@ -26,22 +27,21 @@ class BillController extends BaseWaliApiController
             ->where('student_id', $student->id)
             ->get();
 
-        // Strict UPT Filter: Only show bills matching student's UPT school
-        $studentSchoolName = strtoupper($student->classroom?->school?->name ?? '');
-        $isSmp = str_contains($studentSchoolName, 'SMP');
-        $isMa = str_contains($studentSchoolName, 'MA') || str_contains($studentSchoolName, 'ALIYAH');
-        $isPondok = str_contains($studentSchoolName, 'PONDOK') || str_contains($studentSchoolName, 'PPTQ');
+        $studentSchoolName = $student->classroom?->school?->name ?? '';
+        $entryYear = $student->getEntryYear() ?? date('Y');
 
-        $filteredBills = $allBills->filter(function ($b) use ($isSmp, $isMa, $isPondok) {
-            $btName = strtoupper($b->billType?->name ?? '');
-            if ($isSmp) {
-                return !str_contains($btName, 'PONDOK') && !str_contains($btName, 'MA');
+        $filteredBills = $allBills->filter(function ($b) use ($studentSchoolName, $entryYear) {
+            $btName = $b->billType?->name ?? '';
+            if (!\App\Services\TransactionService::isBillTypeMatchingStudentSchoolUnit($btName, $studentSchoolName)) {
+                return false;
             }
-            if ($isMa) {
-                return !str_contains($btName, 'PONDOK') && !str_contains($btName, 'SMP');
-            }
-            if ($isPondok) {
-                return str_contains($btName, 'PONDOK');
+            
+            $ay = $b->billType?->academicYear ?? $b->academicYear;
+            if ($ay) {
+                $startYear = $ay->getStartYearSafe();
+                if ($startYear !== null && $startYear < $entryYear) {
+                    return false;
+                }
             }
             return true;
         });

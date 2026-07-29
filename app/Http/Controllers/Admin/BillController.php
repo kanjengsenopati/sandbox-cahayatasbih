@@ -48,6 +48,7 @@ class BillController extends Controller
         $academicYears = \App\Models\AcademicYear::orderBy('start_year', 'desc')->get();
 
         if ($studentId = request()->student_id) {
+            TransactionService::cleanupGhostBillsForStudent($studentId);
             TransactionService::syncStudentBillsFromPaidTransactions($studentId);
             TransactionService::ensureStudentBillsSyncedFromRate($studentId);
             $student = Student::with(['user', 'classroom.school', 'classroomHistories.classroom'])->find($studentId);
@@ -86,6 +87,10 @@ class BillController extends Controller
 
     private function getBills($studentId, $type, $academicYearId = null)
     {
+        $student = Student::with('classroom.school')->find($studentId);
+        $studentSchoolName = $student?->classroom?->school?->name ?? '';
+        $entryYear = $student?->getEntryYear() ?? date('Y');
+
         $query = BillType::with(['billItem', 'academicYear', 'bills' => function ($query) use ($studentId, $academicYearId) {
                 $query->where('student_id', $studentId);
                 if ($academicYearId) {
@@ -103,7 +108,20 @@ class BillController extends Controller
 
         return $query->latest()
             ->get()
-            ->map(fn($item) => $this->calculateBillTotals($item, $studentId));
+            ->filter(function($item) use ($studentSchoolName, $entryYear, $academicYearId) {
+                if (!TransactionService::isBillTypeMatchingStudentSchoolUnit($item->name, $studentSchoolName)) {
+                    return false;
+                }
+                if (!$academicYearId && $item->academicYear) {
+                    $startYear = $item->academicYear->getStartYearSafe();
+                    if ($startYear !== null && $startYear < $entryYear) {
+                        return false;
+                    }
+                }
+                return true;
+            })
+            ->map(fn($item) => $this->calculateBillTotals($item, $studentId))
+            ->values();
     }
 
     private function calculateBillTotals($item, $studentId)
