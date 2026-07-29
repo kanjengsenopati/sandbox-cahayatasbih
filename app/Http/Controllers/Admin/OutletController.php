@@ -13,8 +13,8 @@ class OutletController extends Controller
 {
     public function index()
     {
-        if (!Auth::user()->can('Manage Outlet')) {
-            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
+        if (!Auth::user()->can('Manage Outlet') || Auth::user()->isKoordinatorCahayaMart()) {
+            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk modul Outlet');
         }
         if (request()->ajax()) {
             $data = Outlet::with('adminOutlet.admin')->latest()->get();

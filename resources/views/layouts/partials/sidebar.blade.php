@@ -85,6 +85,8 @@
             
             if ($menu->name === 'Menu Pengaturan' || $menu->name === 'Pengaturan') {
                 $hasAccess = $userRoles->contains('super admin') || $userRoles->contains('superadmin');
+            } elseif (auth()->user()->isKoordinatorCahayaMart() && ($menu->name === 'Master Data' || $menu->name === 'Akademik')) {
+                $hasAccess = false;
             } else {
                 if (empty($permissions)) {
                     $hasAccess = true;
@@ -141,6 +143,12 @@
 
                         $user = auth()->user();
 
+                        if ($user->isKoordinatorCahayaMart()) {
+                            if (str_contains($sub->url, 'mode=outlet') || str_contains($sub->url, 'mode=bisnis') || $sub->url === '/outlet') {
+                                return false;
+                            }
+                        }
+
                         if (str_contains($sub->url, 'pos-transaction')) {
                             if ($user->isKasirOutlet() && (str_contains($sub->url, 'mode=kantin') || str_contains($sub->url, 'mode=bisnis'))) {
                                 return false;
@@ -164,7 +172,7 @@
                     
                     $displayMenuName = $menu->name;
                     if (str_contains($menu->name, 'Pondok Mart')) {
-                        if (auth()->user()->isKasirKoperasi()) {
+                        if (auth()->user()->isKasirKoperasi() || auth()->user()->isKoordinatorCahayaMart()) {
                             $displayMenuName = 'Koperasi Pesantren';
                         } elseif (auth()->user()->isKasirOutlet()) {
                             $displayMenuName = 'Pondok Mart (Outlet)';
@@ -197,7 +205,7 @@
                                     $subUrl = $sub->url;
                                     $subName = $sub->name;
                                     if (str_contains($subUrl, 'order-item')) {
-                                        if (auth()->user()->isKasirKoperasi()) {
+                                        if (auth()->user()->isKasirKoperasi() || auth()->user()->isKoordinatorCahayaMart()) {
                                             $effectiveOutletId = auth()->user()->getEffectiveOutletId('kantin');
                                             $subUrl = '/order-item?mode=kantin' . ($effectiveOutletId ? '&outlet_id=' . $effectiveOutletId : '');
                                         } elseif (auth()->user()->isKasirOutlet() || auth()->user()->isKasir()) {
@@ -205,7 +213,7 @@
                                             $subUrl = '/order-item?mode=outlet' . ($effectiveOutletId ? '&outlet_id=' . $effectiveOutletId : '');
                                         }
                                     } elseif (str_contains($subName, 'Multi Outlet') || str_contains($subName, 'Multi-Outlet') || str_contains($subUrl, 'pos-transaction')) {
-                                        if (str_contains($subUrl, 'mode=kantin') || auth()->user()->isKasirKoperasi()) {
+                                        if (str_contains($subUrl, 'mode=kantin') || auth()->user()->isKasirKoperasi() || auth()->user()->isKoordinatorCahayaMart()) {
                                             $subName = 'Laporan POS Kantin';
                                         } elseif (str_contains($subUrl, 'mode=outlet') || auth()->user()->isKasirOutlet()) {
                                             $subName = 'Laporan POS Outlet';

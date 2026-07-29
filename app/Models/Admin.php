@@ -152,6 +152,20 @@ class Admin extends Authenticatable
     }
 
     /**
+     * Check if admin has Koordinator Cahaya Mart role (case-insensitive & substring matching)
+     */
+    public function isKoordinatorCahayaMart(): bool
+    {
+        $roles = $this->roles->pluck('name')->map(fn($r) => strtolower($r));
+        foreach ($roles as $role) {
+            if (str_contains($role, 'koordinator') && (str_contains($role, 'cahaya mart') || str_contains($role, 'mart') || str_contains($role, 'koperasi'))) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
      * Check if admin has Kasir Outlet role (case-insensitive & substring matching)
      */
     public function isKasirOutlet(): bool
@@ -187,7 +201,7 @@ class Admin extends Authenticatable
         $koperasi = \App\Models\Outlet::where('name', 'Koperasi')->orWhere('code', 'KPR')->first();
         $koperasiId = $koperasi ? $koperasi->id : '6bc5b484-07f9-49cc-aefa-00a8cf47e8d7';
 
-        if ($this->isKasirKoperasi()) {
+        if ($this->isKasirKoperasi() || $this->isKoordinatorCahayaMart()) {
             return $koperasiId;
         }
 
@@ -260,7 +274,7 @@ class Admin extends Authenticatable
             return true;
         }
 
-        if (in_array(strtolower($this->email), ['siswanto@cahayatasbih.or.id', 'arsito@cahayatasbih.or.id', 'maulana@cahayatasbih.or.id'])) {
+        if (in_array(strtolower($this->email), ['siswanto@cahayatasbih.or.id', 'arsito@cahayatasbih.or.id'])) {
             return true;
         }
 

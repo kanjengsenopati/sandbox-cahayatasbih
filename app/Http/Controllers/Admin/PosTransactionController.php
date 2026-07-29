@@ -26,12 +26,12 @@ class PosTransactionController extends Controller
         $user = Auth::user();
         $mode = $request->input('mode');
 
-        if ($user->isKasirKoperasi()) {
+        if ($user->isKasirKoperasi() || $user->isKoordinatorCahayaMart()) {
             if ($mode && $mode !== 'kantin') {
                 if ($request->ajax()) {
                     return response()->json(['success' => false, 'message' => 'Maaf, Anda tidak memiliki akses.'], 403);
                 }
-                return redirect()->route('pos-transaction.index', ['mode' => 'kantin'])->with('error', 'Maaf, Anda tidak memiliki akses untuk modul tersebut');
+                return redirect()->route('pos-transaction.index', ['mode' => 'kantin'])->with('error', 'Maaf, Anda tidak memiliki akses untuk modul Outlet');
             }
             $mode = 'kantin';
         } elseif ($user->isKasirOutlet()) {

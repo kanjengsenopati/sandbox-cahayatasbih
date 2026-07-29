@@ -44,8 +44,8 @@ class ItemController extends Controller
             return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
         }
 
-        if ($user->isKasirKoperasi() && request('mode') === 'outlet') {
-            return redirect()->route('item.index', ['mode' => 'kantin']);
+        if (($user->isKasirKoperasi() || $user->isKoordinatorCahayaMart()) && request('mode') === 'outlet') {
+            return redirect()->route('item.index', ['mode' => 'kantin'])->with('error', 'Maaf, Anda tidak memiliki akses untuk modul Outlet');
         }
         if ($user->isKasirOutlet() && request('mode') === 'kantin') {
             return redirect()->route('item.index', ['mode' => 'outlet']);
