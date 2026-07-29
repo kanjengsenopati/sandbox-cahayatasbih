@@ -61,8 +61,11 @@
                         </a>
                     </div>
                     <div>
-                        <x-action.create name="Saldo Santri" label="Penyesuaian Saldo"
-                            action="{{ route('saldo-history.create') }}" />
+                        @if(Auth::user()->can('Create Saldo Santri') || Auth::user()->can('Manage Saldo Santri') || Auth::user()->isKoordinatorCahayaMart())
+                            <a class="btn btn-sm btn-primary" href="{{ route('saldo-history.create') }}">
+                                <i class="fas fa-plus me-1"></i> Penyesuaian Saldo
+                            </a>
+                        @endif
                     </div>
                     <!--end::Card title-->
                 </div>

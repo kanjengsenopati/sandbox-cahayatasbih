@@ -128,7 +128,7 @@ class SaldoHistoryController extends Controller
                     return $statusHtml;
                 })
                 ->addColumn('action', function ($transaction) {
-                    if (Auth::user()->can('Edit Saldo Santri')) {
+                    if (Auth::user()->can('Edit Saldo Santri') || Auth::user()->can('Manage Saldo Santri') || Auth::user()->isKoordinatorCahayaMart()) {
                         $action = "<select class='form-control status-transaction' name='status' id='status-{$transaction->id}' onchange='updateStatus(this.value, \"{$transaction->id}\")'>
                         <option value=''>Pilih Status</option>
                         <option value='" . Transaction::STATUS_PAID . "' " . ($transaction->status == Transaction::STATUS_PAID ? 'selected' : '') . ">Lunas</option>
@@ -168,7 +168,7 @@ class SaldoHistoryController extends Controller
      */
     public function create()
     {
-        if (!Auth::user()->can('Create Saldo Santri')) {
+        if (!Auth::user()->can('Create Saldo Santri') && !Auth::user()->can('Manage Saldo Santri') && !Auth::user()->isKoordinatorCahayaMart()) {
             return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
         }
 
@@ -249,7 +249,7 @@ class SaldoHistoryController extends Controller
         $isAjax = $request->ajax() || $request->wantsJson() || $request->expectsJson() || $request->header('X-Requested-With') === 'XMLHttpRequest';
 
         // Authorization check
-        if (!Auth::user()->can('Create Saldo Santri')) {
+        if (!Auth::user()->can('Create Saldo Santri') && !Auth::user()->can('Manage Saldo Santri') && !Auth::user()->isKoordinatorCahayaMart()) {
             if ($isAjax) {
                 return response()->json(['code' => 403, 'message' => 'Maaf, Anda tidak memiliki akses untuk aksi tersebut'], 403);
             }
@@ -504,7 +504,7 @@ class SaldoHistoryController extends Controller
 
     public function updateStatusPayment(UpdateStatusTopupSaldoRequest $request, $id)
     {
-        if (!Auth::user()->can('Edit Saldo Santri')) {
+        if (!Auth::user()->can('Edit Saldo Santri') && !Auth::user()->can('Manage Saldo Santri') && !Auth::user()->isKoordinatorCahayaMart()) {
             return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
         }
         $transaction = Transaction::findOrFail($id);
