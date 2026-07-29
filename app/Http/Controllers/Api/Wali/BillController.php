@@ -195,7 +195,7 @@ class BillController extends BaseWaliApiController
                 if (!$found) {
                     // Fallback amount determination
                     if ($isSyahriah) {
-                        $amt = 500000;
+                        $amt = \App\Services\TransactionService::resolveStudentRateForBillType($student, $billType, $m, $year);
                     } elseif ($isAplikasi) {
                         $amt = 10000;
                     } elseif ($isZarkasi) {
@@ -219,8 +219,9 @@ class BillController extends BaseWaliApiController
                     $found->setAttribute('is_pending_confirmation', false);
                 } else {
                     if ($found->amount <= 0 && $isSyahriah) {
-                        $found->amount = 500000;
-                        $found->remaining_amount = max(0, 500000 - $found->paid_amount);
+                        $expectedSyahriah = \App\Services\TransactionService::resolveStudentRateForBillType($student, $billType, $found->month, $found->year);
+                        $found->amount = $expectedSyahriah;
+                        $found->remaining_amount = max(0, $expectedSyahriah - $found->paid_amount);
                     }
                 }
                 $fullBills->push($found);
@@ -233,7 +234,8 @@ class BillController extends BaseWaliApiController
             ?? $billType->academicYear?->name 
             ?? null;
 
-        $totalBill = $isSyahriah ? 6000000 : ($isAplikasi ? 120000 : ($isZarkasi ? 550000 : $bills->sum('amount')));
+        $yearlySyahriah = \App\Services\TransactionService::resolveStudentRateForBillType($student, $billType, 7, date('Y')) * 12;
+        $totalBill = $isSyahriah ? $yearlySyahriah : ($isAplikasi ? 120000 : ($isZarkasi ? 550000 : $bills->sum('amount')));
         $totalPaid = $bills->sum('paid_amount');
         $totalUnpaid = max(0, $totalBill - $totalPaid);
 

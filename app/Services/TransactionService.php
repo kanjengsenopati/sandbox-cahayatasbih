@@ -794,7 +794,10 @@ class TransactionService
             } elseif ($isAplikasi) {
                 $amount = 10000;
             } elseif ($isSyahriah) {
-                $amount = 500000;
+                $studentSchoolName = strtoupper($student->classroom?->school?->name ?? '');
+                $btNameUpper = strtoupper($billType->name ?? '');
+                $isPondok = str_contains($studentSchoolName, 'PONDOK') || str_contains($studentSchoolName, 'PPTQ') || str_contains($btNameUpper, 'PONDOK') || str_contains($btNameUpper, 'PPTQ');
+                $amount = $isPondok ? 400000 : 500000;
             } else {
                 $amount = $sampleBill ? $sampleBill->amount : ($billType->billItem->amount ?? 0);
                 if ($amount <= 0) {
@@ -938,7 +941,10 @@ class TransactionService
         } elseif ($isAplikasi) {
             return 10000;
         } elseif ($isSyahriah) {
-            return 500000;
+            $studentSchoolName = strtoupper($student->classroom?->school?->name ?? '');
+            $btNameUpper = strtoupper($billType->name ?? '');
+            $isPondok = str_contains($studentSchoolName, 'PONDOK') || str_contains($studentSchoolName, 'PPTQ') || str_contains($btNameUpper, 'PONDOK') || str_contains($btNameUpper, 'PPTQ');
+            return $isPondok ? 400000 : 500000;
         }
 
         return (int) ($billType->billItem?->amount ?? 0);
