@@ -216,6 +216,9 @@
                                 @php
                                     $subUrl = $sub->url;
                                     $subName = $sub->name;
+                                    if (str_contains($subUrl, 'report-saldo') || str_contains(strtolower($subName), 'tabungan & saldo') || str_contains(strtolower($subName), 'tabungan dan saldo')) {
+                                        $subName = 'Saldo Santri';
+                                    }
                                     if (str_contains($subUrl, 'order-item')) {
                                         if (auth()->user()->isKasirKoperasi() || auth()->user()->isKoordinatorCahayaMart()) {
                                             $effectiveOutletId = auth()->user()->getEffectiveOutletId('kantin');
