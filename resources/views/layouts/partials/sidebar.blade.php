@@ -147,6 +147,18 @@
                             if (str_contains($sub->url, 'mode=outlet') || str_contains($sub->url, 'mode=bisnis') || $sub->url === '/outlet') {
                                 return false;
                             }
+                            if (str_contains($sub->url, 'report-profit-loss')) {
+                                return false;
+                            }
+                            if (str_contains($sub->url, 'report-attendance') || str_contains(strtolower($sub->name), 'kehadiran siswa')) {
+                                return false;
+                            }
+                            if (str_contains($sub->url, 'saving-history') || str_contains(strtolower($sub->name), 'tabungan santri')) {
+                                return false;
+                            }
+                            if (str_contains($sub->url, 'audit/sync') || str_contains($sub->url, 'audit/diagnostics') || str_contains($sub->url, 'audit/duplicate-students')) {
+                                return false;
+                            }
                         }
 
                         if (str_contains($sub->url, 'pos-transaction')) {
