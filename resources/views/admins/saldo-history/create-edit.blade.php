@@ -52,7 +52,10 @@
                         </div>
                     </div>
                     
-                    <div class="card-toolbar">
+                    <div class="card-toolbar d-flex align-items-center gap-2">
+                        <button type="button" class="btn btn-danger btn-sm rounded-[24px] fw-bold d-none shadow-sm" id="btn-batch-reset-zero" onclick="executeBatchResetZero()">
+                            <i class="fas fa-undo me-1"></i> Reset Saldo Ke Rp 0 <span class="badge badge-circle badge-white ms-1 text-danger" id="selected-zero-count">0</span>
+                        </button>
                         <span class="badge badge-light-primary fs-7 px-4 py-3 rounded-pill">
                             <i class="fas fa-info-circle text-primary me-1"></i> Update Saldo Langsung pada Tabel
                         </span>
@@ -68,13 +71,18 @@
                         <table id="table-adjust-saldo" class="table align-middle table-row-dashed fs-6 gy-4">
                             <thead>
                                 <tr class="text-start text-muted fw-bolder fs-7 text-uppercase gs-0 border-bottom border-gray-200">
+                                    <th style="width: 3%" class="text-center pe-0">
+                                        <div class="form-check form-check-sm form-check-custom form-check-solid">
+                                            <input class="form-check-input" type="checkbox" id="check-all-students" />
+                                        </div>
+                                    </th>
                                     <th style="width: 4%">No</th>
                                     <th style="width: 12%">NIS</th>
                                     <th style="width: 22%">Nama</th>
-                                    <th style="width: 12%">Kelas</th>
+                                    <th style="width: 10%">Kelas</th>
                                     <th style="width: 14%">Saldo Awal</th>
                                     <th style="width: 14%">Saldo Sekarang</th>
-                                    <th class="text-center" style="width: 22%">Aksi Update Inline</th>
+                                    <th class="text-center" style="width: 21%">Aksi Update Inline</th>
                                 </tr>
                             </thead>
                             <tbody class="text-gray-700 fw-bold"></tbody>
@@ -92,8 +100,10 @@
 
 @push('js')
 <script>
+    var table = null;
+
     $(document).ready(function() {
-        var table = $('#table-adjust-saldo').DataTable({
+        table = $('#table-adjust-saldo').DataTable({
             processing: true,
             serverSide: true,
             ordering: true,
@@ -115,6 +125,18 @@
                 "searchPlaceholder": "Cari santri (min. 3 huruf)..."
             },
             columns: [
+                {
+                    data: 'id',
+                    orderable: false,
+                    sortable: false,
+                    searchable: false,
+                    className: 'text-center pe-0',
+                    render: function(data, type, row) {
+                        return `<div class="form-check form-check-sm form-check-custom form-check-solid">
+                                    <input class="form-check-input student-select-checkbox" type="checkbox" value="${data}" data-saldo="${row.saldo || 0}" data-name="${row.name}" />
+                                </div>`;
+                    }
+                },
                 {
                     data: null,
                     orderable: false,
@@ -412,6 +434,128 @@
                 title: 'Gagal Update Saldo',
                 text: msg
             });
+        });
+    }
+
+    // Multi-select Checkbox Handler
+    $(document).on('change', '#check-all-students', function() {
+        var isChecked = $(this).is(':checked');
+        $('.student-select-checkbox').prop('checked', isChecked);
+        updateBatchButtonState();
+    });
+
+    $(document).on('change', '.student-select-checkbox', function() {
+        var allCount = $('.student-select-checkbox').length;
+        var checkedCount = $('.student-select-checkbox:checked').length;
+        $('#check-all-students').prop('checked', allCount > 0 && allCount === checkedCount);
+        updateBatchButtonState();
+    });
+
+    function updateBatchButtonState() {
+        var checkedCount = $('.student-select-checkbox:checked').length;
+        var btn = $('#btn-batch-reset-zero');
+        var counter = $('#selected-zero-count');
+
+        if (checkedCount > 0) {
+            btn.removeClass('d-none');
+            counter.text(checkedCount);
+        } else {
+            btn.addClass('d-none');
+            counter.text('0');
+        }
+    }
+
+    // Execute Batch Reset Saldo to Rp 0 via Async AJAX
+    function executeBatchResetZero() {
+        var selectedBoxes = $('.student-select-checkbox:checked');
+        var selectedIds = [];
+
+        selectedBoxes.each(function() {
+            selectedIds.push($(this).val());
+        });
+
+        if (selectedIds.length === 0) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Perhatian',
+                text: 'Pilih minimal satu santri yang ingin di-reset saldonya ke Rp 0.',
+                confirmButtonText: 'OK',
+                customClass: { confirmButton: 'btn btn-primary' }
+            });
+            return;
+        }
+
+        Swal.fire({
+            title: 'Apakah Anda Yakin?',
+            html: 'Sistem akan me-reset saldo dari <b>' + selectedIds.length + ' santri terpilih</b> menjadi <b>Rp 0</b>. Aksi ini akan mencatat riwayat penyesuaian otomatis.',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Ya, Reset Ke Rp 0!',
+            cancelButtonText: 'Batal',
+            customClass: {
+                confirmButton: 'btn btn-danger rounded-[24px]',
+                cancelButton: 'btn btn-light rounded-[24px]'
+            }
+        }).then((result) => {
+            if (result.isConfirmed) {
+                Swal.fire({
+                    title: 'Memproses Reset Saldo...',
+                    text: 'Mohon tunggu sebentar, penyesuaian saldo sedang dilakukan.',
+                    allowOutsideClick: false,
+                    showConfirmButton: false,
+                    didOpen: () => {
+                        Swal.showLoading();
+                    }
+                });
+
+                axios.post("{{ route('saldo-history.batch-reset-zero') }}", {
+                    student_ids: selectedIds,
+                    _token: "{{ csrf_token() }}"
+                }, {
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'Accept': 'application/json'
+                    }
+                })
+                .then(function(response) {
+                    var resData = response.data;
+                    if (resData && (resData.code == 200 || resData.code == '200')) {
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Berhasil Reset!',
+                            text: resData.message || 'Saldo santri terpilih berhasil di-reset menjadi Rp 0.',
+                            timer: 2000,
+                            showConfirmButton: false
+                        });
+
+                        // Uncheck select-all and hide button
+                        $('#check-all-students').prop('checked', false);
+                        updateBatchButtonState();
+
+                        // Auto-refresh DataTables live update asynchronously
+                        if (table) {
+                            table.ajax.reload(null, false);
+                        }
+                    } else {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Gagal',
+                            text: (resData && resData.message) ? resData.message : 'Terjadi kesalahan saat me-reset saldo.'
+                        });
+                    }
+                })
+                .catch(function(error) {
+                    var msg = 'Terjadi kesalahan pada server saat me-reset saldo.';
+                    if (error.response && error.response.data && error.response.data.message) {
+                        msg = error.response.data.message;
+                    }
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Gagal Reset Saldo',
+                        text: msg
+                    });
+                });
+            }
         });
     }
 </script>

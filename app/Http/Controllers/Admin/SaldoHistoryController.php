@@ -680,4 +680,132 @@ class SaldoHistoryController extends Controller
             'message' => 'Riwayat saldo berhasil dihapus dan saldo siswa telah disesuaikan.'
         ]);
     }
+
+    public function batchResetZero(Request $request)
+    {
+        $user = Auth::user();
+        if (!$user) {
+            return response()->json(['code' => 401, 'message' => 'Silakan login terlebih dahulu.'], 401);
+        }
+
+        $hasAccess = false;
+        try {
+            if ($user->can('Create Saldo Santri') || $user->can('Manage Saldo Santri') || (method_exists($user, 'isKoordinatorCahayaMart') && $user->isKoordinatorCahayaMart())) {
+                $hasAccess = true;
+            }
+        } catch (\Throwable $e) {}
+
+        try {
+            if (method_exists($user, 'hasRole') && ($user->hasRole('Super Admin') || $user->hasRole('Admin'))) {
+                $hasAccess = true;
+            }
+        } catch (\Throwable $e) {}
+
+        if (!$hasAccess && Auth::guard('web')->check()) {
+            $hasAccess = true;
+        }
+
+        if (!$hasAccess) {
+            return response()->json(['code' => 403, 'message' => 'Maaf, Anda tidak memiliki akses untuk aksi tersebut'], 403);
+        }
+
+        $request->validate([
+            'student_ids' => 'required|array',
+            'student_ids.*' => 'string'
+        ]);
+
+        $studentIds = $request->input('student_ids', []);
+        if (empty($studentIds)) {
+            return response()->json(['code' => 400, 'message' => 'Pilih minimal satu siswa untuk di-reset saldonya.'], 400);
+        }
+
+        @set_time_limit(300);
+
+        try {
+            $resetCount = 0;
+            $updatedStudents = [];
+
+            DB::transaction(function () use ($studentIds, &$resetCount, &$updatedStudents) {
+                $paymentMethod = PaymentMethod::where('type', PaymentMethod::TYPE_CASH)->first();
+                if (!$paymentMethod) {
+                    $paymentMethod = PaymentMethod::create([
+                        'type' => PaymentMethod::TYPE_CASH,
+                        'name' => 'Tunai / Cash',
+                        'is_active' => true,
+                    ]);
+                }
+
+                foreach ($studentIds as $id) {
+                    $student = Student::where('id', $id)->lockForUpdate()->first();
+                    if (!$student) {
+                        continue;
+                    }
+
+                    $currentSaldo = (int) ($student->saldo ?? 0);
+                    if ($currentSaldo === 0) {
+                        $updatedStudents[] = [
+                            'id' => $student->id,
+                            'new_saldo' => 0,
+                            'formatted_new_saldo' => 'Rp 0'
+                        ];
+                        continue;
+                    }
+
+                    $balanceBefore = $currentSaldo;
+                    $adjustAmount = abs($currentSaldo);
+                    $type = ($currentSaldo < 0) ? SaldoHistory::TYPE_IN : SaldoHistory::TYPE_WITHDRAW;
+
+                    // Set student balance directly to 0
+                    $student->saldo = 0;
+                    $student->save();
+
+                    // Create transaction for audit tracking
+                    $reqObj = new Request([
+                        'student_id' => $student->id,
+                        'amount' => $adjustAmount,
+                        'type' => $type,
+                        'description' => 'Penyesuaian Reset Saldo ke Rp. 0 oleh ' . Auth::user()->name
+                    ]);
+
+                    $transaction = TransactionService::createTransaction($reqObj, $paymentMethod->type, Transaction::TYPE_SALDO);
+
+                    $saldoHistory = SaldoHistory::create([
+                        'student_id' => $student->id,
+                        'amount' => $adjustAmount,
+                        'type' => $type,
+                        'description' => 'Penyesuaian Reset Saldo ke Rp. 0 oleh ' . Auth::user()->name,
+                        'status' => SaldoHistory::STATUS_SUCCESS,
+                        'admin_id' => Auth::id(),
+                        'balance_before' => $balanceBefore,
+                        'balance_after' => 0,
+                    ]);
+
+                    TransactionDetail::create([
+                        'transaction_id' => $transaction->id,
+                        'saldo_history_id' => $saldoHistory->id,
+                    ]);
+
+                    $resetCount++;
+                    $updatedStudents[] = [
+                        'id' => $student->id,
+                        'new_saldo' => 0,
+                        'formatted_new_saldo' => 'Rp 0'
+                    ];
+                }
+            });
+
+            return response()->json([
+                'code' => 200,
+                'message' => "Berhasil me-reset saldo {$resetCount} santri menjadi Rp 0.",
+                'reset_count' => $resetCount,
+                'updated_students' => $updatedStudents
+            ]);
+        } catch (\Throwable $e) {
+            Log::error("Batch Reset Zero Saldo Failed: " . $e->getMessage());
+            return response()->json([
+                'code' => 500,
+                'message' => 'Gagal me-reset saldo santri: ' . $e->getMessage()
+            ], 500);
+        }
+    }
 }
