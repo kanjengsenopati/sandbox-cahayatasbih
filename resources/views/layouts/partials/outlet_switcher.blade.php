@@ -4,9 +4,16 @@
         $authOutletIds = $user->getOutletIds();
         $query = \App\Models\Outlet::where('is_active', 1);
 
+        $isSuperAdmin = false;
+        try {
+            if ($user && method_exists($user, 'hasRole')) {
+                $isSuperAdmin = $user->hasRole('Super Admin');
+            }
+        } catch (\Throwable $e) {}
+
         if (!empty($authOutletIds)) {
             $query->whereIn('id', $authOutletIds);
-        } elseif (!$user->hasRole('Super Admin')) {
+        } elseif (!$isSuperAdmin) {
             $query->where('id', $user->outlet_id);
         }
 

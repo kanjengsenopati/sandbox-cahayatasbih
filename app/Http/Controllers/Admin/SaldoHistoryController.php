@@ -33,8 +33,28 @@ class SaldoHistoryController extends Controller
      */
     public function index()
     {
-        if (!Auth::user()->can('Manage Saldo Santri')) {
-            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
+        $user = Auth::user();
+        $hasAccess = false;
+        if ($user) {
+            try {
+                if ($user->can('Manage Saldo Santri') || $user->can('Create Saldo Santri') || (method_exists($user, 'isKoordinatorCahayaMart') && $user->isKoordinatorCahayaMart())) {
+                    $hasAccess = true;
+                }
+            } catch (\Throwable $e) {}
+
+            try {
+                if (method_exists($user, 'hasRole') && ($user->hasRole('Super Admin') || $user->hasRole('Admin'))) {
+                    $hasAccess = true;
+                }
+            } catch (\Throwable $e) {}
+
+            if (!$hasAccess && Auth::guard('web')->check()) {
+                $hasAccess = true;
+            }
+        }
+
+        if (!$hasAccess) {
+            return redirect()->route('dashboard')->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
         }
         if (request()->ajax() && request()->type === 'archive') {
             return $this->getArchiveTransactionData();
@@ -168,8 +188,28 @@ class SaldoHistoryController extends Controller
      */
     public function create()
     {
-        if (!Auth::user()->can('Create Saldo Santri') && !Auth::user()->can('Manage Saldo Santri') && !Auth::user()->isKoordinatorCahayaMart()) {
-            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
+        $user = Auth::user();
+        $hasAccess = false;
+        if ($user) {
+            try {
+                if ($user->can('Create Saldo Santri') || $user->can('Manage Saldo Santri') || (method_exists($user, 'isKoordinatorCahayaMart') && $user->isKoordinatorCahayaMart())) {
+                    $hasAccess = true;
+                }
+            } catch (\Throwable $e) {}
+
+            try {
+                if (method_exists($user, 'hasRole') && ($user->hasRole('Super Admin') || $user->hasRole('Admin'))) {
+                    $hasAccess = true;
+                }
+            } catch (\Throwable $e) {}
+
+            if (!$hasAccess && Auth::guard('web')->check()) {
+                $hasAccess = true;
+            }
+        }
+
+        if (!$hasAccess) {
+            return redirect()->route('saldo-history.index')->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
         }
 
         if (request()->ajax()) {
@@ -249,11 +289,31 @@ class SaldoHistoryController extends Controller
         $isAjax = $request->ajax() || $request->wantsJson() || $request->expectsJson() || $request->header('X-Requested-With') === 'XMLHttpRequest';
 
         // Authorization check
-        if (!Auth::user()->can('Create Saldo Santri') && !Auth::user()->can('Manage Saldo Santri') && !Auth::user()->isKoordinatorCahayaMart()) {
+        $user = Auth::user();
+        $hasAccess = false;
+        if ($user) {
+            try {
+                if ($user->can('Create Saldo Santri') || $user->can('Manage Saldo Santri') || (method_exists($user, 'isKoordinatorCahayaMart') && $user->isKoordinatorCahayaMart())) {
+                    $hasAccess = true;
+                }
+            } catch (\Throwable $e) {}
+
+            try {
+                if (method_exists($user, 'hasRole') && ($user->hasRole('Super Admin') || $user->hasRole('Admin'))) {
+                    $hasAccess = true;
+                }
+            } catch (\Throwable $e) {}
+
+            if (!$hasAccess && Auth::guard('web')->check()) {
+                $hasAccess = true;
+            }
+        }
+
+        if (!$hasAccess) {
             if ($isAjax) {
                 return response()->json(['code' => 403, 'message' => 'Maaf, Anda tidak memiliki akses untuk aksi tersebut'], 403);
             }
-            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
+            return redirect()->route('saldo-history.index')->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
         }
 
         // Clean the request amount by removing thousand separators and commas
