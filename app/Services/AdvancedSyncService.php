@@ -17,9 +17,14 @@ class AdvancedSyncService
      */
     public function generatePreview(array $filters)
     {
+        @set_time_limit(600);
+        @ini_set('memory_limit', '512M');
+
         $previewId = 'sync_preview_' . (string) Str::uuid();
-        
-        $masterQuery = DB::connection('mysql_master')->table('students')
+        $localConn = DB::connection();
+        $masterConn = DB::connection('mysql_master');
+
+        $masterQuery = $masterConn->table('students')
             ->select('students.id', 'students.name', 'students.nis', 'students.saldo', 'students.saving', 'students.created_at', 'students.updated_at', 'classrooms.name as classroom_name', 'schools.name as school_name')
             ->leftJoin('classrooms', 'students.classroom_id', '=', 'classrooms.id')
             ->leftJoin('schools', 'classrooms.school_id', '=', 'schools.id')
@@ -49,12 +54,12 @@ class AdvancedSyncService
         }
 
         // Fetch Local Students for comparison
-        $studentsLocal = DB::connection('mysql')->table('students')
+        $studentsLocal = $localConn->table('students')
             ->whereIn('id', $studentIds)
             ->get()->keyBy('id');
 
         // Fetch Master Saldo Histories based on date range
-        $saldoHistoriesMasterQuery = DB::connection('mysql_master')->table('saldo_histories')
+        $saldoHistoriesMasterQuery = $masterConn->table('saldo_histories')
             ->whereIn('student_id', $studentIds)
             ->whereNull('deleted_at')
             ->orderBy('created_at', 'asc'); // Must be chronological
@@ -69,7 +74,7 @@ class AdvancedSyncService
         $saldoHistoriesMaster = $saldoHistoriesMasterQuery->get()->groupBy('student_id');
 
         // Fetch Local Saldo Histories for comparison
-        $saldoHistoriesLocal = DB::connection('mysql')->table('saldo_histories')
+        $saldoHistoriesLocal = $localConn->table('saldo_histories')
             ->whereIn('student_id', $studentIds)
             ->whereNull('deleted_at')
             ->get()->groupBy('student_id');
@@ -178,13 +183,19 @@ class AdvancedSyncService
      */
     public function executeSync(string $previewId, string $adminId, ?array $selectedStudentIds = null)
     {
+        @set_time_limit(600);
+        @ini_set('memory_limit', '512M');
+
         $previewData = Cache::get($previewId);
 
         if (!$previewData) {
             throw new \Exception("Data preview tidak ditemukan atau sudah kadaluarsa. Silakan ulangi filter preview.");
         }
 
-        DB::connection('mysql')->beginTransaction();
+        $localConn = DB::connection();
+        $masterConn = DB::connection('mysql_master');
+
+        $localConn->beginTransaction();
 
         try {
             $processedCount = 0;
@@ -198,11 +209,11 @@ class AdvancedSyncService
                 }
                 
                 // Ensure student exists locally
-                $studentExists = DB::connection('mysql')->table('students')->where('id', $studentId)->exists();
+                $studentExists = $localConn->table('students')->where('id', $studentId)->exists();
                 if (!$studentExists) {
-                    $masterStudent = DB::connection('mysql_master')->table('students')->where('id', $studentId)->first();
+                    $masterStudent = $masterConn->table('students')->where('id', $studentId)->first();
                     if ($masterStudent) {
-                         DB::connection('mysql')->table('students')->insert((array)$masterStudent);
+                         $localConn->table('students')->insert((array)$masterStudent);
                     } else {
                         continue; 
                     }
@@ -213,8 +224,8 @@ class AdvancedSyncService
                     $historyArray = (array) $history;
                     
                     // Merging logic: Recalculate ledger based on local running balance
-                    $currentStudent = DB::connection('mysql')->table('students')->where('id', $studentId)->lockForUpdate()->first();
-                    $balanceBefore = $currentStudent->saldo;
+                    $currentStudent = $localConn->table('students')->where('id', $studentId)->lockForUpdate()->first();
+                    $balanceBefore = $currentStudent ? $currentStudent->saldo : 0;
                     $amount = $historyArray['amount'];
                     $type = $historyArray['type'];
                     $balanceAfter = $balanceBefore;
@@ -228,15 +239,22 @@ class AdvancedSyncService
                     $historyArray['balance_before'] = $balanceBefore;
                     $historyArray['balance_after'] = $balanceAfter;
                     
-                    DB::connection('mysql')->table('saldo_histories')->insert($historyArray);
+                    $hId = $historyArray['id'];
+                    $exists = $localConn->table('saldo_histories')->where('id', $hId)->exists();
+                    if ($exists) {
+                        unset($historyArray['id']);
+                        $localConn->table('saldo_histories')->where('id', $hId)->update($historyArray);
+                    } else {
+                        $localConn->table('saldo_histories')->insert($historyArray);
+                    }
 
                     // If usage is POS, pull pos transaction
-                    if ($historyArray['usage'] === 'POS') {
-                        $this->syncPosTransaction($historyArray['id']);
+                    if (isset($historyArray['usage']) && $historyArray['usage'] === 'POS') {
+                        $this->syncPosTransaction($hId);
                     }
 
                     // Update student saldo
-                    DB::connection('mysql')->table('students')
+                    $localConn->table('students')
                         ->where('id', $studentId)
                         ->update(['saldo' => $balanceAfter, 'updated_at' => now()]);
                 }
@@ -244,7 +262,7 @@ class AdvancedSyncService
                 $processedCount++;
             }
 
-            DB::connection('mysql')->table('database_sync_logs')->insert([
+            $localConn->table('database_sync_logs')->insert([
                 'status' => 'success',
                 'started_at' => now(),
                 'finished_at' => now(),
@@ -254,7 +272,7 @@ class AdvancedSyncService
                 'updated_at' => now()
             ]);
 
-            DB::connection('mysql')->commit();
+            $localConn->commit();
             Cache::forget($previewId);
 
             return [
@@ -263,8 +281,8 @@ class AdvancedSyncService
                 'count' => $processedCount
             ];
 
-        } catch (\Exception $e) {
-            DB::connection('mysql')->rollBack();
+        } catch (\Throwable $e) {
+            $localConn->rollBack();
             Log::error("Advanced Sync Execution Failed: " . $e->getMessage());
             
             return [
@@ -276,36 +294,46 @@ class AdvancedSyncService
 
     private function syncPosTransaction($saldoHistoryId)
     {
-        $posTxMaster = DB::connection('mysql_master')->table('point_of_sale_transactions')
+        $localConn = DB::connection();
+        $masterConn = DB::connection('mysql_master');
+
+        $posTxMaster = $masterConn->table('point_of_sale_transactions')
             ->where('saldo_history_id', $saldoHistoryId)
             ->first();
 
         if ($posTxMaster) {
-            $exists = DB::connection('mysql')->table('point_of_sale_transactions')
+            $exists = $localConn->table('point_of_sale_transactions')
                 ->where('id', $posTxMaster->id)
                 ->exists();
 
             if (!$exists) {
                 // Check outlet
-                $outletExists = DB::connection('mysql')->table('outlets')->where('id', $posTxMaster->outlet_id)->exists();
-                if (!$outletExists) {
-                    $masterOutlet = DB::connection('mysql_master')->table('outlets')->where('id', $posTxMaster->outlet_id)->first();
-                    if ($masterOutlet) {
-                        DB::connection('mysql')->table('outlets')->insert((array)$masterOutlet);
+                if (!empty($posTxMaster->outlet_id)) {
+                    $outletExists = $localConn->table('outlets')->where('id', $posTxMaster->outlet_id)->exists();
+                    if (!$outletExists) {
+                        $masterOutlet = $masterConn->table('outlets')->where('id', $posTxMaster->outlet_id)->first();
+                        if ($masterOutlet) {
+                            $localConn->table('outlets')->insert((array)$masterOutlet);
+                        }
                     }
                 }
 
-                DB::connection('mysql')->table('point_of_sale_transactions')->insert((array)$posTxMaster);
+                $localConn->table('point_of_sale_transactions')->insert((array)$posTxMaster);
 
-                $detailsMaster = DB::connection('mysql_master')->table('point_of_sale_transaction_details')
+                $detailsMaster = $masterConn->table('point_of_sale_transaction_details')
                     ->where('point_of_sales_transaction_id', $posTxMaster->id)
                     ->get();
                 
                 foreach ($detailsMaster as $detail) {
-                    DB::connection('mysql')->table('point_of_sale_transaction_details')->updateOrInsert(
-                        ['id' => $detail->id],
-                        (array)$detail
-                    );
+                    $dArr = (array) $detail;
+                    $dId = $dArr['id'];
+                    $dExists = $localConn->table('point_of_sale_transaction_details')->where('id', $dId)->exists();
+                    if ($dExists) {
+                        unset($dArr['id']);
+                        $localConn->table('point_of_sale_transaction_details')->where('id', $dId)->update($dArr);
+                    } else {
+                        $localConn->table('point_of_sale_transaction_details')->insert($dArr);
+                    }
                 }
             }
         }

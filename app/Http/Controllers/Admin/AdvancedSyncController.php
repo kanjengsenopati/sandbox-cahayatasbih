@@ -51,22 +51,41 @@ class AdvancedSyncController extends Controller
      */
     public function execute(Request $request)
     {
-        $request->validate([
-            'preview_id' => 'required|string',
-            'selected_students' => 'nullable|array',
-            'selected_students.*' => 'string'
-        ]);
+        @set_time_limit(600);
+        @ini_set('memory_limit', '512M');
 
-        $adminId = Auth::id(); // Get currently logged in admin ID
-        
-        $selectedStudents = $request->input('selected_students');
-        
-        $result = $this->syncService->executeSync($request->preview_id, $adminId, $selectedStudents);
+        try {
+            $request->validate([
+                'preview_id' => 'required|string',
+                'selected_students' => 'nullable|array',
+                'selected_students.*' => 'string'
+            ]);
 
-        if ($result['status']) {
-            return redirect()->back()->with('success', $result['message']);
-        } else {
-            return redirect()->back()->with('error', $result['message']);
+            $adminId = (string) Auth::id(); // Get currently logged in admin ID
+            $selectedStudents = $request->input('selected_students');
+            
+            $result = $this->syncService->executeSync($request->preview_id, $adminId, $selectedStudents);
+
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json($result);
+            }
+
+            if ($result['status']) {
+                return redirect()->back()->with('success', $result['message']);
+            } else {
+                return redirect()->back()->with('error', $result['message']);
+            }
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error("AdvancedSyncController Exception: " . $e->getMessage());
+
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Terjadi kesalahan sistem: ' . $e->getMessage()
+                ], 500);
+            }
+
+            return redirect()->back()->with('error', 'Gagal mengeksekusi sinkronisasi: ' . $e->getMessage());
         }
     }
 }
