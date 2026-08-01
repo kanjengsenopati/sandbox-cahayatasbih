@@ -82,6 +82,20 @@ class ReportSaldoController extends Controller
     protected function formatDataTable($data)
     {
         return DataTables::of($data)
+            ->filterColumn('student.name', function ($query, $keyword) {
+                $query->whereHas('student', function ($q) use ($keyword) {
+                    $q->where('name', 'like', "%{$keyword}%")
+                      ->orWhere('nis', 'like', "%{$keyword}%")
+                      ->orWhere('nisn', 'like', "%{$keyword}%");
+                });
+            })
+            ->filterColumn('student.nis', function ($query, $keyword) {
+                $query->whereHas('student', function ($q) use ($keyword) {
+                    $q->where('nis', 'like', "%{$keyword}%")
+                      ->orWhere('nisn', 'like', "%{$keyword}%")
+                      ->orWhere('name', 'like', "%{$keyword}%");
+                });
+            })
             ->editColumn('amount', function ($data) {
                 return $this->formatAmountColumn($data);
             })

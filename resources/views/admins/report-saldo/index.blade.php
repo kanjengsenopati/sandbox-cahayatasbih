@@ -1,4 +1,4 @@
-@extends('layouts.master', ['title' => 'Laporan Transaksi'])
+@extends('layouts.master', ['title' => 'Laporan Transaksi Saldo'])
 @section('content')
 <div class="content d-flex flex-column flex-column-fluid" id="kt_content">
     <!--begin::Toolbar-->
@@ -10,7 +10,7 @@
                 data-kt-swapper-parent="{default: '#kt_content_container', 'lg': '#kt_toolbar_container'}"
                 class="page-title d-flex align-items-center flex-wrap me-3 mb-5 mb-lg-0">
                 <!--begin::Title-->
-                <h1 class="d-flex text-dark fw-bolder fs-3 align-items-center my-1">Laporan Transaksi</h1>
+                <h1 class="d-flex text-dark fw-bolder fs-3 align-items-center my-1">Laporan Transaksi Saldo</h1>
                 <!--end::Title-->
                 <!--begin::Separator-->
                 <span class="h-20px border-gray-300 border-start mx-4"></span>
@@ -19,8 +19,7 @@
                 <ul class="breadcrumb breadcrumb-separatorless fw-bold fs-7 my-1">
                     <!--begin::Item-->
                     <li class="breadcrumb-item text-muted">
-                        <a href="{{ route('report-transaction.index') }}" class="text-muted text-hover-primary">Laporan
-                            Transaksi</a>
+                        <a href="{{ route('report-saldo.index') }}" class="text-muted text-hover-primary">Laporan Transaksi Saldo</a>
                     </li>
                     <!--end::Item-->
                     <!--begin::Item-->
@@ -145,10 +144,6 @@
                                     <!--end::Body-->
                                 </div>
                             </div>
-                            {{-- <div class="mt-4 gap-2 d-flex justify-content-beetween align-items-end">
-
-                            </div> --}}
-                            <!--end::Card title-->
                         </div>
                     </div>
                 </div>
@@ -156,6 +151,16 @@
                 <!--begin::Card body-->
                 <div class="card-body">
                     <div class="card-body pt-0">
+                        <!--begin::Search Box-->
+                        <div class="d-flex justify-content-end mb-4">
+                            <div class="d-flex align-items-center position-relative">
+                                <span class="svg-icon svg-icon-1 position-absolute ms-4">
+                                    <i class="fas fa-search text-gray-400"></i>
+                                </span>
+                                <input type="text" id="custom-search-student" class="form-control form-control-solid w-250px ps-12 fs-7" placeholder="Cari Nama Siswa / NIS..." />
+                            </div>
+                        </div>
+                        <!--end::Search Box-->
                         <!--begin::Table-->
                         <div class="table-responsive">
                             <table id="table-saldo" class="table align-middle table-row-dashed ">
@@ -354,6 +359,15 @@
 
         $('#filter_outlet_id').on('change', function() {
             reloadTable();
+        });
+
+        var searchTimer;
+        $('#custom-search-student').on('keyup input', function() {
+            clearTimeout(searchTimer);
+            var val = $(this).val().trim();
+            searchTimer = setTimeout(function() {
+                table.search(val).draw();
+            }, 300);
         });
 
         $('#dateRange').daterangepicker({
