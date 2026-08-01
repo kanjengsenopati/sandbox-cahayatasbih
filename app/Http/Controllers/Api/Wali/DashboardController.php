@@ -38,7 +38,10 @@ class DashboardController extends BaseWaliApiController
             $studyCount = StudyGrade::where('student_id', $activeStudent->id)->distinct('study_id')->count();
 
             $saldoHistories = \App\Models\SaldoHistory::with('transaction_details')->where('student_id', $activeStudent->id)
-                ->whereNotIn('usage', [\App\Models\SaldoHistory::USAGE_POS, \App\Models\SaldoHistory::USAGE_BILL])
+                ->where(function ($q) {
+                    $q->whereNotIn('usage', [\App\Models\SaldoHistory::USAGE_POS, \App\Models\SaldoHistory::USAGE_BILL])
+                      ->orWhereDoesntHave('pointOfSaleTransaction');
+                })
                 ->whereNotIn('status', [\App\Models\SaldoHistory::STATUS_FAILED])
                 ->where('created_at', '>=', now()->startOfDay())
                 ->latest()
@@ -58,13 +61,13 @@ class DashboardController extends BaseWaliApiController
                 })
                 ->map(function($item) {
                     return [
-                        'id' => $item->transaction_details->first()?->transaction_id,
+                        'id' => $item->transaction_details->first()?->transaction_id ?? $item->id,
                         'type' => $item->type === 'IN' ? 'IN' : 'OUT',
                         'amount' => $item->amount,
                         'note' => $item->description ?? ($item->type === 'IN' ? 'Topup Saldo' : 'Pengeluaran Saldo'),
                         'status' => $item->status,
                         'created_at' => $item->created_at,
-                        'category' => $item->type === 'IN' ? 'TOPUP' : 'SALDO'
+                        'category' => $item->type === 'IN' ? 'TOPUP' : ($item->type === 'WITHDRAW' ? 'WITHDRAW' : 'SALDO')
                     ];
                 });
 

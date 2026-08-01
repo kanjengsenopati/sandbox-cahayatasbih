@@ -13,7 +13,10 @@ class SaldoHistoryController extends BaseWaliApiController
         if (!$student) return response()->json(['data' => []]);
         
         $query = SaldoHistory::where('student_id', $student->id)
-            ->whereNotIn('usage', [SaldoHistory::USAGE_POS, SaldoHistory::USAGE_BILL])
+            ->where(function ($q) {
+                $q->whereNotIn('usage', [SaldoHistory::USAGE_POS, SaldoHistory::USAGE_BILL])
+                  ->orWhereDoesntHave('pointOfSaleTransaction');
+            })
             ->whereNotIn('status', [SaldoHistory::STATUS_FAILED])
             ->latest();
             

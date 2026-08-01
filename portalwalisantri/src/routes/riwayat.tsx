@@ -154,6 +154,8 @@ function RiwayatPage() {
       return res.data.data || [];
     },
     enabled: !!active,
+    staleTime: 0,
+    refetchOnWindowFocus: true,
   });
 
   const { data: posTransactions = [], isLoading: isLoadingPos } = useQuery({
@@ -163,6 +165,8 @@ function RiwayatPage() {
       return res.data.data || [];
     },
     enabled: !!active,
+    staleTime: 0,
+    refetchOnWindowFocus: true,
   });
 
   const allTxs: Tx[] = useMemo(() => {
@@ -170,12 +174,12 @@ function RiwayatPage() {
       .filter((s: any) => !["CANCELLED", "cancelled", "rejected", "REJECTED", "EXPIRED", "expired", "failed", "FAILED"].includes(s.status))
       .map((s: any) => ({
         id: s.id,
-        name: s.type === "IN" ? "Top Up Saldo" : "Pengeluaran Saldo",
+        name: s.description || (s.type === "IN" ? "Top Up Saldo" : "Pengeluaran Saldo"),
         category: s.type === "IN" ? "topup" : "kantin",
         type: s.type === "IN" ? "in" : "out",
         amount: s.amount,
         date: s.created_at,
-        note: s.note,
+        note: s.note || s.description,
         status: s.status,
         payId: s.transaction_id || s.transactionId,
       }));
