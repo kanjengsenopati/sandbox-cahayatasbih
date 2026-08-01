@@ -228,17 +228,33 @@ class Student extends Model
 
     public function scopeHasSchool($query)
     {
-        $admin = Auth::guard('web')->user();
-        if ($admin?->hasRole('Super Admin')) {
+        $admin = Auth::guard('web')->user() ?? Auth::user();
+        if (!$admin) {
             return;
         }
 
-        $schoolIds = $admin ? (method_exists($admin, 'getSchoolIds') ? $admin->getSchoolIds() : ($admin->adminSchool ? $admin->adminSchool->pluck('school_id')->toArray() : [])) : [];
+        $isSuperOrAdmin = false;
+        try {
+            if (method_exists($admin, 'hasRole') && ($admin->hasRole('Super Admin') || $admin->hasRole('Admin'))) {
+                $isSuperOrAdmin = true;
+            }
+        } catch (\Throwable $e) {}
 
-        $query->whereHas('classroom', function ($query) use ($schoolIds) {
-            $query->whereHas('school', function ($query) use ($schoolIds) {
-                $query->whereIn('id', $schoolIds);
-            });
+        if ($isSuperOrAdmin) {
+            return;
+        }
+
+        $schoolIds = method_exists($admin, 'getSchoolIds') ? $admin->getSchoolIds() : ($admin->adminSchool ? $admin->adminSchool->pluck('school_id')->toArray() : []);
+
+        if (empty($schoolIds)) {
+            return;
+        }
+
+        $query->where(function ($q) use ($schoolIds) {
+            $q->whereIn('school_id', $schoolIds)
+              ->orWhereHas('classroom', function ($cQ) use ($schoolIds) {
+                  $cQ->whereIn('school_id', $schoolIds);
+              });
         });
     }
 

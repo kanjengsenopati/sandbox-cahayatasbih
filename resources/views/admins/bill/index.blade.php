@@ -771,19 +771,32 @@
         // Function to fetch student data based on selected school
         function fetchStudentData(selectedId = null) {
             var school_id = $('#school_id').val();
-            var academic_year_id = $('#academic_year_id').val();
-            if (school_id) {
-                $.ajax({
+
+            if ($('#student_id').hasClass('select2-hidden-accessible')) {
+                $('#student_id').select2('destroy');
+            }
+
+            if (!school_id) {
+                $('#student_id').empty().append(new Option('Pilih Siswa', '', true, true)).select2();
+                return;
+            }
+
+            $('#student_id').empty().select2({
+                placeholder: 'Pilih Siswa',
+                allowClear: true,
+                ajax: {
                     url: "{{ route('select2') }}",
                     dataType: 'json',
                     delay: 300,
-                    data: {
-                        search: '', // Assuming you need a default search term
-                        data_type: "STUDENT_BY_SCHOOL",
-                        school_id: school_id,
-                        academic_year_id: academic_year_id
+                    data: function (params) {
+                        return {
+                            search: params.term || '',
+                            data_type: "STUDENT_BY_SCHOOL",
+                            school_id: $('#school_id').val(),
+                            academic_year_id: $('#academic_year_id').val()
+                        };
                     },
-                    success: function (data) {
+                    processResults: function (data) {
                         var results = $.map(data, function (item) {
                             let className = item.resolved_classroom_name || item.classroom?.name || '';
                             let displayText = (item.nis ? item.nis + ' - ' : '') +
@@ -800,43 +813,36 @@
                             };
                         });
                         
-                        // Menambahkan opsi "Pilih Siswa" di bagian atas list
-                        results.unshift({ id: '', text: 'Pilih Siswa' });
-                        
-                        $('#student_id').empty().select2({
-                            data: results,
-                            cache: true,
-                            templateResult: function (state) {
-                                if (!state.id) {
-                                    return state.text;
-                                }
-                                if (state.text.indexOf('(KELUAR') !== -1) {
-                                    let cleanText = state.text.replace(' (KELUAR - Ada Tunggakan)', '');
-                                    return $('<span>' + cleanText + ' <span class="badge bg-danger text-white ms-2" style="font-size: 10px; padding: 3px 6px; border-radius: 4px; font-weight: bold; display: inline-block; vertical-align: middle; line-height: 1;">KELUAR - Ada Tunggakan</span></span>');
-                                }
-                                return state.text;
-                            },
-                            templateSelection: function (state) {
-                                if (!state.id) {
-                                    return state.text;
-                                }
-                                if (state.text.indexOf('(KELUAR') !== -1) {
-                                    let cleanText = state.text.replace(' (KELUAR - Ada Tunggakan)', '');
-                                    return $('<span>' + cleanText + ' <span class="badge bg-danger text-white ms-2" style="font-size: 10px; padding: 3px 6px; border-radius: 4px; font-weight: bold; display: inline-block; vertical-align: middle; line-height: 1;">KELUAR - Ada Tunggakan</span></span>');
-                                }
-                                return state.text;
-                            }
-                        });
-
-                        // Set nilai siswa terpilih jika ada di request
-                        if (selectedId) {
-                            $('#student_id').val(selectedId).trigger('change', [true]);
-                        }
+                        return {
+                            results: results
+                        };
                     },
                     cache: true
-                });
-            } else {
-                $('#student_id').empty();
+                },
+                templateResult: function (state) {
+                    if (!state.id) {
+                        return state.text;
+                    }
+                    if (state.text.indexOf('(KELUAR') !== -1) {
+                        let cleanText = state.text.replace(' (KELUAR - Ada Tunggakan)', '');
+                        return $('<span>' + cleanText + ' <span class="badge bg-danger text-white ms-2" style="font-size: 10px; padding: 3px 6px; border-radius: 4px; font-weight: bold; display: inline-block; vertical-align: middle; line-height: 1;">KELUAR - Ada Tunggakan</span></span>');
+                    }
+                    return state.text;
+                },
+                templateSelection: function (state) {
+                    if (!state.id) {
+                        return state.text;
+                    }
+                    if (state.text.indexOf('(KELUAR') !== -1) {
+                        let cleanText = state.text.replace(' (KELUAR - Ada Tunggakan)', '');
+                        return $('<span>' + cleanText + ' <span class="badge bg-danger text-white ms-2" style="font-size: 10px; padding: 3px 6px; border-radius: 4px; font-weight: bold; display: inline-block; vertical-align: middle; line-height: 1;">KELUAR - Ada Tunggakan</span></span>');
+                    }
+                    return state.text;
+                }
+            });
+
+            if (selectedId) {
+                $('#student_id').val(selectedId).trigger('change', [true]);
             }
         }
         

@@ -165,44 +165,57 @@ class Select2Controller extends Controller
     public function studentBySchool($request)
     {
         $academicYearId = $request->academic_year_id;
+        $schoolId = $request->school_id;
+        $search = strtolower(trim($request->search ?? ''));
 
-        // Eager load relasi yang dibutuhkan — menggantikan per-student getClassroomForAcademicYear() calls
+        // Eager load relasi yang dibutuhkan
         $eagerRelations = ['classroom'];
         if ($academicYearId) {
-            // Load classroom history untuk academic year tertentu dalam 1 query
             $eagerRelations['classroomHistories'] = function ($q) use ($academicYearId) {
                 $q->where('academic_year_id', $academicYearId)->with('classroom')->limit(1);
             };
         }
 
-        $students = Student::with($eagerRelations)
-            ->whereHas('classroom', function ($query) use ($request) {
-                $query->where('school_id', $request->school_id);
-            })
-            ->where(function ($q) {
-                $q->where('status', '!=', Student::STATUS_DROPPED_OUT)
-                  ->orWhereHas('bills', function ($bQ) {
-                      $bQ->where('status', \App\Models\Bill::STATUS_UNPAID);
+        $query = Student::with($eagerRelations);
+
+        if (!empty($schoolId)) {
+            $query->where(function ($q) use ($schoolId) {
+                $q->where('school_id', $schoolId)
+                  ->orWhereHas('classroom', function ($cQ) use ($schoolId) {
+                      $cQ->where('school_id', $schoolId);
                   });
-            })
-            ->whereRaw('LOWER(name) like ?', ['%' . strtolower($request->search) . '%'])
-            ->hasSchool()
+            });
+        }
+
+        $query->where(function ($q) {
+            $q->where('status', '!=', Student::STATUS_DROPPED_OUT)
+              ->orWhereHas('bills', function ($bQ) {
+                  $bQ->where('status', \App\Models\Bill::STATUS_UNPAID);
+              });
+        });
+
+        if (!empty($search)) {
+            $query->where(function ($sq) use ($search) {
+                $sq->whereRaw('LOWER(name) like ?', ['%' . $search . '%'])
+                  ->orWhereRaw('LOWER(nis) like ?', ['%' . $search . '%'])
+                  ->orWhereRaw('LOWER(nisn) like ?', ['%' . $search . '%']);
+            });
+        }
+
+        $students = $query->hasSchool()
             ->orderBy('name')
-            ->take(50)
+            ->take(100)
             ->get();
 
         return $students->map(function ($student) use ($academicYearId) {
-            // Gunakan relasi yang sudah di-eager load — TIDAK ADA query tambahan di sini
             if ($academicYearId && $student->relationLoaded('classroomHistories')) {
                 $history = $student->classroomHistories->first();
-                // Abaikan kelas PONDOK, fallback ke classroom saat ini
                 $historyClass = $history?->classroom;
                 if ($historyClass && strtoupper($historyClass->name) !== 'PONDOK') {
                     $student->resolved_classroom_name = $historyClass->name;
                     return $student;
                 }
             }
-            // Fallback: gunakan classroom saat ini (sudah di-eager load)
             $student->resolved_classroom_name = $student->classroom?->name ?? '';
             return $student;
         });
@@ -219,8 +232,9 @@ class Select2Controller extends Controller
     public function studentActiveBySchool($request)
     {
         $academicYearId = $request->academic_year_id;
+        $schoolId = $request->school_id;
+        $search = strtolower(trim($request->search ?? ''));
 
-        // Eager load relasi yang dibutuhkan — konsisten dengan studentBySchool
         $eagerRelations = ['classroom'];
         if ($academicYearId) {
             $eagerRelations['classroomHistories'] = function ($q) use ($academicYearId) {
@@ -228,15 +242,29 @@ class Select2Controller extends Controller
             };
         }
 
-        $students = Student::with($eagerRelations)
-            ->whereHas('classroom', function ($query) use ($request) {
-                $query->where('school_id', $request->school_id);
-            })
-            ->whereRaw('LOWER(name) like ?', ['%' . strtolower($request->search) . '%'])
-            ->hasSchool()
+        $query = Student::with($eagerRelations);
+
+        if (!empty($schoolId)) {
+            $query->where(function ($q) use ($schoolId) {
+                $q->where('school_id', $schoolId)
+                  ->orWhereHas('classroom', function ($cQ) use ($schoolId) {
+                      $cQ->where('school_id', $schoolId);
+                  });
+            });
+        }
+
+        if (!empty($search)) {
+            $query->where(function ($sq) use ($search) {
+                $sq->whereRaw('LOWER(name) like ?', ['%' . $search . '%'])
+                  ->orWhereRaw('LOWER(nis) like ?', ['%' . $search . '%'])
+                  ->orWhereRaw('LOWER(nisn) like ?', ['%' . $search . '%']);
+            });
+        }
+
+        $students = $query->hasSchool()
             ->where('status', Student::STATUS_ACTIVE)
             ->orderBy('name')
-            ->take(50)
+            ->take(100)
             ->get();
 
         return $students->map(function ($student) use ($academicYearId) {
