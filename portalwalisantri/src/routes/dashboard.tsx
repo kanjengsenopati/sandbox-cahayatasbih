@@ -88,6 +88,8 @@ function Dashboard() {
       return res.data;
     },
     enabled: !!active,
+    staleTime: 0,
+    refetchOnWindowFocus: true,
   });
 
   const hasUnpaidBills = dashboard?.has_unpaid_bills || false;
@@ -273,7 +275,7 @@ function Dashboard() {
             <div className="flex items-center justify-between mt-5">
               <div className="flex items-end gap-3">
                 <h2 className="text-3xl font-bold tracking-tight">
-                  {hide ? "Rp ••••••" : fmt(active.saldo)}
+                  {hide ? "Rp ••••••" : fmt(dashboard?.activeStudent?.saldo ?? active.saldo)}
                 </h2>
                 <button onClick={() => setHide((h) => !h)} className="mb-1.5 text-white/80">
                   {hide ? <EyeOff size={18} /> : <Eye size={18} />}

@@ -82,6 +82,8 @@ export function SantriProvider({ children }: { children: ReactNode }) {
         },
         enabled: !isLoginPage && !isPenanggungJawabRoute,
         retry: false,
+        staleTime: 0,
+        refetchOnWindowFocus: true,
     });
 
     const { data: active = null, isPending: isPendingActive } = useQuery({
@@ -92,6 +94,8 @@ export function SantriProvider({ children }: { children: ReactNode }) {
         },
         enabled: !isLoginPage && !isPenanggungJawabRoute,
         retry: false,
+        staleTime: 0,
+        refetchOnWindowFocus: true,
     });
 
     const switchStudent = async (id: string) => {

@@ -219,7 +219,7 @@ function RiwayatPage() {
     });
   }, [allTxs, type, cat, q]);
 
-  const totalIn = filtered.filter((t) => t.type === "in" && (t.status === "SUCCESS" || t.status === "approved" || t.status === "PAID")).reduce((a, b) => a + b.amount, 0);
+  const totalIn = filtered.filter((t) => t.type === "in" && (!t.status || t.status === "SUCCESS" || t.status === "approved" || t.status === "PAID")).reduce((a, b) => a + b.amount, 0);
   const totalOut = filtered.filter((t) => t.type === "out" && (!t.status || t.status === "SUCCESS" || t.status === "approved" || t.status === "PAID")).reduce((a, b) => a + b.amount, 0);
 
   // Group by date label

@@ -15,11 +15,28 @@ class BaseWaliApiController extends Controller
         
         $activeStudentId = session('active_student_id');
         
-        return Student::with(['classroom', 'school', 'asramaHost'])
+        $student = Student::with(['classroom', 'school', 'asramaHost'])
             ->where('user_id', $user->id)
             ->when($activeStudentId, function ($query) use ($activeStudentId) {
                 return $query->where('id', $activeStudentId);
             })
             ->first() ?: Student::with(['classroom', 'school', 'asramaHost'])->where('user_id', $user->id)->first();
+
+        if ($student) {
+            $latestHistory = \App\Models\SaldoHistory::where('student_id', $student->id)
+                ->whereNotIn('status', [\App\Models\SaldoHistory::STATUS_FAILED])
+                ->latest()
+                ->first();
+
+            if ($latestHistory && $latestHistory->balance_after !== null) {
+                $targetSaldo = (int)$latestHistory->balance_after;
+                if ((int)$student->saldo !== $targetSaldo) {
+                    $student->saldo = $targetSaldo;
+                    $student->saveQuietly();
+                }
+            }
+        }
+
+        return $student;
     }
 }
