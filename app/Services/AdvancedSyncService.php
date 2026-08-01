@@ -321,7 +321,7 @@ class AdvancedSyncService
                 $localConn->table('point_of_sale_transactions')->insert((array)$posTxMaster);
 
                 $detailsMaster = $masterConn->table('point_of_sale_transaction_details')
-                    ->where('point_of_sales_transaction_id', $posTxMaster->id)
+                    ->where('point_of_sale_transaction_id', $posTxMaster->id)
                     ->get();
                 
                 foreach ($detailsMaster as $detail) {

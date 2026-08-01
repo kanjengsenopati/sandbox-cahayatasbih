@@ -14,7 +14,7 @@ class PointOfSaleTransactionDetail extends Model
     use HasFactory, UuidTrait, SoftDeletes;
 
     protected $fillable = [
-        'point_of_sales_transaction_id',
+        'point_of_sale_transaction_id',
         'item_id',
         'quantity',
         'price',
