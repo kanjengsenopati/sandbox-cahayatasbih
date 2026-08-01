@@ -38,6 +38,14 @@ class ReportTransactionExport implements FromCollection, WithHeadings, ShouldAut
             ->when(request()->filled('admin_id'), function ($query) {
                 $query->where('admin_id', request()->admin_id);
             })
+            ->when(request()->filled('student_name'), function ($query) {
+                $searchName = strtolower(trim(request()->student_name));
+                $query->whereHas('student', function ($sQ) use ($searchName) {
+                    $sQ->whereRaw('LOWER(name) LIKE ?', ['%' . $searchName . '%'])
+                       ->orWhereRaw('LOWER(nis) LIKE ?', ['%' . $searchName . '%'])
+                       ->orWhereRaw('LOWER(nisn) LIKE ?', ['%' . $searchName . '%']);
+                });
+            })
             ->schoolFilter('school_id', request()->school_id)
             ->classroomFilter('classroom_id', request()->classroom_id)
             ->filter('type', request()->type_data)

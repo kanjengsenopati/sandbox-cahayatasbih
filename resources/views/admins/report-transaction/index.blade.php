@@ -145,6 +145,16 @@
                                     </div>
                                     <!--end::Menu-->
                                     <!--end::Export dropdown-->
+
+                                    <div>
+                                        <label class="form-label">Nama Santri / Siswa</label>
+                                        <div class="d-flex align-items-center position-relative">
+                                            <span class="svg-icon svg-icon-1 position-absolute ms-3">
+                                                <i class="fas fa-search text-gray-400"></i>
+                                            </span>
+                                            <input type="text" id="filter_student_name" name="student_name" class="form-control form-control-sm form-control-solid ps-9" placeholder="Cari Nama Santri / Siswa..." style="width: 220px;" />
+                                        </div>
+                                    </div>
                                 </div>
                             </form>
 
@@ -395,6 +405,14 @@
             reloadTable();
         });
 
+        var studentNameTimer;
+        $('#filter_student_name').on('keyup input', function() {
+            clearTimeout(studentNameTimer);
+            studentNameTimer = setTimeout(function() {
+                reloadTable();
+            }, 300);
+        });
+
         var start = moment().startOf('month');
         var end = moment().endOf('month');
 
@@ -469,6 +487,7 @@
                     d.start_date = $('#start_date').val();
                     d.end_date = $('#end_date').val();
                     d.bill_type_id = $('#filter_tipe_tagihan').val();
+                    d.student_name = $('#filter_student_name').val();
                 }
             },
             columns: [
@@ -551,7 +570,8 @@
                 admin_id: $('#filter_admin').val(),
                 start_date: $('#start_date').val(),
                 end_date: $('#end_date').val(),
-                bill_type_id: $('#filter_tipe_tagihan').val()
+                bill_type_id: $('#filter_tipe_tagihan').val(),
+                student_name: $('#filter_student_name').val()
             },
             success: function(response) {
                 $('#total-bill').text('Rp. ' + response.total_bill);
