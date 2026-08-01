@@ -17,6 +17,12 @@ class PaymentRate extends Model
     const TYPE_TRANSFER = 'TRANSFER';
     use HasFactory, UuidTrait, SoftDeletes;
 
+    protected static function booted()
+    {
+        static::saved(fn () => \Illuminate\Support\Facades\Cache::forget('preloaded_payment_rates'));
+        static::deleted(fn () => \Illuminate\Support\Facades\Cache::forget('preloaded_payment_rates'));
+    }
+
     protected $fillable = [
         'bill_type_id',
         'amount',

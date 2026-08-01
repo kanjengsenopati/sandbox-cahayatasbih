@@ -13,9 +13,15 @@ class BillController extends BaseWaliApiController
         $student = $this->resolveActiveStudent();
         if (!$student) return response()->json(['unpaid' => [], 'paid' => []]);
 
-        \App\Services\TransactionService::cleanupGhostBillsForStudent($student->id);
-        \App\Services\TransactionService::syncStudentBillsFromPaidTransactions($student->id);
-        \App\Services\TransactionService::ensureStudentBillsSyncedFromRate($student->id);
+        // Dispatch sync ke background queue agar API response tidak terblokir.
+        // Cache TTL 30 menit: jika sync sudah berjalan, tidak perlu dispatch lagi.
+        // Force sync bisa di-trigger dengan menghapus cache atau melalui admin panel.
+        $syncCacheKey = "student_bills_synced_{$student->id}";
+        if (!\Illuminate\Support\Facades\Cache::has($syncCacheKey)) {
+            \Illuminate\Support\Facades\Cache::put($syncCacheKey, true, now()->addMinutes(30));
+            dispatch(new \App\Jobs\SyncStudentBillsJob($student->id));
+        }
+
 
         // Load student's school for UPT filtering
         $student->load('classroom.school');
@@ -46,46 +52,50 @@ class BillController extends BaseWaliApiController
             return true;
         });
 
+        // Pre-load all paid/successful transactions for this student to prevent N+1 queries in the map loop.
+        $studentTransactions = \App\Models\Transaction::with(['paymentMethod', 'admin', 'user', 'transactionDetails.bill'])
+            ->where('student_id', $student->id)
+            ->where('type', \App\Models\Transaction::TYPE_BILL)
+            ->whereIn('status', [\App\Models\Transaction::STATUS_PAID, 'approved', 'SUCCESS', 'paid', 'PAID', 'success', 'SUCCESS', 'approved', 'APPROVED'])
+            ->latest()
+            ->get();
+
         $groupedBills = $filteredBills
             ->groupBy(function ($b) {
                 $name = strtoupper(trim($b->billType?->name ?? 'TAGIHAN'));
                 $ayId = $b->academic_year_id ?? $b->billType?->academic_year_id ?? 'default';
                 return "{$name}_{$ayId}";
             })
-            ->map(function ($items) use ($student) {
+            ->map(function ($items) use ($student, $studentTransactions) {
                 $first = $items->first();
                 
-                // Get paid/successful transactions for this bill type group
+                // Get paid/successful transactions for this bill type group from memory
                 $billIds = $items->pluck('id')->toArray();
-                $payments = \App\Models\Transaction::with(['paymentMethod', 'admin', 'user', 'transactionDetails.bill'])
-                    ->where('student_id', $student->id)
-                    ->where('type', \App\Models\Transaction::TYPE_BILL)
-                    ->whereIn('status', [\App\Models\Transaction::STATUS_PAID, 'approved', 'SUCCESS'])
-                    ->whereHas('transactionDetails', function ($query) use ($billIds) {
-                        $query->whereIn('bill_id', $billIds)->whereNull('deleted_at');
-                    })
-                    ->latest()
-                    ->get()
-                    ->map(function ($tx) use ($billIds) {
-                        $amount = 0;
-                        foreach ($tx->transactionDetails as $detail) {
-                            if ($detail->deleted_at !== null) {
-                                continue;
-                            }
-                            if (in_array($detail->bill_id, $billIds)) {
-                                $amount += $detail->amount ?? ($detail->bill->amount ?? 0);
-                            }
+                $payments = $studentTransactions->filter(function ($tx) use ($billIds) {
+                    return $tx->transactionDetails->contains(function ($detail) use ($billIds) {
+                        return $detail->deleted_at === null && in_array($detail->bill_id, $billIds);
+                    });
+                })->map(function ($tx) use ($billIds) {
+                    $amount = 0;
+                    foreach ($tx->transactionDetails as $detail) {
+                        if ($detail->deleted_at !== null) {
+                            continue;
                         }
-                        
-                        return [
-                            'id' => $tx->id,
-                            'amount' => $amount,
-                            'date' => $tx->paid_at ?? $tx->created_at,
-                            'method' => $tx->paymentMethod->name ?? 'Metode Lain',
-                            'cashier' => $tx->admin->name ?? ($tx->user->name ?? 'Sistem'),
-                        ];
-                    })
-                    ->filter(fn($p) => $p['amount'] > 0);
+                        if (in_array($detail->bill_id, $billIds)) {
+                            $amount += $detail->amount ?? ($detail->bill->amount ?? 0);
+                        }
+                    }
+                    
+                    return [
+                        'id' => $tx->id,
+                        'amount' => $amount,
+                        'date' => $tx->paid_at ?? $tx->created_at,
+                        'method' => $tx->paymentMethod->name ?? 'Metode Lain',
+                        'cashier' => $tx->admin->name ?? ($tx->user->name ?? 'Sistem'),
+                    ];
+                })
+                ->filter(fn($p) => $p['amount'] > 0)
+                ->values();
 
                 $academicYearName = $first->academicYear?->name 
                     ?? $first->billType?->academicYear?->name 
@@ -193,16 +203,8 @@ class BillController extends BaseWaliApiController
                 });
 
                 if (!$found) {
-                    // Fallback amount determination
-                    if ($isSyahriah) {
-                        $amt = \App\Services\TransactionService::resolveStudentRateForBillType($student, $billType, $m, $year);
-                    } elseif ($isAplikasi) {
-                        $amt = 10000;
-                    } elseif ($isZarkasi) {
-                        $amt = ($m >= 7 && $m <= 11) ? 100000 : ($m == 12 ? 50000 : 0);
-                    } else {
-                        $amt = $billType->billItem->amount ?? 0;
-                    }
+                    // Fallback amount determination dinamis dari PaymentRate DB
+                    $amt = \App\Services\TransactionService::resolveStudentRateForBillType($student, $billType, $m, $year);
 
                     $found = new Bill([
                         'id' => "generated_{$billType->id}_{$student->id}_{$m}_{$year}",
@@ -218,10 +220,12 @@ class BillController extends BaseWaliApiController
                     ]);
                     $found->setAttribute('is_pending_confirmation', false);
                 } else {
-                    if ($found->amount <= 0 && $isSyahriah) {
-                        $expectedSyahriah = \App\Services\TransactionService::resolveStudentRateForBillType($student, $billType, $found->month, $found->year);
-                        $found->amount = $expectedSyahriah;
-                        $found->remaining_amount = max(0, $expectedSyahriah - $found->paid_amount);
+                    if ($found->amount <= 0) {
+                        $expectedAmt = \App\Services\TransactionService::resolveStudentRateForBillType($student, $billType, $found->month, $found->year);
+                        if ($expectedAmt > 0) {
+                            $found->amount = $expectedAmt;
+                            $found->remaining_amount = max(0, $expectedAmt - $found->paid_amount);
+                        }
                     }
                 }
                 $fullBills->push($found);
@@ -234,8 +238,7 @@ class BillController extends BaseWaliApiController
             ?? $billType->academicYear?->name 
             ?? null;
 
-        $yearlySyahriah = \App\Services\TransactionService::resolveStudentRateForBillType($student, $billType, 7, date('Y')) * 12;
-        $totalBill = $isSyahriah ? $yearlySyahriah : ($isAplikasi ? 120000 : ($isZarkasi ? 550000 : $bills->sum('amount')));
+        $totalBill = $bills->sum('amount');
         $totalPaid = $bills->sum('paid_amount');
         $totalUnpaid = max(0, $totalBill - $totalPaid);
 

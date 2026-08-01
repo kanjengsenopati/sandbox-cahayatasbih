@@ -292,7 +292,7 @@
                                                     <select name="student_id" id="student_id" class="form-select form-select-solid">
                                                         @if(request('student_id') && isset($student))
                                                             <option value="{{ $student->id }}" selected>
-                                                                {{ $student->nis ? $student->nis . ' - ' : '' }}{{ $student->name }} - {{ $student->classroom->name ?? '' }}
+                                                                {{ $student->nis ? $student->nis . ' - ' : '' }}{{ $student->name }}{{ !empty($displayClassName) && $displayClassName !== '-' ? ' - ' . $displayClassName : '' }}
                                                             </option>
                                                         @else
                                                             <option value="">Pilih Siswa</option>
@@ -315,7 +315,7 @@
                                             $displayYearName = $filteredYear ? $filteredYear->name : 'Semua Tahun Ajaran';
                                             $resolvedClass = $student->getClassroomForAcademicYear($filteredYearId);
                                         } else {
-                                            $displayYearName = $activeYear ? $activeYear->name : 'Semua Tahun Ajaran';
+                                            $displayYearName = 'Semua Tahun Ajaran';
                                             $resolvedClass = $student->classroom;
                                         }
                                         
@@ -771,6 +771,7 @@
         // Function to fetch student data based on selected school
         function fetchStudentData(selectedId = null) {
             var school_id = $('#school_id').val();
+            var academic_year_id = $('#academic_year_id').val();
             if (school_id) {
                 $.ajax({
                     url: "{{ route('select2') }}",
@@ -779,13 +780,15 @@
                     data: {
                         search: '', // Assuming you need a default search term
                         data_type: "STUDENT_BY_SCHOOL",
-                        school_id: school_id
+                        school_id: school_id,
+                        academic_year_id: academic_year_id
                     },
                     success: function (data) {
                         var results = $.map(data, function (item) {
+                            let className = item.resolved_classroom_name || item.classroom?.name || '';
                             let displayText = (item.nis ? item.nis + ' - ' : '') +
-                                item.name + ' - ' +
-                                (item.classroom?.name ? item.classroom.name : '');
+                                item.name +
+                                (className ? ' - ' + className : '');
                             
                             if (item.status === 'DROPPED_OUT') {
                                 displayText += ' (KELUAR - Ada Tunggakan)';

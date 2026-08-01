@@ -198,5 +198,94 @@ class User extends Authenticatable
 
         return false;
     }
+
+    /**
+     * Check if user has any cashier role
+     */
+    public function isKasir(): bool
+    {
+        $roles = $this->roles->pluck('name')->map(fn($r) => strtolower($r));
+        foreach ($roles as $role) {
+            if (str_contains($role, 'kasir')) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Check if user has Kasir Koperasi / Kantin role
+     */
+    public function isKasirKoperasi(): bool
+    {
+        $roles = $this->roles->pluck('name')->map(fn($r) => strtolower($r));
+        foreach ($roles as $role) {
+            if (str_contains($role, 'kasir') && (str_contains($role, 'koperasi') || str_contains($role, 'kantin'))) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Check if user has Koordinator Cahaya Mart role
+     */
+    public function isKoordinatorCahayaMart(): bool
+    {
+        $roles = $this->roles->pluck('name')->map(fn($r) => strtolower($r));
+        foreach ($roles as $role) {
+            if (str_contains($role, 'koordinator') && (str_contains($role, 'cahaya mart') || str_contains($role, 'mart') || str_contains($role, 'koperasi'))) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Check if user has Kasir Outlet role
+     */
+    public function isKasirOutlet(): bool
+    {
+        $roles = $this->roles->pluck('name')->map(fn($r) => strtolower($r));
+        foreach ($roles as $role) {
+            if (str_contains($role, 'kasir') && str_contains($role, 'outlet')) {
+                return true;
+            }
+        }
+        foreach ($roles as $role) {
+            if (str_contains($role, 'kasir') && !str_contains($role, 'koperasi') && !str_contains($role, 'kantin')) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Get outlet IDs list
+     */
+    public function getOutletIds(): array
+    {
+        return [];
+    }
+
+    /**
+     * Get effective outlet ID
+     */
+    public function getEffectiveOutletId(?string $mode, ?string $requestOutletId = null): ?string
+    {
+        if ($this->hasRole('Super Admin')) {
+            if ($requestOutletId) return $requestOutletId;
+            return null;
+        }
+
+        $koperasi = \App\Models\Outlet::where('name', 'Koperasi')->orWhere('code', 'KPR')->first();
+        $koperasiId = $koperasi ? $koperasi->id : '6bc5b484-07f9-49cc-aefa-00a8cf47e8d7';
+
+        if ($this->isKasirKoperasi() || $this->isKoordinatorCahayaMart()) {
+            return $koperasiId;
+        }
+
+        return $requestOutletId;
+    }
 }
 

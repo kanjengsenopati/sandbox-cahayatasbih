@@ -32,9 +32,9 @@
                 </div>
                 <!--begin::Actions-->
                 <div class="d-flex align-items-center gap-2 gap-lg-3">
-                    <button type="submit" form="sync-db-form" class="btn btn-sm btn-primary fw-bolder" id="btn-sync-submit">
-                        <i class="fas fa-database me-1 fs-7 text-white"></i> Sinkronkan Sekarang
-                    </button>
+                    <span class="badge badge-light-success fw-bolder fs-7 px-3 py-2 border border-success border-opacity-25">
+                        <i class="fas fa-signal text-success me-1"></i> Connected to Cloud Master DB (103.193.179.146)
+                    </span>
                 </div>
                 <!--end::Actions-->
             </div>
@@ -79,20 +79,149 @@
                     </div>
                 @endif
 
-                <!-- Sync Form Card -->
-                <form action="{{ route('admin.sync-master') }}" method="POST" id="sync-db-form">
-                    @csrf
-                    <div class="card card-flush shadow-sm mb-6">
-                        <div class="card-header border-0 pt-6">
-                            <div class="card-title flex-column">
-                                <h3 class="card-label fw-bolder text-dark">Sinkronisasi Database Master</h3>
-                                <span class="text-muted mt-1 fw-bold fs-7">
-                                    Menyinkronkan data transaksi harian (30 hari terakhir) secara inkremental dari
-                                    <code>cahayatasbihdb</code> ke <code>aplikasidb</code>.
-                                </span>
+                <!-- Primary Redesigned Feature Tabs Navigation -->
+                <ul class="nav nav-custom nav-tabs nav-line-tabs nav-line-tabs-2x border-0 fs-5 fw-bolder mb-6 gap-2" id="syncMainTabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <a class="nav-link text-active-primary pb-4 active d-flex align-items-center gap-2" id="tab-verified-link" data-bs-toggle="tab" href="#tab-verified-pane" role="tab" onclick="fetchMasterDiff('students')">
+                            <i class="fas fa-search-plus text-primary fs-3"></i>
+                            1. Verifikasi Data Aplikasi Lama (Selective Ingestion)
+                        </a>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <a class="nav-link text-active-primary pb-4 d-flex align-items-center gap-2" id="tab-fullsync-link" data-bs-toggle="tab" href="#tab-fullsync-pane" role="tab">
+                            <i class="fas fa-database text-primary fs-3"></i>
+                            2. Sinkronisasi Full Database (Otomatis Inkremental)
+                        </a>
+                    </li>
+                </ul>
+
+                <div class="tab-content" id="syncMainTabsContent">
+                    <!-- Tab 1 Pane: Verified Ingestion -->
+                    <div class="tab-pane fade show active" id="tab-verified-pane" role="tabpanel">
+                        <!-- Master Data Pull & Verification Preview Panel -->
+                        <div class="card card-flush shadow-sm mb-6 border-0 rounded-[24px]" id="preview-master-card" style="display: block;">
+                            <div class="card-header border-0 pt-6 bg-light-primary rounded-top-[24px]">
+                                <div class="card-title flex-column">
+                                    <h3 class="card-label fw-bolder text-primary d-flex align-items-center gap-2">
+                                        <i class="fas fa-search-plus text-primary fs-2"></i> Preview & Verifikasi Diff Data Aplikasi Lama
+                                    </h3>
+                                    <span class="text-muted mt-1 fw-bold fs-7">
+                                        Menampilkan perbandingan presisi data Aplikasi Lama (<code>cahayatasbihdb</code>) vs Lokal (<code>aplikasidb</code>) tanpa menimpa data otomatis.
+                                    </span>
+                                </div>
+                                <div class="card-toolbar d-flex align-items-center gap-3">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <label for="select-diff-limit" class="fs-8 fw-bolder text-gray-600 mb-0 d-none d-md-inline">Cakupan Data:</label>
+                                        <select id="select-diff-limit" class="form-select form-select-sm fw-bold border-primary text-primary style-slim-select" style="width: auto;" onchange="fetchMasterDiff(document.getElementById('current-merge-module').value)">
+                                            <option value="50">50 Record (Preview Cepat)</option>
+                                            <option value="100">100 Record</option>
+                                            <option value="500">500 Record</option>
+                                            <option value="1500" selected>1.185+ Record (Semua Siswa Aktif Master)</option>
+                                        </select>
+                                    </div>
+                                    <div class="btn-group btn-group-sm" role="group">
+                                        <button type="button" class="btn btn-outline btn-outline-primary active btn-mod-tab" onclick="fetchMasterDiff('students', this)">Siswa</button>
+                                        <button type="button" class="btn btn-outline btn-outline-primary btn-mod-tab" onclick="fetchMasterDiff('classrooms', this)">Kelas</button>
+                                        <button type="button" class="btn btn-outline btn-outline-primary btn-mod-tab" onclick="fetchMasterDiff('schools', this)">Sekolah</button>
+                                        <button type="button" class="btn btn-outline btn-outline-primary btn-mod-tab" onclick="fetchMasterDiff('academic_years', this)">Tahun Ajaran</button>
+                                        <button type="button" class="btn btn-outline btn-outline-primary btn-mod-tab" onclick="fetchMasterDiff('bill_types', this)">Jenis Tagihan</button>
+                                        <button type="button" class="btn btn-outline btn-outline-success btn-mod-tab" onclick="fetchMasterDiff('saldo', this)"><i class="fas fa-wallet me-1 fs-8"></i> Verifikasi Saldo</button>
+                                        <button type="button" class="btn btn-outline btn-outline-danger btn-mod-tab" onclick="fetchMasterDiff('billing_status', this)"><i class="fas fa-file-invoice-dollar me-1 fs-8"></i> Status Tagihan</button>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="card-body py-4">
+                                <!-- Filter Container per Sekolah & Kelas (Hanya Tampil saat Modul Status Tagihan Aktif) -->
+                                <div class="row g-3 mb-4 d-none p-3 bg-light-danger rounded-3 border border-danger border-opacity-25" id="billing-filter-container">
+                                    <div class="col-md-6">
+                                        <label class="fs-8 fw-bolder text-gray-700 mb-1"><i class="fas fa-school text-danger me-1"></i> Filter Sekolah:</label>
+                                        <select class="form-select form-select-sm fw-bold border-danger style-slim-select" id="select-filter-school" onchange="onSchoolFilterChange()">
+                                            <option value="">Semua Sekolah</option>
+                                            @foreach($schools ?? [] as $sch)
+                                                <option value="{{ $sch->id }}">{{ $sch->name }}</option>
+                                            @endforeach
+                                        </select>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="fs-8 fw-bolder text-gray-700 mb-1"><i class="fas fa-chalkboard-teacher text-danger me-1"></i> Filter Kelas:</label>
+                                        <select class="form-select form-select-sm fw-bold border-danger style-slim-select" id="select-filter-classroom" onchange="fetchMasterDiff(document.getElementById('current-merge-module').value)">
+                                            <option value="">Semua Kelas</option>
+                                            @foreach($classrooms ?? [] as $cls)
+                                                <option value="{{ $cls->id }}" data-school="{{ $cls->school_id }}">{{ $cls->name }}</option>
+                                            @endforeach
+                                        </select>
+                                    </div>
+                                </div>
+                                <!-- Status Counter Summary Badges (Clickable Filters) -->
+                                <div class="d-flex align-items-center gap-2 mb-4 p-3 bg-light rounded-3 flex-wrap" id="diff-status-badges">
+                                    <span class="badge badge-light-success fw-bolder fs-7 px-3 py-2 cursor-pointer filter-badge" id="cnt-new" onclick="filterDiffTable('NEW_RECORD', this)" style="cursor: pointer; transition: all 0.2s;" title="Klik untuk memfilter Aplikasi Lama Baru">🟢 Aplikasi Lama Baru: 0</span>
+                                    <span class="badge badge-light-warning fw-bolder fs-7 px-3 py-2 cursor-pointer filter-badge" id="cnt-update" onclick="filterDiffTable('UPDATE_REQUIRED', this)" style="cursor: pointer; transition: all 0.2s;" title="Klik untuk memfilter Butuh Update">🟡 Butuh Update: 0</span>
+                                    <span class="badge badge-light-info fw-bolder fs-7 px-3 py-2 cursor-pointer filter-badge" id="cnt-match" onclick="filterDiffTable('EXACT_MATCH', this)" style="cursor: pointer; transition: all 0.2s;" title="Klik untuk memfilter 100% Identik">🔵 100% Identik: 0</span>
+                                    <span class="badge badge-light-danger fw-bolder fs-7 px-3 py-2 cursor-pointer filter-badge" id="cnt-conflict" onclick="filterDiffTable('CONFLICT', this)" style="cursor: pointer; transition: all 0.2s;" title="Klik untuk memfilter Konflik Mapping">🔴 Konflik Mapping: 0</span>
+                                    <button type="button" class="btn btn-xs btn-light-secondary border border-gray-300 fs-8 fw-bold ms-auto d-none" id="btn-reset-diff-filter" onclick="filterDiffTable('ALL', null)">
+                                        <i class="fas fa-undo me-1"></i> Reset Filter (<span id="txt-active-filter-label">Semua</span>)
+                                    </button>
+                                </div>
+
+                                <form action="{{ route('admin.audit.confirm-merge-master') }}" method="POST" id="form-confirm-merge">
+                                    @csrf
+                                    <input type="hidden" name="module" id="current-merge-module" value="students">
+
+                                    <div class="table-responsive style-slim-scroll" style="max-height: 380px;">
+                                        <table class="table table-hover table-striped align-middle table-row-dashed fs-7 gy-3" id="tbl-diff-preview">
+                                            <thead class="bg-light sticky-top">
+                                                <tr class="text-start text-gray-500 fw-bolder text-uppercase tracking-wider">
+                                                    <th class="w-40px px-3">
+                                                        <input class="form-check-input" type="checkbox" id="chk-all-diff" onchange="toggleAllDiffCheckboxes(this)">
+                                                    </th>
+                                                    <th>ID / Code</th>
+                                                    <th>Nama Record</th>
+                                                    <th>Status Mapping</th>
+                                                    <th>Perbandingan Kolom (Aplikasi Lama ➔ Lokal)</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="tbody-diff-preview">
+                                                <tr>
+                                                    <td colspan="5" class="text-center py-5 text-muted">
+                                                        <i class="fas fa-spinner fa-spin me-2"></i> Memuat analisis perbandingan...
+                                                    </td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+
+                                    <div class="d-flex align-items-center justify-content-between pt-4 mt-3 border-top">
+                                        <span class="text-muted fs-7" id="txt-selected-count">0 record terpilih untuk di-merge</span>
+                                        <button type="submit" class="btn btn-sm btn-success fw-bolder" id="btn-submit-merge" disabled>
+                                            <i class="fas fa-check-circle me-1 text-white"></i> Konfirmasi & Terapkan Data Terverifikasi
+                                        </button>
+                                    </div>
+                                </form>
                             </div>
                         </div>
-                        <div class="card-body py-4">
+                    </div>
+
+                    <!-- Tab 2 Pane: Full Database Sync -->
+                    <div class="tab-pane fade" id="tab-fullsync-pane" role="tabpanel">
+                        <!-- Sync Form Card -->
+                        <form action="{{ route('admin.sync-master') }}" method="POST" id="sync-db-form">
+                            @csrf
+                            <div class="card card-flush shadow-sm mb-6 border-0 rounded-[24px]">
+                                <div class="card-header border-0 pt-6">
+                                    <div class="card-title flex-column">
+                                        <h3 class="card-label fw-bolder text-dark">Sinkronisasi Database Aplikasi Lama (Full Sync)</h3>
+                                        <span class="text-muted mt-1 fw-bold fs-7">
+                                            Menyinkronkan data transaksi harian (30 hari terakhir) secara inkremental dari
+                                            <code>cahayatasbihdb</code> ke <code>aplikasidb</code>.
+                                        </span>
+                                    </div>
+                                    <div class="card-toolbar">
+                                        <button type="submit" class="btn btn-sm btn-primary fw-bolder" id="btn-sync-submit">
+                                            <i class="fas fa-database me-1 fs-7 text-white"></i> Sinkronkan Sekarang
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="card-body py-4">rd-body py-4">
 
                             <!-- Status Banner -->
                             <div class="bg-light-primary rounded p-5 mb-6">
@@ -500,6 +629,10 @@
                         </div>
                     </div>
                 </form>
+                    </div>
+                    <!--end::Tab 2 Pane-->
+                </div>
+                <!--end::syncMainTabsContent-->
 
             </div>
             <!--end::Container-->
@@ -509,6 +642,11 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', function () {
+            // Auto fetch students diff on Tab 1 initial load
+            if (typeof fetchMasterDiff === 'function') {
+                fetchMasterDiff('students');
+            }
+
             // Loading state saat form sync disubmit
             var form = document.getElementById('sync-db-form');
             if (form) {
@@ -583,5 +721,211 @@
                 }
             }
         });
+
+        function toggleMasterPreview() {
+            var card = document.getElementById('preview-master-card');
+            if (card.style.display === 'none' || card.style.display === '') {
+                card.style.display = 'block';
+                card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                fetchMasterDiff('students');
+            } else {
+                card.style.display = 'none';
+            }
+        }
+
+        var currentActiveFilter = 'ALL';
+
+        function filterDiffTable(status, badgeEl) {
+            if (badgeEl && currentActiveFilter === status) {
+                status = 'ALL';
+                badgeEl = null;
+            }
+            currentActiveFilter = status;
+
+            document.querySelectorAll('.filter-badge').forEach(function(el) {
+                el.classList.remove('border', 'border-2', 'border-dark', 'shadow-sm');
+                el.style.opacity = (status === 'ALL') ? '1' : '0.4';
+            });
+
+            var resetBtn = document.getElementById('btn-reset-diff-filter');
+            var filterLabel = document.getElementById('txt-active-filter-label');
+
+            if (badgeEl && status !== 'ALL') {
+                badgeEl.style.opacity = '1';
+                badgeEl.classList.add('border', 'border-2', 'border-dark', 'shadow-sm');
+                if (resetBtn) resetBtn.classList.remove('d-none');
+                if (filterLabel) filterLabel.innerText = badgeEl.innerText.split(':')[0].replace(/^[^\s]+\s*/, '');
+            } else {
+                if (resetBtn) resetBtn.classList.add('d-none');
+            }
+
+            var rows = document.querySelectorAll('#tbody-diff-preview tr[data-status]');
+            var visibleCount = 0;
+
+            rows.forEach(function(row) {
+                var rowStatus = row.getAttribute('data-status');
+                if (status === 'ALL' || rowStatus === status) {
+                    row.style.display = '';
+                    visibleCount++;
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+
+            var emptyMsg = document.getElementById('tr-filter-empty-msg');
+            if (visibleCount === 0 && rows.length > 0) {
+                if (!emptyMsg) {
+                    var tbody = document.getElementById('tbody-diff-preview');
+                    tbody.insertAdjacentHTML('beforeend', '<tr id="tr-filter-empty-msg"><td colspan="5" class="text-center py-4 text-muted"><i class="fas fa-filter me-2"></i> Tidak ada data dengan status filter ini.</td></tr>');
+                }
+            } else if (emptyMsg) {
+                emptyMsg.remove();
+            }
+
+            updateMergeButtonState();
+        }
+
+        function onSchoolFilterChange() {
+            var schoolId = document.getElementById('select-filter-school').value;
+            var classSelect = document.getElementById('select-filter-classroom');
+            var options = classSelect.querySelectorAll('option');
+
+            classSelect.value = '';
+            options.forEach(function(opt) {
+                if (!opt.value) {
+                    opt.style.display = '';
+                    return;
+                }
+                var optSchool = opt.getAttribute('data-school');
+                if (!schoolId || optSchool === schoolId) {
+                    opt.style.display = '';
+                } else {
+                    opt.style.display = 'none';
+                }
+            });
+
+            fetchMasterDiff(document.getElementById('current-merge-module').value);
+        }
+
+        function fetchMasterDiff(module, btnEl) {
+            if (btnEl) {
+                document.querySelectorAll('.btn-mod-tab').forEach(function(b) { b.classList.remove('active'); });
+                btnEl.classList.add('active');
+            }
+            document.getElementById('current-merge-module').value = module;
+
+            // Toggle filter container visibility
+            var filterBox = document.getElementById('billing-filter-container');
+            if (filterBox) {
+                if (module === 'billing_status') {
+                    filterBox.classList.remove('d-none');
+                } else {
+                    filterBox.classList.add('d-none');
+                }
+            }
+
+            // Reset active filter
+            filterDiffTable('ALL', null);
+
+            var limitSelect = document.getElementById('select-diff-limit');
+            var limitVal = limitSelect ? parseInt(limitSelect.value) : 50;
+
+            var schoolId = document.getElementById('select-filter-school') ? document.getElementById('select-filter-school').value : '';
+            var classroomId = document.getElementById('select-filter-classroom') ? document.getElementById('select-filter-classroom').value : '';
+
+            var tbody = document.getElementById('tbody-diff-preview');
+            tbody.innerHTML = '<tr><td colspan="5" class="text-center py-5 text-muted"><i class="fas fa-spinner fa-spin me-2"></i> Memuat analisis perbandingan module ' + module + ' (' + (limitVal >= 1000 ? 'Semua Data Master' : limitVal + ' Record') + ')...</td></tr>';
+
+            axios.post('{{ route("admin.audit.preview-pull-master") }}', {
+                module: module,
+                limit: limitVal,
+                school_id: schoolId,
+                classroom_id: classroomId
+            }).then(function(res) {
+                var data = res.data;
+                var summary = data.status_summary || {};
+
+                document.getElementById('cnt-new').innerText = '🟢 Aplikasi Lama Baru: ' + (summary.new_count || 0);
+                document.getElementById('cnt-update').innerText = '🟡 Butuh Update: ' + (summary.update_count || 0);
+                document.getElementById('cnt-match').innerText = '🔵 100% Identik: ' + (summary.match_count || 0);
+                document.getElementById('cnt-conflict').innerText = '🔴 Konflik Mapping: ' + (summary.conflict_count || 0);
+
+                var items = data.items || [];
+                if (items.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="5" class="text-center py-5 text-muted">Tidak ada data ditemukan untuk module ini.</td></tr>';
+                    return;
+                }
+
+                var html = '';
+                items.forEach(function(item) {
+                    var badgeClass = 'bg-light-info text-info';
+                    var badgeLabel = '🔵 100% IDENTIK';
+
+                    if (item.status === 'NEW_RECORD') {
+                        badgeClass = 'bg-light-success text-success';
+                        badgeLabel = '🟢 APLIKASI LAMA BARU';
+                    } else if (item.status === 'UPDATE_REQUIRED') {
+                        badgeClass = 'bg-light-warning text-warning';
+                        badgeLabel = '🟡 BUTUH UPDATE';
+                    } else if (item.status === 'CONFLICT') {
+                        badgeClass = 'bg-light-danger text-danger';
+                        badgeLabel = '🔴 KONFLIK';
+                    }
+
+                    var diffHtml = '';
+                    if (item.diffs && Object.keys(item.diffs).length > 0) {
+                        diffHtml = '<ul class="mb-0 ps-3 fs-8" style="color: #374151; font-weight: 500;">';
+                        for (var k in item.diffs) {
+                            if (typeof item.diffs[k] === 'object') {
+                                diffHtml += '<li class="my-1"><code class="text-primary fw-bolder px-1 py-0.5 bg-light-primary rounded" style="font-size: 11px;">' + k + '</code>: Aplikasi Lama (<span class="fw-bolder text-dark bg-light-warning text-warning px-1.5 py-0.5 rounded border border-warning border-opacity-25">"' + (item.diffs[k].master||'-') + '"</span>) vs Lokal (<span class="fw-bolder text-gray-800 bg-light px-1.5 py-0.5 rounded border border-gray-300">"' + (item.diffs[k].local||'-') + '"</span>)</li>';
+                            } else {
+                                diffHtml += '<li class="my-1"><span class="text-danger fw-bold">' + item.diffs[k] + '</span></li>';
+                            }
+                        }
+                        diffHtml += '</ul>';
+                    } else {
+                        diffHtml = '<span class="fw-semibold fs-8" style="color: #4b5563;">Data aplikasi lama dan lokal presisi identik</span>';
+                    }
+
+                    var isCheckable = (item.status !== 'EXACT_MATCH');
+                    var checkAttr = isCheckable ? 'checked' : 'disabled';
+
+                    html += '<tr data-status="' + item.status + '">';
+                    html += '<td class="px-3"><input class="form-check-input chk-diff-item" type="checkbox" name="selected_ids[]" value="' + item.id + '" ' + checkAttr + ' onchange="updateMergeButtonState()"></td>';
+                    html += '<td class="fw-bold fs-7"><code>' + (item.code_or_nis || item.id) + '</code></td>';
+                    html += '<td class="fw-bolder text-dark">' + item.name + '</td>';
+                    html += '<td><span class="badge ' + badgeClass + ' fw-bolder fs-8 px-2 py-1">' + badgeLabel + '</span></td>';
+                    html += '<td>' + diffHtml + '</td>';
+                    html += '</tr>';
+                });
+
+                tbody.innerHTML = html;
+                updateMergeButtonState();
+            }).catch(function(err) {
+                tbody.innerHTML = '<tr><td colspan="5" class="text-center py-5 text-danger"><i class="fas fa-exclamation-triangle me-2"></i> Gagal memuat data diff: ' + (err.message || 'Error Server') + '</td></tr>';
+            });
+        }
+
+        function toggleAllDiffCheckboxes(masterCb) {
+            var items = document.querySelectorAll('.chk-diff-item:not(:disabled)');
+            items.forEach(function(cb) {
+                cb.checked = masterCb.checked;
+            });
+            updateMergeButtonState();
+        }
+
+        function updateMergeButtonState() {
+            var selected = document.querySelectorAll('.chk-diff-item:checked');
+            var btn = document.getElementById('btn-submit-merge');
+            var txt = document.getElementById('txt-selected-count');
+
+            if (txt) {
+                txt.innerText = selected.length + ' record terverifikasi terpilih untuk di-merge';
+            }
+
+            if (btn) {
+                btn.disabled = (selected.length === 0);
+            }
+        }
     </script>
 @endsection

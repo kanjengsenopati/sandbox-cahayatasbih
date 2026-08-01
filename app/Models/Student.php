@@ -262,15 +262,20 @@ class Student extends Model
         }
 
         // Tier 1: Check tb_bills generated for this student in this academic year (excluding PONDOK)
-        // Group by classroom_id to pick the formal classroom used in this academic year
-        $billsInAy = $this->bills()
-            ->where('academic_year_id', $academicYearId)
-            ->whereNotNull('classroom_id')
-            ->whereHas('classroom', function ($q) {
-                $q->where('name', '!=', 'PONDOK');
-            })
-            ->with('classroom.school')
-            ->get();
+        if ($this->relationLoaded('bills')) {
+            $billsInAy = $this->bills
+                ->where('academic_year_id', $academicYearId)
+                ->filter(fn($b) => !empty($b->classroom_id) && $b->classroom && strtoupper($b->classroom->name) !== 'PONDOK');
+        } else {
+            $billsInAy = $this->bills()
+                ->where('academic_year_id', $academicYearId)
+                ->whereNotNull('classroom_id')
+                ->whereHas('classroom', function ($q) {
+                    $q->where('name', '!=', 'PONDOK');
+                })
+                ->with('classroom.school')
+                ->get();
+        }
 
         if ($billsInAy->count() > 0) {
             $mostFrequentClassId = $billsInAy->groupBy('classroom_id')
@@ -285,9 +290,20 @@ class Student extends Model
         }
 
         // Tier 2: Check StudentClassroomHistory (excluding PONDOK if possible)
-        if ($this->relationLoaded('classroomHistories') || $this->classroomHistories()->exists()) {
+        if ($this->relationLoaded('classroomHistories')) {
             $history = $this->classroomHistories
                 ->where('academic_year_id', $academicYearId)
+                ->filter(fn($h) => $h->classroom && strtoupper($h->classroom->name) !== 'PONDOK')
+                ->first();
+
+            if ($history && $history->classroom) {
+                return $history->classroom;
+            }
+        } elseif ($this->classroomHistories()->where('academic_year_id', $academicYearId)->exists()) {
+            $history = $this->classroomHistories()
+                ->where('academic_year_id', $academicYearId)
+                ->with('classroom.school')
+                ->get()
                 ->filter(fn($h) => $h->classroom && strtoupper($h->classroom->name) !== 'PONDOK')
                 ->first();
 
@@ -297,11 +313,17 @@ class Student extends Model
         }
 
         // Tier 3: Any bill in tb_bills for this academic year
-        $anyBillWithClass = $this->bills()
-            ->where('academic_year_id', $academicYearId)
-            ->whereNotNull('classroom_id')
-            ->with('classroom.school')
-            ->first();
+        if ($this->relationLoaded('bills')) {
+            $anyBillWithClass = $this->bills
+                ->where('academic_year_id', $academicYearId)
+                ->first(fn($b) => !empty($b->classroom_id) && $b->classroom);
+        } else {
+            $anyBillWithClass = $this->bills()
+                ->where('academic_year_id', $academicYearId)
+                ->whereNotNull('classroom_id')
+                ->with('classroom.school')
+                ->first();
+        }
 
         if ($anyBillWithClass && $anyBillWithClass->classroom) {
             return $anyBillWithClass->classroom;
@@ -392,13 +414,20 @@ class Student extends Model
         }
 
         // 2. Try to get entry year from classroom history
-        $firstHistory = $this->classroomHistories()
-            ->with('academicYear')
-            ->get()
-            ->sortBy(function ($history) {
-                return $history->academicYear?->start_year ?? 9999;
-            })
-            ->first();
+        if ($this->relationLoaded('classroomHistories')) {
+            $firstHistory = $this->classroomHistories
+                ->filter(fn($h) => $h->academicYear !== null)
+                ->sortBy(fn($h) => $h->academicYear?->start_year ?? 9999)
+                ->first();
+        } else {
+            $firstHistory = $this->classroomHistories()
+                ->whereHas('academicYear')
+                ->with('academicYear')
+                ->join('academic_years', 'student_classroom_histories.academic_year_id', '=', 'academic_years.id')
+                ->orderBy('academic_years.start_year', 'asc')
+                ->select('student_classroom_histories.*')
+                ->first();
+        }
 
         if ($firstHistory && $firstHistory->academicYear) {
             $historyStartYear = $firstHistory->academicYear->getStartYearSafe();

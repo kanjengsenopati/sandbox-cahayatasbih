@@ -43,16 +43,16 @@ class DashboardController extends BaseWaliApiController
                 ->where('created_at', '>=', now()->startOfDay())
                 ->latest()
                 ->get()
-                ->reject(function($item) use ($activeStudent) {
-                    // Lazy cleanup: remove orphaned kode unik SaldoHistory records
+                ->reject(function($item) {
+                    // Lewati SaldoHistory Kode Unik yang orphaned (tidak punya transaction_detail).
+                    // Proses cleanup dan pengembalian saldo dilakukan oleh scheduled command:
+                    // php artisan saldo:cleanup-orphaned-kode-unik (berjalan harian)
+                    // Ini menjaga idempotency GET request dan mencegah race condition.
                     if ($item->status === \App\Models\SaldoHistory::STATUS_SUCCESS
                         && stripos($item->description, 'Kode Unik') !== false
                         && $item->transaction_details->isEmpty()
                     ) {
-                        $activeStudent->decrement('saldo', $item->amount);
-                        $item->forceDelete();
-                        \Illuminate\Support\Facades\Log::info("Dashboard Lazy Cleanup: Removed orphaned kode unik SaldoHistory (Rp.{$item->amount}) for student {$activeStudent->name} ({$activeStudent->id}).");
-                        return true;
+                        return true; // reject dari collection, tapi TIDAK mengubah data
                     }
                     return false;
                 })

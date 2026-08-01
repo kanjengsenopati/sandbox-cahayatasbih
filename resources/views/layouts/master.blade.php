@@ -71,7 +71,14 @@
 		<!--end::Svg Icon-->
 	</div>
 	<!--end::Scrolltop-->
-	<!--end::Main-->
+	<script>
+		// Suppress third-party browser extension noise (content.js, polyfill.js)
+		window.addEventListener('unhandledrejection', function(event) {
+			if (event.reason && (event.reason.message === 'Could not establish connection. Receiving end does not exist.' || String(event.reason).includes('useCache'))) {
+				event.preventDefault();
+			}
+		});
+	</script>
 	@include('layouts.partials.script')
 
 	<!--end::Page Custom Javascript-->

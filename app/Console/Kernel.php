@@ -15,6 +15,9 @@ class Kernel extends ConsoleKernel
         $schedule->command('app:audit')->dailyAt('01:00');
         $schedule->command('app:check-bill-class')->everyTenMinutes();
         $schedule->command('db:sync-master')->dailyAt('01:00')->withoutOverlapping();
+        // Cleanup SaldoHistory Kode Unik orphaned setiap hari pukul 02:00
+        // Menggantikan lazy cleanup yang sebelumnya ada di GET request Dashboard (idempotency violation)
+        $schedule->command('saldo:cleanup-orphaned-kode-unik')->dailyAt('02:00')->withoutOverlapping();
     }
 
     /**

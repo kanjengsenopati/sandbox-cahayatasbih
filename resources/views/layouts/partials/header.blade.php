@@ -47,8 +47,8 @@
                         <!--begin::Menu wrapper-->
                         <div class="cursor-pointer symbol symbol-30px symbol-md-40px position-relative" data-kt-menu-trigger="click"
                             data-kt-menu-attach="parent" data-kt-menu-placement="bottom-end">
-                            <img src="{{ auth()->user()->avatar_url ?? asset('assets/media/avatars/150-26.jpg') }}"
-                                onerror="this.src='{{ asset('assets/media/avatars/150-26.jpg') }}'"
+                            <img src="{{ auth()->user()->avatar_url ?? asset('assets/media/avatars/blank.png') }}"
+                                onerror="this.onerror=null; this.src='{{ asset('assets/media/avatars/blank.png') }}';"
                                 alt="user" 
                                 @if(session()->has('impersonator_backoffice_id')) style="border: 2px solid #DC2626;" @endif />
                             @if(session()->has('impersonator_backoffice_id'))
@@ -64,8 +64,8 @@
                                     <!--begin::Avatar-->
                                     <div class="symbol symbol-50px me-5">
                                         <img alt="Logo"
-                                            src="{{ auth()->user()->avatar_url ?? asset('assets/media/avatars/150-26.jpg') }}"
-                                            onerror="this.src='{{ asset('assets/media/avatars/150-26.jpg') }}'" />
+                                            src="{{ auth()->user()->avatar_url ?? asset('assets/media/avatars/blank.png') }}"
+                                            onerror="this.onerror=null; this.src='{{ asset('assets/media/avatars/blank.png') }}';" />
                                     </div>
                                     <!--end::Avatar-->
                                     <!--begin::Username-->

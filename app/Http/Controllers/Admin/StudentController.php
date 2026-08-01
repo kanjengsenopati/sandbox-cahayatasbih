@@ -50,6 +50,8 @@ class StudentController extends Controller
                     $query->where('status', request('status'));
                 })
                 ->latest();
+            $activeAy = \App\Models\AcademicYear::where('is_active', true)->first();
+
             return DataTables::of($data)
                 ->editColumn('saldo', function ($data) {
                     return '<span class="badge bg-success">Rp ' . number_format($data->saldo, 0, ',', '.') . '</span>';
@@ -76,16 +78,18 @@ class StudentController extends Controller
                             return '<span class="badge bg-secondary">Tidak Diketahui</span>';
                     }
                 })
-                ->addColumn('student', function ($data) {
+                ->addColumn('student', function ($data) use ($activeAy) {
                     $studentName = $data?->name ? $data->name : '-';
-                    $className = $data->classroom?->name ? $data->classroom->name : '-';
+                    $resolvedClass = $data->classroom ?? ($activeAy ? $data->getClassroomForAcademicYear($activeAy->id) : null);
+                    $className = $resolvedClass?->name ?? '-';
 
                     // Use avatar_url accessor for proper absolute URL
                     $avatarUrl = $data->avatar_url ?? asset('assets/media/avatars/default.png');
+                    $fallbackUrl = asset('assets/media/avatars/default.png');
 
                     // Return HTML structure for the card with avatar, name, and class
                     return '<div class="student-card" style="display: flex; align-items: center; gap: 10px;">
-                        <img src="' . $avatarUrl . '" alt="Avatar" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover;">
+                        <img src="' . $avatarUrl . '" onerror="this.src=\'' . $fallbackUrl . '\'" alt="Avatar" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover;">
                         <div>
                             <div><strong>' . $studentName . '</strong></div>
                             <div>' . $className . '</div>

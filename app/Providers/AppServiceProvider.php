@@ -101,6 +101,15 @@ namespace App\Providers {
             Carbon::setLocale('id');
             setlocale(LC_TIME, 'id_ID');
 
+            \Illuminate\Support\Facades\DB::listen(function ($query) {
+                if ($query->time > 1000) {
+                    \Illuminate\Support\Facades\Log::warning('Slow query: ' . $query->sql, [
+                        'bindings' => $query->bindings,
+                        'time' => $query->time
+                    ]);
+                }
+            });
+
             // Global fallback validation rules if php_fileinfo extension is not enabled
             Validator::resolver(function($translator, $data, $rules, $messages, $customAttributes) {
                 return new \App\Validation\CustomValidator($translator, $data, $rules, $messages, $customAttributes);

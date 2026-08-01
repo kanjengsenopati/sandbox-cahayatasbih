@@ -29,6 +29,7 @@ class BillTypeRequest extends FormRequest
             'academic_year_id' => 'required|exists:academic_years,id',
             'use_wali_filter' => 'nullable|boolean',
             'use_gender_filter' => 'nullable|boolean',
+            'use_custom_filter' => 'nullable|boolean',
         ];
     }
 
@@ -42,6 +43,7 @@ class BillTypeRequest extends FormRequest
             'name' => \Illuminate\Support\Str::upper($name),
             'use_wali_filter' => $this->boolean('use_wali_filter'),
             'use_gender_filter' => $this->boolean('use_gender_filter'),
+            'use_custom_filter' => $this->boolean('use_custom_filter'),
         ]);
     }
 }

@@ -164,7 +164,18 @@ class Select2Controller extends Controller
 
     public function studentBySchool($request)
     {
-        return Student::with('classroom.school')
+        $academicYearId = $request->academic_year_id;
+
+        // Eager load relasi yang dibutuhkan — menggantikan per-student getClassroomForAcademicYear() calls
+        $eagerRelations = ['classroom'];
+        if ($academicYearId) {
+            // Load classroom history untuk academic year tertentu dalam 1 query
+            $eagerRelations['classroomHistories'] = function ($q) use ($academicYearId) {
+                $q->where('academic_year_id', $academicYearId)->with('classroom')->limit(1);
+            };
+        }
+
+        $students = Student::with($eagerRelations)
             ->whereHas('classroom', function ($query) use ($request) {
                 $query->where('school_id', $request->school_id);
             })
@@ -177,7 +188,24 @@ class Select2Controller extends Controller
             ->whereRaw('LOWER(name) like ?', ['%' . strtolower($request->search) . '%'])
             ->hasSchool()
             ->orderBy('name')
+            ->take(50)
             ->get();
+
+        return $students->map(function ($student) use ($academicYearId) {
+            // Gunakan relasi yang sudah di-eager load — TIDAK ADA query tambahan di sini
+            if ($academicYearId && $student->relationLoaded('classroomHistories')) {
+                $history = $student->classroomHistories->first();
+                // Abaikan kelas PONDOK, fallback ke classroom saat ini
+                $historyClass = $history?->classroom;
+                if ($historyClass && strtoupper($historyClass->name) !== 'PONDOK') {
+                    $student->resolved_classroom_name = $historyClass->name;
+                    return $student;
+                }
+            }
+            // Fallback: gunakan classroom saat ini (sudah di-eager load)
+            $student->resolved_classroom_name = $student->classroom?->name ?? '';
+            return $student;
+        });
     }
 
     public function bank($request)
@@ -190,7 +218,17 @@ class Select2Controller extends Controller
 
     public function studentActiveBySchool($request)
     {
-        return Student::with('classroom.school')
+        $academicYearId = $request->academic_year_id;
+
+        // Eager load relasi yang dibutuhkan — konsisten dengan studentBySchool
+        $eagerRelations = ['classroom'];
+        if ($academicYearId) {
+            $eagerRelations['classroomHistories'] = function ($q) use ($academicYearId) {
+                $q->where('academic_year_id', $academicYearId)->with('classroom')->limit(1);
+            };
+        }
+
+        $students = Student::with($eagerRelations)
             ->whereHas('classroom', function ($query) use ($request) {
                 $query->where('school_id', $request->school_id);
             })
@@ -198,6 +236,20 @@ class Select2Controller extends Controller
             ->hasSchool()
             ->where('status', Student::STATUS_ACTIVE)
             ->orderBy('name')
+            ->take(50)
             ->get();
+
+        return $students->map(function ($student) use ($academicYearId) {
+            if ($academicYearId && $student->relationLoaded('classroomHistories')) {
+                $history = $student->classroomHistories->first();
+                $historyClass = $history?->classroom;
+                if ($historyClass && strtoupper($historyClass->name) !== 'PONDOK') {
+                    $student->resolved_classroom_name = $historyClass->name;
+                    return $student;
+                }
+            }
+            $student->resolved_classroom_name = $student->classroom?->name ?? '';
+            return $student;
+        });
     }
 }

@@ -110,18 +110,19 @@ class Transaction extends Model
     public function scopeHasSchool($query)
     {
         $admin = Auth::user();
-        if ($admin?->hasRole('Super Admin')) {
+        if (!$admin || $admin->hasRole('Super Admin')) {
             return;
         }
 
-        $schoolIds = $admin ? (method_exists($admin, 'getSchoolIds') ? $admin->getSchoolIds() : ($admin->adminSchool ? $admin->adminSchool->pluck('school_id')->toArray() : [])) : [];
+        $schoolIds = method_exists($admin, 'getSchoolIds') ? $admin->getSchoolIds() : ($admin->adminSchool ? $admin->adminSchool->pluck('school_id')->toArray() : []);
+        if (empty($schoolIds)) {
+            return;
+        }
 
-        $query->whereHas('student', function ($query) use ($schoolIds) {
-            $query->whereHas('classroom', function ($query) use ($schoolIds) {
-                $query->whereHas('school', function ($query) use ($schoolIds) {
-                    $query->whereIn('id', $schoolIds);
-                });
-            });
+        $classroomIds = \App\Models\Classroom::whereIn('school_id', $schoolIds)->pluck('id')->toArray();
+
+        $query->whereHas('student', function ($q) use ($classroomIds) {
+            $q->whereIn('classroom_id', $classroomIds);
         });
     }
 }

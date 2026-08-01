@@ -31,6 +31,7 @@ use App\Jobs\SendToPushNotificationJob;
 use App\Jobs\SendToWhatsappNotificationJob;
 use App\Http\Requests\Admin\BillPaymentRequest;
 use App\Http\Requests\Admin\UpdateTransactionStatusRequest;
+use App\Jobs\SyncStudentBillsJob;
 
 class BillController extends Controller
 {
@@ -48,9 +49,15 @@ class BillController extends Controller
         $academicYears = \App\Models\AcademicYear::orderBy('start_year', 'desc')->get();
 
         if ($studentId = request()->student_id) {
-            TransactionService::cleanupGhostBillsForStudent($studentId);
-            TransactionService::syncStudentBillsFromPaidTransactions($studentId);
-            TransactionService::ensureStudentBillsSyncedFromRate($studentId);
+            // Dispatch sync ke background queue agar request HTTP tidak terblokir.
+            // Cache TTL 30 menit: jika sync sudah berjalan dalam 30 menit terakhir,
+            // tidak perlu dispatch lagi (data masih cukup fresh).
+            $syncCacheKey = "student_bills_synced_{$studentId}";
+            if (!Cache::has($syncCacheKey)) {
+                Cache::put($syncCacheKey, true, now()->addMinutes(30));
+                dispatch(new SyncStudentBillsJob($studentId, request()->academic_year_id));
+            }
+
             $student = Student::with(['user', 'classroom.school', 'classroomHistories.classroom'])->find($studentId);
             if (!$student) {
                 return redirect()->to(route('bill.index'))->with('error', 'Data siswa tidak ditemukan atau telah dihapus.');
@@ -69,10 +76,16 @@ class BillController extends Controller
                 }
             }
 
+            $preloadedRates = TransactionService::getCachedPreloadedRates();
+            $allStudentBills = Bill::where('student_id', $studentId)
+                ->whereNull('deleted_at')
+                ->with('billType')
+                ->get();
+
             $billMonth = $this->getBills($studentId, BillType::TYPE_MONTHLY, $academicYearId);
             $billOthers = $this->getBills($studentId, BillType::TYPE_OTHER, $academicYearId);
 
-            return view('admins.bill.index', compact('student', 'billMonth', 'billOthers', 'schools', 'academicYears'));
+            return view('admins.bill.index', compact('student', 'billMonth', 'billOthers', 'schools', 'academicYears', 'preloadedRates', 'allStudentBills'));
         }
 
         if (request()->ajax()) {
@@ -87,28 +100,36 @@ class BillController extends Controller
 
     private function getBills($studentId, $type, $academicYearId = null)
     {
+
         $student = Student::with('classroom.school')->find($studentId);
         $studentSchoolName = $student?->classroom?->school?->name ?? '';
         $entryYear = $student?->getEntryYear() ?? date('Y');
+
+        $studentBillTypeIds = Bill::where('student_id', $studentId)
+            ->when($academicYearId, fn($q) => $q->where('academic_year_id', $academicYearId))
+            ->pluck('bill_type_id')
+            ->unique();
 
         $query = BillType::with(['billItem', 'academicYear', 'bills' => function ($query) use ($studentId, $academicYearId) {
                 $query->where('student_id', $studentId);
                 if ($academicYearId) {
                     $query->where('academic_year_id', $academicYearId);
                 }
-                $query->with(['classroom.school', 'transactions.admin', 'transactions.user']);
+                $query->with(['classroom.school']);
             }])
             ->where('type', $type)
-            ->whereHas('bills', function ($query) use ($studentId, $academicYearId) {
-                $query->where('student_id', $studentId);
-                if ($academicYearId) {
-                    $query->where('academic_year_id', $academicYearId);
-                }
-            });
+            ->whereIn('id', $studentBillTypeIds);
+
+        $preloadedRates = \App\Services\TransactionService::getCachedPreloadedRates();
+
+        $allStudentBills = Bill::where('student_id', $studentId)
+            ->whereNull('deleted_at')
+            ->with('billType')
+            ->get();
 
         return $query->latest()
             ->get()
-            ->filter(function($item) use ($studentSchoolName, $entryYear, $academicYearId) {
+            ->filter(function($item) use ($student, $studentSchoolName, $entryYear, $academicYearId, $preloadedRates) {
                 if (!TransactionService::isBillTypeMatchingStudentSchoolUnit($item->name, $studentSchoolName)) {
                     return false;
                 }
@@ -118,13 +139,22 @@ class BillController extends Controller
                         return false;
                     }
                 }
+
+                // SINGLE SOURCE OF TRUTH (SST) ENFORCEMENT:
+                // Tagihan HANYA boleh muncul di profil siswa jika Admin SUDAH me-mapping kelas/siswa pada Payment Rate untuk BillType ini,
+                // ATAU jika siswa memiliki tagihan berstatus PAID / paid_amount > 0 yang harus dipertahankan.
+                $hasPaidBills = $item->bills->contains(fn($b) => $b->status === Bill::STATUS_PAID || (int)$b->paid_amount > 0);
+                if (!$hasPaidBills && !TransactionService::hasActiveRateForStudent($student, $item, $preloadedRates)) {
+                    return false;
+                }
+
                 return true;
             })
-            ->map(fn($item) => $this->calculateBillTotals($item, $studentId))
+            ->map(fn($item) => $this->calculateBillTotals($item, $student, $preloadedRates, $allStudentBills))
             ->values();
     }
 
-    private function calculateBillTotals($item, $studentId)
+    private function calculateBillTotals($item, $student, $preloadedRates = null, $allStudentBills = null)
     {
         $bills = $item->bills;
         $upperName = strtoupper($item->name ?? '');
@@ -143,7 +173,7 @@ class BillController extends Controller
                 if ($bDet && $bDet->amount > 0) {
                     $totalBill += $bDet->amount;
                 } else {
-                    $totalBill += TransactionService::resolveStudentRateForBillType($studentId, $item, $m, $y);
+                    $totalBill += TransactionService::resolveStudentRateForBillType($student, $item, $m, $y, $preloadedRates);
                 }
             }
             $item->total_bill = $totalBill;
@@ -151,20 +181,7 @@ class BillController extends Controller
             $item->total_bill = $bills->sum('amount');
         }
 
-        if ($isZarkasi || $isAplikasi || $isSyahriah) {
-            // Include payments from past/other bill types of the same generic category
-            $matchingBills = \App\Models\Bill::where('student_id', $studentId)
-                ->whereHas('billType', function ($query) use ($isZarkasi, $isAplikasi, $isSyahriah) {
-                    $query->where(function ($q) use ($isZarkasi, $isAplikasi, $isSyahriah) {
-                        if ($isZarkasi) $q->orWhere('name', 'like', '%ZARKASI%');
-                        if ($isAplikasi) $q->orWhere('name', 'like', '%APLIKASI%');
-                        if ($isSyahriah) $q->orWhere('name', 'like', '%SYAHR%');
-                    });
-                })->get();
-            $item->total_paid = $matchingBills->sum('paid_amount');
-        } else {
-            $item->total_paid = $bills->sum('paid_amount');
-        }
+        $item->total_paid = $bills->sum('paid_amount');
 
         $item->total_unpaid = max(0, $item->total_bill - $item->total_paid);
 
@@ -173,8 +190,10 @@ class BillController extends Controller
 
     private function getTransactionData()
     {
+        $transferMethodIds = PaymentMethod::where('type', PaymentMethod::TYPE_TRANSFER)->pluck('id')->toArray();
+
         $transactions = Transaction::with(['student', 'paymentMethod', 'activeProof.bank', 'transactionProofs.bank', 'transactionDetails.bill.billType'])
-            ->whereHas('paymentMethod', fn($query) => $query->where('type', PaymentMethod::TYPE_TRANSFER))
+            ->whereIn('payment_method_id', $transferMethodIds)
             ->where('type', Transaction::TYPE_BILL)
             ->where('status', Transaction::STATUS_PENDING_CONFIRMATION)
             ->hasSchool()
@@ -304,8 +323,10 @@ class BillController extends Controller
 
     private function getArchiveTransactionData()
     {
+        $transferMethodIds = PaymentMethod::where('type', PaymentMethod::TYPE_TRANSFER)->pluck('id')->toArray();
+
         $transactions = Transaction::with(['student', 'paymentMethod', 'activeProof.bank', 'transactionProofs.bank', 'admin', 'transactionDetails.bill.billType'])
-            ->whereHas('paymentMethod', fn($query) => $query->where('type', PaymentMethod::TYPE_TRANSFER))
+            ->whereIn('payment_method_id', $transferMethodIds)
             ->where('type', Transaction::TYPE_BILL)
             ->where('status', Transaction::STATUS_PAID)
             ->where('is_deleted_from_archive', false)
@@ -394,10 +415,6 @@ class BillController extends Controller
     public function store(BillPaymentRequest $request)
     {
         $studentId = $request->student_id;
-        // Saran: Tambahkan bill_id agar user bisa bayar tagihan LAIN secara bersamaan
-        // $billId = $request->bill_id; 
-        // $lockKey = "pay_lock_{$studentId}_{$billId}"; 
-        
         $lockKey = "student_transaction_{$studentId}";
 
         // COBA DAPATKAN KUNCI (ATOMIC)
@@ -406,37 +423,39 @@ class BillController extends Controller
         $lock = Cache::lock($lockKey, 300);
 
         if (!$lock->get()) {
-            // Jika gagal dapat kunci (artinya ada transaksi lain sedang jalan)
             return redirect()->back()->with('error', 'Transaksi sedang diproses, mohon tunggu sebentar.');
         }
 
         // --- MULAI AREA AMAN ---
-        DB::beginTransaction();
-
+        // CATATAN: DB::beginTransaction dihapus karena TransactionService::createTransaction
+        // sudah menggunakan DB::transaction() secara internal.
+        // Nested manual beginTransaction + DB::transaction bisa menyebabkan partial rollback.
         try {
             $paymentMethodType = $request->payment_method;
 
             // Validasi Logika Bisnis Tambahan (Double Check Database)
             foreach ($request->bill_ids as $billId) {
                 $isPaid = Bill::where('id', $billId)->where('status', 'PAID')->exists();
-                if($isPaid) throw new Exception("Tagihan dengan ID {$billId} sudah lunas");
+                if ($isPaid) throw new Exception("Tagihan dengan ID {$billId} sudah lunas");
             }
 
+            // createTransaction menggunakan DB::transaction internal — ACID terjaga
             $transaction = TransactionService::createTransaction($request, $paymentMethodType, Transaction::TYPE_BILL);
-            
+
             if ($transaction->status == Transaction::STATUS_PAID && $transaction?->student?->user?->phone) {
+                // Dispatch notifikasi di LUAR transaction agar tidak mempengaruhi atomicity
                 TransactionService::dispatchNotifications($transaction);
             }
-            
-            DB::commit();
 
             // Lepas kunci agar user bisa transaksi lagi
             $lock->release();
 
+            // Invalidate sync cache agar job dipicu lagi saat santri buka tagihan
+            Cache::forget("student_bills_synced_{$studentId}");
+
             return redirect()->back()->with('success', "Transaksi pembayaran berhasil");
 
         } catch (\Throwable $th) {
-            DB::rollBack();
             Log::error($th);
 
             // Lepas kunci jika error, supaya user tidak terkunci 5 menit
@@ -446,44 +465,8 @@ class BillController extends Controller
         }
     }
 
-    // public function store(BillPaymentRequest $request)
-    // {
-    //     $studentId = $request->student_id; // Assuming student_id is part of the request
-    //     $cacheKey = "student_transaction_{$studentId}";
 
-    //     // Check if there's an active transaction in the cache
-    //     if (Cache::has($cacheKey)) {
-    //         return redirect()->back()->with('error', 'Transaksi sedang diproses, silakan coba lagi nanti');
-    //     }
 
-    //     // Set a cache entry to lock the transaction
-    //     Cache::put($cacheKey, true, now()->addMinutes(5)); // Lock for 5 minutes
-
-    //     DB::beginTransaction();
-
-    //     try {
-    //         $paymentMethodType = $request->payment_method;
-
-    //         $transaction = TransactionService::createTransaction($request, $paymentMethodType, Transaction::TYPE_BILL);
-    //         if ($transaction->status == Transaction::STATUS_PAID && $transaction?->student?->user?->phone) {
-    //             TransactionService::dispatchNotifications($transaction);
-    //         }
-    //         DB::commit();
-
-    //         // Clear the cache entry
-    //         Cache::forget($cacheKey);
-
-    //         return redirect()->back()->with('success', "Transaksi pembayaran berhasil");
-    //     } catch (\Throwable $th) {
-    //         DB::rollBack();
-    //         Log::error($th);
-
-    //         // Ensure the cache entry is cleared in case of an error
-    //         Cache::forget($cacheKey);
-
-    //         return redirect()->back()->with('error', "Transaksi pembayaran gagal");
-    //     }
-    // }
 
     /**
      * Display the specified resource.
@@ -625,27 +608,23 @@ class BillController extends Controller
             ->orderBy('month')
             ->get();
 
-        $isZarkasi = str_contains(strtoupper($billType->name ?? ''), 'ZARKASI');
-        $isAplikasi = str_contains(strtoupper($billType->name ?? ''), 'APLIKASI');
-        $isSyahriah = str_contains(strtoupper($billType->name ?? ''), 'SYAHR');
+        if ($billType->type === 'MONTHLY') {
+            $totalBill = 0;
+            $startYear = $billType->academicYear?->start_year ?? date('Y');
+            $endYear = $billType->academicYear?->end_year ?? ($startYear + 1);
+            $preloadedRates = TransactionService::getCachedPreloadedRates();
 
-        if ($isZarkasi) {
-            $totalBill = 550000;
-        } elseif ($isAplikasi) {
-            $totalBill = 120000;
-        } elseif ($isSyahriah) {
-            $totalBill = 6000000;
-        } else {
-            if ($billType->type === 'MONTHLY') {
-                $sampleBill = $bills->firstWhere('amount', '>', 0);
-                $sampleAmount = $sampleBill ? $sampleBill->amount : ($billType->billItem->amount ?? 0);
-                if ($sampleAmount <= 0) {
-                    $sampleAmount = \App\Models\Bill::where('bill_type_id', $billType->id)->where('amount', '>', 0)->value('amount') ?? 0;
+            foreach (array_merge(range(7, 12), range(1, 6)) as $m) {
+                $y = ($m >= 7) ? $startYear : $endYear;
+                $bDet = $bills->firstWhere('month', (int)$m) ?? $bills->firstWhere('month', (string)$m);
+                if ($bDet && $bDet->amount > 0) {
+                    $totalBill += $bDet->amount;
+                } else {
+                    $totalBill += TransactionService::resolveStudentRateForBillType($student->id, $billType, $m, $y, $preloadedRates);
                 }
-                $totalBill = $sampleAmount > 0 ? ($sampleAmount * 12) : $bills->sum('amount');
-            } else {
-                $totalBill = $bills->sum('amount');
             }
+        } else {
+            $totalBill = $bills->sum('amount');
         }
 
         $totalPaid   = $bills->sum('paid_amount');
@@ -704,19 +683,8 @@ class BillController extends Controller
         $isAuthorized = false;
 
         if ($user) {
-            if ($user->hasRole('Super Admin') || $user->can('Edit Status Tagihan')) {
+            if ($user->hasRole('Super Admin') || $user->hasRole('Bendahara') || $user->can('Edit Status Tagihan')) {
                 $isAuthorized = true;
-            } elseif ($user->hasRole('Bendahara')) {
-                $username = strtolower($user->username ?? '');
-                $name = strtolower($user->name ?? '');
-                if (
-                    str_contains($username, 'khoirus') || 
-                    str_contains($username, 'paramita') ||
-                    str_contains($name, 'khoirus') || 
-                    str_contains($name, 'paramita')
-                ) {
-                    $isAuthorized = true;
-                }
             }
         }
 

@@ -47,8 +47,8 @@
                         <!--begin::Menu wrapper-->
                         <div class="cursor-pointer symbol symbol-30px symbol-md-40px" data-kt-menu-trigger="click"
                             data-kt-menu-attach="parent" data-kt-menu-placement="bottom-end">
-                            <img src="{{ auth('wali')->user()->avatar_url ?? asset('assets/media/avatars/150-26.jpg') }}"
-                                onerror="this.src='{{ asset('assets/media/avatars/default.png') }}'" alt="user" />
+                            <img src="{{ auth('wali')->user()->avatar_url ?? asset('assets/media/avatars/blank.png') }}"
+                                onerror="this.onerror=null; this.src='{{ asset('assets/media/avatars/blank.png') }}';" alt="user" />
                         </div>
                         <!--begin::Menu-->
                         <div class="menu menu-sub menu-sub-dropdown menu-column menu-rounded menu-gray-800 menu-state-bg menu-state-primary fw-bold py-4 fs-6 w-275px"
@@ -59,8 +59,8 @@
                                     <!--begin::Avatar-->
                                     <div class="symbol symbol-50px me-5">
                                         <img alt="Logo"
-                                            src="{{ auth('wali')->user()->avatar_url ?? asset('assets/media/avatars/150-26.jpg') }}"
-                                            onerror="this.src='{{ asset('assets/media/avatars/default.png') }}'" />
+                                            src="{{ auth('wali')->user()->avatar_url ?? asset('assets/media/avatars/blank.png') }}"
+                                            onerror="this.onerror=null; this.src='{{ asset('assets/media/avatars/blank.png') }}';" />
                                     </div>
                                     <!--end::Avatar-->
                                     <!--begin::Username-->

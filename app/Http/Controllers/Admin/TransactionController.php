@@ -62,7 +62,7 @@ class TransactionController extends Controller
 
             // Change status to paid if cash payment in bill
             if ($transaction->status == Transaction::STATUS_PAID) {
-                TransactionService::changeStatusToPaid($request->bill_id);
+                TransactionService::changeStatusToPaid($transaction);
             }
             DB::commit();
             return $this->postSuccessResponse("Berhasil melakukan transaksi pembayaran", $transaction);

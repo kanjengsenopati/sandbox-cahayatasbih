@@ -1,5 +1,52 @@
 @extends('layouts.master', ['title' => 'Data Tarif Pembayaran'])
 
+@push('css')
+<style>
+    .class-grid-container {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        padding: 4px 0;
+    }
+    .class-grade-row {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 8px;
+    }
+    .class-badge-chip {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 48px;
+        height: 38px;
+        padding: 6px 14px;
+        font-size: 13px;
+        font-weight: 700;
+        border-radius: 12px;
+        transition: all 0.2s ease-in-out;
+        border: 2px solid transparent !important;
+        user-select: none;
+        background-color: #ecfdf5 !important;
+        color: #059669 !important;
+        cursor: pointer;
+    }
+    .class-badge-chip:hover {
+        transform: translateY(-2px);
+        background-color: #d1fae5 !important;
+        color: #047857 !important;
+        box-shadow: 0 4px 12px rgba(16, 185, 129, 0.25);
+    }
+    .class-badge-chip.active {
+        background-color: #10b981 !important;
+        color: #ffffff !important;
+        border-color: #dc2626 !important;
+        box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.4) !important;
+        position: relative;
+    }
+</style>
+@endpush
+
 @section('content')
 <div class="content d-flex flex-column flex-column-fluid" id="kt_content">
     <!--begin::Container-->
@@ -145,11 +192,31 @@
                                             @endif
                                         </td>
                                         <td>
-                                            @foreach($rate->paymentRateClassrooms as $prClassroom)
-                                                <span class="badge badge-light-success fw-bolder m-1">
-                                                    {{ $prClassroom->classroom?->name ?? 'Kelas Dihapus' }}
-                                                </span>
-                                            @endforeach
+                                             @php
+                                                 $sortedClassrooms = $rate->paymentRateClassrooms
+                                                     ->filter(fn($prc) => !empty($prc->classroom?->name))
+                                                     ->sortBy(fn($prc) => $prc->classroom->name, SORT_NATURAL)
+                                                     ->groupBy(function($prc) {
+                                                         preg_match('/^\d+/', trim($prc->classroom->name), $matches);
+                                                         return $matches[0] ?? 'Lainnya';
+                                                     });
+                                             @endphp
+
+                                             <div class="class-grid-container">
+                                                 @foreach($sortedClassrooms as $gradeLevel => $prClassrooms)
+                                                     <div class="class-grade-row">
+                                                         @foreach($prClassrooms as $prClassroom)
+                                                             <span class="badge class-badge-chip cursor-pointer"
+                                                                   data-classroom-id="{{ $prClassroom->classroom_id }}"
+                                                                   data-classroom-name="{{ $prClassroom->classroom?->name }}"
+                                                                   data-rate-id="{{ $rate->id }}"
+                                                                   title="Klik untuk memfilter & memuat santri kelas {{ $prClassroom->classroom?->name }} saja">
+                                                                 {{ $prClassroom->classroom?->name }}
+                                                             </span>
+                                                         @endforeach
+                                                     </div>
+                                                 @endforeach
+                                             </div>
                                             @if($rate->gender)
                                                 <span class="badge badge-light-primary fw-bolder m-1">
                                                     {{ $rate->gender == 'L' ? 'Putra' : 'Putri' }}
@@ -431,21 +498,71 @@
             }
         });
 
-        function loadDetailData(rateId, callback) {
+        // Interactive Class Badge Chip Filter Click Handler
+        $(document).on('click', '.class-badge-chip', function(e) {
+            e.stopPropagation();
+            var chip = $(this);
+            var rateId = chip.data('rate-id');
+            var classroomId = chip.data('classroom-id');
+            var classroomName = chip.data('classroom-name');
+            var rateRow = chip.closest('.rate-row');
+            var detailRow = $('#detail-' + rateId);
+            var icon = rateRow.find('.toggle-detail i');
+
+            var wasActive = chip.hasClass('active');
+            rateRow.find('.class-badge-chip').removeClass('active');
+
+            var filterClassId = null;
+            if (!wasActive) {
+                chip.addClass('active');
+                filterClassId = classroomId;
+            }
+
+            if (!detailRow.is(':visible')) {
+                detailRow.slideDown(200);
+                icon.css('transform', 'rotate(90deg)');
+            }
+
+            var contentDiv = detailRow.find('.detail-content');
+            contentDiv.removeData('tbl-state');
+            var targetText = filterClassId ? ('kelas ' + (classroomName || '')) : 'semua kelas';
+            contentDiv.html('<div class="text-center py-5"><div class="spinner-border text-success spinner-border-sm" role="status"></div><span class="text-muted ms-2 fs-7">Memuat data ' + targetText + '...</span></div>');
+
+            loadDetailData(rateId, filterClassId);
+        });
+
+        function loadDetailData(rateId, classroomId, callback) {
+            if (typeof classroomId === 'function') {
+                callback = classroomId;
+                classroomId = null;
+            }
+
             var detailRow = $('#detail-' + rateId);
             var contentDiv = detailRow.find('.detail-content');
             var spinnerEl = detailRow.find('.detail-spinner');
             var countEl = detailRow.find('.detail-count');
 
+            spinnerEl.show();
+
+            var reqData = { type: 'bill' };
+            if (classroomId && classroomId !== 'null') {
+                reqData.classroom_id = classroomId;
+            }
+
             $.ajax({
                 url: "{{ route('payment-rate.show', '') }}/" + rateId,
                 type: 'GET',
-                data: { type: 'bill' },
+                data: reqData,
                 dataType: 'json',
                 success: function(response) {
                     var students = response.data || [];
                     spinnerEl.hide();
-                    countEl.text(students.length + ' Santri');
+
+                    var rateRow = $('.rate-row[data-rate-id="' + rateId + '"]');
+                    var activeChip = rateRow.find('.class-badge-chip.active');
+                    var classLabel = activeChip.length > 0 ? ' (Kelas ' + activeChip.data('classroom-name') + ')' : '';
+
+                    countEl.text(students.length + ' Santri' + classLabel);
 
                     if (students.length === 0) {
                         contentDiv.html('<div class="text-center py-4 text-muted"><i class="fas fa-inbox fs-2 mb-2 d-block"></i>Tidak ada data santri</div>');

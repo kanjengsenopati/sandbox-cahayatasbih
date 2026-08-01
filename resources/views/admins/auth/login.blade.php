@@ -116,8 +116,13 @@
                             </div>
                             <!--end::Wrapper-->
                             <!--begin::Input-->
-                            <input class="form-control form-control-lg form-control-solid" type="password"
-                                placeholder="Password Yang Terdaftar" name="password" autocomplete="off" />
+                            <div class="position-relative">
+                                <input class="form-control form-control-lg form-control-solid pe-20" type="password"
+                                    placeholder="Password Yang Terdaftar" id="password" name="password" autocomplete="off" />
+                                <span class="btn btn-sm btn-icon position-absolute translate-middle-y top-50 end-0 me-8" onclick="togglePassword()" type="button" style="cursor: pointer; z-index: 10;">
+                                    <i id="eye-icon" class="fas fa-eye text-gray-500 fs-4"></i>
+                                </span>
+                            </div>
                             <!--end::Input-->
                         </div>
                         <!--end::Input group-->
@@ -277,6 +282,20 @@
         KTUtil.onDOMContentLoaded(function() {
             KTSigninGeneral.init();
         });
+
+        function togglePassword() {
+            const input = document.getElementById('password');
+            const icon = document.getElementById('eye-icon');
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.classList.remove('fa-eye');
+                icon.classList.add('fa-eye-slash');
+            } else {
+                input.type = 'password';
+                icon.classList.remove('fa-eye-slash');
+                icon.classList.add('fa-eye');
+            }
+        }
     </script>
 </body>
 <!--end::Body-->

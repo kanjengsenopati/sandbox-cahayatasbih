@@ -7,14 +7,14 @@ trait HasAvatarUrl
     /**
      * Get the full URL for the avatar.
      * Supports absolute URLs, assets, storage paths, and relative file paths.
-     * When MASTER_APP_URL is set (clone mode), redirects storage URLs to master server.
+     * Prevents double 'storage/storage/' duplication when avatar path already contains 'storage/' or 'assets/'.
      */
     public function getAvatarUrlAttribute(): ?string
     {
         $value = $this->attributes['avatar'] ?? null;
 
-        if (!$value) {
-            return null;
+        if (!$value || trim($value) === '') {
+            return asset('assets/media/avatars/default.png');
         }
 
         // URL absolut → langsung return
@@ -22,11 +22,14 @@ trait HasAvatarUrl
             return $value;
         }
 
-        if (function_exists('storage_asset')) {
-            return \storage_asset($value);
+        $cleanPath = ltrim($value, '/');
+
+        // Jika path sudah diawali 'storage/' atau 'assets/'
+        if (str_starts_with($cleanPath, 'storage/') || str_starts_with($cleanPath, 'assets/')) {
+            return asset($cleanPath);
         }
 
-        return asset('storage/' . ltrim($value, '/'));
+        return asset('storage/' . $cleanPath);
     }
 
     public function getAvatarFallbackUrlAttribute(): string

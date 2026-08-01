@@ -63,19 +63,20 @@
                             <!--begin::Form-->
                             <x-alert.alert-validation />
                             <form id="bill-type"
-                                action="{{ request()->routeIs('bill-type.create') ? route('bill-type.store') : route('bill-type.update', @$billType->id) }}"
+                                action="{{ (request()->routeIs('bill-type.create') || empty(@$billType->id)) ? route('bill-type.store') : route('bill-type.update', $billType->id) }}"
                                 method="POST" enctype="multipart/form-data">
                                 @csrf
                                 <x-form.put-method />
                                 <!--begin::Input group-->
                                 <div class="row">
                                     <div class="col-md-6">
+                                        <!-- Step A: POS (Lembaga / UPT) -->
                                         <div class="fv-row mb-7">
                                             <!--begin::Label-->
                                             <label class="fs-6 fw-bold form-label mt-3" for="bill_item_id">
-                                                <span class="required">POS</span>
+                                                <span class="required">A. POS (Lembaga / UPT)</span>
                                                 <i class="fas fa-exclamation-circle ms-1 fs-7" data-bs-toggle="tooltip"
-                                                    title="Pilih Pos Bayar (Wajib)"></i>
+                                                    title="Pilih Pos Bayar Dasar / UPT Lembaga (Wajib)"></i>
                                             </label>
                                             <!--end::Label-->
                                             <!--begin::Input-->
@@ -84,12 +85,13 @@
                                             <!--end::Input-->
                                         </div>
 
+                                        <!-- Step B: Tahun Ajaran -->
                                         <div class="fv-row mb-7">
                                             <!--begin::Label-->
                                             <label class="fs-6 fw-bold form-label mt-3" for="academic_year_id">
-                                                <span class="required">Tahun Ajaran</span>
+                                                <span class="required">B. Tahun Ajaran</span>
                                                 <i class="fas fa-exclamation-circle ms-1 fs-7" data-bs-toggle="tooltip"
-                                                    title="Pilih Pos Bayar (Wajib)"></i>
+                                                    title="Pilih Tahun Ajaran (Wajib)"></i>
                                             </label>
                                             <!--end::Label-->
                                             <!--begin::Input-->
@@ -98,10 +100,11 @@
                                             <!--end::Input-->
                                         </div>
 
+                                        <!-- Step C: Nama Pembayaran -->
                                         <div class="fv-row mb-7">
                                             <!--begin::Label-->
                                             <label class="fs-6 fw-bold form-label mt-3" for="name_select">
-                                                <span class="required">Nama Pembayaran</span>
+                                                <span class="required">C. Nama Pembayaran</span>
                                                 <i class="fas fa-exclamation-circle ms-1 fs-7" data-bs-toggle="tooltip"
                                                     title="Pilih Nama Pembayaran (Wajib)"></i>
                                             </label>
@@ -121,25 +124,26 @@
                                         <div class="fv-row mb-7" id="name_custom_container" style="display: none;">
                                             <!--begin::Label-->
                                             <label class="fs-6 fw-bold form-label mt-3" for="name_custom">
-                                                <span class="required">Jenis Baru (Nama Pembayaran)</span>
+                                                <span class="required">Jenis Baru (Nama Pembayaran Custom)</span>
                                                 <i class="fas fa-exclamation-circle ms-1 fs-7" data-bs-toggle="tooltip"
-                                                    title="Masukkan jenis baru (Wajib)"></i>
+                                                    title="Masukkan nama jenis bayar custom (Wajib)"></i>
                                             </label>
                                             <!--end::Label-->
                                             <!--begin::Input-->
                                             <input type="text" name="name_custom" id="name_custom" class="form-control form-control-solid"
-                                                placeholder="Masukkan Jenis baru"
+                                                placeholder="Masukkan Jenis baru (contoh: Pendaftaran / Seragam)"
                                                 value="{{ old('name_custom') ?? (@$billType && !in_array($billType->name, $paymentNames) ? $billType->name : '') }}" />
                                         </div>
                                     </div>
 
                                     <div class="col-md-6">
+                                        <!-- Step D: Tipe Pembayaran -->
                                         <div class="fv-row mb-7">
                                             <!--begin::Label-->
                                             <label class="fs-6 fw-bold form-label mt-3" for="type">
-                                                <span class="required">Tipe Pembayaran</span>
+                                                <span class="required">D. Tipe Pembayaran</span>
                                                 <i class="fas fa-exclamation-circle ms-1 fs-7" data-bs-toggle="tooltip"
-                                                    title="Pilih Tipe Pembayaran (Wajib)"></i>
+                                                    title="Pilih Tipe Pembayaran Bulanan / Bebas (Wajib)"></i>
                                             </label>
                                             <!--end::Label-->
                                             <!--begin::Input-->
@@ -148,29 +152,31 @@
                                                 <option value="MONTHLY" {{ old('type')=='MONTHLY' ? 'selected' : (@$billType->
                                                     type == 'MONTHLY' ? 'selected' : '') }}>Bulanan</option>
                                                 <option value="OTHER" {{ old('type')=='OTHER' ? 'selected' : (@$billType->
-                                                    type == 'OTHER' ? 'selected' : '') }}>Bebas</option>
+                                                    type == 'OTHER' ? 'selected' : '') }}>Bebas (Insidental / Sekali Bayar)</option>
                                             </select>
                                         </div>
 
+                                        <!-- Step E: Metode Input Nominal -->
                                         <div class="fv-row mb-7">
                                             <!--begin::Label-->
                                             <label class="fs-6 fw-bold form-label mt-3" for="payment_input_type">
-                                                <span class="required">Metode Input Nominal</span>
+                                                <span class="required">E. Metode Input Nominal</span>
                                                 <i class="fas fa-exclamation-circle ms-1 fs-7" data-bs-toggle="tooltip"
-                                                    title="Pilih metode input nominal (Wajib)"></i>
+                                                    title="Pilih metode input nominal Fix / Bebas (Wajib)"></i>
                                             </label>
                                             <!--end::Label-->
                                             <!--begin::Input-->
                                             <select name="payment_input_type" id="payment_input_type" class="form-select form-select-solid" required>
-                                                <option value="FIXED" {{ (old('payment_input_type') ?? @$billType->payment_input_type) == 'FIXED' ? 'selected' : '' }}>Fix Amount</option>
+                                                <option value="FIXED" {{ (old('payment_input_type') ?? @$billType->payment_input_type) == 'FIXED' ? 'selected' : '' }}>Fix Amount (Nominal Tetap)</option>
                                                 <option value="FREE" {{ (old('payment_input_type') ?? @$billType->payment_input_type) == 'FREE' ? 'selected' : '' }}>Nominal Bebas (Cicilan)</option>
                                             </select>
                                         </div>
 
+                                        <!-- Step F: Bank Pembayaran -->
                                         <div class="fv-row mb-7">
                                             <!--begin::Label-->
                                             <label class="fs-6 fw-bold form-label mt-3" for="billTypeBank">
-                                                <span class="required">Bank Pembayaran</span>
+                                                <span class="required">F. Bank Pembayaran</span>
                                                 <i class="fas fa-exclamation-circle ms-1 fs-7" data-bs-toggle="tooltip"
                                                     title="Pilih Bank Pembayaran (Wajib)"></i>
                                             </label>
@@ -193,8 +199,9 @@
                                             <!--end::Input-->
                                         </div>
 
+                                        <!-- Step G: Extra Checked Filter untuk Tipe Pembayaran Tagihan Custom -->
                                         <div class="fv-row mb-7">
-                                            <label class="fs-6 fw-bold form-label">Fitur Filter Tambahan (Tarif)</label>
+                                            <label class="fs-6 fw-bold form-label mt-3">G. Fitur Extra Checked Filter (Tagihan Custom)</label>
                                             <div class="d-flex flex-column gap-3 mt-2">
                                                 <div class="form-check form-check-custom form-check-solid">
                                                     <input class="form-check-input" type="checkbox" name="use_wali_filter" id="use_wali_filter" value="1" 
@@ -208,6 +215,13 @@
                                                         {{ (old('use_gender_filter') ?? @$billType->use_gender_filter) ? 'checked' : '' }} />
                                                     <label class="form-check-label fw-bold text-gray-700 cursor-pointer" for="use_gender_filter">
                                                         Aktifkan Filter Jenis Kelamin (Santri Putra / Santri Putri)
+                                                    </label>
+                                                </div>
+                                                <div class="form-check form-check-custom form-check-solid">
+                                                    <input class="form-check-input" type="checkbox" name="use_custom_filter" id="use_custom_filter" value="1" 
+                                                        {{ (old('use_custom_filter') ?? @$billType->use_custom_filter) ? 'checked' : '' }} />
+                                                    <label class="form-check-label fw-bold text-gray-700 cursor-pointer" for="use_custom_filter">
+                                                        Aktifkan Filter Tagihan Custom (Contoh: Pendaftaran / Seragam / Insidental)
                                                     </label>
                                                 </div>
                                             </div>

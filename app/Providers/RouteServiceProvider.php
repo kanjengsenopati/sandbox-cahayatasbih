@@ -55,5 +55,16 @@ class RouteServiceProvider extends ServiceProvider
                     ], 429);
                 });
         });
+
+        RateLimiter::for('transactions', function (Request $request) {
+            return Limit::perMinute(10)
+                ->by($request->user()?->id ?: $request->ip())
+                ->response(function () {
+                    return response()->json([
+                        'status' => 'error',
+                        'message' => 'Terlalu banyak percobaan transaksi. Silakan tunggu 1 menit lagi.',
+                    ], 429);
+                });
+        });
     }
 }

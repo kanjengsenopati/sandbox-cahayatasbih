@@ -193,9 +193,14 @@ class OrderItemController extends Controller
         $adminId = auth()->id();
 
         // 3. IDEMPOTENCY CHECK (Atomic Lock)
-        // Kunci proses berdasarkan Admin ID selama 10 detik.
-        // Ini mencegah double click pada tombol submit.
-        $lockKey = 'pos_submit_lock_' . $adminId;
+        // Untuk pembayaran SALDO: kunci berdasarkan BARCODE SANTRI (bukan admin),
+        // karena yang perlu dilindungi adalah data saldo santri dari concurrent kasir.
+        // Untuk pembayaran TUNAI: kunci berdasarkan admin ID (mencegah double-submit kasir).
+        if ($request->payment_method === PointOfSaleTransaction::PAYMENT_SALDO && $request->barcode) {
+            $lockKey = 'pos_student_saldo_lock_' . $request->barcode;
+        } else {
+            $lockKey = 'pos_submit_lock_' . $adminId;
+        }
         $lock = Cache::lock($lockKey, 10);
 
         if (!$lock->get()) {
@@ -243,9 +248,13 @@ class OrderItemController extends Controller
                 }
 
                 $balanceBefore = $student->saldo;
-                $student->saldo -= $total;
+                // Gunakan decrement atomic di DB level, bukan baca-ubah-simpan di PHP
+                // Ini aman bahkan jika ada 2 proses bersamaan karena DB mengelola atomicity
+                Student::where('id', $student->id)
+                    ->decrement('saldo', $total);
+                // Re-read nilai saldo terbaru dari DB untuk balance_after yang akurat
+                $student->refresh();
                 $balanceAfter = $student->saldo;
-                $student->save();
 
                 $history = $this->recordSaldoHistory($student, $total, $balanceBefore, $balanceAfter, $outletId);
                 $historyId = $history->id;
@@ -254,13 +263,8 @@ class OrderItemController extends Controller
             $outletModel = \App\Models\Outlet::find($outletId);
             $outletCode = $outletModel ? $outletModel->code : 'CHM';
 
-            // Generate Transaction Code
-            // Optimasi: Count bisa berat jika data jutaan, tapi oke untuk skala menengah.
-            // Alternatif: Gunakan UUID atau Timestamp precision tinggi jika sangat ramai.
-            $countToday = PointOfSaleTransaction::whereDate('paid_at', now())
-                ->where('outlet_id', $outletId)
-                ->count() + 1;
-            $paymentCode = 'POS-' . $outletCode . '-' . now()->format('Ymd') . '-' . str_pad($countToday, 4, '0', STR_PAD_LEFT);
+            // Generate Transaction Code (Collision-free timestamp + random string)
+            $paymentCode = 'POS-' . $outletCode . '-' . now()->format('YmdHis') . '-' . strtoupper(\Illuminate\Support\Str::random(4));
 
             // Save Transaction
             $transaction = PointOfSaleTransaction::create([

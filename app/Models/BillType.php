@@ -21,11 +21,13 @@ class BillType extends Model
         'payment_input_type',
         'use_wali_filter',
         'use_gender_filter',
+        'use_custom_filter',
     ];
 
     protected $casts = [
         'use_wali_filter' => 'boolean',
         'use_gender_filter' => 'boolean',
+        'use_custom_filter' => 'boolean',
     ];
 
     public function billItem()

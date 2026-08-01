@@ -115,6 +115,8 @@ Route::prefix('admin')->middleware(['auth'])->group(function () {
     })->name('admin.audit');
 
     Route::post('sync-master', [App\Http\Controllers\Admin\AuditController::class, 'syncMaster'])->name('admin.sync-master');
+    Route::post('audit/preview-pull-master', [App\Http\Controllers\Admin\AuditController::class, 'previewPullMaster'])->name('admin.audit.preview-pull-master');
+    Route::post('audit/confirm-merge-master', [App\Http\Controllers\Admin\AuditController::class, 'confirmMergeMaster'])->name('admin.audit.confirm-merge-master');
     Route::post('audit/sync-selected-students', [App\Http\Controllers\Admin\AuditController::class, 'syncSelectedStudents'])->name('admin.audit.sync-selected-students');
     Route::post('audit/merge-students', [App\Http\Controllers\Admin\AuditController::class, 'mergeStudents'])->name('admin.merge-students');
 });

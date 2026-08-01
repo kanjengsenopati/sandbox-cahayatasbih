@@ -66,7 +66,10 @@ class AuditController extends Controller
         // Fetch full sync history list
         $syncHistory = \App\Models\DatabaseSyncLog::orderBy('id', 'desc')->take(10)->get();
 
-        return view('admins.admin.audit.sync', compact('syncStatus', 'syncHistory'));
+        $schools = \Illuminate\Support\Facades\DB::connection('mysql_master')->table('schools')->whereNull('deleted_at')->get();
+        $classrooms = \Illuminate\Support\Facades\DB::connection('mysql_master')->table('classrooms')->whereNull('deleted_at')->get();
+
+        return view('admins.admin.audit.sync', compact('syncStatus', 'syncHistory', 'schools', 'classrooms'));
     }
 
     /**
@@ -171,6 +174,46 @@ class AuditController extends Controller
         } catch (\Throwable $e) {
             return redirect()->back()->with('error', 'Gagal menyinkronkan siswa terpilih: ' . $e->getMessage());
         }
+    }
+
+    /**
+     * Preview Data Pull & Diff calculation from Master Database without overwriting local DB.
+     */
+    public function previewPullMaster(Request $request, \App\Services\MasterIngestionBridgeService $bridgeService)
+    {
+        if (!Auth::user()->can('Manage Audit dan Sinkron')) {
+            return response()->json(['error' => 'Akses ditolak.'], 403);
+        }
+
+        $module = $request->input('module', 'students');
+        $limit = (int) $request->input('limit', 50);
+        $schoolId = $request->input('school_id');
+        $classroomId = $request->input('classroom_id');
+
+        $diffAnalysis = $bridgeService->analyzeModuleDiff($module, $limit, $schoolId, $classroomId);
+
+        return response()->json($diffAnalysis);
+    }
+
+    /**
+     * Execute verified merge for selected records from preview.
+     */
+    public function confirmMergeMaster(Request $request, \App\Services\MasterIngestionBridgeService $bridgeService)
+    {
+        if (!Auth::user()->can('Manage Audit dan Sinkron')) {
+            return redirect()->back()->with('error', 'Akses ditolak.');
+        }
+
+        $module = $request->input('module', 'students');
+        $selectedIds = $request->input('selected_ids', []);
+
+        $result = $bridgeService->executeVerifiedMerge($module, $selectedIds);
+
+        if ($result['status'] === 'success') {
+            return redirect()->back()->with('success', $result['message']);
+        }
+
+        return redirect()->back()->with('error', $result['message']);
     }
 
     /**

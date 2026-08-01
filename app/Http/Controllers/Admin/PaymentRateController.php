@@ -364,39 +364,39 @@ class PaymentRateController extends Controller
             $query->where('classroom_id', request()->classroom_id);
         }
 
-        // Calculate aggregates in DB using withSum/withCount
-        $query->withSum(['bills as total' => function ($q) use ($relatedBillTypeIds, $paymentRateItemIds, $dateRange) {
-                $q->whereIn('bill_type_id', $relatedBillTypeIds)
-                    ->where(function ($qq) use ($paymentRateItemIds) {
-                        $qq->whereIn('payment_rate_item_id', $paymentRateItemIds)
-                           ->orWhereNull('payment_rate_item_id');
-                    });
+        // Pre-fetch student bill sums in 1 fast GROUP BY query to avoid DataTables withSum subquery slowdown
+        $studentIds = (clone $query)->pluck('students.id')->toArray();
 
-                if ($dateRange['startYear'] && $dateRange['endYear']) {
-                    ($this->dateRangeFilter($dateRange))($q);
-                }
-            }], 'amount')
-            ->withSum(['bills as total_paid' => function ($q) use ($relatedBillTypeIds, $paymentRateItemIds, $dateRange) {
-                $q->whereIn('bill_type_id', $relatedBillTypeIds)
-                    ->where(function ($qq) use ($paymentRateItemIds) {
-                        $qq->whereIn('payment_rate_item_id', $paymentRateItemIds)
-                           ->orWhereNull('payment_rate_item_id');
-                    });
-
-                if ($dateRange['startYear'] && $dateRange['endYear']) {
-                    ($this->dateRangeFilter($dateRange))($q);
-                }
-            }], 'paid_amount');
+        $billAggregates = DB::table('bills')
+            ->select('student_id', DB::raw('SUM(amount) as total'), DB::raw('SUM(paid_amount) as total_paid'))
+            ->whereIn('student_id', $studentIds)
+            ->whereIn('bill_type_id', $relatedBillTypeIds)
+            ->whereNull('deleted_at')
+            ->groupBy('student_id')
+            ->get()
+            ->keyBy('student_id');
 
         return DataTables::of($query)
             ->addColumn('classroom', fn($student) => $student->classroom->name ?? '-')
-            ->addColumn('total_unpaid', function ($student) {
-                return $this->formatCurrency(($student->total ?? 0) - ($student->total_paid ?? 0));
+            ->addColumn('total_unpaid', function ($student) use ($billAggregates) {
+                $agg = $billAggregates->get($student->id);
+                $total = $agg?->total ?? 0;
+                $totalPaid = $agg?->total_paid ?? 0;
+                return $this->formatCurrency(max(0, $total - $totalPaid));
             })
-            ->addColumn('total_paid', fn($student) => $this->formatCurrency($student->total_paid ?? 0))
-            ->addColumn('total', fn($student) => $this->formatCurrency($student->total ?? 0))
-            ->addColumn('status', function ($student) use ($paymentRate) {
-                return $this->getPaymentStatus($student->total_paid ?? 0, $student->total ?? 0, $student, $paymentRate);
+            ->addColumn('total_paid', function ($student) use ($billAggregates) {
+                $agg = $billAggregates->get($student->id);
+                return $this->formatCurrency($agg?->total_paid ?? 0);
+            })
+            ->addColumn('total', function ($student) use ($billAggregates) {
+                $agg = $billAggregates->get($student->id);
+                return $this->formatCurrency($agg?->total ?? 0);
+            })
+            ->addColumn('status', function ($student) use ($paymentRate, $billAggregates) {
+                $agg = $billAggregates->get($student->id);
+                $totalPaid = $agg?->total_paid ?? 0;
+                $total = $agg?->total ?? 0;
+                return $this->getPaymentStatus($totalPaid, $total, $student, $paymentRate);
             })
             ->addColumn('action', fn($student) => $this->renderActions($student, $paymentRate->bill_type_id))
             ->addColumn('id', fn($student) => $student->id)

@@ -149,10 +149,10 @@ Route::prefix('ct-mobile')->middleware(['web'])->group(function () {
     Route::get('bills/{id}', [App\Http\Controllers\Api\Wali\BillController::class, 'show']);
     Route::get('pos-transactions', [App\Http\Controllers\Api\Wali\PosTransactionController::class, 'index']);
     Route::get('bill-transactions', [App\Http\Controllers\Api\Wali\BillTransactionController::class, 'index']);
-    Route::post('topup', [App\Http\Controllers\Api\Wali\TopupController::class, 'store']);
-    Route::post('checkout', [App\Http\Controllers\Api\Wali\CheckoutController::class, 'store']);
+    Route::post('topup', [App\Http\Controllers\Api\Wali\TopupController::class, 'store'])->middleware('throttle:transactions');
+    Route::post('checkout', [App\Http\Controllers\Api\Wali\CheckoutController::class, 'store'])->middleware('throttle:transactions');
     Route::get('payment/{id}', [App\Http\Controllers\Api\Wali\PaymentController::class, 'show']);
-    Route::post('payment/{id}/upload-proof', [App\Http\Controllers\Api\Wali\PaymentProofController::class, 'store']);
+    Route::post('payment/{id}/upload-proof', [App\Http\Controllers\Api\Wali\PaymentProofController::class, 'store'])->middleware('throttle:transactions');
     Route::post('payment/{id}/cancel-proof', [App\Http\Controllers\Api\Wali\PaymentProofController::class, 'cancel']);
     Route::get('limit', [App\Http\Controllers\Api\Wali\LimitController::class, 'show']);
     Route::put('limit', [App\Http\Controllers\Api\Wali\LimitController::class, 'update']);

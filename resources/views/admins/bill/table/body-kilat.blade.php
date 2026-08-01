@@ -64,19 +64,32 @@
     @php
         $isZarkasi = str_contains(strtoupper($bill->name ?? ''), 'ZARKASI');
         $isAplikasi = str_contains(strtoupper($bill->name ?? ''), 'APLIKASI');
-        $isSyahriah = str_contains(strtoupper($bill->name ?? ''), 'SYAHR');
 
-        if ($isZarkasi || $isAplikasi || $isSyahriah) {
-            $existingBills = \App\Models\Bill::where('student_id', $student->id)
-                ->whereHas('billType', function ($query) use ($isZarkasi, $isAplikasi, $isSyahriah) {
-                    $query->where(function ($q) use ($isZarkasi, $isAplikasi, $isSyahriah) {
-                        if ($isZarkasi) $q->orWhere('name', 'like', '%ZARKASI%');
-                        if ($isAplikasi) $q->orWhere('name', 'like', '%APLIKASI%');
-                        if ($isSyahriah) $q->orWhere('name', 'like', '%SYAHR%');
-                    });
-                })->get();
+        if (isset($allStudentBills) && $allStudentBills) {
+            if ($isZarkasi) {
+                $existingBills = $allStudentBills->filter(fn($b) => ($b->academic_year_id == $bill->academic_year_id || $b->billType?->academic_year_id == $bill->academic_year_id) && str_contains(strtoupper($b->billType?->name ?? ''), 'ZARKASI'));
+            } elseif ($isAplikasi) {
+                $existingBills = $allStudentBills->filter(fn($b) => ($b->academic_year_id == $bill->academic_year_id || $b->billType?->academic_year_id == $bill->academic_year_id) && str_contains(strtoupper($b->billType?->name ?? ''), 'APLIKASI'));
+            } else {
+                $existingBills = $allStudentBills->where('bill_type_id', $bill->id);
+            }
         } else {
-            $existingBills = $bill->bills->where('student_id', $student->id);
+            if ($isZarkasi) {
+                $existingBills = \App\Models\Bill::where('student_id', $student->id)
+                    ->where('academic_year_id', $bill->academic_year_id)
+                    ->whereHas('billType', fn($q) => $q->where('name', 'like', '%ZARKASI%'))
+                    ->get();
+            } elseif ($isAplikasi) {
+                $existingBills = \App\Models\Bill::where('student_id', $student->id)
+                    ->where('academic_year_id', $bill->academic_year_id)
+                    ->whereHas('billType', fn($q) => $q->where('name', 'like', '%APLIKASI%'))
+                    ->get();
+            } else {
+                $existingBills = \App\Models\Bill::where('student_id', $student->id)
+                    ->where('bill_type_id', $bill->id)
+                    ->whereNull('deleted_at')
+                    ->get();
+            }
         }
         
         $zarkasiTargets = [
@@ -139,7 +152,7 @@
                 if ($bDet && $bDet->amount > 0) {
                     $totalBillAmount += $bDet->amount;
                 } else {
-                    $totalBillAmount += \App\Services\TransactionService::resolveStudentRateForBillType($student, $bill, $m, $y);
+                    $totalBillAmount += \App\Services\TransactionService::resolveStudentRateForBillType($student, $bill, $m, $y, $preloadedRates ?? null);
                 }
             }
             $unpaidAmount = max(0, $totalBillAmount - $paidAmount);
@@ -260,7 +273,7 @@
                             $detailPayment = $billDetail ? $billDetail->transactions?->first() : null;
                         } else {
                             $targetYearTemp = $billDetail?->year ?? ($month >= 7 ? ($bill->academicYear?->start_year ?? date('Y')) : ($bill->academicYear?->end_year ?? (date('Y') + 1)));
-                            $amount = ($billDetail && $billDetail->amount > 0) ? $billDetail->amount : \App\Services\TransactionService::resolveStudentRateForBillType($student, $bill, $month, $targetYearTemp);
+                            $amount = ($billDetail && $billDetail->amount > 0) ? $billDetail->amount : \App\Services\TransactionService::resolveStudentRateForBillType($student, $bill, $month, $targetYearTemp, $preloadedRates ?? null);
                             
                             $isPaid = ($billDetail && $billDetail->status == 'PAID') || ($unpaidAmount == 0 && $paidAmount >= ($totalBillAmount ?? 0) && $amount > 0);
                             $remainingAmount = $isPaid ? 0 : ($billDetail ? max(0, $billDetail->amount - $billDetail->paid_amount) : $amount);

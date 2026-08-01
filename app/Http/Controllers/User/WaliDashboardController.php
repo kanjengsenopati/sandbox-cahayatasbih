@@ -213,7 +213,7 @@ class WaliDashboardController extends Controller
         $bills = Bill::whereIn('id', $realBillIds)->get();
         $totalAmount = $bills->sum('amount');
         
-        $uniqueDigits = rand(111, 299);
+        $uniqueDigits = TransactionService::generateUniqueDigitsForAmount($totalAmount);
         $payAmount = $totalAmount + $uniqueDigits;
         
         $student = $this->resolveActiveStudent();

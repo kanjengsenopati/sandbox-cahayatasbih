@@ -78,10 +78,10 @@ class ReportBillController extends Controller
                     ->rawColumns(['action', 'type'])
                     ->make(true);
             } elseif (request()->type == 'total') {
-                // Calculate totals without loading entire collections
-                $total = Bill::whereIn('bill_type_id', $data->pluck('id')->toArray())->sum('amount');
-                $totalPaid = Bill::whereIn('bill_type_id', $data->pluck('id')->toArray())
-                    ->sum('paid_amount');
+                // Calculate totals without loading entire collections (pluck id query run once)
+                $billTypeIds = $data->pluck('id')->toArray();
+                $total = Bill::whereIn('bill_type_id', $billTypeIds)->sum('amount');
+                $totalPaid = Bill::whereIn('bill_type_id', $billTypeIds)->sum('paid_amount');
 
                 return response()->json([
                     'total' => number_format($total, 0, ',', '.'),

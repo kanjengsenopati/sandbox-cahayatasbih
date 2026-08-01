@@ -367,60 +367,65 @@ class PosTransactionController extends Controller
                 ->orderBy('name')->get();
         }
 
-        // Hitung rekap waktu dinamis untuk inisiasi awal
+        // Hitung rekap waktu dalam 1 query CASE WHEN (menggantikan 9 query terpisah)
+        // Inisialisasi range tanggal
         $startDateInput = $request->input('start_date');
-        $endDateInput = $request->input('end_date');
-
+        $endDateInput   = $request->input('end_date');
         if ($startDateInput && $endDateInput) {
             $startDate = Carbon::parse($startDateInput);
-            $endDate = Carbon::parse($endDateInput);
-            $today = Carbon::today();
-            if ($today->between($startDate, $endDate)) {
-                $targetDate = Carbon::now();
-            } else {
-                $targetDate = $endDate->isFuture() ? Carbon::now() : $endDate->endOfDay();
-            }
+            $endDate   = Carbon::parse($endDateInput);
+            $today     = Carbon::today();
+            $targetDate = $today->between($startDate, $endDate)
+                ? Carbon::now()
+                : ($endDate->isFuture() ? Carbon::now() : $endDate->endOfDay());
         } else {
             $targetDate = Carbon::now();
         }
-
-        $targetDateToday = $targetDate->copy()->startOfDay();
-        $targetDateWeekStart = $targetDate->copy()->startOfWeek();
-        $targetDateWeekEnd = $targetDate->copy()->endOfWeek();
+        $targetDateToday      = $targetDate->copy()->startOfDay();
+        $targetDateWeekStart  = $targetDate->copy()->startOfWeek();
+        $targetDateWeekEnd    = $targetDate->copy()->endOfWeek();
         $targetDateMonthStart = $targetDate->copy()->startOfMonth();
-        $targetDateMonthEnd = $targetDate->copy()->endOfMonth();
+        $targetDateMonthEnd   = $targetDate->copy()->endOfMonth();
 
-        $todayQuery = PointOfSaleTransaction::where('status', PointOfSaleTransaction::STATUS_SUCCESS)
-            ->whereDate('created_at', $targetDateToday)
-            ->when($hasOutletRestriction, function ($q) use ($authOutletIds) {
-                $q->whereIn('outlet_id', $authOutletIds);
-            });
-
-        $weekQuery = PointOfSaleTransaction::where('status', PointOfSaleTransaction::STATUS_SUCCESS)
-            ->whereBetween('created_at', [$targetDateWeekStart, $targetDateWeekEnd])
-            ->when($hasOutletRestriction, function ($q) use ($authOutletIds) {
-                $q->whereIn('outlet_id', $authOutletIds);
-            });
-
-        $monthQuery = PointOfSaleTransaction::where('status', PointOfSaleTransaction::STATUS_SUCCESS)
-            ->whereBetween('created_at', [$targetDateMonthStart, $targetDateMonthEnd])
-            ->when($hasOutletRestriction, function ($q) use ($authOutletIds) {
-                $q->whereIn('outlet_id', $authOutletIds);
-            });
+        $rekapRaw = \DB::selectOne("
+            SELECT
+                COALESCE(SUM(CASE WHEN DATE(created_at) = ? THEN pay_amount ELSE 0 END), 0) as today_sales,
+                COALESCE(SUM(CASE WHEN DATE(created_at) = ? THEN profit ELSE 0 END), 0)     as today_profit,
+                COUNT(CASE WHEN DATE(created_at) = ? THEN 1 END)                            as today_count,
+                COALESCE(SUM(CASE WHEN created_at BETWEEN ? AND ? THEN pay_amount ELSE 0 END), 0) as week_sales,
+                COALESCE(SUM(CASE WHEN created_at BETWEEN ? AND ? THEN profit ELSE 0 END), 0)     as week_profit,
+                COUNT(CASE WHEN created_at BETWEEN ? AND ? THEN 1 END)                            as week_count,
+                COALESCE(SUM(CASE WHEN created_at BETWEEN ? AND ? THEN pay_amount ELSE 0 END), 0) as month_sales,
+                COALESCE(SUM(CASE WHEN created_at BETWEEN ? AND ? THEN profit ELSE 0 END), 0)     as month_profit,
+                COUNT(CASE WHEN created_at BETWEEN ? AND ? THEN 1 END)                            as month_count
+            FROM point_of_sale_transactions
+            WHERE status = ?
+            " . ($hasOutletRestriction ? 'AND outlet_id IN (' . implode(',', array_fill(0, count($authOutletIds), '?')) . ')' : ''),
+            array_merge(
+                // today x3
+                [$targetDateToday->format('Y-m-d'), $targetDateToday->format('Y-m-d'), $targetDateToday->format('Y-m-d')],
+                // week x3
+                [$targetDateWeekStart, $targetDateWeekEnd, $targetDateWeekStart, $targetDateWeekEnd, $targetDateWeekStart, $targetDateWeekEnd],
+                // month x3
+                [$targetDateMonthStart, $targetDateMonthEnd, $targetDateMonthStart, $targetDateMonthEnd, $targetDateMonthStart, $targetDateMonthEnd],
+                // status + outlet restriction
+                [PointOfSaleTransaction::STATUS_SUCCESS],
+                $hasOutletRestriction ? $authOutletIds : []
+            )
+        );
 
         $rekapWaktu = [
-            'today_sales' => $todayQuery->sum('pay_amount'),
-            'today_profit' => $todayQuery->sum('profit'),
-            'today_count' => $todayQuery->count(),
-
-            'week_sales' => $weekQuery->sum('pay_amount'),
-            'week_profit' => $weekQuery->sum('profit'),
-            'week_count' => $weekQuery->count(),
-
-            'month_sales' => $monthQuery->sum('pay_amount'),
-            'month_profit' => $monthQuery->sum('profit'),
-            'month_count' => $monthQuery->count(),
+            'today_sales'  => $rekapRaw->today_sales ?? 0,
+            'today_profit' => $rekapRaw->today_profit ?? 0,
+            'today_count'  => $rekapRaw->today_count ?? 0,
+            'week_sales'   => $rekapRaw->week_sales ?? 0,
+            'week_profit'  => $rekapRaw->week_profit ?? 0,
+            'week_count'   => $rekapRaw->week_count ?? 0,
+            'month_sales'  => $rekapRaw->month_sales ?? 0,
+            'month_profit' => $rekapRaw->month_profit ?? 0,
+            'month_count'  => $rekapRaw->month_count ?? 0,
         ];
+
 
         // Rekap Dana Per Outlet (untuk Tab Serah Terima)
         $outletsSummary = [];
@@ -565,26 +570,37 @@ class PosTransactionController extends Controller
     }
 
     /**
-     * Generate monthly chart data (omzet or profit).
+     * Generate monthly chart data (omzet or profit) — optimized: 1 GROUP BY query
+     * menggantikan 12 query berurutan (1 per bulan).
      */
     private function generateMonthlyChartData($year, $column, $outletId = null, $hasOutletRestriction = false, $authOutletIds = [])
     {
-        return collect(range(1, 12))->map(function ($month) use ($year, $column, $outletId, $hasOutletRestriction, $authOutletIds) {
-            return intval(PointOfSaleTransaction::whereYear('created_at', $year)
-                ->whereMonth('created_at', $month)
-                ->where('status', PointOfSaleTransaction::STATUS_SUCCESS)
-                ->when($hasOutletRestriction, function ($q) use ($authOutletIds) {
-                    $q->whereIn('outlet_id', $authOutletIds);
-                })
-                ->when(!$hasOutletRestriction && $outletId, function($q) use ($outletId) {
+        $validColumns = ['pay_amount', 'profit'];
+        if (!in_array($column, $validColumns)) {
+            return array_fill(0, 12, 0);
+        }
+
+        $rows = PointOfSaleTransaction::selectRaw("MONTH(created_at) as month, COALESCE(SUM({$column}), 0) as total")
+            ->whereYear('created_at', $year)
+            ->where('status', PointOfSaleTransaction::STATUS_SUCCESS)
+            ->when($hasOutletRestriction, function ($q) use ($authOutletIds) {
+                $q->whereIn('outlet_id', $authOutletIds);
+            })
+            ->when(!$hasOutletRestriction && $outletId, function ($q) use ($outletId) {
+                $q->where('outlet_id', $outletId);
+            })
+            ->when($hasOutletRestriction && $outletId, function ($q) use ($outletId, $authOutletIds) {
+                if (in_array($outletId, $authOutletIds)) {
                     $q->where('outlet_id', $outletId);
-                })
-                ->when($hasOutletRestriction && $outletId, function($q) use ($outletId, $authOutletIds) {
-                    if (in_array($outletId, $authOutletIds)) {
-                        $q->where('outlet_id', $outletId);
-                    }
-                })
-                ->sum($column));
-        })->toArray();
+                }
+            })
+            ->groupByRaw('MONTH(created_at)')
+            ->get()
+            ->keyBy('month');
+
+        // Map ke array 12 bulan, isi 0 untuk bulan yang tidak ada data
+        return collect(range(1, 12))
+            ->map(fn($month) => intval($rows->get($month)?->total ?? 0))
+            ->toArray();
     }
 }
