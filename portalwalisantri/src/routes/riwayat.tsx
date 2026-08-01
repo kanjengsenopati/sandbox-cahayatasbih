@@ -473,8 +473,8 @@ function TxRow({ tx, open, onToggle }: { tx: Tx; open: boolean; onToggle: () => 
         </div>
         <div className="flex items-center gap-1.5">
           <div className="text-right">
-            <p className={`text-sm font-bold ${isIn ? "text-success" : "text-foreground"}`}>
-              {isIn ? "+" : ""}
+            <p className={`text-sm font-bold ${isIn ? "text-emerald-600" : "text-red-600"}`}>
+              {isIn ? "+" : "-"}
               {fmt(tx.amount)}
             </p>
             <p className="text-[10px] text-muted-foreground">

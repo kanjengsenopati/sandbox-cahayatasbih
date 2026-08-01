@@ -467,7 +467,7 @@ function Dashboard() {
                     <div className="flex items-center gap-2">
                       <span
                         className={`text-sm font-bold tabular-nums whitespace-nowrap ${
-                          isIn ? "text-emerald-600" : "text-foreground"
+                          isIn ? "text-emerald-600" : "text-red-600"
                         }`}
                       >
                         {isIn ? "+" : "-"}
