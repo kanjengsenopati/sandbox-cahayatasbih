@@ -49,10 +49,26 @@ class StudentController extends Controller
                 ->when(request('status'), function ($query) {
                     $query->where('status', request('status'));
                 })
+                ->when(request('search_name'), function ($query) {
+                    $search = strtolower(trim(request('search_name')));
+                    $query->where(function ($q) use ($search) {
+                        $q->whereRaw('LOWER(name) LIKE ?', ['%' . $search . '%'])
+                          ->orWhereRaw('LOWER(nis) LIKE ?', ['%' . $search . '%'])
+                          ->orWhereRaw('LOWER(nisn) LIKE ?', ['%' . $search . '%']);
+                    });
+                })
                 ->latest();
             $activeAy = \App\Models\AcademicYear::where('is_active', true)->first();
 
             return DataTables::of($data)
+                ->filterColumn('student', function($query, $keyword) {
+                    $search = strtolower(trim($keyword));
+                    $query->where(function($q) use ($search) {
+                        $q->whereRaw('LOWER(name) LIKE ?', ['%' . $search . '%'])
+                          ->orWhereRaw('LOWER(nis) LIKE ?', ['%' . $search . '%'])
+                          ->orWhereRaw('LOWER(nisn) LIKE ?', ['%' . $search . '%']);
+                    });
+                })
                 ->editColumn('saldo', function ($data) {
                     return '<span class="badge bg-success">Rp ' . number_format($data->saldo, 0, ',', '.') . '</span>';
                 })

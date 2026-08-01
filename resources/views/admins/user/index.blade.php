@@ -140,17 +140,26 @@
                                 <form action="#" id="form-filter" method="get">
                                     <input type="text" hidden id="type" name="type" required>
                                     <div class="d-flex flex-wrap gap-4 align-items-end">
-                                        <div>
-                                            <label class="form-label">Status</label>
-                                            <select name="status" class="form-select form-select-sm" id="filter_status">
-                                                <option value="">Semua</option>
-                                                <option value="ACTIVE">Aktif</option>
-                                                <option value="INACTIVE">Tidak Aktif</option>
-                                                <option value="VERIFICATION">Butuh Verifikasi</option>
-                                            </select>
-                                        </div>
-                                    </div>
-                                </form>
+                                         <div>
+                                             <label class="form-label">Status</label>
+                                             <select name="status" class="form-select form-select-sm" id="filter_status">
+                                                 <option value="">Semua</option>
+                                                 <option value="ACTIVE">Aktif</option>
+                                                 <option value="INACTIVE">Tidak Aktif</option>
+                                                 <option value="VERIFICATION">Butuh Verifikasi</option>
+                                             </select>
+                                         </div>
+                                         <div>
+                                             <label class="form-label">Nama / No. HP</label>
+                                             <div class="d-flex align-items-center position-relative">
+                                                 <span class="svg-icon svg-icon-1 position-absolute ms-3">
+                                                     <i class="fas fa-search text-gray-400"></i>
+                                                 </span>
+                                                 <input type="text" id="filter_name" name="search_name" class="form-control form-control-sm form-control-solid ps-9" placeholder="Cari Nama / No. HP..." style="width: 220px;" />
+                                             </div>
+                                         </div>
+                                     </div>
+                                 </form>
                             </div>
 
                             <!-- Action Buttons -->
@@ -351,6 +360,7 @@
                 data: function(d) {
                     d.status = $('#filter_status').val();
                     d.type = 'table';
+                    d.search_name = $('#filter_name').val();
                 }
             },
             language: {
@@ -454,6 +464,14 @@
 
         $('#filter_status').on('change', function() {
             table.ajax.reload();
+        });
+
+        var filterUserNameTimer;
+        $('#filter_name').on('keyup input', function() {
+            clearTimeout(filterUserNameTimer);
+            filterUserNameTimer = setTimeout(function() {
+                table.ajax.reload();
+            }, 300);
         });
 
         // Select / Deselect All User Checkboxes

@@ -74,6 +74,15 @@
                                 <option value="TRANSFERRED">Pindah</option>
                             </select>
                         </div>
+                        <div class="mb-3">
+                            <label for="filter_name" class="form-label fw-bold">Cari Nama / NIS</label>
+                            <div class="d-flex align-items-center position-relative">
+                                <span class="svg-icon svg-icon-1 position-absolute ms-3">
+                                    <i class="fas fa-search text-gray-400"></i>
+                                </span>
+                                <input type="text" id="filter_name" class="form-control form-control-solid ps-9" placeholder="Cari Nama / NIS..." style="width: 200px;" />
+                            </div>
+                        </div>
                     </div>
                     <div class="d-flex flex-column flex-sm-row align-items-end">
                         {{-- <div class="me-sm-3 mb-3 mb-sm-0"> --}}
@@ -195,6 +204,7 @@
                     d.school_id = $('#filter_school').val();
                     d.classroom_id = $('#filter_class').val();
                     d.status = $('#filter_status').val();
+                    d.search_name = $('#filter_name').val();
                 }
             },
             language: {
@@ -288,6 +298,14 @@
         // Reload DataTable on filter change
         $('#filter_school, #filter_class, #filter_status').on('change', function() {
             table.ajax.reload();
+        });
+
+        var filterStudentNameTimer;
+        $('#filter_name').on('keyup input', function() {
+            clearTimeout(filterStudentNameTimer);
+            filterStudentNameTimer = setTimeout(function() {
+                table.ajax.reload();
+            }, 300);
         });
 
         // Select / Deselect All Checkboxes

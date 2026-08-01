@@ -53,8 +53,23 @@ class UserController extends Controller
             return $query->where('status', 'VERIFICATION');
         })->when(request()->query('jamaah_status'), function ($query) {
             return $query->where('jamaah_status', request()->query('jamaah_status'));
+        })->when(request()->filled('search_name'), function ($query) {
+            $search = strtolower(trim(request()->query('search_name')));
+            return $query->where(function ($q) use ($search) {
+                $q->whereRaw('LOWER(name) LIKE ?', ['%' . $search . '%'])
+                  ->orWhereRaw('LOWER(phone) LIKE ?', ['%' . $search . '%'])
+                  ->orWhereRaw('LOWER(email) LIKE ?', ['%' . $search . '%']);
+            });
         })->latest();
         return DataTables::of($data)
+            ->filterColumn('name', function($query, $keyword) {
+                $search = strtolower(trim($keyword));
+                $query->where(function ($q) use ($search) {
+                    $q->whereRaw('LOWER(name) LIKE ?', ['%' . $search . '%'])
+                      ->orWhereRaw('LOWER(phone) LIKE ?', ['%' . $search . '%'])
+                      ->orWhereRaw('LOWER(email) LIKE ?', ['%' . $search . '%']);
+                });
+            })
             ->addColumn('name', function ($data) {
                 return $this->generateUserCard($data);
             })

@@ -44,6 +44,14 @@ class ReportStudentController extends Controller
                             $billQuery->where('academic_year_id', request()->academic_year_id);
                         });
                     });
+                })
+                ->when(request()->filled('student_name'), function ($q) {
+                    $search = strtolower(trim(request()->student_name));
+                    $q->where(function ($sub) use ($search) {
+                        $sub->whereRaw('LOWER(students.name) LIKE ?', ['%' . $search . '%'])
+                            ->orWhereRaw('LOWER(students.nis) LIKE ?', ['%' . $search . '%'])
+                            ->orWhereRaw('LOWER(students.nisn) LIKE ?', ['%' . $search . '%']);
+                    });
                 });
 
             $tab = request()->input('tab', 'total');

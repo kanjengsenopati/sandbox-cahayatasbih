@@ -245,6 +245,15 @@
                                              <option value="">Pilih Kelas</option>
                                          </select>
                                      </div>
+                                     <div>
+                                         <label class="form-label">Nama / NIS</label>
+                                         <div class="d-flex align-items-center position-relative">
+                                             <span class="svg-icon svg-icon-1 position-absolute ms-3">
+                                                 <i class="fas fa-search text-gray-400"></i>
+                                             </span>
+                                             <input type="text" id="filter_student_name" name="student_name" class="form-control form-control-solid ps-9" placeholder="Cari Nama / NIS..." style="width: 200px;" />
+                                         </div>
+                                     </div>
                                      <!--begin::Export dropdown-->
                                      <button type="button" class="btn btn-sm btn-primary" data-kt-menu-trigger="click"
                                          data-kt-menu-placement="bottom-end">
@@ -398,6 +407,7 @@
     d.school_id = $('#filter_school_id').val();
     d.classroom_id = $('#filter_classroom_id').val();
     d.academic_year_id = $('#filter_academic_year_id').val();
+    d.student_name = $('#filter_student_name').val();
     d.tab = currentTab;
     }
     },
@@ -454,6 +464,14 @@
     // onchange school_id, classroom_id and academic_year_id reload datatable
     $('#filter_school_id, #filter_classroom_id, #filter_academic_year_id').on('change', function() {
         searchData();
+    });
+
+    var reportStudentNameTimer;
+    $('#filter_student_name').on('keyup input', function() {
+        clearTimeout(reportStudentNameTimer);
+        reportStudentNameTimer = setTimeout(function() {
+            searchData();
+        }, 300);
     });
 
     // Export Report
