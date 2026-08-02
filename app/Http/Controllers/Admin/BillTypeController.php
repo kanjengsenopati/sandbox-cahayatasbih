@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Models\Bank;
+use App\Models\BillItem;
 use App\Models\BillType;
 use App\Models\PaymentRate;
 use App\Models\AcademicYear;
@@ -33,6 +34,9 @@ class BillTypeController extends Controller
                 })
                 ->when(request()->type, function ($query) {
                     $query->where('type', request()->type);
+                })
+                ->when(request()->bill_item_id, function ($query) {
+                    $query->where('bill_item_id', request()->bill_item_id);
                 })
                 ->latest();
 
@@ -75,7 +79,8 @@ class BillTypeController extends Controller
                 ->make(true);
         }
         $academicYears = AcademicYear::orderBy('name', 'DESC')->get();
-        return view('admins.bill-type.index', compact('academicYears'));
+        $billItems = BillItem::orderBy('name', 'ASC')->get();
+        return view('admins.bill-type.index', compact('academicYears', 'billItems'));
     }
 
     /**

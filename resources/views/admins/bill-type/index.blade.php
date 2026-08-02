@@ -64,6 +64,15 @@
                                 <option value="OTHER">Bebas</option>
                             </select>
                         </div>
+                        <div class="col-md-4">
+                            <label class="form-label fs-6 fw-bold">Pos Bayar (UPT):</label>
+                            <select class="form-select form-select-solid" id="filter_bill_item" data-placeholder="Pilih Pos Bayar">
+                                <option value="">Semua Pos Bayar</option>
+                                @foreach($billItems as $item)
+                                <option value="{{ $item->id }}">{{ $item->name }}</option>
+                                @endforeach
+                            </select>
+                        </div>
                     </div>
                     <!--end::Filters-->
 
@@ -107,6 +116,7 @@
                 data: function(d) {
                     d.academic_year_id = $('#filter_academic_year').val();
                     d.type = $('#filter_type').val();
+                    d.bill_item_id = $('#filter_bill_item').val();
                 }
             },
             language: {
@@ -169,7 +179,7 @@
         });
 
         // Filter event listeners
-        $('#filter_academic_year, #filter_type').on('change', function() {
+        $('#filter_academic_year, #filter_type, #filter_bill_item').on('change', function() {
             table.draw();
         });
 
@@ -177,6 +187,7 @@
         $('#btn-reset').on('click', function() {
             $('#filter_academic_year').val('').trigger('change');
             $('#filter_type').val('').trigger('change');
+            $('#filter_bill_item').val('').trigger('change');
         });
     });
 </script>
