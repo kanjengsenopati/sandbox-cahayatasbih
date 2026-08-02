@@ -51,8 +51,16 @@
                 <!--begin::Card header-->
                 <div class="card-header d-flex align-items-center justify-content-between border-0 pt-6">
                     <!--begin::Card title-->
-                    <div class="card-title">
-                        <h3 class="text-dark">Permission</h3>
+                    <div class="card-title d-flex align-items-center gap-3">
+                        <h3 class="text-dark m-0">Permission</h3>
+                        <!--begin::Search-->
+                        <div class="d-flex align-items-center position-relative my-1 ms-4">
+                            <span class="svg-icon svg-icon-1 position-absolute ms-4">
+                                <i class="fas fa-search text-gray-400"></i>
+                            </span>
+                            <input type="text" id="search-permission" class="form-control form-control-solid w-250px ps-12 fs-7" placeholder="Cari Permission..." />
+                        </div>
+                        <!--end::Search-->
                     </div>
                     <div class="">
                         <a type="a" class="btn btn-sm btn-primary" id="btn_add_permission"
@@ -126,6 +134,9 @@
                 ]
             });
 
+            $('#search-permission').on('keyup input', function() {
+                table.search(this.value).draw();
+            });
         })
 </script>
 @endpush

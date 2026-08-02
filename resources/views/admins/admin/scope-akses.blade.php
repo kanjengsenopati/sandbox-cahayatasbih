@@ -43,8 +43,16 @@
                 <!--begin::Card header-->
                 <div class="card-header d-flex align-items-center justify-content-between border-0 pt-6">
                     <!--begin::Card title-->
-                    <div class="card-title">
-                        <h3 class="text-dark">Scope Akses Aplikasi</h3>
+                    <div class="card-title d-flex align-items-center gap-3">
+                        <h3 class="text-dark m-0">Scope Akses Aplikasi</h3>
+                        <!--begin::Search-->
+                        <div class="d-flex align-items-center position-relative my-1 ms-4">
+                            <span class="svg-icon svg-icon-1 position-absolute ms-4">
+                                <i class="fas fa-search text-gray-400"></i>
+                            </span>
+                            <input type="text" id="search-scope-akses" class="form-control form-control-solid w-250px ps-12 fs-7" placeholder="Cari Scope / Pengguna..." />
+                        </div>
+                        <!--end::Search-->
                     </div>
                 </div>
                 <!--end::Card header-->
@@ -52,7 +60,7 @@
                 <div class="card-body pt-0">
                     <!--begin::Table-->
                     <div class="table-responsive">
-                        <table class="table table-striped border rounded gy-5 gs-7">
+                        <table id="table-scope-akses" class="table table-striped border rounded gy-5 gs-7">
                             <thead>
                                 <tr class="fw-bolder fs-6 text-gray-800 px-7">
                                     <th width="5%">No</th>
@@ -142,6 +150,13 @@
 @push('js')
 <script>
     $(document).ready(function() {
+        $('#search-scope-akses').on('keyup input', function() {
+            var value = $(this).val().toLowerCase();
+            $('#table-scope-akses tbody tr').filter(function() {
+                $(this).toggle($(this).text().toLowerCase().indexOf(value) > -1);
+            });
+        });
+
         $('.btn-assign').on('click', function() {
             const scopeId = $(this).data('id');
             const scopeName = $(this).data('name');
