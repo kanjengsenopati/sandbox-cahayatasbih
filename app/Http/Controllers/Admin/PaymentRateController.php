@@ -690,8 +690,8 @@ class PaymentRateController extends Controller
                     $queryDeleteBills->whereIn('student_id', $targetsToRemove);
                 }
                 
-                // Execute Delete
-                $queryDeleteBills->delete();
+                // Execute Delete (Gunakan forceDelete untuk tagihan UNPAID agar tidak memicu bentrok unique index di MySQL)
+                $queryDeleteBills->forceDelete();
 
                 // C. Detach Pivot Relations
                 if ($paymentRate->type == PaymentRate::TYPE_REGULAR) {
@@ -851,7 +851,7 @@ class PaymentRateController extends Controller
                         // CASE C: AMOUNT IS 0 -> DELETE UNPAID BILLS
                          Bill::where('payment_rate_item_id', $item->id)
                             ->where('status', Bill::STATUS_UNPAID)
-                            ->delete();
+                            ->forceDelete();
                     }
                 }
                 
@@ -863,22 +863,17 @@ class PaymentRateController extends Controller
                 $cleanPrice = (int) str_replace('.', '', $request->price ?? 0);
                 
                 // Usually Free Type has specific selected months in $request->months
-                if ($request->has('months')) {
-                    foreach ($request->months as $month) {
-                        $year = $request->year ?? date('Y');
-
-                         // Get or Create Item
-                        $item = $items->get($month);
+                if (!empty($request->months)) {
+                    foreach ($request->months as $monthNum) {
+                        $item = $paymentRate->paymentRateItems()->where('month', $monthNum)->first();
                         
                         if (!$item) {
                              $item = $paymentRate->paymentRateItems()->create([
-                                'month'  => $month,
-                                'year'   => $year,
+                                'month'  => $monthNum,
                                 'amount' => $cleanPrice,
                             ]);
                         } else {
                             $item->update([
-                                'year'   => $year,
                                 'amount' => $cleanPrice,
                             ]);
                         }
@@ -888,12 +883,11 @@ class PaymentRateController extends Controller
                             // Update Existing
                              Bill::where('payment_rate_item_id', $item->id)
                                 ->where('status', Bill::STATUS_UNPAID)
-                                ->update(['amount' => $cleanPrice, 'year' => $year]);
+                                ->update(['amount' => $cleanPrice]);
                             
                             // Create Missing
                             $existingBillStudentIds = Bill::where('bill_type_id', $billType->id)
-                                ->where('month', $month)
-                                ->where('year', $year)
+                                ->where('payment_rate_item_id', $item->id)
                                 ->pluck('student_id')
                                 ->toArray();
                             $studentsToCreate = $students->whereNotIn('id', $existingBillStudentIds);
@@ -906,8 +900,7 @@ class PaymentRateController extends Controller
                                     'classroom_id'       => $student->classroom_id,
                                     'student_id'         => $student->id,
                                     'academic_year_id'   => $billType->academic_year_id,
-                                    'month'              => $month,
-                                    'year'               => $year,
+                                    'month'              => $monthNum,
                                     'amount'             => $cleanPrice,
                                     'status'             => Bill::STATUS_UNPAID,
                                     'payment_rate_item_id' => $item->id,
@@ -921,7 +914,7 @@ class PaymentRateController extends Controller
                                 }
                             }
                         } else {
-                             Bill::where('payment_rate_item_id', $item->id)->where('status', Bill::STATUS_UNPAID)->delete();
+                             Bill::where('payment_rate_item_id', $item->id)->where('status', Bill::STATUS_UNPAID)->forceDelete();
                         }
                     }
                 }
@@ -974,7 +967,7 @@ class PaymentRateController extends Controller
                 $query->select('id')
                     ->from('payment_rate_items') // Nama tabel di database (biasanya plural)
                     ->where('payment_rate_id', $id);
-            })->delete();
+            })->forceDelete();
 
             // 4. Hapus Item & Classrooms & Students
             $paymentRate->paymentRateItems()->delete();
@@ -1182,7 +1175,7 @@ class PaymentRateController extends Controller
                 ], 400);
             }
 
-            $bill->delete();
+            $bill->forceDelete();
 
             return response()->json([
                 'success' => true,
@@ -1226,8 +1219,8 @@ class PaymentRateController extends Controller
                 ], 400);
             }
 
-            // Delete bills
-            Bill::whereIn('id', $billIds)->delete();
+            // Delete bills (forceDelete unpaid bills to prevent unique active record collisions)
+            Bill::whereIn('id', $billIds)->where('status', Bill::STATUS_UNPAID)->forceDelete();
 
             DB::commit();
 
