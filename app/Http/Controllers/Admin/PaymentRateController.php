@@ -100,30 +100,37 @@ class PaymentRateController extends Controller
                     }
                 }
 
-                $existingClassroomIds = DB::table('payment_rate_classrooms')
-                    ->join('payment_rates', 'payment_rate_classrooms.payment_rate_id', '=', 'payment_rates.id')
-                    ->join('bill_types', 'payment_rates.bill_type_id', '=', 'bill_types.id')
-                    ->where(function($q) use ($billType) {
-                        $q->where('payment_rates.bill_type_id', $billType->id)
-                          ->orWhere(function($sub) use ($billType) {
-                              $sub->where('bill_types.name', $billType->name)
-                                  ->where('bill_types.academic_year_id', $billType->academic_year_id);
+                $reqJamaah = $request->jamaah_status;
+                $reqGender = $request->gender;
+
+                $existingRates = PaymentRate::where(function($q) use ($billType) {
+                        $q->where('bill_type_id', $billType->id)
+                          ->orWhereHas('billType', function($sub) use ($billType) {
+                              $sub->where('name', $billType->name)
+                                  ->where('academic_year_id', $billType->academic_year_id);
                           });
                     })
-                    ->where('payment_rates.type', PaymentRate::TYPE_REGULAR)
-                    ->whereNull('payment_rates.deleted_at')
-                    ->whereNull('payment_rate_classrooms.deleted_at')
-                    ->pluck('payment_rate_classrooms.classroom_id')
-                    ->unique()
-                    ->toArray();
+                    ->where('type', PaymentRate::TYPE_REGULAR)
+                    ->with('paymentRateClassrooms')
+                    ->get();
 
-                $duplicatedIds = array_intersect($request->classrooms, $existingClassroomIds);
+                $conflictingClassroomIds = [];
+                foreach ($existingRates as $exRate) {
+                    if ($this->isOverlappingFilter($exRate->jamaah_status, $exRate->gender, $reqJamaah, $reqGender)) {
+                        foreach ($exRate->paymentRateClassrooms as $prc) {
+                            $conflictingClassroomIds[] = $prc->classroom_id;
+                        }
+                    }
+                }
+                $conflictingClassroomIds = array_unique($conflictingClassroomIds);
+
+                $duplicatedIds = array_intersect($request->classrooms, $conflictingClassroomIds);
                 if (!empty($duplicatedIds)) {
                     $classNames = Classroom::whereIn('id', $duplicatedIds)->pluck('name')->implode(', ');
                     DB::rollBack();
                     $lock->release();
                     return redirect()->back()
-                        ->with('error', "Gagal: Kelas ({$classNames}) sudah memiliki tarif untuk tagihan ini.")
+                        ->with('error', "Gagal: Kelas ({$classNames}) sudah memiliki tarif dengan kriteria status/gender yang tumpang tindih.")
                         ->withInput();
                 }
             }
@@ -988,40 +995,68 @@ class PaymentRateController extends Controller
         }
     }
 
+    private function isOverlappingFilter($status1, $gender1, $status2, $gender2): bool
+    {
+        $parseArray = function ($val) {
+            if (empty($val)) return [];
+            if (is_array($val)) return array_filter(array_map('trim', $val));
+            return array_filter(array_map('trim', explode(',', (string)$val)));
+        };
+
+        $s1 = $parseArray($status1);
+        $s2 = $parseArray($status2);
+        if (empty($s1)) $s1 = ['JAMAAH', 'NON_JAMAAH', 'MUKIMIN'];
+        if (empty($s2)) $s2 = ['JAMAAH', 'NON_JAMAAH', 'MUKIMIN'];
+
+        $g1 = $parseArray($gender1);
+        $g2 = $parseArray($gender2);
+        if (empty($g1)) $g1 = ['L', 'P'];
+        if (empty($g2)) $g2 = ['L', 'P'];
+
+        $jamaahOverlap = !empty(array_intersect($s1, $s2));
+        $genderOverlap = !empty(array_intersect($g1, $g2));
+
+        return $jamaahOverlap && $genderOverlap;
+    }
+
     public function getClassroom(Request $request)
     {
         $school = School::findOrFail($request->school_id);
         $billTypeId = $request->bill_type_id;
+        $reqJamaah = $request->jamaah_status;
+        $reqGender = $request->gender;
 
-        $existingClassroomIds = [];
+        $conflictingClassroomIds = [];
         if ($billTypeId) {
             $billType = BillType::find($billTypeId);
             if ($billType) {
-                $existingClassroomIds = DB::table('payment_rate_classrooms')
-                    ->join('payment_rates', 'payment_rate_classrooms.payment_rate_id', '=', 'payment_rates.id')
-                    ->join('bill_types', 'payment_rates.bill_type_id', '=', 'bill_types.id')
-                    ->where(function($q) use ($billType) {
-                        $q->where('payment_rates.bill_type_id', $billType->id)
-                          ->orWhere(function($sub) use ($billType) {
-                              $sub->where('bill_types.name', $billType->name)
-                                  ->where('bill_types.academic_year_id', $billType->academic_year_id);
+                $existingRates = PaymentRate::where(function($q) use ($billType) {
+                        $q->where('bill_type_id', $billType->id)
+                          ->orWhereHas('billType', function($sub) use ($billType) {
+                              $sub->where('name', $billType->name)
+                                  ->where('academic_year_id', $billType->academic_year_id);
                           });
                     })
-                    ->where('payment_rates.type', PaymentRate::TYPE_REGULAR)
-                    ->whereNull('payment_rates.deleted_at')
-                    ->whereNull('payment_rate_classrooms.deleted_at')
-                    ->pluck('payment_rate_classrooms.classroom_id')
-                    ->unique()
-                    ->values()
-                    ->toArray();
+                    ->where('type', PaymentRate::TYPE_REGULAR)
+                    ->with('paymentRateClassrooms')
+                    ->get();
+
+                foreach ($existingRates as $exRate) {
+                    if ($this->isOverlappingFilter($exRate->jamaah_status, $exRate->gender, $reqJamaah, $reqGender)) {
+                        foreach ($exRate->paymentRateClassrooms as $prc) {
+                            $conflictingClassroomIds[] = $prc->classroom_id;
+                        }
+                    }
+                }
             }
         }
+        $conflictingClassroomIds = array_unique($conflictingClassroomIds);
 
         $classrooms = Classroom::where('school_id', $school->id)
             ->orderByRaw("CAST(name AS UNSIGNED) ASC, name ASC")
             ->get()
-            ->map(function($classroom) use ($existingClassroomIds) {
-                $classroom->is_already_created = in_array($classroom->id, $existingClassroomIds);
+            ->map(function($classroom) use ($conflictingClassroomIds) {
+                $classroom->is_already_created = in_array($classroom->id, $conflictingClassroomIds);
                 return $classroom;
             });
 

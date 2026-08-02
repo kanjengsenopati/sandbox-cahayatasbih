@@ -15,6 +15,27 @@ class PaymentRateRequest extends FormRequest
     }
 
     /**
+     * Prepare the data for validation.
+     */
+    protected function prepareForValidation(): void
+    {
+        if ($this->has('price')) {
+            $this->merge([
+                'price' => (int) preg_replace('/[^0-9]/', '', (string) $this->price),
+            ]);
+        }
+
+        // Clean monthly inputs if present
+        for ($i = 1; $i <= 12; $i++) {
+            if ($this->has("bulan_$i")) {
+                $this->merge([
+                    "bulan_$i" => (int) preg_replace('/[^0-9]/', '', (string) $this->{"bulan_$i"}),
+                ]);
+            }
+        }
+    }
+
+    /**
      * Get the validation rules that apply to the request.
      *
      * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
