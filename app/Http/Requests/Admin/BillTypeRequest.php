@@ -38,9 +38,12 @@ class BillTypeRequest extends FormRequest
      */
     protected function prepareForValidation()
     {
-        $name = $this->name_select === 'Lainnya' ? $this->name_custom : $this->name_select;
+        $name = $this->name_select === 'Lainnya' 
+            ? $this->name_custom 
+            : ($this->name_select ?: $this->name);
+
         $this->merge([
-            'name' => \Illuminate\Support\Str::upper($name),
+            'name' => !empty($name) ? \Illuminate\Support\Str::upper($name) : null,
             'use_wali_filter' => $this->boolean('use_wali_filter'),
             'use_gender_filter' => $this->boolean('use_gender_filter'),
             'use_custom_filter' => $this->boolean('use_custom_filter'),

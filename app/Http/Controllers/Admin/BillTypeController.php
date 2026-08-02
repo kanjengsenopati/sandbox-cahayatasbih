@@ -112,16 +112,39 @@ class BillTypeController extends Controller
 
         try {
             $validated = $request->validated();
+            $name = $validated['name'] ?? null;
 
-            $existing = BillType::where('name', $validated['name'])
+            if (empty($name)) {
+                DB::rollBack();
+                return redirect()->back()->with('error', 'Nama jenis bayar wajib diisi.');
+            }
+
+            // Pengecekan eksistensi termasuk data yang telah dihapus (withTrashed)
+            $existing = BillType::withTrashed()
+                ->where('name', $name)
                 ->where('academic_year_id', $validated['academic_year_id'] ?? null)
                 ->when(!empty($validated['bill_item_id']), function($q) use ($validated) {
                     $q->where('bill_item_id', $validated['bill_item_id']);
                 })
-                ->whereNull('deleted_at')
                 ->first();
 
             if ($existing) {
+                if ($existing->trashed()) {
+                    // Pulihkan record terhapus dan perbarui nilainya
+                    $existing->restore();
+                    $existing->update($validated);
+
+                    if ($request->has('bank_ids')) {
+                        $existing->billTypeBank()->forceDelete();
+                        foreach ($request->bank_ids as $bankId) {
+                            $existing->billTypeBank()->create(['bank_id' => $bankId]);
+                        }
+                    }
+
+                    DB::commit();
+                    return redirect()->route('bill-type.show', $existing->id)->with('success', 'Jenis bayar berhasil dipulihkan dan diarahkan ke halaman tarif pembayaran.');
+                }
+
                 DB::rollBack();
                 return redirect()->route('bill-type.show', $existing->id)->with('info', 'Jenis bayar ini sudah ada. Anda diarahkan ke halaman tarif pembayaran.');
             }
@@ -136,8 +159,8 @@ class BillTypeController extends Controller
             // Commit the transaction
             DB::commit();
 
-            return redirect()->route('bill-type.index')->with('success', 'Data berhasil ditambahkan');
-        } catch (\Exception $e) {
+            return redirect()->route('bill-type.show', $billType->id)->with('success', 'Data jenis bayar berhasil ditambahkan.');
+        } catch (\Throwable $e) {
             // Rollback the transaction
             DB::rollBack();
 
@@ -147,7 +170,7 @@ class BillTypeController extends Controller
                 'exception' => $e,
             ]);
 
-            return redirect()->route('bill-type.index')->with('error', 'Terjadi kesalahan saat menambahkan data');
+            return redirect()->route('bill-type.index')->with('error', 'Terjadi kesalahan saat menambahkan data: ' . $e->getMessage());
         }
     }
 
