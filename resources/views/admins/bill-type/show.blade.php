@@ -157,7 +157,8 @@
                                         <th style="width: 3%"></th>
                                         <th class="ps-4 min-w-50px">No</th>
                                         <th class="min-w-150px">Sekolah</th>
-                                        <th class="min-w-200px">Kelas</th>
+                                        <th class="min-w-180px">Kelas</th>
+                                        <th class="min-w-150px">Status Wali Santri</th>
                                         <th class="min-w-125px">Total Tagihan</th>
                                         <th class="text-center min-w-100px rounded-end">Aksi</th>
                                     </tr>
@@ -222,8 +223,10 @@
                                                     {{ $rate->gender == 'L' ? 'Putra' : 'Putri' }}
                                                 </span>
                                             @endif
+                                        </td>
+                                        <td>
                                             @if($rate->jamaah_status)
-                                                <span class="badge badge-light-info fw-bolder m-1">
+                                                <span class="badge fw-bolder px-3 py-2" style="background-color: #f3e8ff; color: #7e22ce; border: 1px solid #e9d5ff;">
                                                     {{ collect(explode(',', $rate->jamaah_status))->map(function($status) {
                                                         return match($status) {
                                                             'JAMAAH' => 'Jamaah',
@@ -233,6 +236,8 @@
                                                         };
                                                     })->implode(', ') }}
                                                 </span>
+                                            @else
+                                                <span class="badge badge-light-secondary fw-bold">Semua Status</span>
                                             @endif
                                         </td>
                                         <td>
@@ -258,7 +263,7 @@
                                     </tr>
                                     {{-- Expandable Detail Row --}}
                                     <tr class="detail-row" id="detail-{{ $rate->id }}" style="display: none;">
-                                        <td colspan="6" class="p-0 border-0">
+                                        <td colspan="7" class="p-0 border-0">
                                             <div class="bg-light-primary rounded mx-4 my-3 p-4" style="background-color: #f1f3f9;">
                                                 <div class="d-flex justify-content-between align-items-center mb-3">
                                                     <h6 class="mb-0 text-primary fw-bold">
@@ -303,7 +308,8 @@
                                         <th style="width: 3%"></th>
                                         <th class="ps-4 min-w-50px">No</th>
                                         <th class="min-w-150px">Sekolah</th>
-                                        <th class="min-w-200px">Nama Siswa</th>
+                                        <th class="min-w-180px">Nama Siswa</th>
+                                        <th class="min-w-150px">Status Wali Santri</th>
                                         <th class="min-w-125px">Total Tagihan</th>
                                         <th class="text-center min-w-100px rounded-end">Aksi</th>
                                     </tr>
@@ -337,26 +343,28 @@
                                                     <span class="text-muted fs-8">({{ $prStudent->student?->nis ?? '-' }})</span>
                                                 </div>
                                             @endforeach
-                                            @if($rate->gender || $rate->jamaah_status)
+                                            @if($rate->gender)
                                                 <div class="mt-2">
-                                                    @if($rate->gender)
-                                                        <span class="badge badge-light-primary fw-bolder me-1">
-                                                            {{ $rate->gender == 'L' ? 'Putra' : 'Putri' }}
-                                                        </span>
-                                                    @endif
-                                                    @if($rate->jamaah_status)
-                                                        <span class="badge badge-light-info fw-bolder">
-                                                            {{ collect(explode(',', $rate->jamaah_status))->map(function($status) {
-                                                                return match($status) {
-                                                                    'JAMAAH' => 'Jamaah',
-                                                                    'NON_JAMAAH' => 'Non Jamaah',
-                                                                    'MUKIMIN' => 'Mukimin',
-                                                                    default => $status
-                                                                };
-                                                            })->implode(', ') }}
-                                                        </span>
-                                                    @endif
+                                                    <span class="badge badge-light-primary fw-bolder me-1">
+                                                        {{ $rate->gender == 'L' ? 'Putra' : 'Putri' }}
+                                                    </span>
                                                 </div>
+                                            @endif
+                                        </td>
+                                        <td>
+                                            @if($rate->jamaah_status)
+                                                <span class="badge fw-bolder px-3 py-2" style="background-color: #f3e8ff; color: #7e22ce; border: 1px solid #e9d5ff;">
+                                                    {{ collect(explode(',', $rate->jamaah_status))->map(function($status) {
+                                                        return match($status) {
+                                                            'JAMAAH' => 'Jamaah',
+                                                            'NON_JAMAAH' => 'Non Jamaah',
+                                                            'MUKIMIN' => 'Mukimin',
+                                                            default => $status
+                                                        };
+                                                    })->implode(', ') }}
+                                                </span>
+                                            @else
+                                                <span class="badge badge-light-secondary fw-bold">Semua Status</span>
                                             @endif
                                         </td>
                                         <td>
@@ -382,7 +390,7 @@
                                     </tr>
                                     {{-- Expandable Detail Row --}}
                                     <tr class="detail-row" id="detail-{{ $rate->id }}" style="display: none;">
-                                        <td colspan="6" class="p-0 border-0">
+                                        <td colspan="7" class="p-0 border-0">
                                             <div class="bg-light-primary rounded mx-4 my-3 p-4" style="background-color: #f1f3f9;">
                                                 <div class="d-flex justify-content-between align-items-center mb-3">
                                                     <h6 class="mb-0 text-primary fw-bold">
@@ -404,7 +412,7 @@
                                     </tr>
                                     @empty
                                     <tr>
-                                        <td colspan="6" class="text-center py-10">
+                                        <td colspan="7" class="text-center py-10">
                                             <div class="d-flex flex-column align-items-center">
                                                 <i class="fas fa-user-slash fs-1 text-gray-300 mb-4"></i>
                                                 <span class="text-muted fw-bold fs-6">Belum ada data tarif susulan/pindahan.</span>
