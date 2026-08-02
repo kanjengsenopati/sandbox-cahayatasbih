@@ -432,7 +432,7 @@
                                                     </div>
                                                     <span class="fs-7 fw-bold text-gray-800">{{ $classroom->name }}</span>
                                                     @if($isCreated)
-                                                        <span class="badge badge-light-danger fw-bolder fs-9 ms-auto me-1" title="Kelas ini sudah dibuatkan tarif"><i class="fas fa-lock text-danger me-1 fs-9"></i>Sudah Dibuat</span>
+                                                        <span class="ms-auto me-1 text-danger" title="Kelas ini sudah dibuatkan tarif"><i class="fas fa-lock fs-8"></i></span>
                                                     @endif
                                                 </label>
                                             </div>
@@ -575,7 +575,7 @@
                             var isCreated = value.is_already_created;
                             var cardClass = isCreated ? "btn btn-outline btn-outline-dashed btn-outline-default d-flex align-items-center justify-content-start p-2 w-100 h-100 pe-none bg-light-secondary opacity-75 text-start border-gray-300" : "btn btn-outline btn-outline-dashed btn-outline-default d-flex align-items-center justify-content-start p-2 w-100 h-100 cursor-pointer text-start";
                             var checkAttr = isCreated ? "checked disabled" : "";
-                            var badgeHtml = isCreated ? `<span class="badge badge-light-danger fw-bolder fs-9 ms-auto me-1" title="Kelas ini sudah dibuatkan tarif untuk kriteria status/gender ini"><i class="fas fa-lock text-danger me-1 fs-9"></i>Sudah Dibuat</span>` : "";
+                            var badgeHtml = isCreated ? `<span class="ms-auto me-1 text-danger" title="Kelas ini sudah dibuatkan tarif untuk kriteria status/gender ini"><i class="fas fa-lock fs-8"></i></span>` : "";
 
                             var cardHtml = `
                                 <div class="col">
