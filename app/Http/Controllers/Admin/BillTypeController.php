@@ -112,6 +112,11 @@ class BillTypeController extends Controller
 
         try {
             $validated = $request->validated();
+            
+            if (!Schema::hasColumn('bill_types', 'use_custom_filter')) {
+                unset($validated['use_custom_filter']);
+            }
+            
             $name = $validated['name'] ?? null;
 
             if (empty($name)) {
