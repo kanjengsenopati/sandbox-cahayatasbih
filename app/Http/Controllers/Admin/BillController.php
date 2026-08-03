@@ -352,36 +352,42 @@ class BillController extends Controller
             ->editColumn('pay_amount', function ($transaction) {
                 $formattedTotal = 'Rp ' . number_format($transaction->pay_amount, 0, ',', '.');
                 
-                // Group details by bill type
+                // Group details by BillType + AcademicYear
                 $grouped = [];
                 $totalItemCount = 0;
 
                 foreach ($transaction->transactionDetails as $detail) {
                     $bill = $detail->bill;
                     if ($bill) {
-                        $billTypeName = $bill->billType->name ?? 'Tagihan Lainnya';
-                        $monthName = $bill->translated_month ?? $bill->getTranslatedMonthAttribute();
-                        $period = $monthName ? "{$monthName} {$bill->year}" : $bill->year;
+                        $billType = $bill->billType;
+                        $billTypeName = $billType->name ?? 'Tagihan';
                         
-                        if (!isset($grouped[$billTypeName])) {
-                            $grouped[$billTypeName] = [
-                                'items' => [],
+                        $academicYear = $billType?->academicYear ?? $bill->academicYear;
+                        $academicYearName = $academicYear?->name ?? '';
+
+                        $monthName = $bill->translated_month ?? $bill->getTranslatedMonthAttribute();
+                        $periodLabel = $monthName ? $monthName : ($bill->year ? "Tahun {$bill->year}" : 'Sekali Bayar');
+                        
+                        $groupKey = $billTypeName . '___' . $academicYearName;
+
+                        if (!isset($grouped[$groupKey])) {
+                            $grouped[$groupKey] = [
+                                'bill_type_name' => $billTypeName,
+                                'academic_year' => $academicYearName,
+                                'months' => [],
                                 'total_amount' => 0,
                             ];
                         }
                         
                         $itemAmount = $detail->amount > 0 ? $detail->amount : ($bill->amount ?? 0);
-                        $grouped[$billTypeName]['items'][] = [
-                            'period' => $period,
-                            'amount' => $itemAmount,
-                        ];
-                        $grouped[$billTypeName]['total_amount'] += $itemAmount;
+                        $grouped[$groupKey]['months'][] = $periodLabel;
+                        $grouped[$groupKey]['total_amount'] += $itemAmount;
                         $totalItemCount++;
                     }
                 }
 
                 if (empty($grouped)) {
-                    return "<span class='text-emerald-600 fw-bold fs-6'>{$formattedTotal}</span>";
+                    return "<span class='text-emerald-600 fw-boldest fs-6'>{$formattedTotal}</span>";
                 }
 
                 $collapseId = 'collapse-bills-' . $transaction->id;
@@ -393,46 +399,65 @@ class BillController extends Controller
                 $html .= "  </button>";
                 $html .= "</div>";
 
-                // Expandable grouped table panel
-                $html .= "<div class='collapse mt-2 text-start' id='{$collapseId}'>";
-                $html .= "  <div class='table-responsive rounded-[12px] border border-gray-200 bg-white p-2 shadow-sm' style='max-width: 380px;'>";
-                $html .= "    <table class='table table-sm table-striped align-middle mb-0 fs-8'>";
-                $html .= "      <thead>";
-                $html .= "        <tr class='bg-light text-gray-700 fw-bolder text-uppercase fs-9'>";
-                $html .= "          <th class='ps-2 py-1'>Jenis Tagihan & Periode</th>";
-                $html .= "          <th class='text-end pe-2 py-1'>Nominal</th>";
-                $html .= "        </tr>";
-                $html .= "      </thead>";
-                $html .= "      <tbody>";
+                // Wide Expandable Grouped Table Panel matching Gambar 2 & 3
+                $html .= "<div class='collapse mt-3 text-start' id='{$collapseId}'>";
+                $html .= "  <div class='card card-body p-4 rounded-[16px] border border-gray-200 bg-white shadow-lg' style='min-width: 650px; width: 100%; max-width: 850px;'>";
+                $html .= "    <div class='table-responsive'>";
+                $html .= "      <table class='table align-middle table-row-dashed fs-8 gy-3 mb-0'>";
+                $html .= "        <thead>";
+                $html .= "          <tr class='text-start text-gray-500 fw-bolder fs-8 text-uppercase gs-0 border-bottom border-gray-300'>";
+                $html .= "            <th style='width: 5%'>NO</th>";
+                $html .= "            <th style='width: 35%'>NAMA TAGIHAN & TAHUN AJARAN</th>";
+                $html .= "            <th style='width: 40%'>BULAN TERBAYAR</th>";
+                $html .= "            <th class='text-end' style='width: 20%'>NOMINAL TOTAL</th>";
+                $html .= "          </tr>";
+                $html .= "        </thead>";
+                $html .= "        <tbody class='text-gray-700 fw-bold'>";
 
-                foreach ($grouped as $typeName => $groupData) {
+                $rowNo = 1;
+                $grandTotal = 0;
+
+                foreach ($grouped as $groupData) {
+                    $typeName = $groupData['bill_type_name'];
+                    $taName = $groupData['academic_year'];
+                    $months = $groupData['months'];
                     $groupTotalFormatted = 'Rp ' . number_format($groupData['total_amount'], 0, ',', '.');
-                    $itemCount = count($groupData['items']);
+                    $grandTotal += $groupData['total_amount'];
 
-                    $html .= "        <tr class='bg-light-primary fw-bolder text-primary'>";
-                    $html .= "          <td colspan='2' class='ps-2 py-1 fs-8'>";
-                    $html .= "            <i class='fas fa-folder me-1 text-primary'></i> {$typeName} ({$itemCount} item)";
-                    $html .= "          </td>";
-                    $html .= "        </tr>";
-
-                    foreach ($groupData['items'] as $item) {
-                        $itemAmountFormatted = 'Rp ' . number_format($item['amount'], 0, ',', '.');
-                        $html .= "        <tr>";
-                        $html .= "          <td class='ps-4 py-1 text-gray-700'>{$item['period']}</td>";
-                        $html .= "          <td class='text-end pe-2 py-1 text-emerald-600 fw-bold'>{$itemAmountFormatted}</td>";
-                        $html .= "        </tr>";
+                    $html .= "          <tr>";
+                    $html .= "            <td class='align-top pt-3'>{$rowNo}</td>";
+                    $html .= "            <td class='align-top pt-3'>";
+                    $html .= "              <span class='d-block text-dark fw-bolder fs-7 text-uppercase mb-1'>{$typeName}</span>";
+                    if ($taName) {
+                        $html .= "              <span class='badge badge-light-info text-info border border-info border-opacity-40 rounded-pill px-2.5 py-1 fs-9 fw-bold d-inline-flex align-items-center gap-1'>";
+                        $html .= "                <i class='fas fa-calendar-alt fs-9 text-info'></i> TA {$taName}";
+                        $html .= "              </span>";
                     }
-
-                    if ($itemCount > 1) {
-                        $html .= "        <tr class='fw-bold text-gray-800 bg-light-secondary'>";
-                        $html .= "          <td class='ps-4 py-1 text-gray-600 italic'>Subtotal {$typeName}</td>";
-                        $html .= "          <td class='text-end pe-2 py-1 text-emerald-600 font-bold'>{$groupTotalFormatted}</td>";
-                        $html .= "        </tr>";
+                    $html .= "            </td>";
+                    $html .= "            <td class='align-top pt-3'>";
+                    $html .= "              <div class='d-flex flex-wrap gap-1.5'>";
+                    foreach ($months as $m) {
+                        $html .= "                <span class='badge bg-white text-info border border-info border-opacity-60 rounded-pill px-3 py-1.5 fs-8 fw-semibold shadow-xs'>{$m}</span>";
                     }
+                    $html .= "              </div>";
+                    $html .= "            </td>";
+                    $html .= "            <td class='text-end align-top pt-3 text-dark fw-bolder fs-7'>{$groupTotalFormatted}</td>";
+                    $html .= "          </tr>";
+
+                    $rowNo++;
                 }
 
-                $html .= "      </tbody>";
-                $html .= "    </table>";
+                $grandTotalFormatted = 'Rp ' . number_format($grandTotal, 0, ',', '.');
+
+                $html .= "        </tbody>";
+                $html .= "        <tfoot>";
+                $html .= "          <tr class='border-top border-gray-300 fw-boldest fs-7'>";
+                $html .= "            <td colspan='3' class='text-end pt-4 text-dark'>Total Pembayaran Keseluruhan:</td>";
+                $html .= "            <td class='text-end pt-4 text-emerald-600 fs-6'>{$grandTotalFormatted}</td>";
+                $html .= "          </tr>";
+                $html .= "        </tfoot>";
+                $html .= "      </table>";
+                $html .= "    </div>";
                 $html .= "  </div>";
                 $html .= "</div>";
 
