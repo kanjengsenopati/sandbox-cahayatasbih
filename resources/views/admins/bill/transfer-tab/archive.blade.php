@@ -8,15 +8,18 @@
         <!--begin::Card toolbar (Filters)-->
         <div class="d-flex align-items-center gap-3 flex-wrap">
             <div class="d-flex align-items-center gap-2">
+                <input type="text" id="archive-search-student" class="form-control form-control-solid form-control-sm rounded-[12px]" placeholder="Cari Nama Siswa / NIS..." style="width: 200px;">
+            </div>
+            <div class="d-flex align-items-center gap-2">
                 <label class="fs-7 fw-bold text-gray-700 mb-0">Mulai:</label>
-                <input type="date" id="archive-start-date" class="form-control form-control-solid form-control-sm" style="width: 150px;">
+                <input type="date" id="archive-start-date" class="form-control form-control-solid form-control-sm rounded-[12px]" style="width: 140px;">
             </div>
             <div class="d-flex align-items-center gap-2">
                 <label class="fs-7 fw-bold text-gray-700 mb-0">Selesai:</label>
-                <input type="date" id="archive-end-date" class="form-control form-control-solid form-control-sm" style="width: 150px;">
+                <input type="date" id="archive-end-date" class="form-control form-control-solid form-control-sm rounded-[12px]" style="width: 140px;">
             </div>
-            <button id="archive-btn-filter" class="btn btn-primary btn-sm"><i class="fas fa-filter me-1"></i> Filter</button>
-            <button id="archive-btn-reset" class="btn btn-secondary btn-sm"><i class="fas fa-undo me-1"></i> Reset</button>
+            <button id="archive-btn-filter" class="btn btn-primary btn-sm rounded-[24px]"><i class="fas fa-filter me-1"></i> Filter</button>
+            <button id="archive-btn-reset" class="btn btn-secondary btn-sm rounded-[24px]"><i class="fas fa-undo me-1"></i> Reset</button>
         </div>
         <!--end::Card toolbar-->
     </div>

@@ -959,6 +959,7 @@
                     url: "{{ route('bill.index') }}",
                     data: function(d) {
                         d.tab = 'archive';
+                        d.search_student = $('#archive-search-student').val();
                         d.start_date = $('#archive-start-date').val();
                         d.end_date = $('#archive-end-date').val();
                     }
@@ -1030,11 +1031,20 @@
                 ]
             });
 
+            var searchTimeout = null;
+            $('#archive-search-student').on('keyup input change', function() {
+                clearTimeout(searchTimeout);
+                searchTimeout = setTimeout(function() {
+                    archiveTable.ajax.reload();
+                }, 300);
+            });
+
             $('#archive-btn-filter').click(function() {
                 archiveTable.ajax.reload();
             });
 
             $('#archive-btn-reset').click(function() {
+                $('#archive-search-student').val('');
                 $('#archive-start-date').val('');
                 $('#archive-end-date').val('');
                 archiveTable.ajax.reload();

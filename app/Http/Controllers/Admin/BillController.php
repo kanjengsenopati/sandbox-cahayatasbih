@@ -332,6 +332,12 @@ class BillController extends Controller
             ->where('is_deleted_from_archive', false)
             ->hasSchool();
 
+        if ($searchStudent = request()->search_student) {
+            $transactions->whereHas('student', function ($q) use ($searchStudent) {
+                $q->where('name', 'like', "%{$searchStudent}%")
+                  ->orWhere('nis', 'like', "%{$searchStudent}%");
+            });
+        }
         if ($startDate = request()->start_date) {
             $transactions->whereDate('updated_at', '>=', $startDate);
         }
@@ -344,24 +350,93 @@ class BillController extends Controller
         return DataTables::of($transactions)
             ->addColumn('proof', fn($transaction) => $this->formatProofColumn($transaction))
             ->editColumn('pay_amount', function ($transaction) {
-                $amountHtml = 'Rp ' . number_format($transaction->pay_amount, 0, ',', '.');
+                $formattedTotal = 'Rp ' . number_format($transaction->pay_amount, 0, ',', '.');
                 
-                $billsInfo = [];
+                // Group details by bill type
+                $grouped = [];
+                $totalItemCount = 0;
+
                 foreach ($transaction->transactionDetails as $detail) {
                     $bill = $detail->bill;
                     if ($bill) {
-                        $billTypeName = $bill->billType->name ?? 'Tagihan';
+                        $billTypeName = $bill->billType->name ?? 'Tagihan Lainnya';
                         $monthName = $bill->translated_month ?? $bill->getTranslatedMonthAttribute();
                         $period = $monthName ? "{$monthName} {$bill->year}" : $bill->year;
-                        $billsInfo[] = "<span class='text-muted fs-8'>• {$billTypeName} ({$period})</span>";
+                        
+                        if (!isset($grouped[$billTypeName])) {
+                            $grouped[$billTypeName] = [
+                                'items' => [],
+                                'total_amount' => 0,
+                            ];
+                        }
+                        
+                        $itemAmount = $detail->amount > 0 ? $detail->amount : ($bill->amount ?? 0);
+                        $grouped[$billTypeName]['items'][] = [
+                            'period' => $period,
+                            'amount' => $itemAmount,
+                        ];
+                        $grouped[$billTypeName]['total_amount'] += $itemAmount;
+                        $totalItemCount++;
                     }
                 }
-                
-                if (!empty($billsInfo)) {
-                    $amountHtml .= '<br><div class="d-flex flex-column mt-1">' . implode('', $billsInfo) . '</div>';
+
+                if (empty($grouped)) {
+                    return "<span class='text-emerald-600 fw-bold fs-6'>{$formattedTotal}</span>";
                 }
-                
-                return $amountHtml;
+
+                $collapseId = 'collapse-bills-' . $transaction->id;
+
+                $html = "<div class='d-flex flex-column align-items-start gap-1'>";
+                $html .= "  <span class='text-emerald-600 fw-boldest fs-6'>{$formattedTotal}</span>";
+                $html .= "  <button type='button' class='btn btn-xs btn-light-primary py-1 px-2.5 rounded-[12px] fs-8 fw-bold d-inline-flex align-items-center gap-1 mt-1' data-bs-toggle='collapse' data-bs-target='#{$collapseId}' aria-expanded='false'>";
+                $html .= "    <i class='fas fa-list-ul fs-9'></i> {$totalItemCount} Item Tagihan <i class='fas fa-chevron-down ms-1 fs-9'></i>";
+                $html .= "  </button>";
+                $html .= "</div>";
+
+                // Expandable grouped table panel
+                $html .= "<div class='collapse mt-2 text-start' id='{$collapseId}'>";
+                $html .= "  <div class='table-responsive rounded-[12px] border border-gray-200 bg-white p-2 shadow-sm' style='max-width: 380px;'>";
+                $html .= "    <table class='table table-sm table-striped align-middle mb-0 fs-8'>";
+                $html .= "      <thead>";
+                $html .= "        <tr class='bg-light text-gray-700 fw-bolder text-uppercase fs-9'>";
+                $html .= "          <th class='ps-2 py-1'>Jenis Tagihan & Periode</th>";
+                $html .= "          <th class='text-end pe-2 py-1'>Nominal</th>";
+                $html .= "        </tr>";
+                $html .= "      </thead>";
+                $html .= "      <tbody>";
+
+                foreach ($grouped as $typeName => $groupData) {
+                    $groupTotalFormatted = 'Rp ' . number_format($groupData['total_amount'], 0, ',', '.');
+                    $itemCount = count($groupData['items']);
+
+                    $html .= "        <tr class='bg-light-primary fw-bolder text-primary'>";
+                    $html .= "          <td colspan='2' class='ps-2 py-1 fs-8'>";
+                    $html .= "            <i class='fas fa-folder me-1 text-primary'></i> {$typeName} ({$itemCount} item)";
+                    $html .= "          </td>";
+                    $html .= "        </tr>";
+
+                    foreach ($groupData['items'] as $item) {
+                        $itemAmountFormatted = 'Rp ' . number_format($item['amount'], 0, ',', '.');
+                        $html .= "        <tr>";
+                        $html .= "          <td class='ps-4 py-1 text-gray-700'>{$item['period']}</td>";
+                        $html .= "          <td class='text-end pe-2 py-1 text-emerald-600 fw-bold'>{$itemAmountFormatted}</td>";
+                        $html .= "        </tr>";
+                    }
+
+                    if ($itemCount > 1) {
+                        $html .= "        <tr class='fw-bold text-gray-800 bg-light-secondary'>";
+                        $html .= "          <td class='ps-4 py-1 text-gray-600 italic'>Subtotal {$typeName}</td>";
+                        $html .= "          <td class='text-end pe-2 py-1 text-emerald-600 font-bold'>{$groupTotalFormatted}</td>";
+                        $html .= "        </tr>";
+                    }
+                }
+
+                $html .= "      </tbody>";
+                $html .= "    </table>";
+                $html .= "  </div>";
+                $html .= "</div>";
+
+                return $html;
             })
             ->editColumn('status', fn($transaction) => $this->formatStatusColumn($transaction))
             ->addColumn('action', fn($transaction) => $this->formatArchiveActionColumn($transaction))
