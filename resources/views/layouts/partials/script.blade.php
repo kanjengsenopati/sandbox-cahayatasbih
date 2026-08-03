@@ -126,7 +126,7 @@
 <script>
     Swal.fire({
                 title: '{{ ucfirst($message) }}',
-                text: "<?= session($message) ?>",
+                text: {!! json_encode(session($message)) !!},
                 icon: '{{ $message }}',
                 confirmButtonText: 'Baik',
                 customClass: {
