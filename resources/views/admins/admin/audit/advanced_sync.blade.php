@@ -61,6 +61,16 @@
                     <form id="form-preview" onsubmit="event.preventDefault(); loadPreview();">
                         <div class="row g-5">
                             <div class="col-md-3">
+                                <x-text.label>Periode Filter</x-text.label>
+                                <select id="period_filter" class="form-select form-select-solid rounded-[12px]" data-control="select2" data-hide-search="true">
+                                    <option value="today">Hari Ini</option>
+                                    <option value="this_week">Minggu Ini</option>
+                                    <option value="this_month" selected>Bulan Ini</option>
+                                    <option value="last_30_days">30 Hari Terakhir</option>
+                                    <option value="custom">Pilih Sendiri</option>
+                                </select>
+                            </div>
+                            <div class="col-md-3">
                                 <x-text.label>Tanggal Mulai</x-text.label>
                                 <input type="date" name="start_date" id="start_date" class="form-control form-control-solid rounded-[12px]" required>
                             </div>
@@ -90,8 +100,8 @@
                                 <x-text.label>Cari Siswa (NIS/Nama)</x-text.label>
                                 <input type="text" name="search" id="search" class="form-control form-control-solid rounded-[12px]" placeholder="Masukkan NIS atau Nama (Opsional)">
                             </div>
-                            <div class="col-md-6 d-flex align-items-end justify-content-end">
-                                <button type="submit" class="btn btn-primary rounded-[24px]" id="btn-generate-preview">
+                            <div class="col-md-3 d-flex align-items-end">
+                                <button type="submit" class="btn btn-primary rounded-[24px] w-100" id="btn-generate-preview">
                                     <i class="fas fa-search me-1"></i> Buat Preview
                                 </button>
                             </div>
@@ -188,10 +198,60 @@
 <script>
     var previewTable = null;
 
-    // Filter UPT -> Kelas Cascade
+    // Filter UPT -> Kelas Cascade & Period Helper
     $(document).ready(function() {
         // Initialize tooltips
         $('[data-bs-toggle="tooltip"]').tooltip();
+
+        function setPeriodDates(period) {
+            var today = new Date();
+            
+            function formatDate(d) {
+                var year = d.getFullYear();
+                var month = String(d.getMonth() + 1).padStart(2, '0');
+                var day = String(d.getDate()).padStart(2, '0');
+                return year + '-' + month + '-' + day;
+            }
+
+            var start, end;
+            
+            if (period === 'today') {
+                start = formatDate(today);
+                end = formatDate(today);
+            } else if (period === 'this_week') {
+                var dayOfWeek = today.getDay();
+                var distanceToMonday = (dayOfWeek === 0 ? -6 : 1 - dayOfWeek);
+                var monday = new Date(today);
+                monday.setDate(today.getDate() + distanceToMonday);
+                
+                start = formatDate(monday);
+                end = formatDate(today);
+            } else if (period === 'this_month') {
+                var firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+                start = formatDate(firstDay);
+                end = formatDate(today);
+            } else if (period === 'last_30_days') {
+                var thirtyDaysAgo = new Date(today);
+                thirtyDaysAgo.setDate(today.getDate() - 30);
+                start = formatDate(thirtyDaysAgo);
+                end = formatDate(today);
+            } else if (period === 'custom') {
+                $('#start_date, #end_date').prop('readonly', false).removeClass('bg-light');
+                return;
+            }
+
+            if (start && end) {
+                $('#start_date').val(start);
+                $('#end_date').val(end);
+                $('#start_date, #end_date').prop('readonly', true).addClass('bg-light');
+            }
+        }
+
+        $('#period_filter').on('change', function() {
+            setPeriodDates($(this).val());
+        });
+
+        setPeriodDates($('#period_filter').val() || 'this_month');
 
         $('#school_id').on('change', function() {
             var schoolId = $(this).val();
