@@ -272,6 +272,7 @@ class PaymentRateController extends Controller
      */
     public function show(string $id)
     {
+        @set_time_limit(300);
 
         if (request()->ajax()) {
             return $this->handleAjaxRequest($id);
@@ -284,6 +285,7 @@ class PaymentRateController extends Controller
 
     private function handleAjaxRequest(string $id)
     {
+        @set_time_limit(300);
         $dateRange = $this->getDateRange();
 
         if (request()->type === 'bill') {
@@ -374,14 +376,17 @@ class PaymentRateController extends Controller
         // Pre-fetch student bill sums in 1 fast GROUP BY query to avoid DataTables withSum subquery slowdown
         $studentIds = (clone $query)->pluck('students.id')->toArray();
 
-        $billAggregates = DB::table('bills')
-            ->select('student_id', DB::raw('SUM(amount) as total'), DB::raw('SUM(paid_amount) as total_paid'))
-            ->whereIn('student_id', $studentIds)
-            ->whereIn('bill_type_id', $relatedBillTypeIds)
-            ->whereNull('deleted_at')
-            ->groupBy('student_id')
-            ->get()
-            ->keyBy('student_id');
+        $billAggregates = collect();
+        if (!empty($studentIds)) {
+            $billAggregates = DB::table('bills')
+                ->select('student_id', DB::raw('SUM(amount) as total'), DB::raw('SUM(paid_amount) as total_paid'))
+                ->whereIn('student_id', $studentIds)
+                ->whereIn('bill_type_id', $relatedBillTypeIds)
+                ->whereNull('deleted_at')
+                ->groupBy('student_id')
+                ->get()
+                ->keyBy('student_id');
+        }
 
         return DataTables::of($query)
             ->addColumn('classroom', fn($student) => $student->classroom->name ?? '-')

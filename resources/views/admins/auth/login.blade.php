@@ -245,12 +245,13 @@
                             // Show loading indication
                             submitButton.setAttribute('data-kt-indicator', 'on');
 
-                            // Disable button to avoid multiple click
-                            submitButton.disabled = true;
-
-
-                            //   submit form
+                            // Submit form
                             form.submit();
+
+                            // Disable button shortly after form submission to prevent double clicks without blocking form submission
+                            setTimeout(function() {
+                                submitButton.disabled = true;
+                            }, 50);
                         } else {
                             Swal.fire({
                                 text: "Maaf, sepertinya ada beberapa input yang belum sesuai, silahkan cek kembali.",
@@ -278,9 +279,22 @@
             };
         }();
 
-        // On document ready
+        function resetSubmitButton() {
+            var btn = document.querySelector('#kt_sign_in_submit');
+            if (btn) {
+                btn.removeAttribute('data-kt-indicator');
+                btn.disabled = false;
+            }
+        }
+
+        // On document ready & pageshow (BFCache / reload)
         KTUtil.onDOMContentLoaded(function() {
+            resetSubmitButton();
             KTSigninGeneral.init();
+        });
+
+        window.addEventListener('pageshow', function() {
+            resetSubmitButton();
         });
 
         function togglePassword() {

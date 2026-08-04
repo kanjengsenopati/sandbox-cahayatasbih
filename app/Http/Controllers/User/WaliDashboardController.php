@@ -137,9 +137,26 @@ class WaliDashboardController extends Controller
 
         if (!$activeStudent) return redirect()->route('wali.app');
 
+        $studentSchoolName = $activeStudent->classroom->school->name ?? '';
+
         $groupedBills = Bill::with(['billType.billItem', 'billType.academicYear'])
             ->where('student_id', $activeStudent->id)
             ->get()
+            ->filter(function ($bill) use ($activeStudent, $studentSchoolName) {
+                // Pre-entry year check
+                $entryYear = $activeStudent->getEntryYear();
+                $billAYName = $bill->billType->academicYear->name ?? '';
+                if ($entryYear && $billAYName) {
+                    $ayStartYear = (int) explode('/', $billAYName)[0];
+                    if ($ayStartYear < $entryYear) return false;
+                }
+
+                // UPT matching check
+                $billTypeName = $bill->billType->name ?? '';
+                $billItemName = $bill->billType->billItem->name ?? '';
+                return TransactionService::isBillTypeMatchingStudentSchoolUnit($billTypeName, $studentSchoolName)
+                    || TransactionService::isBillTypeMatchingStudentSchoolUnit($billItemName, $studentSchoolName);
+            })
             ->groupBy('bill_type_id')
             ->map(function ($items) {
                 $first = $items->first();

@@ -40,6 +40,7 @@ class BillController extends Controller
      */
     public function index()
     {
+        @set_time_limit(300);
         if (!Auth::user()->can('Manage Tagihan')) {
             return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
         }
@@ -190,9 +191,10 @@ class BillController extends Controller
 
     private function getTransactionData()
     {
+        @set_time_limit(300);
         $transferMethodIds = PaymentMethod::where('type', PaymentMethod::TYPE_TRANSFER)->pluck('id')->toArray();
 
-        $transactions = Transaction::with(['student', 'paymentMethod', 'activeProof.bank', 'transactionProofs.bank', 'transactionDetails.bill.billType'])
+        $transactions = Transaction::with(['student', 'paymentMethod', 'activeProof.bank', 'transactionProofs.bank', 'transactionDetails.bill.billType.academicYear', 'transactionDetails.bill.academicYear'])
             ->whereIn('payment_method_id', $transferMethodIds)
             ->where('type', Transaction::TYPE_BILL)
             ->where('status', Transaction::STATUS_PENDING_CONFIRMATION)
@@ -323,9 +325,10 @@ class BillController extends Controller
 
     private function getArchiveTransactionData()
     {
+        @set_time_limit(300);
         $transferMethodIds = PaymentMethod::where('type', PaymentMethod::TYPE_TRANSFER)->pluck('id')->toArray();
 
-        $transactions = Transaction::with(['student', 'paymentMethod', 'activeProof.bank', 'transactionProofs.bank', 'admin', 'transactionDetails.bill.billType'])
+        $transactions = Transaction::with(['student', 'paymentMethod', 'activeProof.bank', 'transactionProofs.bank', 'admin', 'transactionDetails.bill.billType.academicYear', 'transactionDetails.bill.academicYear'])
             ->whereIn('payment_method_id', $transferMethodIds)
             ->where('type', Transaction::TYPE_BILL)
             ->where('status', Transaction::STATUS_PAID)
