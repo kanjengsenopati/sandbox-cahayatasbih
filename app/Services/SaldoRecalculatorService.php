@@ -54,7 +54,7 @@ class SaldoRecalculatorService
 
             // Sync current student's total saldo to match latest running balance
             if ((float) $student->saldo !== $runningBalance) {
-                $student->update(['saldo' => $runningBalance]);
+                DB::table('students')->where('id', $student->id)->update(['saldo' => $runningBalance]);
             }
 
             return true;
