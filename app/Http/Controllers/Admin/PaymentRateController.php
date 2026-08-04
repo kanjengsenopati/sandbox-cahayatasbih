@@ -252,6 +252,11 @@ class PaymentRateController extends Controller
                 }
             }
 
+            // 8. AUTO-CLEANUP GHOST BILLS (Mencegah Mismatch)
+            foreach ($students as $student) {
+                TransactionService::cleanupGhostBillsForStudent($student->id);
+            }
+
             DB::commit();
             $lock->release();
 

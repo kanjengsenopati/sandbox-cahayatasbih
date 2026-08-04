@@ -106,8 +106,17 @@ class BillController extends Controller
         $studentSchoolName = $student?->classroom?->school?->name ?? '';
         $entryYear = $student?->getEntryYear() ?? date('Y');
 
-        $studentBillTypeIds = Bill::where('student_id', $studentId)
+        $studentBillTypeIds = Bill::with(['billType.billItem'])
+            ->where('student_id', $studentId)
+            ->whereNull('deleted_at')
             ->when($academicYearId, fn($q) => $q->where('academic_year_id', $academicYearId))
+            ->get()
+            ->filter(function ($b) use ($studentSchoolName) {
+                $bTypeName = $b->billType->name ?? '';
+                $bItemName = $b->billType->billItem->name ?? '';
+                return TransactionService::isBillTypeMatchingStudentSchoolUnit($bTypeName, $studentSchoolName)
+                    || TransactionService::isBillTypeMatchingStudentSchoolUnit($bItemName, $studentSchoolName);
+            })
             ->pluck('bill_type_id')
             ->unique();
 
