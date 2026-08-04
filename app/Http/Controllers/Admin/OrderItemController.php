@@ -380,7 +380,7 @@ class OrderItemController extends Controller
 
     private function recordSaldoHistory($student, $total, $balanceBefore, $balanceAfter, $outletId = null)
     {
-        return SaldoHistory::create([
+        $history = SaldoHistory::create([
             'student_id' => $student->id,
             'outlet_id' => $outletId,
             'type' => 'OUT',
@@ -391,6 +391,10 @@ class OrderItemController extends Controller
             'balance_before' => $balanceBefore ?? 0,
             'balance_after' => $balanceAfter ?? 0,
         ]);
+
+        \App\Services\SaldoRecalculatorService::recalculateForStudent($student->id);
+
+        return $history;
     }
 
     // public function store(Request $request)

@@ -19,7 +19,7 @@ class SaldoService
         $saldoAfter = $saldoBefore + $amount;
 
         // Create saldo history record
-        SaldoHistory::create([
+        $history = SaldoHistory::create([
             'student_id' => $student->id,
             'type' => $type,
             'amount' => $amount,
@@ -29,5 +29,9 @@ class SaldoService
             'balance_before' => $saldoBefore ?? 0,
             'balance_after' => $saldoAfter ?? 0,
         ]);
+
+        if ($status === SaldoHistory::STATUS_SUCCESS) {
+            SaldoRecalculatorService::recalculateForStudent($student->id);
+        }
     }
 }

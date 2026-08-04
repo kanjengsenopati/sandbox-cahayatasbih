@@ -593,6 +593,9 @@ class TransactionService
                             ]);
                         }
                     }
+
+                    // Recalculate running balance to guarantee chronological precision
+                    SaldoRecalculatorService::recalculateForStudent($student->id);
                 } elseif ($transaction->type == Transaction::TYPE_SAVING) {
                     foreach ($transaction->transactionDetails as $detail) {
                         $detail->savingHistory->update([
