@@ -110,6 +110,7 @@
                                     </div>
                                     <button id="saldo-history-btn-filter" class="btn btn-primary btn-sm"><i class="fas fa-filter me-1"></i> Filter</button>
                                     <button id="saldo-history-btn-reset" class="btn btn-secondary btn-sm"><i class="fas fa-undo me-1"></i> Reset</button>
+                                    <button id="saldo-history-btn-recalculate" class="btn btn-warning btn-sm text-dark fw-bold ms-1" title="Perbaiki & Sinkronkan Urutan Saldo"><i class="fas fa-sync-alt me-1"></i> Rekalkulasi Saldo</button>
                                 </div>
                             </div>
                             <!--end::Filters-->
@@ -326,6 +327,42 @@
                 $('#saldo-history-start-date').val('');
                 $('#saldo-history-end-date').val('');
                 table.ajax.reload();
+            });
+
+            $('#saldo-history-btn-recalculate').off('click').on('click', function() {
+                Swal.fire({
+                    title: 'Rekalkulasi Saldo?',
+                    text: 'Proses ini akan mengurutkan & memperhitungkan ulang seluruh running balance riwayat mutasi saldo santri secara presisi kronologis.',
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#3085d6',
+                    cancelButtonColor: '#d33',
+                    confirmButtonText: 'Ya, Rekalkulasi Sekarang!',
+                    cancelButtonText: 'Batal'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        Swal.fire({
+                            title: 'Memproses Rekalkulasi...',
+                            text: 'Mohon tunggu sejenak',
+                            allowOutsideClick: false,
+                            didOpen: () => { Swal.showLoading(); }
+                        });
+                        $.ajax({
+                            url: "{{ route('saldo-history.recalculate') }}",
+                            type: 'POST',
+                            data: {
+                                _token: "{{ csrf_token() }}"
+                            },
+                            success: function(res) {
+                                Swal.fire('Berhasil!', res.message || 'Rekalkulasi saldo selesai.', 'success');
+                                table.ajax.reload();
+                            },
+                            error: function(err) {
+                                Swal.fire('Gagal!', (err.responseJSON && err.responseJSON.message) ? err.responseJSON.message : 'Terjadi kesalahan.', 'error');
+                            }
+                        });
+                    }
+                });
             });
 
             $('#saldo-history-search-name').off('keyup').on('keyup', function(e) {

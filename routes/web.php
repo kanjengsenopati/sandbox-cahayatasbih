@@ -388,6 +388,7 @@ Route::group(['middleware' => ['auth']], function () {
     Route::post('saldo-history/import', [SaldoHistoryController::class, 'import'])->name('saldo-history.import');
     Route::post('saldo-history/batch-reset-zero', [SaldoHistoryController::class, 'batchResetZero'])->name('saldo-history.batch-reset-zero');
     Route::delete('saldo-history/record/{id}', [SaldoHistoryController::class, 'deleteHistory'])->name('saldo-history.delete-history');
+    Route::post('saldo-history/recalculate', [SaldoHistoryController::class, 'recalculate'])->name('saldo-history.recalculate');
     Route::resource('saldo-history', SaldoHistoryController::class);
     Route::post('saving-history/status-payment/{id}', [SavingHistoryController::class, 'updateStatusPayment'])->name('saving-history.status-payment');
     Route::resource('saving-history', SavingHistoryController::class);

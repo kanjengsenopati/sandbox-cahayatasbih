@@ -893,4 +893,31 @@ class SaldoHistoryController extends Controller
             ], 500);
         }
     }
+
+    public function recalculate(Request $request)
+    {
+        try {
+            $studentId = $request->student_id;
+            if ($studentId) {
+                \App\Services\SaldoRecalculatorService::recalculateForStudent($studentId);
+                $message = "Berhasil me-rekalkulasi saldo untuk siswa yang dipilih.";
+            } else {
+                $count = \App\Services\SaldoRecalculatorService::recalculateAllStudents();
+                $message = "Berhasil me-rekalkulasi dan memperbaiki urutan running balance untuk {$count} siswa.";
+            }
+
+            return response()->json([
+                'code' => 200,
+                'status' => 'success',
+                'message' => $message
+            ]);
+        } catch (\Throwable $e) {
+            Log::error("Manual Saldo Recalculate Failed: " . $e->getMessage());
+            return response()->json([
+                'code' => 500,
+                'status' => 'error',
+                'message' => 'Gagal me-rekalkulasi saldo: ' . $e->getMessage()
+            ], 500);
+        }
+    }
 }

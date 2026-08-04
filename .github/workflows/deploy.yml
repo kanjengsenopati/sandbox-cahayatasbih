@@ -64,6 +64,9 @@ jobs:
             echo "=== Running Virtual Bill Auto-Repair & Sync ==="
             /www/server/php/84/bin/php artisan bills:fix-virtual-details || true
 
+            echo "=== Recalculating Running Saldo Balances ==="
+            /www/server/php/84/bin/php artisan saldo:recalculate || true
+
             echo "=== Creating Storage Symlink ==="
             /www/server/php/84/bin/php artisan storage:link || echo "Storage link may already exist"
 

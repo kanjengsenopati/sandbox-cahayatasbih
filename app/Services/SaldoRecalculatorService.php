@@ -45,7 +45,7 @@ class SaldoRecalculatorService
 
                 // Update row if values differ
                 if ((float) $history->balance_before !== $balanceBefore || (float) $history->balance_after !== $balanceAfter) {
-                    $history->update([
+                    DB::table('saldo_histories')->where('id', $history->id)->update([
                         'balance_before' => $balanceBefore,
                         'balance_after' => $balanceAfter
                     ]);
