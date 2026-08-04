@@ -60,7 +60,24 @@ class SaldoHistoryController extends Controller
             return $this->getArchiveTransactionData();
         }
         if (request()->ajax() && request()->type === 'saldo') {
-            $data = SaldoHistory::with('student')->hasSchool()->latest();
+            $data = SaldoHistory::with('student')->hasSchool();
+
+            if ($searchName = request()->search_name) {
+                $data->whereHas('student', function ($q) use ($searchName) {
+                    $q->where('name', 'like', "%{$searchName}%")
+                      ->orWhere('nis', 'like', "%{$searchName}%")
+                      ->orWhere('nisn', 'like', "%{$searchName}%");
+                });
+            }
+            if ($startDate = request()->start_date) {
+                $data->whereDate('created_at', '>=', $startDate);
+            }
+            if ($endDate = request()->end_date) {
+                $data->whereDate('created_at', '<=', $endDate);
+            }
+
+            $data->latest();
+
             return DataTables::of($data)
                 ->addColumn('date', function ($data) {
                     return $data->created_at->translatedFormat('d F Y' . ' <br>' . 'H:i:s');
@@ -615,6 +632,13 @@ class SaldoHistoryController extends Controller
             ->where('is_deleted_from_archive', false)
             ->hasSchool();
 
+        if ($searchName = request()->search_name) {
+            $transactions->whereHas('student', function ($q) use ($searchName) {
+                $q->where('name', 'like', "%{$searchName}%")
+                  ->orWhere('nis', 'like', "%{$searchName}%")
+                  ->orWhere('nisn', 'like', "%{$searchName}%");
+            });
+        }
         if ($startDate = request()->start_date) {
             $transactions->whereDate('updated_at', '>=', $startDate);
         }

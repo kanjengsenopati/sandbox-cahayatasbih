@@ -92,6 +92,27 @@
                     <div class="tab-content" id="myTabContent">
                         <div class="tab-pane fade " id="saldo-history" role="tabpanel"
                             aria-labelledby="saldo-history-tab">
+                            <!--begin::Filters-->
+                            <div class="d-flex align-items-center justify-content-between flex-wrap gap-3 my-4">
+                                <h4 class="text-dark fw-bolder mb-0">Riwayat Mutasi Saldo</h4>
+                                <div class="d-flex align-items-center gap-3 flex-wrap">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <label class="fs-7 fw-bold text-gray-700 mb-0">Cari Siswa:</label>
+                                        <input type="text" id="saldo-history-search-name" class="form-control form-control-solid form-control-sm" placeholder="Nama Siswa / NIS..." style="width: 180px;">
+                                    </div>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <label class="fs-7 fw-bold text-gray-700 mb-0">Mulai:</label>
+                                        <input type="date" id="saldo-history-start-date" class="form-control form-control-solid form-control-sm" style="width: 150px;">
+                                    </div>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <label class="fs-7 fw-bold text-gray-700 mb-0">Selesai:</label>
+                                        <input type="date" id="saldo-history-end-date" class="form-control form-control-solid form-control-sm" style="width: 150px;">
+                                    </div>
+                                    <button id="saldo-history-btn-filter" class="btn btn-primary btn-sm"><i class="fas fa-filter me-1"></i> Filter</button>
+                                    <button id="saldo-history-btn-reset" class="btn btn-secondary btn-sm"><i class="fas fa-undo me-1"></i> Reset</button>
+                                </div>
+                            </div>
+                            <!--end::Filters-->
                             <!--begin::Table-->
                             <div class="table-responsive">
                                 <table id="table-saldo-history" class="table align-middle table-row-dashed ">
@@ -212,6 +233,9 @@
                     url: "{{ route('saldo-history.index') }}",
                     data: function(d) {
                         d.type = 'saldo';
+                        d.search_name = $('#saldo-history-search-name').val();
+                        d.start_date = $('#saldo-history-start-date').val();
+                        d.end_date = $('#saldo-history-end-date').val();
                     }
                 },
                 language: {
@@ -451,6 +475,7 @@
                 url: "{{ route('saldo-history.index') }}",
                 data: function(d) {
                     d.type = 'archive';
+                    d.search_name = $('#archive-search-name').val();
                     d.start_date = $('#archive-start-date').val();
                     d.end_date = $('#archive-end-date').val();
                 }
@@ -527,9 +552,33 @@
         });
 
         $('#archive-btn-reset').click(function() {
+            $('#archive-search-name').val('');
             $('#archive-start-date').val('');
             $('#archive-end-date').val('');
             archiveTable.ajax.reload();
+        });
+
+        $('#archive-search-name').keyup(function(e) {
+            if (e.keyCode === 13) {
+                archiveTable.ajax.reload();
+            }
+        });
+
+        $('#saldo-history-btn-filter').click(function() {
+            table.ajax.reload();
+        });
+
+        $('#saldo-history-btn-reset').click(function() {
+            $('#saldo-history-search-name').val('');
+            $('#saldo-history-start-date').val('');
+            $('#saldo-history-end-date').val('');
+            table.ajax.reload();
+        });
+
+        $('#saldo-history-search-name').keyup(function(e) {
+            if (e.keyCode === 13) {
+                table.ajax.reload();
+            }
         });
 
         $(document).on('click', '.delete-archive-btn', function() {

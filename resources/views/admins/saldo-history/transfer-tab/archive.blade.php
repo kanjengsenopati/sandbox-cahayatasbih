@@ -8,6 +8,10 @@
         <!--begin::Card toolbar (Filters)-->
         <div class="d-flex align-items-center gap-3 flex-wrap">
             <div class="d-flex align-items-center gap-2">
+                <label class="fs-7 fw-bold text-gray-700 mb-0">Cari Siswa:</label>
+                <input type="text" id="archive-search-name" class="form-control form-control-solid form-control-sm" placeholder="Nama Siswa / NIS..." style="width: 180px;">
+            </div>
+            <div class="d-flex align-items-center gap-2">
                 <label class="fs-7 fw-bold text-gray-700 mb-0">Mulai:</label>
                 <input type="date" id="archive-start-date" class="form-control form-control-solid form-control-sm" style="width: 150px;">
             </div>
