@@ -549,6 +549,12 @@ class TransactionService
                 if ($transaction->type == Transaction::TYPE_SALDO) {
                     $student = Student::find($transaction->student_id);
                     $transactionDetail = $transaction?->transactionDetails?->first();
+
+                    // Hitung nominal pokok topup (tanpa kode unik)
+                    $mainAmount = $transaction->unique_payment > 0 
+                        ? ($transaction->pay_amount - $transaction->unique_payment) 
+                        : ($transaction->amount ?? $transaction->pay_amount);
+
                     if ($transactionDetail && $transactionDetail->saldoHistory) {
                         $saldoBefore = $student->saldo;
                         $amountToAdd = $transactionDetail->saldoHistory->amount;
@@ -562,6 +568,30 @@ class TransactionService
                             'balance_before' => $saldoBefore ?? 0,
                             'balance_after' => $student->saldo ?? 0,
                         ]);
+                    } else {
+                        // Fallback auto-recovery: jika TransactionDetail/SaldoHistory belum ada (kasus PWA lama)
+                        $saldoBefore = $student->saldo;
+                        $student->increment('saldo', $mainAmount);
+
+                        $saldoHistory = SaldoHistory::create([
+                            'student_id' => $student->id,
+                            'amount' => $mainAmount,
+                            'type' => SaldoHistory::TYPE_IN,
+                            'description' => 'Top Up Saldo Saku Sebesar Rp.' . number_format($mainAmount, 0, ',', '.'),
+                            'status' => SaldoHistory::STATUS_SUCCESS,
+                            'usage' => SaldoHistory::USAGE_TOPUP,
+                            'balance_before' => $saldoBefore ?? 0,
+                            'balance_after' => $student->saldo ?? 0,
+                        ]);
+
+                        if ($transactionDetail) {
+                            $transactionDetail->update(['saldo_history_id' => $saldoHistory->id]);
+                        } else {
+                            TransactionDetail::create([
+                                'transaction_id' => $transaction->id,
+                                'saldo_history_id' => $saldoHistory->id
+                            ]);
+                        }
                     }
                 } elseif ($transaction->type == Transaction::TYPE_SAVING) {
                     foreach ($transaction->transactionDetails as $detail) {

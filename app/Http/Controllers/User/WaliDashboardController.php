@@ -77,10 +77,21 @@ class WaliDashboardController extends Controller
         
         $transaction = TransactionService::createTransaction($request, $paymentMethod->type, Transaction::TYPE_SALDO);
         
-        if ($transaction instanceof \Illuminate\Http\JsonResponse) {
-            return redirect()->back()->with('error', $transaction->getData()->message);
-        }
+        // Create SaldoHistory with PENDING status
+        $saldoHistory = \App\Models\SaldoHistory::create([
+            'student_id' => $request->student_id,
+            'amount' => $request->amount,
+            'type' => \App\Models\SaldoHistory::TYPE_IN,
+            'description' => 'Top Up Saldo Saku Sebesar Rp.' . number_format($request->amount, 0, ',', '.'),
+            'status' => \App\Models\SaldoHistory::STATUS_PENDING,
+            'usage' => \App\Models\SaldoHistory::USAGE_TOPUP
+        ]);
 
+        // Link transaction to saldo history
+        \App\Models\TransactionDetail::create([
+            'transaction_id' => $transaction->id,
+            'saldo_history_id' => $saldoHistory->id
+        ]);
 
         return redirect()->route('wali.history')->with('success', 'Permintaan Top Up berhasil dibuat. Silakan selesaikan pembayaran.');
     }
