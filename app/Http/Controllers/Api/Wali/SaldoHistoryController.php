@@ -18,7 +18,8 @@ class SaldoHistoryController extends BaseWaliApiController
                   ->orWhereDoesntHave('pointOfSaleTransaction');
             })
             ->whereNotIn('status', [SaldoHistory::STATUS_FAILED])
-            ->latest();
+            ->orderBy('created_at', 'desc')
+            ->orderBy('id', 'desc');
             
         if ($request->filter == 'today') {
             $query->where('created_at', '>=', now()->startOfDay());

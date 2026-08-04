@@ -76,7 +76,8 @@ class SaldoHistoryController extends Controller
                 $data->whereDate('created_at', '<=', $endDate);
             }
 
-            $data->latest();
+            // Ensure stable sort order matching the recalculator logic
+            $data->orderBy('created_at', 'desc')->orderBy('id', 'desc');
 
             return DataTables::of($data)
                 ->addColumn('date', function ($data) {
