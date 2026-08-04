@@ -316,6 +316,23 @@
                     }
                 ]
             });
+
+            $('#saldo-history-btn-filter').off('click').on('click', function() {
+                table.ajax.reload();
+            });
+
+            $('#saldo-history-btn-reset').off('click').on('click', function() {
+                $('#saldo-history-search-name').val('');
+                $('#saldo-history-start-date').val('');
+                $('#saldo-history-end-date').val('');
+                table.ajax.reload();
+            });
+
+            $('#saldo-history-search-name').off('keyup').on('keyup', function(e) {
+                if (e.keyCode === 13) {
+                    table.ajax.reload();
+                }
+            });
     })
 </script>
 <script>
@@ -561,23 +578,6 @@
         $('#archive-search-name').keyup(function(e) {
             if (e.keyCode === 13) {
                 archiveTable.ajax.reload();
-            }
-        });
-
-        $('#saldo-history-btn-filter').click(function() {
-            table.ajax.reload();
-        });
-
-        $('#saldo-history-btn-reset').click(function() {
-            $('#saldo-history-search-name').val('');
-            $('#saldo-history-start-date').val('');
-            $('#saldo-history-end-date').val('');
-            table.ajax.reload();
-        });
-
-        $('#saldo-history-search-name').keyup(function(e) {
-            if (e.keyCode === 13) {
-                table.ajax.reload();
             }
         });
 
