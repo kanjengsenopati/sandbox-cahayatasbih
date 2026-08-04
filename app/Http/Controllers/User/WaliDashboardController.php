@@ -154,6 +154,21 @@ class WaliDashboardController extends Controller
             ->where('student_id', $activeStudent->id)
             ->get()
             ->filter(function ($bill) use ($activeStudent, $studentSchoolName) {
+                $billAY = $bill->billType->academicYear ?? $bill->academicYear;
+
+                // ATURAN KHUSUS SISWA KELAS 12 MA:
+                if (TransactionService::isClass12MA($activeStudent)) {
+                    // 1. Hide tagihan jika Tahun Ajaran < 2026/2027
+                    if (TransactionService::isBillBeforeAcademicYear2026($billAY)) {
+                        return false;
+                    }
+                    // 2. HANYA munculkan Syahriah, Biaya Aplikasi, dan LKS
+                    $btName = $bill->billType->name ?? '';
+                    if (!TransactionService::isAllowedBillTypeForClass12MA($btName)) {
+                        return false;
+                    }
+                }
+
                 // Pre-entry year check
                 $entryYear = $activeStudent->getEntryYear();
                 $billAYName = $bill->billType->academicYear->name ?? '';

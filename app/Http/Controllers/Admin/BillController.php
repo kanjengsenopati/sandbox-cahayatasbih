@@ -140,6 +140,18 @@ class BillController extends Controller
         return $query->latest()
             ->get()
             ->filter(function($item) use ($student, $studentSchoolName, $entryYear, $academicYearId, $preloadedRates) {
+                // ATURAN KHUSUS SISWA KELAS 12 MA:
+                if (TransactionService::isClass12MA($student)) {
+                    // 1. Hide tagihan jika Tahun Ajaran < 2026/2027 (bila tidak difilter TA spesifik)
+                    if (!$academicYearId && TransactionService::isBillBeforeAcademicYear2026($item->academicYear)) {
+                        return false;
+                    }
+                    // 2. HANYA munculkan Syahriah, Biaya Aplikasi, dan LKS
+                    if (!TransactionService::isAllowedBillTypeForClass12MA($item->name)) {
+                        return false;
+                    }
+                }
+
                 if (!TransactionService::isBillTypeMatchingStudentSchoolUnit($item->name, $studentSchoolName)) {
                     return false;
                 }

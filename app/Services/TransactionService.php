@@ -1132,6 +1132,49 @@ class TransactionService
         return true;
     }
 
+    public static function isClass12MA($student): bool
+    {
+        if (!$student) return false;
+        $classroom = $student->classroom ?? ($student->relationLoaded('classroom') ? $student->classroom : null);
+        if (!$classroom && isset($student->classroom_id)) {
+            $classroom = \App\Models\Classroom::with('school')->find($student->classroom_id);
+        }
+        if (!$classroom) return false;
+
+        $clsName = strtoupper($classroom->name ?? '');
+        $schName = strtoupper($classroom->school->name ?? '');
+
+        $isClass12 = (str_contains($clsName, '12') || str_contains($clsName, 'XII'));
+        $isMA = (str_contains($schName, 'MA') || str_contains($schName, 'MADRASAH ALIYAH'));
+
+        return $isClass12 && $isMA;
+    }
+
+    public static function isAllowedBillTypeForClass12MA(string $billTypeName): bool
+    {
+        $upper = strtoupper($billTypeName);
+        return str_contains($upper, 'SYAHR') 
+            || str_contains($upper, 'APLIKASI') 
+            || str_contains($upper, 'LKS');
+    }
+
+    public static function isBillBeforeAcademicYear2026($academicYear): bool
+    {
+        if (!$academicYear) return false;
+        $startYear = method_exists($academicYear, 'getStartYearSafe') 
+            ? $academicYear->getStartYearSafe() 
+            : null;
+        
+        if ($startYear === null && isset($academicYear->name)) {
+            $parts = explode('/', $academicYear->name);
+            if (count($parts) > 0 && is_numeric($parts[0])) {
+                $startYear = (int)$parts[0];
+            }
+        }
+
+        return $startYear !== null && $startYear < 2026;
+    }
+
     public static function cleanupGhostBillsForStudent($studentId)
     {
         if (empty($studentId)) return;

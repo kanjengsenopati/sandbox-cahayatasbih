@@ -36,13 +36,27 @@ class BillController extends BaseWaliApiController
         $studentSchoolName = $student->classroom?->school?->name ?? '';
         $entryYear = $student->getEntryYear() ?? date('Y');
 
-        $filteredBills = $allBills->filter(function ($b) use ($studentSchoolName, $entryYear) {
+        $filteredBills = $allBills->filter(function ($b) use ($student, $studentSchoolName, $entryYear) {
+            $ay = $b->billType?->academicYear ?? $b->academicYear;
+
+            // ATURAN KHUSUS SISWA KELAS 12 MA:
+            if (\App\Services\TransactionService::isClass12MA($student)) {
+                // 1. Hide tagihan jika Tahun Ajaran < 2026/2027
+                if (\App\Services\TransactionService::isBillBeforeAcademicYear2026($ay)) {
+                    return false;
+                }
+                // 2. HANYA munculkan Syahriah, Biaya Aplikasi, dan LKS
+                $btName = $b->billType?->name ?? '';
+                if (!\App\Services\TransactionService::isAllowedBillTypeForClass12MA($btName)) {
+                    return false;
+                }
+            }
+
             $btName = $b->billType?->name ?? '';
             if (!\App\Services\TransactionService::isBillTypeMatchingStudentSchoolUnit($btName, $studentSchoolName)) {
                 return false;
             }
             
-            $ay = $b->billType?->academicYear ?? $b->academicYear;
             if ($ay) {
                 $startYear = $ay->getStartYearSafe();
                 if ($startYear !== null && $startYear < $entryYear) {
