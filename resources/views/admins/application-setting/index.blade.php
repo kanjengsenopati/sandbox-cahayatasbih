@@ -254,6 +254,31 @@
                                         </div>
                                     </div>
                                 </div>
+
+                                <div class="row mb-6">
+                                    <div class="col-12">
+                                        <div class="card card-bordered p-4 bg-light-primary border-primary">
+                                            <div class="d-flex align-items-center justify-content-between mb-3">
+                                                <label class="fs-6 fw-bold form-label mb-0" for="allow_pwa_login_wali">
+                                                    <span class="required">Akses Login PWA Wali Santri (Global System)</span>
+                                                    <i class="fas fa-exclamation-circle ms-1 fs-7" data-bs-toggle="tooltip"
+                                                        title="Buka atau tutup akses login PWA secara keseluruhan"></i>
+                                                </label>
+                                                <div class="form-check form-switch form-check-custom form-check-solid">
+                                                    <input class="form-check-input" type="checkbox" value="1" name="allow_pwa_login_wali" id="allow_pwa_login_wali" {{ (!isset($applicationSetting->allow_pwa_login_wali) || $applicationSetting->allow_pwa_login_wali) ? 'checked' : '' }} />
+                                                    <label class="form-check-label fw-bold text-dark ms-2" for="allow_pwa_login_wali">Izinkan Login PWA Wali Santri</label>
+                                                </div>
+                                            </div>
+                                            <div class="text-muted fs-7 mb-3">
+                                                Jika sakelar ini dimatikan (dinonaktifkan), seluruh upaya login di aplikasi PWA Wali Santri akan ditolak sementara dengan pesan kustom di bawah ini.
+                                            </div>
+                                            <div>
+                                                <label class="fs-7 fw-bold form-label text-gray-700" for="pwa_login_disabled_message">Pesan Kustom Saat Login Dinonaktifkan (Opsional):</label>
+                                                <textarea class="form-control form-control-solid fs-7" name="pwa_login_disabled_message" id="pwa_login_disabled_message" rows="2" placeholder="Contoh: Maaf, layanan login PWA Wali Santri sedang ditutup sementara selama Ujian Akhir Semester.">{{ @$applicationSetting->pwa_login_disabled_message ?? old('pwa_login_disabled_message') }}</textarea>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
                                 <!--end::Input group-->
                                 <!--begin::Separator-->
                                 <div class="separator mb-6">

@@ -10,6 +10,18 @@ class AuthController extends Controller
 {
     public function login(Request $request)
     {
+        // Global PWA Login Kill-Switch check
+        $appSetting = \App\Models\ApplicationSetting::first();
+        if ($appSetting && isset($appSetting->allow_pwa_login_wali) && !$appSetting->allow_pwa_login_wali) {
+            $customMessage = !empty($appSetting->pwa_login_disabled_message)
+                ? $appSetting->pwa_login_disabled_message
+                : 'Maaf, layanan login PWA Wali Santri sedang dinonaktifkan sementara oleh Administrator.';
+
+            return response()->json([
+                'message' => $customMessage
+            ], 403);
+        }
+
         $credentials = $request->validate([
             'phone' => 'required',
             'password' => 'required',

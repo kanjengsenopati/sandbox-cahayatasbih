@@ -25,11 +25,14 @@ class ApplicationSetting extends Model
         'target_month',
         'target_year',
         'payment_auto_check',
+        'allow_pwa_login_wali',
+        'pwa_login_disabled_message',
     ];
 
     protected $casts = [
         'student_card_layout' => 'array',
         'payment_auto_check' => 'boolean',
+        'allow_pwa_login_wali' => 'boolean',
     ];
 
     public static function getDefaultStudentCardLayout(): array

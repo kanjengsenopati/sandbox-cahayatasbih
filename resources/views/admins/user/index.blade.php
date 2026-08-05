@@ -163,7 +163,13 @@
                             </div>
 
                             <!-- Action Buttons -->
-                            <div class="d-flex flex-wrap gap-4 align-items-end">
+                            <div class="d-flex flex-wrap gap-2 align-items-end">
+                                <button type="button" id="btn-bulk-deactivate-user" class="btn btn-danger btn-sm" title="Nonaktifkan Login PWA Wali Santri Massal">
+                                    <i class="fas fa-user-slash me-1"></i> Nonaktifkan Massal PWA
+                                </button>
+                                <button type="button" id="btn-bulk-activate-user" class="btn btn-success btn-sm" title="Aktifkan Login PWA Wali Santri Massal">
+                                    <i class="fas fa-user-check me-1"></i> Aktifkan Massal PWA
+                                </button>
                                 <button type="button" id="btn-bulk-delete-user" class="btn btn-danger btn-sm d-none">
                                     <i class="fa fa-trash me-2"></i> Hapus Terpilih
                                 </button>
@@ -320,6 +326,65 @@
     <!--end::Post-->
 </div>
 <!--end::Content-->
+
+<!-- Modal Massive Toggle PWA Login -->
+<div class="modal fade" id="modal-massive-pwa" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="border-radius: 24px; box-shadow: 0 10px 40px rgba(0,0,0,0.1);">
+            <div class="modal-header border-0 pb-0 pt-6 px-6">
+                <h5 class="modal-title fw-bolder text-dark" id="modal-massive-title">Nonaktifkan Massal Login PWA Wali</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body py-6 px-6">
+                <form id="form-massive-pwa">
+                    @csrf
+                    <input type="hidden" id="massive-action" name="action" value="deactivate">
+
+                    <div class="mb-4">
+                        <label class="form-label fw-bold text-gray-700">Cakupan (Scope) Target:</label>
+                        <select name="scope" id="massive-scope" class="form-select form-select-solid">
+                            <option value="all">Semua Akun Wali Santri</option>
+                            <option value="school">Berdasarkan Sekolah / Lembaga</option>
+                            <option value="classroom">Berdasarkan Kelas</option>
+                            <option value="selected">Hanya Akun yang Dicentang di Tabel</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-4 d-none" id="scope-school-group">
+                        <label class="form-label fw-bold text-gray-700">Pilih Sekolah / Lembaga:</label>
+                        <select name="school_id" id="massive-school-id" class="form-select form-select-solid">
+                            <option value="">-- Pilih Sekolah --</option>
+                            @foreach(\App\Models\School::all() as $sch)
+                                <option value="{{ $sch->id }}">{{ $sch->name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    <div class="mb-4 d-none" id="scope-classroom-group">
+                        <label class="form-label fw-bold text-gray-700">Pilih Kelas:</label>
+                        <select name="classroom_id" id="massive-classroom-id" class="form-select form-select-solid">
+                            <option value="">-- Pilih Kelas --</option>
+                            @foreach(\App\Models\Classroom::orderBy('name')->get() as $cls)
+                                <option value="{{ $cls->id }}">{{ $cls->name }} ({{ $cls->school->name ?? '-' }})</option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    <div class="alert alert-warning d-flex align-items-center p-3 mb-0" style="border-radius: 16px;">
+                        <i class="fas fa-exclamation-triangle text-warning fs-2 me-3"></i>
+                        <div class="fs-7 text-gray-700" id="massive-help-text">
+                            Tindakan ini akan menonaktifkan seluruh akun Wali Santri terpilih. Akun ter-nonaktifkan tidak akan dapat masuk ke PWA Wali Santri.
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer border-0 pt-0 pb-6 px-6">
+                <button type="button" class="btn btn-light btn-sm" data-bs-dismiss="modal">Batal</button>
+                <button type="button" id="btn-submit-massive-pwa" class="btn btn-danger btn-sm">Proses Sekarang</button>
+            </div>
+        </div>
+    </div>
+</div>
 
 <!-- Modal Reset Password Success -->
 <div class="modal fade" id="modalResetPasswordSuccess" tabindex="-1" aria-hidden="true">
@@ -901,6 +966,89 @@
                  }
              });
          }
+
+          // Massive Deactivate / Activate PWA Login Handlers
+          $('#btn-bulk-deactivate-user').on('click', function() {
+              $('#massive-action').val('deactivate');
+              $('#modal-massive-title').text('Nonaktifkan Massal Login PWA Wali');
+              $('#btn-submit-massive-pwa').removeClass('btn-success').addClass('btn-danger').text('Nonaktifkan Sekarang');
+              $('#massive-help-text').text('Tindakan ini akan menonaktifkan akun Wali Santri terpilih. Akun yang dinonaktifkan tidak akan dapat masuk ke PWA Wali Santri.');
+              $('#modal-massive-pwa').modal('show');
+          });
+
+          $('#btn-bulk-activate-user').on('click', function() {
+              $('#massive-action').val('activate');
+              $('#modal-massive-title').text('Aktifkan Massal Login PWA Wali');
+              $('#btn-submit-massive-pwa').removeClass('btn-danger').addClass('btn-success').text('Aktifkan Sekarang');
+              $('#massive-help-text').text('Tindakan ini akan mengaktifkan kembali akun Wali Santri terpilih agar dapat masuk ke PWA Wali Santri.');
+              $('#modal-massive-pwa').modal('show');
+          });
+
+          $('#massive-scope').on('change', function() {
+              var val = $(this).val();
+              if (val === 'school') {
+                  $('#scope-school-group').removeClass('d-none');
+                  $('#scope-classroom-group').addClass('d-none');
+              } else if (val === 'classroom') {
+                  $('#scope-classroom-group').removeClass('d-none');
+                  $('#scope-school-group').addClass('d-none');
+              } else {
+                  $('#scope-school-group').addClass('d-none');
+                  $('#scope-classroom-group').addClass('d-none');
+              }
+          });
+
+          $('#btn-submit-massive-pwa').on('click', function() {
+              var action = $('#massive-action').val();
+              var scope = $('#massive-scope').val();
+              var formData = $('#form-massive-pwa').serializeArray();
+
+              if (scope === 'selected') {
+                  var selectedIds = [];
+                  $('.check-user-item:checked').each(function() {
+                      selectedIds.push($(this).val());
+                  });
+                  if (selectedIds.length === 0) {
+                      Swal.fire('Perhatian', 'Pilih (centang) minimal satu akun Wali Santri di tabel!', 'warning');
+                      return;
+                  }
+                  selectedIds.forEach(function(id) {
+                      formData.push({ name: 'user_ids[]', value: id });
+                  });
+              }
+
+              var actionText = action === 'activate' ? 'Mengaktifkan' : 'Menonaktifkan';
+
+              Swal.fire({
+                  title: 'Konfirmasi Proses Massal',
+                  text: 'Apakah Anda yakin ingin ' + actionText.toLowerCase() + ' akun Wali Santri terpilih?',
+                  icon: 'warning',
+                  showCancelButton: true,
+                  confirmButtonColor: action === 'activate' ? '#50cd89' : '#f1416c',
+                  cancelButtonColor: '#7e8299',
+                  confirmButtonText: 'Ya, Proses!',
+                  cancelButtonText: 'Batal'
+              }).then((result) => {
+                  if (result.isConfirmed) {
+                      Swal.fire({ title: 'Memproses...', text: 'Mohon tunggu sejenak', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
+                      $.ajax({
+                          url: '{{ route('user.massive-toggle-active') }}',
+                          type: 'POST',
+                          data: formData,
+                          success: function(response) {
+                              $('#modal-massive-pwa').modal('hide');
+                              Swal.fire('Berhasil!', response.message, 'success');
+                              table.ajax.reload();
+                              refreshCounters();
+                          },
+                          error: function(xhr) {
+                              var msg = (xhr.responseJSON && xhr.responseJSON.message) ? xhr.responseJSON.message : 'Terjadi kesalahan saat memproses.';
+                              Swal.fire('Gagal!', msg, 'error');
+                          }
+                      });
+                  }
+              });
+          });
 
         // Initial fetch of counters
         refreshCounters();

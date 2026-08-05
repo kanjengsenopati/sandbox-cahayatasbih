@@ -469,4 +469,59 @@ class UserController extends Controller
             return response()->json(['success' => false, 'message' => 'Gagal menghapus data wali santri terpilih: ' . $e->getMessage()], 500);
         }
     }
+
+    /**
+     * Massive / Batch Toggle Active status for Wali Santri accounts.
+     */
+    public function massiveToggleActive(Request $request)
+    {
+        if (!Auth::user()->can('Manage Wali Santri')) {
+            return response()->json(['code' => 403, 'message' => 'Maaf, Anda tidak memiliki akses untuk tindakan tersebut'], 403);
+        }
+
+        $request->validate([
+            'action' => 'required|in:activate,deactivate',
+            'scope' => 'required|in:all,school,classroom,selected',
+            'school_id' => 'nullable|exists:schools,id',
+            'classroom_id' => 'nullable|exists:classrooms,id',
+            'user_ids' => 'nullable|array',
+            'user_ids.*' => 'exists:users,id',
+        ]);
+
+        $isActive = $request->action === 'activate' ? 1 : 0;
+        $scope = $request->scope;
+
+        $query = User::query();
+
+        if ($scope === 'school') {
+            $schoolId = $request->school_id;
+            $query->whereHas('student', function ($q) use ($schoolId) {
+                $q->whereHas('classroom', function ($q2) use ($schoolId) {
+                    $q2->where('school_id', $schoolId);
+                });
+            });
+        } elseif ($scope === 'classroom') {
+            $classroomId = $request->classroom_id;
+            $query->whereHas('student', function ($q) use ($classroomId) {
+                $q->where('classroom_id', $classroomId);
+            });
+        } elseif ($scope === 'selected') {
+            $userIds = $request->user_ids ?? [];
+            if (empty($userIds)) {
+                return response()->json(['code' => 400, 'message' => 'Pilih minimal satu Wali Santri'], 400);
+            }
+            $query->whereIn('id', $userIds);
+        }
+
+        $updatedCount = $query->update(['is_active' => $isActive]);
+
+        $statusText = $isActive ? 'diaktifkan' : 'dinonaktifkan';
+
+        return response()->json([
+            'code' => 200,
+            'status' => 'success',
+            'message' => "Berhasil memproses! Total {$updatedCount} akun Wali Santri telah {$statusText}.",
+            'updated_count' => $updatedCount
+        ]);
+    }
 }

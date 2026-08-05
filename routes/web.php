@@ -253,6 +253,7 @@ Route::group(['middleware' => ['auth']], function () {
     Route::post('user/{user}/verify', [UserController::class, 'verify'])->name('user.verify');
     Route::post('user/{user}/reset-password', [UserController::class, 'resetPassword'])->name('user.reset-password');
     Route::post('user/bulk-delete', [UserController::class, 'bulkDestroy'])->name('user.bulk-delete');
+    Route::post('user/massive-toggle-active', [UserController::class, 'massiveToggleActive'])->name('user.massive-toggle-active');
     Route::resource('user', UserController::class);
     Route::post('school/{school}/assign', [SchoolController::class, 'assignUsers'])->name('school.assign');
     Route::resource('school', SchoolController::class);

@@ -33,6 +33,8 @@ class ApplicationSettingRequest extends FormRequest
             // 'target_month' => 'required|numeric',
             // 'target_year' => 'required|numeric',
             'payment_auto_check' => 'nullable',
+            'allow_pwa_login_wali' => 'nullable',
+            'pwa_login_disabled_message' => 'nullable|string',
         ];
     }
 }
