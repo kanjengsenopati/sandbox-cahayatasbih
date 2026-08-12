@@ -1079,6 +1079,7 @@ class PaymentRateController extends Controller
                                 : '<span class="badge bg-danger">Belum Lunas</span>')
                     ];
                 });
+            }
 
             return response()->json([
                 'success' => true,
