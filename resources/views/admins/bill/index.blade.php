@@ -240,13 +240,13 @@
                             <div>
                                 <div class="card card-flush h-lg-100" id="kt_contacts_main">
                                     <div class="card-body pt-5">
-                                        <form action="{{ route('bill.index') }}" method="GET" id="filter-form">
-                                            <!-- Unit Pendidikan -->
-                                            <div class="row mb-4">
-                                                <label class="col-md-3 col-form-label fw-bold fs-6 required" for="school_id">
-                                                    Unit Pendidikan
-                                                </label>
-                                                <div class="col-md-9">
+                                        <form action="{{ route('bill.index') }}" method="GET" id="filter-form" class="mb-4">
+                                            <div class="row g-5">
+                                                <!-- Unit Pendidikan -->
+                                                <div class="col-md-4">
+                                                    <label class="form-label fw-bold fs-6 required" for="school_id">
+                                                        Unit Pendidikan
+                                                    </label>
                                                     <select name="school_id" class="form-select form-select-solid" id="school_id">
                                                         <option value="">Pilih Unit Pendidikan</option>
                                                         @foreach ($schools as $school)
@@ -256,14 +256,12 @@
                                                         @endforeach
                                                     </select>
                                                 </div>
-                                            </div>
 
-                                            <!-- Tahun Ajaran -->
-                                            <div class="row mb-4">
-                                                <label class="col-md-3 col-form-label fw-bold fs-6" for="academic_year_id">
-                                                    Tahun Ajaran
-                                                </label>
-                                                <div class="col-md-9">
+                                                <!-- Tahun Ajaran -->
+                                                <div class="col-md-4">
+                                                    <label class="form-label fw-bold fs-6" for="academic_year_id">
+                                                        Tahun Ajaran
+                                                    </label>
                                                     <select name="academic_year_id" id="academic_year_id" class="form-select form-select-solid">
                                                         <option value="">Semua Tahun Ajaran</option>
                                                         @foreach ($academicYears as $year)
@@ -281,14 +279,12 @@
                                                         @endforeach
                                                     </select>
                                                 </div>
-                                            </div>
 
-                                            <!-- Siswa & Button -->
-                                            <div class="row mb-4">
-                                                <label class="col-md-3 col-form-label fw-bold fs-6 required" for="student_id">
-                                                    NIS/NISN/Nama
-                                                </label>
-                                                <div class="col-md-9">
+                                                <!-- Siswa & Button -->
+                                                <div class="col-md-4">
+                                                    <label class="form-label fw-bold fs-6 required" for="student_id">
+                                                        NIS/NISN/Nama
+                                                    </label>
                                                     <select name="student_id" id="student_id" class="form-select form-select-solid">
                                                         @if(request('student_id') && isset($student))
                                                             <option value="{{ $student->id }}" selected>
