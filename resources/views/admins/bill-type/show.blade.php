@@ -592,11 +592,22 @@
                         filtered: students,
                         page: existingState ? existingState.page : 1,
                         limit: existingState ? existingState.limit : 20,
-                        search: existingState ? existingState.search : ''
+                        search: existingState ? existingState.search : '',
+                        sortCol: existingState ? existingState.sortCol : null,
+                        sortDir: existingState ? existingState.sortDir : 'asc'
                     };
                     contentDiv.data('tbl-state', state);
 
                     // Render table and search/limit shell
+                    function getSortIcon(colName, currentState) {
+                        if (currentState.sortCol !== colName) {
+                            return '<i class="fas fa-sort text-gray-400 ms-1 fs-9"></i>';
+                        }
+                        return currentState.sortDir === 'asc' 
+                            ? '<i class="fas fa-sort-up text-primary ms-1 fs-8"></i>' 
+                            : '<i class="fas fa-sort-down text-primary ms-1 fs-8"></i>';
+                    }
+
                     var html = '<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">';
                     html += '  <div class="d-flex align-items-center gap-2">';
                     html += '    <span class="fs-8 fw-bold text-gray-600">Tampilkan:</span>';
@@ -617,12 +628,12 @@
                     html += '    <thead><tr class="fw-bolder text-muted fs-8 text-uppercase">';
                     html += '      <th style="width: 3%"></th>';
                     html += '      <th class="ps-4" style="width: 5%">No</th>';
-                    html += '      <th>Nama Santri</th>';
-                    html += '      <th>Kelas</th>';
-                    html += '      <th>Total Tagihan</th>';
-                    html += '      <th>Dibayar</th>';
-                    html += '      <th>Sisa</th>';
-                    html += '      <th class="text-center">Status</th>';
+                    html += '      <th class="sortable-col cursor-pointer user-select-none" data-col="name" data-rate-id="' + rateId + '">Nama Santri ' + getSortIcon('name', state) + '</th>';
+                    html += '      <th class="sortable-col cursor-pointer user-select-none" data-col="classroom" data-rate-id="' + rateId + '">Kelas ' + getSortIcon('classroom', state) + '</th>';
+                    html += '      <th class="sortable-col cursor-pointer user-select-none" data-col="total" data-rate-id="' + rateId + '">Total Tagihan ' + getSortIcon('total', state) + '</th>';
+                    html += '      <th class="sortable-col cursor-pointer user-select-none" data-col="total_paid" data-rate-id="' + rateId + '">Dibayar ' + getSortIcon('total_paid', state) + '</th>';
+                    html += '      <th class="sortable-col cursor-pointer user-select-none" data-col="total_unpaid" data-rate-id="' + rateId + '">Sisa ' + getSortIcon('total_unpaid', state) + '</th>';
+                    html += '      <th class="text-center sortable-col cursor-pointer user-select-none" data-col="status" data-rate-id="' + rateId + '">Status ' + getSortIcon('status', state) + '</th>';
                     html += '    </tr></thead>';
                     html += '    <tbody class="student-table-body" data-rate-id="' + rateId + '"></tbody>';
                     html += '  </table>';
@@ -657,6 +668,39 @@
             state.filtered = state.all.filter(function(s) {
                 return (s.name || '').toLowerCase().indexOf(state.search.toLowerCase()) !== -1;
             });
+
+            // Sort column if active
+            if (state.sortCol) {
+                state.filtered.sort(function(a, b) {
+                    var valA, valB;
+                    if (state.sortCol === 'status') {
+                        valA = (a.status || '').replace(/<[^>]*>?/gm, '').trim();
+                        valB = (b.status || '').replace(/<[^>]*>?/gm, '').trim();
+                    } else if (state.sortCol === 'name') {
+                        valA = (a.name || '').toLowerCase();
+                        valB = (b.name || '').toLowerCase();
+                    } else if (state.sortCol === 'classroom') {
+                        valA = (a.classroom || '').toLowerCase();
+                        valB = (b.classroom || '').toLowerCase();
+                    } else if (state.sortCol === 'total') {
+                        valA = parseFloat((a.total || '0').replace(/[^0-9]/g, '')) || 0;
+                        valB = parseFloat((b.total || '0').replace(/[^0-9]/g, '')) || 0;
+                    } else if (state.sortCol === 'total_paid') {
+                        valA = parseFloat((a.total_paid || '0').replace(/[^0-9]/g, '')) || 0;
+                        valB = parseFloat((b.total_paid || '0').replace(/[^0-9]/g, '')) || 0;
+                    } else if (state.sortCol === 'total_unpaid') {
+                        valA = parseFloat((a.total_unpaid || '0').replace(/[^0-9]/g, '')) || 0;
+                        valB = parseFloat((b.total_unpaid || '0').replace(/[^0-9]/g, '')) || 0;
+                    } else {
+                        valA = a[state.sortCol] || '';
+                        valB = b[state.sortCol] || '';
+                    }
+
+                    if (valA < valB) return state.sortDir === 'asc' ? -1 : 1;
+                    if (valA > valB) return state.sortDir === 'asc' ? 1 : -1;
+                    return 0;
+                });
+            }
 
             // Pagination calculation
             var total = state.filtered.length;
@@ -1143,6 +1187,38 @@
             if (state) {
                 state.limit = $(this).val();
                 state.page = 1; // Reset to first page
+                renderStudentTable(rateId);
+            }
+        });
+
+        // Column Sort Click Handler (Sort A/D)
+        $(document).on('click', '.sortable-col', function(e) {
+            e.preventDefault();
+            var col = $(this).data('col');
+            var rateId = $(this).data('rate-id');
+            var detailRow = $('#detail-' + rateId);
+            var contentDiv = detailRow.find('.detail-content');
+            var state = contentDiv.data('tbl-state');
+
+            if (state) {
+                if (state.sortCol === col) {
+                    state.sortDir = state.sortDir === 'asc' ? 'desc' : 'asc';
+                } else {
+                    state.sortCol = col;
+                    state.sortDir = 'asc';
+                }
+
+                // Update Header Icons
+                detailRow.find('.sortable-col').each(function() {
+                    var c = $(this).data('col');
+                    var iconEl = $(this).find('i');
+                    if (c === state.sortCol) {
+                        iconEl.attr('class', 'fas ' + (state.sortDir === 'asc' ? 'fa-sort-up text-primary' : 'fa-sort-down text-primary') + ' ms-1 fs-8');
+                    } else {
+                        iconEl.attr('class', 'fas fa-sort text-gray-400 ms-1 fs-9');
+                    }
+                });
+
                 renderStudentTable(rateId);
             }
         });
