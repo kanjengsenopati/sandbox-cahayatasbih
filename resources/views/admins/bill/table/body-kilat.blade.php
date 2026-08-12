@@ -60,6 +60,26 @@
 @endpush
 
 <div class="accordion" id="accordionKilatParent">
+    @if($billMonth->isEmpty())
+    <div class="notice d-flex bg-light-warning rounded border-warning border border-dashed p-6 my-4">
+        <span class="svg-icon svg-icon-2tx svg-icon-warning me-4">
+            <i class="fas fa-exclamation-triangle fs-1 text-warning"></i>
+        </span>
+        <div class="d-flex flex-stack flex-grow-1">
+            <div class="fw-bold">
+                <h4 class="text-gray-900 fw-bolder">Belum Ada Tagihan Bulanan yang Di-generate</h4>
+                <div class="fs-6 text-gray-700">
+                    Tagihan kategori <strong>Bulanan</strong> (Syahriah, SPP, Aplikasi, dll) belum dibuat/di-generate untuk siswa <strong>{{ $student->name }}</strong>.
+                    <br>
+                    <span class="text-muted fs-7 mt-2 d-inline-block">
+                        <i class="fas fa-info-circle me-1 text-primary"></i>
+                        <strong>Panduan Admin:</strong> Silakan masuk ke menu <a href="{{ route('bill-type.index') }}" class="fw-bolder text-primary">Data Jenis Bayar</a>, lalu klik tombol sinkronisasi <i class="fas fa-sync text-success me-1"></i> <strong>Generasi Tagihan</strong> pada kelas siswa ini ({{ $displayClassName }}).
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+    @else
     @foreach ($billMonth as $bill)
     @php
         $isZarkasi = str_contains(strtoupper($bill->name ?? ''), 'ZARKASI');
@@ -374,6 +394,7 @@
         </div>
     </div>
     @endforeach
+    @endif
 </div>
 
 @push('js')

@@ -549,7 +549,7 @@
                                                                 </tr>
                                                             </thead>
                                                             <tbody class="text-slate-700 fw-bold">
-                                                                @foreach ($billMonth as $monthly)
+                                                                @forelse ($billMonth as $monthly)
                                                                 <tr>
                                                                     <td>{{ $loop->iteration }}</td>
                                                                     <td>{{ @$monthly->academicYear->name }}</td>
@@ -570,7 +570,16 @@
                                                                         </a>
                                                                     </td>
                                                                 </tr>
-                                                                @endforeach
+                                                                @empty
+                                                                <tr>
+                                                                    <td colspan="8" class="text-center py-5">
+                                                                        <div class="text-muted fw-bold fs-7">
+                                                                            <i class="fas fa-info-circle me-1 text-warning"></i>
+                                                                            Belum ada tagihan bulanan yang di-generate untuk siswa ini.
+                                                                        </div>
+                                                                    </td>
+                                                                </tr>
+                                                                @endforelse
                                                             </tbody>
                                                         </table>
                                                     </div>
@@ -606,7 +615,7 @@
                                                                 </tr>
                                                             </thead>
                                                             <tbody class="text-slate-700 fw-bold">
-                                                                @foreach ($billOthers as $other)
+                                                                @forelse ($billOthers as $other)
                                                                 <tr>
                                                                     <td>{{ $loop->iteration }}</td>
                                                                     <td>{{ @$other->academicYear->name }}</td>
@@ -627,7 +636,16 @@
                                                                         </a>
                                                                     </td>
                                                                 </tr>
-                                                                @endforeach
+                                                                @empty
+                                                                <tr>
+                                                                    <td colspan="8" class="text-center py-5">
+                                                                        <div class="text-muted fw-bold fs-7">
+                                                                            <i class="fas fa-info-circle me-1 text-warning"></i>
+                                                                            Belum ada tagihan lainnya yang di-generate untuk siswa ini.
+                                                                        </div>
+                                                                    </td>
+                                                                </tr>
+                                                                @endforelse
                                                             </tbody>
                                                         </table>
                                                     </div>
