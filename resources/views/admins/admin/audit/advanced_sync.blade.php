@@ -135,7 +135,7 @@
                                         Saldo Aplikasi Baru
                                         <i class="fas fa-question-circle ms-1 fs-7 text-primary cursor-pointer" data-bs-toggle="tooltip" title="Saldo siswa saat ini di aplikasi lokal yang sedang Anda gunakan"></i>
                                     </th>
-                                    <th>Riwayat Tertunda</th>
+                                    <th>Riwayat Transaksi Master</th>
                                     <th>
                                         Saldo Aplikasi Lama
                                         <i class="fas fa-question-circle ms-1 fs-7 text-primary cursor-pointer" data-bs-toggle="tooltip" title="Saldo siswa yang tercatat di database server lama (master)"></i>

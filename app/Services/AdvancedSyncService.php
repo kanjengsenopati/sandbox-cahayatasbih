@@ -117,7 +117,9 @@ class AdvancedSyncService
                 return !isset($localHistoryIdsMap[$history->id]);
             });
 
-            if ($newMasterHistories->isEmpty() && $localStudent) {
+            // Show student if they have ANY master histories matching filter OR if they have new master histories.
+            // This prevents skipping students whose master transactions are already fully synced.
+            if ($masterHistories->isEmpty() && $newMasterHistories->isEmpty()) {
                 continue;
             }
 
@@ -178,11 +180,11 @@ class AdvancedSyncService
                 'master_saldo_date' => $masterSaldoDate,
                 'master_saldo_time' => $masterSaldoTime,
                 'simulated_saldo' => $simulatedSaldo,
-                'new_histories_count' => $newMasterHistories->count(),
+                'new_histories_count' => $masterHistories->count(), // Display TOTAL master histories in this period
                 'total_in_added' => $newIn,
                 'total_out_added' => $newOut,
                 'conflict_status' => $conflictStatus,
-                'histories_to_insert' => $newMasterHistories->values()->toArray()
+                'histories_to_insert' => $masterHistories->values()->toArray() // Pass ALL master histories so executeSync can upsert them
             ];
         }
 
@@ -253,34 +255,37 @@ class AdvancedSyncService
                     $amount = $historyArray['amount'];
                     $type = $historyArray['type'];
                     $balanceAfter = $balanceBefore;
-
-                    if (in_array($type, ['IN', 'UNBLOCKED'])) {
-                        $balanceAfter = $balanceBefore + $amount;
-                    } elseif (in_array($type, ['OUT', 'WITHDRAW', 'BLOCKED'])) {
-                        $balanceAfter = $balanceBefore - $amount;
-                    }
-
-                    $historyArray['balance_before'] = $balanceBefore;
-                    $historyArray['balance_after'] = $balanceAfter;
                     
                     $hId = $historyArray['id'];
                     $exists = $localConn->table('saldo_histories')->where('id', $hId)->exists();
+                    
                     if ($exists) {
+                        // If it already exists locally, just update it. Do NOT add amount to running balance to prevent double counting.
                         unset($historyArray['id']);
                         $localConn->table('saldo_histories')->where('id', $hId)->update($historyArray);
                     } else {
+                        // If it's a new history, calculate the new running balance and insert.
+                        if (in_array($type, ['IN', 'UNBLOCKED'])) {
+                            $balanceAfter = $balanceBefore + $amount;
+                        } elseif (in_array($type, ['OUT', 'WITHDRAW', 'BLOCKED'])) {
+                            $balanceAfter = $balanceBefore - $amount;
+                        }
+
+                        $historyArray['balance_before'] = $balanceBefore;
+                        $historyArray['balance_after'] = $balanceAfter;
+
                         $localConn->table('saldo_histories')->insert($historyArray);
+                        
+                        // Update student saldo only if it was a new history
+                        $localConn->table('students')
+                            ->where('id', $studentId)
+                            ->update(['saldo' => $balanceAfter, 'updated_at' => now()]);
                     }
 
                     // If usage is POS, pull pos transaction
                     if (isset($historyArray['usage']) && $historyArray['usage'] === 'POS') {
                         $this->syncPosTransaction($hId);
                     }
-
-                    // Update student saldo
-                    $localConn->table('students')
-                        ->where('id', $studentId)
-                        ->update(['saldo' => $balanceAfter, 'updated_at' => now()]);
                 }
                 
                 $processedCount++;
