@@ -169,6 +169,10 @@ class WaliDashboardController extends Controller
             })
             ->get()
             ->filter(function ($bill) use ($activeStudent, $studentSchoolName) {
+                if (($bill->billType->is_visible ?? true) === false) {
+                    return false;
+                }
+
                 $billAY = $bill->billType->academicYear ?? $bill->academicYear;
 
                 // ATURAN KHUSUS SISWA KELAS 12 MA:

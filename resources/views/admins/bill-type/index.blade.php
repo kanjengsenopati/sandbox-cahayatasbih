@@ -189,6 +189,61 @@
             $('#filter_type').val('').trigger('change');
             $('#filter_bill_item').val('').trigger('change');
         });
+
+        // Toggle Visibility Event Listener
+        $(document).on('click', '.btn-toggle-visibility', function(e) {
+            e.preventDefault();
+            var btn = $(this);
+            var actionUrl = btn.data('action');
+            var isVisible = btn.data('visible');
+            var actionText = isVisible ? 'menyembunyikan' : 'menampilkan';
+            
+            Swal.fire({
+                title: 'Apakah Anda yakin?',
+                text: "Anda akan " + actionText + " jenis bayar ini dari UI Entry Pembayaran dan PWA Wali Santri.",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#3085d6',
+                cancelButtonColor: '#d33',
+                confirmButtonText: 'Ya, Lanjutkan!',
+                cancelButtonText: 'Batal'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    Swal.fire({
+                        title: 'Memproses...',
+                        allowOutsideClick: false,
+                        didOpen: () => {
+                            Swal.showLoading();
+                        }
+                    });
+                    
+                    $.ajax({
+                        url: actionUrl,
+                        type: 'POST',
+                        data: {
+                            _token: '{{ csrf_token() }}'
+                        },
+                        success: function(response) {
+                            if (response.code === 200) {
+                                Swal.fire({
+                                    icon: 'success',
+                                    title: 'Berhasil',
+                                    text: response.message,
+                                    timer: 1500,
+                                    showConfirmButton: false
+                                });
+                                table.ajax.reload(null, false);
+                            } else {
+                                Swal.fire('Gagal!', response.message, 'error');
+                            }
+                        },
+                        error: function(xhr) {
+                            Swal.fire('Error!', 'Terjadi kesalahan pada sistem.', 'error');
+                        }
+                    });
+                }
+            });
+        });
     });
 </script>
 @endpush

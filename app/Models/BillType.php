@@ -22,12 +22,14 @@ class BillType extends Model
         'use_wali_filter',
         'use_gender_filter',
         'use_custom_filter',
+        'is_visible',
     ];
 
     protected $casts = [
         'use_wali_filter' => 'boolean',
         'use_gender_filter' => 'boolean',
         'use_custom_filter' => 'boolean',
+        'is_visible' => 'boolean',
     ];
 
     public function billItem()

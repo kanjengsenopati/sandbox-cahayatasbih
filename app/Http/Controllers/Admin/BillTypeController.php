@@ -71,7 +71,18 @@ class BillTypeController extends Controller
                 ->addColumn('action', function ($data) {
                     $actionEdit = route('bill-type.edit', $data->id);
                     $actionDelete = route('bill-type.destroy', $data->id);
+                    $actionToggle = route('bill-type.toggle-visibility', $data->id);
+                    $isVisible = $data->is_visible ?? true;
+                    
+                    $iconClass = $isVisible ? 'fa-eye text-primary' : 'fa-eye-slash text-danger';
+                    $btnClass = 'btn btn-icon btn-bg-light btn-active-color-primary btn-sm btn-toggle-visibility';
+                    
+                    $toggleBtn = "<button class='{$btnClass}' data-action='{$actionToggle}' data-visible='{$isVisible}' title='" . ($isVisible ? 'Sembunyikan' : 'Tampilkan') . "'>
+                                    <i class='fas {$iconClass} fs-4'></i>
+                                  </button>";
+
                     return "<div class='d-flex justify-content-center gap-2'>" .
+                        $toggleBtn .
                         view('components.action.edit', ['action' => $actionEdit, 'name' => 'Jenis Bayar']) .
                         view('components.action.delete', ['action' => $actionDelete, 'id' => $data->id, 'name' => 'Jenis Bayar']) .
                         "</div>";
@@ -334,7 +345,33 @@ class BillTypeController extends Controller
 
         $billType->billTypeBank()->delete();
         $billType->delete();
-        return redirect()->route('bill-type.index')->with('success', 'Data berhasil dihapus');
+        return response()->json(['code' => 200, 'message' => 'Data berhasil dihapus']);
+    }
+
+    /**
+     * Toggle the visibility status of the specified resource.
+     */
+    public function toggleVisibility($id)
+    {
+        if (!Auth::user()?->can('Edit Jenis Bayar')) {
+            return response()->json(['code' => 403, 'message' => 'Maaf, Anda tidak memiliki akses']);
+        }
+
+        try {
+            $billType = BillType::findOrFail($id);
+            $billType->is_visible = !$billType->is_visible;
+            $billType->save();
+
+            $statusText = $billType->is_visible ? 'ditampilkan' : 'disembunyikan';
+            return response()->json([
+                'code' => 200, 
+                'message' => "Jenis bayar berhasil {$statusText}",
+                'is_visible' => $billType->is_visible
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error toggling bill type visibility: ' . $e->getMessage());
+            return response()->json(['code' => 500, 'message' => 'Terjadi kesalahan sistem']);
+        }
     }
 
     /**
