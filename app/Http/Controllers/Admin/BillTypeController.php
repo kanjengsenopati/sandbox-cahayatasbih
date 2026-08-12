@@ -231,6 +231,7 @@ class BillTypeController extends Controller
 
             // Regular Rates (Classroom Based)
             $regularRates = PaymentRate::with(['billType.academicYear', 'paymentRateClassrooms.classroom.school', 'paymentRateItems'])
+                ->withExists('bills')
                 ->whereIn('bill_type_id', $relatedBillTypeIds)
                 ->where('type', 'REGULAR')
                 ->when(!empty($academicYearIds), function ($query) use ($academicYearIds) {
@@ -243,6 +244,7 @@ class BillTypeController extends Controller
 
             // Transfer Rates (Student Based)
             $transferRates = PaymentRate::with(['billType.academicYear', 'paymentRateStudents.student.classroom.school', 'paymentRateItems'])
+                ->withExists('bills')
                 ->whereIn('bill_type_id', $relatedBillTypeIds)
                 ->where('type', 'TRANSFER')
                 ->when(!empty($academicYearIds), function ($query) use ($academicYearIds) {

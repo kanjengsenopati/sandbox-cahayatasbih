@@ -13,7 +13,7 @@ if ($user) {
 }
 $elementId = $attributes->get('id', 'user_id');
 @endphp
-<select name="user_id" id="{{ $elementId }}" data-control="select2" class="form-select form-select-solid {{$class ?? ''}}" {{
+<select name="user_id" id="{{ $elementId }}" class="form-select form-select-solid {{$class ?? ''}}" {{
     $attributes->except('id') }}>
     @if($user)
     <option selected value="{{@$user->id}}">{{$user->name}} [{{$statusText}}]{{$phoneText}}</option>

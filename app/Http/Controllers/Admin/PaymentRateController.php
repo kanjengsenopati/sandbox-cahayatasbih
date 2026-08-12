@@ -16,6 +16,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\Controller;
 use App\Services\SendNotifWaService;
+use App\Services\TransactionService;
 use Illuminate\Support\Facades\Cache;
 use App\Http\Requests\Admin\PaymentRateRequest;
 
@@ -176,92 +177,17 @@ class PaymentRateController extends Controller
                 $rateItemsMap["{$month}_{$year}"] = $item->id;
             }
 
-            // 5. DATA FETCHING (OPTIMASI BERAT & ANTI-HANG)
-            $students = collect([]);
-            if ($request->type == PaymentRate::TYPE_REGULAR) {
-                $students = Student::whereIn('classroom_id', $request->classrooms)
-                    ->where('status', 'ACTIVE')
-                    ->when($request->gender, function($q) use ($request) {
-                        $q->whereIn('gender', $request->gender);
-                    })
-                    ->when($request->jamaah_status, function($q) use ($request) {
-                        $q->where(function ($qq) use ($request) {
-                            $qq->whereHas('user', function($userQ) use ($request) {
-                                $userQ->whereIn('jamaah_status', $request->jamaah_status);
-                            });
-                            if (in_array('NON_JAMAAH', $request->jamaah_status)) {
-                                $qq->orWhereNull('user_id')
-                                   ->orWhereDoesntHave('user')
-                                   ->orWhereHas('user', function ($userQ) {
-                                       $userQ->whereNull('jamaah_status');
-                                   });
-                            }
-                        });
-                    })
-                    ->get(['id', 'classroom_id', 'gender', 'user_id']);
-            } else {
-                $students = Student::whereIn('id', $request->students)
-                    ->where('status', 'ACTIVE')
-                    ->when($request->gender, function($q) use ($request) {
-                        $q->whereIn('gender', $request->gender);
-                    })
-                    ->when($request->jamaah_status, function($q) use ($request) {
-                        $q->where(function ($qq) use ($request) {
-                            $qq->whereHas('user', function($userQ) use ($request) {
-                                $userQ->whereIn('jamaah_status', $request->jamaah_status);
-                            });
-                            if (in_array('NON_JAMAAH', $request->jamaah_status)) {
-                                $qq->orWhereNull('user_id')
-                                   ->orWhereDoesntHave('user')
-                                   ->orWhereHas('user', function ($userQ) {
-                                       $userQ->whereNull('jamaah_status');
-                                   });
-                            }
-                        });
-                    })
-                    ->get(['id', 'classroom_id', 'gender', 'user_id']);
-            }
-
-            // Build existing bills map
-            $studentIds = $students->pluck('id')->toArray();
-            $existingBillKeys = [];
-            if (!empty($studentIds)) {
-                $existingBillKeys = DB::table('bills')
-                    ->where('bill_type_id', $billType->id)
-                    ->whereIn('student_id', $studentIds)
-                    ->whereNull('deleted_at')
-                    ->select('student_id', 'month', 'year')
-                    ->get()
-                    ->map(fn($row) => "{$row->student_id}_{$row->month}_{$row->year}")
-                    ->flip()
-                    ->toArray();
-            }
-
-            $billsToInsert = [];
-            $timestamp = now(); // Waktu create seragam
-
-            // 6. LOGIC PEMBUATAN TAGIHAN (IN-MEMORY PROCESSING)
-            foreach ($students as $student) {
-                 $this->generateBillsForStudent($student, $billsToInsert, $months, $billType, $request, $rateItemsMap, $timestamp, $existingBillKeys);
-            }
-
-            // 7. BULK INSERT (EKSEKUSI FINAL)
-            if (!empty($billsToInsert)) {
-                foreach (array_chunk($billsToInsert, 500) as $chunk) {
-                    Bill::insert($chunk);
-                }
-            }
-
-            // 8. AUTO-CLEANUP GHOST BILLS (Mencegah Mismatch)
-            foreach ($students as $student) {
-                TransactionService::cleanupGhostBillsForStudent($student->id);
-            }
+            // 5. DISPATCH ASYNC JOB (Mencegah HANG / Timeout)
+            \Illuminate\Support\Facades\Artisan::queue('bills:sync-rate', [
+                '--rate' => $paymentRate->id,
+                '--force' => true,
+            ]);
 
             DB::commit();
             $lock->release();
 
             return redirect()->route('bill-type.show', $billType->id)
-                ->with('success', 'Tarif pembayaran dan tagihan berhasil digenerate.');
+                ->with('success', 'Tarif pembayaran berhasil dibuat. Pembuatan tagihan untuk siswa sedang diproses di latar belakang (Background Job). Harap tunggu beberapa saat.');
         } catch (\Exception $e) {
             DB::rollBack();
             $lock->release();
@@ -609,7 +535,7 @@ class PaymentRateController extends Controller
             $selectedSchoolId = $paymentRate->paymentRateStudents->first()->student?->classroom?->school_id;
         }
 
-        $classroomsQuery = Classroom::orderByRaw("CAST(name AS UNSIGNED) ASC, name ASC");
+        $classroomsQuery = Classroom::orderByRaw("CAST(name AS INTEGER) ASC, name ASC");
         if ($selectedSchoolId) {
             $classroomsQuery->where('school_id', $selectedSchoolId);
         }
@@ -1056,7 +982,7 @@ class PaymentRateController extends Controller
         $conflictingClassroomIds = array_unique($conflictingClassroomIds);
 
         $classrooms = Classroom::where('school_id', $school->id)
-            ->orderByRaw("CAST(name AS UNSIGNED) ASC, name ASC")
+            ->orderByRaw("CAST(name AS INTEGER) ASC, name ASC")
             ->get()
             ->map(function($classroom) use ($conflictingClassroomIds) {
                 $classroom->is_already_created = in_array($classroom->id, $conflictingClassroomIds);
@@ -1285,153 +1211,5 @@ class PaymentRateController extends Controller
         }
     }
 
-    private function generateBillsForStudent($student, &$billsToInsert, $months, $billType, $request, $rateItemsMap, $timestamp, $existingBillKeys)
-    {
-        if (!in_array($student->status, [Student::STATUS_ACTIVE, Student::STATUS_GRADUATED])) {
-            return;
-        }
 
-        foreach ($months as $month) {
-            // Tentukan Tahun & Nominal
-            $targetYear = ($billType->type == BillType::TYPE_MONTHLY) ? $request->{"tahun_$month"} : $request->year;
-            $targetAmountRaw = ($billType->type == BillType::TYPE_MONTHLY) ? $request->{"bulan_$month"} : $request->price;
-            $targetAmount = $targetAmountRaw ? (int) preg_replace('/[^0-9]/', '', (string)$targetAmountRaw) : 0;
-
-            // Skip jika nominal 0
-            if ($targetAmount == 0) continue;
-
-            // Ambil ID Item dari Map (Tanpa Query)
-            $rateItemId = $rateItemsMap["{$month}_{$targetYear}"] ?? null;
-
-            $billKey = "{$student->id}_{$month}_{$targetYear}";
-
-            if (isset($existingBillKeys[$billKey])) {
-                $existingBill = Bill::where('student_id', $student->id)
-                    ->where('bill_type_id', $billType->id)
-                    ->where('month', $month)
-                    ->where('year', $targetYear)
-                    ->first();
-
-                if ($existingBill && $existingBill->status === Bill::STATUS_UNPAID && ($existingBill->payment_rate_item_id !== $rateItemId || $existingBill->amount !== $targetAmount)) {
-                    $existingBill->update([
-                        'amount' => $targetAmount,
-                        'payment_rate_item_id' => $rateItemId,
-                        'classroom_id' => $student->classroom_id,
-                    ]);
-                }
-            } else {
-                $billsToInsert[] = [
-                    'id'                 => Str::uuid()->toString(),
-                    'bill_type_id'       => $billType->id,
-                    'classroom_id'       => $student->classroom_id,
-                    'student_id'         => $student->id,
-                    'academic_year_id'   => $billType->academic_year_id,
-                    'month'              => $month,
-                    'year'               => $targetYear,
-                    'amount'             => $targetAmount,
-                    'status'             => Bill::STATUS_UNPAID,
-                    'payment_rate_item_id' => $rateItemId,
-                    'created_at'         => $timestamp,
-                    'updated_at'         => $timestamp,
-                ];
-            }
-        }
-    }
-
-    private function generateBillsForNewItem($paymentRate, $newItem, $billType)
-    {
-        $students = collect([]);
-
-        if ($paymentRate->type == PaymentRate::TYPE_REGULAR) {
-            $classroomIds = $paymentRate->paymentRateClassrooms->pluck('classroom_id');
-            $students = Student::whereIn('classroom_id', $classroomIds)
-                ->where('status', 'ACTIVE')
-                ->when($paymentRate->gender, function($q) use ($paymentRate) {
-                    $q->whereIn('gender', explode(',', $paymentRate->gender));
-                })
-                ->when($paymentRate->jamaah_status, function($q) use ($paymentRate) {
-                    $statuses = array_map('trim', explode(',', $paymentRate->jamaah_status));
-                    $q->where(function ($qq) use ($statuses) {
-                        $qq->whereHas('user', function($userQ) use ($statuses) {
-                            $userQ->whereIn('jamaah_status', $statuses);
-                        });
-                        if (in_array('NON_JAMAAH', $statuses)) {
-                            $qq->orWhereNull('user_id')
-                               ->orWhereDoesntHave('user')
-                               ->orWhereHas('user', function ($userQ) {
-                                   $userQ->whereNull('jamaah_status');
-                               });
-                        }
-                    });
-                })
-                ->get();
-        } else {
-            $studentIds = $paymentRate->paymentRateStudents->pluck('student_id');
-            $students = Student::whereIn('id', $studentIds)
-                ->where('status', 'ACTIVE')
-                ->when($paymentRate->gender, function($q) use ($paymentRate) {
-                    $q->whereIn('gender', explode(',', $paymentRate->gender));
-                })
-                ->when($paymentRate->jamaah_status, function($q) use ($paymentRate) {
-                    $statuses = array_map('trim', explode(',', $paymentRate->jamaah_status));
-                    $q->where(function ($qq) use ($statuses) {
-                        $qq->whereHas('user', function($userQ) use ($statuses) {
-                            $userQ->whereIn('jamaah_status', $statuses);
-                        });
-                        if (in_array('NON_JAMAAH', $statuses)) {
-                            $qq->orWhereNull('user_id')
-                               ->orWhereDoesntHave('user')
-                               ->orWhereHas('user', function ($userQ) {
-                                   $userQ->whereNull('jamaah_status');
-                               });
-                        }
-                    });
-                })
-                ->get();
-        }
-
-        $billsToInsert = [];
-        $timestamp = now();
-
-        foreach ($students as $student) {
-             // Check if bill exists
-             $existingBill = Bill::where('student_id', $student->id)
-                ->where('bill_type_id', $billType->id)
-                ->where('month', $newItem->month)
-                ->where('year', $newItem->year)
-                ->first();
-
-             if ($existingBill) {
-                // Sync existing UNPAID bill with correct rate item and amount
-                if ($existingBill->status === Bill::STATUS_UNPAID && ($existingBill->payment_rate_item_id !== $newItem->id || $existingBill->amount !== $newItem->amount)) {
-                    $existingBill->update([
-                        'amount' => $newItem->amount,
-                        'payment_rate_item_id' => $newItem->id,
-                        'classroom_id' => $student->classroom_id,
-                    ]);
-                }
-             } else {
-                $billsToInsert[] = [
-                    'id'                 => Str::uuid()->toString(),
-                    'bill_type_id'       => $billType->id,
-                    'classroom_id'       => $student->classroom_id,
-                    'student_id'         => $student->id,
-                    'academic_year_id'   => $billType->academic_year_id,
-                    'month'              => $newItem->month,
-                    'year'               => $newItem->year,
-                    'amount'             => $newItem->amount,
-                    'status'             => Bill::STATUS_UNPAID,
-                    'payment_rate_item_id' => $newItem->id,
-                    'created_at'         => $timestamp,
-                    'updated_at'         => $timestamp,
-                ];
-             }
-        }
-
-        if (!empty($billsToInsert)) {
-            foreach (array_chunk($billsToInsert, 500) as $chunk) {
-                Bill::insert($chunk);
-            }
-        }
-    }
 }

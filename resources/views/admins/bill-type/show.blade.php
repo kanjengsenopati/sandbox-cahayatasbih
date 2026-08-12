@@ -44,6 +44,10 @@
         box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.4) !important;
         position: relative;
     }
+    .btn-light-success:hover i,
+    .btn-light-danger:hover i {
+        color: #ffffff !important;
+    }
 </style>
 @endpush
 
@@ -252,8 +256,8 @@
                                             <div class="d-flex justify-content-center align-items-center gap-2">
                                                 <form action="{{ route('payment-rate.generate', $rate->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Generate / Sinkronkan tagihan untuk tarif ini?');">
                                                     @csrf
-                                                    <button type="submit" class="btn btn-sm btn-light-success btn-icon hover-scale" title="Generate / Sinkronkan Tagihan">
-                                                        <i class="fas fa-sync text-success"></i>
+                                                    <button type="submit" class="btn btn-sm btn-light-{{ $rate->bills_exists ? 'success' : 'danger' }} btn-icon hover-scale" title="Generate / Sinkronkan Tagihan">
+                                                        <i class="fas fa-sync"></i>
                                                     </button>
                                                 </form>
                                                 @include('components.action.edit', ['action' => route('payment-rate.edit', $rate->id), 'name' => 'Jenis Bayar'])
@@ -379,8 +383,8 @@
                                             <div class="d-flex justify-content-center align-items-center gap-2">
                                                 <form action="{{ route('payment-rate.generate', $rate->id) }}" method="POST" class="d-inline" onsubmit="return confirm('Generate / Sinkronkan tagihan untuk tarif susulan ini?');">
                                                     @csrf
-                                                    <button type="submit" class="btn btn-sm btn-light-success btn-icon hover-scale" title="Generate / Sinkronkan Tagihan Susulan">
-                                                        <i class="fas fa-sync text-success"></i>
+                                                    <button type="submit" class="btn btn-sm btn-light-{{ $rate->bills_exists ? 'success' : 'danger' }} btn-icon hover-scale" title="Generate / Sinkronkan Tagihan Susulan">
+                                                        <i class="fas fa-sync"></i>
                                                     </button>
                                                 </form>
                                                 @include('components.action.edit', ['action' => route('payment-rate.edit', $rate->id), 'name' => 'Jenis Bayar'])
