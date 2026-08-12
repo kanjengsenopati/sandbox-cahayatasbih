@@ -66,8 +66,8 @@ class CleanLeakedBills extends Command
                 $student = $bill->student;
                 if (!$student) continue;
 
-                // If this is a student-specific rate, it's explicitly assigned. Not a leak.
-                if ($paymentRate->type === PaymentRate::TYPE_STUDENT) {
+                // If this is a student-specific rate (Transfer), it's explicitly assigned. Not a leak.
+                if ($paymentRate->type === PaymentRate::TYPE_TRANSFER) {
                     continue;
                 }
 
