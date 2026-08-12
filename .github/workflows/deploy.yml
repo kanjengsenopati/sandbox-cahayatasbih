@@ -20,7 +20,50 @@ jobs:
           chmod 600 ~/.ssh/id_ed25519
           ssh-keyscan -p ${{ secrets.VPS_PORT || '22' }} -H ${{ secrets.VPS_HOST }} >> ~/.ssh/known_hosts
 
-      - name: Deploy to VPS
+      - name: Sync Source Code
+        env:
+          DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
+          VPS_USER: ${{ secrets.VPS_USER }}
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_PORT: ${{ secrets.VPS_PORT || '22' }}
+        run: |
+          echo "Attempting to pull latest changes directly on the VPS..."
+          
+          # Create a script to run on the VPS for git pull
+          cat << 'INNER_EOF' > sync_script.sh
+          set -e
+          cd $DEPLOY_PATH
+          git config --global --add safe.directory $DEPLOY_PATH
+          git remote set-url origin https://github.com/kanjengsenopati/sandbox-cahayatasbih.git || true
+          
+          echo "Trying git fetch (default)..."
+          if git fetch https://x-access-token:${GITHUB_TOKEN}@github.com/kanjengsenopati/sandbox-cahayatasbih.git main; then
+              echo "Git fetch succeeded."
+          else
+              echo "Default fetch failed. Trying with IPv4 forced..."
+              git fetch -4 https://x-access-token:${GITHUB_TOKEN}@github.com/kanjengsenopati/sandbox-cahayatasbih.git main
+          fi
+          git reset --hard FETCH_HEAD
+          INNER_EOF
+          
+          # Execute the sync script on VPS
+          if ssh -o StrictHostKeyChecking=no -p $VPS_PORT $VPS_USER@$VPS_HOST "GITHUB_TOKEN=${{ secrets.GITHUB_TOKEN }} DEPLOY_PATH=$DEPLOY_PATH bash -s" < sync_script.sh; then
+            echo "Source code synced successfully via Git."
+          else
+            echo "Git pull failed on VPS. Falling back to rsync..."
+            rsync -avz --delete \
+              --exclude='.git' \
+              --exclude='storage' \
+              --exclude='bootstrap/cache' \
+              --exclude='.env' \
+              --exclude='node_modules' \
+              --exclude='vendor' \
+              --exclude='public/storage' \
+              -e "ssh -o StrictHostKeyChecking=no -p $VPS_PORT" \
+              ./ $VPS_USER@$VPS_HOST:$DEPLOY_PATH/
+          fi
+
+      - name: Build and Restart on VPS
         env:
           DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
           VPS_USER: ${{ secrets.VPS_USER }}
@@ -30,13 +73,7 @@ jobs:
           ssh -o StrictHostKeyChecking=no -o ServerAliveInterval=15 -o ServerAliveCountMax=20 -p $VPS_PORT $VPS_USER@$VPS_HOST <<EOF
             set -e
             cd $DEPLOY_PATH
-
-            echo "=== Pulling latest changes ==="
-            git config --global --add safe.directory $DEPLOY_PATH
-            git remote set-url origin https://github.com/kanjengsenopati/sandbox-cahayatasbih.git || true
-            git fetch -4 https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/kanjengsenopati/sandbox-cahayatasbih.git main
-            git reset --hard FETCH_HEAD
-
+            
             echo "=== Refreshing Autoloader ==="
             /www/server/php/84/bin/php /usr/bin/composer dump-autoload --optimize
 
