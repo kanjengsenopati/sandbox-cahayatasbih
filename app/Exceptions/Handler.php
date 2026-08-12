@@ -46,9 +46,15 @@ class Handler extends ExceptionHandler
         });
 
         $this->renderable(function (\Illuminate\Session\TokenMismatchException $e, $request) {
-            return redirect()->back()
-                ->withInput($request->except('password', 'password_confirmation'))
-                ->with('error', 'Sesi login telah kedaluwarsa. Token CSRF baru telah dibuat, silakan coba tekan tombol Masuk kembali.');
+            if ($request->expectsJson() || $request->ajax()) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Sesi Anda telah berakhir (CSRF Token Mismatch). Silakan perbarui halaman.'
+                ], 419);
+            }
+
+            return redirect()->guest(route('login'))
+                ->with('error', 'Sesi Anda telah kedaluwarsa. Silakan lakukan login kembali.');
         });
     }
 }

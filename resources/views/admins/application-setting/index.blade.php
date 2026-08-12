@@ -279,6 +279,31 @@
                                         </div>
                                     </div>
                                 </div>
+
+                                <div class="row mb-6">
+                                    <div class="col-12">
+                                        <div class="card card-bordered p-4 bg-light-warning border-warning">
+                                            <div class="d-flex align-items-center justify-content-between mb-3">
+                                                <label class="fs-6 fw-bold form-label mb-0" for="allow_pwa_saldo_payment_wali">
+                                                    <span class="required">Pembayaran Tagihan via Saldo (PWA Wali Santri)</span>
+                                                    <i class="fas fa-exclamation-circle ms-1 fs-7" data-bs-toggle="tooltip"
+                                                        title="Buka atau tutup akses pembayaran tagihan menggunakan saldo khusus di PWA Wali"></i>
+                                                </label>
+                                                <div class="form-check form-switch form-check-custom form-check-solid">
+                                                    <input class="form-check-input" type="checkbox" value="1" name="allow_pwa_saldo_payment_wali" id="allow_pwa_saldo_payment_wali" {{ (!isset($applicationSetting->allow_pwa_saldo_payment_wali) || $applicationSetting->allow_pwa_saldo_payment_wali) ? 'checked' : '' }} />
+                                                    <label class="form-check-label fw-bold text-dark ms-2" for="allow_pwa_saldo_payment_wali">Izinkan Pembayaran via Saldo di PWA Wali</label>
+                                                </div>
+                                            </div>
+                                            <div class="text-muted fs-7 mb-3">
+                                                Jika sakelar ini dimatikan (dinonaktifkan), seluruh upaya transaksi pembayaran tagihan menggunakan Saldo di PWA Wali Santri akan ditolak sementara dengan pesan kustom di bawah ini. (Transaksi Kasir POS/Kantin tetap berjalan).
+                                            </div>
+                                            <div>
+                                                <label class="fs-7 fw-bold form-label text-gray-700" for="pwa_saldo_payment_disabled_message">Pesan Kustom Saat Pembayaran Saldo PWA Dinonaktifkan (Opsional):</label>
+                                                <textarea class="form-control form-control-solid fs-7" name="pwa_saldo_payment_disabled_message" id="pwa_saldo_payment_disabled_message" rows="2" placeholder="Contoh: Pembayaran tagihan menggunakan Saldo di PWA Wali Santri sedang dinonaktifkan sementara oleh Pengelola.">{{ @$applicationSetting->pwa_saldo_payment_disabled_message ?? old('pwa_saldo_payment_disabled_message') }}</textarea>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
                                 <!--end::Input group-->
                                 <!--begin::Separator-->
                                 <div class="separator mb-6">

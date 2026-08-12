@@ -6,6 +6,7 @@ use App\Models\User;
 use App\Models\Contact;
 use App\Models\Student;
 use App\Models\Classroom;
+use App\Models\School;
 use App\Models\Transaction;
 use App\Models\SaldoHistory;
 use Illuminate\Http\Request;
@@ -60,7 +61,18 @@ class SaldoHistoryController extends Controller
             return $this->getArchiveTransactionData();
         }
         if (request()->ajax() && request()->type === 'saldo') {
-            $data = SaldoHistory::with('student')->hasSchool();
+            $data = SaldoHistory::with('student.classroom')->hasSchool();
+
+            if ($schoolId = request()->school_id) {
+                $data->whereHas('student.classroom', function ($q) use ($schoolId) {
+                    $q->where('school_id', $schoolId);
+                });
+            }
+            if ($classroomId = request()->classroom_id) {
+                $data->whereHas('student', function ($q) use ($classroomId) {
+                    $q->where('classroom_id', $classroomId);
+                });
+            }
 
             if ($searchName = request()->search_name) {
                 $data->whereHas('student', function ($q) use ($searchName) {
@@ -94,10 +106,10 @@ class SaldoHistoryController extends Controller
                     }
                 })
                 ->editColumn('balance_before', function ($data) {
-                    return '<span class="badge bg-info">Rp ' . number_format($data->balance_before, 0, ',', '.') . '</span>';
+                    return \format_saldo_badge($data->balance_before);
                 })
                 ->editColumn('balance_after', function ($data) {
-                    return '<span class="badge bg-info">Rp ' . number_format($data->balance_after, 0, ',', '.') . '</span>';
+                    return \format_saldo_badge($data->balance_after);
                 })
                 ->editColumn('status', function ($data) {
                     if ($data->status === SaldoHistory::STATUS_SUCCESS) {
@@ -198,7 +210,9 @@ class SaldoHistoryController extends Controller
                 ->rawColumns(['proof', 'action', 'type', 'status', 'bank_recipient'])
                 ->make(true);
         }
-        return view('admins.saldo-history.index');
+        $schools = School::orderBy('name')->get();
+        $classrooms = Classroom::orderBy('name')->get();
+        return view('admins.saldo-history.index', compact('schools', 'classrooms'));
     }
 
     /**

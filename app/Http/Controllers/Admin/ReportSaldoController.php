@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use Carbon\Carbon;
 use App\Models\School;
+use App\Models\Classroom;
 use App\Models\AcademicYear;
 use App\Models\SaldoHistory;
 use App\Models\Outlet;
@@ -29,7 +30,9 @@ class ReportSaldoController extends Controller
         }
 
         $outlets = Outlet::orderBy('name', 'asc')->get();
-        return view('admins.report-saldo.index', compact('outlets'));
+        $schools = School::orderBy('name', 'asc')->get();
+        $classrooms = Classroom::orderBy('name', 'asc')->get();
+        return view('admins.report-saldo.index', compact('outlets', 'schools', 'classrooms'));
     }
 
     protected function handleAjaxRequest()
@@ -50,6 +53,16 @@ class ReportSaldoController extends Controller
         return SaldoHistory::with(['student.classroom.school', 'outlet'])
             ->when(request()->filled('outlet_id'), function ($query) {
                 $query->where('outlet_id', request()->outlet_id);
+            })
+            ->when(request()->filled('school_id'), function ($query) {
+                $query->whereHas('student.classroom', function ($q) {
+                    $q->where('school_id', request()->school_id);
+                });
+            })
+            ->when(request()->filled('classroom_id'), function ($query) {
+                $query->whereHas('student', function ($q) {
+                    $q->where('classroom_id', request()->classroom_id);
+                });
             })
             ->when(request()->filled('start_date'), function ($query) {
                 $query->whereDate('created_at', '>=', request()->start_date);
@@ -106,10 +119,10 @@ class ReportSaldoController extends Controller
                 return $data->created_at->translatedFormat('d F Y' . ' <br>' . 'H:i:s');
             })
             ->editColumn('balance_before', function ($data) {
-                return '<span class="badge bg-info">Rp ' . number_format($data->balance_before, 0, ',', '.') . '</span>';
+                return \format_saldo_badge($data->balance_before);
             })
             ->editColumn('balance_after', function ($data) {
-                return '<span class="badge bg-info">Rp ' . number_format($data->balance_after, 0, ',', '.') . '</span>';
+                return \format_saldo_badge($data->balance_after);
             })
             ->addColumn('action', function ($data) {
                 $actionDelete = route('report-saldo.destroy', $data->id);

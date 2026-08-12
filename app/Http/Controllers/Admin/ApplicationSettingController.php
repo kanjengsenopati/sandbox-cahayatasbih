@@ -44,6 +44,7 @@ class ApplicationSettingController extends Controller
         $data = $request->validated();
         $data['payment_auto_check'] = $request->has('payment_auto_check') ? true : false;
         $data['allow_pwa_login_wali'] = $request->has('allow_pwa_login_wali') ? true : false;
+        $data['allow_pwa_saldo_payment_wali'] = $request->has('allow_pwa_saldo_payment_wali') ? true : false;
 
         if ($request->hasFile('student_card_image')) {
             $data['student_card_image'] = $this->storeStudentCardImage($request->file('student_card_image'));

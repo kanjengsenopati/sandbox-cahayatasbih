@@ -18,11 +18,11 @@ class AdvancedSyncService
     public function generatePreview(array $filters)
     {
         @set_time_limit(600);
-        @ini_set('memory_limit', '512M');
+        @ini_set('memory_limit', '1024M');
 
         $previewId = 'sync_preview_' . (string) Str::uuid();
         $localConn = DB::connection();
-        $masterConn = DB::connection('mysql_master');
+        $masterConn = $this->getRemoteConnection();
 
         $masterQuery = $masterConn->table('students')
             ->select('students.id', 'students.name', 'students.nis', 'students.saldo', 'students.saving', 'students.created_at', 'students.updated_at', 'classrooms.name as classroom_name', 'schools.name as school_name')
@@ -37,9 +37,10 @@ class AdvancedSyncService
             $masterQuery->where('students.classroom_id', $filters['classroom_id']);
         }
         if (!empty($filters['search'])) {
-            $masterQuery->where(function($q) use ($filters) {
-                $q->where('students.name', 'like', '%' . $filters['search'] . '%')
-                  ->orWhere('students.nis', 'like', '%' . $filters['search'] . '%');
+            $search = $filters['search'];
+            $masterQuery->where(function($q) use ($search) {
+                $q->where('students.name', 'like', '%' . $search . '%')
+                  ->orWhere('students.nis', 'like', '%' . $search . '%');
             });
         }
 
@@ -55,42 +56,65 @@ class AdvancedSyncService
 
         // Fetch Local Students for comparison
         $studentsLocal = $localConn->table('students')
+            ->select('id', 'saldo', 'created_at', 'updated_at')
             ->whereIn('id', $studentIds)
             ->get()->keyBy('id');
 
-        // Fetch Master Saldo Histories based on date range
-        $saldoHistoriesMasterQuery = $masterConn->table('saldo_histories')
-            ->whereIn('student_id', $studentIds)
-            ->whereNull('deleted_at')
-            ->orderBy('created_at', 'asc'); // Must be chronological
-        
-        if (!empty($filters['start_date'])) {
-            $saldoHistoriesMasterQuery->whereDate('created_at', '>=', $filters['start_date']);
+        // Fetch Local Saldo History IDs as an O(1) hash map to avoid RAM exhaustion
+        $localHistoryIdsMap = [];
+        foreach (array_chunk($studentIds, 200) as $chunk) {
+            $ids = $localConn->table('saldo_histories')
+                ->whereIn('student_id', $chunk)
+                ->whereNull('deleted_at')
+                ->pluck('id')
+                ->flip()
+                ->toArray();
+            $localHistoryIdsMap += $ids;
         }
-        if (!empty($filters['end_date'])) {
-            $saldoHistoriesMasterQuery->whereDate('created_at', '<=', $filters['end_date']);
-        }
-        
-        $saldoHistoriesMaster = $saldoHistoriesMasterQuery->get()->groupBy('student_id');
 
-        // Fetch Local Saldo Histories for comparison
-        $saldoHistoriesLocal = $localConn->table('saldo_histories')
-            ->whereIn('student_id', $studentIds)
-            ->whereNull('deleted_at')
-            ->get()->groupBy('student_id');
+        // Fetch Master Saldo Histories in chunks of 200 students to prevent SQL binding limit / PDO slowdown
+        $saldoHistoriesMasterList = collect();
+        foreach (array_chunk($studentIds, 200) as $chunk) {
+            $q = $masterConn->table('saldo_histories')
+                ->select('id', 'student_id', 'type', 'amount', 'usage', 'description', 'status', 'balance_before', 'balance_after', 'created_at')
+                ->whereIn('student_id', $chunk)
+                ->whereNull('deleted_at')
+                ->orderBy('created_at', 'asc');
+
+            if (!empty($filters['start_date'])) {
+                $q->whereDate('created_at', '>=', $filters['start_date']);
+            }
+            if (!empty($filters['end_date'])) {
+                $q->whereDate('created_at', '<=', $filters['end_date']);
+            }
+
+            $saldoHistoriesMasterList = $saldoHistoriesMasterList->concat($q->get());
+        }
+
+        $saldoHistoriesMaster = $saldoHistoriesMasterList->groupBy('student_id');
+
+        // Fetch Local Saldo Histories timestamps for display
+        $localHistoriesByStudent = collect();
+        foreach (array_chunk($studentIds, 200) as $chunk) {
+            $lh = $localConn->table('saldo_histories')
+                ->select('student_id', 'created_at')
+                ->whereIn('student_id', $chunk)
+                ->whereNull('deleted_at')
+                ->get();
+            $localHistoriesByStudent = $localHistoriesByStudent->concat($lh);
+        }
+        $localHistoriesByStudent = $localHistoriesByStudent->groupBy('student_id');
 
         $previewData = [];
 
         foreach ($studentsMaster as $studentId => $masterStudent) {
             $localStudent = $studentsLocal->get($studentId);
             $masterHistories = $saldoHistoriesMaster->get($studentId) ?? collect();
-            $localHistories = $saldoHistoriesLocal->get($studentId) ?? collect();
+            $localHistories = $localHistoriesByStudent->get($studentId) ?? collect();
 
-            $localHistoryIds = $localHistories->pluck('id')->toArray();
-            
-            // Find histories in master that do NOT exist in local yet
-            $newMasterHistories = $masterHistories->filter(function ($history) use ($localHistoryIds) {
-                return !in_array($history->id, $localHistoryIds);
+            // Find histories in master that do NOT exist in local yet using O(1) hash map
+            $newMasterHistories = $masterHistories->filter(function ($history) use ($localHistoryIdsMap) {
+                return !isset($localHistoryIdsMap[$history->id]);
             });
 
             if ($newMasterHistories->isEmpty() && $localStudent) {
@@ -193,7 +217,7 @@ class AdvancedSyncService
         }
 
         $localConn = DB::connection();
-        $masterConn = DB::connection('mysql_master');
+        $masterConn = $this->getRemoteConnection();
 
         $localConn->beginTransaction();
 
@@ -295,11 +319,16 @@ class AdvancedSyncService
     private function syncPosTransaction($saldoHistoryId)
     {
         $localConn = DB::connection();
-        $masterConn = DB::connection('mysql_master');
+        $masterConn = $this->getRemoteConnection();
 
         $posTxMaster = $masterConn->table('point_of_sale_transactions')
             ->where('saldo_history_id', $saldoHistoryId)
             ->first();
+        if (!$posTxMaster) {
+            $posTxMaster = DB::connection('mysql_master')->table('point_of_sale_transactions')
+                ->where('saldo_history_id', $saldoHistoryId)
+                ->first();
+        }
 
         if ($posTxMaster) {
             $exists = $localConn->table('point_of_sale_transactions')
@@ -336,6 +365,20 @@ class AdvancedSyncService
                     }
                 }
             }
+        }
+    }
+
+    /**
+     * Resolve the remote database connection (mysql_aplikasi default as it contains live PWA/POS/saldo data,
+     * fallback to mysql_master if unreachable).
+     */
+    private function getRemoteConnection()
+    {
+        try {
+            DB::connection('mysql_aplikasi')->getPdo();
+            return DB::connection('mysql_aplikasi');
+        } catch (\Throwable $e) {
+            return DB::connection('mysql_master');
         }
     }
 }

@@ -74,6 +74,27 @@
                                              @endforeach
                                          </select>
                                      </div>
+                                     <div>
+                                          <label class="form-label">Lembaga / UPT</label>
+                                          <select name="school_id" class="form-select" id="filter_school_id">
+                                              <option value="">Semua Lembaga</option>
+                                              @foreach ($schools as $school)
+                                              <option value="{{ $school->id }}">{{ $school->name }}</option>
+                                              @endforeach
+                                          </select>
+                                      </div>
+                                      <div>
+                                          <label class="form-label">Kelas</label>
+                                          <div class="dropdown">
+                                              <button class="btn btn-light dropdown-toggle" style="background-color: #f5f8fa; border-color: #f5f8fa; color: #5e6278;" type="button" id="filter_classroom_btn" data-bs-toggle="dropdown" aria-expanded="false" data-bs-auto-close="outside">
+                                                  Semua Kelas
+                                              </button>
+                                              <input type="hidden" name="classroom_id" id="filter_classroom_id" value="">
+                                              <div class="dropdown-menu p-4 shadow" style="min-width: 400px; max-height: 400px; overflow-y: auto;" aria-labelledby="filter_classroom_btn" id="classroom_mega_menu">
+                                                  <div class="text-muted fs-7 mb-2">Pilih Lembaga terlebih dahulu</div>
+                                              </div>
+                                          </div>
+                                      </div>
                                     <!--begin::Export dropdown-->
                                     <button type="button" class="btn btn-sm btn-primary" data-kt-menu-trigger="click"
                                         data-kt-menu-placement="bottom-end">
@@ -216,6 +237,8 @@
                     data: function(d) {
                         d.type = 'table';
                         d.outlet_id = $('#filter_outlet_id').val();
+                        d.school_id = $('#filter_school_id').val();
+                        d.classroom_id = $('#filter_classroom_id').val();
                         d.start_date = start_date;
                         d.end_date = end_date;
                     }
@@ -252,8 +275,13 @@
                         name: 'student.name',
                         orderable: true,
                         searchable: true,
-                        render: function(data) {
-                            return data ? data : 'Unknown Student';
+                        render: function(data, type, row) {
+                            var name = data ? data : 'Unknown Student';
+                            var className = (row.student && row.student.classroom && row.student.classroom.name) ? row.student.classroom.name : '-';
+                            return `<div class="d-flex flex-column text-start">
+                                        <span class="fw-bolder">${name}</span>
+                                        <span class="badge badge-light-primary fw-bolder mt-1 align-self-start">${className}</span>
+                                    </div>`;
                         }
                     },
                     {
@@ -331,6 +359,8 @@
                 data: {
                     type: 'total',
                     outlet_id: $('#filter_outlet_id').val(),
+                    school_id: $('#filter_school_id').val(),
+                    classroom_id: $('#filter_classroom_id').val(),
                     start_date: start_date,
                     end_date: end_date
                 },
@@ -357,7 +387,63 @@
             reloadTable();
         });
 
-        $('#filter_outlet_id').on('change', function() {
+        $('#filter_outlet_id, #filter_school_id').on('change', function() {
+            if ($(this).attr('id') === 'filter_school_id') {
+                $('#filter_classroom_id').val('');
+                $('#filter_classroom_btn').text('Semua Kelas');
+                renderClassroomMegaMenu($(this).val());
+            }
+            reloadTable();
+        });
+
+        const allClassrooms = @json($classrooms);
+
+        function renderClassroomMegaMenu(schoolId) {
+            const container = $('#classroom_mega_menu');
+            container.empty();
+
+            if (!schoolId) {
+                container.html('<div class="text-muted fs-7 mb-2">Pilih Lembaga terlebih dahulu</div>');
+                return;
+            }
+
+            const filteredClasses = allClassrooms.filter(c => c.school_id == schoolId);
+            if (filteredClasses.length === 0) {
+                container.html('<div class="text-muted fs-7 mb-2">Tidak ada kelas ditemukan</div>');
+                return;
+            }
+
+            const groups = {};
+            filteredClasses.forEach(c => {
+                let match = c.name.match(/^(\d+)/);
+                let key = match ? match[1] : 'Lainnya';
+                if (!groups[key]) groups[key] = [];
+                groups[key].push(c);
+            });
+
+            const row = $('<div class="row g-2"></div>');
+            
+            container.append($('<a href="#" class="dropdown-item fw-bold text-primary mb-3 classroom-item" data-id="" data-name="Semua Kelas">Semua Kelas</a>'));
+
+            Object.keys(groups).sort((a,b) => parseInt(a) - parseInt(b)).forEach(key => {
+                const col = $('<div class="col-4"></div>');
+                col.append(`<h6 class="dropdown-header text-uppercase text-muted fw-bolder">Kelas ${key}</h6>`);
+                groups[key].forEach(c => {
+                    col.append(`<a class="dropdown-item classroom-item" href="#" data-id="${c.id}" data-name="${c.name}">${c.name}</a>`);
+                });
+                row.append(col);
+            });
+
+            container.append(row);
+        }
+
+        $(document).on('click', '.classroom-item', function(e) {
+            e.preventDefault();
+            const id = $(this).data('id');
+            const name = $(this).data('name');
+            $('#filter_classroom_id').val(id);
+            $('#filter_classroom_btn').text(name);
+            $('#filter_classroom_btn').dropdown('toggle'); // close dropdown manually
             reloadTable();
         });
 

@@ -580,7 +580,10 @@ class PosTransactionController extends Controller
             return array_fill(0, 12, 0);
         }
 
-        $rows = PointOfSaleTransaction::selectRaw("MONTH(created_at) as month, COALESCE(SUM({$column}), 0) as total")
+        $driver = \Illuminate\Support\Facades\DB::connection()->getDriverName();
+        $monthSelect = $driver === 'sqlite' ? "strftime('%m', created_at)" : "MONTH(created_at)";
+
+        $rows = PointOfSaleTransaction::selectRaw("{$monthSelect} as month, COALESCE(SUM({$column}), 0) as total")
             ->whereYear('created_at', $year)
             ->where('status', PointOfSaleTransaction::STATUS_SUCCESS)
             ->when($hasOutletRestriction, function ($q) use ($authOutletIds) {
@@ -594,9 +597,9 @@ class PosTransactionController extends Controller
                     $q->where('outlet_id', $outletId);
                 }
             })
-            ->groupByRaw('MONTH(created_at)')
+            ->groupByRaw($monthSelect)
             ->get()
-            ->keyBy('month');
+            ->keyBy(fn($item) => intval($item->month));
 
         // Map ke array 12 bulan, isi 0 untuk bulan yang tidak ada data
         return collect(range(1, 12))

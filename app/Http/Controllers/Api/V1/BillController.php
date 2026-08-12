@@ -6,6 +6,7 @@ use App\Models\Bill;
 use App\Models\BillType;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
+use Illuminate\Support\Facades\DB;
 
 class BillController extends Controller
 {
@@ -55,9 +56,20 @@ class BillController extends Controller
     public function show(Request $request, $id)
     {
         $billType = BillType::with(['billItem', 'academicYear', 'bills' => function ($query) use ($request) {
+            $driver = DB::connection()->getDriverName();
+            if ($driver === 'sqlite') {
+                $cases = [];
+                foreach (array_values(array_keys(Bill::$monthOrder)) as $idx => $m) {
+                    $cases[] = "WHEN '{$m}' THEN " . ($idx + 1);
+                }
+                $orderExpr = "CASE month " . implode(' ', $cases) . " ELSE 99 END";
+            } else {
+                $orderExpr = "FIELD(month, " . implode(",", array_keys(Bill::$monthOrder)) . ")";
+            }
+
             $query->where('student_id', $request->student_id)
                 ->orderBy('year', 'asc')
-                ->orderByRaw("FIELD(month, " . implode(",", array_keys(Bill::$monthOrder)) . ")");
+                ->orderByRaw($orderExpr);
         }])->find($id);
 
 

@@ -3,6 +3,8 @@
 // during Laravel bootstrap (Collection class not found due to Enumerable deprecation)
 error_reporting(E_ALL & ~E_DEPRECATED);
 ini_set('display_errors', 0);
+@set_time_limit(300);
+@ini_set('max_execution_time', '300');
 
 
 use Illuminate\Contracts\Http\Kernel;

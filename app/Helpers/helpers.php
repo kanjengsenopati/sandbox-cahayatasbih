@@ -44,3 +44,24 @@ if (!function_exists('storage_asset')) {
         return asset($checkPath);
     }
 }
+
+if (!function_exists('format_saldo_badge')) {
+    /**
+     * Format saldo nominal as a dynamic badge:
+     * - Saldo < 0 (Negatif) : Merah (bg-danger text-white)
+     * - Saldo >= 0 (Rp 0 & Positif) : Hijau (bg-success text-white)
+     *
+     * @param float|int|null $amount
+     * @return string HTML badge element
+     */
+    function format_saldo_badge($amount): string
+    {
+        $val = (float) ($amount ?? 0);
+        $formatted = 'Rp ' . number_format($val, 0, ',', '.');
+        if ($val < 0) {
+            return '<span class="badge bg-danger text-white">' . $formatted . '</span>';
+        }
+        return '<span class="badge bg-success text-white">' . $formatted . '</span>';
+    }
+}
+

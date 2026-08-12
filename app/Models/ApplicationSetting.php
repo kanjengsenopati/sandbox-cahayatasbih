@@ -27,12 +27,15 @@ class ApplicationSetting extends Model
         'payment_auto_check',
         'allow_pwa_login_wali',
         'pwa_login_disabled_message',
+        'allow_pwa_saldo_payment_wali',
+        'pwa_saldo_payment_disabled_message',
     ];
 
     protected $casts = [
         'student_card_layout' => 'array',
         'payment_auto_check' => 'boolean',
         'allow_pwa_login_wali' => 'boolean',
+        'allow_pwa_saldo_payment_wali' => 'boolean',
     ];
 
     public static function getDefaultStudentCardLayout(): array

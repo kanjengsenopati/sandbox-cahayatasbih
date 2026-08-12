@@ -157,7 +157,7 @@ class SendNotifWaService
                                     ->where('month', '<=', $currentMonth);
                             });
                     })
-                    ->orderByRaw('CONCAT(year, LPAD(month, 2, "0")) ASC')
+                    ->orderBy('year', 'asc')->orderBy('month', 'asc')
                     ->get();
 
                 $totalUnpaid = $unpaidBills->sum('amount');
@@ -365,7 +365,7 @@ class SendNotifWaService
                             ->where('month', '<=', $currentMonth); // Dan bulan <= bulan saat ini
                     });
             })
-            ->orderByRaw('CONCAT(year, LPAD(month, 2, "0")) ASC') // Urutkan berdasarkan YYYYMM (terlama dulu)
+            ->orderBy('year', 'asc')->orderBy('month', 'asc') // Urutkan berdasarkan YYYYMM (terlama dulu)
             ->get();
 
         // Jika tidak ada tagihan, kembalikan null

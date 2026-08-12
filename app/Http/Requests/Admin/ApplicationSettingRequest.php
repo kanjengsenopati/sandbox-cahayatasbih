@@ -35,6 +35,8 @@ class ApplicationSettingRequest extends FormRequest
             'payment_auto_check' => 'nullable',
             'allow_pwa_login_wali' => 'nullable',
             'pwa_login_disabled_message' => 'nullable|string',
+            'allow_pwa_saldo_payment_wali' => 'nullable',
+            'pwa_saldo_payment_disabled_message' => 'nullable|string',
         ];
     }
 }

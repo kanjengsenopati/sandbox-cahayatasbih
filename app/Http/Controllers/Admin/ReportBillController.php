@@ -44,7 +44,11 @@ class ReportBillController extends Controller
 
             // Apply the date filters by comparing the concatenated year and month in MySQL
             if ($startDate && $endDate) {
-                $data->whereRaw("STR_TO_DATE(CONCAT(bills.year, '-', LPAD(bills.month, 2, '0'), '-01'), '%Y-%m-%d') BETWEEN ? AND ?", [$startDate . '-01', $endDate . '-31']);
+                $driver = DB::connection()->getDriverName();
+                $dateExpr = $driver === 'sqlite'
+                    ? "(bills.year || '-' || printf('%02d', bills.month) || '-01')"
+                    : "STR_TO_DATE(CONCAT(bills.year, '-', LPAD(bills.month, 2, '0'), '-01'), '%Y-%m-%d')";
+                $data->whereRaw("{$dateExpr} BETWEEN ? AND ?", [$startDate . '-01', $endDate . '-31']);
             }
 
             // Add filtering by school, academic year, and classroom if available
@@ -845,7 +849,7 @@ class ReportBillController extends Controller
     public function getClassroom(Request $request)
     {
         $schoolId = $request->school_id;
-        $classrooms = Classroom::where('school_id', $schoolId)->orderByRaw("CAST(name AS UNSIGNED) ASC, name ASC")->get();
+        $classrooms = Classroom::where('school_id', $schoolId)->orderByRaw(\App\Helpers\DbCompat::classroomOrder())->get();
         return $this->getSuccessResponse($classrooms);
     }
 

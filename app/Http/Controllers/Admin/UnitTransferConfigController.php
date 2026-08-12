@@ -50,7 +50,7 @@ class UnitTransferConfigController extends Controller
     public function create()
     {
         $schools = School::orderBy('name', 'asc')->get();
-        $classrooms = Classroom::orderByRaw("CAST(name AS UNSIGNED) ASC, name ASC")->get();
+        $classrooms = Classroom::orderByRaw(\App\Helpers\DbCompat::classroomOrder())->get();
         $billTypes = BillType::orderBy('name', 'asc')->get();
         return view('admins.unit-transfer-config.create', compact('schools', 'classrooms', 'billTypes'));
     }
@@ -83,7 +83,7 @@ class UnitTransferConfigController extends Controller
     {
         $unitTransferConfig = UnitTransferConfig::findOrFail($id);
         $schools = School::orderBy('name', 'asc')->get();
-        $classrooms = Classroom::where('school_id', $unitTransferConfig->to_school_id)->orderByRaw("CAST(name AS UNSIGNED) ASC, name ASC")->get();
+        $classrooms = Classroom::where('school_id', $unitTransferConfig->to_school_id)->orderByRaw(\App\Helpers\DbCompat::classroomOrder())->get();
         $billTypes = BillType::orderBy('name', 'asc')->get();
         
         return view('admins.unit-transfer-config.edit', compact('unitTransferConfig', 'schools', 'classrooms', 'billTypes'));

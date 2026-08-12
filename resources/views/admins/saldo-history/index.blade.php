@@ -101,6 +101,27 @@
                                         <input type="text" id="saldo-history-search-name" class="form-control form-control-solid form-control-sm" placeholder="Nama Siswa / NIS..." style="width: 180px;">
                                     </div>
                                     <div class="d-flex align-items-center gap-2">
+                                        <label class="fs-7 fw-bold text-gray-700 mb-0">Lembaga:</label>
+                                        <select id="saldo-history-school-id" class="form-select form-select-solid form-select-sm" style="width: 150px;">
+                                            <option value="">Semua</option>
+                                            @foreach ($schools as $school)
+                                            <option value="{{ $school->id }}">{{ $school->name }}</option>
+                                            @endforeach
+                                        </select>
+                                    </div>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <label class="fs-7 fw-bold text-gray-700 mb-0">Kelas:</label>
+                                        <div class="dropdown">
+                                            <button class="btn btn-light form-select-sm dropdown-toggle text-start" style="width: 150px; background-color: #f5f8fa; border-color: #f5f8fa; color: #5e6278;" type="button" id="saldo_history_classroom_btn" data-bs-toggle="dropdown" aria-expanded="false" data-bs-auto-close="outside">
+                                                Semua
+                                            </button>
+                                            <input type="hidden" id="saldo-history-classroom-id" value="">
+                                            <div class="dropdown-menu p-4 shadow" style="min-width: 400px; max-height: 400px; overflow-y: auto;" aria-labelledby="saldo_history_classroom_btn" id="saldo_history_classroom_mega_menu">
+                                                <div class="text-muted fs-7 mb-2">Pilih Lembaga terlebih dahulu</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="d-flex align-items-center gap-2">
                                         <label class="fs-7 fw-bold text-gray-700 mb-0">Mulai:</label>
                                         <input type="date" id="saldo-history-start-date" class="form-control form-control-solid form-control-sm" style="width: 150px;">
                                     </div>
@@ -234,6 +255,8 @@
                     url: "{{ route('saldo-history.index') }}",
                     data: function(d) {
                         d.type = 'saldo';
+                        d.school_id = $('#saldo-history-school-id').val();
+                        d.classroom_id = $('#saldo-history-classroom-id').val();
                         d.search_name = $('#saldo-history-search-name').val();
                         d.start_date = $('#saldo-history-start-date').val();
                         d.end_date = $('#saldo-history-end-date').val();
@@ -270,7 +293,14 @@
                         orderable: true,
                         searchable: true,
                         render: function(data, type, row) {
-                        return data ? data : 'N/A'; // Null handler
+                            if (!data) return 'N/A';
+                            let className = row.student && row.student.classroom ? row.student.classroom.name : 'Unknown';
+                            return `
+                                <div class="d-flex flex-column">
+                                    <span class="text-gray-800 fw-bolder mb-1">${data}</span>
+                                    <span class="badge badge-light-primary fw-bold" style="width: fit-content; font-size: 10px; padding: 4px 6px;">${className}</span>
+                                </div>
+                            `;
                         }
                     },
                     {
@@ -323,10 +353,69 @@
             });
 
             $('#saldo-history-btn-reset').off('click').on('click', function() {
+                $('#saldo-history-school-id').val('');
+                $('#saldo-history-classroom-id').val('');
+                $('#saldo_history_classroom_btn').text('Semua');
                 $('#saldo-history-search-name').val('');
                 $('#saldo-history-start-date').val('');
                 $('#saldo-history-end-date').val('');
                 table.ajax.reload();
+            });
+            
+            const allHistoryClassrooms = @json($classrooms);
+
+            function renderHistoryClassroomMegaMenu(schoolId) {
+                const container = $('#saldo_history_classroom_mega_menu');
+                container.empty();
+
+                if (!schoolId) {
+                    container.html('<div class="text-muted fs-7 mb-2">Pilih Lembaga terlebih dahulu</div>');
+                    return;
+                }
+
+                const filteredClasses = allHistoryClassrooms.filter(c => c.school_id == schoolId);
+                if (filteredClasses.length === 0) {
+                    container.html('<div class="text-muted fs-7 mb-2">Tidak ada kelas ditemukan</div>');
+                    return;
+                }
+
+                const groups = {};
+                filteredClasses.forEach(c => {
+                    let match = c.name.match(/^(\d+)/);
+                    let key = match ? match[1] : 'Lainnya';
+                    if (!groups[key]) groups[key] = [];
+                    groups[key].push(c);
+                });
+
+                const row = $('<div class="row g-2"></div>');
+                
+                container.append($('<a href="#" class="dropdown-item fw-bold text-primary mb-3 history-classroom-item" data-id="" data-name="Semua">Semua</a>'));
+
+                Object.keys(groups).sort((a,b) => parseInt(a) - parseInt(b)).forEach(key => {
+                    const col = $('<div class="col-4"></div>');
+                    col.append(`<h6 class="dropdown-header text-uppercase text-muted fw-bolder">Kelas ${key}</h6>`);
+                    groups[key].forEach(c => {
+                        col.append(`<a class="dropdown-item history-classroom-item" href="#" data-id="${c.id}" data-name="${c.name}">${c.name}</a>`);
+                    });
+                    row.append(col);
+                });
+
+                container.append(row);
+            }
+
+            $('#saldo-history-school-id').on('change', function() {
+                $('#saldo-history-classroom-id').val('');
+                $('#saldo_history_classroom_btn').text('Semua');
+                renderHistoryClassroomMegaMenu($(this).val());
+            });
+
+            $(document).on('click', '.history-classroom-item', function(e) {
+                e.preventDefault();
+                const id = $(this).data('id');
+                const name = $(this).data('name');
+                $('#saldo-history-classroom-id').val(id);
+                $('#saldo_history_classroom_btn').text(name);
+                $('#saldo_history_classroom_btn').dropdown('toggle'); // close dropdown manually
             });
 
             $('#saldo-history-btn-recalculate').off('click').on('click', function() {

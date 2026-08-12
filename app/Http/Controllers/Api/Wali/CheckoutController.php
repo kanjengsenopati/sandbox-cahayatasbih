@@ -60,6 +60,20 @@ class CheckoutController extends BaseWaliApiController
             DB::beginTransaction();
             $paymentMethod = \App\Models\PaymentMethod::findOrFail($request->payment_method_id);
             
+            if ($paymentMethod->type === \App\Models\PaymentMethod::TYPE_BALANCE) {
+                $appSetting = \App\Models\ApplicationSetting::first();
+                if ($appSetting && isset($appSetting->allow_pwa_saldo_payment_wali) && !$appSetting->allow_pwa_saldo_payment_wali) {
+                    DB::rollBack();
+                    $msg = !empty($appSetting->pwa_saldo_payment_disabled_message) 
+                        ? $appSetting->pwa_saldo_payment_disabled_message 
+                        : 'Pembayaran tagihan menggunakan Saldo di PWA Wali Santri sedang dinonaktifkan sementara oleh Pengelola.';
+                    return response()->json([
+                        'status' => false,
+                        'message' => $msg
+                    ], 403);
+                }
+            }
+            
             $transaction = \App\Services\TransactionService::createTransaction($request, $paymentMethod->type, Transaction::TYPE_BILL);
             
             if ($transaction instanceof \Illuminate\Http\JsonResponse) {

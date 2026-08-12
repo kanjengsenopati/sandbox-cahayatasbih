@@ -60,7 +60,7 @@ class StudentGraduationController extends Controller
 
             return DataTables::of($data)
                 ->editColumn('saldo', function ($data) {
-                    return '<span class="badge bg-success">Rp ' . number_format($data->saldo, 0, ',', '.') . '</span>';
+                    return \format_saldo_badge($data->saldo);
                 })
                 ->addColumn('classroom', function ($data) {
                     return $data->classroom->name ?? 'Belum ada kelas';
@@ -152,7 +152,7 @@ class StudentGraduationController extends Controller
             }
         }
 
-        $classrooms = $query->orderByRaw("CAST(name AS UNSIGNED) ASC, name ASC")->get();
+        $classrooms = $query->orderByRaw(\App\Helpers\DbCompat::classroomOrder())->get();
         return response()->json([
             'code' => '200',
             'message' => 'Success',

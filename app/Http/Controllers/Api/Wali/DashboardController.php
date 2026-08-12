@@ -8,6 +8,7 @@ use App\Models\Tahfidz;
 use App\Models\StudyGrade;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
 class DashboardController extends BaseWaliApiController
 {
@@ -154,9 +155,14 @@ class DashboardController extends BaseWaliApiController
                 ->where('from_school_id', $activeStudent->school_id)
                 ->where('is_active', true)
                 ->where(function ($query) use ($classroomName) {
+                    $driver = DB::connection()->getDriverName();
+                    $likeExpr = $driver === 'sqlite'
+                        ? "? LIKE ('%' || eligible_class_level || '%')"
+                        : "? LIKE CONCAT('%', eligible_class_level, '%')";
+
                     $query->whereNull('eligible_class_level')
                           ->orWhere('eligible_class_level', '')
-                          ->orWhereRaw('? LIKE CONCAT(\'%\', eligible_class_level, \'%\')', [$classroomName]);
+                          ->orWhereRaw($likeExpr, [$classroomName]);
                 })
                 ->first();
         }

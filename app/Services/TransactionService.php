@@ -979,7 +979,7 @@ class TransactionService
         // 1. Check Transfer Rate
         $hasTransfer = $ratesForBt->contains(function ($r) use ($student) {
             return $r->type === \App\Models\PaymentRate::TYPE_TRANSFER &&
-                   $r->paymentRateStudents->contains('student_id', $student->id);
+                   $r->paymentRateStudents->whereNull('deleted_at')->contains('student_id', $student->id);
         });
         if ($hasTransfer) return true;
 
@@ -989,7 +989,10 @@ class TransactionService
         return $ratesForBt->contains(function ($r) use ($student) {
             if ($r->type !== \App\Models\PaymentRate::TYPE_REGULAR) return false;
 
-            $classMatch = $r->paymentRateClassrooms->contains('classroom_id', $student->classroom_id);
+            // Pastikan PaymentRateClassroom aktif (non-deleted) dan sesuai kelas siswa saat ini
+            $classMatch = $r->paymentRateClassrooms
+                ->whereNull('deleted_at')
+                ->contains('classroom_id', $student->classroom_id);
             if (!$classMatch) return false;
 
             if (!empty($r->gender)) {
@@ -1103,6 +1106,45 @@ class TransactionService
         }
 
         $sName = strtoupper($studentSchoolName ?? '');
+
+        // VALIDASI VIA DATABASE RELATION (Single Source of Truth):
+        // Jika BillType ini memiliki PaymentRate yang sudah di-mapping ke kelas tertentu,
+        // maka HANYA izinkan siswa yang kelasnya ada di mapping tersebut.
+        if (is_object($billTypeInput) && $billTypeInput->id) {
+            $billTypeId = $billTypeInput->id;
+            $preloadedRates = self::getCachedPreloadedRates();
+            $ratesForBt = $preloadedRates->where('bill_type_id', $billTypeId);
+
+            // Hanya berlaku jika ada REGULAR rates yang sudah di-mapping ke kelas
+            $regularRates = $ratesForBt->where('type', \App\Models\PaymentRate::TYPE_REGULAR);
+            if ($regularRates->isNotEmpty()) {
+                $mappedClassroomIds = $regularRates->flatMap(function ($r) {
+                    return $r->paymentRateClassrooms->whereNull('deleted_at')->pluck('classroom_id');
+                })->unique();
+
+                // Jika ada mapping kelas, cek classroom siswa via studentSchoolName parameter
+                // Note: studentSchoolName adalah nama sekolah, bukan classroom_id
+                // Jadi validasi ini hanya menambah layer keamanan, tidak mengganti string matching
+                if ($mappedClassroomIds->isNotEmpty()) {
+                    // Ambil school_ids dari classroom yang di-mapping
+                    $mappedSchoolIds = \App\Models\Classroom::whereIn('id', $mappedClassroomIds)
+                        ->pluck('school_id')
+                        ->unique();
+
+                    if ($mappedSchoolIds->isNotEmpty()) {
+                        // Cek apakah nama sekolah siswa cocok dengan salah satu sekolah yang di-mapping
+                        $mappedSchoolNames = \App\Models\School::whereIn('id', $mappedSchoolIds)->pluck('name');
+                        $schoolMatch = $mappedSchoolNames->contains(function ($name) use ($sName) {
+                            return strtoupper($name) === $sName;
+                        });
+
+                        if (!$schoolMatch && !empty($sName)) {
+                            return false;
+                        }
+                    }
+                }
+            }
+        }
 
         $hasSmp = str_contains($bName, 'SMP') || str_contains($posName, 'SMP');
         $hasMa = str_contains($bName, 'MA') || str_contains($bName, 'ALIYAH') || str_contains($posName, 'MA') || str_contains($posName, 'ALIYAH');

@@ -211,7 +211,7 @@
                         var formatted = formatRupiahVal(val);
                         var badgeClass = val < 0 
                             ? 'bg-danger text-white fw-bolder px-3 py-2 fs-7 mb-1' 
-                            : 'bg-light-primary text-primary fw-bolder fs-7 mb-1';
+                            : 'bg-success text-white fw-bolder px-3 py-2 fs-7 mb-1';
                         var dateInfo = row.last_saldo_update_date || '-';
                         var timeInfo = row.last_saldo_update_time || '-';
 
@@ -235,7 +235,7 @@
                         var formatted = formatRupiahVal(val);
                         var badgeClass = val < 0 
                             ? 'bg-danger text-white fw-bolder px-3 py-2 fs-7 mb-1' 
-                            : 'bg-light-success text-success fw-bolder fs-7 mb-1';
+                            : 'bg-success text-white fw-bolder px-3 py-2 fs-7 mb-1';
                         var dateInfo = row.last_saldo_update_date || '-';
                         var timeInfo = row.last_saldo_update_time || '-';
 

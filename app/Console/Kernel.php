@@ -18,6 +18,14 @@ class Kernel extends ConsoleKernel
         // Cleanup SaldoHistory Kode Unik orphaned setiap hari pukul 02:00
         // Menggantikan lazy cleanup yang sebelumnya ada di GET request Dashboard (idempotency violation)
         $schedule->command('saldo:cleanup-orphaned-kode-unik')->dailyAt('02:00')->withoutOverlapping();
+        // Auto pull data dari VPS ke SQLite lokal setiap hari pukul 02:30
+        $schedule->command('db:pull-remote --source=both --days=3')->dailyAt('02:30')->withoutOverlapping();
+        // Monitoring otomatis saldo negatif setiap hari pukul 06:00 (dry-run / read-only)
+        // Aturan bisnis: saldo tidak boleh minus, semua anomali harus terdeteksi
+        $schedule->command('saldo:normalize --dry-run')
+            ->dailyAt('06:00')
+            ->withoutOverlapping()
+            ->appendOutputTo(storage_path('logs/negative_balance_monitor.log'));
     }
 
     /**

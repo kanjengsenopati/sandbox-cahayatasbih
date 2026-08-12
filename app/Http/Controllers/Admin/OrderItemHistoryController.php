@@ -250,9 +250,9 @@ class OrderItemHistoryController extends Controller
             ->select([
                 'items.id',
                 'items.name',
-                DB::raw('CAST(t.txn_count as UNSIGNED) as total_transaction'),
-                DB::raw('CAST(t.total_quantity as UNSIGNED) as total_quantity'),
-                DB::raw('CAST(t.total_revenue as UNSIGNED) as revenue')
+                DB::raw('CAST(t.txn_count as INTEGER) as total_transaction'),
+                DB::raw('CAST(t.total_quantity as INTEGER) as total_quantity'),
+                DB::raw('CAST(t.total_revenue as INTEGER) as revenue')
             ])
             ->orderByDesc('total_transaction')
             ->limit(50); // Limit to top 50 items
@@ -431,15 +431,18 @@ class OrderItemHistoryController extends Controller
         $cacheKey = "chart_data_{$year}";
 
         return Cache::remember($cacheKey, self::CACHE_DURATION, function () use ($year) {
+            $driver = DB::connection()->getDriverName();
+            $monthSelect = $driver === 'sqlite' ? "CAST(strftime('%m', created_at) AS INTEGER)" : "MONTH(created_at)";
+
             // Get monthly data in single query
             $monthlyData = PointOfSaleTransaction::query()
                 ->where('status', PointOfSaleTransaction::STATUS_SUCCESS)
                 ->whereYear('created_at', $year)
-                ->selectRaw('
-                    MONTH(created_at) as month,
+                ->selectRaw("
+                    {$monthSelect} as month,
                     COALESCE(SUM(pay_amount), 0) as omzet,
                     COALESCE(SUM(profit), 0) as profit
-                ')
+                ")
                 ->groupBy('month')
                 ->orderBy('month')
                 ->get()
@@ -488,8 +491,11 @@ class OrderItemHistoryController extends Controller
                 ->first();
 
             // Peak hour analysis
+            $driver = DB::connection()->getDriverName();
+            $hourSelect = $driver === 'sqlite' ? "CAST(strftime('%H', created_at) AS INTEGER)" : "HOUR(created_at)";
+
             $peakHour = PointOfSaleTransaction::query()
-                ->selectRaw('HOUR(created_at) as hour, COUNT(*) as count')
+                ->selectRaw("{$hourSelect} as hour, COUNT(*) as count")
                 ->where('status', PointOfSaleTransaction::STATUS_SUCCESS)
                 ->whereBetween('created_at', [$dateRange['start'], $dateRange['end']])
                 ->groupBy('hour')

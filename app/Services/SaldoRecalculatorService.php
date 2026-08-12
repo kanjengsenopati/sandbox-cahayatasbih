@@ -31,6 +31,18 @@ class SaldoRecalculatorService
 
             $runningBalance = 0;
 
+            // Deteksi siswa yang memiliki saldo awal di-set langsung tanpa riwayat TYPE_IN.
+            // Jika record pertama bukan TYPE_IN dan memiliki balance_before > 0,
+            // maka gunakan balance_before sebagai titik awal agar tidak menghasilkan saldo negatif.
+            $firstHistory = $histories->first();
+            if ($firstHistory && $firstHistory->type !== SaldoHistory::TYPE_IN) {
+                $initialBalance = (float) $firstHistory->balance_before;
+                if ($initialBalance > 0) {
+                    $runningBalance = $initialBalance;
+                    Log::info("[SaldoRecalculator] Initial balance gap detected for student {$studentId}, starting from: {$runningBalance}");
+                }
+            }
+
             foreach ($histories as $history) {
                 $amount = (float) $history->amount;
                 $balanceBefore = $runningBalance;

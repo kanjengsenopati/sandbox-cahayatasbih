@@ -535,7 +535,7 @@ class PaymentRateController extends Controller
             $selectedSchoolId = $paymentRate->paymentRateStudents->first()->student?->classroom?->school_id;
         }
 
-        $classroomsQuery = Classroom::orderByRaw("CAST(name AS INTEGER) ASC, name ASC");
+        $classroomsQuery = Classroom::orderByRaw(\App\Helpers\DbCompat::classroomOrder());
         if ($selectedSchoolId) {
             $classroomsQuery->where('school_id', $selectedSchoolId);
         }
@@ -982,7 +982,7 @@ class PaymentRateController extends Controller
         $conflictingClassroomIds = array_unique($conflictingClassroomIds);
 
         $classrooms = Classroom::where('school_id', $school->id)
-            ->orderByRaw("CAST(name AS INTEGER) ASC, name ASC")
+            ->orderByRaw(\App\Helpers\DbCompat::classroomOrder())
             ->get()
             ->map(function($classroom) use ($conflictingClassroomIds) {
                 $classroom->is_already_created = in_array($classroom->id, $conflictingClassroomIds);

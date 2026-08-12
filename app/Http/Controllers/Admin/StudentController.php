@@ -70,7 +70,7 @@ class StudentController extends Controller
                     });
                 })
                 ->editColumn('saldo', function ($data) {
-                    return '<span class="badge bg-success">Rp ' . number_format($data->saldo, 0, ',', '.') . '</span>';
+                    return \format_saldo_badge($data->saldo);
                 })
                 ->addColumn('classroom', function ($data) {
                     return $data->classroom->name ?? 'Belum ada kelas';
@@ -448,6 +448,23 @@ class StudentController extends Controller
         }
         $oldStatus = $student->status;
         $student->update($data);
+
+        // Auto-sync StudentClassroomHistory for active academic year if classroom_id was changed via Edit Santri
+        if ($student->wasChanged('classroom_id') && $student->classroom_id) {
+            $activeAY = \App\Models\AcademicYear::where('is_active', true)->first();
+            if ($activeAY) {
+                \App\Models\StudentClassroomHistory::updateOrCreate(
+                    [
+                        'student_id'       => $student->id,
+                        'academic_year_id' => $activeAY->id,
+                    ],
+                    [
+                        'classroom_id'     => $student->classroom_id,
+                    ]
+                );
+            }
+        }
+
         if ($student->status !== Student::STATUS_ACTIVE && $oldStatus !== $student->status) {
             $student->cleanupFutureUnpaidBills();
         }
@@ -547,7 +564,7 @@ class StudentController extends Controller
 
     public function getClassrooms($id)
     {
-        $classrooms = Classroom::where('school_id', $id)->orderByRaw("CAST(name AS UNSIGNED) ASC, name ASC")->get();
+        $classrooms = Classroom::where('school_id', $id)->orderByRaw(\App\Helpers\DbCompat::classroomOrder())->get();
         return response()->json($classrooms);
     }
 

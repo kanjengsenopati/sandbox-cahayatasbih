@@ -14,7 +14,7 @@ class SyncMasterDatabase extends Command
      *
      * @var string
      */
-    protected $signature = 'db:sync-master {--all : Sync all records instead of only last 30 days} {--tables= : Comma-separated list of tables to sync} {--dry-run : Simulate synchronization without writing to database}';
+    protected $signature = 'db:sync-master {--source=all : Connection source to sync from (all, ponpes, aplikasi)} {--all : Sync all records instead of only last 30 days} {--tables= : Comma-separated list of tables to sync} {--dry-run : Simulate synchronization without writing to database}';
 
     /**
      * The console command description.
@@ -28,7 +28,11 @@ class SyncMasterDatabase extends Command
      */
     public function handle()
     {
-        $this->info('Starting database synchronization from master...');
+        @set_time_limit(1200);
+        @ini_set('memory_limit', '1024M');
+
+        $sourceOption = strtolower($this->option('source') ?? 'all');
+        $this->info("Starting database synchronization from master (Source: {$sourceOption})...");
         $startTime = now();
         $oneMonthAgo = now()->subDays(30)->toDateTimeString();
         $syncAll = $this->option('all');
