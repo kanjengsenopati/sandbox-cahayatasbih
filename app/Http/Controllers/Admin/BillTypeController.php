@@ -42,6 +42,11 @@ class BillTypeController extends Controller
                 ->latest();
 
             return DataTables::of($data)
+                ->addColumn('checkbox', function ($data) {
+                    return '<div class="form-check form-check-sm form-check-custom form-check-solid justify-content-center">
+                                <input class="form-check-input select-row" type="checkbox" value="' . $data->id . '" />
+                            </div>';
+                })
                 ->addColumn('payment_rates', function ($data) {
                     // show button to link to payment rate with default academic year parameter
                     $action = route('bill-type.show', $data->id) . '?academic_year_id=' . $data->academic_year_id;
@@ -87,7 +92,7 @@ class BillTypeController extends Controller
                         view('components.action.delete', ['action' => $actionDelete, 'id' => $data->id, 'name' => 'Jenis Bayar']) .
                         "</div>";
                 })
-                ->rawColumns(['action', 'type', 'payment_rates', 'bank'])
+                ->rawColumns(['checkbox', 'action', 'type', 'payment_rates', 'bank'])
                 ->make(true);
         }
         $academicYears = AcademicYear::orderBy('name', 'DESC')->get();
@@ -370,6 +375,36 @@ class BillTypeController extends Controller
             ]);
         } catch (\Exception $e) {
             Log::error('Error toggling bill type visibility: ' . $e->getMessage());
+            return response()->json(['code' => 500, 'message' => 'Terjadi kesalahan sistem']);
+        }
+    }
+
+    /**
+     * Bulk toggle visibility status of specified resources.
+     */
+    public function bulkToggleVisibility(Request $request)
+    {
+        if (!Auth::user()?->can('Edit Jenis Bayar')) {
+            return response()->json(['code' => 403, 'message' => 'Maaf, Anda tidak memiliki akses']);
+        }
+
+        $request->validate([
+            'ids' => 'required|array',
+            'ids.*' => 'exists:bill_types,id',
+            'is_visible' => 'required|boolean'
+        ]);
+
+        try {
+            BillType::whereIn('id', $request->ids)->update(['is_visible' => $request->is_visible]);
+
+            $statusText = $request->is_visible ? 'ditampilkan' : 'disembunyikan';
+            $count = count($request->ids);
+            return response()->json([
+                'code' => 200,
+                'message' => "{$count} Jenis bayar berhasil {$statusText}"
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error bulk toggling bill type visibility: ' . $e->getMessage());
             return response()->json(['code' => 500, 'message' => 'Terjadi kesalahan sistem']);
         }
     }

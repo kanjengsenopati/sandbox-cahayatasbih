@@ -302,6 +302,7 @@ Route::group(['middleware' => ['auth']], function () {
 
     Route::resource('bill-item', BillItemController::class);
     Route::resource('bill-type', BillTypeController::class);
+    Route::post('bill-type/bulk-toggle-visibility', [BillTypeController::class, 'bulkToggleVisibility'])->name('bill-type.bulk-toggle-visibility');
     Route::post('bill-type/{id}/toggle-visibility', [BillTypeController::class, 'toggleVisibility'])->name('bill-type.toggle-visibility');
     Route::delete('delete-student-bill', [BillController::class, 'deleteStudentBill'])->name('delete-student-bill');
     Route::get('payment-rate/get-bill-details', [PaymentRateController::class, 'getBillDetails'])

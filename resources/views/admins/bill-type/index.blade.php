@@ -37,7 +37,16 @@
                             <h3>Filter Data</h3>
                         </div>
                     </div>
-                    <div class="card-toolbar">
+                    <div class="card-toolbar gap-2">
+                        <div id="bulk-action-container" class="d-none align-items-center gap-2">
+                            <span class="badge badge-light-primary fw-bold px-3 py-2" id="selected-count">0 Terpilih</span>
+                            <button type="button" class="btn btn-sm btn-light-success btn-bulk-visibility fw-bold" data-visible="1" title="Tampilkan semua yang dipilih di UI">
+                                <i class="fas fa-eye me-1 text-success"></i> Tampilkan
+                            </button>
+                            <button type="button" class="btn btn-sm btn-light-danger btn-bulk-visibility fw-bold" data-visible="0" title="Sembunyikan semua yang dipilih dari UI">
+                                <i class="fas fa-eye-slash me-1 text-danger"></i> Sembunyikan
+                            </button>
+                        </div>
                         <x-action.create name="Jenis Bayar" action="{{ route('bill-type.create') }}" />
                     </div>
                 </div>
@@ -81,6 +90,11 @@
                         <table id="table-bill-type" class="table align-middle table-row-dashed fs-6 gy-5">
                             <thead>
                                 <tr class="text-start text-gray-500 fw-bolder fs-7 text-uppercase gs-0">
+                                    <th class="w-10px pe-2 text-center">
+                                        <div class="form-check form-check-sm form-check-custom form-check-solid justify-content-center">
+                                            <input class="form-check-input" type="checkbox" id="check-all" />
+                                        </div>
+                                    </th>
                                     <th style="width: 5%">No</th>
                                     <th>Pos Bayar</th>
                                     <th>Nama Pembayaran</th>
@@ -128,6 +142,13 @@
                 "processing": "Processing...",
             },
             columns: [{
+                    data: 'checkbox',
+                    name: 'checkbox',
+                    orderable: false,
+                    searchable: false,
+                    className: 'text-center'
+                },
+                {
                     "data": null,
                     "sortable": false,
                     "searchable": false,
@@ -190,7 +211,7 @@
             $('#filter_bill_item').val('').trigger('change');
         });
 
-        // Toggle Visibility Event Listener
+        // Toggle Visibility Event Listener (Single Row)
         $(document).on('click', '.btn-toggle-visibility', function(e) {
             e.preventDefault();
             var btn = $(this);
@@ -222,6 +243,100 @@
                         type: 'POST',
                         data: {
                             _token: '{{ csrf_token() }}'
+                        },
+                        success: function(response) {
+                            if (response.code === 200) {
+                                Swal.fire({
+                                    icon: 'success',
+                                    title: 'Berhasil',
+                                    text: response.message,
+                                    timer: 1500,
+                                    showConfirmButton: false
+                                });
+                                table.ajax.reload(null, false);
+                            } else {
+                                Swal.fire('Gagal!', response.message, 'error');
+                            }
+                        },
+                        error: function(xhr) {
+                            Swal.fire('Error!', 'Terjadi kesalahan pada sistem.', 'error');
+                        }
+                    });
+                }
+            });
+        });
+
+        // Bulk Selection & Action Handlers
+        function updateBulkToolbar() {
+            var selected = $('.select-row:checked');
+            var count = selected.length;
+            if (count > 0) {
+                $('#selected-count').text(count + ' Terpilih');
+                $('#bulk-action-container').removeClass('d-none').addClass('d-flex');
+            } else {
+                $('#bulk-action-container').removeClass('d-flex').addClass('d-none');
+                $('#check-all').prop('checked', false);
+            }
+        }
+
+        $(document).on('change', '#check-all', function() {
+            var isChecked = $(this).is(':checked');
+            $('.select-row').prop('checked', isChecked);
+            updateBulkToolbar();
+        });
+
+        $(document).on('change', '.select-row', function() {
+            var allCount = $('.select-row').length;
+            var checkedCount = $('.select-row:checked').length;
+            $('#check-all').prop('checked', allCount > 0 && allCount === checkedCount);
+            updateBulkToolbar();
+        });
+
+        table.on('draw', function() {
+            $('#check-all').prop('checked', false);
+            updateBulkToolbar();
+        });
+
+        $(document).on('click', '.btn-bulk-visibility', function(e) {
+            e.preventDefault();
+            var isVisible = $(this).data('visible');
+            var selectedIds = [];
+            $('.select-row:checked').each(function() {
+                selectedIds.push($(this).val());
+            });
+
+            if (selectedIds.length === 0) {
+                Swal.fire('Peringatan', 'Silakan pilih minimal satu jenis bayar', 'warning');
+                return;
+            }
+
+            var actionText = isVisible == 1 ? 'menampilkan' : 'menyembunyikan';
+            Swal.fire({
+                title: 'Apakah Anda yakin?',
+                text: "Anda akan " + actionText + " " + selectedIds.length + " jenis bayar terpilih dari UI Entry Pembayaran dan PWA Wali Santri.",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#3085d6',
+                cancelButtonColor: '#d33',
+                confirmButtonText: 'Ya, Lanjutkan!',
+                cancelButtonText: 'Batal'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    Swal.fire({
+                        title: 'Memproses...',
+                        allowOutsideClick: false,
+                        didOpen: () => {
+                            Swal.showLoading();
+                        }
+                    });
+
+                    $.ajax({
+                        url: "{{ route('bill-type.bulk-toggle-visibility') }}",
+                        type: 'POST',
+                        data: {
+                            _token: '{{ csrf_token() }}',
+                            ids: selectedIds,
+                            is_visible: isVisible
                         },
                         success: function(response) {
                             if (response.code === 200) {
