@@ -264,7 +264,20 @@ class PaymentRateController extends Controller
         // Apply Payment Rate target filter (Classrooms or Students)
         if ($paymentRate->type === PaymentRate::TYPE_REGULAR) {
             $classroomIds = $paymentRate->paymentRateClassrooms->pluck('classroom_id')->toArray();
-            $query->whereIn('classroom_id', $classroomIds);
+            
+            $activeYear = \App\Models\AcademicYear::where('is_active', true)->first();
+            if ($paymentRate->billType && $paymentRate->billType->academic_year_id && $activeYear && $paymentRate->billType->academic_year_id != $activeYear->id) {
+                // Fetch historical students for this academic year
+                $historicalStudentIds = \Illuminate\Support\Facades\DB::table('student_classroom_histories')
+                    ->where('academic_year_id', $paymentRate->billType->academic_year_id)
+                    ->whereIn('classroom_id', $classroomIds)
+                    ->whereNull('deleted_at')
+                    ->pluck('student_id')
+                    ->toArray();
+                $query->whereIn('id', $historicalStudentIds);
+            } else {
+                $query->whereIn('classroom_id', $classroomIds);
+            }
         } else {
             $studentIds = $paymentRate->paymentRateStudents->pluck('student_id')->toArray();
             $query->whereIn('id', $studentIds);
@@ -427,7 +440,10 @@ class PaymentRateController extends Controller
 
     private function getTotalData(string $id, array $dateRange)
     {
-        $billQuery = Bill::where('bill_type_id', $id)
+        $paymentRate = PaymentRate::with('paymentRateItems')->findOrFail($id);
+        $itemIds = $paymentRate->paymentRateItems->pluck('id')->toArray();
+
+        $billQuery = Bill::whereIn('payment_rate_item_id', $itemIds)
             ->whereHas('student', fn($q) => $q->whereIn('status', [Student::STATUS_ACTIVE, Student::STATUS_GRADUATED]))
             ->when(request()->school_id && request()->school_id !== 'null', $this->schoolBillFilter())
             ->when(request()->classroom_id && request()->classroom_id !== 'null', $this->classroomBillFilter())

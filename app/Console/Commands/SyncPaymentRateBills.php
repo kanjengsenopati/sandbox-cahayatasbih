@@ -112,6 +112,9 @@ class SyncPaymentRateBills extends Command
                     continue;
                 }
 
+                // Get the correct classroom ID for the bill based on academic year
+                $targetClassroomId = $student->classroom_id;
+
                 // Check historical classroom history for past academic years to protect transfer students
                 if ($billType->academicYear && !$billType->academicYear->is_active) {
                     $history = DB::table('student_classroom_histories')
@@ -121,10 +124,17 @@ class SyncPaymentRateBills extends Command
                         ->first();
 
                     if ($history) {
+                        $targetClassroomId = $history->classroom_id;
                         // Check if history classroom matches payment rate classroom
                         $allowedClassroomIds = $paymentRate->paymentRateClassrooms->pluck('classroom_id')->toArray();
                         if (!empty($allowedClassroomIds) && !in_array($history->classroom_id, $allowedClassroomIds)) {
                             $this->warn("    [SKIP HISTORICAL] {$student->name} was in classroom {$history->classroom_id} during {$billType->academicYear->name}, not in target rate classrooms.");
+                            continue;
+                        }
+                    } else {
+                        // For regular rates, if there is no history in that past year -> skip them entirely!
+                        if ($paymentRate->type === PaymentRate::TYPE_REGULAR) {
+                            $this->warn("    [SKIP LEAKAGE] {$student->name} had no classroom history in {$billType->academicYear->name}. Skipping to prevent leakage.");
                             continue;
                         }
                     }
@@ -150,7 +160,7 @@ class SyncPaymentRateBills extends Command
                             $billsToInsert[] = [
                                 'id'                   => Str::uuid()->toString(),
                                 'bill_type_id'         => $billType->id,
-                                'classroom_id'         => $student->classroom_id,
+                                'classroom_id'         => $targetClassroomId,
                                 'student_id'           => $student->id,
                                 'academic_year_id'     => $billType->academic_year_id,
                                 'month'                => $billMonth,
@@ -177,7 +187,7 @@ class SyncPaymentRateBills extends Command
                                             ->where('id', $existingBill->id)
                                             ->update([
                                                 'payment_rate_item_id' => $item->id,
-                                                'classroom_id'         => $student->classroom_id,
+                                                'classroom_id'         => $targetClassroomId,
                                                 'updated_at'           => $timestamp,
                                             ]);
                                     }
@@ -194,7 +204,7 @@ class SyncPaymentRateBills extends Command
                                         ->update([
                                             'amount'               => $billAmount,
                                             'payment_rate_item_id' => $item->id,
-                                            'classroom_id'         => $student->classroom_id,
+                                            'classroom_id'         => $targetClassroomId,
                                             'updated_at'           => $timestamp,
                                         ]);
                                 }
@@ -267,7 +277,19 @@ class SyncPaymentRateBills extends Command
             if (empty($classroomIds)) {
                 return collect([]);
             }
-            $query->whereIn('classroom_id', $classroomIds);
+            $activeYear = \App\Models\AcademicYear::where('is_active', true)->first();
+            if ($billType && $billType->academic_year_id && $activeYear && $billType->academic_year_id != $activeYear->id) {
+                // Fetch historical students for this academic year
+                $historicalStudentIds = DB::table('student_classroom_histories')
+                    ->where('academic_year_id', $billType->academic_year_id)
+                    ->whereIn('classroom_id', $classroomIds)
+                    ->whereNull('deleted_at')
+                    ->pluck('student_id')
+                    ->toArray();
+                $query->whereIn('id', $historicalStudentIds);
+            } else {
+                $query->whereIn('classroom_id', $classroomIds);
+            }
         } else {
             $studentIds = $paymentRate->paymentRateStudents->pluck('student_id')->toArray();
             if (empty($studentIds)) {
