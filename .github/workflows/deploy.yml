@@ -34,7 +34,7 @@ jobs:
             echo "=== Pulling latest changes ==="
             git config --global --add safe.directory $DEPLOY_PATH
             git remote set-url origin https://github.com/kanjengsenopati/sandbox-cahayatasbih.git || true
-            git fetch https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/kanjengsenopati/sandbox-cahayatasbih.git main
+            git fetch -4 https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/kanjengsenopati/sandbox-cahayatasbih.git main
             git reset --hard FETCH_HEAD
 
             echo "=== Refreshing Autoloader ==="
