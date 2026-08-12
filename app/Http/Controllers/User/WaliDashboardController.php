@@ -142,7 +142,7 @@ class WaliDashboardController extends Controller
         return view('users.dashboard.history', compact('activeStudent', 'saldoHistories', 'savingHistories', 'billTransactions', 'posTransactions', 'saldoIn', 'saldoOut', 'totalSaldo', 'filter', 'startDate', 'endDate'));
     }
 
-    public function bills()
+    public function bills(Request $request)
     {
         $activeStudent = $this->resolveActiveStudent();
 
@@ -150,8 +150,23 @@ class WaliDashboardController extends Controller
 
         $studentSchoolName = $activeStudent->classroom->school->name ?? '';
 
+        $academicYearReq = $request->get('academic_year_id');
+        if ($academicYearReq === 'all') {
+            $academicYearId = null;
+        } elseif (!empty($academicYearReq)) {
+            $academicYearId = $academicYearReq;
+        } else {
+            $activeYear = \App\Models\AcademicYear::where('is_active', true)->first();
+            $academicYearId = $activeYear ? $activeYear->id : null;
+        }
+
+        $academicYears = \App\Models\AcademicYear::orderBy('start_year', 'desc')->get();
+
         $groupedBills = Bill::with(['billType.billItem', 'billType.academicYear'])
             ->where('student_id', $activeStudent->id)
+            ->when($academicYearId, function($query) use ($academicYearId) {
+                return $query->where('academic_year_id', $academicYearId);
+            })
             ->get()
             ->filter(function ($bill) use ($activeStudent, $studentSchoolName) {
                 $billAY = $bill->billType->academicYear ?? $bill->academicYear;
@@ -201,7 +216,7 @@ class WaliDashboardController extends Controller
         $unpaidBills = $groupedBills->filter(fn($g) => $g['unpaid'] > 0)->values();
         $paidBills = $groupedBills->filter(fn($g) => $g['unpaid'] == 0)->values();
 
-        return view('users.dashboard.bills', compact('activeStudent', 'unpaidBills', 'paidBills'));
+        return view('users.dashboard.bills', compact('activeStudent', 'unpaidBills', 'paidBills', 'academicYears', 'academicYearId'));
     }
 
     public function billDetail($id)

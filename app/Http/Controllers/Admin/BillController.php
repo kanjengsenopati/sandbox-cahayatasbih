@@ -64,16 +64,29 @@ class BillController extends Controller
                 return redirect()->to(route('bill.index'))->with('error', 'Data siswa tidak ditemukan atau telah dihapus.');
             }
 
-            $academicYearId = request()->academic_year_id;
+            $academicYearReq = request()->academic_year_id;
+            
+            if ($academicYearReq === 'all') {
+                $academicYearId = null;
+            } elseif (!empty($academicYearReq)) {
+                $academicYearId = $academicYearReq;
+            } else {
+                // Default to active academic year if not specified
+                $activeYear = \App\Models\AcademicYear::where('is_active', true)->first();
+                $academicYearId = $activeYear ? $activeYear->id : null;
+                if ($academicYearId) {
+                    request()->merge(['academic_year_id' => $academicYearId]);
+                }
+            }
 
             // Reset academicYearId if it starts before student's entry year
-            if ($academicYearId) {
+            if ($academicYearId && $academicYearId !== 'all') {
                 $selectedYear = \App\Models\AcademicYear::find($academicYearId);
                 $selectedStartYear = $selectedYear?->getStartYearSafe();
                 if ($selectedStartYear !== null && $student->getEntryYear() > $selectedStartYear) {
                     $academicYearId = null;
-                    request()->query->set('academic_year_id', null);
-                    request()->request->set('academic_year_id', null);
+                    request()->query->set('academic_year_id', 'all');
+                    request()->request->set('academic_year_id', 'all');
                 }
             }
 

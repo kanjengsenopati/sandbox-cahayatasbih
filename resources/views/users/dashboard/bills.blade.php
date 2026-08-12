@@ -39,10 +39,18 @@
         </button>
     </div>
 
-    <!-- Search -->
-    <div class="relative mb-5">
-        <i class="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
-        <input type="text" id="search-bills" placeholder="Cari Data" class="w-full bg-slate-50 border border-slate-100 rounded-2xl py-3.5 pl-11 pr-5 text-[13px] font-medium focus:ring-2 focus:ring-blue-600/20 focus:border-blue-200 transition-all" oninput="filterBills()">
+    <!-- Filters -->
+    <div class="flex gap-3 mb-5">
+        <div class="relative flex-1">
+            <i class="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+            <input type="text" id="search-bills" placeholder="Cari Data" class="w-full bg-slate-50 border border-slate-100 rounded-2xl py-3.5 pl-11 pr-5 text-[13px] font-medium focus:ring-2 focus:ring-blue-600/20 focus:border-blue-200 transition-all" oninput="filterBills()">
+        </div>
+        <select onchange="window.location.href='?academic_year_id='+this.value" class="bg-slate-50 border border-slate-100 rounded-2xl py-3.5 px-3 text-[12px] font-bold text-slate-700 focus:ring-2 focus:ring-blue-600/20 focus:border-blue-200 transition-all outline-none">
+            <option value="all" {{ request('academic_year_id') === 'all' ? 'selected' : '' }}>Semua TA</option>
+            @foreach($academicYears as $ay)
+                <option value="{{ $ay->id }}" {{ ($academicYearId == $ay->id) ? 'selected' : '' }}>{{ $ay->name }}</option>
+            @endforeach
+        </select>
     </div>
 
     <!-- ========== TAB TAGIHAN (Belum Lunas) ========== -->

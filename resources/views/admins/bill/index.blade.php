@@ -263,7 +263,7 @@
                                                         Tahun Ajaran
                                                     </label>
                                                     <select name="academic_year_id" id="academic_year_id" class="form-select form-select-solid">
-                                                        <option value="">Semua Tahun Ajaran</option>
+                                                        <option value="all" {{ request('academic_year_id') === 'all' ? 'selected' : '' }}>Semua Tahun Ajaran</option>
                                                         @foreach ($academicYears as $year)
                                                             @php
                                                                 if (isset($student)) {
@@ -306,7 +306,7 @@
                                         $filteredYearId = request('academic_year_id');
                                         $activeYear = $academicYears->where('is_active', true)->first();
                                         
-                                        if ($filteredYearId) {
+                                        if ($filteredYearId && $filteredYearId !== 'all') {
                                             $filteredYear = $academicYears->where('id', $filteredYearId)->first();
                                             $displayYearName = $filteredYear ? $filteredYear->name : 'Semua Tahun Ajaran';
                                             $resolvedClass = $student->getClassroomForAcademicYear($filteredYearId);
