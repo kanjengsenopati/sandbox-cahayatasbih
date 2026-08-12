@@ -160,7 +160,12 @@ class WaliDashboardController extends Controller
             $academicYearId = $activeYear ? $activeYear->id : null;
         }
 
-        $academicYears = \App\Models\AcademicYear::orderBy('start_year', 'desc')->get();
+        $academicYears = \App\Models\AcademicYear::where(function($query) {
+            $query->where('is_active', true)
+                  ->orWhereHas('billTypes', function ($q) {
+                      $q->where('is_visible', true);
+                  });
+        })->orderBy('start_year', 'desc')->get();
 
         $groupedBills = Bill::with(['billType.billItem', 'billType.academicYear'])
             ->where('student_id', $activeStudent->id)

@@ -21,8 +21,12 @@ class PaymentCheckController extends Controller
         // 1. Get Master Data for Filters
         $schools = School::whereNotIn('id', ["37ca75d4-4a87-4856-be8e-f78e2672134f", "ca3d1ef1-a2ec-4a2b-81ce-72a2299e068c"])->orderBy('name')->get();
 
-        // New Logic: Fetch Academic Years correctly sorted (Active First, then Newest)
-        $academicYears = AcademicYear::orderByRaw('is_active DESC, created_at DESC')->get();
+        $academicYears = AcademicYear::where(function($query) {
+            $query->where('is_active', true)
+                  ->orWhereHas('billTypes', function ($q) {
+                      $q->where('is_visible', true);
+                  });
+        })->orderByRaw('is_active DESC, created_at DESC')->get();
 
         // 2. Active Academic Year (for SPP Grid)
         // If filter is present, use it. Otherwise default to current active year.

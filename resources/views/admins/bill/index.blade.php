@@ -258,7 +258,7 @@
                                                 </div>
 
                                                 <!-- Tahun Ajaran -->
-                                                <div class="col-md-4">
+                                                <div class="col-md-3">
                                                     <label class="form-label fw-bold fs-6" for="academic_year_id">
                                                         Tahun Ajaran
                                                     </label>
@@ -281,7 +281,7 @@
                                                 </div>
 
                                                 <!-- Siswa & Button -->
-                                                <div class="col-md-4">
+                                                <div class="col-md-5">
                                                     <label class="form-label fw-bold fs-6 required" for="student_id">
                                                         NIS/NISN/Nama
                                                     </label>

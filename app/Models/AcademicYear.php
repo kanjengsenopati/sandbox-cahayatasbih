@@ -37,4 +37,9 @@ class AcademicYear extends Model
 
         return null;
     }
+
+    public function billTypes()
+    {
+        return $this->hasMany(BillType::class);
+    }
 }

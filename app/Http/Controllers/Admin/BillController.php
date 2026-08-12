@@ -46,8 +46,13 @@ class BillController extends Controller
         }
 
         $schools = School::orderBy('name')->hasSchool()->get();
-        // Dapatkan semua Tahun Ajaran untuk filter
-        $academicYears = \App\Models\AcademicYear::orderBy('start_year', 'desc')->get();
+        // Dapatkan Tahun Ajaran yang memiliki Jenis Bayar aktif (is_visible = true) atau sedang Aktif
+        $academicYears = \App\Models\AcademicYear::where(function($query) {
+            $query->where('is_active', true)
+                  ->orWhereHas('billTypes', function ($q) {
+                      $q->where('is_visible', true);
+                  });
+        })->orderBy('start_year', 'desc')->get();
 
         if ($studentId = request()->student_id) {
             // Dispatch sync ke background queue agar request HTTP tidak terblokir.
