@@ -308,11 +308,11 @@ class PaymentRateController extends Controller
         $studentIds = (clone $query)->pluck('students.id')->toArray();
 
         $billAggregates = collect();
-        if (!empty($studentIds)) {
+        if (!empty($studentIds) && !empty($paymentRateItemIds)) {
             $billAggregates = DB::table('bills')
                 ->select('student_id', DB::raw('SUM(amount) as total'), DB::raw('SUM(paid_amount) as total_paid'))
                 ->whereIn('student_id', $studentIds)
-                ->whereIn('bill_type_id', $relatedBillTypeIds)
+                ->whereIn('payment_rate_item_id', $paymentRateItemIds)
                 ->whereNull('deleted_at')
                 ->groupBy('student_id')
                 ->get()
@@ -1053,18 +1053,14 @@ class PaymentRateController extends Controller
                     ->toArray();
             }
 
-            $bills = Bill::where('student_id', $request->student_id)
-                ->whereIn('bill_type_id', $relatedBillTypeIds)
-                ->when(!empty($paymentRateItemIds), function ($q) use ($paymentRateItemIds) {
-                    $q->where(function ($qq) use ($paymentRateItemIds) {
-                        $qq->whereIn('payment_rate_item_id', $paymentRateItemIds)
-                           ->orWhereNull('payment_rate_item_id');
-                    });
-                })
-                ->orderByRaw("CASE 
-                    WHEN month >= 7 THEN month - 6 
-                    ELSE month + 6 
-                END")
+            $bills = collect();
+            if (!empty($paymentRateItemIds)) {
+                $bills = Bill::where('student_id', $request->student_id)
+                    ->whereIn('payment_rate_item_id', $paymentRateItemIds)
+                    ->orderByRaw("CASE 
+                        WHEN month >= 7 THEN month - 6 
+                        ELSE month + 6 
+                    END")
                 ->orderBy('year')
                 ->get()
                 ->map(function ($bill) {

@@ -165,23 +165,43 @@ class SyncPaymentRateBills extends Command
                         }
                         $totalCreated++;
                         $this->line("    [CREATE] {$student->name} | Bulan {$billMonth}/{$billYear} | Rp " . number_format($billAmount, 0, ',', '.'));
-                    } elseif ($forceUpdate && $existingBill->status === Bill::STATUS_UNPAID) {
+                    } elseif ($forceUpdate) {
                         $needsUpdate = ($existingBill->payment_rate_item_id !== $item->id || (int)$existingBill->amount !== (int)$billAmount);
 
                         if ($needsUpdate) {
-                            if (!$isDryRun) {
-                                DB::table('bills')
-                                    ->where('id', $existingBill->id)
-                                    ->update([
-                                        'amount'               => $billAmount,
-                                        'payment_rate_item_id' => $item->id,
-                                        'classroom_id'         => $student->classroom_id,
-                                        'updated_at'           => $timestamp,
-                                    ]);
+                            if ($existingBill->status === Bill::STATUS_PAID || $existingBill->status === 'PARTIAL') {
+                                // For PAID/PARTIAL bills, ONLY update payment_rate_item_id and classroom, NEVER change the amount!
+                                if ($existingBill->payment_rate_item_id !== $item->id) {
+                                    if (!$isDryRun) {
+                                        DB::table('bills')
+                                            ->where('id', $existingBill->id)
+                                            ->update([
+                                                'payment_rate_item_id' => $item->id,
+                                                'classroom_id'         => $student->classroom_id,
+                                                'updated_at'           => $timestamp,
+                                            ]);
+                                    }
+                                    $totalUpdated++;
+                                    $this->line("    [UPDATE-LINK] {$student->name} | Bulan {$billMonth}/{$billYear} | Diperbarui relasi item ID");
+                                } else {
+                                    $totalSkipped++;
+                                }
+                            } else {
+                                // For UNPAID bills, update both amount and item_id
+                                if (!$isDryRun) {
+                                    DB::table('bills')
+                                        ->where('id', $existingBill->id)
+                                        ->update([
+                                            'amount'               => $billAmount,
+                                            'payment_rate_item_id' => $item->id,
+                                            'classroom_id'         => $student->classroom_id,
+                                            'updated_at'           => $timestamp,
+                                        ]);
+                                }
+                                $totalUpdated++;
+                                $this->line("    [UPDATE] {$student->name} | Bulan {$billMonth}/{$billYear} | " .
+                                    "Rp " . number_format($existingBill->amount, 0, ',', '.') . " -> Rp " . number_format($billAmount, 0, ',', '.'));
                             }
-                            $totalUpdated++;
-                            $this->line("    [UPDATE] {$student->name} | Bulan {$billMonth}/{$billYear} | " .
-                                "Rp " . number_format($existingBill->amount, 0, ',', '.') . " -> Rp " . number_format($billAmount, 0, ',', '.'));
                         } else {
                             $totalSkipped++;
                         }
