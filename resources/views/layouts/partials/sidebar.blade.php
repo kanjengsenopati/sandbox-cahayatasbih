@@ -85,7 +85,7 @@
             
             if ($menu->name === 'Menu Pengaturan' || $menu->name === 'Pengaturan') {
                 $hasAccess = $userRoles->contains('super admin') || $userRoles->contains('superadmin');
-            } elseif (auth()->user()->isKoordinatorCahayaMart() && ($menu->name === 'Master Data' || $menu->name === 'Akademik')) {
+            } elseif (auth()->user()->isKoordinatorCahayaMart() && $menu->name === 'Akademik') {
                 $hasAccess = false;
             } else {
                 if (empty($permissions)) {
@@ -143,14 +143,27 @@
 
                         $user = auth()->user();
 
+                        if ($user->isKoordinatorCahayaMart() || $user->isKasirKoperasi()) {
+                            if (str_contains($sub->url, '/karyawan') || str_contains(strtolower($sub->name), 'karyawan') || str_contains(strtolower($sub->name), 'payroll')) {
+                                return false;
+                            }
+                            if (str_contains($sub->url, 'biometric') || str_contains(strtolower($sub->name), 'biometric') || str_contains(strtolower($sub->name), 'kiosk')) {
+                                return false;
+                            }
+                        }
+
                         if ($user->isKoordinatorCahayaMart()) {
-                            if (str_contains($sub->url, 'mode=outlet') || str_contains($sub->url, 'mode=bisnis') || $sub->url === '/outlet') {
+                            $isKoperasiModule = str_contains($sub->url, '/item') || 
+                                                str_contains($sub->url, '/order-item') || 
+                                                str_contains($sub->url, '/pos-transaction');
+
+                            if (!$isKoperasiModule && (str_contains($sub->url, 'mode=outlet') || str_contains($sub->url, 'mode=bisnis') || $sub->url === '/outlet')) {
                                 return false;
                             }
                             if (str_contains($sub->url, 'report-profit-loss')) {
                                 return false;
                             }
-                            if (str_contains($sub->url, 'report-attendance') || str_contains(strtolower($sub->name), 'kehadiran siswa')) {
+                            if (str_contains($sub->url, 'report-attendance') || str_contains(strtolower($sub->name), 'kehadiran siswa') || str_contains(strtolower($sub->name), 'presensi karyawan')) {
                                 return false;
                             }
                             if (str_contains($sub->url, 'saving-history') || str_contains(strtolower($sub->name), 'tabungan santri')) {
@@ -195,7 +208,11 @@
 
                     $isOpen = false;
                     foreach ($accessibleSubmenus as $sub) {
-                        if ($isUrlActive($sub->url)) {
+                        $checkUrl = $sub->url;
+                        if (auth()->user()->isKoordinatorCahayaMart() || auth()->user()->isKasirKoperasi()) {
+                            if (str_contains($checkUrl, '/item')) $checkUrl = '/item?mode=kantin';
+                        }
+                        if ($isUrlActive($checkUrl)) {
                             $isOpen = true;
                             break;
                         }
@@ -216,6 +233,13 @@
                                 @php
                                     $subUrl = $sub->url;
                                     $subName = $sub->name;
+
+                                    if (auth()->user()->isKoordinatorCahayaMart() || auth()->user()->isKasirKoperasi()) {
+                                        if (str_contains($subUrl, '/item')) {
+                                            $subUrl = '/item?mode=kantin';
+                                        }
+                                    }
+
                                     if (str_contains($subUrl, 'report-saldo') || str_contains(strtolower($subName), 'tabungan & saldo') || str_contains(strtolower($subName), 'tabungan dan saldo')) {
                                         $subName = 'Saldo Santri';
                                     }
@@ -230,6 +254,7 @@
                                     } elseif (str_contains($subName, 'Multi Outlet') || str_contains($subName, 'Multi-Outlet') || str_contains($subUrl, 'pos-transaction')) {
                                         if (str_contains($subUrl, 'mode=kantin') || auth()->user()->isKasirKoperasi() || auth()->user()->isKoordinatorCahayaMart()) {
                                             $subName = 'Laporan POS Kantin';
+                                            $subUrl = '/pos-transaction?mode=kantin';
                                         } elseif (str_contains($subUrl, 'mode=outlet') || auth()->user()->isKasirOutlet()) {
                                             $subName = 'Laporan POS Outlet';
                                         } elseif (str_contains($subUrl, 'mode=bisnis')) {

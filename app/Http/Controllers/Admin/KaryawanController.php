@@ -13,6 +13,20 @@ use Yajra\DataTables\DataTables;
 
 class KaryawanController extends Controller
 {
+    public function __construct()
+    {
+        $this->middleware(function ($request, $next) {
+            $user = auth()->user();
+            if ($user && ($user->isKasirKoperasi() || $user->isKoordinatorCahayaMart())) {
+                if ($request->ajax()) {
+                    return response()->json(['success' => false, 'message' => 'Modul Karyawan hanya diperuntukkan untuk Unit Usaha Outlet.'], 403);
+                }
+                return redirect()->route('dashboard')->with('error', 'Modul Karyawan hanya diperuntukkan untuk Unit Usaha Outlet.');
+            }
+            return $next($request);
+        });
+    }
+
     /**
      * Display a listing of the resource.
      */

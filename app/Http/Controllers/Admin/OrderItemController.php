@@ -26,17 +26,17 @@ class OrderItemController extends Controller
             $user = auth()->user();
             if ($user) {
                 $mode = $request->input('mode') ?? request('mode');
-                if ($user->isKasirKoperasi() && $mode === 'outlet') {
+                if (($user->isKasirKoperasi() || $user->isKoordinatorCahayaMart()) && $mode === 'outlet') {
                     if ($request->ajax()) {
-                        return response()->json(['success' => false, 'message' => 'Maaf, Anda tidak memiliki akses.'], 403);
+                        return response()->json(['success' => false, 'message' => 'Maaf, Anda tidak memiliki akses untuk modul Outlet.'], 403);
                     }
-                    return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
+                    return redirect()->route('order-item.index', ['mode' => 'kantin'])->with('error', 'Maaf, Anda tidak memiliki akses untuk modul Outlet');
                 }
                 if ($user->isKasirOutlet() && $mode === 'kantin') {
                     if ($request->ajax()) {
-                        return response()->json(['success' => false, 'message' => 'Maaf, Anda tidak memiliki akses.'], 403);
+                        return response()->json(['success' => false, 'message' => 'Maaf, Anda tidak memiliki akses untuk modul Kantin/Koperasi.'], 403);
                     }
-                    return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
+                    return redirect()->route('order-item.index', ['mode' => 'outlet'])->with('error', 'Maaf, Anda tidak memiliki akses untuk modul Kantin/Koperasi');
                 }
             }
             return $next($request);
