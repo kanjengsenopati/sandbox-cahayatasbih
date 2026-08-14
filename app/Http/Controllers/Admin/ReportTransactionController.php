@@ -18,9 +18,11 @@ use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Auth;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Exports\ReportTransactionExport;
+use App\Traits\CanonicalBillTypeTrait;
 
 class ReportTransactionController extends Controller
 {
+    use CanonicalBillTypeTrait;
     /**
      * Display a listing of the resource.
      */
@@ -53,20 +55,29 @@ class ReportTransactionController extends Controller
                 ->classroomFilter('classroom_id', request()->classroom_id)
                 ->when(request()->filled('bill_type_id'), function ($query) {
                     $val = request()->input('bill_type_id');
+                    $matchingInfo = $this->getMatchingBillTypeInfo($val);
+                    $matchedIds = $matchingInfo['ids'];
+                    $matchedNames = $matchingInfo['names'];
+
                     $query->where('type', Transaction::TYPE_BILL)
-                        ->whereExists(function ($subQuery) use ($val) {
+                        ->whereExists(function ($subQuery) use ($val, $matchedIds, $matchedNames) {
                             $subQuery->select(DB::raw(1))
                                 ->from('transaction_details')
                                 ->join('bills', 'transaction_details.bill_id', '=', 'bills.id')
                                 ->join('bill_types', 'bills.bill_type_id', '=', 'bill_types.id')
                                 ->whereColumn('transaction_details.transaction_id', 'transactions.id')
-                                ->where(function($q) use ($val) {
-                                    if (is_array($val)) {
-                                        $q->whereIn('bill_types.id', $val)
-                                          ->orWhereIn('bill_types.name', $val);
+                                ->where(function($q) use ($val, $matchedIds, $matchedNames) {
+                                    if (!empty($matchedIds)) {
+                                        $q->whereIn('bill_types.id', $matchedIds)
+                                          ->orWhereIn('bill_types.name', $matchedNames);
                                     } else {
-                                        $q->where('bill_types.id', $val)
-                                          ->orWhere('bill_types.name', $val);
+                                        if (is_array($val)) {
+                                            $q->whereIn('bill_types.id', $val)
+                                              ->orWhereIn('bill_types.name', $val);
+                                        } else {
+                                            $q->where('bill_types.id', $val)
+                                              ->orWhere('bill_types.name', $val);
+                                        }
                                     }
                                 });
                         });
@@ -253,7 +264,7 @@ class ReportTransactionController extends Controller
         // ambil list admin nama dari admin_ids
         $admins = Admin::whereIn('id', $admin_ids)->select('id', 'name')->orderBy('name')->get();
         $schools = School::orderBy('name')->get();
-        $billTypesQuery = BillType::with('academicYear')->select('id', 'name', 'academic_year_id')->whereNotIn('id', [
+        $billTypesQuery = BillType::with(['billItem', 'academicYear'])->select('id', 'name', 'academic_year_id', 'bill_item_id')->whereNotIn('id', [
             '02dae620-fc2c-4bf2-9e13-c5c1950e4d48',
             '615a34af-be2d-45f2-9830-720fea341a0c',
             'f3a25c77-f8c0-4882-8286-571bc57bf87c',
@@ -280,7 +291,14 @@ class ReportTransactionController extends Controller
                 }
             }
         }
-        $billTypes = $billTypesQuery->orderBy('name')->get()->unique('name')->values();
+        $billTypes = $billTypesQuery->get()->map(function($item) {
+            $posName = $item->billItem->name ?? null;
+            $canonicalName = $this->getCanonicalBillTypeName($item->name, $posName);
+            return (object)[
+                'id' => $canonicalName,
+                'name' => $canonicalName,
+            ];
+        })->unique('name')->sortBy('name')->values();
         return view('admins.report-transaction.index', compact('schools', 'admins', 'billTypes'));
     }
 
@@ -345,6 +363,25 @@ class ReportTransactionController extends Controller
     }
 
     /**
+     * Export data to Google Sheets compatible TSV format for instant clipboard copy and paste.
+     */
+    public function exportSheets(Request $request)
+    {
+        if (!Auth::user()->can('Manage Laporan Transaksi')) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
+        }
+
+        $export = new ReportTransactionExport();
+        $result = $export->generateTsv();
+
+        return response()->json([
+            'success' => true,
+            'tsv' => $result['tsv'],
+            'count' => $result['count'],
+        ]);
+    }
+
+    /**
      * Get dynamic filters based on school_id
      */
     public function getFilters(Request $request)
@@ -353,7 +390,7 @@ class ReportTransactionController extends Controller
 
         // 1. Dapatkan Jenis Tagihan yang valid untuk Lembaga ini
         // Database-driven: filter berdasarkan Pos Bayar (bill_item_id)
-        $billTypesQuery = BillType::with('academicYear')->select('id', 'name', 'academic_year_id')->whereNotIn('id', [
+        $billTypesQuery = BillType::with(['billItem', 'academicYear'])->select('id', 'name', 'academic_year_id', 'bill_item_id')->whereNotIn('id', [
             '02dae620-fc2c-4bf2-9e13-c5c1950e4d48',
             '615a34af-be2d-45f2-9830-720fea341a0c',
             'f3a25c77-f8c0-4882-8286-571bc57bf87c',
@@ -371,9 +408,14 @@ class ReportTransactionController extends Controller
             }
         }
 
-        $billTypes = $billTypesQuery->orderBy('name')->get()->unique('name')->values()->map(function($item) {
-            return ['id' => $item->name, 'name' => $item->name];
-        });
+        $billTypes = $billTypesQuery->get()->map(function($item) {
+            $posName = $item->billItem->name ?? null;
+            $canonicalName = $this->getCanonicalBillTypeName($item->name, $posName);
+            return [
+                'id' => $canonicalName,
+                'name' => $canonicalName,
+            ];
+        })->unique('name')->sortBy('name')->values();
 
         // 2. Dapatkan Petugas yang valid untuk Lembaga ini
         $adminsQuery = Admin::select('id', 'name');

@@ -98,8 +98,7 @@
                                     </div>
                                     <div>
                                         <label class="form-label">Petugas</label>
-                                        <select name="admin_id" class="form-select form-select-sm" id="filter_admin"
-                                            onchange="reloadTable()">
+                                        <select name="admin_id" class="form-select form-select-sm" id="filter_admin">
                                             <option value="">Semua</option>
                                             @foreach($admins as $admin)
                                             <option value="{{ $admin->id }}">{{ $admin->name }}</option>
@@ -116,35 +115,6 @@
                                             @endforeach
                                         </select>
                                     </div>
-                                    <!--begin::Export dropdown-->
-                                    <button type="button" class="btn btn-sm btn-primary" data-kt-menu-trigger="click"
-                                        data-kt-menu-placement="bottom-end">
-                                        <i class="ki-duotone fa fa-caret-down fs-2"><span class="path1"></span><span
-                                                class="path2"></span></i>
-                                        Export Report
-                                    </button>
-                                    <!--begin::Menu-->
-                                    <div id="kt_datatable_example_export_menu"
-                                        class="menu menu-sub menu-sub-dropdown menu-column menu-rounded menu-gray-600 menu-state-bg-light-primary fw-semibold fs-7 w-200px py-4"
-                                        data-kt-menu="true">
-                                        <!--begin::Menu item-->
-                                        <div class="menu-item px-3">
-                                            <a type="button" class="menu-link btn-export px-3" data-type="xlsx">
-                                                Export as Excel
-                                            </a>
-                                        </div>
-                                        <!--end::Menu item-->
-                                        <!--begin::Menu item-->
-                                        <div class="menu-item px-3">
-                                            <a type="button" class="menu-link btn-export px-3" data-type="csv">
-                                                Export as CSV
-                                            </a>
-                                        </div>
-                                        <!--end::Menu item-->
-                                    </div>
-                                    <!--end::Menu-->
-                                    <!--end::Export dropdown-->
-
                                     <div>
                                         <label class="form-label">Nama Santri / Siswa</label>
                                         <div class="d-flex align-items-center position-relative">
@@ -153,6 +123,44 @@
                                             </span>
                                             <input type="text" id="filter_student_name" name="student_name" class="form-control form-control-sm form-control-solid ps-9" placeholder="Cari Nama Santri / Siswa..." style="width: 220px;" />
                                         </div>
+                                    </div>
+
+                                    <div class="d-flex gap-2">
+                                        <!--begin::Tampilkan Button-->
+                                        <button type="button" id="btn-tampilkan" class="btn btn-sm btn-primary d-flex align-items-center">
+                                            <i class="fas fa-filter me-1 fs-6"></i>
+                                            Tampilkan
+                                        </button>
+                                        <!--end::Tampilkan Button-->
+
+                                        <!--begin::Export dropdown-->
+                                        <button type="button" class="btn btn-sm btn-light-primary d-flex align-items-center" data-kt-menu-trigger="click"
+                                            data-kt-menu-placement="bottom-end">
+                                            <i class="ki-duotone fa fa-caret-down fs-2 me-1"><span class="path1"></span><span
+                                                    class="path2"></span></i>
+                                            Export Report
+                                        </button>
+                                        <!--begin::Menu-->
+                                        <div id="kt_datatable_example_export_menu"
+                                            class="menu menu-sub menu-sub-dropdown menu-column menu-rounded menu-gray-600 menu-state-bg-light-primary fw-semibold fs-7 w-200px py-4"
+                                            data-kt-menu="true">
+                                            <!--begin::Menu item-->
+                                            <div class="menu-item px-3">
+                                                <a type="button" class="menu-link btn-export px-3" data-type="xlsx">
+                                                    <i class="fas fa-file-excel text-success me-2 fs-6"></i> Export as Excel
+                                                </a>
+                                            </div>
+                                            <!--end::Menu item-->
+                                            <!--begin::Menu item-->
+                                            <div class="menu-item px-3">
+                                                <a type="button" class="menu-link btn-export-sheets px-3">
+                                                    <i class="fas fa-table text-primary me-2 fs-6"></i> Export to Google Sheets
+                                                </a>
+                                            </div>
+                                            <!--end::Menu item-->
+                                        </div>
+                                        <!--end::Menu-->
+                                        <!--end::Export dropdown-->
                                     </div>
                                 </div>
                             </form>
@@ -422,15 +430,8 @@
                     });
                     // Pastikan state langsung default ke Semua Tagihan
                     $('#filter_tipe_tagihan').val('').trigger('change.select2');
-
-                    reloadTable();
                 }
             });
-        });
-
-        // Event handlers to reload the table
-        $('#filter_school_id, #filter_classroom_id, #filter_status, #filter_admin, #filter_tipe_tagihan').on('change', function() {
-            reloadTable();
         });
 
         // Trigger change on load if a school is already selected (e.g. for restricted admins)
@@ -441,12 +442,23 @@
             }, 100);
         }
 
-        var studentNameTimer;
-        $('#filter_student_name').on('keyup input', function() {
-            clearTimeout(studentNameTimer);
-            studentNameTimer = setTimeout(function() {
+        // Manual trigger 'Tampilkan' click handler
+        $('#btn-tampilkan').on('click', function(e) {
+            e.preventDefault();
+            reloadTable();
+        });
+
+        // Form submit / Enter on student name input
+        $('#filter_student_name').on('keypress', function(e) {
+            if (e.which === 13) {
+                e.preventDefault();
                 reloadTable();
-            }, 300);
+            }
+        });
+
+        $('#form-filter').on('submit', function(e) {
+            e.preventDefault();
+            reloadTable();
         });
 
         var start = moment().startOf('month');
@@ -471,7 +483,6 @@
             $('#dateRange span').html(start.format('D/MM/YYYY') + ' - ' + end.format('D/MM/YYYY'));
             $('#start_date').val(start.format('YYYY-MM-DD'));
             $('#end_date').val(end.format('YYYY-MM-DD'));
-            reloadTable();
         });
 
         // Set initial values
@@ -627,6 +638,117 @@
     $('.btn-export').on('click', function() {
         $('#type').val($(this).data('type'));
         $('#form-filter').attr('action', "{{ route('report-transaction.export') }}").submit();
+    });
+
+    // Helper function to safely copy text to clipboard
+    function copyTextToClipboard(text) {
+        if (navigator.clipboard && window.isSecureContext) {
+            return navigator.clipboard.writeText(text);
+        } else {
+            let textArea = document.createElement("textarea");
+            textArea.value = text;
+            textArea.style.position = "fixed";
+            textArea.style.left = "-999999px";
+            textArea.style.top = "-999999px";
+            document.body.appendChild(textArea);
+            textArea.focus();
+            textArea.select();
+            return new Promise((resolve, reject) => {
+                document.execCommand('copy') ? resolve() : reject();
+                textArea.remove();
+            });
+        }
+    }
+
+    // onclick export to google sheets
+    $('.btn-export-sheets').on('click', function(e) {
+        e.preventDefault();
+
+        // 1. Show SweetAlert loading state
+        Swal.fire({
+            title: 'Menyiapkan Google Sheets...',
+            html: '<div class="py-2 text-muted fs-7"><i class="fas fa-spinner fa-spin me-2"></i>Sedang memformat data transaksi untuk Google Sheets...</div>',
+            allowOutsideClick: false,
+            allowEscapeKey: false,
+            showConfirmButton: false,
+            didOpen: () => {
+                Swal.showLoading();
+            }
+        });
+
+        // 2. Fetch TSV data from server
+        $.ajax({
+            url: "{{ route('report-transaction.export-sheets') }}",
+            type: "GET",
+            data: {
+                school_id: $('#filter_school_id').val(),
+                classroom_id: $('#filter_classroom_id').val(),
+                type_data: $('#filter_status').val(),
+                admin_id: $('#filter_admin').val(),
+                start_date: $('#start_date').val(),
+                end_date: $('#end_date').val(),
+                bill_type_id: $('#filter_tipe_tagihan').val(),
+                student_name: $('#filter_student_name').val()
+            },
+            success: function(response) {
+                if (response.success && response.tsv) {
+                    // 3. Copy to clipboard
+                    copyTextToClipboard(response.tsv).then(function() {
+                        // 4. Open Google Sheets in new tab
+                        window.open('https://sheets.new', '_blank');
+
+                        // 5. Show user guidance modal
+                        Swal.fire({
+                            icon: 'success',
+                            title: '<span class="text-success fs-3 fw-bolder">Google Sheets Terbuka!</span>',
+                            html: `
+                                <div class="text-start fs-7 text-gray-700 mt-2">
+                                    <p class="mb-3">Sebanyak <span class="badge badge-light-success fs-7 fw-bold">${response.count} baris data</span> telah <strong>otomatis disalin ke Clipboard</strong>.</p>
+                                    <div class="p-3 bg-light-primary rounded-3 border border-primary border-dashed mb-3">
+                                        <div class="d-flex align-items-center mb-1">
+                                            <i class="fas fa-paste text-primary fs-3 me-2"></i>
+                                            <span class="fw-bolder text-gray-800 fs-7">Langkah Selanjutnya:</span>
+                                        </div>
+                                        <div class="ms-7 fs-8 text-gray-600">
+                                            Buka tab baru Google Sheets, klik sel <strong>A1</strong>, lalu tekan tombol keyboard <kbd class="bg-dark text-white px-2 py-0.5 rounded fs-9">Ctrl + V</kbd> (atau <kbd class="bg-dark text-white px-2 py-0.5 rounded fs-9">⌘ + V</kbd> di Mac).
+                                        </div>
+                                    </div>
+                                </div>
+                            `,
+                            showCancelButton: true,
+                            confirmButtonText: '<i class="fas fa-copy me-1"></i> Salin Ulang Data',
+                            cancelButtonText: 'Tutup',
+                            customClass: {
+                                confirmButton: 'btn btn-sm btn-primary',
+                                cancelButton: 'btn btn-sm btn-light'
+                            }
+                        }).then((result) => {
+                            if (result.isConfirmed) {
+                                copyTextToClipboard(response.tsv).then(function() {
+                                    Swal.fire({
+                                        icon: 'success',
+                                        title: 'Data Disalin!',
+                                        text: 'Data telah disalin kembali ke Clipboard.',
+                                        timer: 1500,
+                                        showConfirmButton: false
+                                    });
+                                });
+                            }
+                        });
+                    }).catch(function(err) {
+                        console.error('Clipboard copy error:', err);
+                        window.open('https://sheets.new', '_blank');
+                        Swal.fire('Gagal Menyalin', 'Gagal menyalin data ke Clipboard otomatis. Silakan periksa izin browser.', 'warning');
+                    });
+                } else {
+                    Swal.fire('Gagal', response.message || 'Gagal memproses data laporan.', 'error');
+                }
+            },
+            error: function(xhr) {
+                console.error('Export sheets error:', xhr);
+                Swal.fire('Terjadi Kesalahan', 'Gagal mengambil data untuk Google Sheets.', 'error');
+            }
+        });
     });
 </script>
 <script>

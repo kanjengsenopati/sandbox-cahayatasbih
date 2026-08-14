@@ -478,6 +478,7 @@ Route::group(['middleware' => ['auth']], function () {
     Route::resource('student-barcode', StudentBarcodeController::class, ['only' => ['index', 'create', 'store']]);
     Route::get('report-transaction/get-filters', [ReportTransactionController::class, 'getFilters'])->name('report-transaction.get-filters');
     Route::get('report-transaction/export', [ReportTransactionController::class, 'export'])->name('report-transaction.export');
+    Route::get('report-transaction/export-sheets', [ReportTransactionController::class, 'exportSheets'])->name('report-transaction.export-sheets');
     Route::resource('report-transaction', ReportTransactionController::class, ['only' => ['index', 'destroy']]);
 
 
