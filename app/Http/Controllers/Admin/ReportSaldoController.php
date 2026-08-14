@@ -75,21 +75,34 @@ class ReportSaldoController extends Controller
 
     protected function calculateTotals($data)
     {
-        $total_topup = $data->where('type', SaldoHistory::TYPE_IN)->where('status', SaldoHistory::STATUS_SUCCESS)->sum('amount');
-        $data = $this->querySaldoHistory();
-        $total_pengurangan = $data->whereIn('type', [SaldoHistory::TYPE_OUT, SaldoHistory::TYPE_WITHDRAW])->where('status', SaldoHistory::STATUS_SUCCESS)->sum('amount');
+        $totals = (clone $data)->selectRaw("
+            SUM(CASE WHEN type = ? AND status = ? THEN amount ELSE 0 END) as total_topup,
+            SUM(CASE WHEN type IN (?, ?) AND status = ? THEN amount ELSE 0 END) as total_pengurangan
+        ", [
+            SaldoHistory::TYPE_IN, SaldoHistory::STATUS_SUCCESS,
+            SaldoHistory::TYPE_OUT, SaldoHistory::TYPE_WITHDRAW, SaldoHistory::STATUS_SUCCESS
+        ])->first();
+
         $saldo_tersedia = $this->calculateAvailableBalance();
 
         return response()->json([
-            'total_topup' => number_format($total_topup, 0, ',', '.'),
-            'total_pengurangan' => number_format($total_pengurangan, 0, ',', '.'),
+            'total_topup' => number_format($totals->total_topup ?? 0, 0, ',', '.'),
+            'total_pengurangan' => number_format($totals->total_pengurangan ?? 0, 0, ',', '.'),
             'saldo_tersedia' => number_format($saldo_tersedia, 0, ',', '.'),
         ]);
     }
 
     protected function calculateAvailableBalance()
     {
-        return Student::sum('saldo');
+        return Student::when(request()->filled('school_id'), function ($q) {
+                $q->whereHas('classroom', function ($c) {
+                    $c->where('school_id', request()->school_id);
+                });
+            })
+            ->when(request()->filled('classroom_id'), function ($q) {
+                $q->where('classroom_id', request()->classroom_id);
+            })
+            ->sum('saldo');
     }
 
     protected function formatDataTable($data)

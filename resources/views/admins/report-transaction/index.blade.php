@@ -108,12 +108,11 @@
                                     </div>
                                     <div>
                                         <label class="form-label">Jenis Tagihan</label>
-                                        <select name="bill_type_id[]" id="filter_tipe_tagihan"
-                                            class="form-select form-select-sm"
-                                            multiple="multiple">
-                                            <option value="">Semua</option>
+                                        <select name="bill_type_id" id="filter_tipe_tagihan"
+                                            class="form-select form-select-sm">
+                                            <option value="">Semua Tagihan</option>
                                             @foreach ($billTypes as $billType)
-                                            <option value="{{ $billType->id }}">{{ $billType->formatted_name }}</option>
+                                            <option value="{{ $billType->name }}">{{ $billType->name }}</option>
                                             @endforeach
                                         </select>
                                     </div>
@@ -382,6 +381,10 @@
         // Fetch classroom data on school_id change
         $('#filter_school_id').on('change', function() {
             let school_id = $(this).val();
+
+            // Reset state Jenis Tagihan ke default "" saat ganti Lembaga
+            $('#filter_tipe_tagihan').val('').trigger('change.select2');
+
             $.ajax({
                 url: "{{ route('report-bill.get-classroom') }}",
                 type: "GET",
@@ -398,12 +401,45 @@
                     }
                 }
             });
+
+            // Fetch dynamic filters for Jenis Tagihan and Petugas
+            $.ajax({
+                url: "{{ route('report-transaction.get-filters') }}",
+                type: "GET",
+                data: { school_id: school_id },
+                success: function(response) {
+                    // Update Petugas Select
+                    $('#filter_admin').empty().append('<option value="">Semua</option>');
+                    $.each(response.admins, function(key, admin) {
+                        $('#filter_admin').append('<option value="' + admin.id + '">' + admin.name + '</option>');
+                    });
+                    $('#filter_admin').trigger('change.select2');
+
+                    // Update Jenis Tagihan Select (Single Select, Grouped by Name)
+                    $('#filter_tipe_tagihan').empty().append('<option value="">Semua Tagihan</option>');
+                    $.each(response.bill_types, function(key, bt) {
+                        $('#filter_tipe_tagihan').append('<option value="' + bt.name + '">' + bt.name + '</option>');
+                    });
+                    // Pastikan state langsung default ke Semua Tagihan
+                    $('#filter_tipe_tagihan').val('').trigger('change.select2');
+
+                    reloadTable();
+                }
+            });
         });
 
         // Event handlers to reload the table
         $('#filter_school_id, #filter_classroom_id, #filter_status, #filter_admin, #filter_tipe_tagihan').on('change', function() {
             reloadTable();
         });
+
+        // Trigger change on load if a school is already selected (e.g. for restricted admins)
+        if ($('#filter_school_id').val()) {
+            // We use setTimeout to ensure other initializations are done
+            setTimeout(function() {
+                $('#filter_school_id').trigger('change');
+            }, 100);
+        }
 
         var studentNameTimer;
         $('#filter_student_name').on('keyup input', function() {
@@ -595,10 +631,10 @@
 </script>
 <script>
     $(document).ready(function() {
-    // Menginisialisasi Select2 pada elemen select
+        // Menginisialisasi Select2 pada elemen select
         $('#filter_tipe_tagihan').select2({
-            placeholder: 'Pilih Tagihan', // Placeholder
-            allowClear: true // Menambahkan opsi untuk menghapus pilihan
+            placeholder: 'Semua Tagihan',
+            allowClear: true
         });
     });
 </script>

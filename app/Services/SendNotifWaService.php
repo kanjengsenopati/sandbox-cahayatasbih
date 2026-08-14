@@ -64,11 +64,18 @@ class SendNotifWaService
                 $billCount = count($transaction->transactionDetails);
                 foreach ($transaction->transactionDetails as $detail) {
                     $bill = $detail->bill;
-                    $totalAmount += $bill->amount;
+                    $amount = $detail->amount ?? ($bill?->amount ?? 0);
+                    $totalAmount += $amount;
                     $message .= "--------------------------------\n";
-                    $message .= "Pembayaran : *" . $bill->billType->name .
-                        " " . $bill->translated_month . " " . $bill->academicYear->name . "*\n";
-                    $message .= "Nominal Pembayaran : *Rp." . number_format($bill->amount, 0, ',', '.') . "*\n";
+                    
+                    if ($bill) {
+                        $message .= "Pembayaran : *" . ($bill->billType?->name ?? 'Tagihan') .
+                            " " . $bill->translated_month . " " . ($bill->academicYear?->name ?? '') . "*\n";
+                    } else {
+                        $message .= "Pembayaran : *Tagihan*\n";
+                    }
+                    
+                    $message .= "Nominal Pembayaran : *Rp." . number_format($amount, 0, ',', '.') . "*\n";
                 }
                 if ($billCount > 1) {
                     $message .= "--------------------------------\n";

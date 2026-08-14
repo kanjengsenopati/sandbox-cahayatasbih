@@ -6,6 +6,7 @@ use Carbon\Carbon;
 use App\Models\Admin;
 use App\Models\School;
 use App\Models\BillType;
+use App\Models\BillItem;
 use App\Models\Transaction;
 use App\Models\SaldoHistory;
 use Illuminate\Http\Request;
@@ -51,13 +52,23 @@ class ReportTransactionController extends Controller
                 ->schoolFilter('school_id', request()->school_id)
                 ->classroomFilter('classroom_id', request()->classroom_id)
                 ->when(request()->filled('bill_type_id'), function ($query) {
-                    $query->where('type', 'BILL') // Filter tipe "BILL" hanya jika `bill_type_id` ada
-                        ->whereExists(function ($subQuery) {
+                    $val = request()->input('bill_type_id');
+                    $query->where('type', Transaction::TYPE_BILL)
+                        ->whereExists(function ($subQuery) use ($val) {
                             $subQuery->select(DB::raw(1))
                                 ->from('transaction_details')
                                 ->join('bills', 'transaction_details.bill_id', '=', 'bills.id')
+                                ->join('bill_types', 'bills.bill_type_id', '=', 'bill_types.id')
                                 ->whereColumn('transaction_details.transaction_id', 'transactions.id')
-                                ->whereIn('bills.bill_type_id', request()->input('bill_type_id', [])); // Gunakan `whereIn` untuk array
+                                ->where(function($q) use ($val) {
+                                    if (is_array($val)) {
+                                        $q->whereIn('bill_types.id', $val)
+                                          ->orWhereIn('bill_types.name', $val);
+                                    } else {
+                                        $q->where('bill_types.id', $val)
+                                          ->orWhere('bill_types.name', $val);
+                                    }
+                                });
                         });
                 })
                 ->hasSchool()
@@ -242,12 +253,34 @@ class ReportTransactionController extends Controller
         // ambil list admin nama dari admin_ids
         $admins = Admin::whereIn('id', $admin_ids)->select('id', 'name')->orderBy('name')->get();
         $schools = School::orderBy('name')->get();
-        $billTypes = BillType::select('id', 'name')->whereNotIn('id', [
+        $billTypesQuery = BillType::with('academicYear')->select('id', 'name', 'academic_year_id')->whereNotIn('id', [
             '02dae620-fc2c-4bf2-9e13-c5c1950e4d48',
             '615a34af-be2d-45f2-9830-720fea341a0c',
             'f3a25c77-f8c0-4882-8286-571bc57bf87c',
             'ce389861-40ab-4523-9364-3458e9dfda1d'
-        ])->get();
+        ]);
+
+        $schoolId = request()->school_id;
+        if (!$schoolId) {
+            $admin = Auth::user();
+            if ($admin && !$admin->hasRole('Super Admin')) {
+                $schoolIds = method_exists($admin, 'getSchoolIds') ? $admin->getSchoolIds() : [];
+                $schoolId = $schoolIds[0] ?? null;
+            }
+        }
+
+        if ($schoolId) {
+            $school = \App\Models\School::find($schoolId);
+            if ($school) {
+                // Database-driven: filter bill_types berdasarkan Pos Bayar (bill_item_id)
+                // Mapping School.type -> BillItem.name
+                $billItemIds = $this->getBillItemIdsBySchoolType($school->type);
+                if ($billItemIds->isNotEmpty()) {
+                    $billTypesQuery->whereIn('bill_item_id', $billItemIds);
+                }
+            }
+        }
+        $billTypes = $billTypesQuery->orderBy('name')->get()->unique('name')->values();
         return view('admins.report-transaction.index', compact('schools', 'admins', 'billTypes'));
     }
 
@@ -309,5 +342,95 @@ class ReportTransactionController extends Controller
     public function export()
     {
         return Excel::download(new ReportTransactionExport, 'Laporan Transaksi ' . request()->start_date . ' - ' . request()->end_date . '.' . request()->type);
+    }
+
+    /**
+     * Get dynamic filters based on school_id
+     */
+    public function getFilters(Request $request)
+    {
+        $schoolId = $request->school_id;
+
+        // 1. Dapatkan Jenis Tagihan yang valid untuk Lembaga ini
+        // Database-driven: filter berdasarkan Pos Bayar (bill_item_id)
+        $billTypesQuery = BillType::with('academicYear')->select('id', 'name', 'academic_year_id')->whereNotIn('id', [
+            '02dae620-fc2c-4bf2-9e13-c5c1950e4d48',
+            '615a34af-be2d-45f2-9830-720fea341a0c',
+            'f3a25c77-f8c0-4882-8286-571bc57bf87c',
+            'ce389861-40ab-4523-9364-3458e9dfda1d'
+        ]);
+
+        if ($schoolId) {
+            $school = \App\Models\School::find($schoolId);
+            if ($school) {
+                // Database-driven: filter bill_types berdasarkan Pos Bayar (bill_item_id)
+                $billItemIds = $this->getBillItemIdsBySchoolType($school->type);
+                if ($billItemIds->isNotEmpty()) {
+                    $billTypesQuery->whereIn('bill_item_id', $billItemIds);
+                }
+            }
+        }
+
+        $billTypes = $billTypesQuery->orderBy('name')->get()->unique('name')->values()->map(function($item) {
+            return ['id' => $item->name, 'name' => $item->name];
+        });
+
+        // 2. Dapatkan Petugas yang valid untuk Lembaga ini
+        $adminsQuery = Admin::select('id', 'name');
+        
+        if ($schoolId) {
+            // Hanya petugas yang memiliki transaksi di lembaga ini, atau yang di-assign ke lembaga ini
+            $adminsQuery->where(function($q) use ($schoolId) {
+                $q->where('school_id', $schoolId)
+                  ->orWhereHas('adminSchool', function($sq) use ($schoolId) {
+                      $sq->where('school_id', $schoolId);
+                  })
+                  ->orWhereExists(function ($eq) use ($schoolId) {
+                      $eq->select(DB::raw(1))
+                          ->from('transactions')
+                          ->join('students', 'transactions.student_id', '=', 'students.id')
+                          ->join('classrooms', 'students.classroom_id', '=', 'classrooms.id')
+                          ->whereColumn('transactions.admin_id', 'admins.id')
+                          ->where('classrooms.school_id', $schoolId);
+                  });
+            });
+        } else {
+            // Default: Petugas yang pernah melakukan transaksi
+            $adminsQuery->whereExists(function ($query) {
+                $query->select(DB::raw(1))
+                    ->from('transactions')
+                    ->whereColumn('transactions.admin_id', 'admins.id');
+            });
+        }
+
+        $admins = $adminsQuery->orderBy('name')->get();
+
+        return response()->json([
+            'bill_types' => $billTypes,
+            'admins' => $admins,
+        ]);
+    }
+
+    /**
+     * Map School.type ke BillItem IDs (Pos Bayar/UPT) untuk database-driven filtering.
+     * Relasi: School.type -> BillItem.name -> bill_types.bill_item_id
+     */
+    private function getBillItemIdsBySchoolType(?string $schoolType)
+    {
+        // Mapping School.type ke nama Pos Bayar (BillItem) yang sesuai
+        $mapping = [
+            School::TYPE_PONDOK => ['PONDOK'],
+            School::TYPE_MA     => ['MADRASAH ALIYAH'],
+            School::TYPE_SMP    => ['SMP'],
+        ];
+
+        $type = strtoupper($schoolType ?? '');
+        $billItemNames = $mapping[$type] ?? [];
+
+        if (empty($billItemNames)) {
+            return collect();
+        }
+
+        return BillItem::whereIn('name', $billItemNames)->pluck('id');
     }
 }

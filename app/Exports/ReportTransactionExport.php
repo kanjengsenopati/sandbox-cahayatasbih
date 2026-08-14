@@ -50,9 +50,15 @@ class ReportTransactionExport implements FromCollection, WithHeadings, ShouldAut
             ->classroomFilter('classroom_id', request()->classroom_id)
             ->filter('type', request()->type_data)
             ->when(request()->filled('bill_type_id'), function ($query) {
-                $query->whereHas('transactionDetails.bill', function ($query) {
-                    $query->where('bill_type_id', request()->bill_type_id);
-                });
+                $val = request()->input('bill_type_id');
+                $query->where('type', \App\Models\Transaction::TYPE_BILL)
+                    ->whereHas('transactionDetails.bill.billType', function ($sub) use ($val) {
+                        if (is_array($val)) {
+                            $sub->whereIn('id', $val)->orWhereIn('name', $val);
+                        } else {
+                            $sub->where('id', $val)->orWhere('name', $val);
+                        }
+                    });
             })
             ->hasSchool()
             ->latest()
