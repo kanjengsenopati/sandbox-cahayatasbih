@@ -39,7 +39,48 @@
 @endpush
 
 <div class="accordion" id="accordionLainnyaParent">
-    @if($billOthers->isEmpty())
+    @if(isset($ungeneratedOtherRates) && $ungeneratedOtherRates->isNotEmpty())
+    {{-- Ada tarif yang sudah di-mapping admin tapi belum di-generate → tampilkan shortcut buttons --}}
+    <div class="notice d-flex bg-light-primary rounded border-primary border border-dashed p-6 my-4">
+        <span class="svg-icon svg-icon-2tx svg-icon-primary me-4">
+            <i class="fas fa-bolt fs-1 text-primary"></i>
+        </span>
+        <div class="d-flex flex-column flex-grow-1">
+            <div class="fw-bold">
+                <h4 class="text-gray-900 fw-bolder mb-1">Tagihan Siap Di-generate</h4>
+                <div class="fs-6 text-gray-700 mb-3">
+                    Tagihan berikut sudah dikonfigurasi untuk kelas siswa <strong>{{ $student->name }}</strong> tetapi belum di-generate. Klik tombol di bawah untuk langsung membuat tagihan:
+                </div>
+            </div>
+            <div class="d-flex flex-wrap gap-3">
+                @foreach($ungeneratedOtherRates as $ur)
+                <div class="d-flex align-items-center bg-white rounded-3 px-4 py-3" style="box-shadow: 0 2px 8px rgba(0,0,0,0.04); min-width: 260px;">
+                    <div class="flex-grow-1 me-3">
+                        <div class="fw-bold text-gray-800 fs-6">{{ $ur->bill_type_name }}</div>
+                        <div class="d-flex align-items-center gap-2 mt-1">
+                            <span class="badge badge-light-primary fs-8">{{ $ur->academic_year_name }}</span>
+                            @if($ur->amount > 0)
+                            <span class="fw-semibold text-emerald-600 fs-7" style="color: #10B981;">Rp {{ number_format($ur->amount, 0, ',', '.') }}</span>
+                            @endif
+                        </div>
+                    </div>
+                    <button type="button"
+                        class="btn btn-sm btn-primary generate-lainnya-btn hover-scale"
+                        data-rate-id="{{ $ur->rate_id }}"
+                        data-student-id="{{ $student->id }}"
+                        data-bill-type-name="{{ $ur->bill_type_name }}"
+                        title="Generate tagihan {{ $ur->bill_type_name }} untuk {{ $student->name }}">
+                        <i class="fas fa-sync-alt me-1"></i>Generate
+                    </button>
+                </div>
+                @endforeach
+            </div>
+        </div>
+    </div>
+    @endif
+
+    @if($billOthers->isEmpty() && (!isset($ungeneratedOtherRates) || $ungeneratedOtherRates->isEmpty()))
+    {{-- Tidak ada tagihan DAN tidak ada tarif yang bisa di-generate --}}
     <div class="notice d-flex bg-light-warning rounded border-warning border border-dashed p-6 my-4">
         <span class="svg-icon svg-icon-2tx svg-icon-warning me-4">
             <i class="fas fa-exclamation-triangle fs-1 text-warning"></i>
@@ -58,7 +99,9 @@
             </div>
         </div>
     </div>
-    @else
+    @endif
+
+    @if($billOthers->isNotEmpty())
     <div class="row g-4">
         @foreach ($billOthers as $bill)
         @php
@@ -432,3 +475,62 @@
     </div>
     @endif
 </div>
+
+@push('js')
+<script>
+    // Shortcut Generate button handler — tab Lainnya
+    $(document).on('click', '.generate-lainnya-btn', function(e) {
+        e.preventDefault();
+        var btn = $(this);
+        var rateId = btn.data('rate-id');
+        var studentId = btn.data('student-id');
+        var btName = btn.data('bill-type-name');
+
+        Swal.fire({
+            title: 'Generate Tagihan?',
+            html: 'Sistem akan langsung me-generate tagihan <strong>' + btName + '</strong> untuk siswa ini.',
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonText: '<i class="fas fa-sync-alt me-1"></i> Ya, Generate Sekarang',
+            cancelButtonText: 'Batal',
+            customClass: {
+                confirmButton: 'btn btn-primary',
+                cancelButton: 'btn btn-light'
+            }
+        }).then((result) => {
+            if (result.isConfirmed) {
+                btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin me-1"></i>Memproses...');
+                $.ajax({
+                    url: "{{ route('payment-rate.generate-student') }}",
+                    type: 'POST',
+                    data: {
+                        _token: '{{ csrf_token() }}',
+                        payment_rate_id: rateId,
+                        student_id: studentId
+                    },
+                    success: function(res) {
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Berhasil!',
+                            text: res.message || 'Tagihan berhasil di-generate!',
+                            timer: 2000,
+                            showConfirmButton: false
+                        });
+                        // Reload halaman agar tagihan yang baru di-generate muncul di tab Lainnya
+                        setTimeout(function() { location.reload(); }, 1500);
+                    },
+                    error: function(xhr) {
+                        btn.prop('disabled', false).html('<i class="fas fa-sync-alt me-1"></i>Generate');
+                        var msg = xhr.responseJSON && xhr.responseJSON.message ? xhr.responseJSON.message : 'Gagal me-generate tagihan.';
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Gagal!',
+                            text: msg
+                        });
+                    }
+                });
+            }
+        });
+    });
+</script>
+@endpush

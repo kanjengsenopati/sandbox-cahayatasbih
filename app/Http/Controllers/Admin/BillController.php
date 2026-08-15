@@ -104,7 +104,11 @@ class BillController extends Controller
             $billMonth = $this->getBills($studentId, BillType::TYPE_MONTHLY, $academicYearId);
             $billOthers = $this->getBills($studentId, BillType::TYPE_OTHER, $academicYearId);
 
-            return view('admins.bill.index', compact('student', 'billMonth', 'billOthers', 'schools', 'academicYears', 'preloadedRates', 'allStudentBills'));
+            // Detect OTHER-type BillTypes yang punya tarif aktif untuk siswa ini tapi belum ada tagihan.
+            // Data ini dipakai untuk shortcut Generate di halaman Data Pembayaran (tab Lainnya).
+            $ungeneratedOtherRates = $this->getUngeneratedRatesForStudent($student, BillType::TYPE_OTHER, $billOthers->pluck('id')->toArray(), $academicYearId, $preloadedRates);
+
+            return view('admins.bill.index', compact('student', 'billMonth', 'billOthers', 'schools', 'academicYears', 'preloadedRates', 'allStudentBills', 'ungeneratedOtherRates'));
         }
 
         if (request()->ajax()) {
@@ -228,6 +232,85 @@ class BillController extends Controller
         $item->total_unpaid = max(0, $item->total_bill - $item->total_paid);
 
         return $item;
+    }
+
+    /**
+     * Deteksi BillType yang sudah punya PaymentRate aktif di-mapping ke kelas/siswa ini,
+     * tapi belum ada tagihan yang di-generate. Digunakan untuk shortcut Generate di UI.
+     */
+    private function getUngeneratedRatesForStudent($student, $type, $excludeBillTypeIds = [], $academicYearId = null, $preloadedRates = null)
+    {
+        $result = collect();
+        if (!$student || !$student->classroom_id) return $result;
+
+        $studentSchoolName = $student->classroom?->school?->name ?? '';
+        $entryYear = $student->getEntryYear() ?? date('Y');
+        if ($preloadedRates === null) {
+            $preloadedRates = TransactionService::getCachedPreloadedRates();
+        }
+
+        // Cari BillType yang sesuai tipe, belum ada tagihannya, dan visible
+        $candidateBillTypes = BillType::with(['billItem', 'academicYear'])
+            ->where('type', $type)
+            ->whereNull('deleted_at')
+            ->where(fn($q) => $q->whereNull('is_visible')->orWhere('is_visible', true))
+            ->when($academicYearId, fn($q) => $q->where('academic_year_id', $academicYearId))
+            ->whereNotIn('id', $excludeBillTypeIds)
+            ->get();
+
+        foreach ($candidateBillTypes as $bt) {
+            // Guard: UPT isolation
+            if (!TransactionService::isBillTypeMatchingStudentSchoolUnit($bt->name, $studentSchoolName)) continue;
+
+            // Guard: Entry year
+            if ($bt->academicYear) {
+                $startYear = $bt->academicYear->getStartYearSafe();
+                if ($startYear !== null && $startYear < $entryYear) continue;
+            }
+
+            // Guard: Class 12 MA — hide TA < 2026/2027
+            if (TransactionService::isClass12MA($student)) {
+                if (TransactionService::isBillBeforeAcademicYear2026($bt->academicYear)) continue;
+            }
+
+            // Check apakah ada active rate untuk siswa ini
+            if (!TransactionService::hasActiveRateForStudent($student, $bt, $preloadedRates)) continue;
+
+            // Cari rate yang matching
+            $ratesForBt = $preloadedRates->where('bill_type_id', $bt->id);
+            $matchingRate = $ratesForBt->first(function ($r) use ($student) {
+                if ($r->type === \App\Models\PaymentRate::TYPE_TRANSFER) {
+                    return $r->paymentRateStudents->whereNull('deleted_at')->contains('student_id', $student->id);
+                }
+                if ($r->type === \App\Models\PaymentRate::TYPE_REGULAR) {
+                    $classMatch = $r->paymentRateClassrooms->whereNull('deleted_at')->contains('classroom_id', $student->classroom_id);
+                    if (!$classMatch) return false;
+                    if (!empty($r->gender)) {
+                        $genders = array_map('trim', explode(',', $r->gender));
+                        if (!in_array($student->gender, $genders)) return false;
+                    }
+                    if (!empty($r->jamaah_status)) {
+                        $statuses = array_map('trim', explode(',', $r->jamaah_status));
+                        $studentStatus = $student->user?->jamaah_status ?? 'NON_JAMAAH';
+                        if (!in_array($studentStatus, $statuses)) return false;
+                    }
+                    return true;
+                }
+                return false;
+            });
+
+            if ($matchingRate) {
+                $result->push((object) [
+                    'rate_id' => $matchingRate->id,
+                    'bill_type_id' => $bt->id,
+                    'bill_type_name' => $bt->name,
+                    'academic_year_name' => $bt->academicYear?->name ?? '-',
+                    'amount' => $matchingRate->amount ?? 0,
+                ]);
+            }
+        }
+
+        return $result;
     }
 
     private function getTransactionData()
