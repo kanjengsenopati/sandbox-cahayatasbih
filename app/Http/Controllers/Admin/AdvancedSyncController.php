@@ -88,4 +88,25 @@ class AdvancedSyncController extends Controller
             return redirect()->back()->with('error', 'Gagal mengeksekusi sinkronisasi: ' . $e->getMessage());
         }
     }
+
+    /**
+     * Execute full clean reconciliation from master (cahayatasbihdb).
+     */
+    public function cleanReconcile(Request $request, \App\Services\CleanReconciliationService $cleanService)
+    {
+        @set_time_limit(3600);
+        @ini_set('memory_limit', '2048M');
+
+        try {
+            $options = $request->only(['class_id', 'school_id', 'student_id']);
+            $result = $cleanService->execute($options);
+            return response()->json($result);
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error("CleanReconciliation Exception: " . $e->getMessage());
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Gagal rekonsiliasi bersih: ' . $e->getMessage()
+            ], 500);
+        }
+    }
 }

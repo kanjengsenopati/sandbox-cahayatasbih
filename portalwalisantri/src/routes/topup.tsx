@@ -212,6 +212,28 @@ function TopupPage() {
     );
   }
 
+  if ((active as any)?.show_pwa_saldo === false) {
+    return (
+      <div className="min-h-screen w-full flex justify-center bg-secondary">
+        <div className="relative w-full max-w-md min-h-screen bg-background p-6 flex flex-col items-center justify-center text-center">
+          <div className="w-16 h-16 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center mb-4 border border-amber-200 shadow-sm">
+            <ShieldOff size={32} />
+          </div>
+          <Text.H2 className="text-slate-800">Layanan Top Up Dinonaktifkan</Text.H2>
+          <Text.Body className="text-slate-500 mt-2 max-w-xs">
+            Layanan Top Up Saldo saku PWA saat ini dinonaktifkan untuk jenjang/kelas santri Anda ({active?.classroom?.name || active?.name}).
+          </Text.Body>
+          <button
+            onClick={() => navigate({ to: "/dashboard" })}
+            className="mt-6 px-6 py-3 rounded-2xl bg-primary text-primary-foreground font-bold text-sm shadow-md active:scale-95 transition"
+          >
+            Kembali ke Dashboard
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   if (step === "confirm") {
     return (
       <ConfirmScreen

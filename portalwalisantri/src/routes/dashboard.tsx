@@ -187,6 +187,9 @@ function Dashboard() {
     );
   }
 
+  // Check PWA permission flags
+  const isSaldoVisible = dashboard?.pwa_permissions?.show_pwa_saldo ?? (active as any)?.show_pwa_saldo ?? true;
+
   // Resolve dynamic actions from database menus
   const dynamicActions: Array<{ label: string; icon: any; accent: string; to: any }> = [];
   const dbMenus = dashboard?.menus || [];
@@ -196,6 +199,10 @@ function Dashboard() {
     const nameKey = (menu.name || "").toLowerCase().trim();
     const mapped = menuMapping[flagKey] || menuMapping[nameKey];
     if (mapped && mapped.label !== "Atur Limit" && mapped.label !== "Blokir Saldo") {
+      // If saldo UI is hidden, filter out Topup Saldo action
+      if (!isSaldoVisible && (mapped.label === "Topup Saldo" || mapped.label === "Top Up")) {
+        return;
+      }
       if (!dynamicActions.some(a => a.label === mapped.label)) {
         dynamicActions.push(mapped);
       }
@@ -205,10 +212,13 @@ function Dashboard() {
   const finalActions = dynamicActions.length > 0 ? [
     ...dynamicActions.filter(a => a.label !== "Atur Limit" && a.label !== "Blokir Saldo"),
     { label: "Riwayat", icon: History, accent: "from-primary-glow to-primary", to: "/riwayat" as const }
-  ] : [
+  ] : (isSaldoVisible ? [
     { label: "Topup Saldo", icon: Plus, accent: "from-primary to-primary-glow", to: "/topup" as const },
     { label: "Riwayat", icon: History, accent: "from-primary-glow to-primary", to: "/riwayat" as const },
-  ];
+  ] : [
+    { label: "Tagihan", icon: Receipt, accent: "from-primary to-primary-glow", to: "/tagihan" as const },
+    { label: "Riwayat", icon: History, accent: "from-primary-glow to-primary", to: "/riwayat" as const },
+  ]);
 
   return (
     <MobileShell>
@@ -253,7 +263,7 @@ function Dashboard() {
               <div className="min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
                   <Text.Label className="text-white/90">
-                    Saldo Santri
+                    {isSaldoVisible ? "Saldo Santri" : "Profil Santri"}
                   </Text.Label>
                   {(active as any).nisn && (
                     <span className="px-1.5 py-0.5 rounded-md bg-white/15 text-[10px] font-extrabold tracking-wide uppercase text-white/95 border border-white/10 shrink-0">
@@ -272,20 +282,54 @@ function Dashboard() {
               </SantriSwitcherTrigger>
             </div>
 
-            <div className="flex items-center justify-between mt-5">
-              <div className="flex items-end gap-3">
-                <h2 className="text-3xl font-bold tracking-tight">
-                  {hide ? "Rp ••••••" : fmt(dashboard?.activeStudent?.saldo ?? active.saldo)}
-                </h2>
-                <button onClick={() => setHide((h) => !h)} className="mb-1.5 text-white/80">
-                  {hide ? <EyeOff size={18} /> : <Eye size={18} />}
-                </button>
+            {isSaldoVisible ? (
+              <div className="flex items-center justify-between mt-5">
+                <div className="flex items-end gap-3">
+                  <h2 className="text-3xl font-bold tracking-tight">
+                    {hide ? "Rp ••••••" : fmt(dashboard?.activeStudent?.saldo ?? active.saldo)}
+                  </h2>
+                  <button onClick={() => setHide((h) => !h)} className="mb-1.5 text-white/80">
+                    {hide ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                </div>
+                <div className="text-right bg-white/10 px-3 py-1.5 rounded-2xl border border-white/10 shrink-0">
+                  <Text.Label className="text-white/85 block text-[10px]">Limit Harian</Text.Label>
+                  <Text.Caption className="text-white not-italic font-bold mt-0.5 block leading-none">{fmt(active.daily_limit)}</Text.Caption>
+                </div>
               </div>
-              <div className="text-right bg-white/10 px-3 py-1.5 rounded-2xl border border-white/10 shrink-0">
-                <Text.Label className="text-white/85 block text-[10px]">Limit Harian</Text.Label>
-                <Text.Caption className="text-white not-italic font-bold mt-0.5 block leading-none">{fmt(active.daily_limit)}</Text.Caption>
+            ) : (
+              <div className="flex flex-col gap-2.5 mt-4 bg-white/10 p-3.5 rounded-2xl border border-white/15 backdrop-blur-md shadow-sm">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-8 h-8 rounded-xl bg-emerald-500/25 border border-emerald-400/40 flex items-center justify-center text-emerald-300 font-bold shrink-0">
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="text-emerald-300">
+                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                        <path d="m9 12 2 2 4-4"/>
+                      </svg>
+                    </div>
+                    <div>
+                      <span className="text-[10px] font-extrabold uppercase tracking-widest text-emerald-300 block leading-none">Status Santri</span>
+                      <span className="text-xs font-bold text-white block mt-0.5">Santri Terdaftar Aktif</span>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <span className="px-2.5 py-1 rounded-lg bg-white/15 text-[10px] font-extrabold uppercase text-white border border-white/15">
+                      {active.school?.name || "Pondok"}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Custom Hero Notice */}
+                <div className="pt-2 border-t border-white/15 flex items-start gap-2">
+                  <div className="mt-0.5 w-4 h-4 rounded-full bg-white/20 flex items-center justify-center shrink-0">
+                    <span className="text-[10px] font-bold text-white leading-none">ℹ</span>
+                  </div>
+                  <p className="text-[11px] leading-snug text-white/90 font-medium">
+                    {dashboard?.hero_saldo_off_message || "Layanan uang saku & belanja santri dikelola melalui sistem kartu utama / aplikasi lama."}
+                  </p>
+                </div>
               </div>
-            </div>
+            )}
 
             <div className="mt-6 flex items-center justify-between text-xs gap-3">
               <div className="min-w-0" style={{ width: "30%" }}>

@@ -10,7 +10,7 @@ class SaldoHistoryController extends BaseWaliApiController
     public function index(Request $request)
     {
         $student = $this->resolveActiveStudent();
-        if (!$student) return response()->json(['data' => []]);
+        if (!$student || !$student->isPwaSaldoVisible()) return response()->json(['data' => []]);
         
         $query = SaldoHistory::where('student_id', $student->id)
             ->where(function ($q) {

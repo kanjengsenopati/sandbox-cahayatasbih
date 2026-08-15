@@ -121,7 +121,12 @@
 
                 {{-- Status Badge --}}
                 @if($bill->status == 'PAID')
-                    <span class="bg-emerald-500 text-white px-3.5 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest flex-shrink-0">Lunas</span>
+                    <div class="flex items-center gap-2 flex-shrink-0">
+                        <a href="{{ route('wali.bill.receipt', $bill->id) }}" target="_blank" class="flex items-center justify-center w-7 h-7 border border-slate-200 text-slate-500 rounded-md hover:border-blue-600 hover:text-blue-600 transition-colors" title="Download Kuitansi">
+                            <i class="fas fa-file-pdf"></i>
+                        </a>
+                        <span class="bg-emerald-500 text-white px-3.5 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest">Lunas</span>
+                    </div>
                 @else
                     <div class="text-right flex flex-col items-end gap-0.5 flex-shrink-0">
                         <span class="bg-blue-600 text-white px-3.5 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest">Bayar</span>

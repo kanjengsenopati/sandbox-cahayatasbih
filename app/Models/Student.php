@@ -455,5 +455,79 @@ class Student extends Model
         // 3. Fallback to created_at year
         return $this->created_at ? $this->created_at->year : intval(date('Y'));
     }
+
+    /**
+     * Determine if PWA login is allowed for this student
+     */
+    public function isPwaLoginAllowed(): bool
+    {
+        $appSetting = \App\Models\ApplicationSetting::first();
+        if ($appSetting && isset($appSetting->allow_pwa_login_wali) && !$appSetting->allow_pwa_login_wali) {
+            return false;
+        }
+
+        if ($this->classroom && $this->classroom->allow_pwa_login !== null) {
+            return (bool) $this->classroom->allow_pwa_login;
+        }
+
+        if ($this->school && $this->school->allow_pwa_login !== null) {
+            return (bool) $this->school->allow_pwa_login;
+        }
+
+        return true;
+    }
+
+    /**
+     * Determine if PWA Saldo (Hero Card & Riwayat Saldo) should be displayed for this student
+     */
+    public function isPwaSaldoVisible(): bool
+    {
+        if ($this->classroom && $this->classroom->show_pwa_saldo !== null) {
+            return (bool) $this->classroom->show_pwa_saldo;
+        }
+
+        if ($this->school && $this->school->show_pwa_saldo !== null) {
+            return (bool) $this->school->show_pwa_saldo;
+        }
+
+        return true;
+    }
+
+    /**
+     * Determine if PWA Saldo Payment is allowed for this student
+     */
+    public function isPwaSaldoPaymentAllowed(): bool
+    {
+        $appSetting = \App\Models\ApplicationSetting::first();
+        if ($appSetting && isset($appSetting->allow_pwa_saldo_payment_wali) && !$appSetting->allow_pwa_saldo_payment_wali) {
+            return false;
+        }
+
+        if ($this->classroom && $this->classroom->allow_pwa_saldo_payment !== null) {
+            return (bool) $this->classroom->allow_pwa_saldo_payment;
+        }
+
+        if ($this->school && $this->school->allow_pwa_saldo_payment !== null) {
+            return (bool) $this->school->allow_pwa_saldo_payment;
+        }
+
+        return true;
+    }
+
+    /**
+     * Get consolidated PWA permissions payload
+     */
+    public function getPwaPermissions(): array
+    {
+        return [
+            'allow_pwa_login' => $this->isPwaLoginAllowed(),
+            'show_pwa_saldo' => $this->isPwaSaldoVisible(),
+            'allow_pwa_saldo_payment' => $this->isPwaSaldoPaymentAllowed(),
+            'classroom_id' => $this->classroom_id,
+            'classroom_name' => $this->classroom?->name,
+            'school_id' => $this->school_id,
+            'school_name' => $this->school?->name,
+        ];
+    }
 }
 

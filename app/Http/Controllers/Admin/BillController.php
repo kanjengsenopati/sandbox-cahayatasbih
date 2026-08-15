@@ -237,7 +237,17 @@ class BillController extends Controller
         @set_time_limit(300);
         $transferMethodIds = PaymentMethod::where('type', PaymentMethod::TYPE_TRANSFER)->pluck('id')->toArray();
 
-        $transactions = Transaction::with(['student', 'paymentMethod', 'activeProof.bank', 'transactionProofs.bank', 'transactionDetails.bill.billType.academicYear', 'transactionDetails.bill.academicYear'])
+        $transactions = Transaction::with([
+            'student',
+            'paymentMethod',
+            'activeProof.bank',
+            'transactionProofs.bank',
+            'transactionDetails.bill.billType.academicYear',
+            'transactionDetails.bill.academicYear',
+            'transactionDetails.saldoHistory',
+            'transactionDetails.savingHistory',
+            'transactionDetails.ppdbRegistration'
+        ])
             ->whereIn('payment_method_id', $transferMethodIds)
             ->where('type', Transaction::TYPE_BILL)
             ->where('status', Transaction::STATUS_PENDING_CONFIRMATION)
@@ -246,26 +256,7 @@ class BillController extends Controller
 
         return DataTables::of($transactions)
             ->addColumn('proof', fn($transaction) => $this->formatProofColumn($transaction))
-            ->editColumn('pay_amount', function ($transaction) {
-                $amountHtml = 'Rp ' . number_format($transaction->pay_amount, 0, ',', '.');
-                
-                $billsInfo = [];
-                foreach ($transaction->transactionDetails as $detail) {
-                    $bill = $detail->bill;
-                    if ($bill) {
-                        $billTypeName = $bill->billType->name ?? 'Tagihan';
-                        $monthName = $bill->translated_month ?? $bill->getTranslatedMonthAttribute();
-                        $period = $monthName ? "{$monthName} {$bill->year}" : $bill->year;
-                        $billsInfo[] = "<span class='text-muted fs-8'>• {$billTypeName} ({$period})</span>";
-                    }
-                }
-                
-                if (!empty($billsInfo)) {
-                    $amountHtml .= '<br><div class="d-flex flex-column mt-1">' . implode('', $billsInfo) . '</div>';
-                }
-                
-                return $amountHtml;
-            })
+            ->editColumn('pay_amount', fn($transaction) => $this->formatPayAmountWithDetailsColumn($transaction))
             ->editColumn('status', fn($transaction) => $this->formatStatusColumn($transaction))
             ->addColumn('action', fn($transaction) => $this->formatActionColumn($transaction))
             ->addColumn('bank_recipient', function ($transaction) {
@@ -298,40 +289,30 @@ class BillController extends Controller
             Transaction::STATUS_REJECTED => 'Ditolak'
         ];
 
-        $statusClass = [
-            Transaction::STATUS_PENDING => 'primary',
-            Transaction::STATUS_PENDING_PAYMENT => 'warning',
-            Transaction::STATUS_PENDING_CONFIRMATION => 'danger',
-            Transaction::STATUS_PAID => 'success',
-            Transaction::STATUS_EXPIRED => 'secondary',
-            Transaction::STATUS_CANCELLED => 'secondary',
-            Transaction::STATUS_REJECTED => 'danger'
+        $statusClasses = [
+            Transaction::STATUS_PENDING => 'badge badge-primary',
+            Transaction::STATUS_PENDING_PAYMENT => 'badge badge-warning',
+            Transaction::STATUS_PENDING_CONFIRMATION => 'badge badge-danger',
+            Transaction::STATUS_PAID => 'badge badge-success',
+            Transaction::STATUS_EXPIRED => 'badge badge-secondary',
+            Transaction::STATUS_CANCELLED => 'badge badge-secondary',
+            Transaction::STATUS_REJECTED => 'badge badge-danger'
         ];
 
-        $statusText = $statusLabels[$transaction->status] ?? '';
-        $statusBadge = "<span class='badge badge-{$statusClass[$transaction->status]}'>{$statusText}</span>";
+        $status = $transaction->status;
+        $statusLabel = $statusLabels[$status] ?? 'Unknown';
+        $statusClass = $statusClasses[$status] ?? 'badge badge-secondary';
 
-        if ($transaction->activeProof) {
-            if ($transaction->activeProof?->ocr_status === 'processed') {
-                $statusBadge .= "<br><span class='badge badge-light-success mt-1' style='font-size: 0.7rem;'><i class='fas fa-robot text-success me-1'></i> AI Checked</span>";
-                if ($transaction->activeProof?->ocr_amount) {
-                    $statusBadge .= "<br><small class='text-muted'>Nominal Terbaca: Rp " . number_format($transaction->activeProof?->ocr_amount, 0, ',', '.') . "</small>";
-                }
-            } elseif ($transaction->activeProof?->ocr_status === 'failed') {
-                $statusBadge .= "<br><span class='badge badge-light-danger mt-1' style='font-size: 0.7rem;'><i class='fas fa-robot text-danger me-1'></i> AI Gagal Membaca</span>";
-            }
-        }
-
-        if ($transaction->status === Transaction::STATUS_REJECTED && $transaction->activeProof) {
-            $statusBadge .= "<br><small class='text-danger d-block mt-1 fw-bold'>{$transaction->activeProof?->note}</small>";
-        }
-
+        $statusHtml = "<span class='{$statusClass}'>{$statusLabel}</span>";
         if ($transaction->created_at) {
             $formattedDate = strtoupper(\Carbon\Carbon::parse($transaction->created_at)->translatedFormat('d-M-Y , H : i'));
-            $statusBadge .= "<br><div class='text-slate-400 mt-1' style='font-size: 12px; font-style: italic; color: #94a3b8;'>{$formattedDate}</div>";
+            $statusHtml .= "<br><small class='text-muted fst-italic'>{$formattedDate}</small>";
+        }
+        if ($status === Transaction::STATUS_REJECTED && $transaction->activeProof?->note) {
+            $statusHtml .= "<br><small class='text-danger'>{$transaction->activeProof->note}</small>";
         }
 
-        return $statusBadge;
+        return $statusHtml;
     }
 
     private function formatActionColumn($transaction)
@@ -340,28 +321,18 @@ class BillController extends Controller
             return '';
         }
 
-        if ($transaction->status === Transaction::STATUS_PAID) {
-            return "<span class='badge badge-success'>Lunas</span>";
-        } elseif ($transaction->status === Transaction::STATUS_REJECTED) {
-            return "<span class='badge badge-danger'>Ditolak</span>";
-        }
+        $id = $transaction->id;
+        $status = $transaction->status;
 
-        $options = [
-            Transaction::STATUS_PAID => 'Lunas',
-            Transaction::STATUS_REJECTED => 'Cek Ulang'
-        ];
-
-        $action = "<select class='form-control status-transaction' name='status' id='status-{$transaction->id}' onchange='updateStatus(this.value, \"{$transaction->id}\")'>
-                <option value=''>Pilih Status</option>";
-
-        foreach ($options as $value => $label) {
-            $selected = $transaction->status == $value ? 'selected' : '';
-            $action .= "<option value='{$value}' {$selected}>{$label}</option>";
-        }
-
-        $action .= "</select>
-                <input type='hidden' name='note' id='note-{$transaction->id}' value='{$transaction->activeProof?->note}'>
-                <button class='btn btn-primary btn-sm mt-2' onclick='saveStatus(\"{$transaction->id}\")'>Simpan</button>";
+        $action = '<div class="d-flex flex-column">';
+        $action .= '<select class="form-select form-select-sm" id="status-' . $id . '" onchange="updateStatus(this.value, \'' . $id . '\')">';
+        $action .= '<option value="">Pilih Status</option>';
+        $action .= '<option value="' . Transaction::STATUS_PAID . '"' . ($status == Transaction::STATUS_PAID ? ' selected' : '') . '>Lunas</option>';
+        $action .= '<option value="' . Transaction::STATUS_REJECTED . '"' . ($status == Transaction::STATUS_REJECTED ? ' selected' : '') . '>Ditolak</option>';
+        $action .= '</select>';
+        $action .= '<input type="hidden" name="note" id="note-' . $id . '">';
+        $action .= '<button class="btn btn-sm btn-primary mt-2" onclick="saveStatus(\'' . $id . '\')">Simpan</button>';
+        $action .= '</div>';
 
         return $action;
     }
@@ -371,7 +342,18 @@ class BillController extends Controller
         @set_time_limit(300);
         $transferMethodIds = PaymentMethod::where('type', PaymentMethod::TYPE_TRANSFER)->pluck('id')->toArray();
 
-        $transactions = Transaction::with(['student', 'paymentMethod', 'activeProof.bank', 'transactionProofs.bank', 'admin', 'transactionDetails.bill.billType.academicYear', 'transactionDetails.bill.academicYear'])
+        $transactions = Transaction::with([
+            'student',
+            'paymentMethod',
+            'activeProof.bank',
+            'transactionProofs.bank',
+            'admin',
+            'transactionDetails.bill.billType.academicYear',
+            'transactionDetails.bill.academicYear',
+            'transactionDetails.saldoHistory',
+            'transactionDetails.savingHistory',
+            'transactionDetails.ppdbRegistration'
+        ])
             ->whereIn('payment_method_id', $transferMethodIds)
             ->where('type', Transaction::TYPE_BILL)
             ->where('status', Transaction::STATUS_PAID)
@@ -395,120 +377,7 @@ class BillController extends Controller
 
         return DataTables::of($transactions)
             ->addColumn('proof', fn($transaction) => $this->formatProofColumn($transaction))
-            ->editColumn('pay_amount', function ($transaction) {
-                $formattedTotal = 'Rp ' . number_format($transaction->pay_amount, 0, ',', '.');
-                
-                // Group details by BillType + AcademicYear
-                $grouped = [];
-                $totalItemCount = 0;
-
-                foreach ($transaction->transactionDetails as $detail) {
-                    $bill = $detail->bill;
-                    if ($bill) {
-                        $billType = $bill->billType;
-                        $billTypeName = $billType->name ?? 'Tagihan';
-                        
-                        $academicYear = $billType?->academicYear ?? $bill->academicYear;
-                        $academicYearName = $academicYear?->name ?? '';
-
-                        $monthName = $bill->translated_month ?? $bill->getTranslatedMonthAttribute();
-                        $periodLabel = $monthName ? $monthName : ($bill->year ? "Tahun {$bill->year}" : 'Sekali Bayar');
-                        
-                        $groupKey = $billTypeName . '___' . $academicYearName;
-
-                        if (!isset($grouped[$groupKey])) {
-                            $grouped[$groupKey] = [
-                                'bill_type_name' => $billTypeName,
-                                'academic_year' => $academicYearName,
-                                'months' => [],
-                                'total_amount' => 0,
-                            ];
-                        }
-                        
-                        $itemAmount = $detail->amount > 0 ? $detail->amount : ($bill->amount ?? 0);
-                        $grouped[$groupKey]['months'][] = $periodLabel;
-                        $grouped[$groupKey]['total_amount'] += $itemAmount;
-                        $totalItemCount++;
-                    }
-                }
-
-                if (empty($grouped)) {
-                    return "<span class='text-emerald-600 fw-boldest fs-6'>{$formattedTotal}</span>";
-                }
-
-                $collapseId = 'collapse-bills-' . $transaction->id;
-
-                $html = "<div class='d-flex flex-column align-items-start gap-1'>";
-                $html .= "  <span class='text-emerald-600 fw-boldest fs-6'>{$formattedTotal}</span>";
-                $html .= "  <button type='button' class='btn btn-xs btn-light-primary py-1 px-2.5 rounded-[12px] fs-8 fw-bold d-inline-flex align-items-center gap-1 mt-1' data-bs-toggle='collapse' data-bs-target='#{$collapseId}' aria-expanded='false'>";
-                $html .= "    <i class='fas fa-list-ul fs-9'></i> {$totalItemCount} Item Tagihan <i class='fas fa-chevron-down ms-1 fs-9'></i>";
-                $html .= "  </button>";
-                $html .= "</div>";
-
-                // Wide Expandable Grouped Table Panel matching Gambar 2 & 3
-                $html .= "<div class='collapse mt-3 text-start' id='{$collapseId}'>";
-                $html .= "  <div class='card card-body p-4 rounded-[16px] border border-gray-200 bg-white shadow-lg' style='min-width: 650px; width: 100%; max-width: 850px;'>";
-                $html .= "    <div class='table-responsive'>";
-                $html .= "      <table class='table align-middle table-row-dashed fs-8 gy-3 mb-0'>";
-                $html .= "        <thead>";
-                $html .= "          <tr class='text-start text-gray-500 fw-bolder fs-8 text-uppercase gs-0 border-bottom border-gray-300'>";
-                $html .= "            <th style='width: 5%'>NO</th>";
-                $html .= "            <th style='width: 35%'>NAMA TAGIHAN & TAHUN AJARAN</th>";
-                $html .= "            <th style='width: 40%'>BULAN TERBAYAR</th>";
-                $html .= "            <th class='text-end' style='width: 20%'>NOMINAL TOTAL</th>";
-                $html .= "          </tr>";
-                $html .= "        </thead>";
-                $html .= "        <tbody class='text-gray-700 fw-bold'>";
-
-                $rowNo = 1;
-                $grandTotal = 0;
-
-                foreach ($grouped as $groupData) {
-                    $typeName = $groupData['bill_type_name'];
-                    $taName = $groupData['academic_year'];
-                    $months = $groupData['months'];
-                    $groupTotalFormatted = 'Rp ' . number_format($groupData['total_amount'], 0, ',', '.');
-                    $grandTotal += $groupData['total_amount'];
-
-                    $html .= "          <tr>";
-                    $html .= "            <td class='align-top pt-3'>{$rowNo}</td>";
-                    $html .= "            <td class='align-top pt-3'>";
-                    $html .= "              <span class='d-block text-dark fw-bolder fs-7 text-uppercase mb-1'>{$typeName}</span>";
-                    if ($taName) {
-                        $html .= "              <span class='badge badge-light-info text-info border border-info border-opacity-40 rounded-pill px-2.5 py-1 fs-9 fw-bold d-inline-flex align-items-center gap-1'>";
-                        $html .= "                <i class='fas fa-calendar-alt fs-9 text-info'></i> TA {$taName}";
-                        $html .= "              </span>";
-                    }
-                    $html .= "            </td>";
-                    $html .= "            <td class='align-top pt-3'>";
-                    $html .= "              <div class='d-flex flex-wrap gap-1.5'>";
-                    foreach ($months as $m) {
-                        $html .= "                <span class='badge bg-white text-info border border-info border-opacity-60 rounded-pill px-3 py-1.5 fs-8 fw-semibold shadow-xs'>{$m}</span>";
-                    }
-                    $html .= "              </div>";
-                    $html .= "            </td>";
-                    $html .= "            <td class='text-end align-top pt-3 text-dark fw-bolder fs-7'>{$groupTotalFormatted}</td>";
-                    $html .= "          </tr>";
-
-                    $rowNo++;
-                }
-
-                $grandTotalFormatted = 'Rp ' . number_format($grandTotal, 0, ',', '.');
-
-                $html .= "        </tbody>";
-                $html .= "        <tfoot>";
-                $html .= "          <tr class='border-top border-gray-300 fw-boldest fs-7'>";
-                $html .= "            <td colspan='3' class='text-end pt-4 text-dark'>Total Pembayaran Keseluruhan:</td>";
-                $html .= "            <td class='text-end pt-4 text-emerald-600 fs-6'>{$grandTotalFormatted}</td>";
-                $html .= "          </tr>";
-                $html .= "        </tfoot>";
-                $html .= "      </table>";
-                $html .= "    </div>";
-                $html .= "  </div>";
-                $html .= "</div>";
-
-                return $html;
-            })
+            ->editColumn('pay_amount', fn($transaction) => $this->formatPayAmountWithDetailsColumn($transaction))
             ->editColumn('status', fn($transaction) => $this->formatStatusColumn($transaction))
             ->addColumn('action', fn($transaction) => $this->formatArchiveActionColumn($transaction))
             ->addColumn('bank_recipient', function ($transaction) {
@@ -525,6 +394,187 @@ class BillController extends Controller
             })
             ->rawColumns(['proof', 'action', 'status', 'bank_recipient', 'pay_amount'])
             ->make(true);
+    }
+
+    private function formatPayAmountWithDetailsColumn($transaction)
+    {
+        $formattedTotal = 'Rp ' . number_format($transaction->pay_amount, 0, ',', '.');
+        
+        // Group details by BillType + AcademicYear
+        $grouped = [];
+        $totalItemCount = 0;
+
+        foreach ($transaction->transactionDetails as $detail) {
+            $bill = $detail->bill;
+            if ($bill) {
+                $billType = $bill->billType;
+                $billTypeName = $billType?->name ?? 'Tagihan Siswa';
+                
+                $academicYear = $billType?->academicYear ?? $bill->academicYear;
+                $academicYearName = $academicYear?->name ?? '';
+
+                $monthName = $bill->translated_month ?? $bill->getTranslatedMonthAttribute();
+                $periodLabel = $monthName ? $monthName : ($bill->year ? "Tahun {$bill->year}" : 'Sekali Bayar');
+                
+                $groupKey = $billTypeName . '___' . $academicYearName;
+
+                if (!isset($grouped[$groupKey])) {
+                    $grouped[$groupKey] = [
+                        'bill_type_name' => $billTypeName,
+                        'academic_year' => $academicYearName,
+                        'months' => [],
+                        'total_amount' => 0,
+                    ];
+                }
+                
+                $itemAmount = $detail->amount > 0 ? $detail->amount : ($bill->amount ?? 0);
+                $grouped[$groupKey]['months'][] = $periodLabel;
+                $grouped[$groupKey]['total_amount'] += $itemAmount;
+                $totalItemCount++;
+            } elseif ($detail->saldoHistory || $transaction->type === Transaction::TYPE_SALDO) {
+                $groupKey = 'TOPUP_SALDO';
+                if (!isset($grouped[$groupKey])) {
+                    $grouped[$groupKey] = [
+                        'bill_type_name' => 'Top Up Saldo Uang Saku',
+                        'academic_year' => '',
+                        'months' => ['Uang Saku PWA'],
+                        'total_amount' => max(0, $transaction->pay_amount - ($transaction->unique_payment ?? 0)),
+                    ];
+                    $totalItemCount++;
+                }
+            } elseif ($detail->savingHistory || $transaction->type === Transaction::TYPE_SAVING) {
+                $groupKey = 'SAVING';
+                if (!isset($grouped[$groupKey])) {
+                    $grouped[$groupKey] = [
+                        'bill_type_name' => 'Setoran Tabungan Santri',
+                        'academic_year' => '',
+                        'months' => ['Tabungan'],
+                        'total_amount' => max(0, $transaction->pay_amount - ($transaction->unique_payment ?? 0)),
+                    ];
+                    $totalItemCount++;
+                }
+            } elseif ($detail->ppdbRegistration || $transaction->type === Transaction::TYPE_PPDB) {
+                $groupKey = 'PPDB';
+                if (!isset($grouped[$groupKey])) {
+                    $grouped[$groupKey] = [
+                        'bill_type_name' => 'Biaya Pendaftaran PPDB',
+                        'academic_year' => '',
+                        'months' => ['Pendaftaran'],
+                        'total_amount' => max(0, $transaction->pay_amount - ($transaction->unique_payment ?? 0)),
+                    ];
+                    $totalItemCount++;
+                }
+            } elseif ($detail->amount > 0) {
+                $groupKey = 'DETAIL_MANUAL_' . $detail->id;
+                $grouped[$groupKey] = [
+                    'bill_type_name' => 'Tagihan Siswa (' . ($transaction->payment_code ?? 'Manual') . ')',
+                    'academic_year' => '',
+                    'months' => ['Biaya Pendidikan'],
+                    'total_amount' => $detail->amount,
+                ];
+                $totalItemCount++;
+            }
+        }
+
+        // Fallback if transactionDetails has no mapped items or empty (ensures 100% of items have full detail):
+        if (empty($grouped)) {
+            $typeLabel = match($transaction->type) {
+                Transaction::TYPE_SALDO => 'Top Up Saldo Uang Saku',
+                Transaction::TYPE_SAVING => 'Setoran Tabungan Santri',
+                Transaction::TYPE_PPDB => 'Biaya Pendaftaran PPDB',
+                default => 'Pembayaran Tagihan Siswa'
+            };
+            $periodLabel = $transaction->payment_code ? "Kode: {$transaction->payment_code}" : 'Pembayaran Transfer';
+            $grouped['FALLBACK'] = [
+                'bill_type_name' => $typeLabel,
+                'academic_year' => '',
+                'months' => [$periodLabel],
+                'total_amount' => max(0, $transaction->pay_amount - ($transaction->unique_payment ?? 0)),
+            ];
+            $totalItemCount = 1;
+        }
+
+        $buttonText = "{$totalItemCount} Item Tagihan";
+        if ($transaction->type === Transaction::TYPE_SALDO) {
+            $buttonText = "Detail Top Up";
+        } elseif ($transaction->type === Transaction::TYPE_SAVING) {
+            $buttonText = "Detail Tabungan";
+        } elseif ($transaction->type === Transaction::TYPE_PPDB) {
+            $buttonText = "Detail PPDB";
+        }
+
+        $collapseId = 'collapse-bills-' . $transaction->id;
+
+        $html = "<div class='d-flex flex-column align-items-start gap-1'>";
+        $html .= "  <span class='text-emerald-600 fw-boldest fs-6'>{$formattedTotal}</span>";
+        $html .= "  <button type='button' class='btn btn-xs btn-light-primary py-1 px-2.5 rounded-[12px] fs-8 fw-bold d-inline-flex align-items-center gap-1 mt-1' data-bs-toggle='collapse' data-bs-target='#{$collapseId}' aria-expanded='false'>";
+        $html .= "    <i class='fas fa-list-ul fs-9'></i> {$buttonText} <i class='fas fa-chevron-down ms-1 fs-9'></i>";
+        $html .= "  </button>";
+        $html .= "</div>";
+
+        // Wide Expandable Grouped Table Panel matching Gambar 2 & 3
+        $html .= "<div class='collapse mt-3 text-start' id='{$collapseId}'>";
+        $html .= "  <div class='card card-body p-4 rounded-[16px] border border-gray-200 bg-white shadow-lg' style='min-width: 650px; width: 100%; max-width: 850px;'>";
+        $html .= "    <div class='table-responsive'>";
+        $html .= "      <table class='table align-middle table-row-dashed fs-8 gy-3 mb-0'>";
+        $html .= "        <thead>";
+        $html .= "          <tr class='text-start text-gray-500 fw-bolder fs-8 text-uppercase gs-0 border-bottom border-gray-300'>";
+        $html .= "            <th style='width: 5%'>NO</th>";
+        $html .= "            <th style='width: 35%'>NAMA TAGIHAN & TAHUN AJARAN</th>";
+        $html .= "            <th style='width: 40%'>BULAN TERBAYAR</th>";
+        $html .= "            <th class='text-end' style='width: 20%'>NOMINAL TOTAL</th>";
+        $html .= "          </tr>";
+        $html .= "        </thead>";
+        $html .= "        <tbody class='text-gray-700 fw-bold'>";
+
+        $rowNo = 1;
+        $grandTotal = 0;
+
+        foreach ($grouped as $groupData) {
+            $typeName = $groupData['bill_type_name'];
+            $taName = $groupData['academic_year'];
+            $months = $groupData['months'];
+            $groupTotalFormatted = 'Rp ' . number_format($groupData['total_amount'], 0, ',', '.');
+            $grandTotal += $groupData['total_amount'];
+
+            $html .= "          <tr>";
+            $html .= "            <td class='align-top pt-3'>{$rowNo}</td>";
+            $html .= "            <td class='align-top pt-3'>";
+            $html .= "              <span class='d-block text-dark fw-bolder fs-7 text-uppercase mb-1'>{$typeName}</span>";
+            if ($taName) {
+                $html .= "              <span class='badge badge-light-info text-info border border-info border-opacity-40 rounded-pill px-2.5 py-1 fs-9 fw-bold d-inline-flex align-items-center gap-1'>";
+                $html .= "                <i class='fas fa-calendar-alt fs-9 text-info'></i> TA {$taName}";
+                $html .= "              </span>";
+            }
+            $html .= "            </td>";
+            $html .= "            <td class='align-top pt-3'>";
+            $html .= "              <div class='d-flex flex-wrap gap-1.5'>";
+            foreach ($months as $m) {
+                $html .= "                <span class='badge bg-white text-info border border-info border-opacity-60 rounded-pill px-3 py-1.5 fs-8 fw-semibold shadow-xs'>{$m}</span>";
+            }
+            $html .= "              </div>";
+            $html .= "            </td>";
+            $html .= "            <td class='text-end align-top pt-3 text-dark fw-bolder fs-7'>{$groupTotalFormatted}</td>";
+            $html .= "          </tr>";
+
+            $rowNo++;
+        }
+
+        $grandTotalFormatted = 'Rp ' . number_format($grandTotal, 0, ',', '.');
+
+        $html .= "        </tbody>";
+        $html .= "        <tfoot>";
+        $html .= "          <tr class='border-top border-gray-300 fw-boldest fs-7'>";
+        $html .= "            <td colspan='3' class='text-end pt-4 text-dark'>Total Pembayaran Keseluruhan:</td>";
+        $html .= "            <td class='text-end pt-4 text-emerald-600 fs-6'>{$grandTotalFormatted}</td>";
+        $html .= "          </tr>";
+        $html .= "        </tfoot>";
+        $html .= "      </table>";
+        $html .= "    </div>";
+        $html .= "  </div>";
+        $html .= "</div>";
+
+        return $html;
     }
 
     private function formatArchiveActionColumn($transaction)

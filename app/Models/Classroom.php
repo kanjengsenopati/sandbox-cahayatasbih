@@ -14,6 +14,15 @@ class Classroom extends Model
     protected $fillable = [
         'name',
         'school_id',
+        'allow_pwa_login',
+        'show_pwa_saldo',
+        'allow_pwa_saldo_payment',
+    ];
+
+    protected $casts = [
+        'allow_pwa_login' => 'boolean',
+        'show_pwa_saldo' => 'boolean',
+        'allow_pwa_saldo_payment' => 'boolean',
     ];
 
 

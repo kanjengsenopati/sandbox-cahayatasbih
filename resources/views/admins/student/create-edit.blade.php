@@ -77,7 +77,7 @@
                             @csrf
                             <x-form.put-method />
                             <div class="row">
-                                <div class="col-md-6">
+                                <div class="col-md-4">
                                     <!-- First Column -->
                                     <div class="fv-row mb-6">
                                         <x-form.image-upload label="Foto Siswa" name="avatar"
@@ -146,30 +146,9 @@
                                                 Pindah </option>
                                         </select>
                                     </div>
-                                    <div class="fv-row mb-6">
-                                        <label class="fs-6 fw-bold form-label" for="asrama_host_display">
-                                            <span>Penanggung Jawab / Ustadz Kamar</span>
-                                            <i class="fas fa-exclamation-circle ms-1 fs-7" data-bs-toggle="tooltip"
-                                                title="Penanggung Jawab / Ustadz Kamar otomatis tersinkron dari Data Asrama"></i>
-                                        </label>
-                                        <input type="text" class="form-control form-control-solid bg-light" id="asrama_host_display"
-                                            value="{{ @$student->asramaHost->name ?? (@$student->asrama?->hostAdmin?->name ?? '-') }}"
-                                            readonly disabled />
-                                        <span class="form-text text-muted fs-8">Otomatis terisi dari Data Asrama (Single Source of Truth)</span>
-                                    </div>
-                                    <div class="fv-row mb-6">
-                                        <label class="fs-6 fw-bold form-label" for="asrama_name_display">
-                                            <span>Nama Kamar</span>
-                                            <i class="fas fa-exclamation-circle ms-1 fs-7" data-bs-toggle="tooltip"
-                                                title="Nama Kamar Santri otomatis tersinkron dari Data Asrama"></i>
-                                        </label>
-                                        <input type="text" class="form-control form-control-solid bg-light" id="asrama_name_display"
-                                            value="{{ @$student->asrama_name ?? (@$student->asrama?->name ?? '-') }}"
-                                            readonly disabled />
-                                        <span class="form-text text-muted fs-8">Otomatis terisi dari Data Asrama (Single Source of Truth)</span>
-                                    </div>
+
                                 </div>
-                                <div class="col-md-6">
+                                <div class="col-md-4">
                                     <!-- Second Column -->
                                     <div class="fv-row mb-6">
                                         <label class="fs-6 fw-bold form-label" for="name">
@@ -237,20 +216,27 @@
                                             @endforeach
                                         </select>
                                     </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <!-- Third Column -->
                                     <div class="fv-row mb-6">
-                                        <label class="fs-6 fw-bold form-label" for="school_id">
-                                            <span class="required">Kelas</span>
-                                            <i class="fas fa-exclamation-circle ms-1 fs-7" data-bs-toggle="tooltip"
-                                                title="Pilih kelas yang akan di daftarkan"></i>
-                                        </label>
-                                        {{-- get classroom_id by school_id --}}
-                                        <select name="classroom_id" class="form-select form-select-solid"
-                                            id="classroom_id" data-control="select2" data-allow-clear="true"
-                                            data-hide-search="true">
-                                            <option value="{{ @$student->classroom_id }}" selected>{{
-                                                @$student->classroom->name ?? 'Pilih
-                                                Kelas' }}</option>
-                                        </select>
+                                        <label class="fs-6 fw-bold form-label required" for="classroom_id">Pilih Kelas</label>
+                                        <div class="d-flex align-items-center justify-content-between mb-2 gap-2">
+                                            <button type="button" id="btn_toggle_classroom" class="btn btn-sm btn-light-primary text-start flex-grow-1 d-flex justify-content-between align-items-center">
+                                                <span id="selected_class_name">{{ @$student->classroom->name ?? 'Pilih Kelas' }}</span>
+                                                <i class="fas fa-chevron-down fs-7"></i>
+                                            </button>
+                                        </div>
+
+                                        <!-- Hidden Input for Form Submission -->
+                                        <input type="hidden" name="classroom_id" id="classroom_id" value="{{ @$student->classroom_id }}" required />
+
+                                        <!-- 3-Column Grid Container -->
+                                        <div class="card card-bordered bg-light p-2.5 rounded-[16px] border-gray-300 d-none mt-2" id="classroom_3col_card" style="max-height: 240px; overflow-y: auto;">
+                                            <div class="row g-2" id="classroom_3col_grid">
+                                                <!-- Populated dynamically via render3ColClassrooms -->
+                                            </div>
+                                        </div>
                                     </div>
 
                                     <div class="fv-row mb-6">
@@ -283,25 +269,43 @@
                                             placeholder="Masukkan Provinsi"
                                             value="{{ @$student->province ?? old('province') }}" />
                                     </div>
+                                    <div class="fv-row mb-6">
+                                        <label class="fs-6 fw-bold form-label" for="asrama_host_display">
+                                            <span>Penanggung Jawab / Ustadz Kamar</span>
+                                            <i class="fas fa-exclamation-circle ms-1 fs-7" data-bs-toggle="tooltip"
+                                                title="Penanggung Jawab / Ustadz Kamar otomatis tersinkron dari Data Asrama"></i>
+                                        </label>
+                                        <input type="text" class="form-control form-control-solid bg-light" id="asrama_host_display"
+                                            value="{{ @$student->asramaHost->name ?? (@$student->asrama?->hostAdmin?->name ?? '-') }}"
+                                            readonly disabled />
+                                        <span class="form-text text-muted fs-8">Otomatis terisi dari Data Asrama</span>
+                                    </div>
+                                    <div class="fv-row mb-6">
+                                        <label class="fs-6 fw-bold form-label" for="asrama_name_display">
+                                            <span>Nama Kamar</span>
+                                            <i class="fas fa-exclamation-circle ms-1 fs-7" data-bs-toggle="tooltip"
+                                                title="Nama Kamar Santri otomatis tersinkron dari Data Asrama"></i>
+                                        </label>
+                                        <input type="text" class="form-control form-control-solid bg-light" id="asrama_name_display"
+                                            value="{{ @$student->asrama_name ?? (@$student->asrama?->name ?? '-') }}"
+                                            readonly disabled />
+                                        <span class="form-text text-muted fs-8">Otomatis terisi dari Data Asrama</span>
+                                    </div>
+                                    
+                                    <!-- Action Buttons moved to the third column -->
+                                    <div class="d-flex justify-content-end mt-8">
+                                        <a href="{{ route('student.index') }}"
+                                            class="btn btn-light btn-active-light-primary me-2">Batal</a>
+                                        <button type="submit" class="btn btn-primary"
+                                            id="kt_account_profile_details_submit">Simpan</button>
+                                    </div>
                                 </div>
                             </div>
                             <!--end::Input group-->
-                            <!--begin::Separator-->
-                            <div class="separator mb-6"></div>
-                            <!--end::Separator-->
-
+                        </form>
+                        <!--end::Form-->
                     </div>
                     <!--end::Card body-->
-                    <!--begin::Actions-->
-                    <div class="card-footer d-flex justify-content-end py-6 px-9">
-                        <a href="{{ route('student.index') }}"
-                            class="btn btn-light btn-active-light-primary me-2">Batal</a>
-                        <button type="submit" class="btn btn-primary"
-                            id="kt_account_profile_details_submit">Simpan</button>
-                    </div>
-                    <!--end::Actions-->
-                    </form>
-                    <!--end::Form-->
                 </div>
                 <!--end::Content-->
             </div>
@@ -317,6 +321,138 @@
 @endsection
 @push('js')
 <script>
+    // 3-Column Classroom Renderer Engine
+    function render3ColClassrooms(classroomList, currentSelectedId) {
+        var $grid = $('#classroom_3col_grid');
+        $grid.empty();
+
+        if (!classroomList || classroomList.length === 0) {
+            $grid.html('<div class="col-12 text-center py-4 text-muted fs-7"><i class="fas fa-info-circle me-1"></i> Tidak ada kelas tersedia untuk sekolah ini</div>');
+            $('#selected_class_name').text('Pilih Kelas');
+            $('#classroom_id').val('');
+            return;
+        }
+
+        // Group classrooms by Grade Prefix
+        var gradeMap = {};
+        $.each(classroomList, function(i, c) {
+            var name = $.trim(c.name);
+            var match = name.match(/^(VII|VIII|IX|X{1,2}I{0,2}|I{1,3}V?|[0-9]+)/i);
+            var gradeKey = 'Lainnya';
+            if (match) {
+                var g = match[1].toUpperCase();
+                if (g === '7' || g === 'VII') gradeKey = 'Kelas 7';
+                else if (g === '8' || g === 'VIII') gradeKey = 'Kelas 8';
+                else if (g === '9' || g === 'IX') gradeKey = 'Kelas 9';
+                else if (g === '10' || g === 'X') gradeKey = 'Kelas 10 / X';
+                else if (g === '11' || g === 'XI') gradeKey = 'Kelas 11 / XI';
+                else if (g === '12' || g === 'XII') gradeKey = 'Kelas 12 / XII';
+                else gradeKey = 'Tingkat ' + g;
+            }
+            if (!gradeMap[gradeKey]) gradeMap[gradeKey] = [];
+            gradeMap[gradeKey].push(c);
+        });
+
+        var keys = Object.keys(gradeMap);
+        var cols = [];
+
+        if (keys.length === 3) {
+            // Natural 3 grade levels (e.g. Kelas 7, 8, 9)
+            cols = [
+                { title: keys[0], items: gradeMap[keys[0]] },
+                { title: keys[1], items: gradeMap[keys[1]] },
+                { title: keys[2], items: gradeMap[keys[2]] }
+            ];
+        } else if (keys.length > 3) {
+            // > 3 groups -> chunk into 3 balanced columns
+            var total = classroomList.length;
+            var chunkSize = Math.ceil(total / 3);
+            cols = [
+                { title: 'Tingkat I', items: classroomList.slice(0, chunkSize) },
+                { title: 'Tingkat II', items: classroomList.slice(chunkSize, chunkSize * 2) },
+                { title: 'Tingkat III', items: classroomList.slice(chunkSize * 2) }
+            ];
+        } else {
+            // 1 or 2 groups -> chunk evenly into 3 columns
+            var total = classroomList.length;
+            var chunkSize = Math.ceil(total / 3);
+            cols = [
+                { title: 'Kolom 1', items: classroomList.slice(0, chunkSize) },
+                { title: 'Kolom 2', items: classroomList.slice(chunkSize, chunkSize * 2) },
+                { title: 'Kolom 3', items: classroomList.slice(chunkSize * 2) }
+            ];
+        }
+
+        var selectedFound = false;
+
+        // Render 3 Columns
+        $.each(cols, function(colIdx, col) {
+            if (!col.items || col.items.length === 0) return;
+
+            var colHtml = '<div class="col-4">';
+            colHtml += '  <div class="bg-white p-2 rounded-[12px] border border-gray-200 shadow-xs h-100">';
+            colHtml += '    <div class="text-center fw-bolder text-primary fs-8 uppercase pb-1 mb-2 border-bottom border-gray-200">' + col.title + '</div>';
+            colHtml += '    <div class="d-flex flex-column gap-1">';
+
+            $.each(col.items, function(idx, item) {
+                var isSelected = (String(item.id) === String(currentSelectedId));
+                if (isSelected) selectedFound = true;
+
+                colHtml += '      <button type="button" class="btn btn-sm btn-classroom-opt text-start d-flex align-items-center justify-content-between py-1.5 px-2 rounded-[8px] transition-all fs-8 fw-bold ' +
+                    (isSelected ? 'btn-primary text-white shadow-xs' : 'btn-light-secondary text-gray-800 hover-elevate-up border border-gray-200') +
+                    '" data-id="' + item.id + '" data-name="' + item.name + '">';
+                colHtml += '        <span class="truncate">' + item.name + '</span>';
+                colHtml += '        <i class="fas fa-check-circle fs-9 text-white ' + (isSelected ? '' : 'd-none') + '"></i>';
+                colHtml += '      </button>';
+            });
+
+            colHtml += '    </div>';
+            colHtml += '  </div>';
+            colHtml += '</div>';
+
+            $grid.append(colHtml);
+        });
+
+        // Update selected badge
+        if (selectedFound) {
+            var activeBtn = $grid.find('.btn-classroom-opt.btn-primary');
+            if (activeBtn.length) {
+                $('#selected_class_name').text(activeBtn.data('name'));
+                $('#classroom_id').val(activeBtn.data('id'));
+            }
+        } else if (currentSelectedId) {
+            $('#classroom_id').val(currentSelectedId);
+        }
+    }
+
+    // Toggle 3-col Grid
+    $('#btn_toggle_classroom').on('click', function(e) {
+        e.preventDefault();
+        $('#classroom_3col_card').toggleClass('d-none');
+    });
+
+    // Handle button click for single select
+    $(document).off('click', '.btn-classroom-opt').on('click', '.btn-classroom-opt', function(e) {
+        e.preventDefault();
+        var id = $(this).data('id');
+        var name = $(this).data('name');
+
+        $('#classroom_id').val(id).trigger('change');
+        $('#selected_class_name').text(name);
+
+        $('#classroom_3col_grid .btn-classroom-opt')
+            .removeClass('btn-primary text-white shadow-xs')
+            .addClass('btn-light-secondary text-gray-800 hover-elevate-up border border-gray-200');
+        $('#classroom_3col_grid .btn-classroom-opt i.fa-check-circle').addClass('d-none');
+
+        $(this).removeClass('btn-light-secondary text-gray-800 border-gray-200')
+            .addClass('btn-primary text-white shadow-xs');
+        $(this).find('i.fa-check-circle').removeClass('d-none');
+        
+        // Hide the grid after selection
+        $('#classroom_3col_card').addClass('d-none');
+    });
+
     $('#school_id').on('change', function () {
         var school_id = $(this).val();
         if (school_id) {
@@ -329,23 +465,22 @@
                 },
                 dataType: "json",
                 success: function (data) {
-                    $('#classroom_id').empty();
-                    // if data null show tidak ada kelas
-                    if (data.length == 0) {
-                        $('#classroom_id').append(
-                            '<option value="" selected disabled>Tidak ada kelas</option>');
-                    } else {
-                        $.each(data, function (key, value) {
-                        $('#classroom_id').append('<option value="' + value.id + '">' + value.name +
-                            '</option>');
-                        });
-                    }
-                },
+                    render3ColClassrooms(data, $('#classroom_id').val());
+                }
             });
         } else {
-            $('#classroom_id').empty();
+            render3ColClassrooms([], '');
         }
-    }); 
+    });
+
+    // Initialize immediately on load
+    var initialClassrooms = @json($classrooms ?? []);
+    var currentClassroomId = '{{ @$student->classroom_id }}';
+    if (initialClassrooms && initialClassrooms.length > 0) {
+        render3ColClassrooms(initialClassrooms, currentClassroomId);
+    } else if ($('#school_id').val()) {
+        $('#school_id').trigger('change');
+    } 
 
     // Auto-fill Nama Panggilan from Nama Siswa (first name)
     const nicknameInput = document.getElementById('nickname');

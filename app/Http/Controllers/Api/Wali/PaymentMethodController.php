@@ -21,14 +21,20 @@ class PaymentMethodController extends BaseWaliApiController
         $billIds = $request->get('bill_ids', []);
 
         $appSetting = \App\Models\ApplicationSetting::first();
-        $allowSaldoWali = !($appSetting && isset($appSetting->allow_pwa_saldo_payment_wali) && !$appSetting->allow_pwa_saldo_payment_wali);
+        $isSaldoVisible = $activeStudent->isPwaSaldoVisible();
+        $allowSaldoWali = $activeStudent->isPwaSaldoPaymentAllowed() && $isSaldoVisible;
         $disabledSaldoReason = !empty($appSetting->pwa_saldo_payment_disabled_message)
             ? $appSetting->pwa_saldo_payment_disabled_message
-            : 'Pembayaran tagihan menggunakan Saldo di PWA Wali Santri sedang dinonaktifkan sementara oleh Pengelola.';
+            : 'Pembayaran tagihan menggunakan Saldo di PWA Wali Santri sedang dinonaktifkan untuk rombel / jenjang ini.';
 
-        // Fetch payment methods (Transfer and Balance)
+        $allowedTypes = [PaymentMethod::TYPE_TRANSFER];
+        if ($isSaldoVisible && $allowSaldoWali) {
+            $allowedTypes[] = PaymentMethod::TYPE_BALANCE;
+        }
+
+        // Fetch payment methods (Transfer and Balance if allowed)
         $methods = PaymentMethod::where('is_active', true)
-            ->whereIn('type', [PaymentMethod::TYPE_TRANSFER, PaymentMethod::TYPE_BALANCE])
+            ->whereIn('type', $allowedTypes)
             ->get()
             ->map(function($m) use ($schoolId, $type, $billIds, $allowSaldoWali, $disabledSaldoReason) {
                 $banks = [];

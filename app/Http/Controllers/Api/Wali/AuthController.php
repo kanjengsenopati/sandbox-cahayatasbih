@@ -58,6 +58,20 @@ class AuthController extends Controller
                 if (Auth::guard('wali')->attempt(['phone' => $waliUser->phone, 'password' => $password])) {
                     $user = Auth::guard('wali')->user();
                     if ($user->is_active) {
+                        // Check if wali has at least one student allowed to access PWA
+                        $userStudents = \App\Models\Student::with(['classroom', 'school'])->where('user_id', $user->id)->get();
+                        if ($userStudents->isNotEmpty()) {
+                            $hasAllowedStudent = $userStudents->contains(fn($st) => $st->isPwaLoginAllowed());
+                            if (!$hasAllowedStudent) {
+                                Auth::guard('wali')->logout();
+                                $appSetting = \App\Models\ApplicationSetting::first();
+                                $customMsg = !empty($appSetting->pwa_login_disabled_message)
+                                    ? $appSetting->pwa_login_disabled_message
+                                    : 'Maaf, akses aplikasi PWA Wali Santri untuk jenjang / kelas santri Anda sedang dinonaktifkan.';
+                                return response()->json(['message' => $customMsg], 403);
+                            }
+                        }
+
                         $user->update(['last_login' => now()]);
                         return response()->json([
                             'message' => 'Login successful',

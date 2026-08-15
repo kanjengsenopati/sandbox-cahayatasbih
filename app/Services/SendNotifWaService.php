@@ -21,7 +21,10 @@ class SendNotifWaService
         $url = $app_setting->getNormalizedWhatsappUrl('send');
         $deviceId = $app_setting->device_id;
 
-        $client = new Client();
+        $client = new Client([
+            'verify' => false,
+            'timeout' => 10,
+        ]);
 
         try {
             $response = $client->get($url, [

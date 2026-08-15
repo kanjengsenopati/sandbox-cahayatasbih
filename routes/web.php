@@ -107,6 +107,7 @@ Route::prefix('admin')->middleware(['auth'])->group(function () {
     Route::get('audit/advanced-sync', [App\Http\Controllers\Admin\AdvancedSyncController::class, 'index'])->name('admin.audit.advanced-sync');
     Route::post('audit/advanced-sync/preview', [App\Http\Controllers\Admin\AdvancedSyncController::class, 'preview'])->name('admin.audit.advanced-sync.preview');
     Route::post('audit/advanced-sync/execute', [App\Http\Controllers\Admin\AdvancedSyncController::class, 'execute'])->name('admin.audit.advanced-sync.execute');
+    Route::post('audit/advanced-sync/clean-reconcile', [App\Http\Controllers\Admin\AdvancedSyncController::class, 'cleanReconcile'])->name('admin.audit.advanced-sync.clean-reconcile');
     Route::post('audit/rollback-simulation', [App\Http\Controllers\Admin\AuditController::class, 'rollbackSimulation'])->name('admin.audit.rollback-simulation');
 
     // Redirect old route for compatibility
@@ -144,6 +145,7 @@ Route::prefix('ct-mobile')->group(function () {
     Route::get('/app/{any?}', [WaliDashboardController::class, 'app'])->where('any', '.*')->name('app');
         Route::get('history', [WaliDashboardController::class, 'app'])->name('wali.history');
         Route::get('bills', [WaliDashboardController::class, 'app'])->name('wali.bills');
+        Route::get('bill-receipt/{id}', [WaliDashboardController::class, 'downloadReceipt'])->name('wali.bill.receipt');
         Route::get('bills/{id}', [WaliDashboardController::class, 'app'])->name('wali.bill-detail');
         Route::post('checkout', [WaliDashboardController::class, 'checkout'])->name('wali.checkout');
         Route::get('payment/{id}', [WaliDashboardController::class, 'app'])->name('wali.payment');
@@ -177,11 +179,8 @@ Route::post('/laporpak', [App\Http\Controllers\Public\LaporPakPublicController::
 Route::get('/laporpak/search-students', [App\Http\Controllers\Public\LaporPakPublicController::class, 'searchStudents'])->name('public.laporpak.search-students');
 
 
-Route::get('/', function () {
-    return view('admins.auth.login');
-});
 //auth
-Route::get('/', [AuthController::class, 'index']);
+Route::get('/', [AuthController::class, 'index'])->name('home');
 Route::get('/login', [AuthController::class, 'index'])->name('login');
 Route::post('/login', [AuthController::class, 'authenticate'])->name('authenticate');
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');

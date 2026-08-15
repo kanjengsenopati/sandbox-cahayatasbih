@@ -22,7 +22,8 @@ class ApplicationSettingController extends Controller
         }
 
         $applicationSetting = ApplicationSetting::first();
-        return view('admins.application-setting.index', compact('applicationSetting'));
+        $schools = \App\Models\School::with(['classroom' => fn($q) => $q->orderBy('name')])->orderBy('name')->get();
+        return view('admins.application-setting.index', compact('applicationSetting', 'schools'));
     }
 
     /**
@@ -52,7 +53,33 @@ class ApplicationSettingController extends Controller
 
         ApplicationSetting::updateOrCreate([], $data);
 
-        return redirect()->route('application-setting.index')->with('success', 'Berhasil mengubah pengaturan aplikasi');
+        // Process school granular settings
+        if ($request->has('schools') && is_array($request->schools)) {
+            foreach ($request->schools as $schoolId => $schoolData) {
+                \App\Models\School::where('id', $schoolId)->update([
+                    'allow_pwa_login' => !empty($schoolData['allow_pwa_login']),
+                    'show_pwa_saldo' => !empty($schoolData['show_pwa_saldo']),
+                    'allow_pwa_saldo_payment' => !empty($schoolData['allow_pwa_saldo_payment']),
+                ]);
+            }
+        }
+
+        // Process classroom granular settings
+        if ($request->has('classrooms') && is_array($request->classrooms)) {
+            foreach ($request->classrooms as $classroomId => $classData) {
+                $allowLogin = isset($classData['allow_pwa_login']) && $classData['allow_pwa_login'] !== '' ? (bool)$classData['allow_pwa_login'] : null;
+                $showSaldo = isset($classData['show_pwa_saldo']) && $classData['show_pwa_saldo'] !== '' ? (bool)$classData['show_pwa_saldo'] : null;
+                $allowPayment = isset($classData['allow_pwa_saldo_payment']) && $classData['allow_pwa_saldo_payment'] !== '' ? (bool)$classData['allow_pwa_saldo_payment'] : null;
+
+                \App\Models\Classroom::where('id', $classroomId)->update([
+                    'allow_pwa_login' => $allowLogin,
+                    'show_pwa_saldo' => $showSaldo,
+                    'allow_pwa_saldo_payment' => $allowPayment,
+                ]);
+            }
+        }
+
+        return redirect()->route('application-setting.index')->with('success', 'Berhasil menyimpan seluruh pengaturan aplikasi');
     }
 
     private function storeStudentCardImage($file)

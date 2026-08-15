@@ -19,6 +19,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Carbon\Carbon;
 use Illuminate\Support\Str;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class WaliDashboardController extends Controller
 {
@@ -488,5 +489,38 @@ class WaliDashboardController extends Controller
         ]);
 
         return redirect()->back()->with('success', 'Password berhasil diperbarui');
+    }
+
+    public function downloadReceipt($id)
+    {
+        $activeStudent = $this->resolveActiveStudent();
+        
+        $bill = Bill::where('student_id', $activeStudent->id)->findOrFail($id);
+        
+        if ($bill->status !== Bill::STATUS_PAID) {
+            return back()->with('error', 'Kuitansi hanya tersedia untuk tagihan yang sudah lunas.');
+        }
+
+        $transaction = $bill->getPaidTransaction();
+        if (!$transaction) {
+             return back()->with('error', 'Data transaksi pembayaran tidak ditemukan.');
+        }
+
+        $data = Transaction::with([
+            'student.classroom.school',
+            'transactionDetails.bill.billType',
+            'transactionDetails.saldoHistory',
+            'transactionDetails.savingHistory',
+            'paymentMethod',
+            'admin'
+        ])->findOrFail($transaction->id);
+
+        $pdf = Pdf::loadView('admins.pdf.transaction-invoice', compact('data'));
+        
+        // Example: Kuitansi_SPP_Juli_2026_Ahmad.pdf
+        $monthName = \Carbon\Carbon::createFromDate($bill->year, $bill->month, 1)->translatedFormat('F');
+        $fileName = 'Kuitansi_' . str_replace(' ', '_', $bill->billType->name) . '_' . $monthName . '_' . $bill->year . '_' . str_replace(' ', '_', $activeStudent->name) . '.pdf';
+        
+        return $pdf->download($fileName);
     }
 }

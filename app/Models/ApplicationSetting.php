@@ -29,6 +29,7 @@ class ApplicationSetting extends Model
         'pwa_login_disabled_message',
         'allow_pwa_saldo_payment_wali',
         'pwa_saldo_payment_disabled_message',
+        'pwa_hero_saldo_off_message',
     ];
 
     protected $casts = [
@@ -168,15 +169,30 @@ class ApplicationSetting extends Model
     public function getWhatsappStatusAttribute()
     {
         $device_id = $this->device_id;
-        if ($device_id) {
-            $url = $this->getNormalizedWhatsappUrl('statusDevice') . '?device_id=' . $device_id;
-            // add header to get data from api
-            $response = Http::withHeaders([
-                'Accept' => 'application/json',
-            ])->get($url);
-            return $response->json()['status'];
+        if (!$device_id || empty($this->link_whatsapp)) {
+            return null;
         }
-        return null;
+
+        try {
+            return \Illuminate\Support\Facades\Cache::remember('whacenter_device_status_' . $device_id, 60, function () use ($device_id) {
+                $url = $this->getNormalizedWhatsappUrl('statusDevice') . '?device_id=' . $device_id;
+                $response = Http::withoutVerifying()
+                    ->timeout(2)
+                    ->withHeaders([
+                        'Accept' => 'application/json',
+                    ])
+                    ->get($url);
+
+                if ($response->successful()) {
+                    $json = $response->json();
+                    return $json['status'] ?? null;
+                }
+                return null;
+            });
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('Failed to fetch WhatsApp device status: ' . $e->getMessage());
+            return null;
+        }
     }
 
     public function getPaymentExpireTimeInMinutesAttribute(): int

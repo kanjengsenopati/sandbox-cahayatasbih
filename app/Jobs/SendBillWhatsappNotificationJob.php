@@ -62,7 +62,10 @@ class SendBillWhatsappNotificationJob implements ShouldQueue
     //  send to whatsapp
     public function sendToWhatsapp($number, $message)
     {
-        $client = new Client();
+        $client = new Client([
+            'verify' => false,
+            'timeout' => 10,
+        ]);
         try {
             if (empty($this->url)) {
                 throw new \Exception('WhatsApp Gateway URL not configured.');

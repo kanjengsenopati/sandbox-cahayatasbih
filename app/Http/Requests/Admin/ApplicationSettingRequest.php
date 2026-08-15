@@ -37,6 +37,9 @@ class ApplicationSettingRequest extends FormRequest
             'pwa_login_disabled_message' => 'nullable|string',
             'allow_pwa_saldo_payment_wali' => 'nullable',
             'pwa_saldo_payment_disabled_message' => 'nullable|string',
+            'pwa_hero_saldo_off_message' => 'nullable|string',
+            'schools' => 'nullable|array',
+            'classrooms' => 'nullable|array',
         ];
     }
 }

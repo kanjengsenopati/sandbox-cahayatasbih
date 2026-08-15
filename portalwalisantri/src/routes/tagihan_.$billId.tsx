@@ -5,7 +5,7 @@ import { useSantri } from "@/contexts/SantriContext";
 import { SantriSwitcherTrigger } from "@/components/SantriSwitcher";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { fetchBillDetail, postCheckout, fetchPaymentMethods } from "@/lib/api";
-import { Building2, CreditCard, Smartphone, ShieldCheck } from "lucide-react";
+import { Building2, CreditCard, Smartphone, ShieldCheck, Download } from "lucide-react";
 import { Text } from "@/components/Text";
 
 export const Route = createFileRoute("/tagihan_/$billId")({
@@ -143,6 +143,11 @@ function BillDetail() {
     if (!methodsRes) return [];
     return methodsRes.flatMap((m: any) => {
       if (m.type === "BALANCE") {
+        const isSaldoVisible = (active as any)?.show_pwa_saldo !== false;
+        const allowSaldoPayment = (active as any)?.allow_pwa_saldo_payment !== false;
+        if (!isSaldoVisible || !allowSaldoPayment || m.is_disabled) {
+          return [];
+        }
         const studentBalance = active?.saldo ?? 0;
         if (studentBalance < pickedTotal) {
           return [];
@@ -348,7 +353,7 @@ function BillDetail() {
               <Text.Caption className="text-slate-400 not-italic">Tidak ada metode pembayaran tersedia untuk tagihan ini.</Text.Caption>
             </div>
           ) : (
-            <div className="grid grid-cols-2 gap-3">
+            <div className="flex flex-col gap-2.5">
               {methods.map((m: any) => {
                 const Icon = m.icon;
                 const isActive = method === m.id;
@@ -357,16 +362,16 @@ function BillDetail() {
                     key={m.id}
                     type="button"
                     onClick={() => setMethod(m.id)}
-                    className={`relative flex flex-col justify-between p-3.5 rounded-[24px] transition-all text-left border-2 ${
+                    className={`relative flex items-center justify-between p-3.5 rounded-[22px] transition-all text-left border-2 ${
                       isActive
-                        ? "border-blue-600 bg-blue-50/60 shadow-[0_8px_30px_rgb(37,99,235,0.12)] ring-1 ring-blue-600/30"
+                        ? "border-blue-600 bg-blue-50/50 shadow-[0_8px_30px_rgb(37,99,235,0.10)] ring-1 ring-blue-600/30"
                         : "border-slate-100 bg-white hover:bg-slate-50/80 shadow-[0_8px_30px_rgb(0,0,0,0.04)]"
                     }`}
                   >
-                    {/* Top Row: Icon + Radio Indicator */}
-                    <div className="flex items-start justify-between w-full mb-2">
+                    {/* Left: Icon + (Title & Subtitle aligned vertically) */}
+                    <div className="flex items-center gap-3 min-w-0 flex-1 pr-2">
                       <div
-                        className={`w-10 h-10 rounded-[16px] flex items-center justify-center transition-all ${
+                        className={`w-10 h-10 rounded-[14px] flex items-center justify-center shrink-0 transition-all ${
                           isActive
                             ? "bg-blue-600 text-white shadow-xs"
                             : "bg-slate-100 text-blue-600"
@@ -375,24 +380,23 @@ function BillDetail() {
                         <Icon size={18} strokeWidth={2} />
                       </div>
 
-                      {/* Radio Indicator */}
-                      <div
-                        className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all shrink-0 mt-0.5 ${
-                          isActive ? "border-blue-600 bg-blue-600" : "border-slate-300 bg-white"
-                        }`}
-                      >
-                        {isActive && <div className="w-2 h-2 rounded-full bg-white" />}
+                      <div className="flex-1 min-w-0">
+                        <Text.Body className="font-bold text-slate-900 leading-tight text-sm truncate">
+                          {m.label}
+                        </Text.Body>
+                        <Text.Caption className="text-[11px] text-slate-500 mt-0.5 line-clamp-1 leading-snug not-italic block truncate">
+                          {m.desc} · {m.fee === 0 ? "Gratis" : `Biaya ${fmt(m.fee)}`}
+                        </Text.Caption>
                       </div>
                     </div>
 
-                    {/* Label & Details */}
-                    <div>
-                      <Text.Body className="font-bold text-slate-900 leading-tight text-sm truncate">
-                        {m.label}
-                      </Text.Body>
-                      <Text.Caption className="text-[11px] text-slate-500 mt-1 line-clamp-2 leading-snug not-italic block">
-                        {m.desc} · {m.fee === 0 ? "Gratis" : `Biaya ${fmt(m.fee)}`}
-                      </Text.Caption>
+                    {/* Right: Radio Selection Indicator */}
+                    <div
+                      className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all shrink-0 ${
+                        isActive ? "border-blue-600 bg-blue-600" : "border-slate-300 bg-white"
+                      }`}
+                    >
+                      {isActive && <div className="w-2 h-2 rounded-full bg-white" />}
                     </div>
                   </button>
                 );
@@ -473,9 +477,21 @@ function BillDetail() {
                       </div>
 
                       {it.paid ? (
-                        <span className="shrink-0 px-5 py-2.5 rounded-xl bg-success text-white text-xs font-bold">
-                          Lunas
-                        </span>
+                        <div className="shrink-0 flex items-center gap-2">
+                          <a
+                            href={`/ct-mobile/bill-receipt/${it.id}`}
+                            target="_blank"
+                            className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-emerald-700 bg-emerald-50 hover:bg-emerald-100 hover:text-emerald-800 transition-all border border-emerald-200 shadow-[0_2px_8px_rgb(16,185,129,0.15)] font-bold text-xs active:scale-95"
+                            title="Download Kuitansi"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <Download size={14} strokeWidth={3} />
+                            <span>Unduh Kuitansi</span>
+                          </a>
+                          <span className="px-5 py-2.5 rounded-xl bg-success text-white text-xs font-bold shadow-sm">
+                            Lunas
+                          </span>
+                        </div>
                       ) : it.isPendingConfirmation ? (
                         <span className="shrink-0 px-3 py-2.5 rounded-xl bg-[oklch(0.78_0.16_75)] text-white text-xs font-bold">
                           Menunggu Verifikasi

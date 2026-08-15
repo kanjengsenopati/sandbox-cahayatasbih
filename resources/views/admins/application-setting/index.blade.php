@@ -304,6 +304,448 @@
                                         </div>
                                     </div>
                                 </div>
+
+                                <div class="row mb-6">
+                                    <div class="col-12">
+                                        <div class="card card-bordered p-4 bg-light-info border-info">
+                                            <div class="d-flex align-items-center mb-2">
+                                                <i class="fas fa-bullhorn fs-3 text-info me-2"></i>
+                                                <label class="fs-6 fw-bold form-label mb-0 text-dark" for="pwa_hero_saldo_off_message">
+                                                    Pesan Informasi Hero Banner PWA (Saat Saldo Disembunyikan / OFF)
+                                                </label>
+                                            </div>
+                                            <div class="text-muted fs-7 mb-3">
+                                                Pesan ini akan tampil secara elegan di dalam kartu profil Hero Banner santri pada PWA Wali Santri ketika visibilitas Saldo diatur ke mode <strong>OFF / Sembunyi</strong> untuk jenjang atau kelas santri tersebut.
+                                            </div>
+                                            <div>
+                                                <textarea class="form-control form-control-solid fs-7" name="pwa_hero_saldo_off_message" id="pwa_hero_saldo_off_message" rows="2" placeholder="Contoh: Layanan uang saku & belanja santri dikelola melalui sistem kartu utama / aplikasi lama.">{{ @$applicationSetting->pwa_hero_saldo_off_message ?? old('pwa_hero_saldo_off_message') }}</textarea>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Granular Access & Saldo Visibility Matrix per UPT / Kelas -->
+                                <div class="row mb-6">
+                                    <div class="col-12">
+                                        <div class="card card-bordered border-gray-300 shadow-sm">
+                                            <div class="card-header bg-light-primary py-4 px-6 d-flex align-items-center justify-content-between flex-wrap gap-3">
+                                                <div>
+                                                    <h3 class="card-title fw-bolder text-gray-900 fs-5 mb-1">
+                                                        <i class="fas fa-layer-group text-primary me-2"></i>Pengaturan Akses PWA & Visibilitas Saldo per UPT / Lembaga & Kelas
+                                                    </h3>
+                                                    <span class="text-muted fs-7">
+                                                        Atur izin login PWA dan opsi <strong>ON/OFF menampilkan UI Saldo</strong> di Kartu Hero & Riwayat Transaksi per Lembaga dan Rombel Kelas.
+                                                    </span>
+                                                </div>
+                                                <div class="d-flex align-items-center gap-2 flex-wrap">
+                                                    <button type="button" class="btn btn-sm btn-light-success fw-bold" onclick="applyPresetKelas7Only()">
+                                                        <i class="fas fa-magic me-1"></i>Preset: Saldo Kelas 7 Saja (Kelas 8-12 OFF)
+                                                    </button>
+                                                    <button type="button" class="btn btn-sm btn-light-primary fw-bold" onclick="toggleAllSaldo(true)">
+                                                        <i class="fas fa-check-double me-1"></i>Aktifkan Semua Saldo
+                                                    </button>
+                                                    <button type="button" class="btn btn-sm btn-light-danger fw-bold" onclick="toggleAllSaldo(false)">
+                                                        <i class="fas fa-ban me-1"></i>Nonaktifkan Semua Saldo
+                                                    </button>
+                                                </div>
+                                            </div>
+
+                                            <div class="card-body p-6">
+                                                @if(isset($schools) && $schools->count() > 0)
+                                                    <ul class="nav nav-stretch nav-line-tabs nav-line-tabs-2x border-transparent fs-6 fw-bold mb-6" role="tablist">
+                                                        @foreach($schools as $index => $school)
+                                                            <li class="nav-item" role="presentation">
+                                                                <a class="nav-link text-active-primary py-3 me-6 {{ $index === 0 ? 'active' : '' }}" 
+                                                                   data-bs-toggle="tab" 
+                                                                   href="#tab_school_{{ $school->id }}" 
+                                                                   role="tab">
+                                                                    <i class="fas fa-school me-2 text-primary"></i>{{ $school->name }} ({{ $school->type ?? 'UPT' }})
+                                                                </a>
+                                                            </li>
+                                                        @endforeach
+                                                    </ul>
+
+                                                    <div class="tab-content" id="schoolTabsContent">
+                                                        @foreach($schools as $index => $school)
+                                                            @php
+                                                                // Group class levels in this school for quick selection chips
+                                                                $levels = $school->classroom->map(function($c) {
+                                                                    if (preg_match('/^(VII|VIII|IX|X{1,2}I{0,2}|I{1,3}V?|[0-9]+)/', strtoupper($c->name), $m)) {
+                                                                        return $m[1];
+                                                                    }
+                                                                    return 'Lainnya';
+                                                                })->unique()->filter()->values();
+                                                            @endphp
+                                                            <div class="tab-pane fade {{ $index === 0 ? 'show active' : '' }}" id="tab_school_{{ $school->id }}" role="tabpanel">
+                                                                <!-- Master Policy for this School -->
+                                                                <div class="p-4 rounded-3 bg-light mb-4 border border-gray-200">
+                                                                    <div class="d-flex align-items-center justify-content-between flex-wrap gap-4">
+                                                                        <div>
+                                                                            <span class="fs-6 fw-bolder text-gray-800 d-block">Kebijakan Induk Lembaga: {{ $school->name }}</span>
+                                                                            <span class="fs-7 text-muted">Pengaturan default yang diwarisi oleh seluruh rombel kelas di lembaga ini.</span>
+                                                                        </div>
+                                                                        <div class="d-flex align-items-center gap-6 flex-wrap">
+                                                                            <div class="form-check form-switch form-check-custom form-check-solid">
+                                                                                <input class="form-check-input school-login-toggle" type="checkbox" value="1" 
+                                                                                    name="schools[{{ $school->id }}][allow_pwa_login]" 
+                                                                                    id="school_login_{{ $school->id }}" 
+                                                                                    data-school-id="{{ $school->id }}"
+                                                                                    {{ (!isset($school->allow_pwa_login) || $school->allow_pwa_login) ? 'checked' : '' }} />
+                                                                                <label class="form-check-label fw-bold text-gray-800 fs-7" for="school_login_{{ $school->id }}">Akses Login PWA</label>
+                                                                            </div>
+                                                                            <div class="form-check form-switch form-check-custom form-check-solid">
+                                                                                <input class="form-check-input school-saldo-toggle" type="checkbox" value="1" 
+                                                                                    name="schools[{{ $school->id }}][show_pwa_saldo]" 
+                                                                                    id="school_saldo_{{ $school->id }}" 
+                                                                                    data-school-id="{{ $school->id }}"
+                                                                                    {{ (!isset($school->show_pwa_saldo) || $school->show_pwa_saldo) ? 'checked' : '' }} />
+                                                                                <label class="form-check-label fw-bold text-gray-800 fs-7" for="school_saldo_{{ $school->id }}">Tampilkan UI Saldo</label>
+                                                                            </div>
+                                                                            <div class="form-check form-switch form-check-custom form-check-solid">
+                                                                                <input class="form-check-input school-pay-toggle" type="checkbox" value="1" 
+                                                                                    name="schools[{{ $school->id }}][allow_pwa_saldo_payment]" 
+                                                                                    id="school_pay_{{ $school->id }}" 
+                                                                                    data-school-id="{{ $school->id }}"
+                                                                                    {{ (!isset($school->allow_pwa_saldo_payment) || $school->allow_pwa_saldo_payment) ? 'checked' : '' }} />
+                                                                                <label class="form-check-label fw-bold text-gray-800 fs-7" for="school_pay_{{ $school->id }}">Bayar via Saldo</label>
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+
+                                                                <!-- Multi-Select Filter Chips & Bulk Action Toolbar -->
+                                                                <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
+                                                                    <div class="d-flex align-items-center gap-1.5 flex-wrap">
+                                                                        <span class="fs-7 fw-bold text-gray-600 me-1">Pilih Cepat:</span>
+                                                                        <button type="button" class="btn btn-xs btn-light-primary fw-bold" onclick="selectClassesByLevel('{{ $school->id }}', 'ALL')">
+                                                                            <i class="fas fa-check-square me-1"></i>Semua ({{ $school->classroom->count() }})
+                                                                        </button>
+                                                                        @foreach($levels as $lvl)
+                                                                            <button type="button" class="btn btn-xs btn-light-info fw-bold" onclick="selectClassesByLevel('{{ $school->id }}', '{{ $lvl }}')">
+                                                                                Kelas {{ $lvl }}
+                                                                            </button>
+                                                                        @endforeach
+                                                                        <button type="button" class="btn btn-xs btn-light-secondary fw-bold" onclick="clearClassSelection('{{ $school->id }}')">
+                                                                            <i class="fas fa-times me-1"></i>Batal Pilih
+                                                                        </button>
+                                                                    </div>
+                                                                    <div>
+                                                                        <span class="badge badge-light-primary fw-bolder fs-7 px-3 py-2" id="selection_count_badge_{{ $school->id }}">
+                                                                            0 rombel dipilih
+                                                                        </span>
+                                                                    </div>
+                                                                </div>
+
+                                                                <!-- Dynamic Floating Bulk Actions Bar -->
+                                                                <div class="bulk-action-bar card card-bordered border-primary bg-light-primary p-3 mb-4 d-none" id="bulk_bar_{{ $school->id }}">
+                                                                    <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+                                                                        <div class="d-flex align-items-center gap-2">
+                                                                            <div class="w-8 h-8 rounded-circle bg-primary text-white d-flex align-items-center justify-content-center fw-bold fs-7">
+                                                                                <i class="fas fa-sliders-h text-white"></i>
+                                                                            </div>
+                                                                            <div>
+                                                                                <div class="fw-bolder text-gray-900 fs-7">Aksi Massal Multi-Select (<span class="selected-num">0</span> kelas)</div>
+                                                                                <div class="text-muted fs-8">Pilih opsi di bawah untuk menerapkan perubahan sekaligus pada seluruh baris yang dicentang.</div>
+                                                                            </div>
+                                                                        </div>
+
+                                                                        <div class="d-flex align-items-center gap-3 flex-wrap">
+                                                                            <!-- UI Saldo Bulk Actions -->
+                                                                            <div class="d-flex align-items-center gap-1 bg-white p-1 rounded-2 border border-gray-300">
+                                                                                <span class="fs-8 fw-bolder text-gray-700 px-2">UI Saldo:</span>
+                                                                                <button type="button" class="btn btn-xs btn-success fw-bold" onclick="applyBulkAction('{{ $school->id }}', 'saldo', '1')">
+                                                                                    <i class="fas fa-eye me-1"></i>ON (Tampil)
+                                                                                </button>
+                                                                                <button type="button" class="btn btn-xs btn-danger fw-bold" onclick="applyBulkAction('{{ $school->id }}', 'saldo', '0')">
+                                                                                    <i class="fas fa-eye-slash me-1"></i>OFF (Sembunyi)
+                                                                                </button>
+                                                                                <button type="button" class="btn btn-xs btn-light fw-bold text-gray-700" onclick="applyBulkAction('{{ $school->id }}', 'saldo', '')">
+                                                                                    Ikuti Lembaga
+                                                                                </button>
+                                                                            </div>
+
+                                                                            <!-- PWA Login Bulk Actions -->
+                                                                            <div class="d-flex align-items-center gap-1 bg-white p-1 rounded-2 border border-gray-300">
+                                                                                <span class="fs-8 fw-bolder text-gray-700 px-2">Login PWA:</span>
+                                                                                <button type="button" class="btn btn-xs btn-light-success fw-bold text-success" onclick="applyBulkAction('{{ $school->id }}', 'login', '1')">
+                                                                                    <i class="fas fa-check me-1"></i>Aktif
+                                                                                </button>
+                                                                                <button type="button" class="btn btn-xs btn-light-danger fw-bold text-danger" onclick="applyBulkAction('{{ $school->id }}', 'login', '0')">
+                                                                                    <i class="fas fa-ban me-1"></i>Tutup
+                                                                                </button>
+                                                                                <button type="button" class="btn btn-xs btn-light fw-bold text-gray-700" onclick="applyBulkAction('{{ $school->id }}', 'login', '')">
+                                                                                    Ikuti
+                                                                                </button>
+                                                                            </div>
+
+                                                                            <!-- Bayar Tagihan Bulk Actions -->
+                                                                            <div class="d-flex align-items-center gap-1 bg-white p-1 rounded-2 border border-gray-300">
+                                                                                <span class="fs-8 fw-bolder text-gray-700 px-2">Bayar Saldo:</span>
+                                                                                <button type="button" class="btn btn-xs btn-light-warning fw-bold text-warning" onclick="applyBulkAction('{{ $school->id }}', 'pay', '1')">
+                                                                                    Izinkan
+                                                                                </button>
+                                                                                <button type="button" class="btn btn-xs btn-light-secondary fw-bold text-muted" onclick="applyBulkAction('{{ $school->id }}', 'pay', '0')">
+                                                                                    Nonaktif
+                                                                                </button>
+                                                                                <button type="button" class="btn btn-xs btn-light fw-bold text-gray-700" onclick="applyBulkAction('{{ $school->id }}', 'pay', '')">
+                                                                                    Ikuti
+                                                                                </button>
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+
+                                                                <!-- Classrooms Table for this School -->
+                                                                <div class="table-responsive">
+                                                                    <table class="table table-row-bordered table-row-gray-200 align-middle gs-4 gy-3" id="table_school_{{ $school->id }}">
+                                                                        <thead class="bg-light-secondary text-gray-700 fw-bolder fs-7 text-uppercase gs-0">
+                                                                            <tr>
+                                                                                <th class="w-40px text-center">
+                                                                                    <div class="form-check form-check-sm form-check-custom form-check-solid justify-content-center">
+                                                                                        <input class="form-check-input select-all-classes-check" type="checkbox" 
+                                                                                            data-school-id="{{ $school->id }}" 
+                                                                                            onchange="toggleSelectAllRows('{{ $school->id }}', this.checked)" />
+                                                                                    </div>
+                                                                                </th>
+                                                                                <th class="min-w-140px">Nama Kelas / Rombel</th>
+                                                                                <th class="text-center min-w-140px">Akses Login PWA</th>
+                                                                                <th class="text-center min-w-180px">Tampilkan UI Saldo (Hero & Riwayat)</th>
+                                                                                <th class="text-center min-w-150px">Bayar Tagihan Saldo</th>
+                                                                                <th class="text-end min-w-120px">Status Efektif</th>
+                                                                            </tr>
+                                                                        </thead>
+                                                                        <tbody class="fw-semibold text-gray-600 fs-7">
+                                                                            @forelse($school->classroom as $class)
+                                                                                @php
+                                                                                    $classLevel = '';
+                                                                                    if (preg_match('/^(VII|VIII|IX|X{1,2}I{0,2}|I{1,3}V?|[0-9]+)/', strtoupper($class->name), $m)) {
+                                                                                        $classLevel = $m[1];
+                                                                                    }
+                                                                                    $isKelas7 = in_array(strtoupper($classLevel), ['7', 'VII']);
+                                                                                @endphp
+                                                                                <tr id="row_class_{{ $class->id }}" data-class-level="{{ $classLevel }}" data-school-id="{{ $school->id }}" class="classroom-row">
+                                                                                    <td class="text-center">
+                                                                                        <div class="form-check form-check-sm form-check-custom form-check-solid justify-content-center">
+                                                                                            <input class="form-check-input row-class-check" type="checkbox" 
+                                                                                                value="{{ $class->id }}"
+                                                                                                data-school-id="{{ $school->id }}" 
+                                                                                                data-class-id="{{ $class->id }}"
+                                                                                                data-class-level="{{ $classLevel }}"
+                                                                                                onchange="onRowCheckChange('{{ $school->id }}')" />
+                                                                                        </div>
+                                                                                    </td>
+                                                                                    <td>
+                                                                                        <div class="d-flex align-items-center">
+                                                                                            <span class="badge badge-light-primary fw-bolder me-2">{{ $class->name }}</span>
+                                                                                            <span class="text-gray-500 fs-8">({{ $class->students_count ?? $class->students()->count() }} santri)</span>
+                                                                                        </div>
+                                                                                    </td>
+                                                                                    <td class="text-center">
+                                                                                        <select class="form-select form-select-sm form-select-solid w-130px d-inline-block class-login-select" 
+                                                                                                name="classrooms[{{ $class->id }}][allow_pwa_login]" 
+                                                                                                data-class-id="{{ $class->id }}">
+                                                                                            <option value="" {{ is_null($class->allow_pwa_login) ? 'selected' : '' }}>Ikuti Lembaga</option>
+                                                                                            <option value="1" {{ $class->allow_pwa_login === true ? 'selected' : '' }}>Aktif (Diizinkan)</option>
+                                                                                            <option value="0" {{ $class->allow_pwa_login === false ? 'selected' : '' }}>Nonaktif (Ditutup)</option>
+                                                                                        </select>
+                                                                                    </td>
+                                                                                    <td class="text-center">
+                                                                                        <select class="form-select form-select-sm form-select-solid w-150px d-inline-block class-saldo-select" 
+                                                                                                name="classrooms[{{ $class->id }}][show_pwa_saldo]" 
+                                                                                                data-class-id="{{ $class->id }}"
+                                                                                                data-class-level="{{ $classLevel }}">
+                                                                                            <option value="" {{ is_null($class->show_pwa_saldo) ? 'selected' : '' }}>Ikuti Lembaga</option>
+                                                                                            <option value="1" {{ $class->show_pwa_saldo === true ? 'selected' : '' }}>ON (Tampilkan Saldo)</option>
+                                                                                            <option value="0" {{ $class->show_pwa_saldo === false ? 'selected' : '' }}>OFF (Sembunyikan Saldo)</option>
+                                                                                        </select>
+                                                                                    </td>
+                                                                                    <td class="text-center">
+                                                                                        <select class="form-select form-select-sm form-select-solid w-140px d-inline-block class-pay-select" 
+                                                                                                name="classrooms[{{ $class->id }}][allow_pwa_saldo_payment]" 
+                                                                                                data-class-id="{{ $class->id }}">
+                                                                                            <option value="" {{ is_null($class->allow_pwa_saldo_payment) ? 'selected' : '' }}>Ikuti Lembaga</option>
+                                                                                            <option value="1" {{ $class->allow_pwa_saldo_payment === true ? 'selected' : '' }}>Diizinkan</option>
+                                                                                            <option value="0" {{ $class->allow_pwa_saldo_payment === false ? 'selected' : '' }}>Dinonaktifkan</option>
+                                                                                        </select>
+                                                                                    </td>
+                                                                                    <td class="text-end">
+                                                                                        @if($isKelas7)
+                                                                                            <span class="badge badge-light-success fw-bold">Aplikasi Baru</span>
+                                                                                        @else
+                                                                                            <span class="badge badge-light-warning fw-bold">Aplikasi Lama</span>
+                                                                                        @endif
+                                                                                    </td>
+                                                                                </tr>
+                                                                            @empty
+                                                                                <tr>
+                                                                                    <td colspan="6" class="text-center text-muted py-4">Belum ada kelas terdaftar di lembaga ini.</td>
+                                                                                </tr>
+                                                                            @endforelse
+                                                                        </tbody>
+                                                                    </table>
+                                                                </div>
+                                                            </div>
+                                                        @endforeach
+                                                    </div>
+                                                @else
+                                                    <div class="text-center py-6 text-muted">Data Lembaga / UPT belum tersedia.</div>
+                                                @endif
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <script>
+                                    // 1. Row Selection Engine
+                                    function onRowCheckChange(schoolId) {
+                                        const checks = document.querySelectorAll(`#table_school_${schoolId} .row-class-check`);
+                                        const checked = document.querySelectorAll(`#table_school_${schoolId} .row-class-check:checked`);
+                                        const allCheck = document.querySelector(`.select-all-classes-check[data-school-id="${schoolId}"]`);
+                                        const bulkBar = document.getElementById(`bulk_bar_${schoolId}`);
+                                        const countBadge = document.getElementById(`selection_count_badge_${schoolId}`);
+
+                                        if (allCheck) {
+                                            allCheck.checked = (checks.length > 0 && checks.length === checked.length);
+                                            allCheck.indeterminate = (checked.length > 0 && checked.length < checks.length);
+                                        }
+
+                                        // Update count text
+                                        if (countBadge) {
+                                            countBadge.textContent = `${checked.length} rombel dipilih`;
+                                            if (checked.length > 0) {
+                                                countBadge.className = 'badge badge-primary fw-bolder fs-7 px-3 py-2';
+                                            } else {
+                                                countBadge.className = 'badge badge-light-primary fw-bolder fs-7 px-3 py-2';
+                                            }
+                                        }
+
+                                        // Highlight active rows
+                                        checks.forEach(chk => {
+                                            const tr = document.getElementById(`row_class_${chk.value}`);
+                                            if (tr) {
+                                                if (chk.checked) {
+                                                    tr.classList.add('bg-light-primary');
+                                                } else {
+                                                    tr.classList.remove('bg-light-primary');
+                                                }
+                                            }
+                                        });
+
+                                        // Show/Hide Floating Bulk Action Bar
+                                        if (bulkBar) {
+                                            if (checked.length > 0) {
+                                                bulkBar.classList.remove('d-none');
+                                                bulkBar.querySelectorAll('.selected-num').forEach(el => el.textContent = checked.length);
+                                            } else {
+                                                bulkBar.classList.add('d-none');
+                                            }
+                                        }
+                                    }
+
+                                    function toggleSelectAllRows(schoolId, isChecked) {
+                                        const checks = document.querySelectorAll(`#table_school_${schoolId} .row-class-check`);
+                                        checks.forEach(chk => chk.checked = isChecked);
+                                        onRowCheckChange(schoolId);
+                                    }
+
+                                    function selectClassesByLevel(schoolId, level) {
+                                        const checks = document.querySelectorAll(`#table_school_${schoolId} .row-class-check`);
+                                        checks.forEach(chk => {
+                                            if (level === 'ALL') {
+                                                chk.checked = true;
+                                            } else {
+                                                const rowLevel = (chk.getAttribute('data-class-level') || '').toUpperCase();
+                                                chk.checked = (rowLevel === level.toUpperCase());
+                                            }
+                                        });
+                                        onRowCheckChange(schoolId);
+                                        toastr.info(`Memilih kelas jenjang ${level === 'ALL' ? 'Semua' : level}`);
+                                    }
+
+                                    function clearClassSelection(schoolId) {
+                                        const checks = document.querySelectorAll(`#table_school_${schoolId} .row-class-check`);
+                                        checks.forEach(chk => chk.checked = false);
+                                        onRowCheckChange(schoolId);
+                                    }
+
+                                    // 2. Apply Bulk Actions to Selected Rows
+                                    function applyBulkAction(schoolId, type, value) {
+                                        const checked = document.querySelectorAll(`#table_school_${schoolId} .row-class-check:checked`);
+                                        if (checked.length === 0) {
+                                            toastr.warning('Silakan pilih minimal 1 rombel kelas terlebih dahulu.');
+                                            return;
+                                        }
+
+                                        let typeLabel = '';
+                                        let valueLabel = '';
+
+                                        checked.forEach(chk => {
+                                            const classId = chk.value;
+                                            const tr = document.getElementById(`row_class_${classId}`);
+                                            if (!tr) return;
+
+                                            let selectEl = null;
+                                            if (type === 'saldo') {
+                                                selectEl = tr.querySelector('.class-saldo-select');
+                                                typeLabel = 'UI Saldo';
+                                                valueLabel = value === '1' ? 'ON (Tampilkan Saldo)' : (value === '0' ? 'OFF (Sembunyikan Saldo)' : 'Ikuti Lembaga');
+                                            } else if (type === 'login') {
+                                                selectEl = tr.querySelector('.class-login-select');
+                                                typeLabel = 'Akses Login';
+                                                valueLabel = value === '1' ? 'Aktif' : (value === '0' ? 'Nonaktif' : 'Ikuti Lembaga');
+                                            } else if (type === 'pay') {
+                                                selectEl = tr.querySelector('.class-pay-select');
+                                                typeLabel = 'Bayar via Saldo';
+                                                valueLabel = value === '1' ? 'Diizinkan' : (value === '0' ? 'Dinonaktifkan' : 'Ikuti Lembaga');
+                                            }
+
+                                            if (selectEl) {
+                                                selectEl.value = value;
+                                                // Trigger highlight pulse animation
+                                                selectEl.classList.add('border-primary', 'bg-light-success');
+                                                setTimeout(() => {
+                                                    selectEl.classList.remove('border-primary', 'bg-light-success');
+                                                }, 1200);
+                                            }
+                                        });
+
+                                        toastr.success(`Berhasil menyetel ${typeLabel} ➔ "${valueLabel}" untuk ${checked.length} rombel terpilih! Klik "Simpan" di bawah untuk menyimpan.`);
+                                    }
+
+                                    // 3. Preset Cepat Global
+                                    function applyPresetKelas7Only() {
+                                        if (!confirm('Apakah Anda ingin menerapkan Preset: Kelas 7 Saldo ON & Kelas 8, 9, 10, 11, 12 Saldo OFF?')) {
+                                            return;
+                                        }
+
+                                        document.querySelectorAll('.school-saldo-toggle').forEach(el => {
+                                            el.checked = true;
+                                        });
+
+                                        document.querySelectorAll('.class-saldo-select').forEach(select => {
+                                            const level = (select.getAttribute('data-class-level') || '').toUpperCase();
+                                            if (level === '7' || level === 'VII') {
+                                                select.value = '1'; // ON
+                                            } else if (['8', '9', '10', '11', '12', 'VIII', 'IX', 'X', 'XI', 'XII'].includes(level)) {
+                                                select.value = '0'; // OFF
+                                            } else {
+                                                select.value = '0'; // OFF
+                                            }
+                                        });
+
+                                        toastr.success('Preset Kelas 7 Aktif Penuh berhasil dipasang! Klik tombol "Simpan" di bawah untuk menyimpan perubahan.');
+                                    }
+
+                                    function toggleAllSaldo(status) {
+                                        document.querySelectorAll('.school-saldo-toggle').forEach(el => {
+                                            el.checked = status;
+                                        });
+                                        document.querySelectorAll('.class-saldo-select').forEach(select => {
+                                            select.value = status ? '1' : '0';
+                                        });
+                                        toastr.info(status ? 'Seluruh UI Saldo diaktifkan.' : 'Seluruh UI Saldo dinonaktifkan.');
+                                    }
+                                </script>
                                 <!--end::Input group-->
                                 <!--begin::Separator-->
                                 <div class="separator mb-6">

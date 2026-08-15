@@ -186,7 +186,11 @@ class StudentController extends Controller
         }
         $schools = School::hasSchool()->orderBy('name')->get();
         $hosts = Admin::orderBy('name')->get();
-        return view('admins.student.create-edit', compact('schools', 'hosts'));
+        $firstSchoolId = $schools->first()?->id ?? null;
+        $classrooms = $firstSchoolId 
+            ? Classroom::where('school_id', $firstSchoolId)->orderByRaw(\App\Helpers\DbCompat::classroomOrder())->get()
+            : collect();
+        return view('admins.student.create-edit', compact('schools', 'classrooms', 'hosts'));
     }
 
     /**
@@ -403,6 +407,10 @@ class StudentController extends Controller
 
         $schools = School::hasSchool()->orderBy('name')->get();
         $hosts = Admin::orderBy('name')->get();
+        $selectedSchoolId = $student->school_id ?? $student->classroom?->school_id ?? ($schools->first()?->id ?? null);
+        $classrooms = $selectedSchoolId 
+            ? Classroom::where('school_id', $selectedSchoolId)->orderByRaw(\App\Helpers\DbCompat::classroomOrder())->get()
+            : collect();
         $saldo = [
             'IN' => SaldoHistory::where('student_id', $student->id)
                 ->where('type', SaldoHistory::TYPE_IN)->sum('amount'),
@@ -412,11 +420,11 @@ class StudentController extends Controller
 
         if (request()->ajax()) {
             return response()->json([
-                'html' => view('admins.student.partials.edit-modal-body', compact('student', 'schools', 'saldo', 'hosts'))->render()
+                'html' => view('admins.student.partials.edit-modal-body', compact('student', 'schools', 'classrooms', 'saldo', 'hosts'))->render()
             ]);
         }
 
-        return view('admins.student.create-edit', compact('student', 'schools', 'saldo', 'hosts'));
+        return view('admins.student.create-edit', compact('student', 'schools', 'classrooms', 'saldo', 'hosts'));
     }
 
     /**

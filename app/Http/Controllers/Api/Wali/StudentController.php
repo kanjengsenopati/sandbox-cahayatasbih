@@ -21,6 +21,9 @@ class StudentController extends BaseWaliApiController
                     ->where('status', \App\Models\Transaction::STATUS_PENDING_CONFIRMATION)
                     ->exists();
                 $s->setAttribute('has_pending_topup', $hasPendingTopup);
+                $s->setAttribute('show_pwa_saldo', $s->isPwaSaldoVisible());
+                $s->setAttribute('allow_pwa_login', $s->isPwaLoginAllowed());
+                $s->setAttribute('allow_pwa_saldo_payment', $s->isPwaSaldoPaymentAllowed());
                 return $s;
             });
             
@@ -36,6 +39,9 @@ class StudentController extends BaseWaliApiController
                 ->where('status', \App\Models\Transaction::STATUS_PENDING_CONFIRMATION)
                 ->exists();
             $activeStudent->setAttribute('has_pending_topup', $hasPendingTopup);
+            $activeStudent->setAttribute('show_pwa_saldo', $activeStudent->isPwaSaldoVisible());
+            $activeStudent->setAttribute('allow_pwa_login', $activeStudent->isPwaLoginAllowed());
+            $activeStudent->setAttribute('allow_pwa_saldo_payment', $activeStudent->isPwaSaldoPaymentAllowed());
         }
         return response()->json($activeStudent);
     }

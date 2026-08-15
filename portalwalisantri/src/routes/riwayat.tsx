@@ -141,6 +141,7 @@ const DATE_FILTERS: { id: DateRange; label: string }[] = [
 function RiwayatPage() {
   const navigate = useNavigate();
   const { active } = useSantri();
+  const isSaldoVisible = (active as any)?.show_pwa_saldo ?? true;
   const [type, setType] = useState<"all" | TxType>("all");
   const [cat, setCat] = useState<"all" | Category>("all");
   const [range, setRange] = useState<DateRange>("all");
@@ -150,10 +151,11 @@ function RiwayatPage() {
   const { data: saldoHistories = [], isLoading: isLoadingSaldo } = useQuery({
     queryKey: ["saldo-histories", active?.id, range],
     queryFn: async () => {
+      if (!isSaldoVisible) return [];
       const res = await fetchSaldoHistories({ filter: range });
       return res.data.data || [];
     },
-    enabled: !!active,
+    enabled: !!active && isSaldoVisible,
     staleTime: 0,
     refetchOnWindowFocus: true,
   });

@@ -82,10 +82,10 @@ class AdvancedSyncService
                 ->orderBy('created_at', 'asc');
 
             if (!empty($filters['start_date'])) {
-                $q->whereDate('created_at', '>=', $filters['start_date']);
+                $q->where('created_at', '>=', $filters['start_date'] . ' 00:00:00');
             }
             if (!empty($filters['end_date'])) {
-                $q->whereDate('created_at', '<=', $filters['end_date']);
+                $q->where('created_at', '<=', $filters['end_date'] . ' 23:59:59');
             }
 
             $saldoHistoriesMasterList = $saldoHistoriesMasterList->concat($q->get());
@@ -374,16 +374,16 @@ class AdvancedSyncService
     }
 
     /**
-     * Resolve the remote database connection (mysql_aplikasi default as it contains live PWA/POS/saldo data,
-     * fallback to mysql_master if unreachable).
+     * Resolve the remote database connection (mysql_master / cahayatasbihdb as primary source of truth for old app,
+     * fallback to mysql_aplikasi if unreachable).
      */
     private function getRemoteConnection()
     {
         try {
-            DB::connection('mysql_aplikasi')->getPdo();
-            return DB::connection('mysql_aplikasi');
-        } catch (\Throwable $e) {
+            DB::connection('mysql_master')->getPdo();
             return DB::connection('mysql_master');
+        } catch (\Throwable $e) {
+            return DB::connection('mysql_aplikasi');
         }
     }
 }

@@ -134,15 +134,24 @@ class DashboardController extends BaseWaliApiController
                     ];
                 });
 
-            $recentTransactions = $saldoHistories->concat($posTransactions)->concat($billTransactions)->sortByDesc('created_at')->values();
-            
-            $todaySummary = [
-                'count' => $recentTransactions->count(),
-                'in' => $saldoHistories->where('type', 'IN')->where('status', \App\Models\SaldoHistory::STATUS_SUCCESS)->sum('amount'),
-                'out' => $saldoHistories->where('type', 'OUT')->where('status', \App\Models\SaldoHistory::STATUS_SUCCESS)->sum('amount') 
-                    + $posTransactions->sum('amount') 
-                    + $billTransactions->where('status', \App\Models\Transaction::STATUS_PAID)->sum('amount'),
-            ];
+            $showSaldo = $activeStudent->isPwaSaldoVisible();
+            if ($showSaldo) {
+                $recentTransactions = $saldoHistories->concat($posTransactions)->concat($billTransactions)->sortByDesc('created_at')->values();
+                $todaySummary = [
+                    'count' => $recentTransactions->count(),
+                    'in' => $saldoHistories->where('type', 'IN')->where('status', \App\Models\SaldoHistory::STATUS_SUCCESS)->sum('amount'),
+                    'out' => $saldoHistories->where('type', 'OUT')->where('status', \App\Models\SaldoHistory::STATUS_SUCCESS)->sum('amount') 
+                        + $posTransactions->sum('amount') 
+                        + $billTransactions->where('status', \App\Models\Transaction::STATUS_PAID)->sum('amount'),
+                ];
+            } else {
+                $recentTransactions = $billTransactions->sortByDesc('created_at')->values();
+                $todaySummary = [
+                    'count' => $billTransactions->count(),
+                    'in' => 0,
+                    'out' => $billTransactions->where('status', \App\Models\Transaction::STATUS_PAID)->sum('amount'),
+                ];
+            }
         }
 
         // Check for Unit Transfer Availability
@@ -221,11 +230,38 @@ class DashboardController extends BaseWaliApiController
                 })->exists();
         }
 
+        $pwaPermissions = $activeStudent ? $activeStudent->getPwaPermissions() : [
+            'allow_pwa_login' => true,
+            'show_pwa_saldo' => true,
+            'allow_pwa_saldo_payment' => true,
+        ];
+
+        // Attach permissions to activeStudent object
+        if ($activeStudent) {
+            $activeStudent->show_pwa_saldo = $pwaPermissions['show_pwa_saldo'];
+            $activeStudent->allow_pwa_login = $pwaPermissions['allow_pwa_login'];
+            $activeStudent->allow_pwa_saldo_payment = $pwaPermissions['allow_pwa_saldo_payment'];
+        }
+
+        // Attach permissions to each student in list
+        $students->each(function ($st) {
+            $st->show_pwa_saldo = $st->isPwaSaldoVisible();
+            $st->allow_pwa_login = $st->isPwaLoginAllowed();
+            $st->allow_pwa_saldo_payment = $st->isPwaSaldoPaymentAllowed();
+        });
+
+        $appSetting = \App\Models\ApplicationSetting::first();
+        $heroSaldoOffMessage = !empty($appSetting->pwa_hero_saldo_off_message)
+            ? $appSetting->pwa_hero_saldo_off_message
+            : 'Layanan uang saku & belanja santri dikelola melalui sistem kartu utama / aplikasi lama.';
+
         return response()->json([
             'user' => $user,
             'informations' => $informations,
             'students' => $students,
             'activeStudent' => $activeStudent,
+            'pwa_permissions' => $pwaPermissions,
+            'hero_saldo_off_message' => $heroSaldoOffMessage,
             'tahfidzCount' => (int) $tahfidzCount,
             'studyCount' => (int) $studyCount,
             'recentTransactions' => $recentTransactions,
