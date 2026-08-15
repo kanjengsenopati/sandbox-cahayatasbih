@@ -163,13 +163,11 @@ class BillController extends Controller
                 }
 
                 // ATURAN KHUSUS SISWA KELAS 12 MA:
+                // Hide tagihan Tahun Ajaran < 2026/2027 (bila tidak difilter TA spesifik)
+                // Jenis tagihan yang muncul ditentukan oleh mapping tarif aktif (SST) di guard bawah,
+                // bukan whitelist hardcoded, agar semua tagihan yang sudah di-generate admin pasti tampil.
                 if (TransactionService::isClass12MA($student)) {
-                    // 1. Hide tagihan jika Tahun Ajaran < 2026/2027 (bila tidak difilter TA spesifik)
                     if (!$academicYearId && TransactionService::isBillBeforeAcademicYear2026($item->academicYear)) {
-                        return false;
-                    }
-                    // 2. HANYA munculkan Syahriah, Biaya Aplikasi, dan LKS
-                    if (!TransactionService::isAllowedBillTypeForClass12MA($item->name)) {
                         return false;
                     }
                 }
@@ -214,7 +212,7 @@ class BillController extends Controller
             foreach (array_merge(range(7, 12), range(1, 6)) as $m) {
                 $y = ($m >= 7) ? $startYear : $endYear;
                 $bDet = $bills->firstWhere('month', (int)$m) ?? $bills->firstWhere('month', (string)$m);
-                if ($bDet && $bDet->amount > 0) {
+                if ($bDet !== null) {
                     $totalBill += $bDet->amount;
                 } else {
                     $totalBill += TransactionService::resolveStudentRateForBillType($student, $item, $m, $y, $preloadedRates);

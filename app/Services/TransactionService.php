@@ -1195,10 +1195,18 @@ class TransactionService
         return $isClass12 && $isMA;
     }
 
+    /**
+     * @deprecated Tidak lagi digunakan. Filtering jenis tagihan kelas 12 MA
+     * sekarang ditangani oleh guard SST (hasActiveRateForStudent) yang lebih robust.
+     * Pendekatan whitelist hardcoded menyebabkan tagihan sah (mis. ZARKASI)
+     * tidak muncul di UI meskipun sudah di-generate oleh admin.
+     * Dipertahankan untuk backward compatibility — jangan panggil dari kode baru.
+     */
     public static function isAllowedBillTypeForClass12MA(string $billTypeName): bool
     {
         $upper = strtoupper($billTypeName);
-        return str_contains($upper, 'SYAHR') 
+        return str_contains($upper, 'ZARKASI')
+            || str_contains($upper, 'SYAHR') 
             || str_contains($upper, 'APLIKASI') 
             || str_contains($upper, 'LKS');
     }

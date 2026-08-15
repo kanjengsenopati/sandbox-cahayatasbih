@@ -182,14 +182,10 @@ class WaliDashboardController extends Controller
                 $billAY = $bill->billType->academicYear ?? $bill->academicYear;
 
                 // ATURAN KHUSUS SISWA KELAS 12 MA:
+                // Hide tagihan Tahun Ajaran < 2026/2027
+                // Jenis tagihan ditentukan oleh mapping tarif aktif (SST), bukan whitelist hardcoded.
                 if (TransactionService::isClass12MA($activeStudent)) {
-                    // 1. Hide tagihan jika Tahun Ajaran < 2026/2027
                     if (TransactionService::isBillBeforeAcademicYear2026($billAY)) {
-                        return false;
-                    }
-                    // 2. HANYA munculkan Syahriah, Biaya Aplikasi, dan LKS
-                    $btName = $bill->billType->name ?? '';
-                    if (!TransactionService::isAllowedBillTypeForClass12MA($btName)) {
                         return false;
                     }
                 }

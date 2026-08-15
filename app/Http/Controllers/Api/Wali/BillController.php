@@ -40,14 +40,10 @@ class BillController extends BaseWaliApiController
             $ay = $b->billType?->academicYear ?? $b->academicYear;
 
             // ATURAN KHUSUS SISWA KELAS 12 MA:
+            // Hide tagihan Tahun Ajaran < 2026/2027
+            // Jenis tagihan ditentukan oleh mapping tarif aktif (SST), bukan whitelist hardcoded.
             if (\App\Services\TransactionService::isClass12MA($student)) {
-                // 1. Hide tagihan jika Tahun Ajaran < 2026/2027
                 if (\App\Services\TransactionService::isBillBeforeAcademicYear2026($ay)) {
-                    return false;
-                }
-                // 2. HANYA munculkan Syahriah, Biaya Aplikasi, dan LKS
-                $btName = $b->billType?->name ?? '';
-                if (!\App\Services\TransactionService::isAllowedBillTypeForClass12MA($btName)) {
                     return false;
                 }
             }

@@ -169,7 +169,7 @@
                 $y = ($m >= 7) ? $startYear : $endYear;
                 $bDet = $existingBills->firstWhere('month', (int)$m) ?? $existingBills->firstWhere('month', (string)$m);
 
-                if ($bDet && $bDet->amount > 0) {
+                if ($bDet !== null) {
                     $totalBillAmount += $bDet->amount;
                 } else {
                     $totalBillAmount += \App\Services\TransactionService::resolveStudentRateForBillType($student, $bill, $m, $y, $preloadedRates ?? null);
