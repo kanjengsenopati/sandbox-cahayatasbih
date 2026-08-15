@@ -112,28 +112,30 @@
             }
         }
         
-        $zarkasiTargets = [
-            7  => 100000,
-            8  => 100000,
-            9  => 100000,
-            10 => 100000,
-            11 => 100000,
-            12 => 50000,
-        ];
+        // Build Zarkasi targets dynamically dari data tagihan aktual di DB
+        // (sebelumnya hardcoded 100k×5 + 50k = 550k yang hanya cocok untuk kelas 12)
+        $zarkasiTargets = [];
+        if ($isZarkasi) {
+            foreach (array_merge(range(7, 12), range(1, 6)) as $zm) {
+                $zBill = $existingBills->firstWhere('month', (int)$zm) ?? $existingBills->firstWhere('month', (string)$zm);
+                $zarkasiTargets[$zm] = $zBill ? (int)$zBill->amount : 0;
+            }
+        }
 
         if ($isZarkasi) {
+            $zarkasiTotal = array_sum($zarkasiTargets);
             $totalRawPaid = $existingBills->sum('paid_amount');
-            $paidAmount = min(550000, $totalRawPaid);
-            $unpaidAmount = max(0, 550000 - $paidAmount);
+            $paidAmount = min($zarkasiTotal, $totalRawPaid);
+            $unpaidAmount = max(0, $zarkasiTotal - $paidAmount);
 
             $zarkasiPaidAllocated = [];
             $remPool = $totalRawPaid;
-            foreach ([7, 8, 9, 10, 11, 12] as $m) {
-                $t = $zarkasiTargets[$m];
-                if ($remPool >= $t) {
+            foreach (array_merge(range(7, 12), range(1, 6)) as $m) {
+                $t = $zarkasiTargets[$m] ?? 0;
+                if ($remPool >= $t && $t > 0) {
                     $zarkasiPaidAllocated[$m] = $t;
                     $remPool -= $t;
-                } else if ($remPool > 0) {
+                } else if ($remPool > 0 && $t > 0) {
                     $zarkasiPaidAllocated[$m] = $remPool;
                     $remPool = 0;
                 } else {
@@ -293,7 +295,7 @@
                             $detailPayment = $billDetail ? $billDetail->transactions?->first() : null;
                         } else {
                             $targetYearTemp = $billDetail?->year ?? ($month >= 7 ? ($bill->academicYear?->start_year ?? date('Y')) : ($bill->academicYear?->end_year ?? (date('Y') + 1)));
-                            $amount = ($billDetail && $billDetail->amount > 0) ? $billDetail->amount : \App\Services\TransactionService::resolveStudentRateForBillType($student, $bill, $month, $targetYearTemp, $preloadedRates ?? null);
+                            $amount = ($billDetail !== null) ? $billDetail->amount : \App\Services\TransactionService::resolveStudentRateForBillType($student, $bill, $month, $targetYearTemp, $preloadedRates ?? null);
                             
                             $isPaid = ($billDetail && $billDetail->status == 'PAID') || ($unpaidAmount == 0 && $paidAmount >= ($totalBillAmount ?? 0) && $amount > 0);
                             $remainingAmount = $isPaid ? 0 : ($billDetail ? max(0, $billDetail->amount - $billDetail->paid_amount) : $amount);
