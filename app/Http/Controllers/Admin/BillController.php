@@ -107,8 +107,11 @@ class BillController extends Controller
             // Detect OTHER-type BillTypes yang punya tarif aktif untuk siswa ini tapi belum ada tagihan.
             // Data ini dipakai untuk shortcut Generate di halaman Data Pembayaran (tab Lainnya).
             $ungeneratedOtherRates = $this->getUngeneratedRatesForStudent($student, BillType::TYPE_OTHER, $billOthers->pluck('id')->toArray(), $academicYearId, $preloadedRates);
+            
+            // Lakukan hal yang sama untuk MONTHLY-type BillTypes (tab Bulanan/Kilat)
+            $ungeneratedMonthlyRates = $this->getUngeneratedRatesForStudent($student, BillType::TYPE_MONTHLY, $billMonth->pluck('id')->toArray(), $academicYearId, $preloadedRates);
 
-            return view('admins.bill.index', compact('student', 'billMonth', 'billOthers', 'schools', 'academicYears', 'preloadedRates', 'allStudentBills', 'ungeneratedOtherRates'));
+            return view('admins.bill.index', compact('student', 'billMonth', 'billOthers', 'schools', 'academicYears', 'preloadedRates', 'allStudentBills', 'ungeneratedOtherRates', 'ungeneratedMonthlyRates'));
         }
 
         if (request()->ajax()) {

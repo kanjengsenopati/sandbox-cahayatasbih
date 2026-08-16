@@ -1050,6 +1050,12 @@ class TransactionService
                 }
             }
 
+            // Pre-check ALL-OR-NOTHING: Hanya generate jika siswa memiliki active rate mapping.
+            // Menghindari partial amount=0 akibat resolusi rate gagal di tengah proses.
+            if (!self::hasActiveRateForStudent($student, $bt, $preloadedRates)) {
+                continue;
+            }
+
             if ($bt->type === 'MONTHLY') {
                 $months = array_merge(range(7, 12), range(1, 6));
                 $startYear = $bt->academicYear?->start_year ?? date('Y');
@@ -1245,6 +1251,7 @@ class TransactionService
             ->get();
 
         $idsToDelete = [];
+        $billTypeIdsToDeleteFully = [];
         foreach ($unpaidBills as $bill) {
             $shouldDelete = false;
 
@@ -1271,8 +1278,18 @@ class TransactionService
             }
 
             if ($shouldDelete) {
+                if ($bType && $bType->type === 'MONTHLY') {
+                    $billTypeIdsToDeleteFully[] = $bill->bill_type_id;
+                }
                 $idsToDelete[] = $bill->id;
             }
+        }
+
+        // Prevent partial delete: Jika satu bulan dari tagihan MONTHLY harus dihapus,
+        // hapus semua bulan yang belum dibayar untuk bill type tersebut.
+        if (!empty($billTypeIdsToDeleteFully)) {
+            $additionalBills = $unpaidBills->whereIn('bill_type_id', $billTypeIdsToDeleteFully)->pluck('id')->toArray();
+            $idsToDelete = array_unique(array_merge($idsToDelete, $additionalBills));
         }
 
         if (!empty($idsToDelete)) {

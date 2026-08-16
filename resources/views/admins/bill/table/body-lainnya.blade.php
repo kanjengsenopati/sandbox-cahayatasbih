@@ -47,9 +47,9 @@
         </span>
         <div class="d-flex flex-column flex-grow-1">
             <div class="fw-bold">
-                <h4 class="text-gray-900 fw-bolder mb-1">Tagihan Siap Di-generate</h4>
+                <h4 class="text-gray-900 fw-bolder mb-1">Tagihan Siap Diterbitkan</h4>
                 <div class="fs-6 text-gray-700 mb-3">
-                    Tagihan berikut sudah dikonfigurasi untuk kelas siswa <strong>{{ $student->name }}</strong> tetapi belum di-generate. Klik tombol di bawah untuk langsung membuat tagihan:
+                    Tagihan berikut sudah dikonfigurasi untuk kelas siswa <strong>{{ $student->name }}</strong> tetapi belum diterbitkan. Klik tombol di bawah untuk langsung menerbitkan tagihan:
                 </div>
             </div>
             <div class="d-flex flex-wrap gap-3">
@@ -69,8 +69,8 @@
                         data-rate-id="{{ $ur->rate_id }}"
                         data-student-id="{{ $student->id }}"
                         data-bill-type-name="{{ $ur->bill_type_name }}"
-                        title="Generate tagihan {{ $ur->bill_type_name }} untuk {{ $student->name }}">
-                        <i class="fas fa-sync-alt me-1"></i>Generate
+                        title="Terbitkan tagihan {{ $ur->bill_type_name }} untuk {{ $student->name }}">
+                        <i class="fas fa-sync-alt me-1"></i>Terbitkan Sekarang
                     </button>
                 </div>
                 @endforeach
@@ -487,11 +487,11 @@
         var btName = btn.data('bill-type-name');
 
         Swal.fire({
-            title: 'Generate Tagihan?',
-            html: 'Sistem akan langsung me-generate tagihan <strong>' + btName + '</strong> untuk siswa ini.',
+            title: 'Terbitkan Tagihan?',
+            html: 'Sistem akan langsung menerbitkan tagihan <strong>' + btName + '</strong> untuk siswa ini.',
             icon: 'question',
             showCancelButton: true,
-            confirmButtonText: '<i class="fas fa-sync-alt me-1"></i> Ya, Generate Sekarang',
+            confirmButtonText: '<i class="fas fa-sync-alt me-1"></i> Ya, Terbitkan Sekarang',
             cancelButtonText: 'Batal',
             customClass: {
                 confirmButton: 'btn btn-primary',
@@ -512,16 +512,16 @@
                         Swal.fire({
                             icon: 'success',
                             title: 'Berhasil!',
-                            text: res.message || 'Tagihan berhasil di-generate!',
+                            text: res.message || 'Tagihan berhasil diterbitkan!',
                             timer: 2000,
                             showConfirmButton: false
                         });
-                        // Reload halaman agar tagihan yang baru di-generate muncul di tab Lainnya
+                        // Reload halaman agar tagihan yang baru diterbitkan muncul di tab Lainnya
                         setTimeout(function() { location.reload(); }, 1500);
                     },
                     error: function(xhr) {
-                        btn.prop('disabled', false).html('<i class="fas fa-sync-alt me-1"></i>Generate');
-                        var msg = xhr.responseJSON && xhr.responseJSON.message ? xhr.responseJSON.message : 'Gagal me-generate tagihan.';
+                        btn.prop('disabled', false).html('<i class="fas fa-sync-alt me-1"></i>Terbitkan Sekarang');
+                        var msg = xhr.responseJSON && xhr.responseJSON.message ? xhr.responseJSON.message : 'Gagal menerbitkan tagihan.';
                         Swal.fire({
                             icon: 'error',
                             title: 'Gagal!',

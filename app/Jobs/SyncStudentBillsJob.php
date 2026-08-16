@@ -10,6 +10,7 @@ use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\DB;
 
 /**
  * Job untuk mensinkronisasi data tagihan santri di background.
@@ -36,9 +37,9 @@ class SyncStudentBillsJob implements ShouldQueue
     public int $tries = 3;
 
     /**
-     * Timeout job dalam detik (90 detik untuk sinkronisasi lengkap).
+     * Timeout job dalam detik (180 detik untuk sinkronisasi lengkap).
      */
-    public int $timeout = 90;
+    public int $timeout = 180;
 
     public function __construct(
         public readonly string $studentId,
@@ -63,14 +64,16 @@ class SyncStudentBillsJob implements ShouldQueue
         Log::info("[SyncStudentBillsJob] Starting sync for student: {$student->name} ({$this->studentId})");
 
         try {
-            // 1. Bersihkan ghost bills (cross-UPT, sebelum tahun masuk)
-            TransactionService::cleanupGhostBillsForStudent($this->studentId);
+            DB::transaction(function () {
+                // 1. Bersihkan ghost bills (cross-UPT, sebelum tahun masuk)
+                TransactionService::cleanupGhostBillsForStudent($this->studentId);
 
-            // 2. Sinkronisasi bill dari transaksi yang sudah dibayar
-            TransactionService::syncStudentBillsFromPaidTransactions($this->studentId);
+                // 2. Sinkronisasi bill dari transaksi yang sudah dibayar
+                TransactionService::syncStudentBillsFromPaidTransactions($this->studentId);
 
-            // 3. Generate bill yang belum ada berdasarkan PaymentRate
-            TransactionService::ensureStudentBillsSyncedFromRate($this->studentId, $this->academicYearId);
+                // 3. Generate bill yang belum ada berdasarkan PaymentRate
+                TransactionService::ensureStudentBillsSyncedFromRate($this->studentId, $this->academicYearId);
+            });
 
             Log::info("[SyncStudentBillsJob] Sync completed for student: {$this->studentId}");
         } catch (\Throwable $e) {
