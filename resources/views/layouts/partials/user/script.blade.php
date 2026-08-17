@@ -47,7 +47,7 @@
         }
     }
     $(document).on('click', '.btn-delete', function(e) {
-        var form = $("#" + e.target.dataset.id);
+        var form = $("#" + $(this).data("id"));
         Swal.fire({
             title: 'Hapus Data',
             text: 'Anda yakin akan menghapus data ini ?, data yang telah dihapus tidak dapat dikembalikan',

@@ -15,7 +15,7 @@
                         <select name="school_id" id="import-school-id" class="form-select form-select-solid" required style="border-radius: 12px;">
                             <option value="">Pilih Unit Pendidikan</option>
                             @foreach ($schools as $school)
-                                <option value="{{ $school->id }}">{{ $school->name }}</option>
+                                <option value="{{ $school->id }}" data-school-type="{{ $school->type }}">{{ $school->name }}</option>
                             @endforeach
                         </select>
                     </div>
@@ -42,14 +42,6 @@
                     <div class="mb-4">
                         <label class="text-slate-400 fw-bold fs-9 text-uppercase tracking-wider mb-2 d-block" style="color: #94a3b8; font-size: 11px;">Jenis Tagihan Pembayaran</label>
                         <select name="bill_type_ids[]" id="template-bill-type-ids" class="form-select form-select-solid" data-control="select2" data-placeholder="Pilih Tahun Ajaran Terlebih Dahulu" multiple="multiple" style="border-radius: 12px;" disabled>
-                            @php
-                                $allTemplateBillTypes = \App\Models\BillType::with('academicYear')
-                                    ->get()
-                                    ->sortBy('formatted_name');
-                            @endphp
-                            @foreach ($allTemplateBillTypes as $bt)
-                                <option value="{{ $bt->id }}" data-academic-year-id="{{ $bt->academic_year_id }}">{{ $bt->formatted_name }} {{ $bt->academicYear ? '('.$bt->academicYear->name.')' : '' }}</option>
-                            @endforeach
                         </select>
                     </div>
 
@@ -73,6 +65,24 @@
 
                 <form id="form-preview-import" enctype="multipart/form-data">
                     @csrf
+                    <!-- Pilih UPT (School) -->
+                    <div class="mb-4">
+                        <label class="text-slate-400 fw-bold fs-9 text-uppercase tracking-wider mb-2 d-block" style="color: #94a3b8; font-size: 11px;">Unit Pendidikan / UPT <span class="text-danger">*</span></label>
+                        <select name="school_id" id="import-school-id-upload" class="form-select form-select-solid" required style="border-radius: 12px;">
+                            <option value="">Pilih Unit Pendidikan</option>
+                            @foreach ($schools as $school)
+                                <option value="{{ $school->id }}" data-school-type="{{ $school->type }}">{{ $school->name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    <!-- Pilih Multi Kelas (Classrooms) -->
+                    <div class="mb-4">
+                        <label class="text-slate-400 fw-bold fs-9 text-uppercase tracking-wider mb-2 d-block" style="color: #94a3b8; font-size: 11px;">Kelas <span class="text-danger">*</span></label>
+                        <select name="classroom_ids[]" id="import-classroom-ids-upload" class="form-select form-select-solid" data-control="select2" data-placeholder="Semua Kelas" multiple="multiple" style="border-radius: 12px;" disabled>
+                        </select>
+                    </div>
+
                     <!-- Pilih Tahun Ajaran -->
                     <div class="mb-4">
                         <label class="text-slate-400 fw-bold fs-9 text-uppercase tracking-wider mb-2 d-block" style="color: #94a3b8; font-size: 11px;">Tahun Ajaran <span class="text-danger">*</span></label>
@@ -84,23 +94,11 @@
                         </select>
                     </div>
 
-                    <!-- Pilih Nama Tagihan (BillType type=OTHER) -->
+                    <!-- Pilih Nama Tagihan Pembayaran (BillType type=OTHER) -->
                     <div class="mb-4">
-                        <label class="text-slate-400 fw-bold fs-9 text-uppercase tracking-wider mb-2 d-block" style="color: #94a3b8; font-size: 11px;">Nama Tagihan Pendaftaran <span class="text-danger">*</span></label>
+                        <label class="text-slate-400 fw-bold fs-9 text-uppercase tracking-wider mb-2 d-block" style="color: #94a3b8; font-size: 11px;">Nama Tagihan Pembayaran <span class="text-danger">*</span></label>
                         <select name="bill_type_id" id="import-bill-type-id" class="form-select form-select-solid" required style="border-radius: 12px;" disabled>
                             <option value="">Pilih Tahun Ajaran Terlebih Dahulu</option>
-                            @php
-                                $billTypes = \App\Models\BillType::where('type', \App\Models\BillType::TYPE_OTHER)
-                                    ->with('academicYear')
-                                    ->get()
-                                    ->unique(function ($item) {
-                                        return strtolower($item->name) . '-' . $item->academic_year_id . '-' . strtolower($item->school_type ?? '');
-                                    })
-                                    ->sortBy('formatted_name');
-                            @endphp
-                            @foreach ($billTypes as $bt)
-                                <option value="{{ $bt->id }}" data-academic-year-id="{{ $bt->academic_year_id }}" class="d-none">{{ $bt->formatted_name }} {{ $bt->academicYear ? '('.$bt->academicYear->name.')' : '' }}</option>
-                            @endforeach
                         </select>
                     </div>
 
@@ -161,12 +159,163 @@
     </div>
 </div>
 
+<!-- Riwayat Import Pembayaran Section -->
+<div class="row mt-7" id="section-import-history">
+    <div class="col-12">
+        <div class="card shadow-[0_8px_30px_rgb(0,0,0,0.04)] border-0" style="border-radius: 24px; background: #ffffff;">
+            <div class="card-header border-0 pt-6 px-6 bg-transparent d-flex justify-content-between align-items-center">
+                <div>
+                    <h4 class="text-slate-800 fw-semibold fs-5 mb-1" style="color: #1e293b;">Riwayat Import Pembayaran</h4>
+                    <p class="text-slate-400 fst-italic fs-7 mb-0" style="color: #94a3b8;">Daftar seluruh import pembayaran yang pernah dilakukan. Klik tombol <strong>Batal</strong> untuk membatalkan dan mengembalikan status tagihan.</p>
+                </div>
+            </div>
+            <div class="card-body p-6 pt-0">
+                <div class="table-responsive">
+                    <table class="table align-middle table-row-dashed table-hover" id="table-import-history" style="width: 100%;">
+                        <thead>
+                            <tr class="text-start text-slate-400 fw-bold fs-9 text-uppercase tracking-wider border-bottom border-gray-200" style="color: #94a3b8;">
+                                <th style="width: 4%;">No</th>
+                                <th>UPT Lembaga</th>
+                                <th>Tahun Ajaran</th>
+                                <th>Jenis Tagihan</th>
+                                <th class="text-center">Siswa</th>
+                                <th class="text-end">Total Nominal</th>
+                                <th>Nama Petugas</th>
+                                <th>Timestamp Log</th>
+                                <th class="text-center">Status</th>
+                                <th class="text-center" style="width: 10%;">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody class="text-slate-600 fw-semibold" style="color: #475569;">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 @push('js')
+<style>
+    /* Custom Dropdown Grid for Classes */
+    .custom-kelas-dropdown .select2-results > .select2-results__options {
+        display: flex;
+        flex-wrap: wrap;
+        padding: 0;
+    }
+    .custom-kelas-dropdown .select2-results__option[role="group"] {
+        flex: 1 1 0;
+        padding: 0;
+        border-right: 1px solid #e2e8f0;
+        min-width: 0; 
+    }
+    .custom-kelas-dropdown .select2-results__option[role="group"]:last-child {
+        border-right: none;
+    }
+    .custom-kelas-dropdown .select2-results__group {
+        background-color: #f8fafc;
+        color: #475569;
+        font-weight: 700;
+        padding: 8px 12px;
+        border-bottom: 1px solid #e2e8f0;
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    .custom-kelas-dropdown.layout-3-col .select2-results__option[role="group"] {
+        min-width: 30%;
+    }
+    .custom-kelas-dropdown.layout-2-col .select2-results__option[role="group"] {
+        min-width: 45%;
+    }
+    .custom-kelas-dropdown .select2-results__options--nested {
+        padding: 4px 0;
+    }
+    .custom-kelas-dropdown .select2-results__option {
+        padding: 6px 12px;
+    }
+</style>
 <script>
     $(document).ready(function() {
+        // Fungsi helper untuk merender opsi kelas dengan grouping
+        function renderClassroomOptions(schoolName, data, selectElement) {
+            selectElement.empty().val(null);
+            var isPondok = schoolName.toUpperCase().indexOf('PONDOK') !== -1;
+            var isMA = schoolName.toUpperCase().indexOf('MA') !== -1 || schoolName.toUpperCase().indexOf('SMA') !== -1;
+            var isSMP = schoolName.toUpperCase().indexOf('SMP') !== -1 || schoolName.toUpperCase().indexOf('MTS') !== -1;
+
+            if (isPondok) {
+                // Khusus pondok 2 kolom
+                var half = Math.ceil(data.length / 2);
+                var g1 = data.slice(0, half);
+                var g2 = data.slice(half);
+                
+                if (g1.length > 0) {
+                    var opt1 = $('<optgroup>').attr('label', 'Kelompok 1');
+                    $.each(g1, function(i, item) { opt1.append(new Option(item.name, item.id, false, false)); });
+                    selectElement.append(opt1);
+                }
+                if (g2.length > 0) {
+                    var opt2 = $('<optgroup>').attr('label', 'Kelompok 2');
+                    $.each(g2, function(i, item) { opt2.append(new Option(item.name, item.id, false, false)); });
+                    selectElement.append(opt2);
+                }
+                selectElement.attr('data-col-layout', '2');
+            } else {
+                // 3 kolom untuk SMP/MA
+                var groups = {};
+                var others = [];
+                $.each(data, function(i, item) {
+                    var name = item.name.toUpperCase();
+                    var grade = null;
+                    if (name.startsWith('7')) grade = 'Kelas 7';
+                    else if (name.startsWith('8')) grade = 'Kelas 8';
+                    else if (name.startsWith('9')) grade = 'Kelas 9';
+                    else if (name.startsWith('10') || name.startsWith('X-') || name === 'X' || name.startsWith('X ')) grade = 'Kelas 10';
+                    else if (name.startsWith('11') || name.startsWith('XI-') || name === 'XI' || name.startsWith('XI ')) grade = 'Kelas 11';
+                    else if (name.startsWith('12') || name.startsWith('XII-') || name === 'XII' || name.startsWith('XII ')) grade = 'Kelas 12';
+                    else grade = 'Lainnya';
+                    
+                    if (!groups[grade]) groups[grade] = [];
+                    groups[grade].push(item);
+                });
+
+                var order = isSMP ? ['Kelas 7', 'Kelas 8', 'Kelas 9', 'Lainnya'] : ['Kelas 10', 'Kelas 11', 'Kelas 12', 'Lainnya'];
+                
+                $.each(order, function(i, key) {
+                    if (groups[key] && groups[key].length > 0) {
+                        var opt = $('<optgroup>').attr('label', key);
+                        $.each(groups[key], function(j, item) { opt.append(new Option(item.name, item.id, false, false)); });
+                        selectElement.append(opt);
+                    }
+                });
+                
+                $.each(groups, function(key, items) {
+                    if (order.indexOf(key) === -1 && items.length > 0) {
+                        var opt = $('<optgroup>').attr('label', key);
+                        $.each(items, function(j, item) { opt.append(new Option(item.name, item.id, false, false)); });
+                        selectElement.append(opt);
+                    }
+                });
+                selectElement.attr('data-col-layout', '3');
+            }
+            selectElement.trigger('change');
+        }
+
+        // Terapkan custom class pada Select2 dropdown saat terbuka
+        $('#import-classroom-ids, #import-classroom-ids-upload').on('select2:open', function (e) {
+            var selectId = $(this).attr('id');
+            var dropdown = $('#select2-' + selectId + '-results').closest('.select2-dropdown');
+            var layout = $(this).attr('data-col-layout') || '3';
+            
+            dropdown.addClass('custom-kelas-dropdown');
+            dropdown.removeClass('layout-2-col layout-3-col').addClass('layout-' + layout + '-col');
+        });
+
         // Load classroom dinamis (Multi-Select) berdasarkan UPT terpilih
         $('#import-school-id').change(function() {
             var schoolId = $(this).val();
+            var schoolName = $(this).find('option:selected').text();
             var classroomSelect = $('#import-classroom-ids');
             
             classroomSelect.empty().val(null).trigger('change');
@@ -182,11 +331,7 @@
                     },
                     success: function(data) {
                         classroomSelect.prop('disabled', false);
-                        $.each(data, function(index, item) {
-                            var newOption = new Option(item.name, item.id, false, false);
-                            classroomSelect.append(newOption);
-                        });
-                        classroomSelect.trigger('change');
+                        renderClassroomOptions(schoolName, data, classroomSelect);
                     },
                     error: function() {
                         classroomSelect.prop('disabled', false);
@@ -197,66 +342,189 @@
             }
         });
 
-        // Filter options bill type template berdasarkan tahun ajaran yang dipilih
-        $('#template-academic-year-id').change(function() {
-            var academicYearId = $(this).val();
-            var billTypeSelect = $('#template-bill-type-ids');
-
-            billTypeSelect.val(null).trigger('change');
-            if (academicYearId) {
-                billTypeSelect.prop('disabled', false);
-                billTypeSelect.find('option').each(function() {
-                    var optionAyId = $(this).data('academic-year-id');
-                    if (optionAyId == academicYearId) {
-                        $(this).prop('disabled', false);
-                    } else {
-                        $(this).prop('disabled', true);
+        // Load classroom dinamis (Multi-Select) berdasarkan UPT terpilih (Upload Form)
+        $('#import-school-id-upload').change(function() {
+            var schoolId = $(this).val();
+            var schoolName = $(this).find('option:selected').text();
+            var classroomSelect = $('#import-classroom-ids-upload');
+            
+            classroomSelect.empty().val(null).trigger('change');
+            if (schoolId) {
+                classroomSelect.prop('disabled', true);
+                
+                $.ajax({
+                    url: "{{ route('select2') }}",
+                    dataType: 'json',
+                    data: {
+                        data_type: "CLASSROOM_BY_SCHOOL",
+                        school_id: schoolId
+                    },
+                    success: function(data) {
+                        classroomSelect.prop('disabled', false);
+                        renderClassroomOptions(schoolName, data, classroomSelect);
+                    },
+                    error: function() {
+                        classroomSelect.prop('disabled', false);
                     }
                 });
-                billTypeSelect.trigger('change');
             } else {
-                billTypeSelect.prop('disabled', true);
-                billTypeSelect.find('option').prop('disabled', true);
-                billTypeSelect.trigger('change');
+                classroomSelect.prop('disabled', true).trigger('change');
             }
         });
 
-        // Filter options bill type berdasarkan tahun ajaran yang dipilih
-        $('#import-academic-year-id').change(function() {
-            var academicYearId = $(this).val();
-            var billTypeSelect = $('#import-bill-type-id');
+        // Master data bill types — DATABASE-DRIVEN via BillType.bill_item_id → BillItem
+        @php
+            // Mapping School.type → BillItem names (same as ReportTransactionController)
+            $schoolTypeToBillItemMap = [
+                \App\Models\School::TYPE_SMP    => ['SMP'],
+                \App\Models\School::TYPE_MA      => ['MADRASAH ALIYAH'],
+                \App\Models\School::TYPE_PONDOK  => ['PONDOK'],
+            ];
 
-            billTypeSelect.val('');
+            // Preload BillItem IDs grouped by School.type
+            $billItemIdsBySchoolType = [];
+            foreach ($schoolTypeToBillItemMap as $schoolType => $billItemNames) {
+                $ids = \App\Models\BillItem::whereIn('name', $billItemNames)->pluck('id')->toArray();
+                $billItemIdsBySchoolType[$schoolType] = $ids;
+            }
+
+            // Build flat lookup: bill_item_id → school_type
+            $billItemToSchoolType = [];
+            foreach ($billItemIdsBySchoolType as $schoolType => $ids) {
+                foreach ($ids as $id) {
+                    $billItemToSchoolType[$id] = $schoolType;
+                }
+            }
+
+            $allTemplateBillTypes = \App\Models\BillType::with(['academicYear', 'billItem'])->get()->sortBy(function($bt) {
+                return ($bt->billItem->name ?? '') . ' - ' . $bt->name;
+            })->values()->map(function($bt) use ($billItemToSchoolType) {
+                $resolvedSchoolType = $billItemToSchoolType[$bt->bill_item_id] ?? null;
+                $suffix = $bt->billItem->name ?? '';
+                $displayName = $bt->name;
+                // Append BillItem name as suffix if not already in the name
+                if ($suffix && !str_contains(strtolower($displayName), strtolower($suffix))) {
+                    $displayName .= ' - ' . $suffix;
+                }
+                return [
+                    'id' => $bt->id,
+                    'name' => $displayName . ($bt->academicYear ? ' ('.$bt->academicYear->name.')' : ''),
+                    'academic_year_id' => $bt->academic_year_id,
+                    'bill_item_id' => $bt->bill_item_id,
+                    'school_type' => $resolvedSchoolType,
+                ];
+            });
+
+            $allUploadBillTypes = $allTemplateBillTypes;
+        @endphp
+
+        var allTemplateBillTypes = @json($allTemplateBillTypes);
+        var allUploadBillTypes = @json($allUploadBillTypes);
+
+        // Database-driven mapping: School.type → BillItem IDs
+        var billItemIdsBySchoolType = @json($billItemIdsBySchoolType);
+
+        // Helper: mendapatkan school_type dari UPT yang dipilih
+        function getSelectedSchoolType(selectId) {
+            var $select = $(selectId);
+            var $selected = $select.find('option:selected');
+            return $selected.data('school-type') || null;
+        }
+
+        // Helper: mendapatkan BillItem IDs yang valid untuk school_type tertentu
+        function getAllowedBillItemIds(schoolType) {
+            if (!schoolType) return null; // null = tidak filter
+            return billItemIdsBySchoolType[String(schoolType).toUpperCase()] || [];
+        }
+
+        // Fungsi rebuild bill type dropdown (dipakai oleh kedua event: UPT change & Tahun Ajaran change)
+        function rebuildTemplateBillTypes() {
+            var academicYearId = $('#template-academic-year-id').val();
+            var schoolType = getSelectedSchoolType('#import-school-id');
+            var allowedBillItemIds = getAllowedBillItemIds(schoolType);
+            var billTypeSelect = $('#template-bill-type-ids');
+
+            // Destroy Select2, wipe options, rebuild
+            if (billTypeSelect.hasClass('select2-hidden-accessible')) {
+                billTypeSelect.select2('destroy');
+            }
+            billTypeSelect.empty();
+
             if (academicYearId) {
-                var count = 0;
-                billTypeSelect.find('option').each(function() {
-                    var optionAyId = $(this).data('academic-year-id');
-                    if (!optionAyId) return; // Skip placeholder option
-
-                    if (optionAyId == academicYearId) {
-                        $(this).removeClass('d-none').prop('disabled', false);
-                        count++;
-                    } else {
-                        $(this).addClass('d-none').prop('disabled', true);
-                    }
+                var filtered = allTemplateBillTypes.filter(function(bt) {
+                    var matchYear = String(bt.academic_year_id) === String(academicYearId);
+                    // Database-driven: filter by bill_item_id
+                    var matchSchool = !allowedBillItemIds || allowedBillItemIds.indexOf(bt.bill_item_id) !== -1;
+                    return matchYear && matchSchool;
                 });
 
-                if (count > 0) {
+                if (filtered.length > 0) {
+                    $.each(filtered, function(i, bt) {
+                        billTypeSelect.append(new Option(bt.name, bt.id, false, false));
+                    });
                     billTypeSelect.prop('disabled', false);
-                    billTypeSelect.find('option[value=""]').text('Pilih Jenis Tagihan Bebas/Pendaftaran').removeClass('d-none').prop('disabled', false);
                 } else {
                     billTypeSelect.prop('disabled', true);
-                    billTypeSelect.find('option[value=""]').text('Tidak ada tagihan untuk tahun ajaran ini').removeClass('d-none').prop('disabled', false);
                 }
+                billTypeSelect.select2({ placeholder: 'Pilih Jenis Tagihan', allowClear: true });
             } else {
                 billTypeSelect.prop('disabled', true);
-                billTypeSelect.find('option[value=""]').text('Pilih Tahun Ajaran Terlebih Dahulu').removeClass('d-none').prop('disabled', false);
-                billTypeSelect.find('option').each(function() {
-                    if ($(this).val() !== '') {
-                        $(this).addClass('d-none').prop('disabled', true);
-                    }
-                });
+                billTypeSelect.select2({ placeholder: 'Pilih Tahun Ajaran Terlebih Dahulu' });
             }
+        }
+
+        function rebuildUploadBillTypes() {
+            var academicYearId = $('#import-academic-year-id').val();
+            var schoolType = getSelectedSchoolType('#import-school-id-upload');
+            var allowedBillItemIds = getAllowedBillItemIds(schoolType);
+            var billTypeSelect = $('#import-bill-type-id');
+
+            // Wipe and rebuild native select
+            billTypeSelect.empty();
+
+            if (academicYearId) {
+                var filtered = allUploadBillTypes.filter(function(bt) {
+                    var matchYear = String(bt.academic_year_id) === String(academicYearId);
+                    // Database-driven: filter by bill_item_id
+                    var matchSchool = !allowedBillItemIds || allowedBillItemIds.indexOf(bt.bill_item_id) !== -1;
+                    return matchYear && matchSchool;
+                });
+
+                if (filtered.length > 0) {
+                    billTypeSelect.append('<option value="">Pilih Jenis Tagihan Pembayaran</option>');
+                    $.each(filtered, function(i, bt) {
+                        billTypeSelect.append(new Option(bt.name, bt.id, false, false));
+                    });
+                    billTypeSelect.prop('disabled', false);
+                } else {
+                    billTypeSelect.append('<option value="">Tidak ada tagihan untuk tahun ajaran ini</option>');
+                    billTypeSelect.prop('disabled', true);
+                }
+            } else {
+                billTypeSelect.append('<option value="">Pilih Tahun Ajaran Terlebih Dahulu</option>');
+                billTypeSelect.prop('disabled', true);
+            }
+        }
+
+        // Strict cascade filter: Jenis Tagihan Pembayaran (Download Template)
+        // Trigger rebuild on BOTH UPT change AND Tahun Ajaran change
+        $('#template-academic-year-id').change(function() {
+            rebuildTemplateBillTypes();
+        });
+
+        // Saat UPT berubah di form download, juga rebuild bill types
+        $('#import-school-id').change(function() {
+            rebuildTemplateBillTypes();
+        });
+
+        // Strict cascade filter: Nama Tagihan Pembayaran (Upload & Preview)
+        $('#import-academic-year-id').change(function() {
+            rebuildUploadBillTypes();
+        });
+
+        // Saat UPT berubah di form upload, juga rebuild bill types
+        $('#import-school-id-upload').change(function() {
+            rebuildUploadBillTypes();
         });
 
         var lastImportedData = [];
@@ -418,6 +686,8 @@
                             _token: "{{ csrf_token() }}",
                             academic_year_id: activeAcademicYearId,
                             bill_type_id: activeBillTypeId,
+                            school_id: $('#import-school-id-upload').val(),
+                            classroom_info: $('#import-classroom-ids-upload option:selected').map(function() { return $(this).text(); }).get().join(', '),
                             data: validData
                         },
                         success: function(response) {
@@ -450,6 +720,118 @@
                                 icon: 'error',
                                 title: 'Gagal',
                                 text: msg
+                            });
+                        }
+                    });
+                }
+            });
+        });
+
+        // ========================================
+        // RIWAYAT IMPORT - DataTable
+        // ========================================
+        var importHistoryTable = $('#table-import-history').DataTable({
+            processing: true,
+            serverSide: false,
+            ajax: {
+                url: "{{ route('bill.import-logs') }}",
+                type: 'GET',
+            },
+            columns: [
+                { data: 'DT_RowIndex', name: 'DT_RowIndex', orderable: false, searchable: false, className: 'text-center' },
+                { data: 'school_name', name: 'school_name' },
+                { data: 'academic_year_name', name: 'academic_year_name' },
+                { data: 'bill_type_name', name: 'bill_type_name' },
+                { data: 'total_students', name: 'total_students', className: 'text-center' },
+                { data: 'total_amount_formatted', name: 'total_amount_formatted', className: 'text-end' },
+                { data: 'admin_name', name: 'admin_name' },
+                { data: 'timestamp', name: 'timestamp' },
+                { data: 'status_badge', name: 'status_badge', className: 'text-center' },
+                { data: 'action', name: 'action', orderable: false, searchable: false, className: 'text-center' },
+            ],
+            order: [[7, 'desc']],
+            language: {
+                emptyTable: "Belum ada riwayat import.",
+                processing: "Memuat data...",
+                search: "Cari:",
+                lengthMenu: "Tampilkan _MENU_ data",
+                info: "Menampilkan _START_ - _END_ dari _TOTAL_ data",
+                paginate: { previous: "‹", next: "›" }
+            },
+            drawCallback: function() {
+                // Style pagination
+                $('#table-import-history_wrapper .dataTables_paginate .paginate_button').css({
+                    'border-radius': '8px',
+                    'margin': '0 2px'
+                });
+            }
+        });
+
+        // ========================================
+        // ROLLBACK IMPORT - Event Handler
+        // ========================================
+        $(document).on('click', '.btn-rollback-import', function() {
+            var importLogId = $(this).data('id');
+
+            Swal.fire({
+                title: 'Batalkan Import?',
+                html: '<p class="mb-2">Tindakan ini akan:</p>' +
+                      '<ul class="text-start" style="font-size: 14px;">' +
+                      '<li>Mengembalikan status tagihan ke <strong>UNPAID</strong></li>' +
+                      '<li>Menghapus seluruh transaksi terkait import ini</li>' +
+                      '</ul>' +
+                      '<p class="mt-2 text-danger fw-bold">Apakah Anda yakin?</p>',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#DC2626',
+                cancelButtonColor: '#64748b',
+                confirmButtonText: '<i class="fas fa-undo me-1"></i> Ya, Batalkan Import',
+                cancelButtonText: 'Tidak'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    Swal.fire({
+                        title: 'Memproses Rollback...',
+                        text: 'Mohon tunggu, data sedang dikembalikan.',
+                        allowOutsideClick: false,
+                        didOpen: () => {
+                            Swal.showLoading();
+                        }
+                    });
+
+                    $.ajax({
+                        url: "{{ url('bill/rollback-import') }}/" + importLogId,
+                        type: 'POST',
+                        data: {
+                            _token: "{{ csrf_token() }}",
+                        },
+                        success: function(response) {
+                            Swal.close();
+                            if (response.success) {
+                                Swal.fire({
+                                    icon: 'success',
+                                    title: 'Berhasil Dibatalkan',
+                                    text: response.message,
+                                }).then(() => {
+                                    importHistoryTable.ajax.reload(null, false);
+                                });
+                            } else {
+                                Swal.fire({
+                                    icon: 'error',
+                                    title: 'Gagal',
+                                    text: response.message,
+                                });
+                            }
+                        },
+                        error: function(xhr) {
+                            Swal.close();
+                            var msg = 'Gagal melakukan rollback.';
+                            if (xhr.responseJSON && xhr.responseJSON.message) {
+                                msg = xhr.responseJSON.message;
+                            }
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Error',
+                                text: msg,
                             });
                         }
                     });

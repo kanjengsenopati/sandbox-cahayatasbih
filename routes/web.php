@@ -320,6 +320,8 @@ Route::group(['middleware' => ['auth']], function () {
     Route::get('bill/download-template', [BillController::class, 'downloadTemplate'])->name('bill.download-template');
     Route::post('bill/preview-import', [BillController::class, 'previewImport'])->name('bill.preview-import');
     Route::post('bill/confirm-import', [BillController::class, 'confirmImport'])->name('bill.confirm-import');
+    Route::get('bill/import-logs', [BillController::class, 'getImportLogs'])->name('bill.import-logs');
+    Route::post('bill/rollback-import/{id}', [BillController::class, 'rollbackImport'])->name('bill.rollback-import');
     Route::post('bill.change-status', [BillController::class, 'changeStatus'])->name('bill.change-status');
     Route::resource('bill', BillController::class);
     Route::resource('payment-method', PaymentMethodController::class);

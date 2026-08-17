@@ -48,7 +48,13 @@ class Transaction extends Model
         'user_id',
         'unique_payment',
         'is_deleted_from_archive',
+        'import_log_id',
     ];
+
+    public function importLog()
+    {
+        return $this->belongsTo(ImportLog::class);
+    }
 
     public function transactionDetails()
     {

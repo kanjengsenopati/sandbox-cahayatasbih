@@ -1040,7 +1040,7 @@
                                     <div class="col">
                                         <div class="card h-100 border-0 position-relative shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover-elevate-up" style="background-color: #ffffff; border-radius: 24px; box-shadow: 0 8px 30px rgba(0, 0, 0, 0.04) !important; border: none; min-height: 140px; transition: all 0.3s ease;">
                                             <!-- Top-Right Action Cluster -->
-                                            <div class="position-absolute top-0 end-0 p-3 d-flex align-items-center gap-2" style="z-index: 10;" onclick="event.stopPropagation();">
+                                            <div class="position-absolute top-0 end-0 p-3 d-flex align-items-center gap-2" style="z-index: 10;">
                                                 @can('Edit Sekolah')
                                                 <a href="${editUrl}" class="btn btn-icon btn-light-warning btn-sm rounded-circle w-28px h-28px d-flex align-items-center justify-content-center transition-all" title="Edit" style="background-color: rgba(245, 158, 11, 0.1); color: #f59e0b; border: none; border-radius: 50%;">
                                                     <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-pencil"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>

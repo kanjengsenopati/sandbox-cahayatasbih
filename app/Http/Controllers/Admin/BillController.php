@@ -10,6 +10,8 @@ use App\Models\Student;
 use App\Models\BillType;
 use App\Models\Classroom;
 use App\Models\Transaction;
+use App\Models\TransactionDetail;
+use App\Models\ImportLog;
 use App\Models\SaldoHistory;
 
 use Exception;
@@ -1080,7 +1082,19 @@ class BillController extends Controller
     public function previewImport(Request $request)
     {
         $request->validate([
-            'file' => 'required|mimes:xls,xlsx',
+            'file' => [
+                'required',
+                'file',
+                function ($attribute, $value, $fail) {
+                    if (!$value || !$value->isValid()) {
+                        return $fail('File yang diunggah tidak valid.');
+                    }
+                    $ext = strtolower($value->getClientOriginalExtension());
+                    if (!in_array($ext, ['xlsx', 'xls', 'csv'])) {
+                        return $fail('File harus berupa berkas berjenis: xls, xlsx.');
+                    }
+                },
+            ],
             'academic_year_id' => 'required|exists:academic_years,id',
             'bill_type_id' => 'required|exists:bill_types,id',
         ]);
@@ -1180,15 +1194,19 @@ class BillController extends Controller
                     $message = 'Nominal bayar harus > 0';
                     $isValidGlobal = false;
                 } else {
-                    $bill = Bill::where('student_id', $student->id)
+                    $studentBills = Bill::where('student_id', $student->id)
                         ->where('bill_type_id', $billTypeId)
                         ->where('academic_year_id', $academicYearId)
-                        ->first();
+                        ->get();
                     
-                    if ($bill && $bill->status === Bill::STATUS_PAID) {
-                        $status = 'INVALID';
-                        $message = 'Tagihan sudah lunas';
-                        $isValidGlobal = false;
+                    if ($studentBills->count() > 0) {
+                        $unpaidBills = $studentBills->filter(fn($b) => $b->status === Bill::STATUS_UNPAID || (int)$b->paid_amount < (int)$b->amount);
+                        
+                        if ($unpaidBills->isEmpty()) {
+                            $status = 'INVALID';
+                            $message = 'Tagihan sudah lunas';
+                            $isValidGlobal = false;
+                        }
                     }
                 }
             }
@@ -1241,6 +1259,17 @@ class BillController extends Controller
 
         DB::beginTransaction();
         try {
+            $importLog = ImportLog::create([
+                'admin_id' => $adminId,
+                'school_id' => $request->school_id ?? null,
+                'classroom_info' => $request->classroom_info ?? null,
+                'academic_year_id' => $academicYearId,
+                'bill_type_id' => $billTypeId,
+                'total_students' => 0,
+                'total_amount' => 0,
+                'status' => ImportLog::STATUS_ACTIVE,
+            ]);
+
             $paymentMethod = PaymentMethod::where('type', PaymentMethod::TYPE_CASH)->first();
             $paymentMethodId = $paymentMethod ? $paymentMethod->id : PaymentMethod::CASH_PAYMENT;
 
@@ -1248,30 +1277,34 @@ class BillController extends Controller
                 $studentId = $item['student_id'];
                 $amount = intval($item['amount']);
 
-                $student = Student::with('classroom')->findOrFail($studentId);
-
-                $bill = Bill::where('student_id', $studentId)
-                    ->where('bill_type_id', $billTypeId)
-                    ->where('academic_year_id', $academicYearId)
-                    ->first();
-
-                if (!$bill) {
-                    $bill = Bill::create([
-                        'bill_type_id' => $billTypeId,
-                        'student_id' => $studentId,
-                        'classroom_id' => $student->classroom_id ?? '',
-                        'academic_year_id' => $academicYearId,
-                        'month' => intval(date('m')),
-                        'year' => intval(date('Y')),
-                        'amount' => $amount,
-                        'paid_amount' => 0,
-                        'status' => Bill::STATUS_UNPAID,
-                    ]);
-                }
-
-                if ($bill->status === Bill::STATUS_PAID) {
+                if ($amount <= 0) {
                     $failedCount++;
                     continue;
+                }
+
+                $student = Student::with('classroom')->findOrFail($studentId);
+
+                $studentBills = Bill::where('student_id', $studentId)
+                    ->where('bill_type_id', $billTypeId)
+                    ->where('academic_year_id', $academicYearId)
+                    ->get();
+
+                // Sort bills chronologically if monthly (July to June order)
+                if ($billType->type === BillType::TYPE_MONTHLY) {
+                    $mOrder = [7=>1, 8=>2, 9=>3, 10=>4, 11=>5, 12=>6, 1=>7, 2=>8, 3=>9, 4=>10, 5=>11, 6=>12];
+                    $sortedBills = $studentBills->sortBy(function($b) use ($mOrder) {
+                        $orderIndex = $mOrder[$b->month] ?? $b->month;
+                        return ($b->year * 100) + $orderIndex;
+                    });
+                } else {
+                    $sortedBills = $studentBills;
+                }
+
+                $unpaidBills = $sortedBills->filter(fn($b) => $b->status === Bill::STATUS_UNPAID || (int)$b->paid_amount < (int)$b->amount);
+
+                if ($studentBills->count() > 0 && $unpaidBills->isEmpty()) {
+                    $failedCount++;
+                    continue; // All bills already paid
                 }
 
                 $transactionCount = Transaction::whereDate('created_at', now())->count();
@@ -1281,25 +1314,85 @@ class BillController extends Controller
                     'pay_amount' => $amount,
                     'payment_code' => $paymentCode,
                     'student_id' => $studentId,
-                    'expiry_time' => Carbon::now()->addMinutes(1440),
+                    'expiry_time' => now()->addMinutes(1440),
                     'status' => Transaction::STATUS_PAID,
                     'paid_at' => now(),
                     'type' => Transaction::TYPE_BILL,
                     'admin_id' => $adminId,
                     'payment_method_id' => $paymentMethodId,
+                    'import_log_id' => $importLog->id,
                 ]);
 
-                TransactionDetail::create([
-                    'transaction_id' => $transaction->id,
-                    'bill_id' => $bill->id,
-                    'amount' => $amount,
-                ]);
+                $remainingToAllocate = $amount;
 
-                $bill->paid_amount = min($bill->amount, $bill->paid_amount + $amount);
-                if ($bill->paid_amount >= $bill->amount) {
-                    $bill->status = Bill::STATUS_PAID;
+                if ($unpaidBills->isNotEmpty()) {
+                    foreach ($unpaidBills as $bill) {
+                        if ($remainingToAllocate <= 0) {
+                            break;
+                        }
+
+                        $needed = max(0, $bill->amount - (int)$bill->paid_amount);
+                        
+                        if ($unpaidBills->count() === 1 && $billType->type !== BillType::TYPE_MONTHLY) {
+                            $allocating = $remainingToAllocate;
+                        } else {
+                            $allocating = ($needed > 0) ? min($needed, $remainingToAllocate) : $remainingToAllocate;
+                        }
+
+                        if ($allocating <= 0) {
+                            continue;
+                        }
+
+                        $bill->paid_amount = (int)$bill->paid_amount + $allocating;
+                        if ($bill->paid_amount >= $bill->amount) {
+                            $bill->status = Bill::STATUS_PAID;
+                        }
+                        $bill->save();
+
+                        TransactionDetail::create([
+                            'transaction_id' => $transaction->id,
+                            'bill_id' => $bill->id,
+                            'amount' => $allocating,
+                        ]);
+
+                        $remainingToAllocate -= $allocating;
+                    }
+
+                    // Excess payment handling
+                    if ($remainingToAllocate > 0) {
+                        $lastBill = $unpaidBills->last();
+                        if ($lastBill) {
+                            $lastDetail = TransactionDetail::where('transaction_id', $transaction->id)->where('bill_id', $lastBill->id)->first();
+                            if ($lastDetail) {
+                                $lastDetail->amount += $remainingToAllocate;
+                                $lastDetail->save();
+                            }
+                            $lastBill->paid_amount += $remainingToAllocate;
+                            $lastBill->save();
+                        }
+                    }
+                } else {
+                    // Create on the fly if no bills existed
+                    $bill = Bill::create([
+                        'bill_type_id' => $billTypeId,
+                        'student_id' => $studentId,
+                        'classroom_id' => $student->classroom_id ?? '',
+                        'academic_year_id' => $academicYearId,
+                        'month' => intval(date('m')),
+                        'year' => intval(date('Y')),
+                        'amount' => $amount,
+                        'paid_amount' => $amount,
+                        'status' => Bill::STATUS_PAID,
+                    ]);
+
+                    TransactionDetail::create([
+                        'transaction_id' => $transaction->id,
+                        'bill_id' => $bill->id,
+                        'amount' => $amount,
+                    ]);
                 }
-                $bill->save();
+
+                TransactionService::handleUnitTransferIfApplicable($transaction);
 
                 try {
                     if ($student->user && $student->user->phone) {
@@ -1312,6 +1405,11 @@ class BillController extends Controller
                 $successCount++;
             }
 
+            $importLog->update([
+                'total_students' => $successCount,
+                'total_amount' => collect($importedData)->sum(function($item) { return intval($item['amount']); }),
+            ]);
+
             DB::commit();
 
             return response()->json([
@@ -1319,6 +1417,7 @@ class BillController extends Controller
                 'message' => "Berhasil mengimport {$successCount} data pembayaran tagihan.",
                 'success_count' => $successCount,
                 'failed_count' => $failedCount,
+                'import_log_id' => $importLog->id,
             ]);
 
         } catch (\Exception $e) {
@@ -1327,6 +1426,126 @@ class BillController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => "Gagal memproses import: " . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    public function getImportLogs()
+    {
+        $data = ImportLog::with(['admin', 'school', 'academicYear', 'billType.billItem', 'rolledBackByAdmin'])
+            ->latest()
+            ->get();
+
+        return \Yajra\DataTables\DataTables::of($data)
+            ->addIndexColumn()
+            ->addColumn('school_name', function ($row) {
+                $schoolName = $row->school->name ?? '-';
+                $classroomInfo = $row->classroom_info;
+                if ($classroomInfo) {
+                    return '<span class="fw-bold">' . e($schoolName) . '</span>'
+                        . '<br><small class="text-muted fst-italic">' . e($classroomInfo) . '</small>';
+                }
+                return e($schoolName);
+            })
+            ->addColumn('academic_year_name', function ($row) {
+                return $row->academicYear->name ?? '-';
+            })
+            ->addColumn('bill_type_name', function ($row) {
+                $name = $row->billType->name ?? '-';
+                $billItem = $row->billType->billItem->name ?? '';
+                if ($billItem && !str_contains(strtolower($name), strtolower($billItem))) {
+                    $name .= ' - ' . $billItem;
+                }
+                return $name;
+            })
+            ->addColumn('admin_name', function ($row) {
+                return $row->admin->name ?? '-';
+            })
+            ->addColumn('total_amount_formatted', function ($row) {
+                return 'Rp ' . number_format($row->total_amount, 0, ',', '.');
+            })
+            ->addColumn('timestamp', function ($row) {
+                return $row->created_at ? $row->created_at->format('d/m/Y H:i') : '-';
+            })
+            ->addColumn('status_badge', function ($row) {
+                if ($row->status === ImportLog::STATUS_ACTIVE) {
+                    return '<span class="badge badge-light-success fw-bold">Aktif</span>';
+                }
+                $rolledBackBy = $row->rolledBackByAdmin->name ?? '';
+                $rolledBackAt = $row->rolled_back_at ? $row->rolled_back_at->format('d/m/Y H:i') : '';
+                return '<span class="badge badge-light-danger fw-bold">Dibatalkan</span>'
+                    . '<br><small class="text-muted fst-italic">' . $rolledBackBy . ' - ' . $rolledBackAt . '</small>';
+            })
+            ->addColumn('action', function ($row) {
+                if ($row->status === ImportLog::STATUS_ACTIVE) {
+                    return '<button class="btn btn-sm btn-light-danger fw-bold btn-rollback-import" data-id="' . $row->id . '" style="border-radius: 8px;">'
+                        . '<i class="fas fa-undo me-1"></i> Batal'
+                        . '</button>';
+                }
+                return '<span class="text-muted fst-italic fs-8">-</span>';
+            })
+            ->rawColumns(['school_name', 'status_badge', 'action'])
+            ->make(true);
+    }
+
+    public function rollbackImport($id)
+    {
+        $importLog = ImportLog::where('id', $id)
+            ->where('status', ImportLog::STATUS_ACTIVE)
+            ->firstOrFail();
+
+        DB::beginTransaction();
+        try {
+            $transactions = Transaction::where('import_log_id', $importLog->id)
+                ->with('transactionDetails.bill')
+                ->get();
+
+            foreach ($transactions as $transaction) {
+                foreach ($transaction->transactionDetails as $detail) {
+                    if ($detail->bill) {
+                        $bill = $detail->bill;
+                        // Retrieve raw amount to avoid accessor interference
+                        $currentPaid = $bill->getRawOriginal('paid_amount');
+                        $newPaid = max(0, (int)$currentPaid - (int)$detail->amount);
+                        
+                        $newStatus = $bill->getRawOriginal('status');
+                        if ($newPaid < $bill->amount) {
+                            $newStatus = Bill::STATUS_UNPAID;
+                        }
+                        
+                        // Set status first so the accessor doesn't force paid_amount to amount
+                        $bill->status = $newStatus;
+                        $bill->paid_amount = $newPaid;
+                        $bill->save();
+                    }
+                    // Soft-delete detail
+                    $detail->delete();
+                }
+                // Soft-delete transaction
+                $transaction->status = Transaction::STATUS_CANCELLED;
+                $transaction->save();
+                $transaction->delete();
+            }
+
+            // Update import log
+            $importLog->update([
+                'status' => ImportLog::STATUS_ROLLED_BACK,
+                'rolled_back_at' => now(),
+                'rolled_back_by' => Auth::id(),
+            ]);
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Import berhasil dibatalkan. ' . $transactions->count() . ' transaksi telah di-rollback.',
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Rollback import gagal: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal melakukan rollback: ' . $e->getMessage(),
             ], 500);
         }
     }
