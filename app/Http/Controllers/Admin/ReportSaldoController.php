@@ -129,13 +129,26 @@ class ReportSaldoController extends Controller
                 return $this->formatStatusColumn($data);
             })
             ->addColumn('date', function ($data) {
-                return $data->created_at->translatedFormat('d F Y' . ' <br>' . 'H:i:s');
+                return '<span data-order="' . $data->created_at->timestamp . '">' 
+                    . $data->created_at->translatedFormat('d F Y' . ' <br>' . 'H:i:s') 
+                    . '</span>';
+            })
+            ->orderColumn('date', function ($query, $order) {
+                $query->orderBy('created_at', $order);
             })
             ->editColumn('balance_before', function ($data) {
-                return \format_saldo_badge($data->balance_before);
+                $val = (float) ($data->balance_before ?? 0);
+                return '<span data-order="' . $val . '">' . \format_saldo_badge($data->balance_before) . '</span>';
+            })
+            ->orderColumn('balance_before', function ($query, $order) {
+                $query->orderBy('balance_before', $order);
             })
             ->editColumn('balance_after', function ($data) {
-                return \format_saldo_badge($data->balance_after);
+                $val = (float) ($data->balance_after ?? 0);
+                return '<span data-order="' . $val . '">' . \format_saldo_badge($data->balance_after) . '</span>';
+            })
+            ->orderColumn('balance_after', function ($query, $order) {
+                $query->orderBy('balance_after', $order);
             })
             ->addColumn('action', function ($data) {
                 $actionDelete = route('report-saldo.destroy', $data->id);
