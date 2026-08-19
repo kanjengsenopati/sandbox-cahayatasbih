@@ -573,11 +573,22 @@
                             var no = index + 1;
                             var amountFormatted = 'Rp ' + new Intl.NumberFormat('id-ID').format(row.amount);
                             
-                            var badgeClass = row.status === 'VALID' ? 'badge-light-success text-emerald-600' : 'badge-light-danger text-red-600';
-                            var badgeText = row.status === 'VALID' ? 'VALID' : 'INVALID';
-                            var styleColor = row.status === 'VALID' ? 'color: #10B981 !important;' : 'color: #DC2626 !important;';
-                            
-                            if (row.status === 'VALID') validCount++;
+                            var badgeClass = 'badge-light-danger text-red-600';
+                            var badgeText = row.status;
+                            var styleColor = 'color: #DC2626 !important;';
+
+                            if (row.status === 'VALID') {
+                                badgeClass = 'badge-light-success text-emerald-600';
+                                badgeText = 'VALID';
+                                styleColor = 'color: #10B981 !important;';
+                                validCount++;
+                            } else if (row.status === 'SKIPPED') {
+                                badgeClass = 'badge-light-secondary text-slate-500';
+                                badgeText = 'DIABAIKAN';
+                                styleColor = 'color: #64748b !important;';
+                            } else {
+                                badgeText = 'INVALID';
+                            }
 
                             var htmlRow = '<tr class="border-bottom border-gray-100">' +
                                 '<td>' + no + '</td>' +

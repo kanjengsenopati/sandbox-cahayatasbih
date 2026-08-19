@@ -1137,11 +1137,36 @@ class BillController extends Controller
         $isValidGlobal = true;
 
         $paymentColIndices = [];
+        $colMap = [];
+        $monthNames = ['juli' => 7, 'agustus' => 8, 'september' => 9, 'oktober' => 10, 'november' => 11, 'desember' => 12, 'januari' => 1, 'februari' => 2, 'maret' => 3, 'april' => 4, 'mei' => 5, 'juni' => 6];
+
         for ($c = 3; $c < $idColIndex; $c++) {
             $paymentColIndices[] = $c;
+            $headerText = strtolower(trim($headers[$c] ?? ''));
+            $matchedMonth = null;
+            $matchedYear = null;
+            
+            if ($billType->type === BillType::TYPE_MONTHLY) {
+                foreach ($monthNames as $mName => $mNum) {
+                    if (str_contains($headerText, $mName)) {
+                        $matchedMonth = $mNum;
+                        preg_match('/\b(20\d{2})\b/', $headerText, $matches);
+                        if (!empty($matches[1])) {
+                            $matchedYear = intval($matches[1]);
+                        }
+                        break;
+                    }
+                }
+            }
+            $colMap[$c] = [
+                'month' => $matchedMonth,
+                'year' => $matchedYear,
+            ];
         }
+        
         if (empty($paymentColIndices)) {
             $paymentColIndices = [3];
+            $colMap[3] = ['month' => null, 'year' => null];
         }
 
         for ($i = 1; $i < count($rows); $i++) {
@@ -1154,24 +1179,10 @@ class BillController extends Controller
                 continue; // Skip baris kosong
             }
 
-            $totalAmount = 0;
-            foreach ($paymentColIndices as $colIdx) {
-                $rawVal = $row[$colIdx] ?? 0;
-                if (is_string($rawVal)) {
-                    $cleaned = preg_replace('/[^0-9]/', '', $rawVal);
-                    $cellVal = intval($cleaned);
-                } else {
-                    $cellVal = intval($rawVal);
-                }
-                if ($cellVal > 0) {
-                    $totalAmount += $cellVal;
-                }
-            }
-
             $student = null;
             $status = 'VALID';
             $message = '';
-
+            
             if ($studentId) {
                 $student = Student::with('classroom')->find($studentId);
             }
@@ -1185,39 +1196,113 @@ class BillController extends Controller
             }
 
             if (!$student) {
-                $status = 'INVALID';
-                $message = 'Siswa tidak ditemukan';
+                $previewData[] = [
+                    'student_id' => null,
+                    'name' => $name,
+                    'classroom' => $className,
+                    'amount' => 0,
+                    'status' => 'INVALID',
+                    'message' => 'Siswa tidak ditemukan',
+                    'allocations' => []
+                ];
                 $isValidGlobal = false;
+                continue;
+            }
+
+            $studentBills = Bill::where('student_id', $student->id)
+                ->where('bill_type_id', $billTypeId)
+                ->where('academic_year_id', $academicYearId)
+                ->get();
+            
+            if ($billType->type === BillType::TYPE_MONTHLY) {
+                $mOrder = [7=>1, 8=>2, 9=>3, 10=>4, 11=>5, 12=>6, 1=>7, 2=>8, 3=>9, 4=>10, 5=>11, 6=>12];
+                $sortedBills = $studentBills->sortBy(function($b) use ($mOrder) {
+                    $orderIndex = $mOrder[$b->month] ?? $b->month;
+                    return ($b->year * 100) + $orderIndex;
+                });
             } else {
-                if ($totalAmount <= 0) {
-                    $status = 'INVALID';
-                    $message = 'Nominal bayar harus > 0';
-                    $isValidGlobal = false;
-                } else {
-                    $studentBills = Bill::where('student_id', $student->id)
-                        ->where('bill_type_id', $billTypeId)
-                        ->where('academic_year_id', $academicYearId)
-                        ->get();
-                    
-                    if ($studentBills->count() > 0) {
-                        $unpaidBills = $studentBills->filter(fn($b) => $b->status === Bill::STATUS_UNPAID || (int)$b->paid_amount < (int)$b->amount);
-                        
-                        if ($unpaidBills->isEmpty()) {
-                            $status = 'INVALID';
-                            $message = 'Tagihan sudah lunas';
-                            $isValidGlobal = false;
+                $sortedBills = $studentBills;
+            }
+            $unpaidBills = $sortedBills->filter(fn($b) => $b->status === Bill::STATUS_UNPAID || (int)$b->paid_amount < (int)$b->amount);
+
+            $validAmount = 0;
+            $allocations = [];
+            
+            $isMonthly = $billType->type === BillType::TYPE_MONTHLY;
+            $nonMonthlyTotal = 0;
+
+            foreach ($paymentColIndices as $colIdx) {
+                $rawVal = $row[$colIdx] ?? 0;
+                $cellVal = is_string($rawVal) ? intval(preg_replace('/[^0-9]/', '', $rawVal)) : intval($rawVal);
+                
+                if ($cellVal <= 0) continue;
+
+                $map = $colMap[$colIdx];
+                if ($isMonthly && $map['month']) {
+                    $specificBill = $studentBills->first(function($b) use ($map) {
+                        return $b->month == $map['month'] && (!$map['year'] || $b->year == $map['year']);
+                    });
+
+                    if ($specificBill) {
+                        $isUnpaid = $specificBill->status === Bill::STATUS_UNPAID || (int)$specificBill->paid_amount < (int)$specificBill->amount;
+                        if ($isUnpaid) {
+                            $needed = (int)$specificBill->amount - (int)$specificBill->paid_amount;
+                            $allocated = min($cellVal, $needed);
+                            if ($allocated > 0) {
+                                $allocations[] = ['bill_id' => $specificBill->id, 'amount' => $allocated];
+                                $validAmount += $allocated;
+                            }
                         }
+                    }
+                } else {
+                    $nonMonthlyTotal += $cellVal;
+                }
+            }
+            
+            // Allocate non-monthly (or unmapped) amounts chronologically
+            if ($nonMonthlyTotal > 0) {
+                $remainingToAllocate = $nonMonthlyTotal;
+                foreach ($unpaidBills as $bill) {
+                    // Skip if already allocated in specific columns
+                    $alreadyAllocated = collect($allocations)->where('bill_id', $bill->id)->sum('amount');
+                    $needed = ((int)$bill->amount - (int)$bill->paid_amount) - $alreadyAllocated;
+                    
+                    if ($needed > 0 && $remainingToAllocate > 0) {
+                        $allocated = min($remainingToAllocate, $needed);
+                        
+                        $existingIndex = null;
+                        foreach ($allocations as $idx => $alloc) {
+                            if ($alloc['bill_id'] == $bill->id) {
+                                $existingIndex = $idx;
+                                break;
+                            }
+                        }
+                        
+                        if ($existingIndex !== null) {
+                            $allocations[$existingIndex]['amount'] += $allocated;
+                        } else {
+                            $allocations[] = ['bill_id' => $bill->id, 'amount' => $allocated];
+                        }
+                        
+                        $validAmount += $allocated;
+                        $remainingToAllocate -= $allocated;
                     }
                 }
             }
 
+            if ($validAmount <= 0) {
+                $status = 'SKIPPED';
+                $message = 'Nominal kosong / Tagihan sudah lunas (Diabaikan)';
+            }
+
             $previewData[] = [
-                'student_id' => $student ? $student->id : null,
-                'name' => $student ? $student->name : $name,
-                'classroom' => $student && $student->classroom ? $student->classroom->name : $className,
-                'amount' => $totalAmount,
+                'student_id' => $student->id,
+                'name' => $student->name,
+                'classroom' => $student->classroom ? $student->classroom->name : $className,
+                'amount' => $validAmount,
                 'status' => $status,
                 'message' => $message,
+                'allocations' => $allocations
             ];
         }
 
@@ -1323,80 +1408,103 @@ class BillController extends Controller
                     'import_log_id' => $importLog->id,
                 ]);
 
-                $remainingToAllocate = $amount;
-
-                if ($unpaidBills->isNotEmpty()) {
-                    foreach ($unpaidBills as $bill) {
-                        if ($remainingToAllocate <= 0) {
-                            break;
-                        }
-
-                        $needed = max(0, $bill->amount - (int)$bill->paid_amount);
+                $allocations = $item['allocations'] ?? [];
+                
+                if (!empty($allocations) && is_array($allocations)) {
+                    // Use specific allocations provided by frontend
+                    foreach ($allocations as $alloc) {
+                        $billId = $alloc['bill_id'];
+                        $allocAmount = (int)$alloc['amount'];
                         
-                        if ($unpaidBills->count() === 1 && $billType->type !== BillType::TYPE_MONTHLY) {
-                            $allocating = $remainingToAllocate;
-                        } else {
-                            $allocating = ($needed > 0) ? min($needed, $remainingToAllocate) : $remainingToAllocate;
-                        }
-
-                        if ($allocating <= 0) {
-                            continue;
-                        }
-
-                        $bill->paid_amount = (int)$bill->paid_amount + $allocating;
-                        if ($bill->paid_amount >= $bill->amount) {
-                            $bill->status = Bill::STATUS_PAID;
-                        }
-                        $bill->save();
-
-                        TransactionDetail::create([
-                            'transaction_id' => $transaction->id,
-                            'bill_id' => $bill->id,
-                            'amount' => $allocating,
-                        ]);
-
-                        $remainingToAllocate -= $allocating;
-                    }
-
-                    // Excess payment handling
-                    if ($remainingToAllocate > 0) {
-                        $lastBill = $unpaidBills->last();
-                        if ($lastBill) {
-                            $lastDetail = TransactionDetail::where('transaction_id', $transaction->id)->where('bill_id', $lastBill->id)->first();
-                            if ($lastDetail) {
-                                $lastDetail->amount += $remainingToAllocate;
-                                $lastDetail->save();
+                        if ($allocAmount <= 0) continue;
+                        
+                        $bill = $studentBills->firstWhere('id', $billId);
+                        if ($bill) {
+                            $needed = max(0, $bill->amount - (int)$bill->paid_amount);
+                            $payAmount = min($allocAmount, $needed);
+                            
+                            if ($payAmount > 0) {
+                                \App\Models\TransactionDetail::create([
+                                    'transaction_id' => $transaction->id,
+                                    'bill_id' => $bill->id,
+                                    'amount' => $payAmount,
+                                ]);
+                                
+                                $bill->paid_amount = (int)$bill->paid_amount + $payAmount;
+                                if ($bill->paid_amount >= $bill->amount) {
+                                    $bill->status = Bill::STATUS_PAID;
+                                }
+                                $bill->save();
                             }
-                            $lastBill->paid_amount += $remainingToAllocate;
-                            $lastBill->save();
                         }
                     }
                 } else {
-                    // Create on the fly if no bills existed
-                    $bill = Bill::create([
-                        'bill_type_id' => $billTypeId,
-                        'student_id' => $studentId,
-                        'classroom_id' => $student->classroom_id ?? '',
-                        'academic_year_id' => $academicYearId,
-                        'month' => intval(date('m')),
-                        'year' => intval(date('Y')),
-                        'amount' => $amount,
-                        'paid_amount' => $amount,
-                        'status' => Bill::STATUS_PAID,
-                    ]);
+                    // Fallback to chronological allocation if allocations are not provided
+                    $remainingToAllocate = $amount;
+                    if ($unpaidBills->isNotEmpty()) {
+                        foreach ($unpaidBills as $bill) {
+                            if ($remainingToAllocate <= 0) {
+                                break;
+                            }
 
-                    TransactionDetail::create([
-                        'transaction_id' => $transaction->id,
-                        'bill_id' => $bill->id,
-                        'amount' => $amount,
-                    ]);
+                            $needed = max(0, $bill->amount - (int)$bill->paid_amount);
+                            $payAmount = min($remainingToAllocate, $needed);
+
+                            \App\Models\TransactionDetail::create([
+                                'transaction_id' => $transaction->id,
+                                'bill_id' => $bill->id,
+                                'amount' => $payAmount,
+                            ]);
+
+                            $bill->paid_amount = (int)$bill->paid_amount + $payAmount;
+                            if ($bill->paid_amount >= $bill->amount) {
+                                $bill->status = Bill::STATUS_PAID;
+                            }
+                            $bill->save();
+
+                            $remainingToAllocate -= $payAmount;
+                        }
+                        
+                        // Excess payment handling
+                        if ($remainingToAllocate > 0) {
+                            $lastBill = $unpaidBills->last();
+                            if ($lastBill) {
+                                $lastDetail = \App\Models\TransactionDetail::where('transaction_id', $transaction->id)->where('bill_id', $lastBill->id)->first();
+                                if ($lastDetail) {
+                                    $lastDetail->amount += $remainingToAllocate;
+                                    $lastDetail->save();
+                                }
+                                $lastBill->paid_amount += $remainingToAllocate;
+                                $lastBill->save();
+                            }
+                        }
+                    } else {
+                        // Create on the fly if no bills existed
+                        $bill = Bill::create([
+                            'bill_type_id' => $billTypeId,
+                            'student_id' => $studentId,
+                            'classroom_id' => $student->classroom_id ?? '',
+                            'academic_year_id' => $academicYearId,
+                            'month' => intval(date('m')),
+                            'year' => intval(date('Y')),
+                            'amount' => $amount,
+                            'paid_amount' => $amount,
+                            'status' => Bill::STATUS_PAID,
+                        ]);
+
+                        \App\Models\TransactionDetail::create([
+                            'transaction_id' => $transaction->id,
+                            'bill_id' => $bill->id,
+                            'amount' => $amount,
+                        ]);
+                    }
                 }
 
-                TransactionService::handleUnitTransferIfApplicable($transaction);
+                \App\Services\TransactionService::handleUnitTransferIfApplicable($transaction);
 
                 try {
                     if ($student->user && $student->user->phone) {
-                        TransactionService::dispatchNotifications($transaction);
+                        \App\Services\TransactionService::dispatchNotifications($transaction);
                     }
                 } catch (\Exception $e) {
                     Log::warning("Gagal mengirim WA notifikasi import: " . $e->getMessage());

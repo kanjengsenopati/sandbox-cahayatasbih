@@ -90,143 +90,171 @@ class SyncPaymentRateBills extends Command
             $this->line("    Gender    : " . ($paymentRate->gender ?? 'Semua'));
             $this->line("    Items     : " . $paymentRate->paymentRateItems->count() . " items");
 
-            // Fetch students based on PaymentRate configuration
-            $students = $this->getStudentsForRate($paymentRate);
+            $classrooms = $paymentRate->paymentRateClassrooms->pluck('classroom_id')->sort()->implode('_');
+            $classroomsStr = empty($classrooms) ? 'all' : $classrooms;
+            $lockKey = md5($billType->name . '_' . $billType->academic_year_id . '_' . $paymentRate->amount . '_' . $classroomsStr);
+            $lockName = 'sync_bills_' . $lockKey;
+            $lock = \Illuminate\Support\Facades\Cache::lock($lockName, 300);
 
-            $this->line("    Students  : {$students->count()} siswa aktif");
-
-            if ($students->isEmpty()) {
-                $this->warn("    Tidak ada siswa yang memenuhi filter, dilewati.");
+            if (!$lock->get()) {
+                $this->warn("PaymentRate {$paymentRate->id}: Proses sinkronisasi untuk konfigurasi tagihan dan kelas yang sama sedang berjalan (Race Condition Protection). Dilewati.");
                 continue;
             }
 
-            // Process each student
-            $timestamp = now();
-            $billsToInsert = [];
-            $startYear = $billType->academicYear?->getStartYearSafe();
+            try {
+                // Pre-fetch related bill type IDs (same name and academic year) to protect against identically named duplicates
+                $relatedBillTypeIds = DB::table('bill_types')
+                    ->where('name', $billType->name)
+                    ->where('academic_year_id', $billType->academic_year_id)
+                    ->pluck('id')
+                    ->toArray();
 
-            foreach ($students as $student) {
-                // Prevent generating bills for years before the student's entry year (only for past/inactive academic years)
-                if ($startYear !== null && !$billType->academicYear?->is_active && $student->getEntryYear() > $startYear) {
-                    $this->warn("    [SKIP] {$student->name} (NIS: {$student->nis}) entered in {$student->getEntryYear()}, bill is for {$billType->academicYear->name}.");
+                // Fetch students based on PaymentRate configuration
+                $students = $this->getStudentsForRate($paymentRate);
+
+                $this->line("    Students  : {$students->count()} siswa aktif");
+
+                if ($students->isEmpty()) {
+                    $this->warn("    Tidak ada siswa yang memenuhi filter, dilewati.");
                     continue;
                 }
 
-                // Get the correct classroom ID for the bill based on academic year
-                $targetClassroomId = $student->classroom_id;
+                // Process each student
+                $timestamp = now();
+                $billsToInsert = [];
+                $startYear = $billType->academicYear?->getStartYearSafe();
 
-                // Check historical classroom history for past academic years to protect transfer students
-                if ($billType->academicYear && !$billType->academicYear->is_active) {
-                    $history = DB::table('student_classroom_histories')
-                        ->where('student_id', $student->id)
-                        ->where('academic_year_id', $billType->academic_year_id)
-                        ->whereNull('deleted_at')
-                        ->first();
+                foreach ($students as $student) {
+                    // Prevent generating bills for years before the student's entry year (only for past/inactive academic years)
+                    if ($startYear !== null && !$billType->academicYear?->is_active && $student->getEntryYear() > $startYear) {
+                        $this->warn("    [SKIP] {$student->name} (NIS: {$student->nis}) entered in {$student->getEntryYear()}, bill is for {$billType->academicYear->name}.");
+                        continue;
+                    }
 
-                    if ($history) {
-                        $targetClassroomId = $history->classroom_id;
-                        // Check if history classroom matches payment rate classroom
-                        $allowedClassroomIds = $paymentRate->paymentRateClassrooms->pluck('classroom_id')->toArray();
-                        if (!empty($allowedClassroomIds) && !in_array($history->classroom_id, $allowedClassroomIds)) {
-                            $this->warn("    [SKIP HISTORICAL] {$student->name} was in classroom {$history->classroom_id} during {$billType->academicYear->name}, not in target rate classrooms.");
-                            continue;
-                        }
-                    } else {
-                        // For regular rates, if there is no history in that past year -> skip them entirely!
-                        if ($paymentRate->type === PaymentRate::TYPE_REGULAR) {
-                            $this->warn("    [SKIP LEAKAGE] {$student->name} had no classroom history in {$billType->academicYear->name}. Skipping to prevent leakage.");
-                            continue;
+                    // Get the correct classroom ID for the bill based on academic year
+                    $targetClassroomId = $student->classroom_id;
+
+                    // Check historical classroom history for past academic years to protect transfer students
+                    if ($billType->academicYear && !$billType->academicYear->is_active) {
+                        $history = DB::table('student_classroom_histories')
+                            ->where('student_id', $student->id)
+                            ->where('academic_year_id', $billType->academic_year_id)
+                            ->whereNull('deleted_at')
+                            ->first();
+
+                        if ($history) {
+                            $targetClassroomId = $history->classroom_id;
+                            // Check if history classroom matches payment rate classroom
+                            $allowedClassroomIds = $paymentRate->paymentRateClassrooms->pluck('classroom_id')->toArray();
+                            if (!empty($allowedClassroomIds) && !in_array($history->classroom_id, $allowedClassroomIds)) {
+                                $this->warn("    [SKIP HISTORICAL] {$student->name} was in classroom {$history->classroom_id} during {$billType->academicYear->name}, not in target rate classrooms.");
+                                continue;
+                            }
+                        } else {
+                            // For regular rates, if there is no history in that past year -> skip them entirely!
+                            if ($paymentRate->type === PaymentRate::TYPE_REGULAR) {
+                                $this->warn("    [SKIP LEAKAGE] {$student->name} had no classroom history in {$billType->academicYear->name}. Skipping to prevent leakage.");
+                                continue;
+                            }
                         }
                     }
-                }
 
-                foreach ($paymentRate->paymentRateItems as $item) {
-                    $billMonth = $item->month;
-                    $billYear  = $item->year;
-                    $billAmount = $item->amount;
+                    foreach ($paymentRate->paymentRateItems as $item) {
+                        $billMonth = $item->month;
+                        $billYear  = $item->year;
+                        $billAmount = $item->amount;
 
-                    // Check existing bill
-                    $existingBill = DB::table('bills')
-                        ->where('student_id', $student->id)
-                        ->where('bill_type_id', $billType->id)
-                        ->where('month', $billMonth)
-                        ->where('year', $billYear)
-                        ->whereNull('deleted_at')
-                        ->first();
+                        // Check existing bill across ANY identical bill type names
+                        $existingBill = DB::table('bills')
+                            ->where('student_id', $student->id)
+                            ->whereIn('bill_type_id', $relatedBillTypeIds)
+                            ->where('month', $billMonth)
+                            ->where('year', $billYear)
+                            ->whereNull('deleted_at')
+                            ->first();
 
-                    if (!$existingBill) {
-                        // Bill belum ada - buat baru
-                        if (!$isDryRun) {
-                            $billsToInsert[] = [
-                                'id'                   => Str::uuid()->toString(),
-                                'bill_type_id'         => $billType->id,
-                                'classroom_id'         => $targetClassroomId,
-                                'student_id'           => $student->id,
-                                'academic_year_id'     => $billType->academic_year_id,
-                                'month'                => $billMonth,
-                                'year'                 => $billYear,
-                                'amount'               => $billAmount,
-                                'paid_amount'          => 0,
-                                'status'               => Bill::STATUS_UNPAID,
-                                'payment_rate_item_id' => $item->id,
-                                'created_at'           => $timestamp,
-                                'updated_at'           => $timestamp,
-                            ];
+                        if ($existingBill && $existingBill->bill_type_id !== $billType->id) {
+                            $this->warn("    [DUPLICATE AVOIDED] {$student->name} | Bulan {$billMonth}/{$billYear} diabaikan karena sudah ada tagihan identik dari tipe tagihan lain.");
+                            $totalSkipped++;
+                            continue;
                         }
-                        $totalCreated++;
-                        $this->line("    [CREATE] {$student->name} | Bulan {$billMonth}/{$billYear} | Rp " . number_format($billAmount, 0, ',', '.'));
-                    } elseif ($forceUpdate) {
-                        $needsUpdate = ($existingBill->payment_rate_item_id !== $item->id || (int)$existingBill->amount !== (int)$billAmount);
 
-                        if ($needsUpdate) {
-                            if ($existingBill->status === Bill::STATUS_PAID || $existingBill->status === 'PARTIAL') {
-                                // For PAID/PARTIAL bills, ONLY update payment_rate_item_id and classroom, NEVER change the amount!
-                                if ($existingBill->payment_rate_item_id !== $item->id) {
+                        if (!$existingBill) {
+                            // Bill belum ada - buat baru
+                            if (!$isDryRun) {
+                                $billsToInsert[] = [
+                                    'id'                   => Str::uuid()->toString(),
+                                    'bill_type_id'         => $billType->id,
+                                    'classroom_id'         => $targetClassroomId,
+                                    'student_id'           => $student->id,
+                                    'academic_year_id'     => $billType->academic_year_id,
+                                    'month'                => $billMonth,
+                                    'year'                 => $billYear,
+                                    'amount'               => $billAmount,
+                                    'paid_amount'          => 0,
+                                    'status'               => \App\Models\Bill::STATUS_UNPAID,
+                                    'payment_rate_item_id' => $item->id,
+                                    'created_at'           => $timestamp,
+                                    'updated_at'           => $timestamp,
+                                ];
+                            }
+                            $totalCreated++;
+                            $this->line("    [CREATE] {$student->name} | Bulan {$billMonth}/{$billYear} | Rp " . number_format($billAmount, 0, ',', '.'));
+                        } elseif ($forceUpdate) {
+                            $needsUpdate = ($existingBill->payment_rate_item_id !== $item->id || (int)$existingBill->amount !== (int)$billAmount);
+
+                            if ($needsUpdate) {
+                                if ($existingBill->status === \App\Models\Bill::STATUS_PAID || $existingBill->status === 'PARTIAL') {
+                                    // For PAID/PARTIAL bills, ONLY update payment_rate_item_id and classroom, NEVER change the amount!
+                                    if ($existingBill->payment_rate_item_id !== $item->id) {
+                                        if (!$isDryRun) {
+                                            DB::table('bills')
+                                                ->where('id', $existingBill->id)
+                                                ->update([
+                                                    'payment_rate_item_id' => $item->id,
+                                                    'classroom_id'         => $targetClassroomId,
+                                                    'updated_at'           => $timestamp,
+                                                ]);
+                                        }
+                                        $totalUpdated++;
+                                        $this->line("    [UPDATE-LINK] {$student->name} | Bulan {$billMonth}/{$billYear} | Diperbarui relasi item ID");
+                                    } else {
+                                        $totalSkipped++;
+                                    }
+                                } else {
+                                    // For UNPAID bills, update both amount and item_id
                                     if (!$isDryRun) {
                                         DB::table('bills')
                                             ->where('id', $existingBill->id)
                                             ->update([
+                                                'amount'               => $billAmount,
                                                 'payment_rate_item_id' => $item->id,
                                                 'classroom_id'         => $targetClassroomId,
                                                 'updated_at'           => $timestamp,
                                             ]);
                                     }
                                     $totalUpdated++;
-                                    $this->line("    [UPDATE-LINK] {$student->name} | Bulan {$billMonth}/{$billYear} | Diperbarui relasi item ID");
-                                } else {
-                                    $totalSkipped++;
+                                    $this->line("    [UPDATE] {$student->name} | Bulan {$billMonth}/{$billYear} | " .
+                                        "Rp " . number_format($existingBill->amount, 0, ',', '.') . " -> Rp " . number_format($billAmount, 0, ',', '.'));
                                 }
                             } else {
-                                // For UNPAID bills, update both amount and item_id
-                                if (!$isDryRun) {
-                                    DB::table('bills')
-                                        ->where('id', $existingBill->id)
-                                        ->update([
-                                            'amount'               => $billAmount,
-                                            'payment_rate_item_id' => $item->id,
-                                            'classroom_id'         => $targetClassroomId,
-                                            'updated_at'           => $timestamp,
-                                        ]);
-                                }
-                                $totalUpdated++;
-                                $this->line("    [UPDATE] {$student->name} | Bulan {$billMonth}/{$billYear} | " .
-                                    "Rp " . number_format($existingBill->amount, 0, ',', '.') . " -> Rp " . number_format($billAmount, 0, ',', '.'));
+                                $totalSkipped++;
                             }
                         } else {
                             $totalSkipped++;
                         }
-                    } else {
-                        $totalSkipped++;
                     }
                 }
-            }
 
-            // Bulk insert
-            if (!$isDryRun && !empty($billsToInsert)) {
-                foreach (array_chunk($billsToInsert, 500) as $chunk) {
-                    DB::table('bills')->insert($chunk);
+                // Bulk insert
+                if (!$isDryRun && !empty($billsToInsert)) {
+                    foreach (array_chunk($billsToInsert, 500) as $chunk) {
+                        DB::table('bills')->insertOrIgnore($chunk);
+                    }
+                    $billsToInsert = [];
                 }
-                $billsToInsert = [];
+            } finally {
+                $lock->release();
             }
         }
 

@@ -77,8 +77,12 @@ class PaymentRateController extends Controller
     public function store(PaymentRateRequest $request)
     {
         // 1. ATOMIC LOCK: Mencegah tombol diklik 2x (Anti Double Submit) & Race Condition antar admin
-        // Kunci berbasis bill_type_id untuk mencegah 2 admin men-generate tagihan yang sama
-        $lock = Cache::lock('store_payment_rate_bill_type_' . $request->bill_type_id, 60);
+        // Kunci berbasis kombinasi Tagihan dan Kelas untuk mengizinkan generate tagihan kelas berbeda secara bersamaan
+        $classroomsArray = (array)$request->classrooms;
+        sort($classroomsArray);
+        $classroomsStr = !empty($classroomsArray) ? implode('_', $classroomsArray) : 'all';
+        $lockKey = md5($request->school_id . '_' . $request->bill_type_id . '_' . $request->amount . '_' . $classroomsStr);
+        $lock = Cache::lock('store_payment_rate_' . $lockKey, 60);
 
         if (!$lock->get()) {
             return redirect()->back()->with('error', 'Proses sedang berjalan, mohon tunggu sebentar...');
@@ -469,7 +473,7 @@ class PaymentRateController extends Controller
             $billAggregates = DB::table('bills')
                 ->select('student_id', DB::raw('SUM(amount) as total'), DB::raw('SUM(paid_amount) as total_paid'))
                 ->whereIn('student_id', $studentIds)
-                ->whereIn('payment_rate_item_id', $paymentRateItemIds)
+                ->whereIn('bill_type_id', $relatedBillTypeIds)
                 ->whereNull('deleted_at')
                 ->groupBy('student_id')
                 ->get()
@@ -584,10 +588,18 @@ class PaymentRateController extends Controller
 
     private function getTotalData(string $id, array $dateRange)
     {
-        $paymentRate = PaymentRate::with('paymentRateItems')->findOrFail($id);
+        $paymentRate = PaymentRate::with(['paymentRateItems', 'billType'])->findOrFail($id);
         $itemIds = $paymentRate->paymentRateItems->pluck('id')->toArray();
 
-        $billQuery = Bill::whereIn('payment_rate_item_id', $itemIds)
+        $relatedBillTypeIds = [$paymentRate->bill_type_id];
+        if ($paymentRate->billType) {
+            $relatedBillTypeIds = BillType::where('name', $paymentRate->billType->name)
+                ->where('academic_year_id', $paymentRate->billType->academic_year_id)
+                ->pluck('id')
+                ->toArray();
+        }
+
+        $billQuery = Bill::whereIn('bill_type_id', $relatedBillTypeIds)
             ->whereHas('student', fn($q) => $q->whereIn('status', [Student::STATUS_ACTIVE, Student::STATUS_GRADUATED]))
             ->when(request()->school_id && request()->school_id !== 'null', $this->schoolBillFilter())
             ->when(request()->classroom_id && request()->classroom_id !== 'null', $this->classroomBillFilter())
@@ -1222,9 +1234,9 @@ class PaymentRateController extends Controller
             }
 
             $bills = collect();
-            if (!empty($paymentRateItemIds)) {
+            if (!empty($relatedBillTypeIds)) {
                 $bills = Bill::where('student_id', $request->student_id)
-                    ->whereIn('payment_rate_item_id', $paymentRateItemIds)
+                    ->whereIn('bill_type_id', $relatedBillTypeIds)
                     ->orderByRaw("CASE 
                         WHEN month >= 7 THEN month - 6 
                         ELSE month + 6 
