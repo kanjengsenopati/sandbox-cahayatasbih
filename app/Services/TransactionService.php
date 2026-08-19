@@ -455,9 +455,18 @@ class TransactionService
             if ($oldStatus === Transaction::STATUS_PAID && $transaction->status !== Transaction::STATUS_PAID) {
                 if ($transaction->unique_payment > 0) {
                     $student = Student::find($transaction->student_id);
-                    $student->decrement('saldo', $transaction->unique_payment);
-                    Log::info("Rollback Kode Unik: Mengurangi saldo siswa {$student->name} ({$student->id}) sebesar Rp.{$transaction->unique_payment} akibat pembatalan transaksi.");
-                    \App\Models\SaldoHistory::where('student_id', $student->id)
+                    if ($student) {
+                        $affected = Student::where('id', $student->id)
+                            ->where('saldo', '>=', $transaction->unique_payment)
+                            ->decrement('saldo', $transaction->unique_payment);
+                        
+                        if ($affected) {
+                            Log::info("Rollback Kode Unik: Mengurangi saldo siswa {$student->name} ({$student->id}) sebesar Rp.{$transaction->unique_payment} akibat pembatalan transaksi.");
+                        } else {
+                            Log::warning("Rollback Kode Unik: Saldo siswa {$student->name} ({$student->id}) tidak mencukupi untuk dikurangi Rp.{$transaction->unique_payment}.");
+                        }
+                    }
+                    \App\Models\SaldoHistory::where('student_id', $transaction->student_id)
                         ->where('amount', (int) $transaction->unique_payment)
                         ->where('description', 'like', '%Kode Unik%')
                         ->forceDelete();
@@ -466,16 +475,28 @@ class TransactionService
                 if ($transaction->type == Transaction::TYPE_SALDO) {
                     $student = Student::find($transaction->student_id);
                     $transactionDetail = $transaction->transactionDetails->first();
-                    if ($transactionDetail && $transactionDetail->saldoHistory) {
+                    if ($transactionDetail && $transactionDetail->saldoHistory && $student) {
                         $amountToSub = $transactionDetail->saldoHistory->amount;
-                        $student->decrement('saldo', $amountToSub);
+                        $affected = Student::where('id', $student->id)
+                            ->where('saldo', '>=', $amountToSub)
+                            ->decrement('saldo', $amountToSub);
+                        
+                        if (!$affected && $student->saldo < $amountToSub) {
+                            throw new \Exception("Gagal membatalkan transaksi: Saldo santri saat ini (Rp " . number_format($student->saldo, 0, ',', '.') . ") tidak mencukupi untuk ditarik kembali sebesar Rp " . number_format($amountToSub, 0, ',', '.') . ".");
+                        }
                     }
                 } elseif ($transaction->type == Transaction::TYPE_SAVING) {
                     $student = Student::find($transaction->student_id);
                     $transactionDetail = $transaction->transactionDetails->first();
-                    if ($transactionDetail && $transactionDetail->savingHistory) {
+                    if ($transactionDetail && $transactionDetail->savingHistory && $student) {
                         $amountToSub = $transactionDetail->savingHistory->amount;
-                        $student->decrement('saving', $amountToSub);
+                        $affected = Student::where('id', $student->id)
+                            ->where('saving', '>=', $amountToSub)
+                            ->decrement('saving', $amountToSub);
+                        
+                        if (!$affected && $student->saving < $amountToSub) {
+                            throw new \Exception("Gagal membatalkan transaksi: Tabungan santri saat ini tidak mencukupi untuk ditarik kembali.");
+                        }
                     }
                 } elseif ($transaction->type == Transaction::TYPE_BILL) {
                     $transaction->transactionDetails->each(function ($detail) {
@@ -573,6 +594,7 @@ class TransactionService
                         $saldoBefore = $student->saldo;
                         $student->increment('saldo', $mainAmount);
 
+                        $txTimestamp = $transaction->created_at ?? \Carbon\Carbon::now();
                         $saldoHistory = SaldoHistory::create([
                             'student_id' => $student->id,
                             'amount' => $mainAmount,
@@ -582,6 +604,8 @@ class TransactionService
                             'usage' => SaldoHistory::USAGE_TOPUP,
                             'balance_before' => $saldoBefore ?? 0,
                             'balance_after' => $student->saldo ?? 0,
+                            'created_at' => $txTimestamp,
+                            'updated_at' => $txTimestamp,
                         ]);
 
                         if ($transactionDetail) {
@@ -589,7 +613,9 @@ class TransactionService
                         } else {
                             TransactionDetail::create([
                                 'transaction_id' => $transaction->id,
-                                'saldo_history_id' => $saldoHistory->id
+                                'saldo_history_id' => $saldoHistory->id,
+                                'created_at' => $txTimestamp,
+                                'updated_at' => $txTimestamp,
                             ]);
                         }
                     }
@@ -637,12 +663,14 @@ class TransactionService
                         ->where('description', 'like', '%Kode Unik%')
                         ->count();
 
-                    if ($deletedCount > 0) {
+                    if ($deletedCount > 0 && $student) {
                         // Only decrement saldo if the rollback block above didn't already handle it
                         // (i.e., when the old status was NOT PAID, meaning the PAID→non-PAID block didn't fire)
                         if ($oldStatus !== Transaction::STATUS_PAID) {
-                            $student->decrement('saldo', $transaction->unique_payment * $deletedCount);
-                            Log::info("REJECTED Safety Net: Mengurangi saldo siswa {$student->name} ({$student->id}) sebesar Rp." . ($transaction->unique_payment * $deletedCount) . " (kode unik orphan).");
+                            Student::where('id', $student->id)
+                                ->where('saldo', '>=', $transaction->unique_payment)
+                                ->decrement('saldo', $transaction->unique_payment);
+                            Log::info("REJECTED Safety Net: Mengurangi saldo siswa {$student->name} ({$student->id}) sebesar Rp.{$transaction->unique_payment} (kode unik orphan).");
                         }
                         \App\Models\SaldoHistory::where('student_id', $student->id)
                             ->where('amount', (int) $transaction->unique_payment)
@@ -937,7 +965,7 @@ class TransactionService
         if ($student->classroom_id) {
             $regularRates = $ratesForBt->filter(function ($r) use ($student) {
                 return $r->type === \App\Models\PaymentRate::TYPE_REGULAR &&
-                       $r->paymentRateClassrooms->contains('classroom_id', $student->classroom_id);
+                       $r->paymentRateClassrooms->whereNull('deleted_at')->contains('classroom_id', $student->classroom_id);
             });
 
             foreach ($regularRates as $rate) {
@@ -949,6 +977,23 @@ class TransactionService
                     $statuses = array_map('trim', explode(',', $rate->jamaah_status));
                     $studentStatus = $student->user?->jamaah_status ?? 'NON_JAMAAH';
                     if (!in_array($studentStatus, $statuses)) continue;
+                }
+                
+                if (!empty($rate->alumni_status)) {
+                    if (!isset($isAlumni)) {
+                        $isAlumni = false;
+                        if ($student->classroom && $student->classroom->school && str_contains(strtoupper($student->classroom->school->name), 'MA')) {
+                            $hasSmpHistory = \App\Models\StudentClassroomHistory::where('student_id', $student->id)
+                                ->whereHas('classroom.school', function($q) {
+                                    $q->where('name', 'like', '%SMP%');
+                                })->exists();
+                            $isAlumni = $hasSmpHistory;
+                        }
+                    }
+
+                    $statuses = array_map('trim', explode(',', $rate->alumni_status));
+                    $studentAlumniStatus = $isAlumni ? 'ALUMNI_SMP_MA' : 'NON_ALUMNI';
+                    if (!in_array($studentAlumniStatus, $statuses)) continue;
                 }
 
                 $item = $rate->paymentRateItems->first(fn($i) => $i->month == $month && $i->year == $year);
@@ -1005,6 +1050,22 @@ class TransactionService
                 $studentStatus = $student->user?->jamaah_status ?? 'NON_JAMAAH';
                 if (!in_array($studentStatus, $statuses)) return false;
             }
+
+            if (!empty($r->alumni_status)) {
+                $isAlumni = false;
+                if ($student->classroom && $student->classroom->school && str_contains(strtoupper($student->classroom->school->name), 'MA')) {
+                    $hasSmpHistory = \App\Models\StudentClassroomHistory::where('student_id', $student->id)
+                        ->whereHas('classroom.school', function($q) {
+                            $q->where('name', 'like', '%SMP%');
+                        })->exists();
+                    $isAlumni = $hasSmpHistory;
+                }
+                
+                $statuses = array_map('trim', explode(',', $r->alumni_status));
+                $studentAlumniStatus = $isAlumni ? 'ALUMNI_SMP_MA' : 'NON_ALUMNI';
+                if (!in_array($studentAlumniStatus, $statuses)) return false;
+            }
+
 
             return true;
         });

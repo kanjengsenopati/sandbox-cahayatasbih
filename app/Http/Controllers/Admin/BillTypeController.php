@@ -248,6 +248,7 @@ class BillTypeController extends Controller
             // Regular Rates (Classroom Based)
             $regularRates = PaymentRate::with(['billType.academicYear', 'paymentRateClassrooms.classroom.school', 'paymentRateItems'])
                 ->withExists('bills')
+                ->whereHas('paymentRateClassrooms')
                 ->whereIn('bill_type_id', $relatedBillTypeIds)
                 ->where('type', 'REGULAR')
                 ->when(!empty($academicYearIds), function ($query) use ($academicYearIds) {
@@ -350,7 +351,7 @@ class BillTypeController extends Controller
 
         $billType->billTypeBank()->delete();
         $billType->delete();
-        return response()->json(['code' => 200, 'message' => 'Data berhasil dihapus']);
+        return redirect()->route('bill-type.index')->with('success', 'Data berhasil dihapus');
     }
 
     /**

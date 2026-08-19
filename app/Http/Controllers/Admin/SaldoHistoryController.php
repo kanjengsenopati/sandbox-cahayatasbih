@@ -437,17 +437,19 @@ class SaldoHistoryController extends Controller
      */
     protected function handleWithdrawal(Student $student, $request, $transaction)
     {
-        // Check if student has enough saldo
-        if ($student->saldo < $request->amount) {
+        $amount = (float) $request->amount;
+        $balanceBefore = $student->saldo ?? 0;
+
+        // Atomic safe decrement
+        $affected = Student::where('id', $student->id)
+            ->where('saldo', '>=', $amount)
+            ->decrement('saldo', $amount);
+
+        if ($affected === 0) {
             throw new \Exception('Saldo Santri tidak mencukupi');
         }
 
-        $balanceBefore = $student->saldo ?? 0;
-
-        // Reduce saldo
-        $student->saldo -= $request->amount;
-        $student->save();
-
+        $student->refresh();
         $balanceAfter = $student->saldo ?? 0;
 
         // Create saldo history
@@ -758,12 +760,18 @@ class SaldoHistoryController extends Controller
 
         // Adjust student balance back based on transaction type
         if ($history->type === SaldoHistory::TYPE_IN) {
-            $student->saldo -= $history->amount;
+            if ($student->saldo < $history->amount) {
+                return response()->json([
+                    'code' => '422',
+                    'message' => 'Tidak dapat menghapus riwayat Top-Up: Saldo santri saat ini (Rp ' . number_format($student->saldo, 0, ',', '.') . ') tidak mencukupi untuk dikurangi kembali sebesar Rp ' . number_format($history->amount, 0, ',', '.') . '.'
+                ], 422);
+            }
+            Student::where('id', $student->id)
+                ->where('saldo', '>=', $history->amount)
+                ->decrement('saldo', $history->amount);
         } elseif ($history->type === SaldoHistory::TYPE_OUT || $history->type === SaldoHistory::TYPE_WITHDRAW) {
-            $student->saldo += $history->amount;
+            Student::where('id', $student->id)->increment('saldo', $history->amount);
         }
-
-        $student->save();
 
         // Delete the associated TransactionDetail if exists
         $transactionDetail = TransactionDetail::where('saldo_history_id', $history->id)->first();

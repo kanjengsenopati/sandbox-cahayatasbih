@@ -224,6 +224,13 @@
                                                         Aktifkan Filter Tagihan Custom (Contoh: Pendaftaran / Seragam / Insidental)
                                                     </label>
                                                 </div>
+                                                <div class="form-check form-check-custom form-check-solid">
+                                                    <input class="form-check-input" type="checkbox" name="use_alumni_filter" id="use_alumni_filter" value="1" 
+                                                        {{ (old('use_alumni_filter') ?? @$billType->use_alumni_filter) ? 'checked' : '' }} />
+                                                    <label class="form-check-label fw-bold text-gray-700 cursor-pointer" for="use_alumni_filter">
+                                                        Aktifkan Filter Khusus Alumni (Lulusan SMP lanjut MA)
+                                                    </label>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>

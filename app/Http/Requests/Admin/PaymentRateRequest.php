@@ -44,13 +44,20 @@ class PaymentRateRequest extends FormRequest
     {
         $rules = [
             'bill_type_id' => 'required|exists:bill_types,id',
-            'price' => 'required|numeric',
             'type' => 'required|in:REGULAR,TRANSFER',
             'gender' => 'nullable|array',
             'gender.*' => 'in:L,P',
             'jamaah_status' => 'nullable|array',
             'jamaah_status.*' => 'in:JAMAAH,NON_JAMAAH,MUKIMIN',
+            'alumni_status' => 'nullable|array',
+            'alumni_status.*' => 'in:ALUMNI_SMP_MA,NON_ALUMNI',
         ];
+
+        if ($this->has('is_matrix') && $this->is_matrix == 1) {
+            $rules['matrix_price'] = 'required|array';
+        } else {
+            $rules['price'] = 'required|numeric';
+        }
 
         // Validation for CREATE only
         if ($this->isMethod('post')) {

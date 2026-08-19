@@ -29,6 +29,7 @@ class PaymentRate extends Model
         'type',
         'gender',
         'jamaah_status',
+        'alumni_status',
     ];
 
     protected $casts = [
@@ -42,7 +43,7 @@ class PaymentRate extends Model
 
     public function paymentRateClassrooms()
     {
-        return $this->hasMany(PaymentRateClassroom::class)->withTrashed();
+        return $this->hasMany(PaymentRateClassroom::class);
     }
 
     public function paymentRateStudents()

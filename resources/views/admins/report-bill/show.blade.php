@@ -375,9 +375,6 @@
                         d.end_date = end_date;
                     }
                 },
-                language: {
-                    processing: "Sedang memproses data, Silahkan ditunggu..."
-                },
                 lengthMenu: [
                     [10, 25, 50, 100, -1],
                     [10, 25, 50, 100, "Semua"]

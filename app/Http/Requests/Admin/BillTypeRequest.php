@@ -30,6 +30,7 @@ class BillTypeRequest extends FormRequest
             'use_wali_filter' => 'nullable|boolean',
             'use_gender_filter' => 'nullable|boolean',
             'use_custom_filter' => 'nullable|boolean',
+            'use_alumni_filter' => 'nullable|boolean',
         ];
     }
 
@@ -47,6 +48,7 @@ class BillTypeRequest extends FormRequest
             'use_wali_filter' => $this->boolean('use_wali_filter'),
             'use_gender_filter' => $this->boolean('use_gender_filter'),
             'use_custom_filter' => $this->boolean('use_custom_filter'),
+            'use_alumni_filter' => $this->boolean('use_alumni_filter'),
         ]);
     }
 }

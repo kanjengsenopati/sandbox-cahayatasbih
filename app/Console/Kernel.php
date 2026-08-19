@@ -26,6 +26,12 @@ class Kernel extends ConsoleKernel
             ->dailyAt('06:00')
             ->withoutOverlapping()
             ->appendOutputTo(storage_path('logs/negative_balance_monitor.log'));
+        // Rotasi dan pengarsipan otomatis transaksi Saldo & Belanja POS (> 6 bulan) setiap tanggal 1 pukul 03:00
+        // Mempertahankan 100% data tagihan dan pembayaran tagihan santri
+        $schedule->command('transactions:prune-old --months=6')
+            ->monthlyOn(1, '03:00')
+            ->withoutOverlapping()
+            ->appendOutputTo(storage_path('logs/transaction_pruning.log'));
     }
 
     /**

@@ -19,9 +19,45 @@
     if (typeof $.fn.dataTable !== 'undefined') {
         $.extend(true, $.fn.dataTable.defaults, {
             language: {
-                processing: "Sedang memproses data, Silahkan ditunggu..."
+                processing: `
+                    <div class="text-center">
+                        <div class="fs-4 fw-bolder text-dark mb-2">Mohon Tunggu</div>
+                        <div class="fs-6 text-muted mb-4">Sedang memuat data...</div>
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                    </div>
+                `
             }
         });
+
+        // Add custom CSS to force processing indicator to top with modern solid UI
+        $("<style>")
+            .prop("type", "text/css")
+            .html("\
+                div.dataTables_wrapper div.dataTables_processing {\
+                    position: fixed !important;\
+                    top: 50% !important;\
+                    left: 50% !important;\
+                    transform: translate(-50%, -50%) !important;\
+                    margin-top: 0 !important;\
+                    z-index: 10000 !important;\
+                    background-color: #ffffff !important;\
+                    box-shadow: 0px 0px 30px rgba(0, 0, 0, 0.15) !important;\
+                    border: none !important;\
+                    border-radius: 12px !important;\
+                    padding: 30px 40px !important;\
+                    width: 320px !important;\
+                    display: flex !important;\
+                    flex-direction: column !important;\
+                    align-items: center !important;\
+                    justify-content: center !important;\
+                }\
+                .dt-processing-active {\
+                    pointer-events: none;\
+                }\
+            ")
+            .appendTo("head");
 
         // Listen to processing event globally to toggle active class
         $(document).on('processing.dt', function(e, settings, processing) {

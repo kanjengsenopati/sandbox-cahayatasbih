@@ -38,10 +38,16 @@
         <!--end::Page Title-->
 
         <form id="payment-rate-form"
-            action="{{ request()->routeIs('payment-rate.create') ? route('payment-rate.store') : route('payment-rate.update', @$paymentRate->id) }}"
-            method="POST" enctype="multipart/form-data">
+            action="{{ isset($paymentRate) ? route('payment-rate.update', $paymentRate->id) : route('payment-rate.store') }}"
+            method="POST">
             @csrf
-            <x-form.put-method />
+            @if (isset($paymentRate))
+                @method('PUT')
+            @endif
+
+            @php
+                $isMatrixMode = !isset($paymentRate) && $billType->use_wali_filter && $billType->use_alumni_filter;
+            @endphp
 
             <div class="row g-5">
                 <!--begin::Left Column (Main Configuration)-->
@@ -159,6 +165,103 @@
                             <!-- Hidden Bill Type ID -->
                             <input type="hidden" name="bill_type_id" value="{{ @$billType->id }}">
 
+                            @if($isMatrixMode)
+                                <!-- MATRIX PRICING UI -->
+                                <input type="hidden" name="is_matrix" value="1">
+                                <div class="mb-10">
+                                    <div class="alert alert-primary d-flex align-items-center p-5 mb-10">
+                                        <i class="ki-duotone ki-information fs-2hx text-primary me-4"><span class="path1"></span><span class="path2"></span><span class="path3"></span></i>
+                                        <div class="d-flex flex-column">
+                                            <h4 class="mb-1 text-primary">Matriks Tarif Pintar</h4>
+                                            <span>Sistem mendeteksi bahwa tagihan ini menggunakan filter Alumni & Wali. Silakan isi matriks di bawah ini, sistem akan otomatis men-generate 4 tarif terpisah.</span>
+                                        </div>
+                                    </div>
+
+                                    <div class="table-responsive border rounded">
+                                        <table class="table table-row-bordered table-striped align-middle mb-0">
+                                            <thead class="bg-light">
+                                                <tr>
+                                                    <th class="fw-bold text-gray-700 px-3 w-25">Status Alumni</th>
+                                                    <th class="fw-bold text-gray-700 px-3 w-25">Status Wali</th>
+                                                    <th class="fw-bold text-gray-700 px-3 min-w-200px">Nominal Tarif (Rp)</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <!-- Row 1: Jamaah -->
+                                                <tr>
+                                                    <td rowspan="3" class="align-middle fw-bold text-dark bg-white border-bottom px-3">Khusus Siswa Baru<br><span class="text-muted fs-7 fw-normal">(Non-Alumni)</span></td>
+                                                    <td class="bg-white px-3">Jamaah</td>
+                                                    <td class="bg-white px-3">
+                                                        <div class="input-group input-group-sm input-group-solid">
+                                                            <span class="input-group-text border-0">Rp</span>
+                                                            <input type="text" class="form-control form-control-sm form-control-solid input-money" name="matrix_price[NON_ALUMNI][JAMAAH]" placeholder="0" required>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                                <!-- Row 2: Non Jamaah -->
+                                                <tr>
+                                                    <td class="bg-white px-3">Non Jamaah</td>
+                                                    <td class="bg-white px-3">
+                                                        <div class="input-group input-group-sm input-group-solid">
+                                                            <span class="input-group-text border-0">Rp</span>
+                                                            <input type="text" class="form-control form-control-sm form-control-solid input-money" name="matrix_price[NON_ALUMNI][NON_JAMAAH]" placeholder="0" required>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                                <!-- Row 3: Mukimin -->
+                                                <tr>
+                                                    <td class="bg-white border-bottom px-3">Mukimin</td>
+                                                    <td class="bg-white border-bottom px-3">
+                                                        <div class="input-group input-group-sm input-group-solid">
+                                                            <span class="input-group-text border-0">Rp</span>
+                                                            <input type="text" class="form-control form-control-sm form-control-solid input-money" name="matrix_price[NON_ALUMNI][MUKIMIN]" placeholder="0" required>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                                <!-- Row 4: Alumni -->
+                                                <tr>
+                                                    <td class="fw-bold text-primary bg-light-primary border-bottom px-3">Khusus Alumni<br><span class="text-muted fs-7 fw-normal">(Lulusan SMP -> MA)</span></td>
+                                                    <td class="text-muted fst-italic bg-light-primary border-bottom px-3">Semua Status Wali</td>
+                                                    <td class="bg-light-primary border-bottom px-3">
+                                                        <div class="input-group input-group-sm input-group-solid border border-primary">
+                                                            <span class="input-group-text border-0 bg-transparent text-primary">Rp</span>
+                                                            <input type="text" class="form-control form-control-sm form-control-solid input-money bg-transparent" name="matrix_price[ALUMNI_SMP_MA][ALL]" placeholder="0" required>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                    
+                                    <!-- We also need to hide Months / Year if it's FREE TYPE -->
+                                    @if ($billType->type != "MONTHLY")
+                                        <div class="row mt-8">
+                                            <div class="col-lg-6">
+                                                <div class="mb-5">
+                                                    <label for="month" class="form-label fs-6 fw-bold text-gray-700">Berlaku Untuk Bulan</label>
+                                                    <select name="months[]" id="month" class="form-select form-select-solid"
+                                                        data-control="select2" data-placeholder="Pilih Bulan..." multiple="multiple" required>
+                                                        @php
+                                                        $indonesianMonths = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+                                                        @endphp
+                                                        @foreach ($indonesianMonths as $key => $monthName)
+                                                        <option value="{{ $key + 1 }}">{{ $monthName }}</option>
+                                                        @endforeach
+                                                    </select>
+                                                </div>
+                                            </div>
+                                            <div class="col-lg-6">
+                                                <div class="mb-5">
+                                                    <label for="year" class="form-label fs-6 fw-bold text-gray-700">Tahun</label>
+                                                    <input type="number" name="year" id="year"
+                                                        class="form-control form-control-solid" placeholder="Tahun"
+                                                        value="{{ $billType->academicYear->start_year ?? date('Y') }}" required>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    @endif
+                                </div>
+                            @else
                             @if ($billType->type == "MONTHLY")
                             <!-- MONTHLY TYPE -->
                             <div class="mb-8">
@@ -276,6 +379,7 @@
                                 </div>
                             </div>
                             @endif
+                            @endif
                         </div>
                     </div>
                 </div>
@@ -342,7 +446,7 @@
                             </div>
 
                             <!-- Status Wali -->
-                            @if($billType->use_wali_filter)
+                            @if($billType->use_wali_filter && !$isMatrixMode)
                             <div class="mb-5">
                                 <label class="form-label fw-bold fs-6 text-gray-700">Status Wali</label>
                                 <select name="jamaah_status[]" class="form-select form-select-solid {{ isset($paymentRate) ? 'bg-light' : '' }}" id="jamaah_status"
@@ -374,6 +478,24 @@
                                 </select>
                                 @if(isset($paymentRate))
                                     <input type="hidden" name="gender" value="{{ $paymentRate->gender }}">
+                                @endif
+                            </div>
+                            @endif
+
+                            <!-- Status Alumni -->
+                            @if($billType->use_alumni_filter && !$isMatrixMode)
+                            <div class="mb-5">
+                                <label class="form-label fw-bold fs-6 text-gray-700">Status Alumni</label>
+                                <select name="alumni_status[]" class="form-select form-select-solid {{ isset($paymentRate) ? 'bg-light' : '' }}" id="alumni_status"
+                                    data-control="select2" data-placeholder="Semua Status (Alumni & Non-Alumni)" data-allow-clear="true" multiple="multiple" {{ isset($paymentRate) ? 'disabled' : '' }}>
+                                    @php
+                                        $alumniValues = isset($paymentRate) ? explode(',', $paymentRate->alumni_status) : [];
+                                    @endphp
+                                    <option value="ALUMNI_SMP_MA" {{ in_array('ALUMNI_SMP_MA', $alumniValues) ? 'selected' : '' }}>Khusus Alumni (Lulusan SMP -> MA)</option>
+                                    <option value="NON_ALUMNI" {{ in_array('NON_ALUMNI', $alumniValues) ? 'selected' : '' }}>Khusus Siswa Baru (Non-Alumni)</option>
+                                </select>
+                                @if(isset($paymentRate))
+                                    <input type="hidden" name="alumni_status" value="{{ $paymentRate->alumni_status }}">
                                 @endif
                             </div>
                             @endif
@@ -508,6 +630,7 @@
             var school_id = $('#school_id').val();
             var gender = $('#gender').val();
             var jamaah_status = $('#jamaah_status').val();
+            var alumni_status = $('#alumni_status').val();
             var studentSelect = $('#student_id');
             var billTypeId = $('input[name="bill_type_id"]').val();
 
@@ -520,7 +643,8 @@
                             school_id: school_id,
                             bill_type_id: billTypeId,
                             gender: gender,
-                            jamaah_status: jamaah_status
+                            jamaah_status: jamaah_status,
+                            alumni_status: alumni_status
                         }
                     })
                     .then(function(response) {
@@ -554,6 +678,8 @@
             var billTypeId = $('input[name="bill_type_id"]').val();
             var gender = $('#gender').val();
             var jamaah_status = $('#jamaah_status').val();
+            var alumni_status = $('#alumni_status').val();
+            var is_matrix = $('input[name="is_matrix"]').val() || 0;
 
             if (!school_id) {
                 gridContainer.empty();
@@ -565,7 +691,9 @@
                         school_id: school_id,
                         bill_type_id: billTypeId,
                         gender: gender,
-                        jamaah_status: jamaah_status
+                        jamaah_status: jamaah_status,
+                        alumni_status: alumni_status,
+                        is_matrix: is_matrix
                     }
                 })
                 .then(function(response) {
@@ -575,7 +703,7 @@
                             var isCreated = value.is_already_created;
                             var cardClass = isCreated ? "btn btn-outline btn-outline-dashed btn-outline-default d-flex align-items-center justify-content-start p-2 w-100 h-100 pe-none bg-light-secondary opacity-75 text-start border-gray-300" : "btn btn-outline btn-outline-dashed btn-outline-default d-flex align-items-center justify-content-start p-2 w-100 h-100 cursor-pointer text-start";
                             var checkAttr = isCreated ? "checked disabled" : "";
-                            var badgeHtml = isCreated ? `<span class="ms-auto me-1 text-danger" title="Kelas ini sudah dibuatkan tarif untuk kriteria status/gender ini"><i class="fas fa-lock fs-8"></i></span>` : "";
+                            var badgeHtml = isCreated ? `<span class="ms-auto me-1 text-danger" title="Kelas ini sudah dibuatkan tarif untuk kriteria status/gender/alumni ini"><i class="fas fa-lock fs-8"></i></span>` : "";
 
                             var cardHtml = `
                                 <div class="col">
@@ -603,7 +731,7 @@
         });
 
         // Handle Filter Changes -> Re-fetch both Classrooms AND Students
-        $('#gender, #jamaah_status').on('change', function() {
+        $('#gender, #jamaah_status, #alumni_status').on('change', function() {
             fetchClassrooms();
             fetchStudents();
         });
@@ -689,10 +817,15 @@
                     }
                 });
             } else {
-                // Check if single price has value (Bebas Type)
-                var val = $('#setPrice').val().replace(/\./g, '');
-                if (val && parseInt(val) > 0) {
+                var isMatrix = $('input[name="is_matrix"]').val() || 0;
+                if (isMatrix == 1) {
                     isValid = true;
+                } else {
+                    // Check if single price has value (Bebas Type)
+                    var val = $('#setPrice').val().replace(/\./g, '');
+                    if (val && parseInt(val) > 0) {
+                        isValid = true;
+                    }
                 }
             }
 

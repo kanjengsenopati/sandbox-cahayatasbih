@@ -44,23 +44,29 @@ class PaymentRateController extends Controller
         $schools = $schoolsQuery->orderBy('name')->get();
         $classroomValue = [];
 
-        $existingClassroomIds = DB::table('payment_rate_classrooms')
-            ->join('payment_rates', 'payment_rate_classrooms.payment_rate_id', '=', 'payment_rates.id')
-            ->join('bill_types', 'payment_rates.bill_type_id', '=', 'bill_types.id')
-            ->where(function($q) use ($billType) {
-                $q->where('payment_rates.bill_type_id', $billType->id)
-                  ->orWhere(function($sub) use ($billType) {
-                      $sub->where('bill_types.name', $billType->name)
-                          ->where('bill_types.academic_year_id', $billType->academic_year_id);
-                  });
-            })
-            ->where('payment_rates.type', PaymentRate::TYPE_REGULAR)
-            ->whereNull('payment_rates.deleted_at')
-            ->whereNull('payment_rate_classrooms.deleted_at')
-            ->pluck('payment_rate_classrooms.classroom_id')
-            ->unique()
-            ->values()
-            ->toArray();
+        $isMatrixMode = $billType->use_wali_filter && $billType->use_alumni_filter;
+
+        if ($isMatrixMode) {
+            $existingClassroomIds = [];
+        } else {
+            $existingClassroomIds = DB::table('payment_rate_classrooms')
+                ->join('payment_rates', 'payment_rate_classrooms.payment_rate_id', '=', 'payment_rates.id')
+                ->join('bill_types', 'payment_rates.bill_type_id', '=', 'bill_types.id')
+                ->where(function($q) use ($billType) {
+                    $q->where('payment_rates.bill_type_id', $billType->id)
+                      ->orWhere(function($sub) use ($billType) {
+                          $sub->where('bill_types.name', $billType->name)
+                              ->where('bill_types.academic_year_id', $billType->academic_year_id);
+                      });
+                })
+                ->where('payment_rates.type', PaymentRate::TYPE_REGULAR)
+                ->whereNull('payment_rates.deleted_at')
+                ->whereNull('payment_rate_classrooms.deleted_at')
+                ->pluck('payment_rate_classrooms.classroom_id')
+                ->unique()
+                ->values()
+                ->toArray();
+        }
 
         return view('admins.payment-rate.create-edit', compact('billType', 'schools', 'classroomValue', 'existingClassroomIds'));
     }
@@ -83,6 +89,113 @@ class PaymentRateController extends Controller
 
             $billType = BillType::findOrFail($request->bill_type_id);
 
+            // MATRIX MODE LOGIC
+            if ($request->has('is_matrix') && $request->is_matrix == 1) {
+                $matrixPrices = $request->matrix_price;
+                if (!$matrixPrices || empty($request->classrooms)) {
+                     throw new \Exception("Data matriks atau kelas belum dipilih.");
+                }
+
+                // Backend Protection: Validate classrooms match the selected school
+                if ($request->school_id) {
+                    $mismatchedClasses = Classroom::whereIn('id', $request->classrooms)
+                        ->where('school_id', '!=', $request->school_id)
+                        ->pluck('name')
+                        ->toArray();
+                    if (!empty($mismatchedClasses)) {
+                        throw new \Exception("Gagal: Kelas (" . implode(', ', $mismatchedClasses) . ") tidak berada di bawah sekolah yang dipilih.");
+                    }
+                }
+
+                // 1. SMART DETACH ALGORITHM (Legacy Conflict Resolution)
+                // Lepaskan (detach) kelas yang dipilih dari tarif-tarif lama di BillType ini
+                $legacyClassroomLinks = DB::table('payment_rate_classrooms')
+                    ->join('payment_rates', 'payment_rate_classrooms.payment_rate_id', '=', 'payment_rates.id')
+                    ->where('payment_rates.bill_type_id', $billType->id)
+                    ->where('payment_rates.type', PaymentRate::TYPE_REGULAR)
+                    ->whereNull('payment_rates.deleted_at')
+                    ->whereIn('payment_rate_classrooms.classroom_id', $request->classrooms)
+                    ->pluck('payment_rate_classrooms.id');
+                    
+                if ($legacyClassroomLinks->isNotEmpty()) {
+                    DB::table('payment_rate_classrooms')
+                        ->whereIn('id', $legacyClassroomLinks)
+                        ->update(['deleted_at' => now()]); // Soft delete from pivot table
+                }
+
+                // Juga update alumni_status tarif lama menjadi NON_ALUMNI
+                $legacyRates = PaymentRate::where('bill_type_id', $billType->id)
+                    ->where('type', PaymentRate::TYPE_REGULAR)
+                    ->where(function($q) {
+                        $q->whereNull('alumni_status')->orWhere('alumni_status', '');
+                    })->get();
+                
+                foreach ($legacyRates as $legacyRate) {
+                    $legacyRate->update(['alumni_status' => 'NON_ALUMNI']);
+                }
+
+                // 2. BULK CREATE MATRIX RATES
+                $months = ($billType->type == BillType::TYPE_MONTHLY) ? range(1, 12) : ($request->months ?? [7]);
+                $ratesToDispatch = [];
+
+                foreach ($matrixPrices as $alumniStatus => $jamaahArr) {
+                    foreach ($jamaahArr as $jamaahStatus => $priceInput) {
+                        $cleanAmount = (int) preg_replace('/[^0-9]/', '', (string)$priceInput);
+                        if ($cleanAmount <= 0) continue;
+
+                        $dbAlumni = ($alumniStatus === 'ALL') ? null : $alumniStatus;
+                        $dbJamaah = ($jamaahStatus === 'ALL') ? null : $jamaahStatus;
+
+                        // Create Parent Rate
+                        $paymentRate = $billType->paymentRates()->create([
+                            'amount' => $cleanAmount,
+                            'type' => PaymentRate::TYPE_REGULAR,
+                            'gender' => null, 
+                            'jamaah_status' => $dbJamaah,
+                            'alumni_status' => $dbAlumni,
+                        ]);
+
+                        // Attach Classrooms
+                        foreach ($request->classrooms as $classroomId) {
+                            $paymentRate->paymentRateClassrooms()->create([
+                                'classroom_id' => $classroomId,
+                            ]);
+                        }
+
+                        // Create Items
+                        foreach ($months as $month) {
+                            if ($billType->type == BillType::TYPE_MONTHLY) {
+                                $itemYear = $request->{"tahun_$month"} ?? ($billType->academicYear->start_year ?? date('Y'));
+                            } else {
+                                $itemYear = $request->year ?? ($billType->academicYear->start_year ?? date('Y'));
+                            }
+                            $paymentRate->paymentRateItems()->create([
+                                'month'  => $month,
+                                'year'   => $itemYear,
+                                'amount' => $cleanAmount,
+                            ]);
+                        }
+
+                        $ratesToDispatch[] = $paymentRate->id;
+                    }
+                }
+
+                // 3. DISPATCH JOBS
+                foreach ($ratesToDispatch as $rId) {
+                    \Illuminate\Support\Facades\Artisan::queue('bills:sync-rate', [
+                        '--rate' => $rId,
+                        '--force' => true,
+                    ]);
+                }
+
+                DB::commit();
+                $lock->release();
+
+                return redirect()->route('bill-type.show', $billType->id)
+                    ->with('success', 'Matriks Tarif berhasil dibuat. Auto-Migration tarif lama telah dijalankan. Sinkronisasi tagihan siswa sedang diproses di background.');
+            }
+
+
             // Backend Protection: Validate classrooms match the selected school & block duplicates
             if ($request->type == PaymentRate::TYPE_REGULAR && !empty($request->classrooms)) {
                 if ($request->school_id) {
@@ -103,6 +216,7 @@ class PaymentRateController extends Controller
 
                 $reqJamaah = $request->jamaah_status;
                 $reqGender = $request->gender;
+                $reqAlumni = $request->alumni_status;
 
                 $existingRates = PaymentRate::where(function($q) use ($billType) {
                         $q->where('bill_type_id', $billType->id)
@@ -117,7 +231,7 @@ class PaymentRateController extends Controller
 
                 $conflictingClassroomIds = [];
                 foreach ($existingRates as $exRate) {
-                    if ($this->isOverlappingFilter($exRate->jamaah_status, $exRate->gender, $reqJamaah, $reqGender)) {
+                    if ($this->isOverlappingFilter($exRate->jamaah_status, $exRate->gender, $exRate->alumni_status, $reqJamaah, $reqGender, $reqAlumni)) {
                         foreach ($exRate->paymentRateClassrooms as $prc) {
                             $conflictingClassroomIds[] = $prc->classroom_id;
                         }
@@ -142,6 +256,7 @@ class PaymentRateController extends Controller
                 'type' => $request->type,
                 'gender' => $request->gender ? implode(',', $request->gender) : null,
                 'jamaah_status' => $request->jamaah_status ? implode(',', $request->jamaah_status) : null,
+                'alumni_status' => $request->alumni_status ? implode(',', $request->alumni_status) : null,
             ]);
 
             // 3. Attach Classrooms
@@ -160,13 +275,13 @@ class PaymentRateController extends Controller
             }
 
             // 4. Create Payment Rate Items & Build Memory Map
-            $months = ($billType->type == BillType::TYPE_MONTHLY) ? range(1, 12) : $request->months;
+            $months = ($billType->type == BillType::TYPE_MONTHLY) ? range(1, 12) : ($request->months ?? [7]);
             $rateItemsMap = []; // Format: "bulan_tahun" => ID
 
             foreach ($months as $month) {
                 $amountInput = ($billType->type == BillType::TYPE_MONTHLY) ? $request->{"bulan_$month"} : $request->price;
                 $amount = $amountInput ? (int) preg_replace('/[^0-9]/', '', (string)$amountInput) : 0;
-                $year = ($billType->type == BillType::TYPE_MONTHLY) ? $request->{"tahun_$month"} : $request->year;
+                $year = ($billType->type == BillType::TYPE_MONTHLY) ? $request->{"tahun_$month"} : ($request->year ?? ($billType->academicYear->start_year ?? date('Y')));
 
                 $item = $paymentRate->paymentRateItems()->create([
                     'month'  => $month,
@@ -191,7 +306,7 @@ class PaymentRateController extends Controller
         } catch (\Exception $e) {
             DB::rollBack();
             $lock->release();
-            Log::error("Error Generate Tagihan: " . $e->getMessage());
+            Log::error("Error Generate Tagihan: " . $e->getMessage() . "\n" . $e->getTraceAsString());
 
             return redirect()->back()
                 ->with('error', 'Terjadi kesalahan: ' . $e->getMessage())
@@ -301,6 +416,35 @@ class PaymentRateController extends Controller
                       ->orWhereHas('user', function ($userQ) {
                           $userQ->whereNull('jamaah_status');
                       });
+                }
+            });
+        }
+
+        // Apply Payment Rate Alumni Status Filter
+        if ($paymentRate->alumni_status) {
+            $alumniStatuses = array_map('trim', explode(',', $paymentRate->alumni_status));
+            $query->where(function ($q) use ($alumniStatuses) {
+                $alumniSubquery = \Illuminate\Support\Facades\DB::table('student_classroom_histories')
+                    ->join('classrooms', 'classrooms.id', '=', 'student_classroom_histories.classroom_id')
+                    ->join('schools', 'schools.id', '=', 'classrooms.school_id')
+                    ->where('schools.name', 'like', '%SMP%')
+                    ->whereNull('student_classroom_histories.deleted_at')
+                    ->select('student_id');
+
+                if (in_array('ALUMNI_SMP_MA', $alumniStatuses)) {
+                    $q->orWhere(function ($qAlumni) use ($alumniSubquery) {
+                        $qAlumni->whereHas('classroom.school', function ($sq) {
+                            $sq->where('name', 'like', '%MA%');
+                        })->whereIn('students.id', clone $alumniSubquery);
+                    });
+                }
+
+                if (in_array('NON_ALUMNI', $alumniStatuses)) {
+                    $q->orWhere(function ($qNonAlumni) use ($alumniSubquery) {
+                        $qNonAlumni->whereDoesntHave('classroom.school', function ($sq) {
+                            $sq->where('name', 'like', '%MA%');
+                        })->orWhereNotIn('students.id', clone $alumniSubquery);
+                    });
                 }
             });
         }
@@ -940,7 +1084,7 @@ class PaymentRateController extends Controller
         }
     }
 
-    private function isOverlappingFilter($status1, $gender1, $status2, $gender2): bool
+    private function isOverlappingFilter($status1, $gender1, $alumni1, $status2, $gender2, $alumni2): bool
     {
         $parseArray = function ($val) {
             if (empty($val)) return [];
@@ -957,11 +1101,17 @@ class PaymentRateController extends Controller
         $g2 = $parseArray($gender2);
         if (empty($g1)) $g1 = ['L', 'P'];
         if (empty($g2)) $g2 = ['L', 'P'];
+        
+        $a1 = $parseArray($alumni1);
+        $a2 = $parseArray($alumni2);
+        if (empty($a1)) $a1 = ['ALUMNI_SMP_MA', 'NON_ALUMNI'];
+        if (empty($a2)) $a2 = ['ALUMNI_SMP_MA', 'NON_ALUMNI'];
 
         $jamaahOverlap = !empty(array_intersect($s1, $s2));
         $genderOverlap = !empty(array_intersect($g1, $g2));
+        $alumniOverlap = !empty(array_intersect($a1, $a2));
 
-        return $jamaahOverlap && $genderOverlap;
+        return $jamaahOverlap && $genderOverlap && $alumniOverlap;
     }
 
     public function getClassroom(Request $request)
@@ -970,9 +1120,11 @@ class PaymentRateController extends Controller
         $billTypeId = $request->bill_type_id;
         $reqJamaah = $request->jamaah_status;
         $reqGender = $request->gender;
+        $reqAlumni = $request->alumni_status;
 
+        $isMatrix = $request->is_matrix;
         $conflictingClassroomIds = [];
-        if ($billTypeId) {
+        if ($billTypeId && !$isMatrix) {
             $billType = BillType::find($billTypeId);
             if ($billType) {
                 $existingRates = PaymentRate::where(function($q) use ($billType) {
@@ -987,7 +1139,7 @@ class PaymentRateController extends Controller
                     ->get();
 
                 foreach ($existingRates as $exRate) {
-                    if ($this->isOverlappingFilter($exRate->jamaah_status, $exRate->gender, $reqJamaah, $reqGender)) {
+                    if ($this->isOverlappingFilter($exRate->jamaah_status, $exRate->gender, $exRate->alumni_status, $reqJamaah, $reqGender, $reqAlumni)) {
                         foreach ($exRate->paymentRateClassrooms as $prc) {
                             $conflictingClassroomIds[] = $prc->classroom_id;
                         }

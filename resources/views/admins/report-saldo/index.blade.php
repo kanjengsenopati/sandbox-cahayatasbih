@@ -347,7 +347,8 @@
                     searchable: false,
                     }
                     @endif
-                ]
+                ],
+                order: [[1, 'desc']]
             });
         }
 

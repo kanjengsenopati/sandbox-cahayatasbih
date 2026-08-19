@@ -267,8 +267,7 @@
                         "next": "<i class='fa fa-angle-right'>",
                         "previous": "<i class='fa fa-angle-left'>"
                     },
-                    "loadingRecords": "Loading...",
-                    "processing": "Processing...",
+                    "loadingRecords": "Loading..."
                 },
                 columns: [{
                         "data": null,
@@ -479,8 +478,7 @@
                         "next": "<i class='fa fa-angle-right'>",
                         "previous": "<i class='fa fa-angle-left'>"
                     },
-                    "loadingRecords": "Loading...",
-                    "processing": "Processing...",
+                    "loadingRecords": "Loading..."
                 },
                 columns: [{
                         "data": null,
@@ -628,8 +626,7 @@
                     "next": "<i class='fa fa-angle-right'>",
                     "previous": "<i class='fa fa-angle-left'>"
                 },
-                "loadingRecords": "Loading...",
-                "processing": "Processing...",
+                "loadingRecords": "Loading..."
             },
             columns: [
                 {

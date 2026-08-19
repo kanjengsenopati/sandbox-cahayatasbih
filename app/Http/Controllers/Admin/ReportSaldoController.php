@@ -51,6 +51,7 @@ class ReportSaldoController extends Controller
     protected function querySaldoHistory()
     {
         return SaldoHistory::with(['student.classroom.school', 'outlet'])
+            ->where('status', SaldoHistory::STATUS_SUCCESS)
             ->when(request()->filled('outlet_id'), function ($query) {
                 $query->where('outlet_id', request()->outlet_id);
             })
@@ -69,8 +70,7 @@ class ReportSaldoController extends Controller
             })
             ->when(request()->filled('end_date'), function ($query) {
                 $query->whereDate('created_at', '<=', request()->end_date);
-            })
-            ->latest();
+            });
     }
 
     protected function calculateTotals($data)

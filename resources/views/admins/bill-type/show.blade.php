@@ -162,7 +162,7 @@
                                         <th class="ps-4 min-w-50px">No</th>
                                         <th class="min-w-150px">Sekolah</th>
                                         <th class="min-w-180px">Kelas</th>
-                                        <th class="min-w-150px">Status Wali Santri</th>
+                                        <th class="min-w-150px">Kategori / Status</th>
                                         <th class="min-w-125px">Total Tagihan</th>
                                         <th class="text-center min-w-100px rounded-end">Aksi</th>
                                     </tr>
@@ -229,8 +229,9 @@
                                             @endif
                                         </td>
                                         <td>
-                                            @if($rate->jamaah_status)
-                                                <span class="badge fw-bolder px-3 py-2" style="background-color: #f3e8ff; color: #7e22ce; border: 1px solid #e9d5ff;">
+                                            @if($rate->jamaah_status || $rate->alumni_status)
+                                                @if($rate->jamaah_status)
+                                                <span class="badge fw-bolder px-3 py-2 m-1" style="background-color: #f3e8ff; color: #7e22ce; border: 1px solid #e9d5ff;">
                                                     {{ collect(explode(',', $rate->jamaah_status))->map(function($status) {
                                                         return match($status) {
                                                             'JAMAAH' => 'Jamaah',
@@ -240,8 +241,21 @@
                                                         };
                                                     })->implode(', ') }}
                                                 </span>
+                                                @endif
+                                                
+                                                @if($rate->alumni_status)
+                                                <span class="badge fw-bolder px-3 py-2 m-1" style="background-color: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd;">
+                                                    {{ collect(explode(',', $rate->alumni_status))->map(function($status) {
+                                                        return match($status) {
+                                                            'ALUMNI_SMP_MA' => 'Alumni SMP',
+                                                            'NON_ALUMNI' => 'Non Alumni',
+                                                            default => $status
+                                                        };
+                                                    })->implode(', ') }}
+                                                </span>
+                                                @endif
                                             @else
-                                                <span class="badge badge-light-secondary fw-bold">Semua Status</span>
+                                                <span class="badge fw-bold px-3 py-2 m-1" style="background-color: #f8fafc; color: #64748b; border: 1px dashed #cbd5e1;">Semua Status</span>
                                             @endif
                                         </td>
                                         <td>
@@ -313,7 +327,7 @@
                                         <th class="ps-4 min-w-50px">No</th>
                                         <th class="min-w-150px">Sekolah</th>
                                         <th class="min-w-180px">Nama Siswa</th>
-                                        <th class="min-w-150px">Status Wali Santri</th>
+                                        <th class="min-w-150px">Kategori / Status</th>
                                         <th class="min-w-125px">Total Tagihan</th>
                                         <th class="text-center min-w-100px rounded-end">Aksi</th>
                                     </tr>
@@ -356,8 +370,9 @@
                                             @endif
                                         </td>
                                         <td>
-                                            @if($rate->jamaah_status)
-                                                <span class="badge fw-bolder px-3 py-2" style="background-color: #f3e8ff; color: #7e22ce; border: 1px solid #e9d5ff;">
+                                            @if($rate->jamaah_status || $rate->alumni_status)
+                                                @if($rate->jamaah_status)
+                                                <span class="badge fw-bolder px-3 py-2 m-1" style="background-color: #f3e8ff; color: #7e22ce; border: 1px solid #e9d5ff;">
                                                     {{ collect(explode(',', $rate->jamaah_status))->map(function($status) {
                                                         return match($status) {
                                                             'JAMAAH' => 'Jamaah',
@@ -367,8 +382,21 @@
                                                         };
                                                     })->implode(', ') }}
                                                 </span>
+                                                @endif
+                                                
+                                                @if($rate->alumni_status)
+                                                <span class="badge fw-bolder px-3 py-2 m-1" style="background-color: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd;">
+                                                    {{ collect(explode(',', $rate->alumni_status))->map(function($status) {
+                                                        return match($status) {
+                                                            'ALUMNI_SMP_MA' => 'Alumni SMP',
+                                                            'NON_ALUMNI' => 'Non Alumni',
+                                                            default => $status
+                                                        };
+                                                    })->implode(', ') }}
+                                                </span>
+                                                @endif
                                             @else
-                                                <span class="badge badge-light-secondary fw-bold">Semua Status</span>
+                                                <span class="badge fw-bold px-3 py-2 m-1" style="background-color: #f8fafc; color: #64748b; border: 1px dashed #cbd5e1;">Semua Status</span>
                                             @endif
                                         </td>
                                         <td>

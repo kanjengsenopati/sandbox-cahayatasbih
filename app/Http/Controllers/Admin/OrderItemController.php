@@ -248,10 +248,15 @@ class OrderItemController extends Controller
                 }
 
                 $balanceBefore = $student->saldo;
-                // Gunakan decrement atomic di DB level, bukan baca-ubah-simpan di PHP
-                // Ini aman bahkan jika ada 2 proses bersamaan karena DB mengelola atomicity
-                Student::where('id', $student->id)
+                // Gunakan decrement atomic di DB level dengan WHERE guard non-negatif
+                $affected = Student::where('id', $student->id)
+                    ->where('saldo', '>=', $total)
                     ->decrement('saldo', $total);
+
+                if ($affected === 0) {
+                    throw new \Exception('Maaf, saldo santri tidak mencukupi untuk transaksi ini.');
+                }
+
                 // Re-read nilai saldo terbaru dari DB untuk balance_after yang akurat
                 $student->refresh();
                 $balanceAfter = $student->saldo;

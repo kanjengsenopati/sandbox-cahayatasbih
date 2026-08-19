@@ -69,21 +69,7 @@ class SaldoHistoryController extends BaseWaliApiController
                 }
             }
 
-            // Lazy cleanup for orphaned kode unik SaldoHistory records
-            // These are standalone SUCCESS records (not linked via transaction_details)
-            // created by SaldoService::addHistory when unique_payment was refunded at PAID transition,
-            // but never cleaned up when the transaction was later rejected/cancelled.
-            if ($history->status === SaldoHistory::STATUS_SUCCESS
-                && stripos($history->description, 'Kode Unik') !== false
-                && !$transactionDetail
-            ) {
-                // This is an orphaned kode unik record — force delete and decrement saldo
-                $student->decrement('saldo', $history->amount);
-                $history->forceDelete();
-                $histories->forget($key);
-                \Illuminate\Support\Facades\Log::info("PWA Lazy Cleanup: Removed orphaned kode unik SaldoHistory (Rp.{$history->amount}) for student {$student->name} ({$student->id}).");
-                continue;
-            }
+
         }
         $paginated->setCollection($histories->values());
 
