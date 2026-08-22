@@ -392,27 +392,46 @@
 
                                     @if(isset($paymentRate) && $paymentRate->type == 'TRANSFER')
                                         <!-- EDIT MODE FOR EXISTING TRANSFER RATE -->
-                                        <div class="p-5 bg-light rounded border mb-4">
+                                        <div class="p-6 bg-light rounded-4 border mb-4 shadow-sm" style="background-color: #fdfdfd; border: 1px solid #e4e6ef !important;">
                                             <div class="row g-4">
                                                 <div class="col-md-6">
-                                                    <label class="form-label fs-6 fw-bolder text-gray-700">Nama Jenis Status / Tagihan Khusus</label>
-                                                    <input type="text" class="form-control form-control-solid" name="transfer_edit_name" value="{{ $paymentRate->name }}" placeholder="Misal: Santri Ndalem" required />
+                                                    <label class="form-label fs-6 fw-bolder text-gray-800">Nama Jenis Status / Tagihan Khusus <span class="text-danger">*</span></label>
+                                                    <input type="text" class="form-control form-control-solid" id="transfer_edit_name" name="transfer_edit_name" value="{{ $paymentRate->name }}" placeholder="Misal: Santri Khidmat / Ndalem" required />
                                                 </div>
                                                 <div class="col-md-6">
-                                                    <label class="form-label fs-6 fw-bolder text-gray-700">Nominal Tarif (Rp)</label>
+                                                    <label class="form-label fs-6 fw-bolder text-gray-800">Nominal Tarif (Rp) <span class="text-danger">*</span></label>
                                                     <div class="input-group input-group-solid">
                                                         <span class="input-group-text border-0">Rp</span>
                                                         <input type="text" class="form-control form-control-solid input-money" name="price" value="{{ number_format($paymentRate->amount ?? 0, 0, ',', '.') }}" placeholder="0" required />
                                                     </div>
                                                 </div>
                                                 <div class="col-12">
-                                                    <label class="form-label fs-6 fw-bolder text-gray-700">Siswa Terdaftar Pada Tarif Ini</label>
-                                                    <div class="d-flex flex-wrap gap-2 pt-2">
-                                                        @foreach($paymentRate->paymentRateStudents as $prStudent)
-                                                            <span class="badge badge-light-primary p-2 fs-7">{{ $prStudent->student?->name }} ({{ $prStudent->student?->nis ?? '-' }})</span>
-                                                            <input type="hidden" name="students[]" value="{{ $prStudent->student_id }}">
-                                                        @endforeach
+                                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                                        <label class="form-label fs-6 fw-bolder text-gray-800 m-0">
+                                                            <i class="fas fa-users text-primary me-2"></i>Daftar Siswa Terdaftar & Tambah Siswa Susulan <span class="text-danger">*</span>
+                                                        </label>
+                                                        <span class="badge badge-light-primary fw-bolder fs-8" id="edit_students_count_badge">
+                                                            {{ $paymentRate->paymentRateStudents->count() }} Santri
+                                                        </span>
                                                     </div>
+                                                    <div class="form-text mb-3 text-muted">
+                                                        Ketik nama atau NIS santri pada kolom di bawah untuk mencari dan <strong>menambahkan santri susulan</strong>, atau klik tanda silang (<i class="fas fa-times text-danger fs-8"></i>) untuk menghapus santri dari tarif khusus ini.
+                                                    </div>
+                                                    
+                                                    <select class="form-select form-select-solid transfer-student-edit-select" id="transfer_edit_students" name="students[]" data-placeholder="Ketik untuk mencari dan menambahkan santri susulan..." multiple="multiple" required>
+                                                        @foreach($paymentRate->paymentRateStudents as $prStudent)
+                                                            @if($prStudent->student)
+                                                                <option value="{{ $prStudent->student_id }}" 
+                                                                        selected 
+                                                                        data-name="{{ $prStudent->student->name }}"
+                                                                        data-nis="{{ $prStudent->student->nis ?? '-' }}"
+                                                                        data-classroom="{{ $prStudent->student->classroom?->name ?? '-' }}"
+                                                                        data-school="{{ $prStudent->student->classroom?->school?->name ?? '-' }}">
+                                                                    {{ $prStudent->student->name }} [{{ $prStudent->student->nis ?? '-' }}] - {{ $prStudent->student->classroom?->name ?? '-' }}
+                                                                </option>
+                                                            @endif
+                                                        @endforeach
+                                                    </select>
                                                 </div>
                                             </div>
                                         </div>
@@ -655,63 +674,29 @@
                             <span class="badge badge-light-primary fw-bolder fs-7" id="selected_students_count_badge">0 Santri</span>
                         </div>
                         <div class="card-body pt-2 px-4">
-                            @if(isset($paymentRate) && $paymentRate->type == 'TRANSFER')
-                                <!-- EDIT MODE EXISTING STUDENTS TABLE -->
-                                <div class="table-responsive" style="max-height: 420px; overflow-y: auto;">
-                                    <table class="table table-row-dashed table-row-gray-200 align-middle gs-0 gy-2 mb-0">
-                                        <thead>
-                                            <tr class="fw-bolder text-gray-600 fs-8 text-uppercase bg-light">
-                                                <th class="w-30px text-center ps-2 rounded-start">No</th>
-                                                <th>Nama Santri</th>
-                                                <th class="text-center">Kelas</th>
-                                                <th class="text-end pe-2 rounded-end">Jenis Khusus</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            @foreach($paymentRate->paymentRateStudents as $idx => $prStudent)
-                                            <tr>
-                                                <td class="text-center fw-bold text-gray-700 ps-2 fs-7">{{ $idx + 1 }}</td>
-                                                <td>
-                                                    <span class="fw-bolder text-gray-800 fs-7">{{ $prStudent->student?->name ?? 'Siswa Dihapus' }}</span>
-                                                    <span class="text-muted fs-8 d-block">{{ $prStudent->student?->nis ?? '-' }}</span>
-                                                </td>
-                                                <td class="text-center">
-                                                    <span class="badge badge-light-info fw-bold fs-8">{{ $prStudent->student?->classroom?->name ?? '-' }}</span>
-                                                </td>
-                                                <td class="text-end pe-2">
-                                                    <span class="badge badge-light-warning fw-bolder fs-8">{{ $paymentRate->name }}</span>
-                                                </td>
-                                            </tr>
-                                            @endforeach
-                                        </tbody>
-                                    </table>
+                            <div id="empty_selected_students_notice" class="text-center py-8 text-muted d-none">
+                                <div class="symbol symbol-50px symbol-circle bg-light-primary mb-3 mx-auto d-flex align-items-center justify-content-center">
+                                    <i class="fas fa-users fs-2 text-primary"></i>
                                 </div>
-                            @else
-                                <!-- CREATE MODE DYNAMIC STUDENTS TABLE -->
-                                <div id="empty_selected_students_notice" class="text-center py-8 text-muted">
-                                    <div class="symbol symbol-50px symbol-circle bg-light-primary mb-3 mx-auto d-flex align-items-center justify-content-center">
-                                        <i class="fas fa-users fs-2 text-primary"></i>
-                                    </div>
-                                    <div class="fw-bold fs-7 text-gray-700">Belum ada santri yang dipilih</div>
-                                    <div class="fs-8 text-muted mt-1">Cari dan pilih santri pada kolom di sebelah kiri untuk melihat daftar urutan santri di sini.</div>
-                                </div>
+                                <div class="fw-bold fs-7 text-gray-700">Belum ada santri yang dipilih</div>
+                                <div class="fs-8 text-muted mt-1">Cari dan pilih santri pada kolom di sebelah kiri untuk melihat daftar urutan santri di sini.</div>
+                            </div>
 
-                                <div class="table-responsive d-none" id="selected_students_table_container" style="max-height: 420px; overflow-y: auto;">
-                                    <table class="table table-row-dashed table-row-gray-200 align-middle gs-0 gy-2 mb-0">
-                                        <thead>
-                                            <tr class="fw-bolder text-gray-600 fs-8 text-uppercase bg-light">
-                                                <th class="w-30px text-center ps-2 rounded-start">No</th>
-                                                <th>Nama Santri</th>
-                                                <th class="text-center">Kelas</th>
-                                                <th class="text-end pe-2 rounded-end">Jenis Khusus</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody id="selected_students_tbody">
-                                            <!-- Dynamically populated rows from selected students in repeater -->
-                                        </tbody>
-                                    </table>
-                                </div>
-                            @endif
+                            <div class="table-responsive" id="selected_students_table_container" style="max-height: 420px; overflow-y: auto;">
+                                <table class="table table-row-dashed table-row-gray-200 align-middle gs-0 gy-2 mb-0">
+                                    <thead>
+                                        <tr class="fw-bolder text-gray-600 fs-8 text-uppercase bg-light">
+                                            <th class="w-30px text-center ps-2 rounded-start">No</th>
+                                            <th>Nama Santri</th>
+                                            <th class="text-center">Kelas</th>
+                                            <th class="text-end pe-2 rounded-end">Jenis Khusus</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="selected_students_tbody">
+                                        <!-- Dynamically populated rows from selected students in repeater or edit select -->
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
                     </div>
                     <!--end::Selected Students Card-->
@@ -740,36 +725,61 @@
 <script>
     let khususRowCounter = 0;
 
-    // Cache of student details selected across all rows
+    // Cache of student details selected across all rows and edit mode
     const studentDetailCache = {};
 
     function renderSelectedStudentsTable() {
         const allStudents = [];
 
-        $('.siswa-khusus-row').each(function(rowIndex) {
-            const rowName = $(this).find('input[name^="transfer_names"]').val() || ('Jenis Khusus #' + (rowIndex + 1));
-            const selectEl = $(this).find('.transfer-student-select');
-            const selectedData = selectEl.select2('data') || [];
+        // CASE 1: EDIT MODE FOR EXISTING TRANSFER RATE
+        if ($('#transfer_edit_students').length > 0) {
+            const categoryName = $('#transfer_edit_name').val() || 'Siswa Khusus';
+            const selectedData = $('#transfer_edit_students').select2('data') || [];
 
             selectedData.forEach(function(item) {
-                // Look up in cache or extract from Select2 item
                 const cached = studentDetailCache[item.id] || {};
-                const className = item.classroom_name || cached.classroom_name || '-';
-                const studentName = item.name || cached.name || (item.text ? item.text.split('[')[0].trim() : 'Santri');
-                const studentNis = item.nis || cached.nis || (item.text && item.text.match(/\[(.*?)\]/) ? item.text.match(/\[(.*?)\]/)[1] : '-');
+                const className = item.classroom_name || cached.classroom_name || $(item.element).data('classroom') || '-';
+                const studentName = item.name || cached.name || $(item.element).data('name') || (item.text ? item.text.split('[')[0].trim() : 'Santri');
+                const studentNis = item.nis || cached.nis || $(item.element).data('nis') || (item.text && item.text.match(/\[(.*?)\]/) ? item.text.match(/\[(.*?)\]/)[1] : '-');
 
                 allStudents.push({
                     id: item.id,
                     name: studentName,
                     nis: studentNis,
                     classroom: className,
-                    categoryName: rowName
+                    categoryName: categoryName
                 });
             });
-        });
+        } else {
+            // CASE 2: CREATE MODE WITH DYNAMIC REPEATER
+            $('.siswa-khusus-row').each(function(rowIndex) {
+                const rowName = $(this).find('input[name^="transfer_names"]').val() || ('Jenis Khusus #' + (rowIndex + 1));
+                const selectEl = $(this).find('.transfer-student-select');
+                const selectedData = selectEl.select2('data') || [];
+
+                selectedData.forEach(function(item) {
+                    // Look up in cache or extract from Select2 item
+                    const cached = studentDetailCache[item.id] || {};
+                    const className = item.classroom_name || cached.classroom_name || '-';
+                    const studentName = item.name || cached.name || (item.text ? item.text.split('[')[0].trim() : 'Santri');
+                    const studentNis = item.nis || cached.nis || (item.text && item.text.match(/\[(.*?)\]/) ? item.text.match(/\[(.*?)\]/)[1] : '-');
+
+                    allStudents.push({
+                        id: item.id,
+                        name: studentName,
+                        nis: studentNis,
+                        classroom: className,
+                        categoryName: rowName
+                    });
+                });
+            });
+        }
 
         const count = allStudents.length;
         $('#selected_students_count_badge').text(count + ' Santri');
+        if ($('#edit_students_count_badge').length > 0) {
+            $('#edit_students_count_badge').text(count + ' Santri');
+        }
 
         if (count === 0) {
             $('#empty_selected_students_notice').removeClass('d-none');
@@ -797,7 +807,7 @@
                             ${classBadge}
                         </td>
                         <td class="text-end pe-2">
-                            <span class="badge badge-light-primary fw-bolder fs-8">${student.categoryName}</span>
+                            <span class="badge badge-light-warning fw-bolder fs-8">${student.categoryName}</span>
                         </td>
                     </tr>
                 `;
@@ -921,6 +931,86 @@
 
     $(document).ready(function() {
 
+        // ========================================================
+        // INITIALIZE EDIT MODE SISWA KHUSUS SELECT2
+        // ========================================================
+        if ($('#transfer_edit_students').length > 0) {
+            // Preload student cache from existing selected options
+            $('#transfer_edit_students option:selected').each(function() {
+                const sId = $(this).val();
+                studentDetailCache[sId] = {
+                    id: sId,
+                    name: $(this).data('name') || $(this).text().split('[')[0].trim(),
+                    nis: $(this).data('nis') || ($(this).text().match(/\[(.*?)\]/) ? $(this).text().match(/\[(.*?)\]/)[1] : '-'),
+                    classroom_name: $(this).data('classroom') || '-',
+                    school_name: $(this).data('school') || '-'
+                };
+            });
+
+            // Initialize AJAX Select2 for Edit Mode
+            $('#transfer_edit_students').select2({
+                ajax: {
+                    url: "{{ route('select2') }}",
+                    dataType: 'json',
+                    delay: 250,
+                    data: function (params) {
+                        return { 
+                            data_type: 'STUDENT', 
+                            school_id: $('#school_id').val(),
+                            q: params.term, 
+                            page: params.page 
+                        };
+                    },
+                    processResults: function (data, params) {
+                        params.page = params.page || 1;
+                        return { 
+                            results: $.map(data, function (item) { 
+                                studentDetailCache[item.id] = {
+                                    id: item.id,
+                                    name: item.name,
+                                    nis: item.nis,
+                                    classroom_name: item.classroom_name,
+                                    gender: item.gender
+                                };
+
+                                return { 
+                                    id: item.id,
+                                    name: item.name,
+                                    nis: item.nis,
+                                    classroom_name: item.classroom_name,
+                                    gender: item.gender,
+                                    text: item.text 
+                                }; 
+                            }), 
+                            pagination: { more: (params.page * 30) < (data.total_count || 0) } 
+                        };
+                    }
+                },
+                minimumInputLength: 1,
+                language: {
+                    inputTooShort: function() {
+                        return "Ketik nama atau NIS santri...";
+                    },
+                    searching: function() {
+                        return "Mencari data santri...";
+                    },
+                    noResults: function() {
+                        return "Santri tidak ditemukan";
+                    }
+                }
+            });
+
+            // Listen to student changes in edit mode
+            $('#transfer_edit_students').on('change select2:select select2:unselect', function() {
+                renderSelectedStudentsTable();
+            });
+
+            // Listen to name changes in edit mode
+            $('#transfer_edit_name').on('input keyup change', function() {
+                renderSelectedStudentsTable();
+            });
+        }
+
         // Function to fetch classrooms dynamically
         function fetchClassrooms() {
             var school_id = $('#school_id').val();
@@ -1007,8 +1097,8 @@
                 $('#selected_students_card').removeClass('d-none');
                 $('#type_helper').text('Tarif hanya akan diterapkan untuk siswa tertentu yang dipilih pada daftar di bawah.');
                 
-                // Auto create initial row if empty
-                if ($('#siswa_khusus_repeater .siswa-khusus-row').length === 0 && !$('input[name="transfer_edit_name"]').length) {
+                // Auto create initial row if empty in create mode
+                if ($('#siswa_khusus_repeater .siswa-khusus-row').length === 0 && !$('#transfer_edit_students').length) {
                     addSiswaKhususRow();
                 }
 
@@ -1021,7 +1111,7 @@
         });
 
         // Initial Trigger
-        var initialType = $('input[name="type"]:checked').val() || 'REGULAR';
+        var initialType = $('input[name="type"]:checked').val() || $('input[name="type"]').val() || 'REGULAR';
         toggleCategoryType(initialType);
 
         function updateSelectAllButtonText() {
@@ -1135,16 +1225,31 @@
                 }
             } else {
                 // SISWA KHUSUS VALIDATION
-                if ($('.siswa-khusus-row').length === 0 && !$('input[name="transfer_edit_name"]').length) {
-                    e.preventDefault();
-                    Swal.fire({
-                        text: "Harap tambahkan minimal 1 baris tarif Siswa Khusus.",
-                        icon: "warning",
-                        buttonsStyling: false,
-                        confirmButtonText: "Ok, Mengerti",
-                        customClass: { confirmButton: "btn btn-primary" }
-                    });
-                    return false;
+                if ($('#transfer_edit_students').length > 0) {
+                    var selectedStudents = $('#transfer_edit_students').val();
+                    if (!selectedStudents || selectedStudents.length === 0) {
+                        e.preventDefault();
+                        Swal.fire({
+                            text: "Harap pilih minimal 1 santri target untuk tarif khusus ini.",
+                            icon: "warning",
+                            buttonsStyling: false,
+                            confirmButtonText: "Ok, Mengerti",
+                            customClass: { confirmButton: "btn btn-primary" }
+                        });
+                        return false;
+                    }
+                } else {
+                    if ($('.siswa-khusus-row').length === 0) {
+                        e.preventDefault();
+                        Swal.fire({
+                            text: "Harap tambahkan minimal 1 baris tarif Siswa Khusus.",
+                            icon: "warning",
+                            buttonsStyling: false,
+                            confirmButtonText: "Ok, Mengerti",
+                            customClass: { confirmButton: "btn btn-primary" }
+                        });
+                        return false;
+                    }
                 }
             }
 

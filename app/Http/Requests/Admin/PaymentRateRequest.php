@@ -54,10 +54,17 @@ class PaymentRateRequest extends FormRequest
             'student_sub_status_id' => 'nullable|uuid|exists:student_sub_statuses,id',
         ];
 
-        if ($this->type == 'TRANSFER' && $this->isMethod('post')) {
-            $rules['transfer_names'] = 'required|array';
-            $rules['transfer_prices'] = 'required|array';
-            $rules['transfer_students'] = 'required|array';
+        if ($this->type == 'TRANSFER') {
+            if ($this->isMethod('post')) {
+                $rules['transfer_names'] = 'required|array';
+                $rules['transfer_prices'] = 'required|array';
+                $rules['transfer_students'] = 'required|array';
+            } else {
+                $rules['transfer_edit_name'] = 'required|string|max:255';
+                $rules['price'] = 'required|numeric';
+                $rules['students'] = 'required|array|min:1';
+                $rules['students.*'] = 'required|uuid|exists:students,id';
+            }
         } elseif ($this->has('is_matrix') && $this->is_matrix == 1) {
             $rules['matrix_price'] = 'required|array';
         } elseif ($this->has('is_matrix_pptq') && $this->is_matrix_pptq == 1) {
@@ -69,9 +76,6 @@ class PaymentRateRequest extends FormRequest
         // Validation for CREATE only
         if ($this->isMethod('post')) {
             $rules['classrooms'] = 'required_if:type,REGULAR|array';
-            
-            // For monthly, we can allow price to be 0 or null technically if months are filled, 
-            // but the form usually forces a value. keeping price required is safer.
         }
 
         return $rules;
