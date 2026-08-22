@@ -403,6 +403,19 @@ class SyncPaymentRateBills extends Command
             if ($paymentRate->student_sub_status_id) {
                 $query->where('student_sub_status_id', $paymentRate->student_sub_status_id);
             }
+
+            // Exclude students who have a Special / Transfer rate for this bill type
+            $transferStudentIds = DB::table('payment_rate_students')
+                ->join('payment_rates', 'payment_rate_students.payment_rate_id', '=', 'payment_rates.id')
+                ->where('payment_rates.bill_type_id', $paymentRate->bill_type_id)
+                ->where('payment_rates.type', PaymentRate::TYPE_TRANSFER)
+                ->whereNull('payment_rate_students.deleted_at')
+                ->whereNull('payment_rates.deleted_at')
+                ->pluck('payment_rate_students.student_id')
+                ->toArray();
+            if (!empty($transferStudentIds)) {
+                $query->whereNotIn('id', $transferStudentIds);
+            }
         } else {
             $studentIds = $paymentRate->paymentRateStudents->pluck('student_id')->toArray();
             if (empty($studentIds)) {
