@@ -1022,8 +1022,8 @@ class PaymentRateController extends Controller
                 for ($month = 1; $month <= 12; $month++) {
                     $year = $request->input("tahun_$month") ?? ($billType->academicYear->start_year ?? date('Y'));
                     
-                    // If month-specific price is provided (bulan_1, etc.), use it; otherwise use globalPrice if month is active
-                    if ($request->has("bulan_$month") && $request->input("bulan_$month") !== null && $request->input("bulan_$month") !== '') {
+                    // If month-specific price is provided (bulan_1, etc.) and it's NOT a transfer rate, use it; otherwise use globalPrice if month is active
+                    if ($request->type !== 'TRANSFER' && $request->has("bulan_$month") && $request->input("bulan_$month") !== null && $request->input("bulan_$month") !== '') {
                         $cleanAmount = (int) preg_replace('/[^0-9]/', '', (string)$request->input("bulan_$month"));
                     } else {
                         $cleanAmount = (!$hasActiveMonths || in_array($month, $activeMonths)) ? $globalPrice : 0;
