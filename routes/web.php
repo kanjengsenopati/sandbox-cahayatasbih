@@ -239,6 +239,7 @@ Route::group(['middleware' => ['auth']], function () {
     Route::get('payment-rate/get-student', [PaymentRateController::class, 'getStudent'])
         ->name('payment-rate.get-student');
     Route::get('select2', [Select2Controller::class, 'index'])->name('select2');
+    Route::get('select2/students', [Select2Controller::class, 'students'])->name('admin.select2.students');
     Route::resource('permission', PermissionController::class, ['except' => ['show']]);
     Route::post('role/{role}/assign', [RoleController::class, 'assignUsers'])->name('role.assign');
     Route::resource('role', RoleController::class);
@@ -264,6 +265,7 @@ Route::group(['middleware' => ['auth']], function () {
     Route::post('student/import-preview', [StudentController::class, 'importPreview'])->name('student.import-preview');
     Route::post('student/import-confirm', [StudentController::class, 'importConfirm'])->name('student.import-confirm');
     Route::post('student/bulk-delete', [StudentController::class, 'bulkDestroy'])->name('student.bulk-delete');
+    Route::post('student/bulk-update-sub-status', [StudentController::class, 'bulkUpdateSubStatus'])->name('student.bulk-update-sub-status');
     Route::resource('student', StudentController::class);
     Route::resource('tahfidz', TahfidzController::class);
     Route::resource('category-item', CategoryItemController::class);

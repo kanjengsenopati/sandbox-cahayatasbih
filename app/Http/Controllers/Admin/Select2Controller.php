@@ -18,6 +18,11 @@ use App\Http\Controllers\Controller;
 
 class Select2Controller extends Controller
 {
+    public function students(\Illuminate\Http\Request $request) {
+        $request->merge(['data_type' => 'STUDENT']);
+        return $this->index($request);
+    }
+
     public function index(Request $request)
     {
         $data = match ($request->data_type) {
@@ -85,18 +90,57 @@ class Select2Controller extends Controller
 
     public function student($request)
     {
-        return Student::hasSchoolPlace()
-            ->with('classroom.school')
+        $search = strtolower(trim($request->q ?: ($request->search ?? '')));
+        $schoolId = $request->school_id ?: auth()->user()?->school_id;
+
+        $query = Student::hasSchoolPlace()
+            ->with(['classroom.school'])
             ->where(function ($q) {
                 $q->where('status', '!=', Student::STATUS_DROPPED_OUT)
                   ->orWhereHas('bills', function ($bQ) {
                       $bQ->where('status', \App\Models\Bill::STATUS_UNPAID);
                   });
-            })
-            ->whereRaw('LOWER(name) like ?', ['%' . strtolower($request->search) . '%'])
-            ->hasSchool()
-            ->take(30)
+            });
+
+        if (!empty($schoolId)) {
+            $query->where(function ($q) use ($schoolId) {
+                $q->where('school_id', $schoolId)
+                  ->orWhereHas('classroom', function ($cQ) use ($schoolId) {
+                      $cQ->where('school_id', $schoolId);
+                  });
+            });
+        }
+
+        if (!empty($search)) {
+            $query->where(function ($sq) use ($search) {
+                $sq->whereRaw('LOWER(name) like ?', ['%' . $search . '%'])
+                  ->orWhereRaw('LOWER(nis) like ?', ['%' . $search . '%'])
+                  ->orWhereRaw('LOWER(nisn) like ?', ['%' . $search . '%']);
+            });
+        }
+
+        $students = $query->hasSchool()
+            ->orderBy('name')
+            ->take(50)
             ->get();
+
+        return $students->map(function ($student) {
+            $className = $student->classroom?->name ?? '-';
+            $genderText = $student->gender === 'L' ? 'Putra' : ($student->gender === 'P' ? 'Putri' : '');
+            $nisText = $student->nis ? " [{$student->nis}]" : '';
+            $classText = $className !== '-' ? " (Kelas {$className})" : '';
+            
+            return [
+                'id' => $student->id,
+                'name' => $student->name,
+                'nis' => $student->nis ?? '-',
+                'gender' => $student->gender,
+                'classroom_name' => $className,
+                'classroom_id' => $student->classroom_id,
+                'school_name' => $student->classroom?->school?->name ?? '-',
+                'text' => $student->name . $nisText . $classText . ($genderText ? " - {$genderText}" : ''),
+            ];
+        });
     }
 
     public function item($request)

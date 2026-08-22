@@ -205,21 +205,70 @@ class SyncPaymentRateBills extends Command
 
                             if ($needsUpdate) {
                                 if ($existingBill->status === \App\Models\Bill::STATUS_PAID || $existingBill->status === 'PARTIAL') {
-                                    // For PAID/PARTIAL bills, ONLY update payment_rate_item_id and classroom, NEVER change the amount!
-                                    if ($existingBill->payment_rate_item_id !== $item->id) {
-                                        if (!$isDryRun) {
-                                            DB::table('bills')
-                                                ->where('id', $existingBill->id)
-                                                ->update([
+                                    $paidAmount = $existingBill->paid_amount;
+                                    $newAmount = $billAmount;
+                                    
+                                    if ($newAmount != $existingBill->amount) {
+                                        // Auto-adjustment logic for overpricing/underpricing
+                                        if ($paidAmount > $newAmount) {
+                                            $overpayment = $paidAmount - $newAmount;
+                                            if (!$isDryRun) {
+                                                $studentModel = \App\Models\Student::find($student->id);
+                                                $oldBalance = $studentModel->saldo;
+                                                $studentModel->increment('saldo', $overpayment);
+                                                
+                                                \App\Models\SaldoHistory::create([
+                                                    'student_id' => $student->id,
+                                                    'type' => \App\Models\SaldoHistory::TYPE_IN,
+                                                    'amount' => $overpayment,
+                                                    'description' => 'Alokasi Kelebihan Bayar ' . $billType->name,
+                                                    'status' => \App\Models\SaldoHistory::STATUS_SUCCESS,
+                                                    'usage' => \App\Models\SaldoHistory::USAGE_BILL,
+                                                    'balance_before' => $oldBalance,
+                                                    'balance_after' => $oldBalance + $overpayment,
+                                                ]);
+                                                
+                                                DB::table('bills')->where('id', $existingBill->id)->update([
+                                                    'amount' => $newAmount,
+                                                    'paid_amount' => $newAmount,
+                                                    'status' => \App\Models\Bill::STATUS_PAID,
                                                     'payment_rate_item_id' => $item->id,
                                                     'classroom_id'         => $targetClassroomId,
                                                     'updated_at'           => $timestamp,
                                                 ]);
+                                            }
+                                            $totalUpdated++;
+                                            $this->line("    [ADJUSTMENT] {$student->name} | Kelebihan Rp " . number_format($overpayment, 0, ',', '.') . " dialokasikan ke saldo.");
+                                        } else {
+                                            // paidAmount <= newAmount
+                                            if (!$isDryRun) {
+                                                $newStatus = ($paidAmount == $newAmount) ? \App\Models\Bill::STATUS_PAID : 'PARTIAL';
+                                                DB::table('bills')->where('id', $existingBill->id)->update([
+                                                    'amount' => $newAmount,
+                                                    'status' => $newStatus,
+                                                    'payment_rate_item_id' => $item->id,
+                                                    'classroom_id'         => $targetClassroomId,
+                                                    'updated_at'           => $timestamp,
+                                                ]);
+                                            }
+                                            $totalUpdated++;
+                                            $this->line("    [UPDATE-AMOUNT] {$student->name} | Bulan {$billMonth}/{$billYear} | Diperbarui nominal dan status.");
                                         }
-                                        $totalUpdated++;
-                                        $this->line("    [UPDATE-LINK] {$student->name} | Bulan {$billMonth}/{$billYear} | Diperbarui relasi item ID");
                                     } else {
-                                        $totalSkipped++;
+                                        // Same amount, just update link
+                                        if ($existingBill->payment_rate_item_id !== $item->id) {
+                                            if (!$isDryRun) {
+                                                DB::table('bills')->where('id', $existingBill->id)->update([
+                                                    'payment_rate_item_id' => $item->id,
+                                                    'classroom_id'         => $targetClassroomId,
+                                                    'updated_at'           => $timestamp,
+                                                ]);
+                                            }
+                                            $totalUpdated++;
+                                            $this->line("    [UPDATE-LINK] {$student->name} | Bulan {$billMonth}/{$billYear} | Diperbarui relasi item ID");
+                                        } else {
+                                            $totalSkipped++;
+                                        }
                                     }
                                 } else {
                                     // For UNPAID bills, update both amount and item_id
@@ -318,6 +367,42 @@ class SyncPaymentRateBills extends Command
             } else {
                 $query->whereIn('classroom_id', $classroomIds);
             }
+
+            // Strict 3-UPT Guard: Ensure student's classroom belongs strictly to the target UPT school of the BillType
+            $billType = $paymentRate->billType;
+            if ($billType) {
+                $targetSchoolId = $this->resolveTargetSchoolIdForBillType($billType);
+                if ($targetSchoolId) {
+                    $query->whereHas('classroom', function ($q) use ($targetSchoolId) {
+                        $q->where('school_id', $targetSchoolId);
+                    });
+                }
+            }
+
+            // Filter by gender
+            if ($paymentRate->gender) {
+                $query->whereIn('gender', array_map('trim', explode(',', $paymentRate->gender)));
+            }
+
+            // Filter by jamaah_status
+            if ($paymentRate->jamaah_status) {
+                $statuses = array_map('trim', explode(',', $paymentRate->jamaah_status));
+                $query->where(function ($q) use ($statuses) {
+                    $userQ->whereIn('jamaah_status', $statuses);
+                    if (in_array('NON_JAMAAH', $statuses)) {
+                        $q->orWhereNull('user_id')
+                          ->orWhereDoesntHave('user')
+                          ->orWhereHas('user', function ($userQ) {
+                              $userQ->whereNull('jamaah_status');
+                          });
+                    }
+                });
+            }
+
+            // Filter by student_sub_status_id (PPTQ Matrix)
+            if ($paymentRate->student_sub_status_id) {
+                $query->where('student_sub_status_id', $paymentRate->student_sub_status_id);
+            }
         } else {
             $studentIds = $paymentRate->paymentRateStudents->pluck('student_id')->toArray();
             if (empty($studentIds)) {
@@ -326,40 +411,7 @@ class SyncPaymentRateBills extends Command
             $query->whereIn('id', $studentIds);
         }
 
-        // Strict 3-UPT Guard: Ensure student's classroom belongs strictly to the target UPT school of the BillType
-        $billType = $paymentRate->billType;
-        if ($billType) {
-            $targetSchoolId = $this->resolveTargetSchoolIdForBillType($billType);
-            if ($targetSchoolId) {
-                $query->whereHas('classroom', function ($q) use ($targetSchoolId) {
-                    $q->where('school_id', $targetSchoolId);
-                });
-            }
-        }
-
-        // Filter by gender
-        if ($paymentRate->gender) {
-            $query->whereIn('gender', array_map('trim', explode(',', $paymentRate->gender)));
-        }
-
-        // Filter by jamaah_status
-        if ($paymentRate->jamaah_status) {
-            $statuses = array_map('trim', explode(',', $paymentRate->jamaah_status));
-            $query->where(function ($q) use ($statuses) {
-                $q->whereHas('user', function ($userQ) use ($statuses) {
-                    $userQ->whereIn('jamaah_status', $statuses);
-                });
-                if (in_array('NON_JAMAAH', $statuses)) {
-                    $q->orWhereNull('user_id')
-                      ->orWhereDoesntHave('user')
-                      ->orWhereHas('user', function ($userQ) {
-                          $userQ->whereNull('jamaah_status');
-                      });
-                }
-            });
-        }
-
-        return $query->get(['id', 'name', 'classroom_id', 'gender', 'user_id']);
+        return $query->get(['id', 'name', 'classroom_id', 'gender', 'user_id', 'student_sub_status_id']);
     }
 
     /**

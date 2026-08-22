@@ -87,6 +87,9 @@
                     <div class="d-flex flex-column flex-sm-row align-items-end">
                         {{-- <div class="me-sm-3 mb-3 mb-sm-0"> --}}
                             <div class="d-flex gap-2">
+                                <button type="button" id="btn-bulk-update-substatus" class="btn btn-warning btn-sm d-none" data-bs-toggle="modal" data-bs-target="#modalBulkUpdateSubStatus">
+                                    <i class="fa fa-edit me-2"></i> Ubah Status PPTQ
+                                </button>
                                 <button type="button" id="btn-bulk-delete-student" class="btn btn-danger btn-sm d-none">
                                     <i class="fa fa-trash me-2"></i> Hapus Terpilih
                                 </button>
@@ -184,6 +187,36 @@
         <div class="modal-content rounded-[24px] shadow-[0_8px_30px_rgb(0,0,0,0.04)] border-0" id="modalEditSiswaContent">
             <div class="p-10 text-center text-muted">
                 <span class="spinner-border spinner-border-sm me-2"></span> Memuat Form Edit Siswa...
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Bulk Update Sub Status PPTQ -->
+<div class="modal fade" id="modalBulkUpdateSubStatus" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-[24px] shadow-[0_8px_30px_rgb(0,0,0,0.04)] border-0">
+            <div class="modal-header">
+                <h5 class="modal-title">Ubah Status Santri PPTQ</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-5">
+                    <label class="form-label fw-bold">Pilih Status Baru</label>
+                    <select id="bulk_sub_status_id" class="form-select form-select-solid">
+                        <option value="">Pilih Status</option>
+                        @foreach($studentSubStatuses ?? [] as $subStatus)
+                        <option value="{{ $subStatus->id }}">{{ $subStatus->name }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="alert alert-info">
+                    Ini akan memperbarui status <strong id="bulk_sub_status_count">0</strong> santri terpilih.
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                <button type="button" id="btn-submit-bulk-substatus" class="btn btn-primary">Simpan</button>
             </div>
         </div>
     </div>
@@ -334,8 +367,11 @@
             var checkedCount = $('.student-checkbox:checked').length;
             if (checkedCount > 0) {
                 $('#btn-bulk-delete-student').removeClass('d-none');
+                $('#btn-bulk-update-substatus').removeClass('d-none');
+                $('#bulk_sub_status_count').text(checkedCount);
             } else {
                 $('#btn-bulk-delete-student').addClass('d-none');
+                $('#btn-bulk-update-substatus').addClass('d-none');
             }
         }
 
@@ -503,6 +539,59 @@
                         confirmButtonText: "Ok, Mengerti",
                         customClass: { confirmButton: "btn btn-primary rounded-[24px]" }
                     });
+                }
+            });
+        });
+
+        // Bulk Update Sub Status Submit
+        $('#btn-submit-bulk-substatus').on('click', function() {
+            var selectedIds = [];
+            $('.student-checkbox:checked').each(function() {
+                selectedIds.push($(this).val());
+            });
+
+            var subStatusId = $('#bulk_sub_status_id').val();
+
+            if (selectedIds.length === 0) {
+                Swal.fire("Peringatan", "Pilih minimal satu santri", "warning");
+                return;
+            }
+
+            if (!subStatusId) {
+                Swal.fire("Peringatan", "Pilih status baru terlebih dahulu", "warning");
+                return;
+            }
+
+            var btn = $(this);
+            btn.prop('disabled', true).text('Menyimpan...');
+
+            $.ajax({
+                url: '{{ route('student.bulk-update-sub-status') }}',
+                type: 'POST',
+                data: {
+                    _token: '{{ csrf_token() }}',
+                    ids: selectedIds,
+                    sub_status_id: subStatusId
+                },
+                success: function(response) {
+                    btn.prop('disabled', false).text('Simpan');
+                    $('#modalBulkUpdateSubStatus').modal('hide');
+                    if (response.success) {
+                        Swal.fire({
+                            text: response.message,
+                            icon: "success",
+                            buttonsStyling: false,
+                            confirmButtonText: "Ok, Mengerti",
+                            customClass: { confirmButton: "btn btn-primary rounded-[24px]" }
+                        });
+                        table.ajax.reload(null, false);
+                    } else {
+                        Swal.fire("Gagal", response.message, "error");
+                    }
+                },
+                error: function(xhr) {
+                    btn.prop('disabled', false).text('Simpan');
+                    Swal.fire("Gagal", "Terjadi kesalahan server", "error");
                 }
             });
         });

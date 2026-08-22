@@ -121,7 +121,7 @@ class Student extends Model
     public function scopeHasSchoolPlace($query)
     {
         // if auth user have school_id, then use it
-        if (Auth::guard('web')->user()->school_id) {
+        if (Auth::guard('web')->user()?->school_id) {
             return $query->whereSchoolId(Auth::guard('web')->user()->school_id);
         }
     }

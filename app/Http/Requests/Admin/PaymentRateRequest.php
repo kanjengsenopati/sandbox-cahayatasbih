@@ -51,10 +51,17 @@ class PaymentRateRequest extends FormRequest
             'jamaah_status.*' => 'in:JAMAAH,NON_JAMAAH,MUKIMIN',
             'alumni_status' => 'nullable|array',
             'alumni_status.*' => 'in:ALUMNI_SMP_MA,NON_ALUMNI',
+            'student_sub_status_id' => 'nullable|uuid|exists:student_sub_statuses,id',
         ];
 
-        if ($this->has('is_matrix') && $this->is_matrix == 1) {
+        if ($this->type == 'TRANSFER' && $this->isMethod('post')) {
+            $rules['transfer_names'] = 'required|array';
+            $rules['transfer_prices'] = 'required|array';
+            $rules['transfer_students'] = 'required|array';
+        } elseif ($this->has('is_matrix') && $this->is_matrix == 1) {
             $rules['matrix_price'] = 'required|array';
+        } elseif ($this->has('is_matrix_pptq') && $this->is_matrix_pptq == 1) {
+            $rules['matrix_price_pptq'] = 'required|array';
         } else {
             $rules['price'] = 'required|numeric';
         }
@@ -62,7 +69,6 @@ class PaymentRateRequest extends FormRequest
         // Validation for CREATE only
         if ($this->isMethod('post')) {
             $rules['classrooms'] = 'required_if:type,REGULAR|array';
-            $rules['students'] = 'required_if:type,TRANSFER|array';
             
             // For monthly, we can allow price to be 0 or null technically if months are filled, 
             // but the form usually forces a value. keeping price required is safer.

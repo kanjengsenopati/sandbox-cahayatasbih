@@ -996,6 +996,12 @@ class TransactionService
                     if (!in_array($studentAlumniStatus, $statuses)) continue;
                 }
 
+                if (!empty($rate->student_sub_status_id)) {
+                    if ($student->student_sub_status_id !== $rate->student_sub_status_id) {
+                        continue;
+                    }
+                }
+
                 $item = $rate->paymentRateItems->first(fn($i) => $i->month == $month && $i->year == $year);
                 if ($item) return (int) $item->amount;
                 if ($rate->amount > 0) return (int) ($rate->amount / 12);
@@ -1052,18 +1058,26 @@ class TransactionService
             }
 
             if (!empty($r->alumni_status)) {
-                $isAlumni = false;
-                if ($student->classroom && $student->classroom->school && str_contains(strtoupper($student->classroom->school->name), 'MA')) {
-                    $hasSmpHistory = \App\Models\StudentClassroomHistory::where('student_id', $student->id)
-                        ->whereHas('classroom.school', function($q) {
-                            $q->where('name', 'like', '%SMP%');
-                        })->exists();
-                    $isAlumni = $hasSmpHistory;
+                if (!isset($isAlumni)) {
+                    $isAlumni = false;
+                    if ($student->classroom && $student->classroom->school && str_contains(strtoupper($student->classroom->school->name), 'MA')) {
+                        $hasSmpHistory = \App\Models\StudentClassroomHistory::where('student_id', $student->id)
+                            ->whereHas('classroom.school', function($q) {
+                                $q->where('name', 'like', '%SMP%');
+                            })->exists();
+                        $isAlumni = $hasSmpHistory;
+                    }
                 }
-                
+
                 $statuses = array_map('trim', explode(',', $r->alumni_status));
                 $studentAlumniStatus = $isAlumni ? 'ALUMNI_SMP_MA' : 'NON_ALUMNI';
                 if (!in_array($studentAlumniStatus, $statuses)) return false;
+            }
+
+            if (!empty($r->student_sub_status_id)) {
+                if ($student->student_sub_status_id !== $r->student_sub_status_id) {
+                    return false;
+                }
             }
 
 

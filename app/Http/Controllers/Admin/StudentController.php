@@ -79,20 +79,36 @@ class StudentController extends Controller
                     return $data->classroom->school->name ?? 'Belum ada sekolah';
                 })
                 ->addColumn('status', function ($data) {
+                    $html = '';
                     switch ($data->status) {
                         case 'ACTIVE':
-                            return '<span class="badge bg-success">Aktif</span>';
+                            $html .= '<span class="badge bg-success">Aktif</span>';
+                            break;
                         case 'INACTIVE':
-                            return '<span class="badge bg-danger">Tidak Aktif</span>';
+                            $html .= '<span class="badge bg-danger">Tidak Aktif</span>';
+                            break;
                         case 'GRADUATED':
-                            return '<span class="badge bg-warning">Lulus</span>';
+                            $html .= '<span class="badge bg-warning">Lulus</span>';
+                            break;
                         case 'TRANSFERRED':
-                            return '<span class="badge bg-info">Pindah</span>';
+                            $html .= '<span class="badge bg-info">Pindah</span>';
+                            break;
                         case 'DROPPED_OUT':
-                            return '<span class="badge bg-secondary">Keluar</span>';
+                            $html .= '<span class="badge bg-secondary">Keluar</span>';
+                            break;
                         default:
-                            return '<span class="badge bg-secondary">Tidak Diketahui</span>';
+                            $html .= '<span class="badge bg-secondary">Tidak Diketahui</span>';
+                            break;
                     }
+
+                    if ($data->student_sub_status_id) {
+                        $subStatus = \App\Models\StudentSubStatus::find($data->student_sub_status_id);
+                        if ($subStatus) {
+                            $html .= '<div class="mt-1"><span class="badge badge-light-info fw-bolder px-2 py-1">' . $subStatus->name . '</span></div>';
+                        }
+                    }
+
+                    return $html;
                 })
                 ->addColumn('student', function ($data) use ($activeAy) {
                     $studentName = $data?->name ? $data->name : '-';
@@ -173,7 +189,8 @@ class StudentController extends Controller
                 ->make(true);
         }
         $schools = School::hasSchool()->orderBy('name')->get();
-        return view('admins.student.index', compact('schools'));
+        $studentSubStatuses = \App\Models\StudentSubStatus::where('is_active', true)->get();
+        return view('admins.student.index', compact('schools', 'studentSubStatuses'));
     }
 
     /**
@@ -887,6 +904,24 @@ class StudentController extends Controller
         } catch (\Exception $e) {
             Log::error('Bulk delete students failed: ' . $e->getMessage());
             return response()->json(['success' => false, 'message' => 'Gagal menghapus data santri terpilih: ' . $e->getMessage()], 500);
+        }
+    }
+
+    public function bulkUpdateSubStatus(\Illuminate\Http\Request $request)
+    {
+        $ids = $request->ids;
+        $subStatusId = $request->sub_status_id;
+
+        if (empty($ids) || !is_array($ids)) {
+            return response()->json(['success' => false, 'message' => 'Pilih minimal satu santri'], 400);
+        }
+
+        try {
+            Student::whereIn('id', $ids)->update(['student_sub_status_id' => $subStatusId]);
+            return response()->json(['success' => true, 'message' => 'Berhasil memperbarui status santri']);
+        } catch (\Exception $e) {
+            Log::error('Bulk update sub status failed: ' . $e->getMessage());
+            return response()->json(['success' => false, 'message' => 'Gagal memperbarui status santri: ' . $e->getMessage()], 500);
         }
     }
 }

@@ -133,21 +133,22 @@
             <div class="card-body pt-0">
                 
                 <!--begin::Nav Tabs-->
-                <ul class="nav nav-tabs nav-line-tabs mb-5 fs-6">
-                    <li class="nav-item">
-                        <a class="nav-link active" data-bs-toggle="tab" href="#tab_regular">
-                            Siswa Reguler
-                            <span class="badge badge-light-success ms-2">{{ $regularRates->count() }}</span>
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" data-bs-toggle="tab" href="#tab_transfer">
-                            Siswa Pindahan
-                            <span class="badge badge-light-warning ms-2">{{ $transferRates->count() }}</span>
-                        </a>
-                    </li>
-                </ul>
-                <!--end::Nav Tabs-->
+                <div class="card-title m-0">
+                    <ul class="nav nav-tabs nav-line-tabs mb-5 fs-6">
+                        <li class="nav-item">
+                            <a class="nav-link active" data-bs-toggle="tab" href="#tab_regular">
+                                Siswa Umum
+                                <span class="badge badge-light-success ms-2">{{ $regularRates->count() }}</span>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" data-bs-toggle="tab" href="#tab_transfer">
+                                Siswa Khusus
+                                <span class="badge badge-light-warning ms-2">{{ $transferRates->count() }}</span>
+                            </a>
+                        </li>
+                    </ul>
+                </div><!--end::Nav Tabs-->
 
                 <!--begin::Tab Content-->
                 <div class="tab-content" id="myTabContent">
@@ -229,7 +230,7 @@
                                             @endif
                                         </td>
                                         <td>
-                                            @if($rate->jamaah_status || $rate->alumni_status)
+                                            @if($rate->jamaah_status || $rate->student_sub_status_id || $rate->alumni_status)
                                                 @if($rate->jamaah_status)
                                                 <span class="badge fw-bolder px-3 py-2 m-1" style="background-color: #f3e8ff; color: #7e22ce; border: 1px solid #e9d5ff;">
                                                     {{ collect(explode(',', $rate->jamaah_status))->map(function($status) {
@@ -244,7 +245,7 @@
                                                 @endif
                                                 
                                                 @if($rate->alumni_status)
-                                                <span class="badge fw-bolder px-3 py-2 m-1" style="background-color: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd;">
+                                                <span class="badge fw-bolder px-3 py-2 m-1" style="background-color: #fef08a; color: #854d0e; border: 1px solid #fde047;">
                                                     {{ collect(explode(',', $rate->alumni_status))->map(function($status) {
                                                         return match($status) {
                                                             'ALUMNI_SMP_MA' => 'Alumni SMP',
@@ -253,6 +254,15 @@
                                                         };
                                                     })->implode(', ') }}
                                                 </span>
+                                                @endif
+
+                                                @if($rate->student_sub_status_id)
+                                                @php $subStatus = \App\Models\StudentSubStatus::find($rate->student_sub_status_id); @endphp
+                                                @if($subStatus)
+                                                <span class="badge fw-bolder px-3 py-2 m-1" style="background-color: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd;">
+                                                    {{ $subStatus->name }}
+                                                </span>
+                                                @endif
                                                 @endif
                                             @else
                                                 <span class="badge fw-bold px-3 py-2 m-1" style="background-color: #f8fafc; color: #64748b; border: 1px dashed #cbd5e1;">Semua Status</span>
@@ -370,7 +380,7 @@
                                             @endif
                                         </td>
                                         <td>
-                                            @if($rate->jamaah_status || $rate->alumni_status)
+                                            @if($rate->jamaah_status || $rate->student_sub_status_id || $rate->alumni_status)
                                                 @if($rate->jamaah_status)
                                                 <span class="badge fw-bolder px-3 py-2 m-1" style="background-color: #f3e8ff; color: #7e22ce; border: 1px solid #e9d5ff;">
                                                     {{ collect(explode(',', $rate->jamaah_status))->map(function($status) {
@@ -385,7 +395,7 @@
                                                 @endif
                                                 
                                                 @if($rate->alumni_status)
-                                                <span class="badge fw-bolder px-3 py-2 m-1" style="background-color: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd;">
+                                                <span class="badge fw-bolder px-3 py-2 m-1" style="background-color: #fef08a; color: #854d0e; border: 1px solid #fde047;">
                                                     {{ collect(explode(',', $rate->alumni_status))->map(function($status) {
                                                         return match($status) {
                                                             'ALUMNI_SMP_MA' => 'Alumni SMP',
@@ -394,6 +404,15 @@
                                                         };
                                                     })->implode(', ') }}
                                                 </span>
+                                                @endif
+
+                                                @if($rate->student_sub_status_id)
+                                                @php $subStatus = \App\Models\StudentSubStatus::find($rate->student_sub_status_id); @endphp
+                                                @if($subStatus)
+                                                <span class="badge fw-bolder px-3 py-2 m-1" style="background-color: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd;">
+                                                    {{ $subStatus->name }}
+                                                </span>
+                                                @endif
                                                 @endif
                                             @else
                                                 <span class="badge fw-bold px-3 py-2 m-1" style="background-color: #f8fafc; color: #64748b; border: 1px dashed #cbd5e1;">Semua Status</span>
