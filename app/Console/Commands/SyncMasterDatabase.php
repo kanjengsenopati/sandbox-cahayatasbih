@@ -674,6 +674,48 @@ class SyncMasterDatabase extends Command
                     }
                 }
             }
+
+            // 7. Enforce Special Rate (TYPE_TRANSFER) bill consistency for all students in payment_rate_students
+            $this->info("Enforcing Special Rate (TYPE_TRANSFER) bill consistency...");
+            $transferRates = DB::connection('mysql')->table('payment_rates')
+                ->where('type', 'TRANSFER')
+                ->whereNull('deleted_at')
+                ->get();
+
+            foreach ($transferRates as $tr) {
+                $trItems = DB::connection('mysql')->table('payment_rate_items')
+                    ->where('payment_rate_id', $tr->id)
+                    ->whereNull('deleted_at')
+                    ->get()
+                    ->keyBy('month');
+                    
+                $trStudentIds = DB::connection('mysql')->table('payment_rate_students')
+                    ->where('payment_rate_id', $tr->id)
+                    ->whereNull('deleted_at')
+                    ->pluck('student_id');
+
+                if ($trStudentIds->isNotEmpty() && $trItems->isNotEmpty()) {
+                    foreach ($trItems as $month => $item) {
+                        DB::connection('mysql')->table('bills')
+                            ->whereIn('student_id', $trStudentIds)
+                            ->where('bill_type_id', $tr->bill_type_id)
+                            ->where('month', $month)
+                            ->where('status', 'UNPAID')
+                            ->where('paid_amount', 0)
+                            ->whereNull('deleted_at')
+                            ->where(function($q) use ($item) {
+                                $q->where('amount', '!=', $item->amount)
+                                  ->orWhere('payment_rate_item_id', '!=', $item->id)
+                                  ->orWhereNull('payment_rate_item_id');
+                            })
+                            ->update([
+                                'amount' => $item->amount,
+                                'payment_rate_item_id' => $item->id,
+                                'updated_at' => now()
+                            ]);
+                    }
+                }
+            }
             }
  
             DB::connection('mysql')->statement('SET FOREIGN_KEY_CHECKS=1;');

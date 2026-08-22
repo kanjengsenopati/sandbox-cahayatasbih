@@ -440,15 +440,13 @@ class PaymentRateController extends Controller
             $lock->release();
 
             // SINKRONISASI LANGSUNG (Synchronous Execution)
-            foreach ($ratesToDispatch as $rId) {
-                try {
-                    \Illuminate\Support\Facades\Artisan::call('bills:sync-rate', [
-                        '--rate' => $rId,
-                        '--force' => true,
-                    ]);
-                } catch (\Throwable $e) {
-                    Log::warning("bills:sync-rate synchronous fallback warning: " . $e->getMessage());
-                }
+            try {
+                \Illuminate\Support\Facades\Artisan::call('bills:sync-rate', [
+                    '--bill-type' => $billType->id,
+                    '--force' => true,
+                ]);
+            } catch (\Throwable $e) {
+                Log::warning("bills:sync-rate synchronous fallback warning: " . $e->getMessage());
             }
 
             return redirect()->route('bill-type.show', $billType->id)
@@ -1007,13 +1005,13 @@ class PaymentRateController extends Controller
             }
 
             // ------------------------------------------------------------------
-            // C. UPDATE NOMINALS & SYNC BILLS (Create/Update Logic from before)
+            // ------------------------------------------------------------------
+            // C. UPDATE NOMINALS & SAVE ITEMS
             // ------------------------------------------------------------------
 
             // Prepare for loop
             $totalAmount = 0;
             $items = $paymentRate->paymentRateItems->keyBy('month');
-            $timestamp = now();
 
             // LOGIC FOR MONTHLY TYPE
             if ($billType->type == BillType::TYPE_MONTHLY) {
@@ -1021,16 +1019,16 @@ class PaymentRateController extends Controller
                 $globalPrice = (int) preg_replace('/[^0-9]/', '', (string)$request->price);
                 
                 for ($month = 1; $month <= 12; $month++) {
-                    $year      = $request->input("tahun_$month") ?? ($billType->academicYear->start_year ?? date('Y'));
+                    $year = $request->input("tahun_$month") ?? ($billType->academicYear->start_year ?? date('Y'));
                     
-                    // Sanitize amount (remove dots)
+                    // Sanitize amount
                     $cleanAmount = in_array($month, $activeMonths) ? $globalPrice : 0;
                     $totalAmount += $cleanAmount;
 
                     // Get or Create PaymentRateItem
                     $item = $items->get($month);
                     if (!$item) {
-                        $item = $paymentRate->paymentRateItems()->create([
+                        $paymentRate->paymentRateItems()->create([
                             'month'  => $month,
                             'year'   => $year,
                             'amount' => $cleanAmount,
@@ -1041,59 +1039,6 @@ class PaymentRateController extends Controller
                             'amount' => $cleanAmount,
                         ]);
                     }
-
-                    // --- SYNC BILLS LOGIC ---
-                    if ($cleanAmount > 0) {
-                        // CASE B: UPDATE EXISTING UNPAID BILLS
-                        Bill::where('payment_rate_item_id', $item->id)
-                            ->where('status', Bill::STATUS_UNPAID)
-                            ->update([
-                                'amount' => $cleanAmount,
-                                'year'   => $year
-                            ]);
-
-                        // CASE A: CREATE NEW BILLS FOR MISSING STUDENTS (New Targets OR New Months)
-                        // 1. Get IDs of students who ALREADY have a bill for this month/year and bill type
-                        $existingBillStudentIds = Bill::where('bill_type_id', $billType->id)
-                            ->where('month', $month)
-                            ->where('year', $year)
-                            ->pluck('student_id')
-                            ->toArray();
-                        
-                        // 2. Find students who need a bill created
-                        $studentsToCreate = $students->whereNotIn('id', $existingBillStudentIds);
-                        
-                        $billsToInsert = [];
-                        foreach ($studentsToCreate as $student) {
-                            $billsToInsert[] = [
-                                'id'                 => Str::uuid()->toString(),
-                                'bill_type_id'       => $billType->id,
-                                'classroom_id'       => $student->classroom_id,
-                                'student_id'         => $student->id,
-                                'academic_year_id'   => $billType->academic_year_id,
-                                'month'              => $month,
-                                'year'               => $year,
-                                'amount'             => $cleanAmount,
-                                'status'             => Bill::STATUS_UNPAID,
-                                'payment_rate_item_id' => $item->id,
-                                'created_at'         => $timestamp,
-                                'updated_at'         => $timestamp,
-                            ];
-                        }
-
-                        // Bulk Insert (Chunked for safety)
-                        if (!empty($billsToInsert)) {
-                            foreach (array_chunk($billsToInsert, 500) as $chunk) {
-                                Bill::insert($chunk);
-                            }
-                        }
-
-                    } else {
-                        // CASE C: AMOUNT IS 0 -> DELETE UNPAID BILLS
-                         Bill::where('payment_rate_item_id', $item->id)
-                            ->where('status', Bill::STATUS_UNPAID)
-                            ->forceDelete();
-                    }
                 }
                 
                 // Update Total Amount on Parent
@@ -1103,13 +1048,12 @@ class PaymentRateController extends Controller
                 // LOGIC FOR FREE / NON-MONTHLY TYPE
                 $cleanPrice = (int) str_replace('.', '', $request->price ?? 0);
                 
-                // Usually Free Type has specific selected months in $request->months
                 if (!empty($request->months)) {
                     foreach ($request->months as $monthNum) {
                         $item = $paymentRate->paymentRateItems()->where('month', $monthNum)->first();
                         
                         if (!$item) {
-                             $item = $paymentRate->paymentRateItems()->create([
+                            $paymentRate->paymentRateItems()->create([
                                 'month'  => $monthNum,
                                 'amount' => $cleanPrice,
                             ]);
@@ -1117,45 +1061,6 @@ class PaymentRateController extends Controller
                             $item->update([
                                 'amount' => $cleanPrice,
                             ]);
-                        }
-                        
-                        // --- SYNC BILLS ---
-                        if ($cleanPrice > 0) {
-                            // Update Existing
-                             Bill::where('payment_rate_item_id', $item->id)
-                                ->where('status', Bill::STATUS_UNPAID)
-                                ->update(['amount' => $cleanPrice]);
-                            
-                            // Create Missing
-                            $existingBillStudentIds = Bill::where('bill_type_id', $billType->id)
-                                ->where('payment_rate_item_id', $item->id)
-                                ->pluck('student_id')
-                                ->toArray();
-                            $studentsToCreate = $students->whereNotIn('id', $existingBillStudentIds);
-                            
-                            $billsToInsert = [];
-                            foreach ($studentsToCreate as $student) {
-                                $billsToInsert[] = [
-                                    'id'                 => Str::uuid()->toString(),
-                                    'bill_type_id'       => $billType->id,
-                                    'classroom_id'       => $student->classroom_id,
-                                    'student_id'         => $student->id,
-                                    'academic_year_id'   => $billType->academic_year_id,
-                                    'month'              => $monthNum,
-                                    'amount'             => $cleanPrice,
-                                    'status'             => Bill::STATUS_UNPAID,
-                                    'payment_rate_item_id' => $item->id,
-                                    'created_at'         => $timestamp,
-                                    'updated_at'         => $timestamp,
-                                ];
-                            }
-                             if (!empty($billsToInsert)) {
-                                foreach (array_chunk($billsToInsert, 500) as $chunk) {
-                                    Bill::insert($chunk);
-                                }
-                            }
-                        } else {
-                             Bill::where('payment_rate_item_id', $item->id)->where('status', Bill::STATUS_UNPAID)->forceDelete();
                         }
                     }
                 }
@@ -1165,6 +1070,16 @@ class PaymentRateController extends Controller
 
             DB::commit();
             $lock->release();
+
+            // Atomic & Robust Sync across all Regular and Transfer rates for this BillType
+            try {
+                \Illuminate\Support\Facades\Artisan::call('bills:sync-rate', [
+                    '--bill-type' => $billType->id,
+                    '--force' => true,
+                ]);
+            } catch (\Throwable $syncErr) {
+                Log::warning("Auto-sync bills after update PaymentRate {$paymentRate->id}: " . $syncErr->getMessage());
+            }
 
             return redirect()->route('bill-type.show', $billType->id)
                 ->with('success', 'Tarif pembayaran berhasil diperbarui. Tagihan siswa telah disinkronkan.');

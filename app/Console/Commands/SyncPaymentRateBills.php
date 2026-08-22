@@ -110,7 +110,7 @@ class SyncPaymentRateBills extends Command
                     ->toArray();
 
                 // Fetch students based on PaymentRate configuration
-                $students = $this->getStudentsForRate($paymentRate);
+                $students = $this->getStudentsForRate($paymentRate, $relatedBillTypeIds);
 
                 $this->line("    Students  : {$students->count()} siswa aktif");
 
@@ -321,7 +321,7 @@ class SyncPaymentRateBills extends Command
     /**
      * Get students matching a PaymentRate's filters
      */
-    private function getStudentsForRate(PaymentRate $paymentRate): \Illuminate\Support\Collection
+    private function getStudentsForRate(PaymentRate $paymentRate, array $relatedBillTypeIds = []): \Illuminate\Support\Collection
     {
         $billType = $paymentRate->billType;
         $isPondok = false;
@@ -405,9 +405,10 @@ class SyncPaymentRateBills extends Command
             }
 
             // Exclude students who have a Special / Transfer rate for this bill type
+            $targetBtIds = !empty($relatedBillTypeIds) ? $relatedBillTypeIds : [$paymentRate->bill_type_id];
             $transferStudentIds = DB::table('payment_rate_students')
                 ->join('payment_rates', 'payment_rate_students.payment_rate_id', '=', 'payment_rates.id')
-                ->where('payment_rates.bill_type_id', $paymentRate->bill_type_id)
+                ->whereIn('payment_rates.bill_type_id', $targetBtIds)
                 ->where('payment_rates.type', PaymentRate::TYPE_TRANSFER)
                 ->whereNull('payment_rate_students.deleted_at')
                 ->whereNull('payment_rates.deleted_at')

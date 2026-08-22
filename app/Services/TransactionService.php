@@ -1012,6 +1012,77 @@ class TransactionService
         return 0;
     }
 
+    public static function resolveStudentRateItemForBillType($studentId, $billTypeId, $month, $year, $preloadedRates = null)
+    {
+        $student = is_object($studentId) ? $studentId : Student::with(['user', 'classroom'])->find($studentId);
+        if (!$student) return null;
+
+        $billType = is_object($billTypeId) ? $billTypeId : \App\Models\BillType::with('billItem')->find($billTypeId);
+        if (!$billType) return null;
+
+        if ($preloadedRates === null) {
+            $preloadedRates = self::getCachedPreloadedRates();
+        }
+
+        $ratesForBt = $preloadedRates->where('bill_type_id', $billType->id);
+
+        $transferRate = $ratesForBt->first(function ($r) use ($student) {
+            return $r->type === \App\Models\PaymentRate::TYPE_TRANSFER &&
+                   $r->paymentRateStudents->contains('student_id', $student->id);
+        });
+        if ($transferRate) {
+            $item = $transferRate->paymentRateItems->first(fn($i) => $i->month == $month && $i->year == $year);
+            if ($item) return $item;
+        }
+
+        if ($student->classroom_id) {
+            $regularRates = $ratesForBt->filter(function ($r) use ($student) {
+                return $r->type === \App\Models\PaymentRate::TYPE_REGULAR &&
+                       $r->paymentRateClassrooms->whereNull('deleted_at')->contains('classroom_id', $student->classroom_id);
+            });
+
+            foreach ($regularRates as $rate) {
+                if (!empty($rate->gender)) {
+                    $genders = array_map('trim', explode(',', $rate->gender));
+                    if (!in_array($student->gender, $genders)) continue;
+                }
+                if (!empty($rate->jamaah_status)) {
+                    $statuses = array_map('trim', explode(',', $rate->jamaah_status));
+                    $studentStatus = $student->user?->jamaah_status ?? 'NON_JAMAAH';
+                    if (!in_array($studentStatus, $statuses)) continue;
+                }
+                
+                if (!empty($rate->alumni_status)) {
+                    if (!isset($isAlumni)) {
+                        $isAlumni = false;
+                        if ($student->classroom && $student->classroom->school && str_contains(strtoupper($student->classroom->school->name), 'MA')) {
+                            $hasSmpHistory = \App\Models\StudentClassroomHistory::where('student_id', $student->id)
+                                ->whereHas('classroom.school', function($q) {
+                                    $q->where('name', 'like', '%SMP%');
+                                })->exists();
+                            $isAlumni = $hasSmpHistory;
+                        }
+                    }
+
+                    $statuses = array_map('trim', explode(',', $rate->alumni_status));
+                    $studentAlumniStatus = $isAlumni ? 'ALUMNI_SMP_MA' : 'NON_ALUMNI';
+                    if (!in_array($studentAlumniStatus, $statuses)) continue;
+                }
+
+                if (!empty($rate->student_sub_status_id)) {
+                    if ($student->student_sub_status_id !== $rate->student_sub_status_id) {
+                        continue;
+                    }
+                }
+
+                $item = $rate->paymentRateItems->first(fn($i) => $i->month == $month && $i->year == $year);
+                if ($item) return $item;
+            }
+        }
+
+        return null;
+    }
+
     public static function hasActiveRateForStudent($studentInput, $billTypeInput, $preloadedRates = null): bool
     {
         $student = is_object($studentInput) ? $studentInput : Student::with(['user', 'classroom'])->find($studentInput);
@@ -1069,7 +1140,7 @@ class TransactionService
                     }
                 }
 
-                $statuses = array_map('trim', explode(',', $r->alumni_status));
+                $statuses = array_map('trim', explode(',', $rate->alumni_status));
                 $studentAlumniStatus = $isAlumni ? 'ALUMNI_SMP_MA' : 'NON_ALUMNI';
                 if (!in_array($studentAlumniStatus, $statuses)) return false;
             }
@@ -1141,7 +1212,9 @@ class TransactionService
                     $key = "{$bt->id}_{$m}_{$y}";
 
                     $existingBill = $existingBills->get($key);
-                    $expectedAmount = self::resolveStudentRateForBillType($student, $bt, $m, $y, $preloadedRates);
+                    $expectedItem = self::resolveStudentRateItemForBillType($student, $bt, $m, $y, $preloadedRates);
+                    $expectedAmount = $expectedItem ? (int) $expectedItem->amount : self::resolveStudentRateForBillType($student, $bt, $m, $y, $preloadedRates);
+                    $expectedItemId = $expectedItem?->id;
 
                     if (!$existingBill) {
                         $newBillsToInsert[] = [
@@ -1155,11 +1228,15 @@ class TransactionService
                             'amount' => $expectedAmount,
                             'paid_amount' => 0,
                             'status' => Bill::STATUS_UNPAID,
+                            'payment_rate_item_id' => $expectedItemId,
                             'created_at' => $now,
                             'updated_at' => $now,
                         ];
-                    } elseif ($existingBill->status === Bill::STATUS_UNPAID && $existingBill->paid_amount == 0 && $existingBill->amount != $expectedAmount) {
-                        $existingBill->update(['amount' => $expectedAmount]);
+                    } elseif ($existingBill->status === Bill::STATUS_UNPAID && $existingBill->paid_amount == 0 && ($existingBill->amount != $expectedAmount || $existingBill->payment_rate_item_id != $expectedItemId)) {
+                        $existingBill->update([
+                            'amount' => $expectedAmount,
+                            'payment_rate_item_id' => $expectedItemId,
+                        ]);
                     }
                 }
             }
