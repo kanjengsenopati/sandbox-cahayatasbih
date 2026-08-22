@@ -48,70 +48,6 @@
     .btn-light-danger:hover i {
         color: #ffffff !important;
     }
-
-    /* 5-Column Grid for Student Names in Siswa Khusus Table */
-    .student-grid-5 {
-        display: grid;
-        grid-template-columns: repeat(5, minmax(0, 1fr));
-        gap: 6px;
-        width: 100%;
-    }
-    @media (max-width: 1366px) {
-        .student-grid-5 {
-            grid-template-columns: repeat(4, minmax(0, 1fr));
-        }
-    }
-    @media (max-width: 1100px) {
-        .student-grid-5 {
-            grid-template-columns: repeat(3, minmax(0, 1fr));
-        }
-    }
-    @media (max-width: 768px) {
-        .student-grid-5 {
-            grid-template-columns: repeat(2, minmax(0, 1fr));
-        }
-    }
-    @media (max-width: 480px) {
-        .student-grid-5 {
-            grid-template-columns: repeat(1, minmax(0, 1fr));
-        }
-    }
-    .student-chip-card {
-        background-color: #f3e8ff;
-        border: 1px solid #d8b4fe;
-        border-radius: 8px;
-        padding: 5px 8px;
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-        min-width: 0;
-        transition: all 0.15s ease-in-out;
-    }
-    .student-chip-card:hover {
-        background-color: #ede9fe;
-        border-color: #c084fc;
-        box-shadow: 0 2px 8px rgba(147, 51, 234, 0.15);
-    }
-    .student-chip-name {
-        color: #3b0764; /* Deep dark purple for ultra-clear readability */
-        font-weight: 700;
-        font-size: 11px;
-        line-height: 1.25;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-    }
-    .student-chip-nis {
-        color: #6b21a8;
-        font-size: 9.5px;
-        font-weight: 600;
-        line-height: 1.2;
-        margin-top: 1px;
-        opacity: 0.9;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-    }
 </style>
 @endpush
 
@@ -399,7 +335,8 @@
                                     <tr class="fw-bolder text-muted fs-7 text-uppercase">
                                         <th style="width: 3%"></th>
                                         <th class="ps-4 min-w-50px">No</th>
-                                        <th class="min-w-350px">Sekolah & Daftar Siswa</th>
+                                        <th class="min-w-150px">Sekolah</th>
+                                        <th class="min-w-140px">Jumlah Siswa</th>
                                         <th class="min-w-150px">Kategori / Status</th>
                                         <th class="min-w-125px">Total Tagihan</th>
                                         <th class="text-center min-w-100px rounded-end">Aksi</th>
@@ -421,46 +358,25 @@
                                                     ->filter()
                                                     ->unique();
                                             @endphp
-                                            
-                                            {{-- Header Baris: Nama Sekolah & Judul Tarif Khusus --}}
-                                            <div class="d-flex align-items-center justify-content-between mb-2">
-                                                <div class="d-flex align-items-center flex-wrap gap-2">
-                                                    <span class="text-gray-900 fw-bolder fs-6">
-                                                        <i class="fas fa-school text-primary me-1 fs-7"></i>
-                                                        {{ $transferSchoolNames->implode(', ') ?: '-' }}
-                                                    </span>
-                                                    @if($rate->name)
-                                                        <span class="badge fw-bold" style="background-color: #ede9fe; color: #581c87; border: 1px solid #ddd6fe; font-size: 11px;">
-                                                            {{ $rate->name }}
-                                                        </span>
-                                                    @endif
-                                                </div>
-                                                <span class="badge badge-light-primary fw-bold" style="font-size: 11px;">
-                                                    <i class="fas fa-users me-1 fs-8"></i>{{ $rate->paymentRateStudents->count() }} Siswa Khusus
+                                            <span class="text-gray-800 fw-bold d-block fs-6">
+                                                {{ $transferSchoolNames->implode(', ') ?: '-' }}
+                                            </span>
+                                            @if($rate->name)
+                                                <span class="badge fw-bold mt-1" style="background-color: #ede9fe; color: #581c87; border: 1px solid #ddd6fe; font-size: 11px;">
+                                                    {{ $rate->name }}
                                                 </span>
-                                            </div>
-
-                                            {{-- Konten Siswa: Berjajar ke kanan 5 kolom per baris --}}
-                                            @if($rate->paymentRateStudents->isNotEmpty())
-                                                <div class="student-grid-5 mt-2">
-                                                    @foreach($rate->paymentRateStudents as $prStudent)
-                                                        <div class="student-chip-card" title="{{ $prStudent->student?->name ?? 'Siswa Dihapus' }} (NIS: {{ $prStudent->student?->nis ?? '-' }})">
-                                                            <span class="student-chip-name">
-                                                                {{ $prStudent->student?->name ?? 'Siswa Dihapus' }}
-                                                            </span>
-                                                            <span class="student-chip-nis">
-                                                                ({{ $prStudent->student?->nis ?? '-' }})
-                                                            </span>
-                                                        </div>
-                                                    @endforeach
-                                                </div>
-                                            @else
-                                                <span class="text-muted fs-8 fst-italic">Belum ada siswa yang terdaftar.</span>
                                             @endif
-
+                                        </td>
+                                        <td>
+                                            @php
+                                                $studentCount = $rate->paymentRateStudents->count();
+                                            @endphp
+                                            <span class="badge fw-bolder px-3 py-2 fs-7" style="background-color: #f3e8ff; color: #581c87; border: 1px solid #d8b4fe;">
+                                                <i class="fas fa-users me-1" style="color: #6b21a8;"></i> {{ $studentCount }} Siswa
+                                            </span>
                                             @if($rate->gender)
-                                                <div class="mt-2">
-                                                    <span class="badge badge-light-primary fw-bolder me-1">
+                                                <div class="mt-1">
+                                                    <span class="badge badge-light-primary fw-bolder">
                                                         {{ $rate->gender == 'L' ? 'Putra' : 'Putri' }}
                                                     </span>
                                                 </div>
@@ -528,7 +444,7 @@
                                     </tr>
                                     {{-- Expandable Detail Row --}}
                                     <tr class="detail-row" id="detail-{{ $rate->id }}" style="display: none;">
-                                        <td colspan="6" class="p-0 border-0">
+                                        <td colspan="7" class="p-0 border-0">
                                             <div class="bg-light-primary rounded mx-4 my-3 p-4" style="background-color: #f1f3f9;">
                                                 <div class="d-flex justify-content-between align-items-center mb-3">
                                                     <h6 class="mb-0 text-primary fw-bold">
@@ -550,7 +466,7 @@
                                     </tr>
                                     @empty
                                     <tr>
-                                        <td colspan="6" class="text-center py-10">
+                                        <td colspan="7" class="text-center py-10">
                                             <div class="d-flex flex-column align-items-center">
                                                 <i class="fas fa-user-slash fs-1 text-gray-300 mb-4"></i>
                                                 <span class="text-muted fw-bold fs-6">Belum ada data tarif susulan/pindahan.</span>
