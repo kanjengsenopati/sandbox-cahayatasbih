@@ -1015,14 +1015,19 @@ class PaymentRateController extends Controller
 
             // LOGIC FOR MONTHLY TYPE
             if ($billType->type == BillType::TYPE_MONTHLY) {
-                $activeMonths = $request->input("active_months", []);
+                $hasActiveMonths = $request->has('active_months');
+                $activeMonths = $request->input("active_months", range(1, 12));
                 $globalPrice = (int) preg_replace('/[^0-9]/', '', (string)$request->price);
                 
                 for ($month = 1; $month <= 12; $month++) {
                     $year = $request->input("tahun_$month") ?? ($billType->academicYear->start_year ?? date('Y'));
                     
-                    // Sanitize amount
-                    $cleanAmount = in_array($month, $activeMonths) ? $globalPrice : 0;
+                    // If month-specific price is provided (bulan_1, etc.), use it; otherwise use globalPrice if month is active
+                    if ($request->has("bulan_$month") && $request->input("bulan_$month") !== null && $request->input("bulan_$month") !== '') {
+                        $cleanAmount = (int) preg_replace('/[^0-9]/', '', (string)$request->input("bulan_$month"));
+                    } else {
+                        $cleanAmount = (!$hasActiveMonths || in_array($month, $activeMonths)) ? $globalPrice : 0;
+                    }
                     $totalAmount += $cleanAmount;
 
                     // Get or Create PaymentRateItem
@@ -1041,12 +1046,13 @@ class PaymentRateController extends Controller
                     }
                 }
                 
-                // Update Total Amount on Parent
-                $paymentRate->update(['amount' => $totalAmount]);
+                // For TRANSFER rate, amount is monthly nominal ($globalPrice). For REGULAR rate, amount is $globalPrice if set, otherwise $totalAmount.
+                $parentAmount = ($paymentRate->type == PaymentRate::TYPE_TRANSFER) ? $globalPrice : ($globalPrice > 0 ? $globalPrice : $totalAmount);
+                $paymentRate->update(['amount' => $parentAmount]);
 
             } else {
                 // LOGIC FOR FREE / NON-MONTHLY TYPE
-                $cleanPrice = (int) str_replace('.', '', $request->price ?? 0);
+                $cleanPrice = (int) preg_replace('/[^0-9]/', '', (string)($request->price ?? 0));
                 
                 if (!empty($request->months)) {
                     foreach ($request->months as $monthNum) {
