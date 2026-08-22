@@ -1382,17 +1382,26 @@ class PaymentRateController extends Controller
                 ->orderBy('year')
                 ->get()
                 ->map(function ($bill) {
+                    $effectiveStatus = $bill->status;
+                    $paid = (int) ($bill->paid_amount ?? 0);
+                    $amt  = (int) ($bill->amount ?? 0);
+                    if ($paid >= $amt && $amt > 0) {
+                        $effectiveStatus = Bill::STATUS_PAID;
+                    } elseif ($paid > 0 && $paid < $amt) {
+                        $effectiveStatus = 'PARTIAL';
+                    }
+
                     return [
                         'id' => $bill->id,
                         'month' => $bill->month,
                         'year' => $bill->year,
                         'amount' => $bill->amount,
-                        'paid_amount' => $bill->paid_amount ?? 0,
-                        'status' => $bill->status,
+                        'paid_amount' => $paid,
+                        'status' => $effectiveStatus,
                         'translated_month' => $bill->translated_month,
-                        'status_badge' => $bill->status === Bill::STATUS_PAID
+                        'status_badge' => $effectiveStatus === Bill::STATUS_PAID
                             ? '<span class="badge bg-success">Lunas</span>'
-                            : ($bill->status === 'PARTIAL'
+                            : ($effectiveStatus === 'PARTIAL'
                                 ? '<span class="badge bg-warning">Cicilan</span>'
                                 : '<span class="badge bg-danger">Belum Lunas</span>')
                     ];

@@ -921,15 +921,18 @@
                     bills.forEach(function(b, idx) {
                         html += '<div class="col">';
                         
-                        var cardStyle = b.status === 'PAID' 
+                        var isPaid = b.status === 'PAID' || (b.paid_amount >= b.amount && b.amount > 0);
+                        var isPartial = !isPaid && (b.status === 'PARTIAL' || (b.paid_amount > 0 && b.paid_amount < b.amount));
+                        
+                        var cardStyle = isPaid 
                             ? 'bg-light-success border-success' 
-                            : (b.status === 'PARTIAL' ? 'bg-light-warning border-warning' : 'bg-white border-gray-200');
+                            : (isPartial ? 'bg-light-warning border-warning' : 'bg-white border-gray-200');
                         
                         // Refined to p-3, min-height 145px, d-flex flex-column to be compact and eliminate blank gaps
                         html += '<div class="card h-100 border ' + cardStyle + ' shadow-sm rounded-4 position-relative p-3 d-flex flex-column" style="min-height: 145px; transition: transform 0.2s, box-shadow 0.2s;">';
                         
                         // Checkbox for selection (Only for UNPAID bills, positioned at top-left with m-2)
-                        if (b.status === 'UNPAID') {
+                        if (!isPaid && !isPartial) {
                             html += '<div class="position-absolute top-0 start-0 m-2">';
                             html += '<div class="form-check form-check-custom form-check-solid form-check-sm">';
                             html += '<input class="form-check-input select-bill-checkbox" type="checkbox" value="' + b.id + '" data-rate-id="' + rateId + '" data-student-id="' + studentId + '" />';
@@ -941,21 +944,21 @@
                         html += '<div class="badge badge-light-primary fw-bolder text-uppercase fs-8 py-1.5 px-3 w-100 mb-1.5 text-center mt-2">' + (b.translated_month || '-') + ' ' + b.year + '</div>';
                         
                         // Dynamic Status Badge (Emerald for PAID, Yellow for PARTIAL, Red for UNPAID)
-                        var statusStyle = b.status === 'PAID' 
+                        var statusStyle = isPaid 
                             ? 'background-color: #10b981 !important; color: #ffffff !important;' 
-                            : (b.status === 'PARTIAL' 
+                            : (isPartial 
                                 ? 'background-color: #f59e0b !important; color: #ffffff !important;' 
                                 : 'background-color: #dc2626 !important; color: #ffffff !important;');
-                        var statusLabel = b.status === 'PAID' ? 'LUNAS' : (b.status === 'PARTIAL' ? 'CICILAN' : 'BELUM LUNAS');
+                        var statusLabel = isPaid ? 'LUNAS' : (isPartial ? 'CICILAN' : 'BELUM LUNAS');
                         html += '<div class="badge fw-bold fs-8 py-1.5 px-3 w-100 mb-2 text-center" style="' + statusStyle + '">' + statusLabel + '</div>';
                         
                         // Nominal
-                        var amountColor = b.status === 'PAID' ? 'text-success' : (b.status === 'PARTIAL' ? 'text-warning' : 'text-primary');
+                        var amountColor = isPaid ? 'text-success' : (isPartial ? 'text-warning' : 'text-primary');
                         html += '<div class="fs-5 fw-bolder ' + amountColor + ' text-center mb-2">Rp. ' + new Intl.NumberFormat('id-ID').format(b.amount) + '</div>';
                         
                         // Aligned Bottom Buttons / Status
                         html += '<div class="mt-auto">';
-                        if (b.status === 'UNPAID' || b.status === 'PARTIAL') {
+                        if (!isPaid) {
                             html += '<div class="d-flex gap-2 w-100">';
                             html += '<button type="button" class="btn btn-sm btn-light-primary w-50 edit-bill-btn py-1 fs-8 d-flex align-items-center justify-content-center" data-bill-id="' + b.id + '" data-amount="' + b.amount + '" data-rate-id="' + rateId + '" data-student-id="' + studentId + '" title="Edit">';
                             html += '<i class="bi bi-pencil-square me-1 fs-8"></i>Edit';
