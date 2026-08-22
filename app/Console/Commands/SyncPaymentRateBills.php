@@ -332,10 +332,15 @@ class SyncPaymentRateBills extends Command
         }
 
         $query = Student::query();
-        if ($isPondok) {
-            $query->whereIn('status', ['ACTIVE', 'GRADUATED']);
-        } else {
-            $query->where('status', 'ACTIVE');
+        
+        // Hanya filter status untuk tarif REGULAR. Untuk tarif TRANSFER (susulan), 
+        // proses semua siswa yang terdaftar, termasuk yang DROPPED_OUT.
+        if ($paymentRate->type === PaymentRate::TYPE_REGULAR) {
+            if ($isPondok) {
+                $query->whereIn('status', ['ACTIVE', 'GRADUATED']);
+            } else {
+                $query->where('status', 'ACTIVE');
+            }
         }
         
         if ($this->option('user-id')) {
