@@ -164,14 +164,25 @@ class SyncPaymentRateBills extends Command
                         $billYear  = $item->year;
                         $billAmount = $item->amount;
 
-                        // Check existing bill across ANY identical bill type names
-                        $existingBill = DB::table('bills')
+                        // Check existing bills across ANY identical bill type names
+                        $existingBills = DB::table('bills')
                             ->where('student_id', $student->id)
                             ->whereIn('bill_type_id', $relatedBillTypeIds)
                             ->where('month', $billMonth)
                             ->where('year', $billYear)
                             ->whereNull('deleted_at')
-                            ->first();
+                            ->orderByDesc('paid_amount') // Prioritaskan tagihan yang sudah ada pembayaran
+                            ->orderByDesc('updated_at')  // Lalu yang paling baru diupdate
+                            ->get();
+
+                        $existingBill = $existingBills->first();
+
+                        // CLEANUP DUPLICATES: Jika ada tagihan ganda di bulan yang sama, simpan 1 yang terbaik, hapus sisanya
+                        if ($existingBills->count() > 1 && !$isDryRun) {
+                            $duplicateIds = $existingBills->slice(1)->pluck('id')->toArray();
+                            DB::table('bills')->whereIn('id', $duplicateIds)->update(['deleted_at' => \Carbon\Carbon::now()]);
+                            $this->warn("    [DUPLICATE CLEANUP] {$student->name} | Dihapus " . count($duplicateIds) . " tagihan ganda untuk bulan {$billMonth}/{$billYear}.");
+                        }
 
                         if ($existingBill && $existingBill->bill_type_id !== $billType->id) {
                             $this->warn("    [DUPLICATE AVOIDED] {$student->name} | Bulan {$billMonth}/{$billYear} diabaikan karena sudah ada tagihan identik dari tipe tagihan lain.");
