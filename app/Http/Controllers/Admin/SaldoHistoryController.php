@@ -200,7 +200,10 @@ class SaldoHistoryController extends Controller
                     return '<span class="badge bg-light-success text-success fw-bolder fs-6 px-3 py-2">Rp ' . number_format($transaction->pay_amount ?? 0, 0, ',', '.') . '</span>';
                 })
                 ->editColumn('unique_payment', function ($transaction) {
-                    return $transaction->unique_payment ?? '-';
+                    if ($transaction->unique_payment) {
+                        return '<span class="badge bg-light-primary text-primary font-monospace fw-bold px-2 py-1 fs-7">#' . e($transaction->unique_payment) . '</span>';
+                    }
+                    return '<span class="text-muted fs-8 font-monospace">-</span>';
                 })
                 ->editColumn('status', function ($transaction) {
                     $statusHtml = '<span class="badge badge-warning text-dark fw-bolder px-3 py-2 fs-7 shadow-xs">Verifikasi Petugas</span>';
@@ -248,7 +251,7 @@ class SaldoHistoryController extends Controller
                         <span class='text-muted fs-8'>A.N: " . e($bank->account_name) . "</span>
                     </div>";
                 })
-                ->rawColumns(['proof', 'action', 'status', 'bank_recipient', 'pay_amount'])
+                ->rawColumns(['proof', 'action', 'status', 'bank_recipient', 'pay_amount', 'unique_payment'])
                 ->make(true);
         }
         if (request()->ajax() && request()->type === 'adjust') {
@@ -688,15 +691,20 @@ class SaldoHistoryController extends Controller
             ->addColumn('proof', function ($transaction) {
                 $proof = $transaction->activeProof ?? $transaction->transactionProofs->first();
                 $proofUrl = $proof?->proof_image_url ?? $proof?->proof_image;
-                if (!$proofUrl) return '<span class="text-muted fs-8 fst-italic">Tidak ada</span>';
-                return "<img src='{$proofUrl}' class='img-fluid img-thumbnail cursor-pointer view-proof-image shadow-sm' data-src='{$proofUrl}' style='max-width: 75px; max-height: 75px; object-fit: cover; border-radius: 8px;' alt='Bukti Transfer' title='Klik untuk melihat bukti full'>";
+                if (!$proofUrl) {
+                    return '<span class="badge bg-light text-muted fs-8 px-2 py-1"><i class="fas fa-file-invoice text-gray-400 me-1"></i> Tanpa Bukti</span>';
+                }
+                return "<img src='{$proofUrl}' class='img-fluid img-thumbnail cursor-pointer view-proof-image shadow-sm' data-src='{$proofUrl}' style='max-width: 65px; max-height: 65px; object-fit: cover; border-radius: 12px; border: 1px solid #e2e8f0;' alt='Bukti Transfer' title='Klik untuk melihat bukti full'>";
             })
             ->editColumn('pay_amount', function ($transaction) {
                 $badgeClass = $transaction->status == Transaction::STATUS_PAID ? 'bg-light-success text-success' : 'bg-light-danger text-danger';
                 return '<span class="badge ' . $badgeClass . ' fw-bolder fs-6 px-3 py-2">Rp ' . number_format($transaction->pay_amount ?? 0, 0, ',', '.') . '</span>';
             })
             ->editColumn('unique_payment', function ($transaction) {
-                return $transaction->unique_payment ?? '-';
+                if ($transaction->unique_payment) {
+                    return '<span class="badge bg-light-primary text-primary font-monospace fw-bold px-2 py-1 fs-7">#' . e($transaction->unique_payment) . '</span>';
+                }
+                return '<span class="text-muted fs-8 font-monospace">-</span>';
             })
             ->editColumn('status', function ($transaction) {
                 $statusHtml = '';
@@ -741,7 +749,7 @@ class SaldoHistoryController extends Controller
             ->addColumn('updated_at_formatted', function ($transaction) {
                 return $transaction->updated_at ? $transaction->updated_at->translatedFormat('d F Y H:i') : '-';
             })
-            ->rawColumns(['proof', 'action', 'status', 'bank_recipient'])
+            ->rawColumns(['proof', 'action', 'status', 'bank_recipient', 'pay_amount', 'unique_payment'])
             ->make(true);
     }
 

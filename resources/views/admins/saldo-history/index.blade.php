@@ -94,40 +94,55 @@
                     <div class="tab-content" id="myTabContent">
                         <!-- 1. TOP UP SALDO TAB PANE -->
                         <div class="tab-pane fade show active" id="top-up-saldo" role="tabpanel" aria-labelledby="top-up-saldo-tab">
-                            <div class="d-flex align-items-center justify-content-between flex-wrap gap-3 my-4">
-                                <div class="d-flex align-items-center gap-3 flex-wrap">
-                                    <h4 class="text-dark fw-bolder mb-0">Antrean Verifikasi Top Up</h4>
+                            <!--begin::Filters Card Toolbar-->
+                            <div class="card bg-light-subtle rounded-[20px] p-4 border border-gray-200 mb-4 shadow-sm">
+                                <!-- Row 1: Header Title & Status Badge -->
+                                <div class="d-flex align-items-center justify-content-between flex-wrap gap-3 mb-3 pb-3 border-bottom border-gray-200">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <i class="fas fa-money-bill-wave text-warning fs-4"></i>
+                                        <h4 class="text-slate-800 fw-bolder mb-0 fs-5">Antrean Verifikasi Top Up</h4>
+                                    </div>
                                     <span class="badge badge-light-warning text-dark fw-bold fs-8 px-3 py-2 rounded-pill">
                                         <i class="fas fa-clock text-warning me-1"></i> Menunggu Konfirmasi Petugas
                                     </span>
                                 </div>
-                                <div class="d-flex align-items-center gap-3 flex-wrap">
-                                    <div class="d-flex align-items-center gap-2">
-                                        <label class="fs-7 fw-bold text-gray-700 mb-0">Lembaga:</label>
-                                        <select id="topup-school-id" class="form-select form-select-solid form-select-sm" style="width: 140px;">
-                                            <option value="">Semua</option>
-                                            @foreach($schools as $school)
-                                                <option value="{{ $school->id }}">{{ $school->name }}</option>
-                                            @endforeach
-                                        </select>
+
+                                <!-- Row 2: Filter Controls Grid -->
+                                <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+                                    <div class="d-flex align-items-center gap-3 flex-wrap">
+                                        <div class="d-flex align-items-center gap-2">
+                                            <label class="fs-7 fw-bold text-gray-700 mb-0">Lembaga:</label>
+                                            <select id="topup-school-id" class="form-select form-select-solid form-select-sm rounded-pill" style="width: 140px;">
+                                                <option value="">Semua</option>
+                                                @foreach($schools as $school)
+                                                    <option value="{{ $school->id }}">{{ $school->name }}</option>
+                                                @endforeach
+                                            </select>
+                                        </div>
+                                        <div class="d-flex align-items-center gap-2">
+                                            <label class="fs-7 fw-bold text-gray-700 mb-0">Kelas:</label>
+                                            <select id="topup-classroom-id" class="form-select form-select-solid form-select-sm rounded-pill" style="width: 140px;">
+                                                <option value="">Semua Kelas</option>
+                                                @foreach($classrooms as $cls)
+                                                    <option value="{{ $cls->id }}" data-school="{{ $cls->school_id }}">{{ $cls->name }}</option>
+                                                @endforeach
+                                            </select>
+                                        </div>
+                                        <div class="d-flex align-items-center gap-2">
+                                            <label class="fs-7 fw-bold text-gray-700 mb-0">Cari:</label>
+                                            <div class="position-relative">
+                                                <input type="text" id="topup-search-name" class="form-control form-control-solid form-control-sm rounded-pill ps-8" placeholder="Nama Siswa / NIS..." style="width: 180px;">
+                                                <i class="fas fa-search position-absolute top-50 start-0 translate-middle-y ms-3 text-gray-400 fs-8"></i>
+                                            </div>
+                                        </div>
                                     </div>
                                     <div class="d-flex align-items-center gap-2">
-                                        <label class="fs-7 fw-bold text-gray-700 mb-0">Kelas:</label>
-                                        <select id="topup-classroom-id" class="form-select form-select-solid form-select-sm" style="width: 140px;">
-                                            <option value="">Semua Kelas</option>
-                                            @foreach($classrooms as $cls)
-                                                <option value="{{ $cls->id }}" data-school="{{ $cls->school_id }}">{{ $cls->name }}</option>
-                                            @endforeach
-                                        </select>
+                                        <button id="topup-btn-filter" class="btn btn-primary btn-sm rounded-pill px-4 shadow-xs"><i class="fas fa-filter me-1"></i> Filter</button>
+                                        <button id="topup-btn-reset" class="btn btn-light btn-sm rounded-pill px-4 border"><i class="fas fa-undo me-1"></i> Reset</button>
                                     </div>
-                                    <div class="d-flex align-items-center gap-2">
-                                        <label class="fs-7 fw-bold text-gray-700 mb-0">Cari:</label>
-                                        <input type="text" id="topup-search-name" class="form-control form-control-solid form-control-sm" placeholder="Nama Siswa / NIS..." style="width: 160px;">
-                                    </div>
-                                    <button id="topup-btn-filter" class="btn btn-primary btn-sm"><i class="fas fa-filter me-1"></i> Filter</button>
-                                    <button id="topup-btn-reset" class="btn btn-secondary btn-sm"><i class="fas fa-undo me-1"></i> Reset</button>
                                 </div>
                             </div>
+                            <!--end::Filters Card Toolbar-->
                             <!--begin::Table-->
                             <div class="table-responsive">
                                 <table id="table-transfer" class="table align-middle table-row-dashed fs-7 gy-3" style="width: 100%;">
@@ -220,63 +235,76 @@
 
                         <!-- 4. RIWAYAT SALDO TAB PANE -->
                         <div class="tab-pane fade" id="saldo-history" role="tabpanel" aria-labelledby="saldo-history-tab">
-                            <!--begin::Filters-->
-                            <div class="d-flex align-items-center justify-content-between flex-wrap gap-3 my-4">
-                                <div class="d-flex align-items-center gap-3 flex-wrap">
-                                    <h4 class="text-dark fw-bolder mb-0">Riwayat Mutasi Saldo</h4>
+                            <!--begin::Filters Card Toolbar-->
+                            <div class="card bg-light-subtle rounded-[20px] p-4 border border-gray-200 mb-4 shadow-sm">
+                                <!-- Row 1: Header Title & Period Presets -->
+                                <div class="d-flex align-items-center justify-content-between flex-wrap gap-3 mb-3 pb-3 border-bottom border-gray-200">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <i class="fas fa-history text-primary fs-4"></i>
+                                        <h4 class="text-slate-800 fw-bolder mb-0 fs-5">Riwayat Mutasi Saldo</h4>
+                                    </div>
                                     <!--begin::Period Presets-->
                                     <div class="btn-group btn-group-sm" role="group" id="history-period-group">
-                                        <button type="button" class="btn btn-light-primary history-period-btn" data-period="today">Hari Ini</button>
-                                        <button type="button" class="btn btn-primary history-period-btn active" data-period="week">7 Hari Terakhir</button>
-                                        <button type="button" class="btn btn-light-primary history-period-btn" data-period="month">Bulan Ini</button>
-                                        <button type="button" class="btn btn-light-primary history-period-btn" data-period="custom">Cari Sendiri</button>
+                                        <button type="button" class="btn btn-light-primary history-period-btn rounded-start-pill px-3" data-period="today">Hari Ini</button>
+                                        <button type="button" class="btn btn-primary history-period-btn active px-3" data-period="week">7 Hari Terakhir</button>
+                                        <button type="button" class="btn btn-light-primary history-period-btn px-3" data-period="month">Bulan Ini</button>
+                                        <button type="button" class="btn btn-light-primary history-period-btn rounded-end-pill px-3" data-period="custom">Cari Sendiri</button>
                                     </div>
                                     <!--end::Period Presets-->
                                 </div>
-                                <div class="d-flex align-items-center gap-3 flex-wrap">
-                                    <div class="d-flex align-items-center gap-2">
-                                        <label class="fs-7 fw-bold text-gray-700 mb-0">Cari Siswa:</label>
-                                        <input type="text" id="saldo-history-search-name" class="form-control form-control-solid form-control-sm" placeholder="Nama Siswa / NIS..." style="width: 170px;">
-                                    </div>
-                                    <div class="d-flex align-items-center gap-2">
-                                        <label class="fs-7 fw-bold text-gray-700 mb-0">Lembaga:</label>
-                                        <select id="saldo-history-school-id" class="form-select form-select-solid form-select-sm" style="width: 140px;">
-                                            <option value="">Semua</option>
-                                            @foreach ($schools as $school)
-                                            <option value="{{ $school->id }}">{{ $school->name }}</option>
-                                            @endforeach
-                                        </select>
-                                    </div>
-                                    <div class="d-flex align-items-center gap-2">
-                                        <label class="fs-7 fw-bold text-gray-700 mb-0">Kelas:</label>
-                                        <div class="dropdown">
-                                            <button class="btn btn-light form-select-sm dropdown-toggle text-start" style="width: 140px; background-color: #f5f8fa; border-color: #f5f8fa; color: #5e6278;" type="button" id="saldo_history_classroom_btn" data-bs-toggle="dropdown" aria-expanded="false" data-bs-auto-close="outside">
-                                                Semua
-                                            </button>
-                                            <input type="hidden" id="saldo-history-classroom-id" value="">
-                                            <div class="dropdown-menu p-4 shadow" style="min-width: 400px; max-height: 400px; overflow-y: auto;" aria-labelledby="saldo_history_classroom_btn" id="saldo_history_classroom_mega_menu">
-                                                <div class="text-muted fs-7 mb-2">Pilih Lembaga terlebih dahulu</div>
+
+                                <!-- Row 2: Filter Controls Grid -->
+                                <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+                                    <div class="d-flex align-items-center gap-3 flex-wrap">
+                                        <div class="d-flex align-items-center gap-2">
+                                            <label class="fs-7 fw-bold text-gray-700 mb-0">Lembaga:</label>
+                                            <select id="saldo-history-school-id" class="form-select form-select-solid form-select-sm rounded-pill" style="width: 140px;">
+                                                <option value="">Semua</option>
+                                                @foreach ($schools as $school)
+                                                <option value="{{ $school->id }}">{{ $school->name }}</option>
+                                                @endforeach
+                                            </select>
+                                        </div>
+                                        <div class="d-flex align-items-center gap-2">
+                                            <label class="fs-7 fw-bold text-gray-700 mb-0">Kelas:</label>
+                                            <div class="dropdown">
+                                                <button class="btn btn-light form-select-sm dropdown-toggle text-start rounded-pill" style="width: 140px; background-color: #f5f8fa; border-color: #f5f8fa; color: #5e6278;" type="button" id="saldo_history_classroom_btn" data-bs-toggle="dropdown" aria-expanded="false" data-bs-auto-close="outside">
+                                                    Semua
+                                                </button>
+                                                <input type="hidden" id="saldo-history-classroom-id" value="">
+                                                <div class="dropdown-menu p-4 shadow" style="min-width: 400px; max-height: 400px; overflow-y: auto;" aria-labelledby="saldo_history_classroom_btn" id="saldo_history_classroom_mega_menu">
+                                                    <div class="text-muted fs-7 mb-2">Pilih Lembaga terlebih dahulu</div>
+                                                </div>
                                             </div>
                                         </div>
-                                    </div>
-                                    <!--begin::Custom Date Range Container-->
-                                    <div class="d-flex align-items-center gap-2" id="history-custom-date-container">
-                                        <div class="d-flex align-items-center gap-1">
-                                            <label class="fs-7 fw-bold text-gray-700 mb-0">Mulai:</label>
-                                            <input type="date" id="saldo-history-start-date" class="form-control form-control-solid form-control-sm" value="{{ now()->subDays(6)->format('Y-m-d') }}" style="width: 140px;">
+                                        <div class="d-flex align-items-center gap-2">
+                                            <label class="fs-7 fw-bold text-gray-700 mb-0">Cari:</label>
+                                            <div class="position-relative">
+                                                <input type="text" id="saldo-history-search-name" class="form-control form-control-solid form-control-sm rounded-pill ps-8" placeholder="Nama Siswa / NIS..." style="width: 160px;">
+                                                <i class="fas fa-search position-absolute top-50 start-0 translate-middle-y ms-3 text-gray-400 fs-8"></i>
+                                            </div>
                                         </div>
-                                        <div class="d-flex align-items-center gap-1">
-                                            <label class="fs-7 fw-bold text-gray-700 mb-0">Selesai:</label>
-                                            <input type="date" id="saldo-history-end-date" class="form-control form-control-solid form-control-sm" value="{{ now()->format('Y-m-d') }}" style="width: 140px;">
+                                        <!--begin::Custom Date Range Container-->
+                                        <div class="d-flex align-items-center gap-2" id="history-custom-date-container">
+                                            <div class="d-flex align-items-center gap-1">
+                                                <label class="fs-7 fw-bold text-gray-700 mb-0">Mulai:</label>
+                                                <input type="date" id="saldo-history-start-date" class="form-control form-control-solid form-control-sm rounded-pill" value="{{ now()->subDays(6)->format('Y-m-d') }}" style="width: 135px;">
+                                            </div>
+                                            <div class="d-flex align-items-center gap-1">
+                                                <label class="fs-7 fw-bold text-gray-700 mb-0">Selesai:</label>
+                                                <input type="date" id="saldo-history-end-date" class="form-control form-control-solid form-control-sm rounded-pill" value="{{ now()->format('Y-m-d') }}" style="width: 135px;">
+                                            </div>
                                         </div>
+                                        <!--end::Custom Date Range Container-->
                                     </div>
-                                    <!--end::Custom Date Range Container-->
-                                    <button id="saldo-history-btn-filter" class="btn btn-primary btn-sm"><i class="fas fa-filter me-1"></i> Filter</button>
-                                    <button id="saldo-history-btn-reset" class="btn btn-secondary btn-sm"><i class="fas fa-undo me-1"></i> Reset</button>
-                                    <button id="saldo-history-btn-recalculate" class="btn btn-warning btn-sm text-dark fw-bold ms-1" title="Perbaiki & Sinkronkan Urutan Saldo"><i class="fas fa-sync-alt me-1"></i> Rekalkulasi Saldo</button>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <button id="saldo-history-btn-filter" class="btn btn-primary btn-sm rounded-pill px-4 shadow-xs"><i class="fas fa-filter me-1"></i> Filter</button>
+                                        <button id="saldo-history-btn-reset" class="btn btn-light btn-sm rounded-pill px-4 border"><i class="fas fa-undo me-1"></i> Reset</button>
+                                        <button id="saldo-history-btn-recalculate" class="btn btn-warning btn-sm text-dark fw-bold rounded-pill px-3 shadow-xs" title="Perbaiki & Sinkronkan Urutan Saldo"><i class="fas fa-sync-alt me-1"></i> Rekalkulasi</button>
+                                    </div>
                                 </div>
                             </div>
-                            <!--end::Filters-->
+                            <!--end::Filters Card Toolbar-->
                             <!--begin::Table-->
                             <div class="table-responsive">
                                 <table id="table-saldo-history" class="table align-middle table-row-dashed" style="width: 100%;">
