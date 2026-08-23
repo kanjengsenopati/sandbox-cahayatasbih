@@ -125,6 +125,7 @@ class RecalculateSaldoAllStudents extends Command
 
             if (!$isDryRun) {
                 DB::commit();
+                \Illuminate\Support\Facades\Cache::flush();
             }
         } catch (\Throwable $e) {
             if (!$isDryRun) {
