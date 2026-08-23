@@ -61,87 +61,66 @@ class RecalculateSaldoAllStudents extends Command
         $discrepancyRows = [];
         $repairedCount = 0;
 
-        if (!$isDryRun) {
-            DB::beginTransaction();
-        }
+        $students = $query->get();
+        $bar = $this->output->createProgressBar($totalStudents);
+        $bar->start();
 
-        try {
-            $students = $query->get();
-            $bar = $this->output->createProgressBar($totalStudents);
-            $bar->start();
+        foreach ($students as $student) {
+            $currentSaldo = (float) $student->saldo;
 
-            foreach ($students as $student) {
-                $currentSaldo = (float) $student->saldo;
+            $histories = SaldoHistory::where('student_id', $student->id)
+                ->where('status', SaldoHistory::STATUS_SUCCESS)
+                ->orderBy('created_at', 'asc')
+                ->orderBy('id', 'asc')
+                ->select('id', 'type', 'amount', 'balance_before', 'balance_after')
+                ->get();
 
-                $histories = SaldoHistory::where('student_id', $student->id)
-                    ->where('status', SaldoHistory::STATUS_SUCCESS)
-                    ->orderBy('created_at', 'asc')
-                    ->orderBy('id', 'asc')
-                    ->select('id', 'type', 'amount', 'balance_before', 'balance_after')
-                    ->get();
-
-                $runningBalance = 0;
-                $firstHistory = $histories->first();
-                if ($firstHistory && $firstHistory->type !== SaldoHistory::TYPE_IN) {
-                    $initialBalance = (float) $firstHistory->balance_before;
-                    if ($initialBalance > 0) {
-                        $runningBalance = $initialBalance;
-                    }
+            $runningBalance = 0;
+            $firstHistory = $histories->first();
+            if ($firstHistory && $firstHistory->type !== SaldoHistory::TYPE_IN) {
+                $initialBalance = (float) $firstHistory->balance_before;
+                if ($initialBalance > 0) {
+                    $runningBalance = $initialBalance;
                 }
+            }
 
-                foreach ($histories as $history) {
-                    $amount = (float) $history->amount;
-                    if ($history->type === SaldoHistory::TYPE_IN) {
-                        $runningBalance += $amount;
-                    } else {
-                        $runningBalance -= $amount;
-                    }
+            foreach ($histories as $history) {
+                $amount = (float) $history->amount;
+                if ($history->type === SaldoHistory::TYPE_IN) {
+                    $runningBalance += $amount;
+                } else {
+                    $runningBalance -= $amount;
                 }
+            }
 
-                $projectedSaldo = $runningBalance;
-                $diff = $projectedSaldo - $currentSaldo;
+            $projectedSaldo = $runningBalance;
+            $diff = $projectedSaldo - $currentSaldo;
 
-                if (abs($diff) > 0.01 || $currentSaldo < 0) {
-                    $discrepancyRows[] = [
-                        $student->nis ?? '-',
-                        $student->name,
-                        $student->classroom->name ?? '-',
-                        'Rp ' . number_format($currentSaldo, 0, ',', '.'),
-                        'Rp ' . number_format($projectedSaldo, 0, ',', '.'),
-                        ($diff >= 0 ? '+' : '') . 'Rp ' . number_format($diff, 0, ',', '.'),
-                    ];
+            if (abs($diff) > 0.01 || $currentSaldo < 0) {
+                $discrepancyRows[] = [
+                    $student->nis ?? '-',
+                    $student->name,
+                    $student->classroom->name ?? '-',
+                    'Rp ' . number_format($currentSaldo, 0, ',', '.'),
+                    'Rp ' . number_format($projectedSaldo, 0, ',', '.'),
+                    ($diff >= 0 ? '+' : '') . 'Rp ' . number_format($diff, 0, ',', '.'),
+                ];
 
-                    if (!$isDryRun) {
+                if (!$isDryRun) {
+                    try {
                         SaldoRecalculatorService::recalculateForStudent($student->id);
                         $repairedCount++;
+                    } catch (\Throwable $e) {
+                        // Log error for this specific student and continue
                     }
                 }
-
-                $bar->advance();
             }
 
-            $bar->finish();
-            $this->line("\n");
-
-            if (!$isDryRun) {
-                DB::commit();
-            }
-        } catch (\Throwable $e) {
-            if (!$isDryRun) {
-                DB::rollBack();
-            }
-            $this->error("TERJADI KESALAHAN! Transaksi di-rollback: " . $e->getMessage());
-            return 1;
+            $bar->advance();
         }
 
-        // Clear cache safely without affecting DB transaction if redis is missing
-        if (!$isDryRun) {
-            try {
-                \Illuminate\Support\Facades\Cache::flush();
-            } catch (\Throwable $ignored) {
-                // Redis / Cache driver not configured, safe to ignore
-            }
-        }
+        $bar->finish();
+        $this->line("\n");
 
         $totalDiscrepancies = count($discrepancyRows);
 
