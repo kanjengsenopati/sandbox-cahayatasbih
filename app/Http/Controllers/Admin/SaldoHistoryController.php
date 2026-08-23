@@ -81,10 +81,12 @@ class SaldoHistoryController extends Controller
                       ->orWhere('nisn', 'like', "%{$searchName}%");
                 });
             }
-            if ($startDate = request()->start_date) {
+            $startDate = request()->filled('start_date') ? request()->start_date : now()->subDays(6)->format('Y-m-d');
+            $endDate = request()->filled('end_date') ? request()->end_date : now()->format('Y-m-d');
+            if ($startDate) {
                 $data->whereDate('created_at', '>=', $startDate);
             }
-            if ($endDate = request()->end_date) {
+            if ($endDate) {
                 $data->whereDate('created_at', '<=', $endDate);
             }
 
@@ -627,10 +629,12 @@ class SaldoHistoryController extends Controller
                   ->orWhere('nisn', 'like', "%{$searchName}%");
             });
         }
-        if ($startDate = request()->start_date) {
+        $startDate = request()->filled('start_date') ? request()->start_date : now()->subDays(6)->format('Y-m-d');
+        $endDate = request()->filled('end_date') ? request()->end_date : now()->format('Y-m-d');
+        if ($startDate) {
             $transactions->whereDate('updated_at', '>=', $startDate);
         }
-        if ($endDate = request()->end_date) {
+        if ($endDate) {
             $transactions->whereDate('updated_at', '<=', $endDate);
         }
 

@@ -199,15 +199,25 @@
                         <div class="tab-pane fade" id="saldo-history" role="tabpanel" aria-labelledby="saldo-history-tab">
                             <!--begin::Filters-->
                             <div class="d-flex align-items-center justify-content-between flex-wrap gap-3 my-4">
-                                <h4 class="text-dark fw-bolder mb-0">Riwayat Mutasi Saldo</h4>
+                                <div class="d-flex align-items-center gap-3 flex-wrap">
+                                    <h4 class="text-dark fw-bolder mb-0">Riwayat Mutasi Saldo</h4>
+                                    <!--begin::Period Presets-->
+                                    <div class="btn-group btn-group-sm" role="group" id="history-period-group">
+                                        <button type="button" class="btn btn-light-primary history-period-btn" data-period="today">Hari Ini</button>
+                                        <button type="button" class="btn btn-primary history-period-btn active" data-period="week">7 Hari Terakhir</button>
+                                        <button type="button" class="btn btn-light-primary history-period-btn" data-period="month">Bulan Ini</button>
+                                        <button type="button" class="btn btn-light-primary history-period-btn" data-period="custom">Cari Sendiri</button>
+                                    </div>
+                                    <!--end::Period Presets-->
+                                </div>
                                 <div class="d-flex align-items-center gap-3 flex-wrap">
                                     <div class="d-flex align-items-center gap-2">
                                         <label class="fs-7 fw-bold text-gray-700 mb-0">Cari Siswa:</label>
-                                        <input type="text" id="saldo-history-search-name" class="form-control form-control-solid form-control-sm" placeholder="Nama Siswa / NIS..." style="width: 180px;">
+                                        <input type="text" id="saldo-history-search-name" class="form-control form-control-solid form-control-sm" placeholder="Nama Siswa / NIS..." style="width: 170px;">
                                     </div>
                                     <div class="d-flex align-items-center gap-2">
                                         <label class="fs-7 fw-bold text-gray-700 mb-0">Lembaga:</label>
-                                        <select id="saldo-history-school-id" class="form-select form-select-solid form-select-sm" style="width: 150px;">
+                                        <select id="saldo-history-school-id" class="form-select form-select-solid form-select-sm" style="width: 140px;">
                                             <option value="">Semua</option>
                                             @foreach ($schools as $school)
                                             <option value="{{ $school->id }}">{{ $school->name }}</option>
@@ -217,7 +227,7 @@
                                     <div class="d-flex align-items-center gap-2">
                                         <label class="fs-7 fw-bold text-gray-700 mb-0">Kelas:</label>
                                         <div class="dropdown">
-                                            <button class="btn btn-light form-select-sm dropdown-toggle text-start" style="width: 150px; background-color: #f5f8fa; border-color: #f5f8fa; color: #5e6278;" type="button" id="saldo_history_classroom_btn" data-bs-toggle="dropdown" aria-expanded="false" data-bs-auto-close="outside">
+                                            <button class="btn btn-light form-select-sm dropdown-toggle text-start" style="width: 140px; background-color: #f5f8fa; border-color: #f5f8fa; color: #5e6278;" type="button" id="saldo_history_classroom_btn" data-bs-toggle="dropdown" aria-expanded="false" data-bs-auto-close="outside">
                                                 Semua
                                             </button>
                                             <input type="hidden" id="saldo-history-classroom-id" value="">
@@ -226,14 +236,18 @@
                                             </div>
                                         </div>
                                     </div>
-                                    <div class="d-flex align-items-center gap-2">
-                                        <label class="fs-7 fw-bold text-gray-700 mb-0">Mulai:</label>
-                                        <input type="date" id="saldo-history-start-date" class="form-control form-control-solid form-control-sm" style="width: 150px;">
+                                    <!--begin::Custom Date Range Container-->
+                                    <div class="d-flex align-items-center gap-2" id="history-custom-date-container">
+                                        <div class="d-flex align-items-center gap-1">
+                                            <label class="fs-7 fw-bold text-gray-700 mb-0">Mulai:</label>
+                                            <input type="date" id="saldo-history-start-date" class="form-control form-control-solid form-control-sm" value="{{ now()->subDays(6)->format('Y-m-d') }}" style="width: 140px;">
+                                        </div>
+                                        <div class="d-flex align-items-center gap-1">
+                                            <label class="fs-7 fw-bold text-gray-700 mb-0">Selesai:</label>
+                                            <input type="date" id="saldo-history-end-date" class="form-control form-control-solid form-control-sm" value="{{ now()->format('Y-m-d') }}" style="width: 140px;">
+                                        </div>
                                     </div>
-                                    <div class="d-flex align-items-center gap-2">
-                                        <label class="fs-7 fw-bold text-gray-700 mb-0">Selesai:</label>
-                                        <input type="date" id="saldo-history-end-date" class="form-control form-control-solid form-control-sm" style="width: 150px;">
-                                    </div>
+                                    <!--end::Custom Date Range Container-->
                                     <button id="saldo-history-btn-filter" class="btn btn-primary btn-sm"><i class="fas fa-filter me-1"></i> Filter</button>
                                     <button id="saldo-history-btn-reset" class="btn btn-secondary btn-sm"><i class="fas fa-undo me-1"></i> Reset</button>
                                     <button id="saldo-history-btn-recalculate" class="btn btn-warning btn-sm text-dark fw-bold ms-1" title="Perbaiki & Sinkronkan Urutan Saldo"><i class="fas fa-sync-alt me-1"></i> Rekalkulasi Saldo</button>
@@ -1088,14 +1102,61 @@
             ]
         });
 
+        // Helper to compute ISO date string (YYYY-MM-DD) in local time
+        function getLocalIsoDate(d) {
+            var year = d.getFullYear();
+            var month = String(d.getMonth() + 1).padStart(2, '0');
+            var day = String(d.getDate()).padStart(2, '0');
+            return year + '-' + month + '-' + day;
+        }
+
+        function getPresetDates(period) {
+            var today = new Date();
+            var endStr = getLocalIsoDate(today);
+            var startStr = endStr;
+
+            if (period === 'today') {
+                startStr = endStr;
+            } else if (period === 'week') {
+                var d = new Date();
+                d.setDate(d.getDate() - 6);
+                startStr = getLocalIsoDate(d);
+            } else if (period === 'month') {
+                var d = new Date(today.getFullYear(), today.getMonth(), 1);
+                startStr = getLocalIsoDate(d);
+            }
+            return { start: startStr, end: endStr };
+        }
+
+        // Period button handlers for Archive
+        $(document).on('click', '.archive-period-btn', function() {
+            var period = $(this).data('period');
+            $('.archive-period-btn').removeClass('btn-primary active').addClass('btn-light-primary');
+            $(this).removeClass('btn-light-primary').addClass('btn-primary active');
+
+            if (period === 'custom') {
+                $('#archive-start-date').focus();
+            } else {
+                var dates = getPresetDates(period);
+                $('#archive-start-date').val(dates.start);
+                $('#archive-end-date').val(dates.end);
+                archiveTable.ajax.reload();
+            }
+        });
+
         $('#archive-btn-filter').on('click', function() {
+            $('.archive-period-btn').removeClass('btn-primary active').addClass('btn-light-primary');
+            $('.archive-period-btn[data-period="custom"]').removeClass('btn-light-primary').addClass('btn-primary active');
             archiveTable.ajax.reload();
         });
 
         $('#archive-btn-reset').on('click', function() {
             $('#archive-search-name').val('');
-            $('#archive-start-date').val('');
-            $('#archive-end-date').val('');
+            var dates = getPresetDates('week');
+            $('#archive-start-date').val(dates.start);
+            $('#archive-end-date').val(dates.end);
+            $('.archive-period-btn').removeClass('btn-primary active').addClass('btn-light-primary');
+            $('.archive-period-btn[data-period="week"]').removeClass('btn-light-primary').addClass('btn-primary active');
             archiveTable.ajax.reload();
         });
 
@@ -1268,7 +1329,25 @@
             ]
         });
 
+        // Period button handlers for Saldo History
+        $(document).on('click', '.history-period-btn', function() {
+            var period = $(this).data('period');
+            $('.history-period-btn').removeClass('btn-primary active').addClass('btn-light-primary');
+            $(this).removeClass('btn-light-primary').addClass('btn-primary active');
+
+            if (period === 'custom') {
+                $('#saldo-history-start-date').focus();
+            } else {
+                var dates = getPresetDates(period);
+                $('#saldo-history-start-date').val(dates.start);
+                $('#saldo-history-end-date').val(dates.end);
+                historyTable.ajax.reload();
+            }
+        });
+
         $('#saldo-history-btn-filter').on('click', function() {
+            $('.history-period-btn').removeClass('btn-primary active').addClass('btn-light-primary');
+            $('.history-period-btn[data-period="custom"]').removeClass('btn-light-primary').addClass('btn-primary active');
             historyTable.ajax.reload();
         });
 
@@ -1277,8 +1356,11 @@
             $('#saldo-history-classroom-id').val('');
             $('#saldo_history_classroom_btn').text('Semua');
             $('#saldo-history-search-name').val('');
-            $('#saldo-history-start-date').val('');
-            $('#saldo-history-end-date').val('');
+            var dates = getPresetDates('week');
+            $('#saldo-history-start-date').val(dates.start);
+            $('#saldo-history-end-date').val(dates.end);
+            $('.history-period-btn').removeClass('btn-primary active').addClass('btn-light-primary');
+            $('.history-period-btn[data-period="week"]').removeClass('btn-light-primary').addClass('btn-primary active');
             historyTable.ajax.reload();
         });
         
