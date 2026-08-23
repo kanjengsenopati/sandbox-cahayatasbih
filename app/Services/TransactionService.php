@@ -1140,7 +1140,7 @@ class TransactionService
                     }
                 }
 
-                $statuses = array_map('trim', explode(',', $rate->alumni_status));
+                $statuses = array_map('trim', explode(',', $r->alumni_status));
                 $studentAlumniStatus = $isAlumni ? 'ALUMNI_SMP_MA' : 'NON_ALUMNI';
                 if (!in_array($studentAlumniStatus, $statuses)) return false;
             }
