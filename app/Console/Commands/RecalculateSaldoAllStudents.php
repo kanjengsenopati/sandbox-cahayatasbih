@@ -125,7 +125,6 @@ class RecalculateSaldoAllStudents extends Command
 
             if (!$isDryRun) {
                 DB::commit();
-                \Illuminate\Support\Facades\Cache::flush();
             }
         } catch (\Throwable $e) {
             if (!$isDryRun) {
@@ -133,6 +132,15 @@ class RecalculateSaldoAllStudents extends Command
             }
             $this->error("TERJADI KESALAHAN! Transaksi di-rollback: " . $e->getMessage());
             return 1;
+        }
+
+        // Clear cache safely without affecting DB transaction if redis is missing
+        if (!$isDryRun) {
+            try {
+                \Illuminate\Support\Facades\Cache::flush();
+            } catch (\Throwable $ignored) {
+                // Redis / Cache driver not configured, safe to ignore
+            }
         }
 
         $totalDiscrepancies = count($discrepancyRows);
