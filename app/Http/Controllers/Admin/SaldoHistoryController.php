@@ -210,41 +210,7 @@ class SaldoHistoryController extends Controller
                 ->rawColumns(['proof', 'action', 'type', 'status', 'bank_recipient'])
                 ->make(true);
         }
-        $schools = School::orderBy('name')->get();
-        $classrooms = Classroom::orderBy('name')->get();
-        return view('admins.saldo-history.index', compact('schools', 'classrooms'));
-    }
-
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
-    {
-        $user = Auth::user();
-        $hasAccess = false;
-        if ($user) {
-            try {
-                if ($user->can('Create Saldo Santri') || $user->can('Manage Saldo Santri') || (method_exists($user, 'isKoordinatorCahayaMart') && $user->isKoordinatorCahayaMart())) {
-                    $hasAccess = true;
-                }
-            } catch (\Throwable $e) {}
-
-            try {
-                if (method_exists($user, 'hasRole') && ($user->hasRole('Super Admin') || $user->hasRole('Admin'))) {
-                    $hasAccess = true;
-                }
-            } catch (\Throwable $e) {}
-
-            if (!$hasAccess && Auth::guard('web')->check()) {
-                $hasAccess = true;
-            }
-        }
-
-        if (!$hasAccess) {
-            return redirect()->route('saldo-history.index')->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
-        }
-
-        if (request()->ajax()) {
+        if (request()->ajax() && request()->type === 'adjust') {
             $students = Student::with(['classroom', 'latestSaldoHistory'])->hasSchool()
                 ->when(request('classroom_id'), function ($query, $classroomId) {
                     $query->where('classroom_id', $classroomId);
@@ -307,9 +273,9 @@ class SaldoHistoryController extends Controller
                 })
                 ->make(true);
         }
-
+        $schools = School::orderBy('name')->get();
         $classrooms = Classroom::orderBy('name')->get();
-        return view('admins.saldo-history.create-edit', compact('classrooms'));
+        return view('admins.saldo-history.index', compact('schools', 'classrooms'));
     }
 
     /**
