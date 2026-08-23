@@ -132,9 +132,17 @@ class SaldoHistoryController extends Controller
                 ->make(true);
         }
         if (request()->ajax() && request()->type === 'topup') {
-            $transactions = Transaction::with(['student.classroom', 'paymentMethod', 'activeProof.bank', 'transactionProofs.bank'])
+            $transactions = Transaction::with(['student.classroom.school.saldoBank.bank', 'paymentMethod', 'activeProof.bank', 'transactionProofs.bank'])
                 ->where('type', Transaction::TYPE_SALDO)
-                ->whereIn('status', [Transaction::STATUS_PENDING_CONFIRMATION, Transaction::STATUS_PENDING_PAYMENT])
+                ->where(function ($q) {
+                    $q->where('status', Transaction::STATUS_PENDING_CONFIRMATION)
+                      ->orWhere(function ($sq) {
+                          $sq->where('status', Transaction::STATUS_PENDING_PAYMENT)
+                             ->whereHas('transactionProofs', function ($pq) {
+                                 $pq->whereNotNull('proof_image');
+                             });
+                      });
+                })
                 ->hasSchool()
                 ->latest();
 
@@ -151,7 +159,7 @@ class SaldoHistoryController extends Controller
                     $proof = $transaction->activeProof ?? $transaction->transactionProofs->first();
                     $proofUrl = $proof?->proof_image_url ?? $proof?->proof_image;
                     if (!$proofUrl) return '<span class="text-muted fs-8 fst-italic">Belum upload</span>';
-                    return "<img src='{$proofUrl}' class='img-fluid img-thumbnail cursor-pointer view-proof-image' data-src='{$proofUrl}' style='max-width: 80px; height: auto; border-radius: 8px;' alt='Bukti Transfer'>";
+                    return "<img src='{$proofUrl}' class='img-fluid img-thumbnail cursor-pointer view-proof-image shadow-sm' data-src='{$proofUrl}' style='max-width: 75px; max-height: 75px; object-fit: cover; border-radius: 8px;' alt='Bukti Transfer' title='Klik untuk melihat bukti full'>";
                 })
                 ->editColumn('pay_amount', function ($transaction) {
                     return 'Rp ' . number_format($transaction->pay_amount ?? 0, 0, ',', '.');
@@ -160,24 +168,7 @@ class SaldoHistoryController extends Controller
                     return $transaction->unique_payment ?? '-';
                 })
                 ->editColumn('status', function ($transaction) {
-                    $statusHtml = '';
-                    if ($transaction->status == Transaction::STATUS_PENDING) {
-                        $statusHtml = '<span class="badge badge-primary">Belum Dibayar</span>';
-                    } elseif ($transaction->status == Transaction::STATUS_PENDING_PAYMENT) {
-                        $statusHtml = '<span class="badge badge-warning text-dark">Menunggu Pembayaran</span>';
-                    } elseif ($transaction->status == Transaction::STATUS_PENDING_CONFIRMATION) {
-                        $statusHtml = '<span class="badge badge-danger">Menunggu Verifikasi</span>';
-                    } elseif ($transaction->status == Transaction::STATUS_PAID) {
-                        $statusHtml = '<span class="badge badge-success">Lunas</span>';
-                    } elseif ($transaction->status == Transaction::STATUS_EXPIRED) {
-                        $statusHtml = '<span class="badge badge-secondary">Kedaluwarsa</span>';
-                    } elseif ($transaction->status == Transaction::STATUS_CANCELLED) {
-                        $statusHtml = '<span class="badge badge-secondary">Dibatalkan</span>';
-                    } elseif ($transaction->status == Transaction::STATUS_REJECTED) {
-                        $statusHtml = '<span class="badge badge-danger">Ditolak</span><br><small class="text-muted">' . e($transaction->activeProof?->note) . '</small>';
-                    } else {
-                        $statusHtml = '<span class="badge badge-light">' . e($transaction->status) . '</span>';
-                    }
+                    $statusHtml = '<span class="badge badge-warning text-dark fw-bolder px-3 py-2 fs-7">Verifikasi Petugas</span>';
 
                     if ($transaction->created_at) {
                         $formattedDate = strtoupper(\Carbon\Carbon::parse($transaction->created_at)->translatedFormat('d-M-Y , H : i'));
@@ -211,8 +202,16 @@ class SaldoHistoryController extends Controller
                 ->addColumn('bank_recipient', function ($transaction) {
                     $proof = $transaction->activeProof ?? $transaction->transactionProofs->first();
                     $bank = $proof?->bank;
+                    if (!$bank) {
+                        $banks = $transaction->banks;
+                        $bank = $banks->first();
+                    }
                     if (!$bank) return '-';
-                    return "<strong>" . e($bank->name) . "</strong><br><small class='text-muted'>No: " . e($bank->account_number) . "</small><br><small class='text-muted'>A.N: " . e($bank->account_name) . "</small>";
+                    return "<div class='d-flex flex-column align-items-start'>
+                        <span class='fw-bolder text-gray-800 fs-7'>" . e($bank->name) . "</span>
+                        <span class='text-muted fs-8'>No: " . e($bank->account_number) . "</span>
+                        <span class='text-muted fs-8'>A.N: " . e($bank->account_name) . "</span>
+                    </div>";
                 })
                 ->rawColumns(['proof', 'action', 'status', 'bank_recipient'])
                 ->make(true);
@@ -613,10 +612,12 @@ class SaldoHistoryController extends Controller
 
     private function getArchiveTransactionData()
     {
-        $transactions = Transaction::with(['student.classroom', 'paymentMethod', 'activeProof.bank', 'transactionProofs.bank', 'admin'])
+        $transactions = Transaction::with(['student.classroom.school.saldoBank.bank', 'paymentMethod', 'activeProof.bank', 'transactionProofs.bank', 'admin'])
             ->where('type', Transaction::TYPE_SALDO)
             ->whereIn('status', [Transaction::STATUS_PAID, Transaction::STATUS_REJECTED])
-            ->where('is_deleted_from_archive', false)
+            ->where(function ($q) {
+                $q->where('is_deleted_from_archive', false)->orWhereNull('is_deleted_from_archive');
+            })
             ->hasSchool();
 
         if ($searchName = request()->search_name) {
@@ -640,7 +641,7 @@ class SaldoHistoryController extends Controller
                 $proof = $transaction->activeProof ?? $transaction->transactionProofs->first();
                 $proofUrl = $proof?->proof_image_url ?? $proof?->proof_image;
                 if (!$proofUrl) return '<span class="text-muted fs-8 fst-italic">Tidak ada</span>';
-                return "<img src='{$proofUrl}' class='img-fluid img-thumbnail cursor-pointer view-proof-image' data-src='{$proofUrl}' style='max-width: 80px; height: auto; border-radius: 8px;' alt='Bukti Transfer'>";
+                return "<img src='{$proofUrl}' class='img-fluid img-thumbnail cursor-pointer view-proof-image shadow-sm' data-src='{$proofUrl}' style='max-width: 75px; max-height: 75px; object-fit: cover; border-radius: 8px;' alt='Bukti Transfer' title='Klik untuk melihat bukti full'>";
             })
             ->editColumn('pay_amount', function ($transaction) {
                 return 'Rp ' . number_format($transaction->pay_amount ?? 0, 0, ',', '.');
@@ -650,22 +651,15 @@ class SaldoHistoryController extends Controller
             })
             ->editColumn('status', function ($transaction) {
                 $statusHtml = '';
-                if ($transaction->status == Transaction::STATUS_PENDING) {
-                    $statusHtml = '<span class="badge badge-primary">Belum Dibayar</span>';
-                } elseif ($transaction->status == Transaction::STATUS_PENDING_PAYMENT) {
-                    $statusHtml = '<span class="badge badge-warning text-dark">Menunggu Pembayaran</span>';
-                } elseif ($transaction->status == Transaction::STATUS_PENDING_CONFIRMATION) {
-                    $statusHtml = '<span class="badge badge-danger">Menunggu Verifikasi</span>';
-                } elseif ($transaction->status == Transaction::STATUS_PAID) {
-                    $statusHtml = '<span class="badge badge-success">Lunas</span>';
-                } elseif ($transaction->status == Transaction::STATUS_EXPIRED) {
-                    $statusHtml = '<span class="badge badge-secondary">Kedaluwarsa</span>';
-                } elseif ($transaction->status == Transaction::STATUS_CANCELLED) {
-                    $statusHtml = '<span class="badge badge-secondary">Dibatalkan</span>';
+                if ($transaction->status == Transaction::STATUS_PAID) {
+                    $statusHtml = '<span class="badge badge-success fw-bold px-3 py-2 fs-7">Lunas</span>';
                 } elseif ($transaction->status == Transaction::STATUS_REJECTED) {
-                    $statusHtml = '<span class="badge badge-danger">Ditolak</span><br><small class="text-muted">' . e($transaction->activeProof?->note) . '</small>';
+                    $statusHtml = '<span class="badge badge-danger fw-bold px-3 py-2 fs-7">Ditolak</span>';
+                    if ($transaction->activeProof?->note) {
+                        $statusHtml .= '<br><small class="text-muted mt-1 d-block">' . e($transaction->activeProof->note) . '</small>';
+                    }
                 } else {
-                    $statusHtml = '<span class="badge badge-light">' . e($transaction->status) . '</span>';
+                    $statusHtml = '<span class="badge badge-light fw-bold px-3 py-2 fs-7">' . e($transaction->status) . '</span>';
                 }
 
                 if ($transaction->created_at) {
@@ -681,8 +675,16 @@ class SaldoHistoryController extends Controller
             ->addColumn('bank_recipient', function ($transaction) {
                 $proof = $transaction->activeProof ?? $transaction->transactionProofs->first();
                 $bank = $proof?->bank;
+                if (!$bank) {
+                    $banks = $transaction->banks;
+                    $bank = $banks->first();
+                }
                 if (!$bank) return '-';
-                return "<strong>" . e($bank->name) . "</strong><br><small class='text-muted'>No: " . e($bank->account_number) . "</small><br><small class='text-muted'>A.N: " . e($bank->account_name) . "</small>";
+                return "<div class='d-flex flex-column align-items-start'>
+                    <span class='fw-bolder text-gray-800 fs-7'>" . e($bank->name) . "</span>
+                    <span class='text-muted fs-8'>No: " . e($bank->account_number) . "</span>
+                    <span class='text-muted fs-8'>A.N: " . e($bank->account_name) . "</span>
+                </div>";
             })
             ->addColumn('officer', function ($transaction) {
                 return $transaction->admin?->name ?? '-';

@@ -667,6 +667,7 @@
             ordering: true,
             processing: true,
             serverSide: true,
+            deferRender: true,
             ajax: {
                 url: "{{ route('saldo-history.index') }}",
                 data: function(d) {
@@ -772,6 +773,7 @@
             adjustTable = $('#table-adjust-saldo').DataTable({
                 processing: true,
                 serverSide: true,
+                deferRender: true,
                 ordering: true,
                 order: [],
                 ajax: {
@@ -987,6 +989,7 @@
             sortable: true,
             processing: true,
             serverSide: true,
+            deferRender: true,
             pageLength: 20,
             lengthMenu: [20, 30, 40, 50],
             ajax: {
@@ -1165,6 +1168,7 @@
             ordering: false,
             processing: true,
             serverSide: true,
+            deferRender: true,
             ajax: {
                 url: "{{ route('saldo-history.index') }}",
                 data: function(d) {
@@ -1444,17 +1448,21 @@
             }
 
             // Immediately adjust all visible tables geometry
-            $.fn.dataTable.tables({ visible: true, api: true }).columns.adjust();
+            function adjustVisibleTables() {
+                $.fn.dataTable.tables({ visible: true, api: true }).columns.adjust();
+            }
+            adjustVisibleTables();
+            setTimeout(adjustVisibleTables, 100);
 
             // Refresh table upon activating tab for real-time consistency
             if (target === '#top-up-saldo' && topupTable) {
-                topupTable.columns.adjust().ajax.reload(null, false);
+                topupTable.ajax.reload(null, false);
             } else if (target === '#penyesuaian-saldo' && adjustTable) {
-                adjustTable.columns.adjust().ajax.reload(null, false);
+                adjustTable.ajax.reload(null, false);
             } else if (target === '#arsip-topup-saldo' && archiveTable) {
-                archiveTable.columns.adjust().ajax.reload(null, false);
+                archiveTable.ajax.reload(null, false);
             } else if (target === '#saldo-history' && historyTable) {
-                historyTable.columns.adjust().ajax.reload(null, false);
+                historyTable.ajax.reload(null, false);
             }
         });
 
