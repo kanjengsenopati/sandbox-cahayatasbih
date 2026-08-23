@@ -98,29 +98,44 @@ class SaldoHistoryController extends Controller
                     return $data->created_at ? $data->created_at->translatedFormat('d F Y' . ' <br>' . 'H:i:s') : '-';
                 })
                 ->editColumn('amount', function ($data) {
-                    // Format amount menjadi rupiah dengan pemisah ribuan
                     $formattedAmount = 'Rp ' . number_format($data->amount, 0, ',', '.');
 
                     if ($data->type === 'IN') {
-                        return '<span class="badge bg-success">+' . $formattedAmount . '</span>';
+                        return '<span class="badge bg-light-success text-success fw-bolder px-3 py-2 fs-7">+' . $formattedAmount . '</span>';
                     } else {
-                        return '<span class="badge bg-danger">-' . $formattedAmount . '</span>';
+                        return '<span class="badge bg-light-danger text-danger fw-bolder px-3 py-2 fs-7">-' . $formattedAmount . '</span>';
                     }
                 })
                 ->editColumn('balance_before', function ($data) {
-                    return function_exists('format_saldo_badge') ? \format_saldo_badge($data->balance_before) : 'Rp ' . number_format($data->balance_before ?? 0, 0, ',', '.');
+                    $val = (float)($data->balance_before ?? 0);
+                    $badgeClass = $val < 0 ? 'bg-light-danger text-danger' : 'bg-light-success text-success';
+                    return '<span class="badge ' . $badgeClass . ' fw-bold px-3 py-2 fs-7">Rp ' . number_format($val, 0, ',', '.') . '</span>';
                 })
                 ->editColumn('balance_after', function ($data) {
-                    return function_exists('format_saldo_badge') ? \format_saldo_badge($data->balance_after) : 'Rp ' . number_format($data->balance_after ?? 0, 0, ',', '.');
+                    $val = (float)($data->balance_after ?? 0);
+                    $badgeClass = $val < 0 ? 'bg-light-danger text-danger' : 'bg-light-success text-success';
+                    return '<span class="badge ' . $badgeClass . ' fw-bold px-3 py-2 fs-7">Rp ' . number_format($val, 0, ',', '.') . '</span>';
                 })
                 ->editColumn('status', function ($data) {
                     if ($data->status === SaldoHistory::STATUS_SUCCESS) {
-                        return '<span class="badge bg-success">' . $data->status . '</span>';
+                        return '<span class="badge bg-success fw-bold px-3 py-2 fs-7">' . $data->status . '</span>';
                     } elseif ($data->status === SaldoHistory::STATUS_PENDING) {
-                        return '<span class="badge bg-warning text-dark">' . $data->status . '</span>';
+                        return '<span class="badge bg-warning text-dark fw-bold px-3 py-2 fs-7">' . $data->status . '</span>';
                     } else {
-                        return '<span class="badge bg-danger">' . $data->status . '</span>';
+                        return '<span class="badge bg-danger fw-bold px-3 py-2 fs-7">' . $data->status . '</span>';
                     }
+                })
+                ->editColumn('description', function ($data) {
+                    $desc = e($data->description ?? '-');
+                    $icon = '<i class="fas fa-receipt text-gray-400 me-2"></i>';
+                    if ($data->type === 'IN') {
+                        $icon = '<i class="fas fa-arrow-down text-success me-2"></i>';
+                    } elseif ($data->type === 'OUT') {
+                        $icon = '<i class="fas fa-shopping-cart text-danger me-2"></i>';
+                    } elseif ($data->type === 'WITHDRAW') {
+                        $icon = '<i class="fas fa-hand-holding-usd text-warning me-2"></i>';
+                    }
+                    return '<div class="d-flex align-items-center fs-7 text-gray-800">' . $icon . '<span>' . $desc . '</span></div>';
                 })
                 ->addColumn('action', function ($row) {
                     if (Auth::user()->hasRole('Super Admin')) {
@@ -130,7 +145,7 @@ class SaldoHistoryController extends Controller
                     }
                     return '-';
                 })
-                ->rawColumns(['amount', 'status', 'date', 'balance_before', 'balance_after', 'action'])
+                ->rawColumns(['amount', 'status', 'date', 'balance_before', 'balance_after', 'description', 'action'])
                 ->make(true);
         }
         if (request()->ajax() && request()->type === 'topup') {
@@ -148,12 +163,30 @@ class SaldoHistoryController extends Controller
                 ->hasSchool()
                 ->latest();
 
+            if ($schoolId = request()->school_id) {
+                $transactions->whereHas('student.classroom', function ($q) use ($schoolId) {
+                    $q->where('school_id', $schoolId);
+                });
+            }
+            if ($classroomId = request()->classroom_id) {
+                $transactions->whereHas('student', function ($q) use ($classroomId) {
+                    $q->where('classroom_id', $classroomId);
+                });
+            }
+
             if ($searchName = request()->search_name) {
                 $transactions->whereHas('student', function ($q) use ($searchName) {
                     $q->where('name', 'like', "%{$searchName}%")
                       ->orWhere('nis', 'like', "%{$searchName}%")
                       ->orWhere('nisn', 'like', "%{$searchName}%");
                 });
+            }
+
+            if (request()->filled('start_date')) {
+                $transactions->whereDate('created_at', '>=', request()->start_date);
+            }
+            if (request()->filled('end_date')) {
+                $transactions->whereDate('created_at', '<=', request()->end_date);
             }
 
             return DataTables::of($transactions)
@@ -164,13 +197,13 @@ class SaldoHistoryController extends Controller
                     return "<img src='{$proofUrl}' class='img-fluid img-thumbnail cursor-pointer view-proof-image shadow-sm' data-src='{$proofUrl}' style='max-width: 75px; max-height: 75px; object-fit: cover; border-radius: 8px;' alt='Bukti Transfer' title='Klik untuk melihat bukti full'>";
                 })
                 ->editColumn('pay_amount', function ($transaction) {
-                    return 'Rp ' . number_format($transaction->pay_amount ?? 0, 0, ',', '.');
+                    return '<span class="badge bg-light-success text-success fw-bolder fs-6 px-3 py-2">Rp ' . number_format($transaction->pay_amount ?? 0, 0, ',', '.') . '</span>';
                 })
                 ->editColumn('unique_payment', function ($transaction) {
                     return $transaction->unique_payment ?? '-';
                 })
                 ->editColumn('status', function ($transaction) {
-                    $statusHtml = '<span class="badge badge-warning text-dark fw-bolder px-3 py-2 fs-7">Verifikasi Petugas</span>';
+                    $statusHtml = '<span class="badge badge-warning text-dark fw-bolder px-3 py-2 fs-7 shadow-xs">Verifikasi Petugas</span>';
 
                     if ($transaction->created_at) {
                         $formattedDate = strtoupper(\Carbon\Carbon::parse($transaction->created_at)->translatedFormat('d-M-Y , H : i'));
@@ -215,7 +248,7 @@ class SaldoHistoryController extends Controller
                         <span class='text-muted fs-8'>A.N: " . e($bank->account_name) . "</span>
                     </div>";
                 })
-                ->rawColumns(['proof', 'action', 'status', 'bank_recipient'])
+                ->rawColumns(['proof', 'action', 'status', 'bank_recipient', 'pay_amount'])
                 ->make(true);
         }
         if (request()->ajax() && request()->type === 'adjust') {
@@ -622,6 +655,17 @@ class SaldoHistoryController extends Controller
             })
             ->hasSchool();
 
+        if ($schoolId = request()->school_id) {
+            $transactions->whereHas('student.classroom', function ($q) use ($schoolId) {
+                $q->where('school_id', $schoolId);
+            });
+        }
+        if ($classroomId = request()->classroom_id) {
+            $transactions->whereHas('student', function ($q) use ($classroomId) {
+                $q->where('classroom_id', $classroomId);
+            });
+        }
+
         if ($searchName = request()->search_name) {
             $transactions->whereHas('student', function ($q) use ($searchName) {
                 $q->where('name', 'like', "%{$searchName}%")
@@ -648,7 +692,8 @@ class SaldoHistoryController extends Controller
                 return "<img src='{$proofUrl}' class='img-fluid img-thumbnail cursor-pointer view-proof-image shadow-sm' data-src='{$proofUrl}' style='max-width: 75px; max-height: 75px; object-fit: cover; border-radius: 8px;' alt='Bukti Transfer' title='Klik untuk melihat bukti full'>";
             })
             ->editColumn('pay_amount', function ($transaction) {
-                return 'Rp ' . number_format($transaction->pay_amount ?? 0, 0, ',', '.');
+                $badgeClass = $transaction->status == Transaction::STATUS_PAID ? 'bg-light-success text-success' : 'bg-light-danger text-danger';
+                return '<span class="badge ' . $badgeClass . ' fw-bolder fs-6 px-3 py-2">Rp ' . number_format($transaction->pay_amount ?? 0, 0, ',', '.') . '</span>';
             })
             ->editColumn('unique_payment', function ($transaction) {
                 return $transaction->unique_payment ?? '-';

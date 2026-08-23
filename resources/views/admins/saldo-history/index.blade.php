@@ -95,11 +95,34 @@
                         <!-- 1. TOP UP SALDO TAB PANE -->
                         <div class="tab-pane fade show active" id="top-up-saldo" role="tabpanel" aria-labelledby="top-up-saldo-tab">
                             <div class="d-flex align-items-center justify-content-between flex-wrap gap-3 my-4">
-                                <h4 class="text-dark fw-bolder mb-0">Verifikasi Top Up Saldo</h4>
-                                <div class="d-flex align-items-center gap-3">
+                                <div class="d-flex align-items-center gap-3 flex-wrap">
+                                    <h4 class="text-dark fw-bolder mb-0">Antrean Verifikasi Top Up</h4>
+                                    <span class="badge badge-light-warning text-dark fw-bold fs-8 px-3 py-2 rounded-pill">
+                                        <i class="fas fa-clock text-warning me-1"></i> Menunggu Konfirmasi Petugas
+                                    </span>
+                                </div>
+                                <div class="d-flex align-items-center gap-3 flex-wrap">
                                     <div class="d-flex align-items-center gap-2">
-                                        <label class="fs-7 fw-bold text-gray-700 mb-0">Cari Siswa:</label>
-                                        <input type="text" id="topup-search-name" class="form-control form-control-solid form-control-sm" placeholder="Nama Siswa / NIS..." style="width: 180px;">
+                                        <label class="fs-7 fw-bold text-gray-700 mb-0">Lembaga:</label>
+                                        <select id="topup-school-id" class="form-select form-select-solid form-select-sm" style="width: 140px;">
+                                            <option value="">Semua</option>
+                                            @foreach($schools as $school)
+                                                <option value="{{ $school->id }}">{{ $school->name }}</option>
+                                            @endforeach
+                                        </select>
+                                    </div>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <label class="fs-7 fw-bold text-gray-700 mb-0">Kelas:</label>
+                                        <select id="topup-classroom-id" class="form-select form-select-solid form-select-sm" style="width: 140px;">
+                                            <option value="">Semua Kelas</option>
+                                            @foreach($classrooms as $cls)
+                                                <option value="{{ $cls->id }}" data-school="{{ $cls->school_id }}">{{ $cls->name }}</option>
+                                            @endforeach
+                                        </select>
+                                    </div>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <label class="fs-7 fw-bold text-gray-700 mb-0">Cari:</label>
+                                        <input type="text" id="topup-search-name" class="form-control form-control-solid form-control-sm" placeholder="Nama Siswa / NIS..." style="width: 160px;">
                                     </div>
                                     <button id="topup-btn-filter" class="btn btn-primary btn-sm"><i class="fas fa-filter me-1"></i> Filter</button>
                                     <button id="topup-btn-reset" class="btn btn-secondary btn-sm"><i class="fas fa-undo me-1"></i> Reset</button>
@@ -107,17 +130,17 @@
                             </div>
                             <!--begin::Table-->
                             <div class="table-responsive">
-                                <table id="table-transfer" class="table align-middle table-row-dashed" style="width: 100%;">
+                                <table id="table-transfer" class="table align-middle table-row-dashed fs-7 gy-3" style="width: 100%;">
                                     <thead>
                                         <tr class="text-start text-gray-400 fw-bolder fs-7 text-uppercase gs-0">
-                                            <th style="width: 5%">No</th>
-                                            <th>Siswa</th>
-                                            <th>Nominal</th>
-                                            <th>Kode Unik</th>
-                                            <th>Bank Tujuan</th>
-                                            <th>Bukti Transfer</th>
-                                            <th>Status</th>
-                                            <th class="text-center min-w-100px" style="width: 22%">Aksi</th>
+                                            <th style="width: 4%">No</th>
+                                            <th style="width: 20%">Siswa</th>
+                                            <th style="width: 13%">Nominal</th>
+                                            <th style="width: 9%">Kode Unik</th>
+                                            <th style="width: 20%">Bank Tujuan</th>
+                                            <th style="width: 10%">Bukti Transfer</th>
+                                            <th style="width: 12%">Status</th>
+                                            <th class="text-center min-w-100px" style="width: 12%">Aksi</th>
                                         </tr>
                                     </thead>
                                     <tbody class="text-gray-600 fw-bold"></tbody>
@@ -686,6 +709,8 @@
                 url: "{{ route('saldo-history.index') }}",
                 data: function(d) {
                     d.type = 'topup';
+                    d.school_id = $('#topup-school-id').val();
+                    d.classroom_id = $('#topup-classroom-id').val();
                     d.search_name = $('#topup-search-name').val();
                 }
             },
@@ -696,7 +721,7 @@
                 },
                 loadingRecords: "Memuat data...",
                 processing: "Sedang memproses...",
-                emptyTable: "Tidak ada data verifikasi top up saldo"
+                emptyTable: "Tidak ada antrean verifikasi top up saldo"
             },
             columns: [
                 {
@@ -716,9 +741,10 @@
                         if (!data) return '<span class="text-muted fs-7">-</span>';
                         let className = (row.student && row.student.classroom) ? row.student.classroom.name : '';
                         let badge = className ? `<span class="badge badge-light-primary fw-bold ms-1" style="font-size: 10px; padding: 3px 6px;">${className}</span>` : '';
+                        let nis = (row.student && (row.student.nis || row.student.nisn)) ? `<span class="text-muted fs-8">NIS: ${row.student.nis || row.student.nisn}</span>` : '';
                         return `<div class="d-flex flex-column align-items-start">
                             <span class="text-gray-800 fw-bolder mb-1">${data}</span>
-                            ${badge}
+                            <div class="d-flex align-items-center gap-1">${badge} ${nis}</div>
                         </div>`;
                     }
                 },
@@ -764,11 +790,31 @@
             ]
         });
 
+        $('#topup-school-id').on('change', function() {
+            var schoolId = $(this).val();
+            $('#topup-classroom-id option').each(function() {
+                var clsSchool = $(this).data('school');
+                if (!schoolId || !clsSchool || clsSchool == schoolId) {
+                    $(this).show();
+                } else {
+                    $(this).hide();
+                }
+            });
+            $('#topup-classroom-id').val('');
+            topupTable.ajax.reload();
+        });
+
+        $('#topup-classroom-id').on('change', function() {
+            topupTable.ajax.reload();
+        });
+
         $('#topup-btn-filter').on('click', function() {
             topupTable.ajax.reload();
         });
 
         $('#topup-btn-reset').on('click', function() {
+            $('#topup-school-id').val('');
+            $('#topup-classroom-id').val('').find('option').show();
             $('#topup-search-name').val('');
             topupTable.ajax.reload();
         });
@@ -995,9 +1041,6 @@
             updateBatchButtonState();
         });
 
-        // ==========================================
-        // 3. ARSIP TOPUP SALDO DATATABLE
-        // ==========================================
         var archiveTable = $('#table-archive').DataTable({
             ordering: true,
             sortable: true,
@@ -1010,6 +1053,8 @@
                 url: "{{ route('saldo-history.index') }}",
                 data: function(d) {
                     d.type = 'archive';
+                    d.school_id = $('#archive-school-id').val();
+                    d.classroom_id = $('#archive-classroom-id').val();
                     d.search_name = $('#archive-search-name').val();
                     d.start_date = $('#archive-start-date').val();
                     d.end_date = $('#archive-end-date').val();
@@ -1042,9 +1087,10 @@
                         if (!data) return '<span class="text-muted fs-7">-</span>';
                         let className = (row.student && row.student.classroom) ? row.student.classroom.name : '';
                         let badge = className ? `<span class="badge badge-light-primary fw-bold ms-1" style="font-size: 10px; padding: 3px 6px;">${className}</span>` : '';
+                        let nis = (row.student && (row.student.nis || row.student.nisn)) ? `<span class="text-muted fs-8">NIS: ${row.student.nis || row.student.nisn}</span>` : '';
                         return `<div class="d-flex flex-column align-items-start">
                             <span class="text-gray-800 fw-bolder mb-1">${data}</span>
-                            ${badge}
+                            <div class="d-flex align-items-center gap-1">${badge} ${nis}</div>
                         </div>`;
                     }
                 },
@@ -1102,6 +1148,24 @@
             ]
         });
 
+        $('#archive-school-id').on('change', function() {
+            var schoolId = $(this).val();
+            $('#archive-classroom-id option').each(function() {
+                var clsSchool = $(this).data('school');
+                if (!schoolId || !clsSchool || clsSchool == schoolId) {
+                    $(this).show();
+                } else {
+                    $(this).hide();
+                }
+            });
+            $('#archive-classroom-id').val('');
+            archiveTable.ajax.reload();
+        });
+
+        $('#archive-classroom-id').on('change', function() {
+            archiveTable.ajax.reload();
+        });
+
         // Helper to compute ISO date string (YYYY-MM-DD) in local time
         function getLocalIsoDate(d) {
             var year = d.getFullYear();
@@ -1151,6 +1215,8 @@
         });
 
         $('#archive-btn-reset').on('click', function() {
+            $('#archive-school-id').val('');
+            $('#archive-classroom-id').val('').find('option').show();
             $('#archive-search-name').val('');
             var dates = getPresetDates('week');
             $('#archive-start-date').val(dates.start);
@@ -1275,10 +1341,12 @@
                     render: function(data, type, row) {
                         if (!data) return '<span class="text-muted fs-7">-</span>';
                         let className = (row.student && row.student.classroom) ? row.student.classroom.name : 'Unknown';
+                        let badge = className ? `<span class="badge badge-light-primary fw-bold ms-1" style="font-size: 10px; padding: 3px 6px;">${className}</span>` : '';
+                        let nis = (row.student && (row.student.nis || row.student.nisn)) ? `<span class="text-muted fs-8">NIS: ${row.student.nis || row.student.nisn}</span>` : '';
                         return `
                             <div class="d-flex flex-column align-items-start">
                                 <span class="text-gray-800 fw-bolder mb-1">${data}</span>
-                                <span class="badge badge-light-primary fw-bold" style="font-size: 10px; padding: 3px 6px;">${className}</span>
+                                <div class="d-flex align-items-center gap-1">${badge} ${nis}</div>
                             </div>
                         `;
                     }

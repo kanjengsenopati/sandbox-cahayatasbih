@@ -13,18 +13,36 @@
     </div>
     <div class="d-flex align-items-center gap-3 flex-wrap">
         <div class="d-flex align-items-center gap-2">
-            <label class="fs-7 fw-bold text-gray-700 mb-0">Cari Siswa:</label>
-            <input type="text" id="archive-search-name" class="form-control form-control-solid form-control-sm" placeholder="Nama Siswa / NIS..." style="width: 170px;">
+            <label class="fs-7 fw-bold text-gray-700 mb-0">Lembaga:</label>
+            <select id="archive-school-id" class="form-select form-select-solid form-select-sm" style="width: 140px;">
+                <option value="">Semua</option>
+                @foreach($schools as $school)
+                    <option value="{{ $school->id }}">{{ $school->name }}</option>
+                @endforeach
+            </select>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+            <label class="fs-7 fw-bold text-gray-700 mb-0">Kelas:</label>
+            <select id="archive-classroom-id" class="form-select form-select-solid form-select-sm" style="width: 140px;">
+                <option value="">Semua Kelas</option>
+                @foreach($classrooms as $cls)
+                    <option value="{{ $cls->id }}" data-school="{{ $cls->school_id }}">{{ $cls->name }}</option>
+                @endforeach
+            </select>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+            <label class="fs-7 fw-bold text-gray-700 mb-0">Cari:</label>
+            <input type="text" id="archive-search-name" class="form-control form-control-solid form-control-sm" placeholder="Nama / NIS..." style="width: 150px;">
         </div>
         <!--begin::Custom Date Range Container-->
         <div class="d-flex align-items-center gap-2" id="archive-custom-date-container">
             <div class="d-flex align-items-center gap-1">
                 <label class="fs-7 fw-bold text-gray-700 mb-0">Mulai:</label>
-                <input type="date" id="archive-start-date" class="form-control form-control-solid form-control-sm" value="{{ now()->subDays(6)->format('Y-m-d') }}" style="width: 140px;">
+                <input type="date" id="archive-start-date" class="form-control form-control-solid form-control-sm" value="{{ now()->subDays(6)->format('Y-m-d') }}" style="width: 135px;">
             </div>
             <div class="d-flex align-items-center gap-1">
                 <label class="fs-7 fw-bold text-gray-700 mb-0">Selesai:</label>
-                <input type="date" id="archive-end-date" class="form-control form-control-solid form-control-sm" value="{{ now()->format('Y-m-d') }}" style="width: 140px;">
+                <input type="date" id="archive-end-date" class="form-control form-control-solid form-control-sm" value="{{ now()->format('Y-m-d') }}" style="width: 135px;">
             </div>
         </div>
         <!--end::Custom Date Range Container-->
@@ -36,19 +54,19 @@
 
 <!--begin::Table-->
 <div class="table-responsive">
-    <table id="table-archive" class="table align-middle table-row-dashed" style="width: 100%;">
+    <table id="table-archive" class="table align-middle table-row-dashed fs-7 gy-3" style="width: 100%;">
         <thead>
             <tr class="text-start text-gray-400 fw-bolder fs-7 text-uppercase gs-0">
-                <th style="width: 5%">No</th>
-                <th>Siswa</th>
-                <th>Nominal</th>
-                <th>Kode Unik</th>
-                <th>Bank Tujuan</th>
-                <th>Bukti Transfer</th>
-                <th>Status</th>
-                <th>Petugas</th>
-                <th>Tanggal & Waktu</th>
-                <th class="text-center min-w-100px" style="width: 12%">Aksi</th>
+                <th style="width: 4%">No</th>
+                <th style="width: 18%">Siswa</th>
+                <th style="width: 12%">Nominal</th>
+                <th style="width: 8%">Kode Unik</th>
+                <th style="width: 18%">Bank Tujuan</th>
+                <th style="width: 10%">Bukti Transfer</th>
+                <th style="width: 12%">Status</th>
+                <th style="width: 10%">Petugas</th>
+                <th style="width: 10%">Tanggal & Waktu</th>
+                <th class="text-center min-w-80px" style="width: 8%">Aksi</th>
             </tr>
         </thead>
         <tbody class="text-gray-600 fw-bold"></tbody>
