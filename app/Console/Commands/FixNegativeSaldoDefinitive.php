@@ -10,40 +10,49 @@ use App\Models\Student;
 class FixNegativeSaldoDefinitive extends Command
 {
     protected $signature = 'saldo:fix-negative 
-                            {--dry-run : Jalankan simulasi tanpa mengubah database}';
+                            {--dry-run : Jalankan simulasi tanpa mengubah database}
+                            {--zero-deficits : Nol-kan defisit/utang kecil masa lalu (< 0 menjadi Rp 0)}
+                            {--student= : Filter berdasarkan NIS, Nama, atau ID tertentu}';
 
-    protected $description = 'Perbaikan definitif: hapus TARIK PENYESUAIAN fiktif (koreksi ganda), recalculate saldo dari histories bersih';
+    protected $description = 'Perbaikan definitif saldo negatif: hapus seluruh record koreksi ganda/phantom, recalculate saldo dari riwayat sah, force-update students.saldo';
 
     public function handle()
     {
         ini_set('memory_limit', '1024M');
         $isDryRun = $this->option('dry-run');
+        $zeroDeficits = $this->option('zero-deficits');
+        $filterStudent = $this->option('student');
 
         $this->info("=========================================================================================");
-        $this->info("     PERBAIKAN DEFINITIF SALDO NEGATIF (HAPUS TARIK PENYESUAIAN KOREKSI GANDA)           ");
+        $this->info("     PERBAIKAN DEFINITIF SALDO NEGATIF SANTRI (PEMBERSIHAN TOTAL PHANTOM & RECALCULATE)  ");
         $this->info("=========================================================================================\n");
 
         if ($isDryRun) {
-            $this->warn(">>> MODE SIMULASI (DRY-RUN) AKTIF: Tidak ada perubahan <<<\n");
+            $this->warn(">>> MODE SIMULASI (DRY-RUN) AKTIF: Tidak ada data yang diubah di database <<<\n");
         }
 
         // =====================================================================
-        // STEP 1: Find and delete phantom "TARIK PENYESUAI" records
-        // These were manually inserted as corrections, but rollback command
-        // ALREADY deleted the Alokasi records → double correction → massive negative
+        // STEP 1: DETEKSI & HAPUS SELURUH MUTASI PENGURANGAN PHANTOM / KOREKSI GANDA
+        // Meliputi: TARIK PENYESUAIAN, TARIK MANUAL, KOREKSI SALDO, atau OUT/WITHDRAW >= 500k anomali
         // =====================================================================
         $phantomRecords = DB::table('saldo_histories')
-            ->where('type', 'WITHDRAW')
+            ->whereIn('type', ['OUT', 'WITHDRAW'])
             ->where('status', 'SUCCESS')
             ->where(function ($q) {
-                $q->where('description', 'like', '%TARIK PENYESUAI%')
-                  ->orWhere('description', 'like', '%TARIK PENYESUAIAN%');
+                $q->where('description', 'like', '%PENYESUAI%')
+                  ->orWhere('description', 'like', '%KOREKSI%')
+                  ->orWhere('description', 'like', '%ROLLBACK%')
+                  ->orWhere('description', 'like', '%KELEBIHAN%')
+                  ->orWhere('description', 'like', '%ALOKASI%')
+                  ->orWhere(function ($sub) {
+                      $sub->where('description', 'like', '%TARIK%')
+                          ->where('amount', '>=', 500000);
+                  });
             })
-            ->where('amount', '>=', 500000) // Only large amounts (the phantom corrections)
             ->get();
 
-        $this->info("STEP 1: Deteksi record 'TARIK PENYESUAIAN' fiktif (koreksi ganda)");
-        $this->info("Ditemukan: {$phantomRecords->count()} record phantom\n");
+        $this->info("STEP 1: Deteksi record mutasi pengurangan phantom / koreksi ganda...");
+        $this->info("Ditemukan: {$phantomRecords->count()} record phantom.\n");
 
         if ($phantomRecords->count() > 0) {
             $phantomRows = [];
@@ -58,6 +67,7 @@ class FixNegativeSaldoDefinitive extends Command
                     $student->nis ?? '-',
                     $student->name ?? '-',
                     $student->classroom ?? '-',
+                    $p->type,
                     'Rp ' . number_format($p->amount, 0, ',', '.'),
                     $p->description,
                     $p->created_at,
@@ -65,7 +75,7 @@ class FixNegativeSaldoDefinitive extends Command
             }
 
             $this->table(
-                ['NIS', 'Nama', 'Kelas', 'Nominal Phantom', 'Deskripsi', 'Tanggal'],
+                ['NIS', 'Nama', 'Kelas', 'Tipe', 'Nominal Phantom', 'Deskripsi', 'Tanggal'],
                 $phantomRows
             );
 
@@ -74,21 +84,21 @@ class FixNegativeSaldoDefinitive extends Command
                 $deletedCount = DB::table('saldo_histories')
                     ->whereIn('id', $phantomIds)
                     ->delete();
-                $this->info("\n  → Berhasil MENGHAPUS {$deletedCount} record phantom TARIK PENYESUAIAN.\n");
+                $this->info("\n  → Berhasil MENGHAPUS {$deletedCount} record mutasi phantom.\n");
             } else {
                 $this->warn("\n  → " . $phantomRecords->count() . " record akan dihapus saat eksekusi live.\n");
             }
         }
 
         // =====================================================================
-        // STEP 2: Also delete any remaining Alokasi Kelebihan Bayar records
+        // STEP 2: HAPUS JUGA RECORD ALOKASI KELEBIHAN BAYAR (TYPE IN) JIKA ADA
         // =====================================================================
         $remainingAlokasi = DB::table('saldo_histories')
             ->where('description', 'like', '%Alokasi Kelebihan Bayar%')
             ->count();
 
         if ($remainingAlokasi > 0) {
-            $this->info("STEP 2: Ditemukan {$remainingAlokasi} record Alokasi Kelebihan Bayar tersisa.");
+            $this->info("STEP 2: Ditemukan {$remainingAlokasi} record 'Alokasi Kelebihan Bayar' (IN).");
             if (!$isDryRun) {
                 $deleted = DB::table('saldo_histories')
                     ->where('description', 'like', '%Alokasi Kelebihan Bayar%')
@@ -98,35 +108,45 @@ class FixNegativeSaldoDefinitive extends Command
                 $this->info("  → Akan dihapus saat eksekusi live.\n");
             }
         } else {
-            $this->info("STEP 2: ✓ Tidak ada record Alokasi Kelebihan Bayar tersisa.\n");
+            $this->info("STEP 2: ✓ Tidak ada record Alokasi Kelebihan Bayar (IN) tersisa.\n");
         }
 
         // =====================================================================
-        // STEP 3: Recalculate ALL students with saldo < 0
+        // STEP 3: REKALKULASI & SINKRONISASI SALDO SELURUH SANTRI NEGATIF
         // =====================================================================
-        $negativeStudents = Student::with('classroom')
-            ->where('saldo', '<', 0)
-            ->orderBy('saldo', 'asc')
-            ->get();
+        $query = Student::with('classroom');
 
-        $totalNegative = $negativeStudents->count();
-        $this->info("STEP 3: Merecalculate {$totalNegative} santri dengan saldo negatif...\n");
+        if ($filterStudent) {
+            $query->where(function ($q) use ($filterStudent) {
+                $q->where('id', $filterStudent)
+                  ->orWhere('nis', $filterStudent)
+                  ->orWhere('nisn', $filterStudent)
+                  ->orWhere('name', 'like', "%{$filterStudent}%");
+            });
+        } else {
+            $query->where('saldo', '<', 0);
+        }
 
-        if ($totalNegative === 0) {
-            $this->info("✓ Tidak ada santri dengan saldo negatif. Semua sudah normal!");
+        $negativeStudents = $query->orderBy('saldo', 'asc')->get();
+        $totalTarget = $negativeStudents->count();
+
+        $this->info("STEP 3: Memeriksa dan merekonstruksi {$totalTarget} santri target...\n");
+
+        if ($totalTarget === 0) {
+            $this->info("✓ Tidak ada santri dengan saldo negatif yang perlu diperbaiki.");
             return 0;
         }
 
         $resultRows = [];
         $repairedCount = 0;
 
-        $bar = $this->output->createProgressBar($totalNegative);
+        $bar = $this->output->createProgressBar($totalTarget);
         $bar->start();
 
         foreach ($negativeStudents as $student) {
             $currentSaldo = (float) $student->saldo;
 
-            // Fetch remaining clean histories (phantom records already deleted)
+            // Ambil seluruh riwayat mutasi sah yang tersisa
             $histories = DB::table('saldo_histories')
                 ->where('student_id', $student->id)
                 ->where('status', 'SUCCESS')
@@ -135,7 +155,7 @@ class FixNegativeSaldoDefinitive extends Command
                 ->select('id', 'type', 'amount', 'balance_before', 'balance_after')
                 ->get();
 
-            // Calculate from zero
+            // Hitung running balance murni dari nol
             $runningBalance = 0.0;
             foreach ($histories as $h) {
                 if ($h->type === 'IN') {
@@ -146,6 +166,12 @@ class FixNegativeSaldoDefinitive extends Command
             }
 
             $trueSaldo = $runningBalance;
+
+            // Jika opsi --zero-deficits aktif atau saldo minus karena defisit masa lalu
+            if ($zeroDeficits && $trueSaldo < 0) {
+                $trueSaldo = 0.0;
+            }
+
             $diff = $trueSaldo - $currentSaldo;
 
             $resultRows[] = [
@@ -205,11 +231,11 @@ class FixNegativeSaldoDefinitive extends Command
 
         $this->line('');
         if ($isDryRun) {
-            $this->warn("Ditemukan {$totalNegative} santri yang siap dinormalisasi.");
-            $this->info("Untuk eksekusi, jalankan tanpa --dry-run:");
+            $this->warn("Ditemukan {$totalTarget} santri yang siap diproses.");
+            $this->info("Untuk mengeksekusi langsung di database, jalankan tanpa opsi --dry-run:");
             $this->comment("php artisan saldo:fix-negative");
         } else {
-            $this->info("✓ BERHASIL MEMPERBAIKI {$repairedCount} SANTRI KE SALDO RIIL ASLINYA!");
+            $this->info("✓ BERHASIL MEMPERBAIKI {$repairedCount} dari {$totalTarget} SANTRI KE SALDO RIIL ASLINYA 100%!");
         }
 
         return 0;
