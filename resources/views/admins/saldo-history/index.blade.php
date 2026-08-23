@@ -92,78 +92,22 @@
                         </li>
                     </ul>
                     <div class="tab-content" id="myTabContent">
-                        <div class="tab-pane fade " id="saldo-history" role="tabpanel"
-                            aria-labelledby="saldo-history-tab">
-                            <!--begin::Filters-->
+                        <!-- 1. TOP UP SALDO TAB PANE -->
+                        <div class="tab-pane fade show active" id="top-up-saldo" role="tabpanel" aria-labelledby="top-up-saldo-tab">
                             <div class="d-flex align-items-center justify-content-between flex-wrap gap-3 my-4">
-                                <h4 class="text-dark fw-bolder mb-0">Riwayat Mutasi Saldo</h4>
-                                <div class="d-flex align-items-center gap-3 flex-wrap">
+                                <h4 class="text-dark fw-bolder mb-0">Verifikasi Top Up Saldo</h4>
+                                <div class="d-flex align-items-center gap-3">
                                     <div class="d-flex align-items-center gap-2">
                                         <label class="fs-7 fw-bold text-gray-700 mb-0">Cari Siswa:</label>
-                                        <input type="text" id="saldo-history-search-name" class="form-control form-control-solid form-control-sm" placeholder="Nama Siswa / NIS..." style="width: 180px;">
+                                        <input type="text" id="topup-search-name" class="form-control form-control-solid form-control-sm" placeholder="Nama Siswa / NIS..." style="width: 180px;">
                                     </div>
-                                    <div class="d-flex align-items-center gap-2">
-                                        <label class="fs-7 fw-bold text-gray-700 mb-0">Lembaga:</label>
-                                        <select id="saldo-history-school-id" class="form-select form-select-solid form-select-sm" style="width: 150px;">
-                                            <option value="">Semua</option>
-                                            @foreach ($schools as $school)
-                                            <option value="{{ $school->id }}">{{ $school->name }}</option>
-                                            @endforeach
-                                        </select>
-                                    </div>
-                                    <div class="d-flex align-items-center gap-2">
-                                        <label class="fs-7 fw-bold text-gray-700 mb-0">Kelas:</label>
-                                        <div class="dropdown">
-                                            <button class="btn btn-light form-select-sm dropdown-toggle text-start" style="width: 150px; background-color: #f5f8fa; border-color: #f5f8fa; color: #5e6278;" type="button" id="saldo_history_classroom_btn" data-bs-toggle="dropdown" aria-expanded="false" data-bs-auto-close="outside">
-                                                Semua
-                                            </button>
-                                            <input type="hidden" id="saldo-history-classroom-id" value="">
-                                            <div class="dropdown-menu p-4 shadow" style="min-width: 400px; max-height: 400px; overflow-y: auto;" aria-labelledby="saldo_history_classroom_btn" id="saldo_history_classroom_mega_menu">
-                                                <div class="text-muted fs-7 mb-2">Pilih Lembaga terlebih dahulu</div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="d-flex align-items-center gap-2">
-                                        <label class="fs-7 fw-bold text-gray-700 mb-0">Mulai:</label>
-                                        <input type="date" id="saldo-history-start-date" class="form-control form-control-solid form-control-sm" style="width: 150px;">
-                                    </div>
-                                    <div class="d-flex align-items-center gap-2">
-                                        <label class="fs-7 fw-bold text-gray-700 mb-0">Selesai:</label>
-                                        <input type="date" id="saldo-history-end-date" class="form-control form-control-solid form-control-sm" style="width: 150px;">
-                                    </div>
-                                    <button id="saldo-history-btn-filter" class="btn btn-primary btn-sm"><i class="fas fa-filter me-1"></i> Filter</button>
-                                    <button id="saldo-history-btn-reset" class="btn btn-secondary btn-sm"><i class="fas fa-undo me-1"></i> Reset</button>
-                                    <button id="saldo-history-btn-recalculate" class="btn btn-warning btn-sm text-dark fw-bold ms-1" title="Perbaiki & Sinkronkan Urutan Saldo"><i class="fas fa-sync-alt me-1"></i> Rekalkulasi Saldo</button>
+                                    <button id="topup-btn-filter" class="btn btn-primary btn-sm"><i class="fas fa-filter me-1"></i> Filter</button>
+                                    <button id="topup-btn-reset" class="btn btn-secondary btn-sm"><i class="fas fa-undo me-1"></i> Reset</button>
                                 </div>
                             </div>
-                            <!--end::Filters-->
                             <!--begin::Table-->
                             <div class="table-responsive">
-                                <table id="table-saldo-history" class="table align-middle table-row-dashed ">
-                                    <thead>
-                                        <tr class="text-start text-gray-400 fw-bolder fs-7 text-uppercase gs-0">
-                                            <th style="width: 5%">No</th>
-                                            <th>Tanggal</th>
-                                            <th class="min-w-100px" style="width: 22%">Siswa</th>
-                                            <th class="min-w-100px" style="width: 22%">Jumlah</th>
-                                            <th class="min-w-100px" style="width: 22%">Status</th>
-                                            <th>Saldo Awal</th>
-                                            <th>Saldo Akhir</th>
-                                            <th class="min-w-100px" style="width: 22%">Keterangan</th>
-                                            <th class="text-center min-w-100px" style="width: 10%">Aksi</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody class="text-gray-600 fw-bold"></tbody>
-                                </table>
-                            </div>
-                            <!--end::Table-->
-                        </div>
-                        <div class="tab-pane fade show active" id="top-up-saldo" role="tabpanel"
-                            aria-labelledby="top-up-saldo-tab">
-                            <!--begin::Top Up Form-->
-                            <!--begin::Table-->
-                            <div class="table-responsive">
-                                <table id="table-transfer" class="table align-middle table-row-dashed ">
+                                <table id="table-transfer" class="table align-middle table-row-dashed" style="width: 100%;">
                                     <thead>
                                         <tr class="text-start text-gray-400 fw-bolder fs-7 text-uppercase gs-0">
                                             <th style="width: 5%">No</th>
@@ -180,14 +124,13 @@
                                 </table>
                             </div>
                             <!--end::Table-->
-
-                            <!--end::Top Up Form-->
                         </div>
-                        
+
+                        <!-- 2. PENYESUAIAN SALDO TAB PANE -->
                         @if(Auth::user()->can('Create Saldo Santri') || Auth::user()->can('Manage Saldo Santri') || (method_exists(Auth::user(), 'isKoordinatorCahayaMart') && Auth::user()->isKoordinatorCahayaMart()))
                         <div class="tab-pane fade" id="penyesuaian-saldo" role="tabpanel" aria-labelledby="penyesuaian-saldo-tab">
                             <!--begin::Card Header-->
-                            <div class="card-header border-0 pt-6 pb-4 px-0">
+                            <div class="card-header border-0 pt-4 pb-4 px-0">
                                 <div class="card-title d-flex align-items-center gap-3 flex-wrap">
                                     <div class="d-flex align-items-center position-relative me-2">
                                         <span class="svg-icon svg-icon-1 position-absolute ms-4">
@@ -246,9 +189,77 @@
                             <!--end::Card Body-->
                         </div>
                         @endif
-                        <div class="tab-pane fade" id="arsip-topup-saldo" role="tabpanel"
-                            aria-labelledby="arsip-topup-saldo-tab">
+
+                        <!-- 3. ARSIP TOPUP SALDO TAB PANE -->
+                        <div class="tab-pane fade" id="arsip-topup-saldo" role="tabpanel" aria-labelledby="arsip-topup-saldo-tab">
                             @include('admins.saldo-history.transfer-tab.archive')
+                        </div>
+
+                        <!-- 4. RIWAYAT SALDO TAB PANE -->
+                        <div class="tab-pane fade" id="saldo-history" role="tabpanel" aria-labelledby="saldo-history-tab">
+                            <!--begin::Filters-->
+                            <div class="d-flex align-items-center justify-content-between flex-wrap gap-3 my-4">
+                                <h4 class="text-dark fw-bolder mb-0">Riwayat Mutasi Saldo</h4>
+                                <div class="d-flex align-items-center gap-3 flex-wrap">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <label class="fs-7 fw-bold text-gray-700 mb-0">Cari Siswa:</label>
+                                        <input type="text" id="saldo-history-search-name" class="form-control form-control-solid form-control-sm" placeholder="Nama Siswa / NIS..." style="width: 180px;">
+                                    </div>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <label class="fs-7 fw-bold text-gray-700 mb-0">Lembaga:</label>
+                                        <select id="saldo-history-school-id" class="form-select form-select-solid form-select-sm" style="width: 150px;">
+                                            <option value="">Semua</option>
+                                            @foreach ($schools as $school)
+                                            <option value="{{ $school->id }}">{{ $school->name }}</option>
+                                            @endforeach
+                                        </select>
+                                    </div>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <label class="fs-7 fw-bold text-gray-700 mb-0">Kelas:</label>
+                                        <div class="dropdown">
+                                            <button class="btn btn-light form-select-sm dropdown-toggle text-start" style="width: 150px; background-color: #f5f8fa; border-color: #f5f8fa; color: #5e6278;" type="button" id="saldo_history_classroom_btn" data-bs-toggle="dropdown" aria-expanded="false" data-bs-auto-close="outside">
+                                                Semua
+                                            </button>
+                                            <input type="hidden" id="saldo-history-classroom-id" value="">
+                                            <div class="dropdown-menu p-4 shadow" style="min-width: 400px; max-height: 400px; overflow-y: auto;" aria-labelledby="saldo_history_classroom_btn" id="saldo_history_classroom_mega_menu">
+                                                <div class="text-muted fs-7 mb-2">Pilih Lembaga terlebih dahulu</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <label class="fs-7 fw-bold text-gray-700 mb-0">Mulai:</label>
+                                        <input type="date" id="saldo-history-start-date" class="form-control form-control-solid form-control-sm" style="width: 150px;">
+                                    </div>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <label class="fs-7 fw-bold text-gray-700 mb-0">Selesai:</label>
+                                        <input type="date" id="saldo-history-end-date" class="form-control form-control-solid form-control-sm" style="width: 150px;">
+                                    </div>
+                                    <button id="saldo-history-btn-filter" class="btn btn-primary btn-sm"><i class="fas fa-filter me-1"></i> Filter</button>
+                                    <button id="saldo-history-btn-reset" class="btn btn-secondary btn-sm"><i class="fas fa-undo me-1"></i> Reset</button>
+                                    <button id="saldo-history-btn-recalculate" class="btn btn-warning btn-sm text-dark fw-bold ms-1" title="Perbaiki & Sinkronkan Urutan Saldo"><i class="fas fa-sync-alt me-1"></i> Rekalkulasi Saldo</button>
+                                </div>
+                            </div>
+                            <!--end::Filters-->
+                            <!--begin::Table-->
+                            <div class="table-responsive">
+                                <table id="table-saldo-history" class="table align-middle table-row-dashed" style="width: 100%;">
+                                    <thead>
+                                        <tr class="text-start text-gray-400 fw-bolder fs-7 text-uppercase gs-0">
+                                            <th style="width: 5%">No</th>
+                                            <th>Tanggal</th>
+                                            <th class="min-w-100px" style="width: 22%">Siswa</th>
+                                            <th class="min-w-100px" style="width: 22%">Jumlah</th>
+                                            <th class="min-w-100px" style="width: 22%">Status</th>
+                                            <th>Saldo Awal</th>
+                                            <th>Saldo Akhir</th>
+                                            <th class="min-w-100px" style="width: 22%">Keterangan</th>
+                                            <th class="text-center min-w-100px" style="width: 10%">Aksi</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="text-gray-600 fw-bold"></tbody>
+                                </table>
+                            </div>
+                            <!--end::Table-->
                         </div>
                     </div>
                     <!--end::Tabs-->
@@ -311,810 +322,34 @@
 @endsection
 @push('js')
 <script>
-    $(document).ready(() => {
-            var table = $('#table-saldo-history').DataTable({
-                ordering: false,
-                processing: true,
-                serverSide: true,
-                ajax: {
-                    url: "{{ route('saldo-history.index') }}",
-                    data: function(d) {
-                        d.type = 'saldo';
-                        d.school_id = $('#saldo-history-school-id').val();
-                        d.classroom_id = $('#saldo-history-classroom-id').val();
-                        d.search_name = $('#saldo-history-search-name').val();
-                        d.start_date = $('#saldo-history-start-date').val();
-                        d.end_date = $('#saldo-history-end-date').val();
-                    }
-                },
-                language: {
-                    "paginate": {
-                        "next": "<i class='fa fa-angle-right'>",
-                        "previous": "<i class='fa fa-angle-left'>"
-                    },
-                    "loadingRecords": "Loading..."
-                },
-                columns: [{
-                        "data": null,
-                        "sortable": false,
-                        "searchable": false,
-                        render: function(data, type, row, meta) {
-                            return meta.row + meta.settings._iDisplayStart + 1;
-                        }
-                    },
-                    {
-                        data: 'date',
-                        name: 'date',
-                        orderable: true,
-                        searchable: true,
-                        render: function(data, type, row) {
-                        return data ? data : 'N/A'; // Null handler
-                        }
-                    },
-                    {
-                        data: 'student.name',
-                        name: 'student.name',
-                        orderable: true,
-                        searchable: true,
-                        render: function(data, type, row) {
-                            if (!data) return 'N/A';
-                            let className = row.student && row.student.classroom ? row.student.classroom.name : 'Unknown';
-                            return `
-                                <div class="d-flex flex-column">
-                                    <span class="text-gray-800 fw-bolder mb-1">${data}</span>
-                                    <span class="badge badge-light-primary fw-bold" style="width: fit-content; font-size: 10px; padding: 4px 6px;">${className}</span>
-                                </div>
-                            `;
-                        }
-                    },
-                    {
-                        data: 'amount',
-                        name: 'amount',
-                        orderable: true,
-                        searchable: true,
-                        render: function(data, type, row) {
-                        return data ? data : 'N/A'; // Null handler
-                        }
-                    },
-                    {
-                        data: 'status',
-                        name: 'status',
-                        orderable: true,
-                        searchable: true,
-                        render: function(data, type, row) {
-                         return data ? data : 'N/A'; // Null handler
-                        }
-                    },
-                    {
-                        data: 'balance_before',
-                        name: 'balance_before'
-                    },
-                    {
-                        data: 'balance_after',
-                        name: 'balance_after'
-                    },
-                    {
-                        data: 'description',
-                        name: 'description',
-                        orderable: true,
-                        searchable: true,
-                        render: function(data, type, row) {
-                         return data ? data : 'N/A'; // Null handler
-                        }
-                    },
-                    {
-                        data: 'action',
-                        name: 'action',
-                        orderable: false,
-                        searchable: false,
-                        className: 'text-center'
-                    }
-                ]
-            });
-
-            $('#saldo-history-btn-filter').off('click').on('click', function() {
-                table.ajax.reload();
-            });
-
-            $('#saldo-history-btn-reset').off('click').on('click', function() {
-                $('#saldo-history-school-id').val('');
-                $('#saldo-history-classroom-id').val('');
-                $('#saldo_history_classroom_btn').text('Semua');
-                $('#saldo-history-search-name').val('');
-                $('#saldo-history-start-date').val('');
-                $('#saldo-history-end-date').val('');
-                table.ajax.reload();
-            });
-            
-            const allHistoryClassrooms = @json($classrooms);
-
-            function renderHistoryClassroomMegaMenu(schoolId) {
-                const container = $('#saldo_history_classroom_mega_menu');
-                container.empty();
-
-                if (!schoolId) {
-                    container.html('<div class="text-muted fs-7 mb-2">Pilih Lembaga terlebih dahulu</div>');
-                    return;
-                }
-
-                const filteredClasses = allHistoryClassrooms.filter(c => c.school_id == schoolId);
-                if (filteredClasses.length === 0) {
-                    container.html('<div class="text-muted fs-7 mb-2">Tidak ada kelas ditemukan</div>');
-                    return;
-                }
-
-                const groups = {};
-                filteredClasses.forEach(c => {
-                    let match = c.name.match(/^(\d+)/);
-                    let key = match ? match[1] : 'Lainnya';
-                    if (!groups[key]) groups[key] = [];
-                    groups[key].push(c);
-                });
-
-                const row = $('<div class="row g-2"></div>');
-                
-                container.append($('<a href="#" class="dropdown-item fw-bold text-primary mb-3 history-classroom-item" data-id="" data-name="Semua">Semua</a>'));
-
-                Object.keys(groups).sort((a,b) => parseInt(a) - parseInt(b)).forEach(key => {
-                    const col = $('<div class="col-4"></div>');
-                    col.append(`<h6 class="dropdown-header text-uppercase text-muted fw-bolder">Kelas ${key}</h6>`);
-                    groups[key].forEach(c => {
-                        col.append(`<a class="dropdown-item history-classroom-item" href="#" data-id="${c.id}" data-name="${c.name}">${c.name}</a>`);
-                    });
-                    row.append(col);
-                });
-
-                container.append(row);
-            }
-
-            $('#saldo-history-school-id').on('change', function() {
-                $('#saldo-history-classroom-id').val('');
-                $('#saldo_history_classroom_btn').text('Semua');
-                renderHistoryClassroomMegaMenu($(this).val());
-            });
-
-            $(document).on('click', '.history-classroom-item', function(e) {
-                e.preventDefault();
-                const id = $(this).data('id');
-                const name = $(this).data('name');
-                $('#saldo-history-classroom-id').val(id);
-                $('#saldo_history_classroom_btn').text(name);
-                $('#saldo_history_classroom_btn').dropdown('toggle'); // close dropdown manually
-            });
-
-            $('#saldo-history-btn-recalculate').off('click').on('click', function() {
-                Swal.fire({
-                    title: 'Rekalkulasi Saldo?',
-                    text: 'Proses ini akan mengurutkan & memperhitungkan ulang seluruh running balance riwayat mutasi saldo santri secara presisi kronologis.',
-                    icon: 'warning',
-                    showCancelButton: true,
-                    confirmButtonColor: '#3085d6',
-                    cancelButtonColor: '#d33',
-                    confirmButtonText: 'Ya, Rekalkulasi Sekarang!',
-                    cancelButtonText: 'Batal'
-                }).then((result) => {
-                    if (result.isConfirmed) {
-                        Swal.fire({
-                            title: 'Memproses Rekalkulasi...',
-                            text: 'Mohon tunggu sejenak',
-                            allowOutsideClick: false,
-                            didOpen: () => { Swal.showLoading(); }
-                        });
-                        $.ajax({
-                            url: "{{ route('saldo-history.recalculate') }}",
-                            type: 'POST',
-                            data: {
-                                _token: "{{ csrf_token() }}"
-                            },
-                            success: function(res) {
-                                Swal.fire('Berhasil!', res.message || 'Rekalkulasi saldo selesai.', 'success');
-                                table.ajax.reload();
-                            },
-                            error: function(err) {
-                                Swal.fire('Gagal!', (err.responseJSON && err.responseJSON.message) ? err.responseJSON.message : 'Terjadi kesalahan.', 'error');
-                            }
-                        });
-                    }
-                });
-            });
-
-            $('#saldo-history-search-name').off('keyup').on('keyup', function(e) {
-                if (e.keyCode === 13) {
-                    table.ajax.reload();
-                }
-            });
-    })
-</script>
-<script>
-    $(document).ready(() => {
-            var table = $('#table-transfer').DataTable({
-                ordering: true,
-                sortable: true,
-                processing: true,
-                serverSide: true,
-                ajax: {
-                    url: "{{ route('saldo-history.index') }}",
-                    data: function(d) {
-                        d.type = 'topup';
-                    }
-                },
-                language: {
-                    "paginate": {
-                        "next": "<i class='fa fa-angle-right'>",
-                        "previous": "<i class='fa fa-angle-left'>"
-                    },
-                    "loadingRecords": "Loading..."
-                },
-                columns: [{
-                        "data": null,
-                        "sortable": false,
-                        "searchable": false,
-                        render: function(data, type, row, meta) {
-                            return meta.row + meta.settings._iDisplayStart + 1;
-                        }
-                    },
-                    {
-                        data: 'student.name',
-                        name: 'student.name',
-                        orderable: false,
-                    },
-                  
-                    {
-                        data: 'pay_amount',
-                        name: 'pay_amount'
-                    },
-                    {
-                        data: 'unique_payment',
-                        name: 'unique_payment'
-                    },
-                    {
-                        data: 'bank_recipient',
-                        name: 'bank_recipient',
-                        orderable: false,
-                        searchable: false
-                    },
-                    {
-                        data: 'proof',
-                        name: 'proof',
-                    },
-                    {
-                        data: 'status',
-                        name: 'status',
-                        orderable: true,
-                        searchable: false
-                    },
-                    {
-                        data: 'action',
-                        name: 'action',
-                        orderable: false,
-                        searchable: false
-                    }
-                ]
-            });
-
-        })
-</script>
-<script>
-    function updateStatus(status, id) {
-        // Show note textarea if status is "Ditolak"
-        const noteTextarea = document.getElementById(`note-${id}`);
-        if (status == 'REJECTED') {
-        if (noteTextarea.tagName.toLowerCase() === 'input') {
-        const textarea = document.createElement('textarea');
-        textarea.className = 'form-control mt-2';
-        textarea.name = 'note';
-        textarea.id = `note-${id}`;
-        textarea.placeholder = 'Note';
-        textarea.value = noteTextarea.value;
-        noteTextarea.replaceWith(textarea);
-    }
-    } else {
-        if (noteTextarea.tagName.toLowerCase() === 'textarea') {
-        const input = document.createElement('input');
-        input.type = 'hidden';
-        input.name = 'note';
-        input.id = `note-${id}`;
-        input.value = noteTextarea.value;
-        noteTextarea.replaceWith(input);
+    // Global helper to refresh all saldo DataTables synchronously
+    function reloadAllSaldoTables() {
+        if ($.fn.DataTable.isDataTable('#table-transfer')) {
+            $('#table-transfer').DataTable().ajax.reload(null, false);
         }
-     }
+        if ($.fn.DataTable.isDataTable('#table-adjust-saldo')) {
+            $('#table-adjust-saldo').DataTable().ajax.reload(null, false);
+        }
+        if ($.fn.DataTable.isDataTable('#table-archive')) {
+            $('#table-archive').DataTable().ajax.reload(null, false);
+        }
+        if ($.fn.DataTable.isDataTable('#table-saldo-history')) {
+            $('#table-saldo-history').DataTable().ajax.reload(null, false);
+        }
     }
 
-    function saveStatus(id) {
-    const status = document.getElementById(`status-${id}`).value;
-    const note = document.getElementById(`note-${id}`).value || '';
-
-    // Tampilkan loader menggunakan SweetAlert
-    Swal.fire({
-        title: 'Menyimpan...',
-        text: 'Harap tunggu',
-        allowOutsideClick: false,
-        didOpen: () => {
-        Swal.showLoading();
-        }
-    });
-
-    // Simpan menggunakan axios ke route saldo-history.update
-    axios.post(`{{ url('saldo-history/status-payment/') }}/${id}`, {
-        status: status,
-        note: note,
-        _token: '{{ csrf_token() }}' // Pastikan Anda menyertakan CSRF token
-    })
-    .then((response) => {
-        // Tampilkan pesan sukses menggunakan SweetAlert sesuai response dari server
-        if (response.data.code == '200') {
-            Swal.fire({
-                icon: 'success',
-                title: 'Berhasil',
-                text: response.data.message
-            });
-        } else {
-            Swal.fire({
-                icon: 'error',
-                title: 'Gagal',
-                text: response.data.message
-            });
-        }
-        // reload data table
-        $('#table-transfer').DataTable().ajax.reload();
-    })
-    .catch((error) => {
-    // Tampilkan pesan error menggunakan SweetAlert
-        Swal.fire({
-        icon: 'error',
-        title: 'Gagal',
-        text: 'Terjadi kesalahan saat menyimpan data'
-        });
-        });
-    }
-</script>
-<script>
-    $(document).ready(() => {
-        var archiveTable = $('#table-archive').DataTable({
-            ordering: true,
-            sortable: true,
-            processing: true,
-            serverSide: true,
-            pageLength: 20,
-            lengthMenu: [20, 30, 40],
-            ajax: {
-                url: "{{ route('saldo-history.index') }}",
-                data: function(d) {
-                    d.type = 'archive';
-                    d.search_name = $('#archive-search-name').val();
-                    d.start_date = $('#archive-start-date').val();
-                    d.end_date = $('#archive-end-date').val();
-                }
-            },
-            language: {
-                "paginate": {
-                    "next": "<i class='fa fa-angle-right'>",
-                    "previous": "<i class='fa fa-angle-left'>"
-                },
-                "loadingRecords": "Loading..."
-            },
-            columns: [
-                {
-                    "data": null,
-                    "sortable": false,
-                    "searchable": false,
-                    render: function(data, type, row, meta) {
-                        return meta.row + meta.settings._iDisplayStart + 1;
-                    }
-                },
-                {
-                    data: 'student.name',
-                    name: 'student.name',
-                    orderable: false,
-                },
-                {
-                    data: 'pay_amount',
-                    name: 'pay_amount'
-                },
-                {
-                    data: 'unique_payment',
-                    name: 'unique_payment'
-                },
-                {
-                    data: 'bank_recipient',
-                    name: 'bank_recipient',
-                    orderable: false,
-                    searchable: false
-                },
-                {
-                    data: 'proof',
-                    name: 'proof',
-                    orderable: false,
-                    searchable: false
-                },
-                {
-                    data: 'status',
-                    name: 'status',
-                    orderable: true,
-                    searchable: false
-                },
-                {
-                    data: 'officer',
-                    name: 'officer',
-                    orderable: false
-                },
-                {
-                    data: 'updated_at_formatted',
-                    name: 'updated_at',
-                    orderable: true
-                },
-                {
-                    data: 'action',
-                    name: 'action',
-                    orderable: false,
-                    searchable: false
-                }
-            ]
-        });
-
-        $('#archive-btn-filter').click(function() {
-            archiveTable.ajax.reload();
-        });
-
-        $('#archive-btn-reset').click(function() {
-            $('#archive-search-name').val('');
-            $('#archive-start-date').val('');
-            $('#archive-end-date').val('');
-            archiveTable.ajax.reload();
-        });
-
-        $('#archive-search-name').keyup(function(e) {
-            if (e.keyCode === 13) {
-                archiveTable.ajax.reload();
-            }
-        });
-
-        $(document).on('click', '.delete-archive-btn', function() {
-            var id = $(this).data('id');
-            Swal.fire({
-                title: 'Apakah Anda yakin?',
-                text: "Arsip riwayat ini akan disembunyikan. Tindakan ini tidak dapat dibatalkan!",
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonColor: '#3085d6',
-                cancelButtonColor: '#d33',
-                confirmButtonText: 'Ya, hapus!',
-                cancelButtonText: 'Batal'
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    Swal.fire({
-                        title: 'Menghapus...',
-                        text: 'Harap tunggu',
-                        allowOutsideClick: false,
-                        didOpen: () => {
-                            Swal.showLoading();
-                        }
-                    });
-
-                    axios.delete(`{{ url('saldo-history') }}/${id}`, {
-                        data: {
-                            _token: '{{ csrf_token() }}'
-                        }
-                    })
-                    .then((response) => {
-                        if (response.data.code == '200') {
-                            Swal.fire({
-                                icon: 'success',
-                                title: 'Berhasil',
-                                text: response.data.message
-                            });
-                            archiveTable.ajax.reload();
-                        } else {
-                            Swal.fire({
-                                icon: 'error',
-                                title: 'Gagal',
-                                text: response.data.message
-                            });
-                        }
-                    })
-                    .catch((error) => {
-                        console.error('Error deleting archive:', error);
-                        var msg = 'Terjadi kesalahan saat menghapus arsip';
-                        if (error.response && error.response.data && error.response.data.message) {
-                            msg = error.response.data.message;
-                        }
-                        Swal.fire({
-                            icon: 'error',
-                            title: 'Gagal',
-                            text: msg
-                        });
-                    });
-                }
-            });
-        });
-
-        $(document).on('click', '.delete-history-btn', function() {
-            var id = $(this).data('id');
-            Swal.fire({
-                title: 'Apakah Anda yakin?',
-                text: "Riwayat saldo ini akan dihapus permanen dan saldo siswa akan disesuaikan kembali!",
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonColor: '#3085d6',
-                cancelButtonColor: '#d33',
-                confirmButtonText: 'Ya, hapus!',
-                cancelButtonText: 'Batal'
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    Swal.fire({
-                        title: 'Menghapus...',
-                        text: 'Harap tunggu',
-                        allowOutsideClick: false,
-                        didOpen: () => {
-                            Swal.showLoading();
-                        }
-                    });
-
-                    axios.delete(`{{ url('saldo-history/record') }}/${id}`, {
-                        data: {
-                            _token: '{{ csrf_token() }}'
-                        }
-                    })
-                    .then((response) => {
-                        if (response.data.code == '200') {
-                            Swal.fire({
-                                icon: 'success',
-                                title: 'Berhasil',
-                                text: response.data.message
-                            });
-                            $('#table-saldo-history').DataTable().ajax.reload();
-                        } else {
-                            Swal.fire({
-                                icon: 'error',
-                                title: 'Gagal',
-                                text: response.data.message
-                            });
-                        }
-                    })
-                    .catch((error) => {
-                        console.error('Error deleting history:', error);
-                        var msg = 'Terjadi kesalahan saat menghapus riwayat';
-                        if (error.response && error.response.data && error.response.data.message) {
-                            msg = error.response.data.message;
-                        }
-                        Swal.fire({
-                            icon: 'error',
-                            title: 'Gagal',
-                            text: msg
-                        });
-                    });
-                }
-            });
-        });
-
-        // Adjust columns on tab switch
-        $('a[href="#arsip-topup-saldo"]').on('shown.bs.tab', function (e) {
-            archiveTable.columns.adjust().draw();
-        });
-
-        // Click handler for viewing proof images in a modal
-        $(document).on('click', '.view-proof-image', function() {
-            var src = $(this).data('src');
-            $('#imagePreviewSrc').attr('src', src);
-            $('#imagePreviewModal').modal('show');
-        });
-
-        // ==========================================
-        // PENYESUAIAN SALDO SCRIPTS
-        // ==========================================
-        var adjustTable = $('#table-adjust-saldo').DataTable({
-            processing: true,
-            serverSide: true,
-            ordering: true,
-            order: [],
-            ajax: {
-                url: "{{ route('saldo-history.index') }}",
-                data: function(d) {
-                    d.type = 'adjust';
-                    d.classroom_id = $('#filter-classroom').val();
-                }
-            },
-            language: {
-                "paginate": {
-                    "next": "<i class='fa fa-angle-right'>",
-                    "previous": "<i class='fa fa-angle-left'>"
-                },
-                "loadingRecords": "Memuat data...",
-                "processing": "Sedang memproses...",
-                "search": "",
-                "searchPlaceholder": "Cari santri (min. 3 huruf)..."
-            },
-            columns: [
-                {
-                    data: 'id',
-                    orderable: false,
-                    sortable: false,
-                    searchable: false,
-                    className: 'text-center pe-0',
-                    render: function(data, type, row) {
-                        return `<div class="form-check form-check-sm form-check-custom form-check-solid">
-                                    <input class="form-check-input student-select-checkbox" type="checkbox" value="${data}" data-saldo="${row.saldo || 0}" data-name="${row.name}" />
-                                </div>`;
-                    }
-                },
-                {
-                    data: null,
-                    orderable: false,
-                    sortable: false,
-                    searchable: false,
-                    render: function(data, type, row, meta) {
-                        return meta.row + meta.settings._iDisplayStart + 1;
-                    }
-                },
-                {
-                    data: 'nis',
-                    name: 'nis',
-                    orderable: true,
-                    sortable: true,
-                    searchable: true,
-                    render: function(data) {
-                        return `<span class="fw-bold text-gray-700 fs-7">${data ? data : '-'}</span>`;
-                    }
-                },
-                {
-                    data: 'name',
-                    name: 'name',
-                    orderable: true,
-                    sortable: true,
-                    searchable: true,
-                    render: function(data, type, row) {
-                        var avatar = row.avatar_url ? row.avatar_url : '{{ asset("assets/media/avatars/default.png") }}';
-                        var statusText = row.translated_status || row.status || 'Aktif';
-                        var badgeClass = 'bg-light-success text-success';
-
-                        if (row.status === 'INACTIVE') {
-                            badgeClass = 'bg-light-danger text-danger';
-                        } else if (row.status === 'GRADUATED') {
-                            badgeClass = 'bg-light-warning text-warning';
-                        } else if (row.status === 'TRANSFERRED') {
-                            badgeClass = 'bg-light-info text-info';
-                        } else if (row.status === 'DROPPED_OUT') {
-                            badgeClass = 'bg-light-secondary text-secondary';
-                        }
-
-                        return `
-                            <div class="d-flex align-items-center">
-                                <div class="symbol symbol-circle symbol-35px me-3">
-                                    <img src="${avatar}" alt="${data}" style="object-fit: cover;" />
-                                </div>
-                                <div class="d-flex flex-column align-items-start">
-                                    <span class="text-gray-800 text-hover-primary fw-bolder fs-6 mb-1">${data}</span>
-                                    <span class="badge ${badgeClass} fs-8 px-2 py-1">${statusText}</span>
-                                </div>
-                            </div>
-                        `;
-                    }
-                },
-                {
-                    data: 'classroom',
-                    name: 'classroom',
-                    orderable: true,
-                    sortable: true,
-                    searchable: true,
-                    render: function(data) {
-                        return `<span class="badge badge-light-dark fs-7">${data}</span>`;
-                    }
-                },
-                {
-                    data: 'saldo',
-                    name: 'saldo',
-                    orderable: true,
-                    sortable: true,
-                    searchable: false,
-                    render: function(data, type, row) {
-                        var val = parseInt(data) || 0;
-                        var formatted = formatRupiahVal(val);
-                        var badgeClass = val < 0 
-                            ? 'bg-danger text-white fw-bolder px-3 py-2 fs-7 mb-1' 
-                            : 'bg-success text-white fw-bolder px-3 py-2 fs-7 mb-1';
-                        var dateInfo = row.last_saldo_update_date || '-';
-                        var timeInfo = row.last_saldo_update_time || '-';
-
-                        return `
-                            <div class="d-flex flex-column align-items-start">
-                                <span class="badge ${badgeClass}" id="saldo-awal-${row.id}" data-saldo="${val}">Rp ${formatted}</span>
-                                <span class="text-slate-400 fst-italic mt-1" style="font-size: 11px; line-height: 1.3; color: #94a3b8;" id="date-awal-${row.id}">${dateInfo}</span>
-                                <span class="text-slate-400 fst-italic" style="font-size: 11px; line-height: 1.3; color: #94a3b8;" id="time-awal-${row.id}">${timeInfo}</span>
-                            </div>
-                        `;
-                    }
-                },
-                {
-                    data: 'saldo',
-                    name: 'saldo_sekarang',
-                    orderable: true,
-                    sortable: true,
-                    searchable: false,
-                    render: function(data, type, row) {
-                        var val = parseInt(data) || 0;
-                        var formatted = formatRupiahVal(val);
-                        var badgeClass = val < 0 
-                            ? 'bg-danger text-white fw-bolder px-3 py-2 fs-7 mb-1' 
-                            : 'bg-success text-white fw-bolder px-3 py-2 fs-7 mb-1';
-                        var dateInfo = row.last_saldo_update_date || '-';
-                        var timeInfo = row.last_saldo_update_time || '-';
-
-                        return `
-                            <div class="d-flex flex-column align-items-start">
-                                <span class="badge ${badgeClass}" id="saldo-sekarang-${row.id}">Rp ${formatted}</span>
-                                <span class="text-slate-400 fst-italic mt-1" style="font-size: 11px; line-height: 1.3; color: #94a3b8;" id="date-sekarang-${row.id}">${dateInfo}</span>
-                                <span class="text-slate-400 fst-italic" style="font-size: 11px; line-height: 1.3; color: #94a3b8;" id="time-sekarang-${row.id}">${timeInfo}</span>
-                            </div>
-                        `;
-                    }
-                },
-                {
-                    data: null,
-                    orderable: false,
-                    sortable: false,
-                    searchable: false,
-                    className: 'text-center',
-                    render: function(data, type, row) {
-                        return `
-                            <div class="d-flex align-items-center justify-content-center gap-2">
-                                <select class="form-select form-select-sm form-select-solid type-select fs-7" id="type-${row.id}" style="width: 105px;" onchange="recalculateSaldo('${row.id}')">
-                                    <option value="IN">+ TopUp</option>
-                                    <option value="WITHDRAW">- Tarik</option>
-                                </select>
-                                <div class="input-group input-group-sm" style="width: 140px;">
-                                    <span class="input-group-text bg-light text-gray-600 border-0 fs-7 px-2">Rp</span>
-                                    <input type="text" class="form-control form-control-sm form-control-solid amount-input fs-7 px-2" id="amount-${row.id}" placeholder="0" onkeyup="onAmountKeyUp(this, '${row.id}')">
-                                </div>
-                                <input type="text" class="form-control form-control-sm form-control-solid desc-input fs-7" id="desc-${row.id}" placeholder="Keterangan..." style="width: 130px;">
-                                <button type="button" class="btn btn-sm btn-primary px-3 py-2 fs-7 btn-save-inline" id="btn-save-${row.id}" onclick="submitInlineSaldo('${row.id}')">
-                                    <i class="fas fa-check me-1"></i> Update
-                                </button>
-                            </div>
-                        `;
-                    }
-                }
-            ]
-        });
-
-        // Filter classroom change event
-        $('#filter-classroom').change(function() {
-            adjustTable.ajax.reload();
-        });
-
-        // Custom Search Input: only filter if search query is at least 3 characters or empty
-        var searchTimer;
-        $('#custom-search').on('keyup input', function() {
-            clearTimeout(searchTimer);
-            var val = $(this).val().trim();
-            
-            searchTimer = setTimeout(function() {
-                if (val.length >= 3) {
-                    adjustTable.search(val).draw();
-                } else if (val.length === 0) {
-                    adjustTable.search('').draw();
-                }
-            }, 300);
-        });
-        
-        $('a[href="#penyesuaian-saldo"]').on('shown.bs.tab', function (e) {
-            adjustTable.columns.adjust().draw();
-        });
-    });
-
-    // Helper to format number to Rupiah string
+    // Helper functions for currency formatting & recalculation
     function formatRupiahVal(number) {
         var val = parseInt(number) || 0;
         return val.toLocaleString('id-ID');
     }
 
-    // Parse input string into raw integer amount
     function parseAmountStr(str) {
         if (!str) return 0;
         var clean = str.toString().replace(/[^0-9]/g, '');
         return parseInt(clean) || 0;
     }
 
-    // On keyup handler for inline amount input
     function onAmountKeyUp(inputElem, rowId) {
         var rawVal = parseAmountStr($(inputElem).val());
         if (rawVal > 0) {
@@ -1125,7 +360,6 @@
         recalculateSaldo(rowId);
     }
 
-    // Recalculate "Saldo Sekarang" live preview
     function recalculateSaldo(rowId) {
         var baseSaldo = parseInt($('#saldo-awal-' + rowId).attr('data-saldo')) || 0;
         var type = $('#type-' + rowId).val();
@@ -1148,7 +382,92 @@
         }
     }
 
-    // Save inline balance adjustment via AJAX
+    // Topup status updater handlers
+    function updateStatus(status, id) {
+        const noteTextarea = document.getElementById(`note-${id}`);
+        if (!noteTextarea) return;
+        if (status == 'REJECTED') {
+            if (noteTextarea.tagName.toLowerCase() === 'input') {
+                const textarea = document.createElement('textarea');
+                textarea.className = 'form-control form-control-sm mt-2';
+                textarea.name = 'note';
+                textarea.id = `note-${id}`;
+                textarea.placeholder = 'Alasan penolakan...';
+                textarea.rows = 2;
+                textarea.value = noteTextarea.value;
+                noteTextarea.replaceWith(textarea);
+            }
+        } else {
+            if (noteTextarea.tagName.toLowerCase() === 'textarea') {
+                const input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = 'note';
+                input.id = `note-${id}`;
+                input.value = noteTextarea.value;
+                noteTextarea.replaceWith(input);
+            }
+        }
+    }
+
+    function saveStatus(id) {
+        const statusElem = document.getElementById(`status-${id}`);
+        const noteElem = document.getElementById(`note-${id}`);
+        const status = statusElem ? statusElem.value : '';
+        const note = noteElem ? noteElem.value : '';
+
+        if (!status) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Pilih Status',
+                text: 'Silakan pilih status verifikasi terlebih dahulu.'
+            });
+            return;
+        }
+
+        Swal.fire({
+            title: 'Menyimpan...',
+            text: 'Harap tunggu sebentar',
+            allowOutsideClick: false,
+            didOpen: () => { Swal.showLoading(); }
+        });
+
+        axios.post(`{{ url('saldo-history/status-payment') }}/${id}`, {
+            status: status,
+            note: note,
+            _token: '{{ csrf_token() }}'
+        })
+        .then((response) => {
+            if (response.data.code == '200' || response.data.status) {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Berhasil',
+                    text: response.data.message || 'Status transaksi berhasil diperbarui.',
+                    timer: 2000,
+                    showConfirmButton: false
+                });
+            } else {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Gagal',
+                    text: response.data.message || 'Terjadi kendala saat memperbarui status.'
+                });
+            }
+            reloadAllSaldoTables();
+        })
+        .catch((error) => {
+            var msg = 'Terjadi kesalahan saat menyimpan data';
+            if (error.response && error.response.data && error.response.data.message) {
+                msg = error.response.data.message;
+            }
+            Swal.fire({
+                icon: 'error',
+                title: 'Gagal',
+                text: msg
+            });
+        });
+    }
+
+    // Inline Saldo Adjustment
     function submitInlineSaldo(rowId) {
         var amountStr = $('#amount-' + rowId).val();
         var amount = parseAmountStr(amountStr);
@@ -1167,7 +486,6 @@
             return;
         }
 
-        // Disable button & show spinner
         btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm me-1"></span>...');
 
         axios.post("{{ route('saldo-history.store') }}", {
@@ -1195,7 +513,6 @@
                     showConfirmButton: false
                 });
 
-                // Update Saldo Awal attribute, text, and badge class
                 var newSaldo = resData.new_saldo !== undefined ? resData.new_saldo : 0;
                 var awalBadge = $('#saldo-awal-' + rowId);
                 awalBadge.attr('data-saldo', newSaldo).text('Rp ' + formatRupiahVal(newSaldo));
@@ -1205,7 +522,6 @@
                     awalBadge.attr('class', 'badge bg-light-primary text-primary fw-bolder fs-7 mb-1');
                 }
 
-                // Update date & time under Saldo Awal and Saldo Sekarang
                 if (resData.updated_date && resData.updated_time) {
                     $('#date-awal-' + rowId).text(resData.updated_date);
                     $('#time-awal-' + rowId).text(resData.updated_time);
@@ -1213,15 +529,12 @@
                     $('#time-sekarang-' + rowId).text(resData.updated_time);
                 }
                 
-                // Clear input fields and recalculate
                 $('#amount-' + rowId).val('');
                 $('#desc-' + rowId).val('');
                 recalculateSaldo(rowId);
                 
-                // CRITICAL INJECTION: Reload Main Saldo History Table
-                if ($.fn.DataTable.isDataTable('#table-saldo-history')) {
-                    $('#table-saldo-history').DataTable().ajax.reload(null, false);
-                }
+                // Synchronize tables
+                reloadAllSaldoTables();
             } else {
                 Swal.fire({
                     icon: 'error',
@@ -1232,12 +545,10 @@
         })
         .catch(function(error) {
             btn.prop('disabled', false).html('<i class="fas fa-check me-1"></i> Update');
-            
             var msg = 'Terjadi kesalahan pada server saat memperbarui saldo.';
             if (error.response && error.response.data && error.response.data.message) {
                 msg = error.response.data.message;
             }
-            
             Swal.fire({
                 icon: 'error',
                 title: 'Gagal Update Saldo',
@@ -1246,20 +557,7 @@
         });
     }
 
-    // Multi-select Checkbox Handler
-    $(document).on('change', '#check-all-students', function() {
-        var isChecked = $(this).is(':checked');
-        $('.student-select-checkbox').prop('checked', isChecked);
-        updateBatchButtonState();
-    });
-
-    $(document).on('change', '.student-select-checkbox', function() {
-        var allCount = $('.student-select-checkbox').length;
-        var checkedCount = $('.student-select-checkbox:checked').length;
-        $('#check-all-students').prop('checked', allCount > 0 && allCount === checkedCount);
-        updateBatchButtonState();
-    });
-
+    // Batch Reset Saldo
     function updateBatchButtonState() {
         var checkedCount = $('.student-select-checkbox:checked').length;
         var btn = $('#btn-batch-reset-zero');
@@ -1274,7 +572,6 @@
         }
     }
 
-    // Execute Batch Reset Saldo to Rp 0 via Async AJAX
     function executeBatchResetZero() {
         var selectedBoxes = $('.student-select-checkbox:checked');
         var selectedIds = [];
@@ -1312,9 +609,7 @@
                     text: 'Mohon tunggu sebentar, penyesuaian saldo sedang dilakukan.',
                     allowOutsideClick: false,
                     showConfirmButton: false,
-                    didOpen: () => {
-                        Swal.showLoading();
-                    }
+                    didOpen: () => { Swal.showLoading(); }
                 });
 
                 axios.post("{{ route('saldo-history.batch-reset-zero') }}", {
@@ -1337,20 +632,9 @@
                             showConfirmButton: false
                         });
 
-                        // Uncheck select-all and hide button
                         $('#check-all-students').prop('checked', false);
                         updateBatchButtonState();
-
-                        // Auto-refresh DataTables live update asynchronously
-                        var adjustTableObj = $('#table-adjust-saldo').DataTable();
-                        if (adjustTableObj) {
-                            adjustTableObj.ajax.reload(null, false);
-                        }
-                        
-                        // CRITICAL INJECTION: Reload Main Saldo History Table
-                        if ($.fn.DataTable.isDataTable('#table-saldo-history')) {
-                            $('#table-saldo-history').DataTable().ajax.reload(null, false);
-                        }
+                        reloadAllSaldoTables();
                     } else {
                         Swal.fire({
                             icon: 'error',
@@ -1373,5 +657,831 @@
             }
         });
     }
+
+    // MAIN DOCUMENT READY EXECUTION
+    $(document).ready(function() {
+        // ==========================================
+        // 1. TOP UP SALDO DATATABLE
+        // ==========================================
+        var topupTable = $('#table-transfer').DataTable({
+            ordering: true,
+            processing: true,
+            serverSide: true,
+            ajax: {
+                url: "{{ route('saldo-history.index') }}",
+                data: function(d) {
+                    d.type = 'topup';
+                    d.search_name = $('#topup-search-name').val();
+                }
+            },
+            language: {
+                paginate: {
+                    next: "<i class='fa fa-angle-right'></i>",
+                    previous: "<i class='fa fa-angle-left'></i>"
+                },
+                loadingRecords: "Memuat data...",
+                processing: "Sedang memproses...",
+                emptyTable: "Tidak ada data verifikasi top up saldo"
+            },
+            columns: [
+                {
+                    data: null,
+                    orderable: false,
+                    searchable: false,
+                    render: function(data, type, row, meta) {
+                        return meta.row + meta.settings._iDisplayStart + 1;
+                    }
+                },
+                {
+                    data: 'student.name',
+                    name: 'student.name',
+                    defaultContent: '-',
+                    orderable: false,
+                    render: function(data, type, row) {
+                        if (!data) return '<span class="text-muted fs-7">-</span>';
+                        let className = (row.student && row.student.classroom) ? row.student.classroom.name : '';
+                        let badge = className ? `<span class="badge badge-light-primary fw-bold ms-1" style="font-size: 10px; padding: 3px 6px;">${className}</span>` : '';
+                        return `<div class="d-flex flex-column align-items-start">
+                            <span class="text-gray-800 fw-bolder mb-1">${data}</span>
+                            ${badge}
+                        </div>`;
+                    }
+                },
+                {
+                    data: 'pay_amount',
+                    name: 'pay_amount',
+                    defaultContent: 'Rp 0'
+                },
+                {
+                    data: 'unique_payment',
+                    name: 'unique_payment',
+                    defaultContent: '-'
+                },
+                {
+                    data: 'bank_recipient',
+                    name: 'bank_recipient',
+                    defaultContent: '-',
+                    orderable: false,
+                    searchable: false
+                },
+                {
+                    data: 'proof',
+                    name: 'proof',
+                    defaultContent: '-',
+                    orderable: false,
+                    searchable: false
+                },
+                {
+                    data: 'status',
+                    name: 'status',
+                    defaultContent: '-',
+                    orderable: true,
+                    searchable: false
+                },
+                {
+                    data: 'action',
+                    name: 'action',
+                    defaultContent: '-',
+                    orderable: false,
+                    searchable: false,
+                    className: 'text-center'
+                }
+            ]
+        });
+
+        $('#topup-btn-filter').on('click', function() {
+            topupTable.ajax.reload();
+        });
+
+        $('#topup-btn-reset').on('click', function() {
+            $('#topup-search-name').val('');
+            topupTable.ajax.reload();
+        });
+
+        $('#topup-search-name').on('keyup', function(e) {
+            if (e.keyCode === 13) {
+                topupTable.ajax.reload();
+            }
+        });
+
+        // ==========================================
+        // 2. PENYESUAIAN SALDO DATATABLE
+        // ==========================================
+        var adjustTable = null;
+        if ($('#table-adjust-saldo').length) {
+            adjustTable = $('#table-adjust-saldo').DataTable({
+                processing: true,
+                serverSide: true,
+                ordering: true,
+                order: [],
+                ajax: {
+                    url: "{{ route('saldo-history.index') }}",
+                    data: function(d) {
+                        d.type = 'adjust';
+                        d.classroom_id = $('#filter-classroom').val();
+                    }
+                },
+                language: {
+                    paginate: {
+                        next: "<i class='fa fa-angle-right'></i>",
+                        previous: "<i class='fa fa-angle-left'></i>"
+                    },
+                    loadingRecords: "Memuat data...",
+                    processing: "Sedang memproses...",
+                    emptyTable: "Tidak ada data santri ditemukan"
+                },
+                columns: [
+                    {
+                        data: 'id',
+                        orderable: false,
+                        sortable: false,
+                        searchable: false,
+                        className: 'text-center pe-0',
+                        render: function(data, type, row) {
+                            return `<div class="form-check form-check-sm form-check-custom form-check-solid">
+                                        <input class="form-check-input student-select-checkbox" type="checkbox" value="${data}" data-saldo="${row.saldo || 0}" data-name="${row.name || ''}" />
+                                    </div>`;
+                        }
+                    },
+                    {
+                        data: null,
+                        orderable: false,
+                        sortable: false,
+                        searchable: false,
+                        render: function(data, type, row, meta) {
+                            return meta.row + meta.settings._iDisplayStart + 1;
+                        }
+                    },
+                    {
+                        data: 'nis',
+                        name: 'nis',
+                        defaultContent: '-',
+                        orderable: true,
+                        sortable: true,
+                        searchable: true,
+                        render: function(data) {
+                            return `<span class="fw-bold text-gray-700 fs-7">${data ? data : '-'}</span>`;
+                        }
+                    },
+                    {
+                        data: 'name',
+                        name: 'name',
+                        defaultContent: '-',
+                        orderable: true,
+                        sortable: true,
+                        searchable: true,
+                        render: function(data, type, row) {
+                            var avatar = row.avatar_url ? row.avatar_url : '{{ asset("assets/media/avatars/default.png") }}';
+                            var statusText = row.translated_status || row.status || 'Aktif';
+                            var badgeClass = 'bg-light-success text-success';
+
+                            if (row.status === 'INACTIVE') {
+                                badgeClass = 'bg-light-danger text-danger';
+                            } else if (row.status === 'GRADUATED') {
+                                badgeClass = 'bg-light-warning text-warning';
+                            } else if (row.status === 'TRANSFERRED') {
+                                badgeClass = 'bg-light-info text-info';
+                            } else if (row.status === 'DROPPED_OUT') {
+                                badgeClass = 'bg-light-secondary text-secondary';
+                            }
+
+                            return `
+                                <div class="d-flex align-items-center">
+                                    <div class="symbol symbol-circle symbol-35px me-3">
+                                        <img src="${avatar}" alt="${data || ''}" style="object-fit: cover;" />
+                                    </div>
+                                    <div class="d-flex flex-column align-items-start">
+                                        <span class="text-gray-800 text-hover-primary fw-bolder fs-6 mb-1">${data || '-'}</span>
+                                        <span class="badge ${badgeClass} fs-8 px-2 py-1">${statusText}</span>
+                                    </div>
+                                </div>
+                            `;
+                        }
+                    },
+                    {
+                        data: 'classroom',
+                        name: 'classroom',
+                        defaultContent: '-',
+                        orderable: true,
+                        sortable: true,
+                        searchable: true,
+                        render: function(data) {
+                            return `<span class="badge badge-light-dark fs-7">${data || 'Belum ada kelas'}</span>`;
+                        }
+                    },
+                    {
+                        data: 'saldo',
+                        name: 'saldo',
+                        defaultContent: 0,
+                        orderable: true,
+                        sortable: true,
+                        searchable: false,
+                        render: function(data, type, row) {
+                            var val = parseInt(data) || 0;
+                            var formatted = formatRupiahVal(val);
+                            var badgeClass = val < 0 
+                                ? 'bg-danger text-white fw-bolder px-3 py-2 fs-7 mb-1' 
+                                : 'bg-success text-white fw-bolder px-3 py-2 fs-7 mb-1';
+                            var dateInfo = row.last_saldo_update_date || '-';
+                            var timeInfo = row.last_saldo_update_time || '-';
+
+                            return `
+                                <div class="d-flex flex-column align-items-start">
+                                    <span class="badge ${badgeClass}" id="saldo-awal-${row.id}" data-saldo="${val}">Rp ${formatted}</span>
+                                    <span class="text-slate-400 fst-italic mt-1" style="font-size: 11px; line-height: 1.3; color: #94a3b8;" id="date-awal-${row.id}">${dateInfo}</span>
+                                    <span class="text-slate-400 fst-italic" style="font-size: 11px; line-height: 1.3; color: #94a3b8;" id="time-awal-${row.id}">${timeInfo}</span>
+                                </div>
+                            `;
+                        }
+                    },
+                    {
+                        data: 'saldo',
+                        name: 'saldo_sekarang',
+                        defaultContent: 0,
+                        orderable: true,
+                        sortable: true,
+                        searchable: false,
+                        render: function(data, type, row) {
+                            var val = parseInt(data) || 0;
+                            var formatted = formatRupiahVal(val);
+                            var badgeClass = val < 0 
+                                ? 'bg-danger text-white fw-bolder px-3 py-2 fs-7 mb-1' 
+                                : 'bg-success text-white fw-bolder px-3 py-2 fs-7 mb-1';
+                            var dateInfo = row.last_saldo_update_date || '-';
+                            var timeInfo = row.last_saldo_update_time || '-';
+
+                            return `
+                                <div class="d-flex flex-column align-items-start">
+                                    <span class="badge ${badgeClass}" id="saldo-sekarang-${row.id}">Rp ${formatted}</span>
+                                    <span class="text-slate-400 fst-italic mt-1" style="font-size: 11px; line-height: 1.3; color: #94a3b8;" id="date-sekarang-${row.id}">${dateInfo}</span>
+                                    <span class="text-slate-400 fst-italic" style="font-size: 11px; line-height: 1.3; color: #94a3b8;" id="time-sekarang-${row.id}">${timeInfo}</span>
+                                </div>
+                            `;
+                        }
+                    },
+                    {
+                        data: null,
+                        orderable: false,
+                        sortable: false,
+                        searchable: false,
+                        className: 'text-center',
+                        render: function(data, type, row) {
+                            return `
+                                <div class="d-flex align-items-center justify-content-center gap-2">
+                                    <select class="form-select form-select-sm form-select-solid type-select fs-7" id="type-${row.id}" style="width: 105px;" onchange="recalculateSaldo('${row.id}')">
+                                        <option value="IN">+ TopUp</option>
+                                        <option value="WITHDRAW">- Tarik</option>
+                                    </select>
+                                    <div class="input-group input-group-sm" style="width: 140px;">
+                                        <span class="input-group-text bg-light text-gray-600 border-0 fs-7 px-2">Rp</span>
+                                        <input type="text" class="form-control form-control-sm form-control-solid amount-input fs-7 px-2" id="amount-${row.id}" placeholder="0" onkeyup="onAmountKeyUp(this, '${row.id}')">
+                                    </div>
+                                    <input type="text" class="form-control form-control-sm form-control-solid desc-input fs-7" id="desc-${row.id}" placeholder="Keterangan..." style="width: 130px;">
+                                    <button type="button" class="btn btn-sm btn-primary px-3 py-2 fs-7 btn-save-inline" id="btn-save-${row.id}" onclick="submitInlineSaldo('${row.id}')">
+                                        <i class="fas fa-check me-1"></i> Update
+                                    </button>
+                                </div>
+                            `;
+                        }
+                    }
+                ]
+            });
+
+            $('#filter-classroom').on('change', function() {
+                adjustTable.ajax.reload();
+            });
+
+            var searchTimer;
+            $('#custom-search').on('keyup input', function() {
+                clearTimeout(searchTimer);
+                var val = $(this).val().trim();
+                searchTimer = setTimeout(function() {
+                    if (val.length >= 3) {
+                        adjustTable.search(val).draw();
+                    } else if (val.length === 0) {
+                        adjustTable.search('').draw();
+                    }
+                }, 300);
+            });
+        }
+
+        // Multi-select Checkbox Handler
+        $(document).on('change', '#check-all-students', function() {
+            var isChecked = $(this).is(':checked');
+            $('.student-select-checkbox').prop('checked', isChecked);
+            updateBatchButtonState();
+        });
+
+        $(document).on('change', '.student-select-checkbox', function() {
+            var allCount = $('.student-select-checkbox').length;
+            var checkedCount = $('.student-select-checkbox:checked').length;
+            $('#check-all-students').prop('checked', allCount > 0 && allCount === checkedCount);
+            updateBatchButtonState();
+        });
+
+        // ==========================================
+        // 3. ARSIP TOPUP SALDO DATATABLE
+        // ==========================================
+        var archiveTable = $('#table-archive').DataTable({
+            ordering: true,
+            sortable: true,
+            processing: true,
+            serverSide: true,
+            pageLength: 20,
+            lengthMenu: [20, 30, 40, 50],
+            ajax: {
+                url: "{{ route('saldo-history.index') }}",
+                data: function(d) {
+                    d.type = 'archive';
+                    d.search_name = $('#archive-search-name').val();
+                    d.start_date = $('#archive-start-date').val();
+                    d.end_date = $('#archive-end-date').val();
+                }
+            },
+            language: {
+                paginate: {
+                    next: "<i class='fa fa-angle-right'></i>",
+                    previous: "<i class='fa fa-angle-left'></i>"
+                },
+                loadingRecords: "Memuat data...",
+                processing: "Sedang memproses...",
+                emptyTable: "Tidak ada arsip riwayat top up"
+            },
+            columns: [
+                {
+                    data: null,
+                    orderable: false,
+                    searchable: false,
+                    render: function(data, type, row, meta) {
+                        return meta.row + meta.settings._iDisplayStart + 1;
+                    }
+                },
+                {
+                    data: 'student.name',
+                    name: 'student.name',
+                    defaultContent: '-',
+                    orderable: false,
+                    render: function(data, type, row) {
+                        if (!data) return '<span class="text-muted fs-7">-</span>';
+                        let className = (row.student && row.student.classroom) ? row.student.classroom.name : '';
+                        let badge = className ? `<span class="badge badge-light-primary fw-bold ms-1" style="font-size: 10px; padding: 3px 6px;">${className}</span>` : '';
+                        return `<div class="d-flex flex-column align-items-start">
+                            <span class="text-gray-800 fw-bolder mb-1">${data}</span>
+                            ${badge}
+                        </div>`;
+                    }
+                },
+                {
+                    data: 'pay_amount',
+                    name: 'pay_amount',
+                    defaultContent: 'Rp 0'
+                },
+                {
+                    data: 'unique_payment',
+                    name: 'unique_payment',
+                    defaultContent: '-'
+                },
+                {
+                    data: 'bank_recipient',
+                    name: 'bank_recipient',
+                    defaultContent: '-',
+                    orderable: false,
+                    searchable: false
+                },
+                {
+                    data: 'proof',
+                    name: 'proof',
+                    defaultContent: '-',
+                    orderable: false,
+                    searchable: false
+                },
+                {
+                    data: 'status',
+                    name: 'status',
+                    defaultContent: '-',
+                    orderable: true,
+                    searchable: false
+                },
+                {
+                    data: 'officer',
+                    name: 'officer',
+                    defaultContent: '-',
+                    orderable: false
+                },
+                {
+                    data: 'updated_at_formatted',
+                    name: 'updated_at',
+                    defaultContent: '-',
+                    orderable: true
+                },
+                {
+                    data: 'action',
+                    name: 'action',
+                    defaultContent: '-',
+                    orderable: false,
+                    searchable: false,
+                    className: 'text-center'
+                }
+            ]
+        });
+
+        $('#archive-btn-filter').on('click', function() {
+            archiveTable.ajax.reload();
+        });
+
+        $('#archive-btn-reset').on('click', function() {
+            $('#archive-search-name').val('');
+            $('#archive-start-date').val('');
+            $('#archive-end-date').val('');
+            archiveTable.ajax.reload();
+        });
+
+        $('#archive-search-name').on('keyup', function(e) {
+            if (e.keyCode === 13) {
+                archiveTable.ajax.reload();
+            }
+        });
+
+        $(document).on('click', '.delete-archive-btn', function() {
+            var id = $(this).data('id');
+            Swal.fire({
+                title: 'Apakah Anda yakin?',
+                text: "Arsip riwayat ini akan disembunyikan. Tindakan ini tidak dapat dibatalkan!",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#3085d6',
+                cancelButtonColor: '#d33',
+                confirmButtonText: 'Ya, hapus!',
+                cancelButtonText: 'Batal'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    Swal.fire({
+                        title: 'Menghapus...',
+                        text: 'Harap tunggu',
+                        allowOutsideClick: false,
+                        didOpen: () => { Swal.showLoading(); }
+                    });
+
+                    axios.delete(`{{ url('saldo-history') }}/${id}`, {
+                        data: { _token: '{{ csrf_token() }}' }
+                    })
+                    .then((response) => {
+                        if (response.data.code == '200') {
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Berhasil',
+                                text: response.data.message,
+                                timer: 1800,
+                                showConfirmButton: false
+                            });
+                            reloadAllSaldoTables();
+                        } else {
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Gagal',
+                                text: response.data.message
+                            });
+                        }
+                    })
+                    .catch((error) => {
+                        var msg = 'Terjadi kesalahan saat menghapus arsip';
+                        if (error.response && error.response.data && error.response.data.message) {
+                            msg = error.response.data.message;
+                        }
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Gagal',
+                            text: msg
+                        });
+                    });
+                }
+            });
+        });
+
+        // ==========================================
+        // 4. RIWAYAT SALDO DATATABLE
+        // ==========================================
+        var historyTable = $('#table-saldo-history').DataTable({
+            ordering: false,
+            processing: true,
+            serverSide: true,
+            ajax: {
+                url: "{{ route('saldo-history.index') }}",
+                data: function(d) {
+                    d.type = 'saldo';
+                    d.school_id = $('#saldo-history-school-id').val();
+                    d.classroom_id = $('#saldo-history-classroom-id').val();
+                    d.search_name = $('#saldo-history-search-name').val();
+                    d.start_date = $('#saldo-history-start-date').val();
+                    d.end_date = $('#saldo-history-end-date').val();
+                }
+            },
+            language: {
+                paginate: {
+                    next: "<i class='fa fa-angle-right'></i>",
+                    previous: "<i class='fa fa-angle-left'></i>"
+                },
+                loadingRecords: "Memuat data...",
+                processing: "Sedang memproses...",
+                emptyTable: "Tidak ada riwayat mutasi saldo ditemukan"
+            },
+            columns: [
+                {
+                    data: null,
+                    orderable: false,
+                    searchable: false,
+                    render: function(data, type, row, meta) {
+                        return meta.row + meta.settings._iDisplayStart + 1;
+                    }
+                },
+                {
+                    data: 'date',
+                    name: 'date',
+                    defaultContent: '-',
+                    orderable: false,
+                    searchable: false
+                },
+                {
+                    data: 'student.name',
+                    name: 'student.name',
+                    defaultContent: '-',
+                    orderable: false,
+                    searchable: true,
+                    render: function(data, type, row) {
+                        if (!data) return '<span class="text-muted fs-7">-</span>';
+                        let className = (row.student && row.student.classroom) ? row.student.classroom.name : 'Unknown';
+                        return `
+                            <div class="d-flex flex-column align-items-start">
+                                <span class="text-gray-800 fw-bolder mb-1">${data}</span>
+                                <span class="badge badge-light-primary fw-bold" style="font-size: 10px; padding: 3px 6px;">${className}</span>
+                            </div>
+                        `;
+                    }
+                },
+                {
+                    data: 'amount',
+                    name: 'amount',
+                    defaultContent: 'Rp 0',
+                    orderable: false,
+                    searchable: false
+                },
+                {
+                    data: 'status',
+                    name: 'status',
+                    defaultContent: '-',
+                    orderable: false,
+                    searchable: false
+                },
+                {
+                    data: 'balance_before',
+                    name: 'balance_before',
+                    defaultContent: 'Rp 0',
+                    orderable: false,
+                    searchable: false
+                },
+                {
+                    data: 'balance_after',
+                    name: 'balance_after',
+                    defaultContent: 'Rp 0',
+                    orderable: false,
+                    searchable: false
+                },
+                {
+                    data: 'description',
+                    name: 'description',
+                    defaultContent: '-',
+                    orderable: false,
+                    searchable: true
+                },
+                {
+                    data: 'action',
+                    name: 'action',
+                    defaultContent: '-',
+                    orderable: false,
+                    searchable: false,
+                    className: 'text-center'
+                }
+            ]
+        });
+
+        $('#saldo-history-btn-filter').on('click', function() {
+            historyTable.ajax.reload();
+        });
+
+        $('#saldo-history-btn-reset').on('click', function() {
+            $('#saldo-history-school-id').val('');
+            $('#saldo-history-classroom-id').val('');
+            $('#saldo_history_classroom_btn').text('Semua');
+            $('#saldo-history-search-name').val('');
+            $('#saldo-history-start-date').val('');
+            $('#saldo-history-end-date').val('');
+            historyTable.ajax.reload();
+        });
+        
+        const allHistoryClassrooms = @json($classrooms);
+
+        function renderHistoryClassroomMegaMenu(schoolId) {
+            const container = $('#saldo_history_classroom_mega_menu');
+            container.empty();
+
+            if (!schoolId) {
+                container.html('<div class="text-muted fs-7 mb-2">Pilih Lembaga terlebih dahulu</div>');
+                return;
+            }
+
+            const filteredClasses = allHistoryClassrooms.filter(c => c.school_id == schoolId);
+            if (filteredClasses.length === 0) {
+                container.html('<div class="text-muted fs-7 mb-2">Tidak ada kelas ditemukan</div>');
+                return;
+            }
+
+            const groups = {};
+            filteredClasses.forEach(c => {
+                let match = c.name.match(/^(\d+)/);
+                let key = match ? match[1] : 'Lainnya';
+                if (!groups[key]) groups[key] = [];
+                groups[key].push(c);
+            });
+
+            const row = $('<div class="row g-2"></div>');
+            
+            container.append($('<a href="#" class="dropdown-item fw-bold text-primary mb-3 history-classroom-item" data-id="" data-name="Semua">Semua</a>'));
+
+            Object.keys(groups).sort((a,b) => parseInt(a) - parseInt(b)).forEach(key => {
+                const col = $('<div class="col-4"></div>');
+                col.append(`<h6 class="dropdown-header text-uppercase text-muted fw-bolder">Kelas ${key}</h6>`);
+                groups[key].forEach(c => {
+                    col.append(`<a class="dropdown-item history-classroom-item" href="#" data-id="${c.id}" data-name="${c.name}">${c.name}</a>`);
+                });
+                row.append(col);
+            });
+
+            container.append(row);
+        }
+
+        $('#saldo-history-school-id').on('change', function() {
+            $('#saldo-history-classroom-id').val('');
+            $('#saldo_history_classroom_btn').text('Semua');
+            renderHistoryClassroomMegaMenu($(this).val());
+        });
+
+        $(document).on('click', '.history-classroom-item', function(e) {
+            e.preventDefault();
+            const id = $(this).data('id');
+            const name = $(this).data('name');
+            $('#saldo-history-classroom-id').val(id);
+            $('#saldo_history_classroom_btn').text(name);
+            $('#saldo_history_classroom_btn').dropdown('toggle');
+        });
+
+        $('#saldo-history-btn-recalculate').on('click', function() {
+            Swal.fire({
+                title: 'Rekalkulasi Saldo?',
+                text: 'Proses ini akan mengurutkan & memperhitungkan ulang seluruh running balance riwayat mutasi saldo santri secara presisi kronologis.',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#3085d6',
+                cancelButtonColor: '#d33',
+                confirmButtonText: 'Ya, Rekalkulasi Sekarang!',
+                cancelButtonText: 'Batal'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    Swal.fire({
+                        title: 'Memproses Rekalkulasi...',
+                        text: 'Mohon tunggu sejenak',
+                        allowOutsideClick: false,
+                        didOpen: () => { Swal.showLoading(); }
+                    });
+                    $.ajax({
+                        url: "{{ route('saldo-history.recalculate') }}",
+                        type: 'POST',
+                        data: {
+                            _token: "{{ csrf_token() }}"
+                        },
+                        success: function(res) {
+                            Swal.fire('Berhasil!', res.message || 'Rekalkulasi saldo selesai.', 'success');
+                            reloadAllSaldoTables();
+                        },
+                        error: function(err) {
+                            Swal.fire('Gagal!', (err.responseJSON && err.responseJSON.message) ? err.responseJSON.message : 'Terjadi kesalahan.', 'error');
+                        }
+                    });
+                }
+            });
+        });
+
+        $('#saldo-history-search-name').on('keyup', function(e) {
+            if (e.keyCode === 13) {
+                historyTable.ajax.reload();
+            }
+        });
+
+        $(document).on('click', '.delete-history-btn', function() {
+            var id = $(this).data('id');
+            Swal.fire({
+                title: 'Apakah Anda yakin?',
+                text: "Riwayat saldo ini akan dihapus permanen dan saldo siswa akan disesuaikan kembali!",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#3085d6',
+                cancelButtonColor: '#d33',
+                confirmButtonText: 'Ya, hapus!',
+                cancelButtonText: 'Batal'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    Swal.fire({
+                        title: 'Menghapus...',
+                        text: 'Harap tunggu',
+                        allowOutsideClick: false,
+                        didOpen: () => { Swal.showLoading(); }
+                    });
+
+                    axios.delete(`{{ url('saldo-history/record') }}/${id}`, {
+                        data: { _token: '{{ csrf_token() }}' }
+                    })
+                    .then((response) => {
+                        if (response.data.code == '200') {
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Berhasil',
+                                text: response.data.message,
+                                timer: 1800,
+                                showConfirmButton: false
+                            });
+                            reloadAllSaldoTables();
+                        } else {
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Gagal',
+                                text: response.data.message
+                            });
+                        }
+                    })
+                    .catch((error) => {
+                        var msg = 'Terjadi kesalahan saat menghapus riwayat';
+                        if (error.response && error.response.data && error.response.data.message) {
+                            msg = error.response.data.message;
+                        }
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Gagal',
+                            text: msg
+                        });
+                    });
+                }
+            });
+        });
+
+        // ==========================================
+        // 5. UNIFIED TAB SWITCHING & COLUMN ADJUSTMENT
+        // ==========================================
+        $('a[data-bs-toggle="tab"]').on('shown.bs.tab', function(e) {
+            var target = $(e.target).attr("href");
+            
+            // Seamless URL hash sync
+            if (history.replaceState) {
+                history.replaceState(null, null, target);
+            }
+
+            // Immediately adjust all visible tables geometry
+            $.fn.dataTable.tables({ visible: true, api: true }).columns.adjust();
+
+            // Refresh table upon activating tab for real-time consistency
+            if (target === '#top-up-saldo' && topupTable) {
+                topupTable.columns.adjust().ajax.reload(null, false);
+            } else if (target === '#penyesuaian-saldo' && adjustTable) {
+                adjustTable.columns.adjust().ajax.reload(null, false);
+            } else if (target === '#arsip-topup-saldo' && archiveTable) {
+                archiveTable.columns.adjust().ajax.reload(null, false);
+            } else if (target === '#saldo-history' && historyTable) {
+                historyTable.columns.adjust().ajax.reload(null, false);
+            }
+        });
+
+        // Activate tab from URL hash or query param (?tab=...)
+        var hash = window.location.hash;
+        var urlParams = new URLSearchParams(window.location.search);
+        var tabParam = urlParams.get('tab');
+
+        if (tabParam) {
+            var targetTab = '#' + tabParam.replace('#', '');
+            var tabTrigger = $(`a[href="${targetTab}"]`);
+            if (tabTrigger.length) {
+                tabTrigger.tab('show');
+            }
+        } else if (hash) {
+            var tabTrigger = $(`a[href="${hash}"]`);
+            if (tabTrigger.length) {
+                tabTrigger.tab('show');
+            }
+        }
+
+        // Click handler for viewing proof images in a modal
+        $(document).on('click', '.view-proof-image', function() {
+            var src = $(this).data('src');
+            $('#imagePreviewSrc').attr('src', src);
+            $('#imagePreviewModal').modal('show');
+        });
+    });
 </script>
 @endpush
