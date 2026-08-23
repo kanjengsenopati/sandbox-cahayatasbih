@@ -220,38 +220,7 @@ class SyncPaymentRateBills extends Command
                                 
                                 if ($paidAmount > 0) {
                                     // There is already a payment made on this bill
-                                    if ($paidAmount > $newAmount) {
-                                        $overpayment = $paidAmount - $newAmount;
-                                        if (!$isDryRun) {
-                                            $studentModel = \App\Models\Student::find($student->id);
-                                            if ($studentModel) {
-                                                $oldBalance = $studentModel->saldo;
-                                                $studentModel->increment('saldo', $overpayment);
-                                                
-                                                \App\Models\SaldoHistory::create([
-                                                    'student_id' => $student->id,
-                                                    'type' => \App\Models\SaldoHistory::TYPE_IN,
-                                                    'amount' => $overpayment,
-                                                    'description' => 'Alokasi Kelebihan Bayar ' . $billType->name,
-                                                    'status' => \App\Models\SaldoHistory::STATUS_SUCCESS,
-                                                    'usage' => \App\Models\SaldoHistory::USAGE_BILL,
-                                                    'balance_before' => $oldBalance,
-                                                    'balance_after' => $oldBalance + $overpayment,
-                                                ]);
-                                            }
-                                            
-                                            DB::table('bills')->where('id', $existingBill->id)->update([
-                                                'amount' => $newAmount,
-                                                'paid_amount' => $newAmount,
-                                                'status' => \App\Models\Bill::STATUS_PAID,
-                                                'payment_rate_item_id' => $item->id,
-                                                'classroom_id'         => $targetClassroomId,
-                                                'updated_at'           => $timestamp,
-                                            ]);
-                                        }
-                                        $totalUpdated++;
-                                        $this->line("    [ADJUSTMENT] {$student->name} | Kelebihan Rp " . number_format($overpayment, 0, ',', '.') . " dialokasikan ke saldo.");
-                                    } elseif ($paidAmount == $newAmount) {
+                                    if ($paidAmount >= $newAmount) {
                                         if (!$isDryRun) {
                                             DB::table('bills')->where('id', $existingBill->id)->update([
                                                 'amount' => $newAmount,
