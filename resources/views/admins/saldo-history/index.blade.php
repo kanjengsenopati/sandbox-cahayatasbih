@@ -1,4 +1,64 @@
 @extends('layouts.master', ['title' => 'Data Riwayat Saldo'])
+
+@push('css')
+<style>
+    /* PakRT Custom Nav Tabs - Full Hitbox & Isolated Stacking Context */
+    .saldo-nav-tabs {
+        position: relative;
+        z-index: 20;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        border-bottom: 2px solid #e2e8f0;
+        padding: 0;
+        margin-bottom: 1.5rem;
+    }
+    .saldo-nav-tabs .nav-item {
+        position: relative;
+        z-index: 21;
+        margin-bottom: -2px;
+    }
+    .saldo-nav-tabs .nav-link {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 10px 22px;
+        font-weight: 600;
+        font-size: 14px;
+        color: #64748b;
+        background: transparent;
+        border: none;
+        border-bottom: 3px solid transparent;
+        border-top-left-radius: 12px;
+        border-top-right-radius: 12px;
+        cursor: pointer;
+        user-select: none;
+        transition: all 0.2s ease-in-out;
+        min-height: 48px;
+    }
+    .saldo-nav-tabs .nav-link:hover {
+        color: #2563eb;
+        background: rgba(37, 99, 235, 0.05);
+        border-bottom-color: #93c5fd;
+    }
+    .saldo-nav-tabs .nav-link.active {
+        color: #2563eb;
+        font-weight: 700;
+        background: rgba(37, 99, 235, 0.08);
+        border-bottom: 3px solid #2563eb;
+    }
+    .saldo-nav-tabs .nav-link:focus,
+    .saldo-nav-tabs .nav-link:active {
+        outline: none;
+        box-shadow: none;
+    }
+    #myTabContent {
+        position: relative;
+        z-index: 1;
+    }
+</style>
+@endpush
+
 @section('content')
 <div class="content d-flex flex-column flex-column-fluid" id="kt_content">
     <!--begin::Toolbar-->
@@ -70,25 +130,32 @@
                 <!--begin::Card body-->
                 <div class="card-body pt-0">
                     <!--begin::Tabs-->
-                    <ul class="nav nav-tabs" id="myTab" role="tablist">
-
+                    <ul class="nav nav-tabs saldo-nav-tabs" id="myTab" role="tablist">
                         <li class="nav-item" role="presentation">
                             <a class="nav-link active" id="top-up-saldo-tab" data-bs-toggle="tab" href="#top-up-saldo"
-                                role="tab" aria-controls="top-up-saldo" aria-selected="true">Top Up Saldo</a>
+                                role="tab" aria-controls="top-up-saldo" aria-selected="true">
+                                <i class="fas fa-money-bill-wave me-2 fs-7"></i> Top Up Saldo
+                            </a>
                         </li>
                         @if(Auth::user()->can('Create Saldo Santri') || Auth::user()->can('Manage Saldo Santri') || (method_exists(Auth::user(), 'isKoordinatorCahayaMart') && Auth::user()->isKoordinatorCahayaMart()))
                         <li class="nav-item" role="presentation">
                             <a class="nav-link" id="penyesuaian-saldo-tab" data-bs-toggle="tab" href="#penyesuaian-saldo"
-                                role="tab" aria-controls="penyesuaian-saldo" aria-selected="false">Penyesuaian Saldo</a>
+                                role="tab" aria-controls="penyesuaian-saldo" aria-selected="false">
+                                <i class="fas fa-sliders-h me-2 fs-7"></i> Penyesuaian Saldo
+                            </a>
                         </li>
                         @endif
                         <li class="nav-item" role="presentation">
                             <a class="nav-link" id="arsip-topup-saldo-tab" data-bs-toggle="tab" href="#arsip-topup-saldo"
-                                role="tab" aria-controls="arsip-topup-saldo" aria-selected="false">Arsip Topup Saldo</a>
+                                role="tab" aria-controls="arsip-topup-saldo" aria-selected="false">
+                                <i class="fas fa-archive me-2 fs-7"></i> Arsip Topup Saldo
+                            </a>
                         </li>
                         <li class="nav-item" role="presentation">
                             <a class="nav-link" id="saldo-history-tab" data-bs-toggle="tab" href="#saldo-history"
-                                role="tab" aria-controls="saldo-history" aria-selected="false">Riwayat Saldo</a>
+                                role="tab" aria-controls="saldo-history" aria-selected="false">
+                                <i class="fas fa-history me-2 fs-7"></i> Riwayat Saldo
+                            </a>
                         </li>
                     </ul>
                     <div class="tab-content" id="myTabContent">
