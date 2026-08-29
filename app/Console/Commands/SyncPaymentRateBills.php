@@ -384,6 +384,35 @@ class SyncPaymentRateBills extends Command
                 });
             }
 
+            // Filter by alumni_status
+            if ($paymentRate->alumni_status) {
+                $alumniStatuses = array_map('trim', explode(',', $paymentRate->alumni_status));
+                $query->where(function ($q) use ($alumniStatuses) {
+                    $alumniSubquery = \Illuminate\Support\Facades\DB::table('student_classroom_histories')
+                        ->join('classrooms', 'classrooms.id', '=', 'student_classroom_histories.classroom_id')
+                        ->join('schools', 'schools.id', '=', 'classrooms.school_id')
+                        ->where('schools.name', 'like', '%SMP%')
+                        ->whereNull('student_classroom_histories.deleted_at')
+                        ->select('student_id');
+
+                    if (in_array('ALUMNI_SMP_MA', $alumniStatuses)) {
+                        $q->orWhere(function ($qAlumni) use ($alumniSubquery) {
+                            $qAlumni->whereHas('classroom.school', function ($sq) {
+                                $sq->where('name', 'like', '%MA%');
+                            })->whereIn('students.id', clone $alumniSubquery);
+                        });
+                    }
+
+                    if (in_array('NON_ALUMNI', $alumniStatuses)) {
+                        $q->orWhere(function ($qNonAlumni) use ($alumniSubquery) {
+                            $qNonAlumni->whereDoesntHave('classroom.school', function ($sq) {
+                                $sq->where('name', 'like', '%MA%');
+                            })->orWhereNotIn('students.id', clone $alumniSubquery);
+                        });
+                    }
+                });
+            }
+
             // Filter by student_sub_status_id (PPTQ Matrix)
             if ($paymentRate->student_sub_status_id) {
                 $query->where('student_sub_status_id', $paymentRate->student_sub_status_id);
