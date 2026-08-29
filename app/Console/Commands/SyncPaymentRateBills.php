@@ -224,7 +224,6 @@ class SyncPaymentRateBills extends Command
                                         if (!$isDryRun) {
                                             DB::table('bills')->where('id', $existingBill->id)->update([
                                                 'amount' => $newAmount,
-                                                'paid_amount' => $newAmount,
                                                 'status' => \App\Models\Bill::STATUS_PAID,
                                                 'payment_rate_item_id' => $item->id,
                                                 'classroom_id'         => $targetClassroomId,
