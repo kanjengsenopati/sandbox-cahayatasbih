@@ -166,9 +166,6 @@ class Bill extends Model
 
     public function getPaidAmountAttribute($value)
     {
-        if ($this->status === self::STATUS_PAID) {
-            return $this->amount;
-        }
         return $value ?? 0;
     }
 
