@@ -1261,11 +1261,22 @@ class BillController extends Controller
             
             // Allocate non-monthly (or unmapped) amounts chronologically
             if ($nonMonthlyTotal > 0) {
-                $remainingToAllocate = $nonMonthlyTotal;
+                if (!$isMonthly) {
+                    // Logika Bisnis Pendaftaran/Bebas (Cumulative):
+                    // Excel menyimpan "Total Pembayaran Terkini" (Cumulative).
+                    // Maka, kurangi total di Excel dengan total yang sudah dibayar di sistem.
+                    $totalPaidInDb = $studentBills->sum(function($b) {
+                        return (int) $b->getRawOriginal('paid_amount');
+                    });
+                    $remainingToAllocate = max(0, $nonMonthlyTotal - $totalPaidInDb);
+                } else {
+                    $remainingToAllocate = $nonMonthlyTotal;
+                }
+
                 foreach ($unpaidBills as $bill) {
                     // Skip if already allocated in specific columns
                     $alreadyAllocated = collect($allocations)->where('bill_id', $bill->id)->sum('amount');
-                    $needed = ((int)$bill->amount - (int)$bill->paid_amount) - $alreadyAllocated;
+                    $needed = ((int)$bill->amount - (int)$bill->getRawOriginal('paid_amount')) - $alreadyAllocated;
                     
                     if ($needed > 0 && $remainingToAllocate > 0) {
                         $allocated = min($remainingToAllocate, $needed);
@@ -1616,9 +1627,12 @@ class BillController extends Controller
                         $currentPaid = $bill->getRawOriginal('paid_amount');
                         $newPaid = max(0, (int)$currentPaid - (int)$detail->amount);
                         
-                        $newStatus = $bill->getRawOriginal('status');
-                        if ($newPaid < $bill->amount) {
-                            $newStatus = Bill::STATUS_UNPAID;
+                        if ($newPaid == 0) {
+                            $newStatus = 'UNPAID';
+                        } elseif ($newPaid >= $bill->amount) {
+                            $newStatus = 'PAID';
+                        } else {
+                            $newStatus = 'PARTIAL';
                         }
                         
                         // Set status first so the accessor doesn't force paid_amount to amount
