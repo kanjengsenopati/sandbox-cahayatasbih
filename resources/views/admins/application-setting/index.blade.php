@@ -541,28 +541,31 @@
                                                                                         </div>
                                                                                     </td>
                                                                                     <td class="text-center">
-                                                                                        <select class="form-select form-select-sm form-select-solid w-130px d-inline-block class-login-select" 
+                                                                                        <select class="form-select form-select-sm form-select-solid fw-bold w-130px d-inline-block class-login-select dynamic-state-select" 
                                                                                                 name="classrooms[{{ $class->id }}][allow_pwa_login]" 
-                                                                                                data-class-id="{{ $class->id }}">
+                                                                                                data-class-id="{{ $class->id }}"
+                                                                                                onchange="updateSelectStateColor(this)">
                                                                                             <option value="" {{ is_null($class->allow_pwa_login) ? 'selected' : '' }}>Ikuti Lembaga</option>
                                                                                             <option value="1" {{ $class->allow_pwa_login === true ? 'selected' : '' }}>Aktif (Diizinkan)</option>
                                                                                             <option value="0" {{ $class->allow_pwa_login === false ? 'selected' : '' }}>Nonaktif (Ditutup)</option>
                                                                                         </select>
                                                                                     </td>
                                                                                     <td class="text-center">
-                                                                                        <select class="form-select form-select-sm form-select-solid w-150px d-inline-block class-saldo-select" 
+                                                                                        <select class="form-select form-select-sm form-select-solid fw-bold w-150px d-inline-block class-saldo-select dynamic-state-select" 
                                                                                                 name="classrooms[{{ $class->id }}][show_pwa_saldo]" 
                                                                                                 data-class-id="{{ $class->id }}"
-                                                                                                data-class-level="{{ $classLevel }}">
+                                                                                                data-class-level="{{ $classLevel }}"
+                                                                                                onchange="updateSelectStateColor(this)">
                                                                                             <option value="" {{ is_null($class->show_pwa_saldo) ? 'selected' : '' }}>Ikuti Lembaga</option>
                                                                                             <option value="1" {{ $class->show_pwa_saldo === true ? 'selected' : '' }}>ON (Tampilkan Saldo)</option>
                                                                                             <option value="0" {{ $class->show_pwa_saldo === false ? 'selected' : '' }}>OFF (Sembunyikan Saldo)</option>
                                                                                         </select>
                                                                                     </td>
                                                                                     <td class="text-center">
-                                                                                        <select class="form-select form-select-sm form-select-solid w-140px d-inline-block class-pay-select" 
+                                                                                        <select class="form-select form-select-sm form-select-solid fw-bold w-140px d-inline-block class-pay-select dynamic-state-select" 
                                                                                                 name="classrooms[{{ $class->id }}][allow_pwa_saldo_payment]" 
-                                                                                                data-class-id="{{ $class->id }}">
+                                                                                                data-class-id="{{ $class->id }}"
+                                                                                                onchange="updateSelectStateColor(this)">
                                                                                             <option value="" {{ is_null($class->allow_pwa_saldo_payment) ? 'selected' : '' }}>Ikuti Lembaga</option>
                                                                                             <option value="1" {{ $class->allow_pwa_saldo_payment === true ? 'selected' : '' }}>Diizinkan</option>
                                                                                             <option value="0" {{ $class->allow_pwa_saldo_payment === false ? 'selected' : '' }}>Dinonaktifkan</option>
@@ -701,10 +704,11 @@
 
                                             if (selectEl) {
                                                 selectEl.value = value;
+                                                updateSelectStateColor(selectEl); // update color immediately
                                                 // Trigger highlight pulse animation
-                                                selectEl.classList.add('border-primary', 'bg-light-success');
+                                                selectEl.classList.add('border-primary');
                                                 setTimeout(() => {
-                                                    selectEl.classList.remove('border-primary', 'bg-light-success');
+                                                    selectEl.classList.remove('border-primary');
                                                 }, 1200);
                                             }
                                         });
@@ -731,6 +735,7 @@
                                             } else {
                                                 select.value = '0'; // OFF
                                             }
+                                            updateSelectStateColor(select);
                                         });
 
                                         toastr.success('Preset Kelas 7 Aktif Penuh berhasil dipasang! Klik tombol "Simpan" di bawah untuk menyimpan perubahan.');
@@ -742,9 +747,30 @@
                                         });
                                         document.querySelectorAll('.class-saldo-select').forEach(select => {
                                             select.value = status ? '1' : '0';
+                                            updateSelectStateColor(select);
                                         });
                                         toastr.info(status ? 'Seluruh UI Saldo diaktifkan.' : 'Seluruh UI Saldo dinonaktifkan.');
                                     }
+
+                                    // 4. State Color UI
+                                    function updateSelectStateColor(selectEl) {
+                                        selectEl.classList.remove('bg-light-success', 'text-success', 'bg-light-danger', 'text-danger', 'text-gray-600', 'bg-light');
+                                        
+                                        if (selectEl.value === '1') {
+                                            selectEl.classList.add('bg-light-success', 'text-success');
+                                        } else if (selectEl.value === '0') {
+                                            selectEl.classList.add('bg-light-danger', 'text-danger');
+                                        } else {
+                                            selectEl.classList.add('bg-light', 'text-gray-600');
+                                        }
+                                    }
+
+                                    // Initialize colors on load
+                                    document.addEventListener('DOMContentLoaded', function() {
+                                        document.querySelectorAll('.dynamic-state-select').forEach(function(el) {
+                                            updateSelectStateColor(el);
+                                        });
+                                    });
                                 </script>
                                 <!--end::Input group-->
                                 <!--begin::Separator-->
