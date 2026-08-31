@@ -114,6 +114,15 @@ function LoginPage() {
           <h2 className="mt-5 text-[16px] font-bold text-white tracking-wide drop-shadow-md">
             PPTQ CAHAYA TASBIH Mobile
           </h2>
+          
+          <div className="mt-2.5">
+            <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-white/15 backdrop-blur-md border border-white/40 shadow-[0_8px_16px_rgba(0,0,0,0.1)]">
+              <span className="flex w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse ring-2 ring-emerald-400/30"></span>
+              <span className="text-[10px] font-extrabold text-white uppercase tracking-[0.15em] drop-shadow-sm">
+                Versi Baru 2026
+              </span>
+            </span>
+          </div>
         </div>
 
         {/* Floating White Card */}
