@@ -52,10 +52,12 @@ class AuthController extends Controller
         }
 
         // 1. Attempt Wali Santri Auth
+        $remember = $request->boolean('remember');
+
         if (!$role || $role === 'wali') {
             $waliUser = \App\Models\User::whereIn('phone', $variations)->first();
             if ($waliUser) {
-                if (Auth::guard('wali')->attempt(['phone' => $waliUser->phone, 'password' => $password])) {
+                if (Auth::guard('wali')->attempt(['phone' => $waliUser->phone, 'password' => $password], $remember)) {
                     $user = Auth::guard('wali')->user();
                     if ($user->is_active) {
                         // Check if wali has at least one student allowed to access PWA
@@ -90,7 +92,7 @@ class AuthController extends Controller
         if (!$role || $role === 'penanggung_jawab') {
             $penanggungJawabUser = \App\Models\Admin::whereIn('phone', $variations)->first();
             if ($penanggungJawabUser) {
-                if (Auth::guard('web')->attempt(['phone' => $penanggungJawabUser->phone, 'password' => $password])) {
+                if (Auth::guard('web')->attempt(['phone' => $penanggungJawabUser->phone, 'password' => $password], $remember)) {
                     $admin = Auth::guard('web')->user();
                     if ($admin->is_active) {
                         // Check if Admin is allowed to access PWA

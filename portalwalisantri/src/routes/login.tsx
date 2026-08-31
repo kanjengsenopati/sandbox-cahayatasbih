@@ -72,12 +72,12 @@ function LoginPage() {
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
-    loginMutation.mutate({ phone, password });
+    loginMutation.mutate({ phone, password, remember: rememberMe });
   };
 
   const selectRoleAndLogin = (selectedRole: string) => {
     setShowRoleSelector(false);
-    loginMutation.mutate({ phone, password, role: selectedRole });
+    loginMutation.mutate({ phone, password, remember: rememberMe, role: selectedRole });
   };
 
   return (
