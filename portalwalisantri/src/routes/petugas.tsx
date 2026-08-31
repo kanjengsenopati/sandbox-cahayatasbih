@@ -137,7 +137,7 @@ function PetugasPage() {
               )}
             </div>
           ) : (
-            <div className="grid grid-cols-2 gap-3 sm:gap-3.5">
+            <div className="grid grid-cols-1 gap-3 sm:gap-4">
               {filteredOfficers.map((officer: any) => {
                 // Extract initials if photo is absent
                 const officerName = officer?.name || "Petugas Pesantren";
@@ -156,38 +156,34 @@ function PetugasPage() {
                 return (
                   <div
                     key={officer.id}
-                    className="bg-white rounded-[24px] shadow-[0_8px_30px_rgb(0,0,0,0.04)] p-3.5 sm:p-4 flex flex-col justify-between hover:shadow-[0_12px_36px_rgb(0,0,0,0.08)] transition-all duration-200 group border-0"
+                    className="bg-white rounded-[24px] shadow-[0_8px_30px_rgb(0,0,0,0.04)] p-4 flex flex-col hover:shadow-[0_12px_36px_rgb(0,0,0,0.08)] transition-all duration-200 group border-0"
                   >
-                    <div>
-                      {/* Top Row: Avatar & Position Badge */}
-                      <div className="flex items-start justify-between gap-1.5 mb-3">
-                        {officer.photo ? (
-                          <img
-                            src={`/${officer.photo}`}
-                            alt={officerName}
-                            className="w-11 h-11 rounded-[16px] object-cover shrink-0 border border-slate-100 shadow-xs"
-                          />
-                        ) : (
-                          <div className="w-11 h-11 rounded-[16px] bg-blue-600/10 text-blue-600 font-bold text-xs flex items-center justify-center shrink-0 border border-blue-600/20 shadow-xs">
-                            {initials}
-                          </div>
-                        )}
-
-                        {/* Top-Right Action / Tag Cluster */}
-                        {officer.position && (
-                          <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-700 text-[10px] font-bold uppercase tracking-wider shrink-0 max-w-[70%] truncate text-right">
-                            {officer.position}
-                          </span>
-                        )}
-                      </div>
+                    <div className="flex items-start gap-3.5 mb-3">
+                      {/* Avatar */}
+                      {officer.photo ? (
+                        <img
+                          src={`/${officer.photo}`}
+                          alt={officerName}
+                          className="w-12 h-12 rounded-[16px] object-cover shrink-0 border border-slate-100 shadow-xs"
+                        />
+                      ) : (
+                        <div className="w-12 h-12 rounded-[16px] bg-blue-600/10 text-blue-600 font-bold text-sm flex items-center justify-center shrink-0 border border-blue-600/20 shadow-xs">
+                          {initials}
+                        </div>
+                      )}
 
                       {/* Content: Name & Duty */}
-                      <div className="space-y-1 mb-3">
-                        <Text.H2 className="text-slate-900 font-bold text-xs sm:text-sm leading-tight line-clamp-2 min-h-[2.25rem] group-hover:text-blue-600 transition-colors">
+                      <div className="flex-1 min-w-0">
+                        {officer.position && (
+                          <Text.Label className="inline-flex mb-1 text-emerald-600">
+                            {officer.position}
+                          </Text.Label>
+                        )}
+                        <Text.H2 className="text-slate-900 font-bold text-sm sm:text-base leading-tight group-hover:text-blue-600 transition-colors truncate">
                           {officer.name}
                         </Text.H2>
                         {officer.duty && (
-                          <Text.Body className="text-slate-500 text-[11px] sm:text-xs leading-snug line-clamp-2 font-normal">
+                          <Text.Body className="text-slate-500 text-xs leading-snug line-clamp-2 font-normal mt-1">
                             {officer.duty}
                           </Text.Body>
                         )}
@@ -200,18 +196,18 @@ function PetugasPage() {
                         href={`https://wa.me/${cleanWa}`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="w-full py-2.5 px-2.5 rounded-[16px] bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[11px] sm:text-xs flex items-center justify-center gap-1.5 shadow-sm active:scale-[0.97] transition-all shrink-0"
+                        className="w-full py-2.5 px-3 rounded-[16px] bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-sm active:scale-[0.97] transition-all shrink-0"
                       >
-                        <MessageCircle size={15} strokeWidth={2.2} className="shrink-0" />
-                        <span className="truncate">Hubungi via WA</span>
+                        <MessageCircle size={16} strokeWidth={2.2} className="shrink-0" />
+                        <span>Hubungi via WA</span>
                       </a>
                     ) : (
                       <button
                         disabled
-                        className="w-full py-2.5 px-2.5 rounded-[16px] bg-slate-100 text-slate-400 font-bold text-[11px] sm:text-xs flex items-center justify-center gap-1.5 cursor-not-allowed shrink-0"
+                        className="w-full py-2.5 px-3 rounded-[16px] bg-slate-100 text-slate-400 font-bold text-xs flex items-center justify-center gap-1.5 cursor-not-allowed shrink-0"
                       >
-                        <MessageCircle size={15} strokeWidth={2.2} className="shrink-0" />
-                        <span className="truncate">No. WA Tdk Ada</span>
+                        <MessageCircle size={16} strokeWidth={2.2} className="shrink-0" />
+                        <span>No. WA Tdk Ada</span>
                       </button>
                     )}
                   </div>
