@@ -60,17 +60,6 @@ class AdvancedSyncService
             ->whereIn('id', $studentIds)
             ->get()->keyBy('id');
 
-        // Fetch Local Saldo History IDs as an O(1) hash map to avoid RAM exhaustion
-        $localHistoryIdsMap = [];
-        foreach (array_chunk($studentIds, 200) as $chunk) {
-            $ids = $localConn->table('saldo_histories')
-                ->whereIn('student_id', $chunk)
-                ->whereNull('deleted_at')
-                ->pluck('id')
-                ->flip()
-                ->toArray();
-            $localHistoryIdsMap += $ids;
-        }
 
         // Fetch Master Saldo Histories in chunks of 200 students to prevent SQL binding limit / PDO slowdown
         $saldoHistoriesMasterList = collect();
@@ -112,37 +101,24 @@ class AdvancedSyncService
             $masterHistories = $saldoHistoriesMaster->get($studentId) ?? collect();
             $localHistories = $localHistoriesByStudent->get($studentId) ?? collect();
 
-            // Find histories in master that do NOT exist in local yet using O(1) hash map
-            $newMasterHistories = $masterHistories->filter(function ($history) use ($localHistoryIdsMap) {
-                return !isset($localHistoryIdsMap[$history->id]);
-            });
-
-            // Show student if they have ANY master histories matching filter OR if they have new master histories.
-            // This prevents skipping students whose master transactions are already fully synced.
-            if ($masterHistories->isEmpty() && $newMasterHistories->isEmpty()) {
+            // Show student if they have ANY master histories matching filter
+            if ($masterHistories->isEmpty()) {
                 continue;
             }
 
             $currentLocalSaldo = $localStudent ? $localStudent->saldo : 0;
+            $masterSaldo = $masterStudent->saldo;
             
-            // Calculate Accumulated Balance (Merging)
-            $simulatedSaldo = $currentLocalSaldo;
-            $newIn = 0;
-            $newOut = 0;
+            // Single Source of Truth: Master saldo IS the final saldo, no merge calculation
+            $saldoDifference = $masterSaldo - $currentLocalSaldo;
 
-            foreach ($newMasterHistories as $history) {
-                if (in_array($history->type, ['IN', 'UNBLOCKED'])) {
-                    $simulatedSaldo += $history->amount;
-                    $newIn += $history->amount;
-                } elseif (in_array($history->type, ['OUT', 'WITHDRAW', 'BLOCKED'])) {
-                    $simulatedSaldo -= $history->amount;
-                    $newOut += $history->amount;
-                }
-            }
-
-            $conflictStatus = 'OK';
-            if ($localStudent && $localStudent->saldo != $masterStudent->saldo) {
-                $conflictStatus = 'CONFLICT_DETECTED';
+            // Determine sync status
+            if (!$localStudent) {
+                $conflictStatus = 'NEW';
+            } elseif ($currentLocalSaldo == $masterSaldo) {
+                $conflictStatus = 'OK';
+            } else {
+                $conflictStatus = 'NEEDS_SYNC';
             }
 
             // Determine timestamp for local saldo
@@ -176,15 +152,13 @@ class AdvancedSyncService
                 'current_local_saldo' => $currentLocalSaldo,
                 'local_saldo_date' => $localSaldoDate,
                 'local_saldo_time' => $localSaldoTime,
-                'master_saldo' => $masterStudent->saldo,
+                'master_saldo' => $masterSaldo,
                 'master_saldo_date' => $masterSaldoDate,
                 'master_saldo_time' => $masterSaldoTime,
-                'simulated_saldo' => $simulatedSaldo,
-                'new_histories_count' => $masterHistories->count(), // Display TOTAL master histories in this period
-                'total_in_added' => $newIn,
-                'total_out_added' => $newOut,
+                'saldo_difference' => $saldoDifference,
+                'master_histories_count' => $masterHistories->count(),
                 'conflict_status' => $conflictStatus,
-                'histories_to_insert' => $masterHistories->values()->toArray() // Pass ALL master histories so executeSync can upsert them
+                'histories_to_insert' => $masterHistories->values()->toArray()
             ];
         }
 
@@ -200,7 +174,8 @@ class AdvancedSyncService
     }
 
     /**
-     * Execute the actual merge into the local database
+     * Execute the sync by mirroring master data to local (Single Source of Truth).
+     * This purges local-only histories and overwrites saldo from master.
      * 
      * @param string $previewId
      * @param string $adminId
@@ -245,46 +220,64 @@ class AdvancedSyncService
                     }
                 }
 
-                // Insert the new histories
+                // === PURGE + MIRROR PATTERN (Master as Single Source of Truth) ===
+
+                // Step 1: Build master history ID map for this student
+                $masterHistoryIds = collect($data['histories_to_insert'])->pluck('id')->toArray();
+                $masterHistoryIdMap = array_flip($masterHistoryIds);
+
+                // Step 2: Find and purge local-only histories (not in master)
+                $localHistoryIds = $localConn->table('saldo_histories')
+                    ->where('student_id', $studentId)
+                    ->pluck('id')
+                    ->toArray();
+
+                $rogueIds = [];
+                foreach ($localHistoryIds as $lid) {
+                    if (!isset($masterHistoryIdMap[$lid])) {
+                        $rogueIds[] = $lid;
+                    }
+                }
+
+                if (!empty($rogueIds)) {
+                    foreach (array_chunk($rogueIds, 500) as $rogueChunk) {
+                        $localConn->table('saldo_histories')->whereIn('id', $rogueChunk)->delete();
+                    }
+                }
+
+                // Step 3: Bulk upsert all master histories (preserve original balance_before & balance_after from master)
+                $toInsert = [];
+                foreach ($data['histories_to_insert'] as $history) {
+                    $toInsert[] = (array) $history;
+                }
+
+                if (!empty($toInsert)) {
+                    foreach (array_chunk($toInsert, 100) as $batch) {
+                        $localConn->table('saldo_histories')->upsert(
+                            $batch,
+                            ['id'],
+                            ['student_id', 'type', 'amount', 'usage', 'description', 'status', 'balance_before', 'balance_after', 'created_at', 'updated_at', 'deleted_at']
+                        );
+                    }
+                }
+
+                // Step 4: Overwrite student saldo directly from master (Single Source of Truth)
+                $masterStudent = $masterConn->table('students')->where('id', $studentId)->first();
+                if ($masterStudent) {
+                    $localConn->table('students')
+                        ->where('id', $studentId)
+                        ->update([
+                            'saldo' => $masterStudent->saldo,
+                            'saving' => $masterStudent->saving,
+                            'updated_at' => now(),
+                        ]);
+                }
+
+                // Step 5: Sync POS transactions if any
                 foreach ($data['histories_to_insert'] as $history) {
                     $historyArray = (array) $history;
-                    
-                    // Merging logic: Recalculate ledger based on local running balance
-                    $currentStudent = $localConn->table('students')->where('id', $studentId)->lockForUpdate()->first();
-                    $balanceBefore = $currentStudent ? $currentStudent->saldo : 0;
-                    $amount = $historyArray['amount'];
-                    $type = $historyArray['type'];
-                    $balanceAfter = $balanceBefore;
-                    
-                    $hId = $historyArray['id'];
-                    $exists = $localConn->table('saldo_histories')->where('id', $hId)->exists();
-                    
-                    if ($exists) {
-                        // If it already exists locally, just update it. Do NOT add amount to running balance to prevent double counting.
-                        unset($historyArray['id']);
-                        $localConn->table('saldo_histories')->where('id', $hId)->update($historyArray);
-                    } else {
-                        // If it's a new history, calculate the new running balance and insert.
-                        if (in_array($type, ['IN', 'UNBLOCKED'])) {
-                            $balanceAfter = $balanceBefore + $amount;
-                        } elseif (in_array($type, ['OUT', 'WITHDRAW', 'BLOCKED'])) {
-                            $balanceAfter = $balanceBefore - $amount;
-                        }
-
-                        $historyArray['balance_before'] = $balanceBefore;
-                        $historyArray['balance_after'] = $balanceAfter;
-
-                        $localConn->table('saldo_histories')->insert($historyArray);
-                        
-                        // Update student saldo only if it was a new history
-                        $localConn->table('students')
-                            ->where('id', $studentId)
-                            ->update(['saldo' => $balanceAfter, 'updated_at' => now()]);
-                    }
-
-                    // If usage is POS, pull pos transaction
                     if (isset($historyArray['usage']) && $historyArray['usage'] === 'POS') {
-                        $this->syncPosTransaction($hId);
+                        $this->syncPosTransaction($historyArray['id']);
                     }
                 }
                 
@@ -296,7 +289,7 @@ class AdvancedSyncService
                 'started_at' => now(),
                 'finished_at' => now(),
                 'duration' => 0,
-                'report' => json_encode(['merged_students' => $processedCount, 'type' => 'ADVANCED_MERGE']),
+                'report' => json_encode(['synced_students' => $processedCount, 'type' => 'SSOT_SYNC']),
                 'created_at' => now(),
                 'updated_at' => now()
             ]);
@@ -306,7 +299,7 @@ class AdvancedSyncService
 
             return [
                 'status' => true,
-                'message' => "Berhasil menggabungkan (merge) data mutasi untuk {$processedCount} siswa.",
+                'message' => "Berhasil menyinkronkan saldo untuk {$processedCount} siswa dari aplikasi lama.",
                 'count' => $processedCount
             ];
 

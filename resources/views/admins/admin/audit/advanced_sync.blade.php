@@ -1,4 +1,4 @@
-@extends('layouts.master', ['title' => 'Sync Saldo & Riwayat'])
+@extends('layouts.master', ['title' => 'Sync Saldo dari Aplikasi Lama'])
 
 @section('content')
 <div class="content d-flex flex-column flex-column-fluid" id="kt_content">
@@ -7,7 +7,7 @@
     <div class="toolbar" id="kt_toolbar">
         <div id="kt_toolbar_container" class="container-fluid d-flex flex-stack px-5">
             <div class="page-title d-flex align-items-center flex-wrap me-3 mb-5 mb-lg-0">
-                <x-text.h1>Sinkronisasi Saldo & Riwayat (Preview)</x-text.h1>
+                <x-text.h1>Sync Saldo dari Aplikasi Lama</x-text.h1>
             </div>
             
             <div class="d-flex align-items-center gap-2 gap-lg-3">
@@ -19,7 +19,7 @@
                     <input type="hidden" name="preview_id" id="execute_preview_id">
                     <div id="selected-students-container"></div>
                     <button type="button" class="btn btn-sm btn-primary fw-bolder rounded-[24px]" id="btn-execute-sync">
-                        <i class="fas fa-link me-1"></i> Gabungkan Data <span id="selected-count" class="badge badge-circle badge-white ms-2 d-none text-primary">0</span>
+                        <i class="fas fa-sync me-1"></i> Sync Saldo <span id="selected-count" class="badge badge-circle badge-white ms-2 d-none text-primary">0</span>
                     </button>
                 </form>
             </div>
@@ -115,7 +115,7 @@
                 <div class="card-header border-0 pt-6">
                     <div class="card-title flex-column">
                         <x-text.h2>Hasil Pratinjau (Preview)</x-text.h2>
-                        <x-text.body>Data di bawah belum disimpan ke database lokal. Periksa dengan teliti sebelum menekan tombol Gabungkan Data.</x-text.body>
+                        <x-text.body>Data di bawah belum disimpan. Saldo aplikasi lama akan menjadi <strong>sumber kebenaran tunggal (Single Source of Truth)</strong>. Tekan Sync Saldo untuk menimpa saldo lokal.</x-text.body>
                     </div>
                 </div>
                 <div class="card-body py-4 pb-8">
@@ -132,15 +132,15 @@
                                     <th>Siswa</th>
                                     <th>Kelas/UPT</th>
                                     <th>
-                                        Saldo Aplikasi Baru
+                                        Saldo Lokal (Baru)
                                         <i class="fas fa-question-circle ms-1 fs-7 text-primary cursor-pointer" data-bs-toggle="tooltip" title="Saldo siswa saat ini di aplikasi lokal yang sedang Anda gunakan"></i>
                                     </th>
-                                    <th>Riwayat Transaksi Master</th>
+                                    <th>Total TX Master</th>
                                     <th>
-                                        Saldo Aplikasi Lama
-                                        <i class="fas fa-question-circle ms-1 fs-7 text-primary cursor-pointer" data-bs-toggle="tooltip" title="Saldo siswa yang tercatat di database server lama (master)"></i>
+                                        Saldo Master (Lama)
+                                        <i class="fas fa-question-circle ms-1 fs-7 text-primary cursor-pointer" data-bs-toggle="tooltip" title="Saldo siswa yang tercatat di database server lama (master) — ini yang akan menjadi saldo akhir setelah sync"></i>
                                     </th>
-                                    <th>Estimasi Saldo Akhir</th>
+                                    <th>Selisih</th>
                                     <th>Status</th>
                                 </tr>
                             </thead>
@@ -395,33 +395,26 @@
                     }
                 },
                 {
-                    data: 'new_histories_count',
+                    data: 'master_histories_count',
                     render: function(data, type, row) {
-                        let totalIn = new Intl.NumberFormat('id-ID').format(row.total_in_added);
-                        let totalOut = new Intl.NumberFormat('id-ID').format(row.total_out_added);
-                        
                         window.previewHistories = window.previewHistories || {};
                         window.previewHistories[row.student_id] = {
                             name: row.name,
                             histories: row.histories_to_insert
                         };
 
-                        return '<div class="d-flex flex-column gap-1">' +
-                               '<span class="badge badge-light-primary fw-bolder cursor-pointer history-hover-trigger" data-student-id="' + row.student_id + '">' + data + ' Transaksi <i class="fas fa-eye ms-1 text-primary fs-8"></i></span>' +
-                               '<span class="text-[12px] text-emerald-600">+ Rp ' + totalIn + '</span>' +
-                               '<span class="text-[12px] text-red-600">- Rp ' + totalOut + '</span>' +
-                               '</div>';
+                        return '<span class="badge badge-light-primary fw-bolder cursor-pointer history-hover-trigger" data-student-id="' + row.student_id + '">' + data + ' Transaksi <i class="fas fa-eye ms-1 text-primary fs-8"></i></span>';
                     }
                 },
                 {
                     data: 'master_saldo',
                     render: function(data, type, row) {
                         let html = '<div class="d-flex flex-column align-items-start gap-1">' +
-                                   '<span class="text-slate-600 font-medium">Rp ' + new Intl.NumberFormat('id-ID').format(data) + '</span>';
+                                   '<span class="text-[18px] font-bold text-emerald-600">Rp ' + new Intl.NumberFormat('id-ID').format(data) + '</span>';
                         if (row.master_saldo_date && row.master_saldo_time) {
-                            html += '<div class="badge d-inline-flex flex-column align-items-start py-1 px-2.5 mt-1" style="font-size: 70%; border-radius: 8px; line-height: 1.35; width: fit-content; background-color: #EFF6FF; border: 1px solid #BFDBFE;">' +
-                                    '<span class="fw-bold" style="color: #1D4ED8 !important;">' + row.master_saldo_date + '</span>' +
-                                    '<span class="fw-semibold" style="color: #2563EB !important;">' + row.master_saldo_time + '</span>' +
+                            html += '<div class="badge d-inline-flex flex-column align-items-start py-1 px-2.5 mt-1" style="font-size: 70%; border-radius: 8px; line-height: 1.35; width: fit-content; background-color: #ECFDF5; border: 1px solid #A7F3D0;">' +
+                                    '<span class="fw-bold" style="color: #047857 !important;">' + row.master_saldo_date + '</span>' +
+                                    '<span class="fw-semibold" style="color: #059669 !important;">' + row.master_saldo_time + '</span>' +
                                     '</div>';
                         }
                         html += '</div>';
@@ -429,18 +422,26 @@
                     }
                 },
                 {
-                    data: 'simulated_saldo',
+                    data: 'saldo_difference',
                     render: function(data, type, row) {
-                        return '<span class="text-[18px] font-bold text-emerald-600">Rp ' + new Intl.NumberFormat('id-ID').format(data) + '</span>';
+                        if (data === 0) {
+                            return '<span class="text-slate-400 font-medium">—</span>';
+                        }
+                        let color = data > 0 ? 'text-emerald-600' : 'text-red-600';
+                        let sign = data > 0 ? '+' : '';
+                        return '<span class="font-bold ' + color + '">' + sign + 'Rp ' + new Intl.NumberFormat('id-ID').format(data) + '</span>';
                     }
                 },
                 {
                     data: 'conflict_status',
                     render: function(data, type, row) {
                         if (data === 'OK') {
-                            return '<span class="badge badge-light-success px-3 py-2">OK</span>';
+                            return '<span class="badge badge-light-success px-3 py-2 fw-bolder" style="border-radius: 8px;">SYNCED</span>';
                         }
-                        return '<span class="badge px-3 py-2 fw-bolder" style="background-color: #5A306B; color: #ffffff; border-radius: 8px; letter-spacing: 0.02em;">CONFLICT MERGED</span>';
+                        if (data === 'NEW') {
+                            return '<span class="badge px-3 py-2 fw-bolder" style="background-color: #2563EB; color: #ffffff; border-radius: 8px; letter-spacing: 0.02em;">NEW</span>';
+                        }
+                        return '<span class="badge px-3 py-2 fw-bolder" style="background-color: #F59E0B; color: #ffffff; border-radius: 8px; letter-spacing: 0.02em;">NEEDS SYNC</span>';
                     }
                 }
             ]
@@ -473,11 +474,11 @@
         });
         
         Swal.fire({
-            title: 'Apakah Anda Yakin?',
-            html: 'Sistem akan menggabungkan <b>transaksi dari ' + checkedBoxes.length + ' siswa terpilih</b> dan menghitung ulang saldo lokal. Aksi ini tidak dapat dibatalkan.',
+            title: 'Sync Saldo dari Aplikasi Lama?',
+            html: 'Saldo lokal untuk <b>' + checkedBoxes.length + ' siswa terpilih</b> akan <strong>ditimpa</strong> dengan saldo dari aplikasi lama (master). Riwayat transaksi lokal yang tidak ada di master akan dihapus. Aksi ini tidak dapat dibatalkan.',
             icon: 'warning',
             showCancelButton: true,
-            confirmButtonText: 'Ya, Gabungkan Data!',
+            confirmButtonText: 'Ya, Sync Saldo!',
             cancelButtonText: 'Batal',
             customClass: {
                 confirmButton: "btn btn-primary rounded-[24px]",
@@ -488,7 +489,7 @@
                 // Tampilkan loading screen
                 Swal.fire({
                     title: 'Memproses...',
-                    text: 'Mohon tunggu, proses sinkronisasi sedang berjalan.',
+                    text: 'Mohon tunggu, proses sinkronisasi saldo sedang berjalan.',
                     allowOutsideClick: false,
                     showConfirmButton: false,
                     didOpen: () => {
