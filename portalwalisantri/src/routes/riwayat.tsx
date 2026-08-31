@@ -116,7 +116,7 @@ const fmtDate = (iso: string) => {
 const fmtTime = (iso: string) =>
   safeParseDate(iso).toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" });
 
-type DateRange = "today" | "week" | "month" | "all";
+type DateRange = "today" | "week" | "month";
 
 const TYPE_TABS: { id: "all" | TxType; label: string }[] = [
   { id: "all", label: "Semua" },
@@ -133,9 +133,8 @@ const CAT_FILTERS: { id: "all" | Category; label: string }[] = [
 
 const DATE_FILTERS: { id: DateRange; label: string }[] = [
   { id: "today", label: "Hari Ini" },
-  { id: "week", label: "Minggu Ini" },
-  { id: "month", label: "Bulan Ini" },
-  { id: "all", label: "Semua" },
+  { id: "week", label: "7 Hari" },
+  { id: "month", label: "30 Hari" },
 ];
 
 function RiwayatPage() {
