@@ -25,9 +25,9 @@ class BillTransactionController extends BaseWaliApiController
         if ($request->filter == 'today') {
             $query->where('created_at', '>=', now()->startOfDay());
         } elseif ($request->filter == 'week') {
-            $query->where('created_at', '>=', now()->startOfWeek());
+            $query->where('created_at', '>=', now()->subDays(7)->startOfDay());
         } elseif ($request->filter == 'month') {
-            $query->where('created_at', '>=', now()->startOfMonth());
+            $query->where('created_at', '>=', now()->subDays(30)->startOfDay());
         } elseif ($request->start_date && $request->end_date) {
             $query->whereBetween('created_at', [$request->start_date, $request->end_date]);
         }
