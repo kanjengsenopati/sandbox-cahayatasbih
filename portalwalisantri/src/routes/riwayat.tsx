@@ -116,7 +116,7 @@ const fmtDate = (iso: string) => {
 const fmtTime = (iso: string) =>
   safeParseDate(iso).toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" });
 
-type DateRange = "all" | "today" | "7d" | "30d";
+type DateRange = "today" | "week" | "month" | "all";
 
 const TYPE_TABS: { id: "all" | TxType; label: string }[] = [
   { id: "all", label: "Semua" },
@@ -132,10 +132,10 @@ const CAT_FILTERS: { id: "all" | Category; label: string }[] = [
 ];
 
 const DATE_FILTERS: { id: DateRange; label: string }[] = [
-  { id: "all", label: "Semua" },
   { id: "today", label: "Hari Ini" },
-  { id: "7d", label: "7 Hari" },
-  { id: "30d", label: "30 Hari" },
+  { id: "week", label: "Minggu Ini" },
+  { id: "month", label: "Bulan Ini" },
+  { id: "all", label: "Semua" },
 ];
 
 function RiwayatPage() {
@@ -144,7 +144,7 @@ function RiwayatPage() {
   const isSaldoVisible = (active as any)?.show_pwa_saldo ?? true;
   const [type, setType] = useState<"all" | TxType>("all");
   const [cat, setCat] = useState<"all" | Category>("all");
-  const [range, setRange] = useState<DateRange>("all");
+  const [range, setRange] = useState<DateRange>("today");
   const [q, setQ] = useState("");
   const [openId, setOpenId] = useState<string | null>(null);
 
@@ -235,7 +235,7 @@ function RiwayatPage() {
   }, [filtered]);
 
   const activeFilters =
-    (type !== "all" ? 1 : 0) + (cat !== "all" ? 1 : 0) + (range !== "all" ? 1 : 0) + (q ? 1 : 0);
+    (type !== "all" ? 1 : 0) + (cat !== "all" ? 1 : 0) + (range !== "today" ? 1 : 0) + (q ? 1 : 0);
 
   // Enabled Skeleton loading below by removing fullscreen loader block
 
@@ -362,7 +362,7 @@ function RiwayatPage() {
                 onClick={() => {
                   setType("all");
                   setCat("all");
-                  setRange("all");
+                  setRange("today");
                   setQ("");
                 }}
                 className="mt-3 w-full py-2 rounded-xl bg-accent text-primary text-[11px] font-bold flex items-center justify-center gap-1.5"
