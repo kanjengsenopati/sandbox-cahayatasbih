@@ -21,6 +21,7 @@ class Officer extends Model
         'phone',
         'photo',
         'is_active',
+        'is_cs_password',
         'admin_id',
     ];
 

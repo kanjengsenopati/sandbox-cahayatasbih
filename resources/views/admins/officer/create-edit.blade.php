@@ -108,6 +108,18 @@
                                                 placeholder="Jelaskan deskripsi tugas dan wewenang yang bisa dikonsultasikan oleh wali"
                                                 required>{{ @$officer->duty ?? old('duty') }}</textarea>
                                         </div>
+                                        
+                                        <!-- CS Password Flag Input -->
+                                        <div class="fv-row mb-7">
+                                            <div class="form-check form-check-custom form-check-solid">
+                                                <input class="form-check-input" type="checkbox" value="1" id="is_cs_password" name="is_cs_password" 
+                                                    {{ (@$officer->is_cs_password ?? old('is_cs_password')) ? 'checked' : '' }} />
+                                                <label class="form-check-label fw-bold text-gray-700 ms-3" for="is_cs_password">
+                                                    Jadikan Nomor WA ini terhubung ke 'Lupa Kata Sandi' (PWA)
+                                                </label>
+                                            </div>
+                                            <div class="text-muted fs-7 mt-2">Hanya satu petugas yang dapat menjadi CS Lupa Password. Mencentang ini akan membatalkan status CS petugas lainnya.</div>
+                                        </div>
                                     </div>
                                 </div>
 

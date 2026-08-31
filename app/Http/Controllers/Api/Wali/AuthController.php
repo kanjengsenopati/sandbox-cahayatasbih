@@ -152,4 +152,19 @@ class AuthController extends Controller
         }
         return response()->json(['message' => 'Logout successful']);
     }
+
+    public function settings()
+    {
+        $officer = \App\Models\Officer::where('is_cs_password', true)->where('is_active', true)->first();
+        $csPhone = $officer ? $officer->phone : null;
+
+        if (!$csPhone) {
+            $appSetting = \App\Models\ApplicationSetting::first();
+            $csPhone = $appSetting ? $appSetting->number_whatsapp : null;
+        }
+
+        return response()->json([
+            'cs_password_phone' => $csPhone
+        ]);
+    }
 }

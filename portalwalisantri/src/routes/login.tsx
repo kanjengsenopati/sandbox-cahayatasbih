@@ -1,8 +1,8 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { Eye, EyeOff, Loader2 } from "lucide-react";
-import { postLogin } from "@/lib/api";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { postLogin, fetchAppSettings } from "@/lib/api";
+import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 
 export const Route = createFileRoute("/login")({
   component: LoginPage,
@@ -33,6 +33,28 @@ function LoginPage() {
   const [showRoleSelector, setShowRoleSelector] = useState(false);
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+
+  const { data: settings } = useQuery({
+    queryKey: ["app-settings"],
+    queryFn: async () => {
+      const res = await fetchAppSettings();
+      return res.data;
+    },
+  });
+
+  const handleForgotPassword = () => {
+    const csPhone = settings?.cs_password_phone;
+    if (csPhone) {
+      let formattedPhone = csPhone.replace(/\D/g, "");
+      if (formattedPhone.startsWith("0")) {
+        formattedPhone = "62" + formattedPhone.slice(1);
+      }
+      const message = encodeURIComponent("Assalamu'alaikum Admin, saya wali santri ingin dibantu mereset kata sandi aplikasi CT-Mobile.");
+      window.location.href = `https://wa.me/${formattedPhone}?text=${message}`;
+    } else {
+      alert("Mohon maaf, layanan CS saat ini belum terkonfigurasi. Silakan hubungi admin pondok.");
+    }
+  };
 
   const loginMutation = useMutation({
     mutationFn: async (data: any) => {
@@ -180,7 +202,7 @@ function LoginPage() {
               </div>
             </div>
 
-            <div className="flex items-center mt-4">
+            <div className="flex items-center justify-between mt-4">
               <label className="flex items-center gap-2 cursor-pointer">
                 <input
                   type="checkbox"
@@ -190,6 +212,14 @@ function LoginPage() {
                 />
                 <span className="text-[12px] font-bold text-slate-500">Ingat Saya</span>
               </label>
+
+              <button
+                type="button"
+                onClick={handleForgotPassword}
+                className="text-[12px] font-bold text-[#9b1de8] hover:text-[#7a12b8] transition"
+              >
+                Lupa Kata Sandi?
+              </button>
             </div>
 
             {/* Submit Button */}

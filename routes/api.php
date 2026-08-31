@@ -136,6 +136,7 @@ Route::group(['prefix' => 'v1', 'middleware' => 'validate_api_key'], function ()
 Route::prefix('ct-mobile')->middleware(['web'])->group(function () {
     Route::post('login', [App\Http\Controllers\Api\Wali\AuthController::class, 'login']);
     Route::post('logout', [App\Http\Controllers\Api\Wali\AuthController::class, 'logout']);
+    Route::get('app-settings', [App\Http\Controllers\Api\Wali\AuthController::class, 'settings']);
 
     Route::middleware(['auth:wali'])->group(function () {
     Route::get('dashboard', [App\Http\Controllers\Api\Wali\DashboardController::class, 'index']);

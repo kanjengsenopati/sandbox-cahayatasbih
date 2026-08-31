@@ -82,11 +82,17 @@ class OfficerController extends Controller
             $data['photo'] = 'storage/' . $request->file('photo')->store('images/officers', 'public');
         }
         $data['is_active'] = $request->has('is_active') ? $request->is_active : true;
+        $data['is_cs_password'] = $request->has('is_cs_password');
         
-        Officer::updateOrCreate(
+        $officer = Officer::updateOrCreate(
             ['admin_id' => $data['admin_id']],
             $data
         );
+
+        if ($data['is_cs_password']) {
+            Officer::where('id', '!=', $officer->id)->update(['is_cs_password' => false]);
+        }
+
         return redirect()->route('officer.index')->with('success', 'Petugas berhasil ditambahkan');
     }
 
@@ -137,8 +143,14 @@ class OfficerController extends Controller
             $data['photo'] = 'storage/' . $request->file('photo')->store('images/officers', 'public');
         }
         $data['is_active'] = $request->has('is_active') ? $request->is_active : $officer->is_active;
+        $data['is_cs_password'] = $request->has('is_cs_password');
 
         $officer->update($data);
+
+        if ($data['is_cs_password']) {
+            Officer::where('id', '!=', $officer->id)->update(['is_cs_password' => false]);
+        }
+
         return redirect()->route('officer.index')->with('success', 'Petugas berhasil diubah');
     }
 

@@ -34,6 +34,7 @@ api.interceptors.response.use(
 
 export const postLogin = (data: any) => api.post('/login', data);
 export const postLogout = () => api.post('/logout');
+export const fetchAppSettings = () => api.get('/app-settings');
 export const fetchDashboard = () => api.get('/dashboard');
 export const fetchInformations = (params?: any) => api.get('/informations', { params });
 export const fetchInformationDetail = (id: string | number) => api.get(`/informations/${id}`);

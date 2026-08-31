@@ -28,6 +28,7 @@ class OfficerRequest extends FormRequest
             'phone' => 'required|string|max:20',
             'photo' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
             'is_active' => 'nullable|boolean',
+            'is_cs_password' => 'nullable|boolean',
             'access_scope' => 'required|in:pwa,backoffice,both',
         ];
     }
