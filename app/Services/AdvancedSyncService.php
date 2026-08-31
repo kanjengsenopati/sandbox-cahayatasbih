@@ -200,6 +200,7 @@ class AdvancedSyncService
 
         try {
             $processedCount = 0;
+            $allPosHistoryIds = [];
 
             foreach ($previewData as $data) {
                 $studentId = $data['student_id'];
@@ -273,15 +274,19 @@ class AdvancedSyncService
                         ]);
                 }
 
-                // Step 5: Sync POS transactions if any
+                // Step 5: Collect POS transactions if any
                 foreach ($data['histories_to_insert'] as $history) {
                     $historyArray = (array) $history;
                     if (isset($historyArray['usage']) && $historyArray['usage'] === 'POS') {
-                        $this->syncPosTransaction($historyArray['id']);
+                        $allPosHistoryIds[] = $historyArray['id'];
                     }
                 }
                 
                 $processedCount++;
+            }
+
+            if (!empty($allPosHistoryIds)) {
+                $this->bulkSyncPosTransactions($allPosHistoryIds);
             }
 
             $localConn->table('database_sync_logs')->insert([
@@ -314,54 +319,67 @@ class AdvancedSyncService
         }
     }
 
-    private function syncPosTransaction($saldoHistoryId)
+    private function bulkSyncPosTransactions(array $saldoHistoryIds)
     {
         $localConn = DB::connection();
         $masterConn = $this->getRemoteConnection();
 
-        $posTxMaster = $masterConn->table('point_of_sale_transactions')
-            ->where('saldo_history_id', $saldoHistoryId)
-            ->first();
-        if (!$posTxMaster) {
-            $posTxMaster = DB::connection('mysql_master')->table('point_of_sale_transactions')
-                ->where('saldo_history_id', $saldoHistoryId)
-                ->first();
+        $posTxsMaster = collect();
+        foreach (array_chunk($saldoHistoryIds, 500) as $chunk) {
+            $txs = $masterConn->table('point_of_sale_transactions')
+                ->whereIn('saldo_history_id', $chunk)
+                ->get();
+            $posTxsMaster = $posTxsMaster->concat($txs);
         }
 
-        if ($posTxMaster) {
-            $exists = $localConn->table('point_of_sale_transactions')
-                ->where('id', $posTxMaster->id)
-                ->exists();
+        if ($posTxsMaster->isEmpty()) {
+            return;
+        }
 
-            if (!$exists) {
-                // Check outlet
-                if (!empty($posTxMaster->outlet_id)) {
-                    $outletExists = $localConn->table('outlets')->where('id', $posTxMaster->outlet_id)->exists();
-                    if (!$outletExists) {
-                        $masterOutlet = $masterConn->table('outlets')->where('id', $posTxMaster->outlet_id)->first();
-                        if ($masterOutlet) {
-                            $localConn->table('outlets')->insert((array)$masterOutlet);
-                        }
-                    }
+        $posTxsIds = $posTxsMaster->pluck('id')->toArray();
+        $outletIds = $posTxsMaster->pluck('outlet_id')->filter()->unique()->toArray();
+
+        // 1. Sync Missing Outlets
+        if (!empty($outletIds)) {
+            $existingOutlets = $localConn->table('outlets')->whereIn('id', $outletIds)->pluck('id')->toArray();
+            $missingOutletIds = array_diff($outletIds, $existingOutlets);
+
+            if (!empty($missingOutletIds)) {
+                $masterOutlets = $masterConn->table('outlets')->whereIn('id', $missingOutletIds)->get();
+                $outletsToInsert = $masterOutlets->map(fn($o) => (array)$o)->toArray();
+                if (!empty($outletsToInsert)) {
+                    $localConn->table('outlets')->insert($outletsToInsert);
                 }
+            }
+        }
 
-                $localConn->table('point_of_sale_transactions')->insert((array)$posTxMaster);
+        // 2. Upsert POS Transactions
+        $posTxsToInsert = $posTxsMaster->map(fn($tx) => (array)$tx)->toArray();
+        foreach (array_chunk($posTxsToInsert, 500) as $batch) {
+            $localConn->table('point_of_sale_transactions')->upsert(
+                $batch,
+                ['id'],
+                array_keys($batch[0])
+            );
+        }
 
-                $detailsMaster = $masterConn->table('point_of_sale_transaction_details')
-                    ->where('point_of_sale_transaction_id', $posTxMaster->id)
-                    ->get();
-                
-                foreach ($detailsMaster as $detail) {
-                    $dArr = (array) $detail;
-                    $dId = $dArr['id'];
-                    $dExists = $localConn->table('point_of_sale_transaction_details')->where('id', $dId)->exists();
-                    if ($dExists) {
-                        unset($dArr['id']);
-                        $localConn->table('point_of_sale_transaction_details')->where('id', $dId)->update($dArr);
-                    } else {
-                        $localConn->table('point_of_sale_transaction_details')->insert($dArr);
-                    }
-                }
+        // 3. Upsert POS Details
+        $posDetailsMaster = collect();
+        foreach (array_chunk($posTxsIds, 500) as $chunk) {
+            $details = $masterConn->table('point_of_sale_transaction_details')
+                ->whereIn('point_of_sale_transaction_id', $chunk)
+                ->get();
+            $posDetailsMaster = $posDetailsMaster->concat($details);
+        }
+
+        if ($posDetailsMaster->isNotEmpty()) {
+            $detailsToInsert = $posDetailsMaster->map(fn($d) => (array)$d)->toArray();
+            foreach (array_chunk($detailsToInsert, 500) as $batch) {
+                $localConn->table('point_of_sale_transaction_details')->upsert(
+                    $batch,
+                    ['id'],
+                    array_keys($batch[0])
+                );
             }
         }
     }
