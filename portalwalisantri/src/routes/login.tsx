@@ -116,9 +116,9 @@ function LoginPage() {
           </h2>
           
           <div className="mt-2.5">
-            <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-white/15 backdrop-blur-md border border-white/40 shadow-[0_8px_16px_rgba(0,0,0,0.1)]">
-              <span className="flex w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse ring-2 ring-emerald-400/30"></span>
-              <span className="text-[10px] font-extrabold text-white uppercase tracking-[0.15em] drop-shadow-sm">
+            <span className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-gradient-to-r from-amber-200 via-yellow-400 to-amber-500 shadow-[0_0_20px_rgba(251,191,36,0.6)] border border-yellow-200/80">
+              <span className="flex w-1.5 h-1.5 rounded-full bg-purple-950 animate-pulse ring-2 ring-purple-950/30"></span>
+              <span className="text-[10px] font-extrabold text-purple-950 uppercase tracking-[0.15em] drop-shadow-sm">
                 Versi Baru 2026
               </span>
             </span>
