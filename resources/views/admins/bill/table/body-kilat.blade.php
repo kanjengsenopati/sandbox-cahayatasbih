@@ -389,10 +389,10 @@
                                             {{ !empty($billDetail?->paid_date) ? date('d/m/y', strtotime($billDetail->paid_date)) : '-' }}
                                         </div>
                                         <div class="fw-bolder text-slate-700">{{ $billDetail?->payment_method ?? '-' }}</div>
-                                        @if(strtoupper($billDetail?->payment_method ?? '') == 'TUNAI' || strtoupper($billDetail?->payment_method ?? '') == 'CASH')
+                                        @if(strtoupper($billDetail?->payment_method ?? '') == 'TUNAI' || strtoupper($billDetail?->payment_method ?? '') == 'CASH' || !empty($detailPayment?->admin_id))
                                             <div class="text-primary fw-bold fs-9">
                                                 <i class="fas fa-user-check me-1"></i>
-                                                {{ $detailPayment->admin->name ?? $detailPayment->user->name ?? 'Admin' }}
+                                                {{ $detailPayment->admin->name ?? 'Sistem / Admin' }}
                                             </div>
                                         @endif
                                     </div>

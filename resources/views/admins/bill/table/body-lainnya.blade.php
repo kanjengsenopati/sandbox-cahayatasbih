@@ -329,7 +329,7 @@
                                                         @if($detail->transaction->paymentMethod?->type == \App\Models\PaymentMethod::TYPE_BALANCE || $detail->saldo_history_id)
                                                             <span class="badge badge-light-primary fw-bolder px-2 py-0.5 fs-9">SALDO</span>
                                                         @else
-                                                            {{ $detail->transaction->admin->name ?? $detail->transaction->user->name ?? 'Admin' }}
+                                                            {{ $detail->transaction->admin->name ?? 'Sistem / Admin' }}
                                                         @endif
                                                     </td>
                                                     <td class="text-danger fw-boldest">Rp {{ number_format(max(0, $runningRemaining), 0, ',', '.') }}</td>
@@ -419,10 +419,10 @@
                                             </span>
                                             
                                             <!-- Nama Petugas -->
-                                            @if(strtoupper($billDetail->payment_method) == 'TUNAI' || strtoupper($billDetail->payment_method) == 'CASH')
+                                            @if(strtoupper($billDetail->payment_method) == 'TUNAI' || strtoupper($billDetail->payment_method) == 'CASH' || !empty($detailPayment?->admin_id))
                                                 <span class="d-inline-flex align-items-center bg-white border border-gray-200 px-2.5 py-1 rounded text-primary fw-bold">
                                                     <i class="fas fa-user-check text-primary me-1.5 fs-9"></i>
-                                                    {{ $detailPayment->admin->name ?? $detailPayment->user->name ?? 'Admin' }}
+                                                    {{ $detailPayment->admin->name ?? 'Sistem / Admin' }}
                                                 </span>
                                             @endif
                                         </div>
