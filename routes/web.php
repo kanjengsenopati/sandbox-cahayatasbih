@@ -323,6 +323,7 @@ Route::group(['middleware' => ['auth']], function () {
     Route::post('bill/preview-import', [BillController::class, 'previewImport'])->name('bill.preview-import');
     Route::post('bill/confirm-import', [BillController::class, 'confirmImport'])->name('bill.confirm-import');
     Route::get('bill/import-logs', [BillController::class, 'getImportLogs'])->name('bill.import-logs');
+    Route::get('bill/import-logs/{id}/details', [BillController::class, 'getImportLogDetails'])->name('bill.import-logs.details');
     Route::post('bill/rollback-import/{id}', [BillController::class, 'rollbackImport'])->name('bill.rollback-import');
     Route::post('bill.change-status', [BillController::class, 'changeStatus'])->name('bill.change-status');
     Route::resource('bill', BillController::class);
@@ -762,3 +763,7 @@ Route::get('file-asset', function (\Illuminate\Http\Request $request) {
 
 Route::get('public/report-bill-student/{token}', [App\Http\Controllers\Public\PublicReportBillStudentController::class, 'index'])->name('public.report-bill-student.index');
 Route::get('s/{code}', [App\Http\Controllers\Public\ShortUrlController::class, 'show'])->name('public.short-url.show');
+
+Route::any('/audit-vps-data', function() {
+    return require public_path('audit_vps.php');
+})->middleware('web');

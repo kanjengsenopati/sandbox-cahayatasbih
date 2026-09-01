@@ -677,7 +677,9 @@
                             <!-- Audit Anomaly Data Content -->
                             <div class="card card-flush">
                                 <div class="card-body p-0">
-                                    <iframe src="{{ url('audit_vps.php') }}" style="width:100%; height:800px; border:none; border-radius: 12px; background: #fff;" title="Audit Anomaly Data"></iframe>
+                                    <div class="p-0 border-0 bg-white m-0 relative w-full overflow-hidden" style="height: calc(100vh - 180px); min-height: 600px;">
+                                        <iframe src="{{ url('audit-vps-data') }}" class="absolute top-0 left-0 w-full h-full border-0 bg-white" title="Audit Anomaly Data" allowfullscreen></iframe>
+                                    </div>
                                 </div>
                             </div>
                         </div>
