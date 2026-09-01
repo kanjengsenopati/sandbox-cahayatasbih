@@ -215,6 +215,23 @@ function groupDataBySantriAndTagihan($data) {
         }
         $res[$k]['tagihan_groups'][$tagihan_name][] = $r;
     }
+    
+    // Urutkan tiap grup tagihan berdasarkan Tahun lalu Bulan
+    foreach($res as &$studentGroup) {
+        foreach($studentGroup['tagihan_groups'] as $tName => &$items) {
+            usort($items, function($a, $b) {
+                $yA = isset($a->year) ? (int)$a->year : 0;
+                $yB = isset($b->year) ? (int)$b->year : 0;
+                if ($yA !== $yB) return $yA <=> $yB;
+                
+                $mA = isset($a->month) ? (int)$a->month : 0;
+                $mB = isset($b->month) ? (int)$b->month : 0;
+                return $mA <=> $mB;
+            });
+        }
+    }
+    unset($studentGroup, $items);
+
     return array_values($res);
 }
 
