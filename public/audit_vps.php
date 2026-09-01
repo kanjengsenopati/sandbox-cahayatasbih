@@ -395,7 +395,7 @@ $history_repairs = DB::connection($conn)->select("
                             <h3 class="font-bold text-slate-800 text-lg">
                                 <?= $no++ ?>. <?= htmlspecialchars($g['santri']) ?> <span class="text-sm text-slate-500 font-normal ml-2">(Kelas: <?= htmlspecialchars($g['kelas']) ?>)</span>
                             </h3>
-                            <button onclick="fixMultiAnomaly('<?= $stu_hash ?>', this)" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold px-4 py-2 rounded-lg transition-colors shadow-sm hidden btn-bulk-<?= $stu_hash ?>">
+                            <button onclick="fixMultiAnomaly('<?= $stu_hash ?>', this)" class="bg-blue-600 hover:bg-blue-700 text-white text-[11px] font-bold px-4 py-2 uppercase tracking-widest rounded-lg transition-colors shadow-sm hidden btn-bulk-<?= $stu_hash ?>">
                                 UPDATE KOREKSI TERPILIH (<span class="count-<?= $stu_hash ?>">0</span>)
                             </button>
                         </div>
@@ -408,7 +408,7 @@ $history_repairs = DB::connection($conn)->select("
                                     <h4 class="text-sm font-bold text-slate-600 uppercase tracking-wider">
                                         <?= htmlspecialchars($tagihan_name) ?>
                                     </h4>
-                                    <label class="ml-auto text-[10px] font-bold text-slate-500 flex items-center gap-1.5 cursor-pointer hover:text-blue-600">
+                                    <label class="ml-auto text-[10px] font-bold text-slate-500 font-bold text-[11px] flex items-center gap-1.5 cursor-pointer hover:text-blue-600">
                                         <input type="checkbox" onchange="toggleSelectAll('<?= $tag_hash ?>', this.checked, '<?= $stu_hash ?>')" class="w-3.5 h-3.5 rounded border-slate-300 text-blue-600 focus:ring-blue-500">
                                         PILIH SEMUA
                                     </label>
@@ -446,24 +446,24 @@ if (!empty($item->paid_at)) {
                                     <div class="border border-slate-200 rounded-xl p-3 bg-white shadow-[0_2px_8px_rgb(0,0,0,0.04)] flex flex-col justify-between relative">
                                         <input type="checkbox" value="<?= $item->bill_id ?>" data-cat="<?= $anomaly_category ?>" class="chk-<?= $tag_hash ?> chk-group-<?= $stu_hash ?> w-4 h-4 text-blue-600 rounded border-slate-300 absolute top-3 right-3 cursor-pointer shadow-sm" onchange="updateBulkCount('<?= $stu_hash ?>')">
                                         <div>
-                                            <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Periode</div>
-                                            <div class="text-sm font-bold text-slate-800 mb-2"><?= $indo_months[(int)$item->month] ?>-<?= $item->year ?></div>
-                                            <div class="text-[10px] text-slate-500 mb-0.5">Nominal:</div>
-                                            <div class="text-amount-error text-sm font-bold">Rp <?= number_format($item->amount,0,',','.')?></div>
+                                            <div class="text-[11px] font-bold text-slate-500 uppercase tracking-widest mb-1">Periode</div>
+                                            <div class="text-base font-extrabold text-slate-800 mb-2"><?= $indo_months[(int)$item->month] ?>-<?= $item->year ?></div>
+                                            <div class="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Nominal:</div>
+                                            <div class="text-red-600 text-lg font-extrabold">Rp <?= number_format($item->amount,0,',','.')?></div>
                                         </div>
                                         <div class="mt-3 pt-3 border-t border-slate-100 flex flex-col gap-1.5">
-                                            <div class="text-[10px] text-slate-500 flex items-center gap-1.5">
+                                            <div class="text-[10px] text-slate-500 font-bold text-[11px] flex items-center gap-1.5">
                                                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
                                                 <?= $tgl?>
                                             </div>
-                                            <div class="text-[10px] bg-slate-50 border border-slate-100 px-2 py-1 rounded text-slate-600 truncate flex items-center gap-1.5" title="<?= htmlspecialchars($petugas)?>">
+                                            <div class="text-[11px] font-bold bg-white border border-slate-200 px-2.5 py-1 rounded-md text-blue-600 truncate flex items-center gap-1.5 shadow-sm" title="<?= htmlspecialchars($petugas)?>">
                                                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
                                                 <?= htmlspecialchars($petugas)?>
                                             </div>
                                             <div class="text-[9px] <?= $entry_color?> px-1.5 py-1 rounded font-semibold text-center mt-1 uppercase tracking-wide">
                                                 <?= $entry_method?>
                                             </div>
-                                            <button onclick="fixAnomaly('<?= $item->bill_id?>', 'cat2', this)" class="mt-2 w-full bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-bold py-1.5 rounded transition-colors shadow-sm flex items-center justify-center gap-1"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path></svg>UPDATE KOREKSI</button>
+                                            <button onclick="fixAnomaly('<?= $item->bill_id?>', 'cat2', this)" class="mt-2 w-full bg-blue-600 hover:bg-blue-700 text-white text-[11px] font-bold py-2 rounded transition-colors shadow-sm flex items-center justify-center gap-1"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path></svg>UPDATE KOREKSI</button>
                                         </div>
                                     </div>
                                     <?php endforeach;?>
@@ -500,7 +500,7 @@ if (!empty($item->paid_at)) {
                             <h3 class="font-bold text-slate-800 text-lg">
                                 <?= $no++ ?>. <?= htmlspecialchars($g['santri']) ?> <span class="text-sm text-slate-500 font-normal ml-2">(Kelas: <?= htmlspecialchars($g['kelas']) ?>)</span>
                             </h3>
-                            <button onclick="fixMultiAnomaly('<?= $stu_hash ?>', this)" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold px-4 py-2 rounded-lg transition-colors shadow-sm hidden btn-bulk-<?= $stu_hash ?>">
+                            <button onclick="fixMultiAnomaly('<?= $stu_hash ?>', this)" class="bg-blue-600 hover:bg-blue-700 text-white text-[11px] font-bold px-4 py-2 uppercase tracking-widest rounded-lg transition-colors shadow-sm hidden btn-bulk-<?= $stu_hash ?>">
                                 UPDATE KOREKSI TERPILIH (<span class="count-<?= $stu_hash ?>">0</span>)
                             </button>
                         </div>
@@ -513,7 +513,7 @@ if (!empty($item->paid_at)) {
                                     <h4 class="text-sm font-bold text-slate-600 uppercase tracking-wider">
                                         <?= htmlspecialchars($tagihan_name) ?>
                                     </h4>
-                                    <label class="ml-auto text-[10px] font-bold text-slate-500 flex items-center gap-1.5 cursor-pointer hover:text-blue-600">
+                                    <label class="ml-auto text-[10px] font-bold text-slate-500 font-bold text-[11px] flex items-center gap-1.5 cursor-pointer hover:text-blue-600">
                                         <input type="checkbox" onchange="toggleSelectAll('<?= $tag_hash ?>', this.checked, '<?= $stu_hash ?>')" class="w-3.5 h-3.5 rounded border-slate-300 text-blue-600 focus:ring-blue-500">
                                         PILIH SEMUA
                                     </label>
@@ -550,8 +550,8 @@ if (!empty($item->paid_at)) {
                                     <div class="border border-slate-200 rounded-xl p-4 bg-white shadow-[0_2px_8px_rgb(0,0,0,0.04)] flex flex-col justify-between">
                                         <div>
                                             <div class="flex justify-between items-center mb-2">
-                                                <div class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Periode</div>
-                                                <div class="text-xs font-bold text-slate-800 bg-slate-100 px-2 py-0.5 rounded"><?= $indo_months[(int)$item->month] ?>-<?= $item->year ?></div>
+                                                <div class="text-[11px] font-bold text-slate-500 uppercase tracking-widest">Periode</div>
+                                                <div class="text-sm font-extrabold text-slate-800 bg-slate-100 px-2 py-0.5 rounded"><?= $indo_months[(int)$item->month] ?>-<?= $item->year ?></div>
                                             </div>
                                             <div class="grid grid-cols-2 gap-2 text-xs mb-3 bg-slate-50 p-2 rounded-lg border border-slate-100">
                                                 <div class="text-slate-500">Tagihan:</div><div class="text-right font-medium text-slate-700">Rp <?= number_format($item->tagihan_rp,0,',','.')?></div>
@@ -561,13 +561,13 @@ if (!empty($item->paid_at)) {
                                         </div>
                                         <div class="mt-1 flex flex-col gap-1.5">
                                             <div class="flex justify-between items-center text-[10px]">
-                                                <div class="text-slate-500 flex items-center gap-1"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg><?= $tgl?></div>
-                                                <div class="text-slate-600 font-medium flex items-center gap-1" title="<?= htmlspecialchars($petugas)?>"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg><?= htmlspecialchars(substr($petugas,0,10))?>..</div>
+                                                <div class="text-slate-500 font-bold text-[11px] flex items-center gap-1"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg><?= $tgl?></div>
+                                                <div class="text-blue-600 font-bold text-[11px] flex items-center gap-1" title="<?= htmlspecialchars($petugas)?>"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg><?= htmlspecialchars(substr($petugas,0,10))?>..</div>
                                             </div>
                                             <div class="text-[10px] <?= $entry_color?> px-1.5 py-1 rounded font-semibold text-center mt-1 uppercase tracking-wide">
                                                 <?= $entry_method?>
                                             </div>
-                                            <button onclick="fixAnomaly('<?= $item->bill_id?>', 'cat3', this)" class="mt-2 w-full bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-bold py-1.5 rounded transition-colors shadow-sm flex items-center justify-center gap-1"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path></svg>UPDATE KOREKSI</button>
+                                            <button onclick="fixAnomaly('<?= $item->bill_id?>', 'cat3', this)" class="mt-2 w-full bg-blue-600 hover:bg-blue-700 text-white text-[11px] font-bold py-2 rounded transition-colors shadow-sm flex items-center justify-center gap-1"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path></svg>UPDATE KOREKSI</button>
                                         </div>
                                     </div>
                                     <?php endforeach;?>
@@ -604,7 +604,7 @@ if (!empty($item->paid_at)) {
                             <h3 class="font-bold text-slate-800 text-lg">
                                 <?= $no++ ?>. <?= htmlspecialchars($g['santri']) ?> <span class="text-sm text-slate-500 font-normal ml-2">(Kelas: <?= htmlspecialchars($g['kelas']) ?>)</span>
                             </h3>
-                            <button onclick="fixMultiAnomaly('<?= $stu_hash ?>', this)" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold px-4 py-2 rounded-lg transition-colors shadow-sm hidden btn-bulk-<?= $stu_hash ?>">
+                            <button onclick="fixMultiAnomaly('<?= $stu_hash ?>', this)" class="bg-blue-600 hover:bg-blue-700 text-white text-[11px] font-bold px-4 py-2 uppercase tracking-widest rounded-lg transition-colors shadow-sm hidden btn-bulk-<?= $stu_hash ?>">
                                 UPDATE KOREKSI TERPILIH (<span class="count-<?= $stu_hash ?>">0</span>)
                             </button>
                         </div>
@@ -617,7 +617,7 @@ if (!empty($item->paid_at)) {
                                     <h4 class="text-sm font-bold text-slate-600 uppercase tracking-wider">
                                         <?= htmlspecialchars($tagihan_name) ?>
                                     </h4>
-                                    <label class="ml-auto text-[10px] font-bold text-slate-500 flex items-center gap-1.5 cursor-pointer hover:text-blue-600">
+                                    <label class="ml-auto text-[10px] font-bold text-slate-500 font-bold text-[11px] flex items-center gap-1.5 cursor-pointer hover:text-blue-600">
                                         <input type="checkbox" onchange="toggleSelectAll('<?= $tag_hash ?>', this.checked, '<?= $stu_hash ?>')" class="w-3.5 h-3.5 rounded border-slate-300 text-blue-600 focus:ring-blue-500">
                                         PILIH SEMUA
                                     </label>
@@ -655,23 +655,23 @@ if (!empty($item->paid_at)) {
                                     <div class="border border-red-200 rounded-xl p-3 bg-red-50/30 shadow-[0_2px_8px_rgb(0,0,0,0.04)] flex flex-col justify-between relative">
                                         <input type="checkbox" value="<?= $item->bill_id ?>" data-cat="<?= $anomaly_category ?>" class="chk-<?= $tag_hash ?> chk-group-<?= $stu_hash ?> w-4 h-4 text-blue-600 rounded border-slate-300 absolute top-3 right-3 cursor-pointer shadow-sm" onchange="updateBulkCount('<?= $stu_hash ?>')">
                                         <div>
-                                            <div class="text-[10px] font-bold text-red-500 uppercase tracking-wider mb-1">Periode Duplikat</div>
-                                            <div class="text-sm font-bold text-slate-800 mb-2"><?= $indo_months[(int)$item->month] ?>-<?= $item->year ?></div>
-                                            <div class="text-amount-error text-xs font-bold mb-2">Rp <?= number_format($item->amount,0,',','.')?></div>
+                                            <div class="text-[11px] font-bold text-red-500 uppercase tracking-widest mb-1">Periode Duplikat</div>
+                                            <div class="text-base font-extrabold text-slate-800 mb-2"><?= $indo_months[(int)$item->month] ?>-<?= $item->year ?></div>
+                                            <div class="text-red-600 text-lg font-extrabold mb-2">Rp <?= number_format($item->amount,0,',','.')?></div>
                                         </div>
                                         <div class="mt-2 pt-2 border-t border-slate-200 flex flex-col gap-1.5">
                                             <div class="text-[10px] text-slate-600 flex items-center gap-1.5">
                                                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
                                                 <?= $tgl?>
                                             </div>
-                                            <div class="text-[10px] bg-white border border-slate-200 px-2 py-1 rounded text-slate-700 truncate flex items-center gap-1.5" title="<?= htmlspecialchars($petugas)?>">
+                                            <div class="text-[11px] font-bold bg-white border border-slate-200 px-2.5 py-1 rounded-md text-blue-600 truncate flex items-center gap-1.5 shadow-sm" title="<?= htmlspecialchars($petugas)?>">
                                                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
                                                 <?= htmlspecialchars($petugas)?>
                                             </div>
                                             <div class="text-[9px] <?= $entry_color?> px-1.5 py-1 rounded font-semibold text-center mt-1 uppercase tracking-wide">
                                                 <?= $entry_method?>
                                             </div>
-                                            <button onclick="fixAnomaly('<?= $item->bill_id?>', 'cat5', this)" class="mt-2 w-full bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-bold py-1.5 rounded transition-colors shadow-sm flex items-center justify-center gap-1"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path></svg>UPDATE KOREKSI</button>
+                                            <button onclick="fixAnomaly('<?= $item->bill_id?>', 'cat5', this)" class="mt-2 w-full bg-blue-600 hover:bg-blue-700 text-white text-[11px] font-bold py-2 rounded transition-colors shadow-sm flex items-center justify-center gap-1"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path></svg>UPDATE KOREKSI</button>
                                         </div>
                                     </div>
                                     <?php endforeach;?>
@@ -708,7 +708,7 @@ if (!empty($item->paid_at)) {
                                 Kategori Anomali: <span class="font-bold text-slate-600"><?= strtoupper($r->category) ?></span> | Waktu Fix: <?= date('d/m/Y H:i', strtotime($r->repair_time)) ?>
                             </div>
                         </div>
-                        <button onclick="revertRepair('<?= $r->repair_id ?>', this)" class="bg-red-50 hover:bg-red-100 border border-red-200 text-red-600 text-xs font-bold px-4 py-2 rounded-lg transition-colors flex items-center gap-1 shadow-sm">
+                        <button onclick="revertRepair('<?= $r->repair_id ?>', this)" class="bg-red-50 hover:bg-red-100 border border-red-200 text-red-600 text-[11px] font-bold px-4 py-2 uppercase tracking-widest rounded-lg transition-colors flex items-center gap-1 shadow-sm">
                             BATALKAN
                         </button>
                     </div>
