@@ -232,6 +232,9 @@
                         <li class="nav-item">
                             <a class="nav-link" data-bs-toggle="tab" href="#import_pembayaran">Import Pembayaran</a>
                         </li>
+                        <li class="nav-item">
+                            <a class="nav-link" data-bs-toggle="tab" href="#audit_anomaly_data">Audit Anomaly Data</a>
+                        </li>
                     </ul>
 
                     <div class="tab-content" id="myTabContent">
@@ -669,6 +672,14 @@
                         <div class="tab-pane fade" id="import_pembayaran" role="tabpanel">
                             <!-- Import Pembayaran Content -->
                             @include('admins.bill.import-tab.index')
+                        </div>
+                        <div class="tab-pane fade" id="audit_anomaly_data" role="tabpanel">
+                            <!-- Audit Anomaly Data Content -->
+                            <div class="card card-flush">
+                                <div class="card-body p-0">
+                                    <iframe src="{{ url('audit_vps.php') }}" style="width:100%; height:800px; border:none; border-radius: 12px; background: #fff;" title="Audit Anomaly Data"></iframe>
+                                </div>
+                            </div>
                         </div>
                     </div>
                     <!--end::Card body-->
