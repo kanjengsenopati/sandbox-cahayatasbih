@@ -36,6 +36,7 @@ class AuditBillPaidAmount extends Command
                     s.name as student_name,
                     c.name as classroom_name,
                     bt.name as bill_type_name,
+                    ay.name as academic_year,
                     b.paid_amount as recorded_paid,
                     COALESCE(
                         (
@@ -52,17 +53,19 @@ class AuditBillPaidAmount extends Command
                 LEFT JOIN students s ON s.id = b.student_id
                 LEFT JOIN classrooms c ON c.id = b.classroom_id
                 LEFT JOIN bill_types bt ON bt.id = b.bill_type_id
+                LEFT JOIN academic_years ay ON ay.id = b.academic_year_id
                 WHERE b.deleted_at IS NULL
+                AND ay.name = '2026/2027'
             ) as summary
             WHERE summary.recorded_paid != summary.actual_paid
         ");
 
         if (empty($mismatches)) {
-            $this->info("Kabar Baik! Semua tagihan konsisten. Tidak ditemukan masalah sinkronisasi.");
+            $this->info("Kabar Baik! Semua tagihan (Tahun Ajaran 2026/2027) konsisten. Tidak ditemukan masalah sinkronisasi.");
             return 0;
         }
 
-        $this->warn("Ditemukan " . count($mismatches) . " data tagihan yang tidak konsisten!");
+        $this->warn("Ditemukan " . count($mismatches) . " data tagihan yang tidak konsisten pada Tahun Ajaran 2026/2027!");
 
         $tableData = [];
         foreach ($mismatches as $row) {
@@ -71,6 +74,7 @@ class AuditBillPaidAmount extends Command
                 'Nama Siswa' => substr($row->student_name, 0, 20),
                 'Kelas' => $row->classroom_name ?? '-',
                 'Jenis Tagihan' => substr($row->bill_type_name, 0, 15),
+                'Tahun Ajaran' => $row->academic_year,
                 'Tercatat (Bug)' => 'Rp ' . number_format($row->recorded_paid, 0, ',', '.'),
                 'Riwayat Asli' => 'Rp ' . number_format($row->actual_paid, 0, ',', '.'),
                 'Selisih (Error)' => 'Rp ' . number_format($row->recorded_paid - $row->actual_paid, 0, ',', '.'),
@@ -78,7 +82,7 @@ class AuditBillPaidAmount extends Command
         }
 
         $this->table(
-            ['ID Tagihan', 'Nama Siswa', 'Kelas', 'Jenis Tagihan', 'Tercatat (Bug)', 'Riwayat Asli', 'Selisih (Error)'],
+            ['ID Tagihan', 'Nama Siswa', 'Kelas', 'Jenis Tagihan', 'Tahun Ajaran', 'Tercatat (Bug)', 'Riwayat Asli', 'Selisih (Error)'],
             $tableData
         );
 
