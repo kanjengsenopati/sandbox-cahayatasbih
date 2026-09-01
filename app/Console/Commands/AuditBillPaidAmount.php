@@ -28,7 +28,7 @@ class AuditBillPaidAmount extends Command
     {
         $this->info("Memulai audit komprehensif sinkronisasi data pembayaran...");
 
-        // Query raw SQL menggunakan Subquery agar kompatibel dengan strict mode (MySQL/SQLite)
+        // Query raw SQL menggunakan Derived Table agar eksekusi di MySQL VPS instan (O(N) bukan O(N^2))
         $mismatches = DB::select("
             SELECT * FROM (
                 SELECT 
@@ -38,22 +38,21 @@ class AuditBillPaidAmount extends Command
                     bt.name as bill_type_name,
                     ay.name as academic_year,
                     b.paid_amount as recorded_paid,
-                    COALESCE(
-                        (
-                            SELECT SUM(td2.amount)
-                            FROM transaction_details td2
-                            JOIN transactions t2 ON t2.id = td2.transaction_id
-                            WHERE td2.bill_id = b.id
-                            AND td2.deleted_at IS NULL
-                            AND t2.deleted_at IS NULL
-                            AND t2.status = 'PAID'
-                        ), 0
-                    ) as actual_paid
+                    COALESCE(td_sums.total_paid, 0) as actual_paid
                 FROM bills b
                 LEFT JOIN students s ON s.id = b.student_id
                 LEFT JOIN classrooms c ON c.id = b.classroom_id
                 LEFT JOIN bill_types bt ON bt.id = b.bill_type_id
                 LEFT JOIN academic_years ay ON ay.id = b.academic_year_id
+                LEFT JOIN (
+                    SELECT td2.bill_id, SUM(td2.amount) as total_paid
+                    FROM transaction_details td2
+                    JOIN transactions t2 ON t2.id = td2.transaction_id
+                    WHERE td2.deleted_at IS NULL 
+                      AND t2.deleted_at IS NULL 
+                      AND t2.status = 'PAID'
+                    GROUP BY td2.bill_id
+                ) td_sums ON td_sums.bill_id = b.id
                 WHERE b.deleted_at IS NULL
                 AND ay.name = '2026/2027'
             ) as summary
