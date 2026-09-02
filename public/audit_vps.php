@@ -39,6 +39,101 @@ DB::connection($conn)->statement("
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 ");
 
+// --- AJAX HANDLER FOR Massive Bulk Fix CAT2 ---
+if (isset($_SERVER['REQUEST_METHOD']) && $_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'fix_all_cat2') {
+    header('Content-Type: application/json');
+    $offset = (int)($_POST['offset'] ?? 0);
+    $limit = (int)($_POST['limit'] ?? 50);
+
+    try {
+        // Fresh query: ambil bill_id CAT2 yang BELUM pernah diperbaiki
+        $bills = DB::connection($conn)->select("
+            SELECT DISTINCT b.id AS bill_id, b.paid_amount AS old_paid
+            FROM bills b
+            JOIN transaction_details td ON td.bill_id = b.id
+            JOIN transactions t ON t.id = td.transaction_id
+            JOIN academic_years ay ON ay.id = b.academic_year_id
+            WHERE b.deleted_at IS NULL AND b.status = 'UNPAID' AND ay.name = '2026/2027'
+            AND td.deleted_at IS NULL AND t.deleted_at IS NULL AND t.status = 'PAID'
+            ORDER BY b.id
+            LIMIT $limit OFFSET 0
+        ");
+        // NOTE: OFFSET selalu 0 karena setiap batch yang sukses mengubah status UNPAID->PAID,
+        // sehingga query berikutnya secara otomatis mengambil batch selanjutnya (idempotent).
+
+        if (empty($bills)) {
+            // Hitung sisa untuk konfirmasi
+            $remaining = DB::connection($conn)->selectOne("
+                SELECT COUNT(DISTINCT b.id) as cnt
+                FROM bills b
+                JOIN transaction_details td ON td.bill_id = b.id
+                JOIN transactions t ON t.id = td.transaction_id
+                JOIN academic_years ay ON ay.id = b.academic_year_id
+                WHERE b.deleted_at IS NULL AND b.status = 'UNPAID' AND ay.name = '2026/2027'
+                AND td.deleted_at IS NULL AND t.deleted_at IS NULL AND t.status = 'PAID'
+            ")->cnt;
+            echo json_encode(['success' => true, 'processed' => 0, 'remaining' => (int)$remaining, 'message' => 'Tidak ada lagi anomali CAT2.']);
+            exit;
+        }
+
+        DB::connection($conn)->beginTransaction();
+        $processed = 0;
+        foreach ($bills as $bill) {
+            DB::connection($conn)->table('bills')->where('id', $bill->bill_id)->update([
+                'status' => 'PAID',
+                'paid_amount' => DB::raw('amount'),
+                'updated_at' => now()
+            ]);
+            DB::connection($conn)->table('anomaly_repairs')->insert([
+                'bill_id' => $bill->bill_id,
+                'category' => 'cat2',
+                'snapshot' => json_encode(['old_status' => 'UNPAID', 'old_paid' => $bill->old_paid]),
+                'created_at' => now()
+            ]);
+            $processed++;
+        }
+        DB::connection($conn)->commit();
+
+        // Hitung sisa setelah batch ini
+        $remaining = DB::connection($conn)->selectOne("
+            SELECT COUNT(DISTINCT b.id) as cnt
+            FROM bills b
+            JOIN transaction_details td ON td.bill_id = b.id
+            JOIN transactions t ON t.id = td.transaction_id
+            JOIN academic_years ay ON ay.id = b.academic_year_id
+            WHERE b.deleted_at IS NULL AND b.status = 'UNPAID' AND ay.name = '2026/2027'
+            AND td.deleted_at IS NULL AND t.deleted_at IS NULL AND t.status = 'PAID'
+        ")->cnt;
+
+        echo json_encode([
+            'success' => true,
+            'processed' => $processed,
+            'remaining' => (int)$remaining,
+            'message' => "Batch selesai: $processed tagihan diperbaiki."
+        ]);
+    } catch (\Exception $e) {
+        DB::connection($conn)->rollBack();
+        echo json_encode(['success' => false, 'message' => 'Gagal batch: ' . $e->getMessage()]);
+    }
+    exit;
+}
+
+// --- AJAX HANDLER FOR Pre-count CAT2 ---
+if (isset($_SERVER['REQUEST_METHOD']) && $_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'count_cat2') {
+    header('Content-Type: application/json');
+    $total = DB::connection($conn)->selectOne("
+        SELECT COUNT(DISTINCT b.id) as cnt
+        FROM bills b
+        JOIN transaction_details td ON td.bill_id = b.id
+        JOIN transactions t ON t.id = td.transaction_id
+        JOIN academic_years ay ON ay.id = b.academic_year_id
+        WHERE b.deleted_at IS NULL AND b.status = 'UNPAID' AND ay.name = '2026/2027'
+        AND td.deleted_at IS NULL AND t.deleted_at IS NULL AND t.status = 'PAID'
+    ")->cnt;
+    echo json_encode(['success' => true, 'total' => (int)$total]);
+    exit;
+}
+
 // --- AJAX HANDLER FOR Update Koreksi ---
 if (isset($_SERVER['REQUEST_METHOD']) && $_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'fix_repair') {
     header('Content-Type: application/json');
@@ -826,6 +921,102 @@ if (!empty($item->paid_at)) {
     </div>
 
 <script>
+async function startMassiveFixCat2() {
+    const btn = document.getElementById('btn-fix-all-cat2');
+    
+    // Step 1: Pre-count
+    btn.innerHTML = '<svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg> Menghitung...';
+    btn.disabled = true;
+    
+    try {
+        const countData = new FormData();
+        countData.append('action', 'count_cat2');
+        const countRes = await fetch('audit_vps.php', { method: 'POST', body: countData });
+        const countJson = await countRes.json();
+        
+        if (!countJson.success || countJson.total === 0) {
+            alert('Tidak ada anomali CAT2 yang perlu diperbaiki.');
+            btn.innerHTML = 'Perbaiki Semua Cat 2';
+            btn.disabled = false;
+            return;
+        }
+        
+        // Step 2: Confirmation
+        const total = countJson.total;
+        if (!confirm(
+            'MASSIVE BULK FIX — Kategori 2\n\n' +
+            'Total tagihan anomali: ' + total + ' bills\n' +
+            'Proses akan berjalan dalam batch @50 tagihan.\n\n' +
+            'Setiap batch memiliki snapshot rollback.\n' +
+            'Lanjutkan?'
+        )) {
+            btn.innerHTML = '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg> Perbaiki Semua Cat 2';
+            btn.disabled = false;
+            return;
+        }
+        
+        // Step 3: Show progress bar
+        const progressEl = document.getElementById('massive-fix-progress');
+        const progressBar = document.getElementById('progress-bar');
+        const progressLabel = document.getElementById('progress-label');
+        const progressPct = document.getElementById('progress-pct');
+        const progressDetail = document.getElementById('progress-detail');
+        progressEl.classList.remove('hidden');
+        btn.classList.add('hidden');
+        
+        // Step 4: Chunked processing loop
+        let totalProcessed = 0;
+        let batchNum = 0;
+        let remaining = total;
+        
+        while (remaining > 0) {
+            batchNum++;
+            progressLabel.textContent = 'Batch ' + batchNum + ': Memproses ' + Math.min(50, remaining) + ' tagihan...';
+            
+            const batchData = new FormData();
+            batchData.append('action', 'fix_all_cat2');
+            batchData.append('offset', '0');
+            batchData.append('limit', '50');
+            
+            const batchRes = await fetch('audit_vps.php', { method: 'POST', body: batchData });
+            const batchJson = await batchRes.json();
+            
+            if (!batchJson.success) {
+                progressBar.classList.remove('bg-emerald-500');
+                progressBar.classList.add('bg-red-500');
+                progressLabel.textContent = 'Error pada Batch ' + batchNum + ': ' + batchJson.message;
+                progressDetail.innerHTML = '<button onclick="startMassiveFixCat2()" class="mt-2 bg-blue-600 text-white text-xs font-bold px-4 py-2 rounded-lg">Retry dari Batch ' + batchNum + '</button>';
+                return;
+            }
+            
+            totalProcessed += batchJson.processed;
+            remaining = batchJson.remaining;
+            
+            const pct = Math.round(((total - remaining) / total) * 100);
+            progressBar.style.width = pct + '%';
+            progressPct.textContent = pct + '%';
+            progressDetail.textContent = totalProcessed + ' / ' + total + ' tagihan selesai. Sisa: ' + remaining;
+            
+            if (batchJson.processed === 0) break;
+        }
+        
+        // Step 5: Complete
+        progressBar.style.width = '100%';
+        progressBar.classList.remove('bg-emerald-500');
+        progressBar.classList.add('bg-emerald-400');
+        progressPct.textContent = '100%';
+        progressLabel.textContent = 'Selesai! ' + totalProcessed + ' tagihan berhasil diperbaiki.';
+        progressDetail.textContent = 'Halaman akan dimuat ulang dalam 3 detik...';
+        
+        setTimeout(() => { location.reload(); }, 3000);
+        
+    } catch (err) {
+        alert('Kesalahan jaringan: ' + err.message);
+        btn.innerHTML = '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg> Perbaiki Semua Cat 2';
+        btn.disabled = false;
+    }
+}
+
 function filterStudents(tab) {
     let input = document.getElementById('search-' + tab).value.toLowerCase();
     sessionStorage.setItem('search_' + tab, input);
