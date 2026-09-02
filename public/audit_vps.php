@@ -40,7 +40,7 @@ DB::connection($conn)->statement("
 ");
 
 // --- AJAX HANDLER FOR Update Koreksi ---
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'fix_repair') {
+if (isset($_SERVER['REQUEST_METHOD']) && $_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'fix_repair') {
     header('Content-Type: application/json');
     $bill_id = $_POST['bill_id'] ?? '';
     $cat = $_POST['category'] ?? '';
@@ -119,7 +119,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     exit;
 }
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'fix_repair_multi') {
+if (isset($_SERVER['REQUEST_METHOD']) && $_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'fix_repair_multi') {
     header('Content-Type: application/json');
     $items = json_decode($_POST['items'] ?? '[]', true);
     if (empty($items)) { echo json_encode(['success' => false, 'message' => 'No items']); exit; }
@@ -179,7 +179,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     exit;
 }
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'revert_repair_multi') {
+if (isset($_SERVER['REQUEST_METHOD']) && $_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'revert_repair_multi') {
     header('Content-Type: application/json');
     $items = json_decode($_POST['items'] ?? '[]', true);
     if (empty($items)) { echo json_encode(['success' => false, 'message' => 'No items']); exit; }
@@ -222,7 +222,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     exit;
 }
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'revert_repair') {
+if (isset($_SERVER['REQUEST_METHOD']) && $_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'revert_repair') {
     header('Content-Type: application/json');
     $repair_id = $_POST['repair_id'] ?? '';
     if (!$repair_id) { echo json_encode(['success' => false, 'message' => 'Invalid ID']); exit; }
@@ -332,7 +332,7 @@ $q2 = DB::connection($conn)->select("
     LEFT JOIN users u_parent ON u_parent.id = t.user_id
     WHERE b.deleted_at IS NULL AND b.status='UNPAID' AND ay.name = '2026/2027'
     AND td.deleted_at IS NULL AND t.deleted_at IS NULL AND t.status='PAID'
-    GROUP BY b.id, s.name, c.name, bt.name, b.month, b.year, b.amount, t.paid_at, a.name, u.name, t.import_log_id, t.admin_id
+    GROUP BY b.id, s.name, c.name, bt.name, b.month, b.year, b.amount, t.paid_at, a.name, u_admin.name, u_parent.name, t.import_log_id, t.admin_id, t.user_id
 ");
 
 // 3. Partial Paid (Ada transaksi, ambil info evidence)
