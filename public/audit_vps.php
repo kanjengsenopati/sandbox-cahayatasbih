@@ -555,6 +555,10 @@ $g_history = groupDataBySantriAndTagihan($history_repairs);
                     <span class="bg-amber-100 p-1.5 rounded-full"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg></span>
                     Kategori 2: Missed Update (Sudah Bayar tapi Status Belum Terbayar)
                 </h2>
+                <button id="btn-fix-all-cat2" onclick="startMassiveFixCat2()" class="bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-bold px-5 py-2.5 rounded-xl transition-colors shadow-sm flex items-center gap-2 whitespace-nowrap">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                    Perbaiki Semua Cat 2
+                </button>
             </div>
             <div class="bg-amber-50 border-y border-amber-100 px-6 py-4 text-sm">
                 <p><strong class="text-amber-800">Disebabkan oleh:</strong> Santri berhasil membayar (riwayat transaksi sukses ada), tetapi callback sistem gagal memperbarui status tagihan menjadi PAID.</p>
