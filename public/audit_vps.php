@@ -394,6 +394,12 @@ $history_repairs = DB::connection($conn)->select("
         </div>
     </div>
 <div id="content-aktif" class="max-w-6xl mx-auto px-5 space-y-6">
+    <div class="relative mb-2">
+        <div class="absolute inset-y-0 left-0 flex items-center pl-4 pointer-events-none">
+            <svg class="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+        </div>
+        <input type="text" id="search-aktif" onkeyup="filterStudents('aktif')" placeholder="Cari nama siswa atau kelas..." class="bg-white border border-slate-200 text-slate-800 text-sm font-medium rounded-xl focus:ring-blue-500 focus:border-blue-500 block w-full pl-12 p-3.5 shadow-[0_2px_10px_rgb(0,0,0,0.02)] placeholder-slate-400">
+    </div>
 
         <!-- CARD 2: Missed Update -->
         <div class="bg-white rounded-[24px] shadow-[0_8px_30px_rgb(0,0,0,0.04)] overflow-hidden">
@@ -411,7 +417,7 @@ $history_repairs = DB::connection($conn)->select("
             <div>
                 <?php if(count($g2) > 0):?>
                     <?php $anomaly_category = "cat2"; $no = 1; foreach($g2 as $g):?>
-                    <div class="border-b border-slate-100 p-5 hover:bg-slate-50/50">
+                    <div class="student-wrapper-aktif border-b border-slate-100 p-5 hover:bg-slate-50/50" data-search="<?= strtolower(htmlspecialchars($g['santri'].' '.$g['kelas'])) ?>">
                         <?php $stu_hash = md5($g['santri'].$g['kelas']); ?>
                         <div class="flex justify-between items-center mb-4">
                             <h3 class="font-bold text-slate-800 text-lg">
@@ -516,7 +522,7 @@ if (!empty($item->paid_at)) {
             <div>
                 <?php if(count($g3) > 0):?>
                     <?php $anomaly_category = "cat3"; $no = 1; foreach($g3 as $g):?>
-                    <div class="border-b border-slate-100 p-5 hover:bg-slate-50/50">
+                    <div class="student-wrapper-aktif border-b border-slate-100 p-5 hover:bg-slate-50/50" data-search="<?= strtolower(htmlspecialchars($g['santri'].' '.$g['kelas'])) ?>">
                         <?php $stu_hash = md5($g['santri'].$g['kelas']); ?>
                         <div class="flex justify-between items-center mb-4">
                             <h3 class="font-bold text-slate-800 text-lg">
@@ -620,7 +626,7 @@ if (!empty($item->paid_at)) {
             <div>
                 <?php if(count($g6) > 0):?>
                     <?php $anomaly_category = "cat5"; $no = 1; foreach($g6 as $g):?>
-                    <div class="border-b border-slate-100 p-5 hover:bg-slate-50/50">
+                    <div class="student-wrapper-aktif border-b border-slate-100 p-5 hover:bg-slate-50/50" data-search="<?= strtolower(htmlspecialchars($g['santri'].' '.$g['kelas'])) ?>">
                         <?php $stu_hash = md5($g['santri'].$g['kelas']); ?>
                         <div class="flex justify-between items-center mb-4">
                             <h3 class="font-bold text-slate-800 text-lg">
@@ -722,7 +728,7 @@ if (!empty($item->paid_at)) {
             <div>
                 <?php if(count($history_repairs) > 0): ?>
                     <?php foreach($history_repairs as $r): ?>
-                    <div class="border-b border-slate-100 p-5 hover:bg-slate-50/50 flex justify-between items-center">
+                    <div class="student-wrapper-riwayat border-b border-slate-100 p-5 hover:bg-slate-50/50 flex justify-between items-center" data-search="<?= strtolower(htmlspecialchars($r->santri.' '.$r->kelas.' '.$r->tagihan)) ?>">
                         <div>
                             <div class="text-sm font-bold text-slate-800"><?= $r->santri ?> <span class="text-xs text-slate-400 font-normal ml-2">Kelas <?= $r->kelas ?></span></div>
                             <div class="text-xs text-slate-500 mt-1"><?= $r->tagihan ?> (<?= $indo_months[(int)$r->month] ?>-<?= $r->year ?>) - Rp <?= number_format($r->amount, 0, ',', '.') ?></div>
