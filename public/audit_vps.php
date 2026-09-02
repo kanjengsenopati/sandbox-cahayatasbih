@@ -319,7 +319,7 @@ $q1 = DB::connection($conn)->select("
 
 // 2. Missed Update (Ada transaksi, ambil info evidence)
 $q2 = DB::connection($conn)->select("
-    SELECT b.id AS bill_id, s.name AS santri, COALESCE(c.name,'-') AS kelas, bt.name AS tagihan, b.month, b.year, b.amount, t.paid_at, COALESCE(a.name, u_admin.name) AS admin_petugas, u_parent.name AS user_petugas, t.import_log_id, t.admin_id, t.user_id 
+    SELECT b.id AS bill_id, s.name AS santri, COALESCE(c.name,'-') AS kelas, bt.name AS tagihan, b.month, b.year, b.amount, t.paid_at, a.name AS admin_petugas, il_admin.name AS import_admin, t.import_log_id, t.admin_id, t.user_id 
     FROM bills b 
     JOIN students s ON s.id=b.student_id 
     LEFT JOIN classrooms c ON c.id=s.classroom_id 
@@ -328,16 +328,16 @@ $q2 = DB::connection($conn)->select("
     JOIN transaction_details td ON td.bill_id=b.id
     JOIN transactions t ON t.id=td.transaction_id
     LEFT JOIN admins a ON a.id = t.admin_id
-    LEFT JOIN users u_admin ON u_admin.id = t.admin_id
-    LEFT JOIN users u_parent ON u_parent.id = t.user_id
+    LEFT JOIN import_logs il ON il.id = t.import_log_id
+    LEFT JOIN admins il_admin ON il_admin.id = il.admin_id
     WHERE b.deleted_at IS NULL AND b.status='UNPAID' AND ay.name = '2026/2027'
     AND td.deleted_at IS NULL AND t.deleted_at IS NULL AND t.status='PAID'
-    GROUP BY b.id, s.name, c.name, bt.name, b.month, b.year, b.amount, t.paid_at, a.name, u_admin.name, u_parent.name, t.import_log_id, t.admin_id, t.user_id
+    GROUP BY b.id, s.name, c.name, bt.name, b.month, b.year, b.amount, t.paid_at, a.name, il_admin.name, t.import_log_id, t.admin_id, t.user_id
 ");
 
 // 3. Partial Paid (Ada transaksi, ambil info evidence)
 $q3 = DB::connection($conn)->select("
-    SELECT b.id AS bill_id, s.name AS santri, COALESCE(c.name,'-') AS kelas, bt.name AS tagihan, b.month, b.year, b.amount AS tagihan_rp, t.pay_amount AS dibayar_rp, (b.amount - t.pay_amount) AS sisa_rp, t.paid_at, COALESCE(a.name, u_admin.name) AS admin_petugas, u_parent.name AS user_petugas, t.import_log_id, t.admin_id, t.user_id
+    SELECT b.id AS bill_id, s.name AS santri, COALESCE(c.name,'-') AS kelas, bt.name AS tagihan, b.month, b.year, b.amount AS tagihan_rp, t.pay_amount AS dibayar_rp, (b.amount - t.pay_amount) AS sisa_rp, t.paid_at, a.name AS admin_petugas, il_admin.name AS import_admin, t.import_log_id, t.admin_id, t.user_id
     FROM bills b 
     JOIN students s ON s.id=b.student_id 
     LEFT JOIN classrooms c ON c.id=s.classroom_id 
@@ -345,8 +345,8 @@ $q3 = DB::connection($conn)->select("
     JOIN transaction_details td ON td.bill_id=b.id 
     JOIN transactions t ON t.id=td.transaction_id
     LEFT JOIN admins a ON a.id = t.admin_id
-    LEFT JOIN users u_admin ON u_admin.id = t.admin_id
-    LEFT JOIN users u_parent ON u_parent.id = t.user_id
+    LEFT JOIN import_logs il ON il.id = t.import_log_id
+    LEFT JOIN admins il_admin ON il_admin.id = il.admin_id
     JOIN academic_years ay ON ay.id=b.academic_year_id
     WHERE b.deleted_at IS NULL AND b.status='PAID' AND t.status='PAID' AND t.deleted_at IS NULL AND td.deleted_at IS NULL
     AND ay.name = '2026/2027'
@@ -356,13 +356,13 @@ $q3 = DB::connection($conn)->select("
 
 // 5. Duplikat TX (Ada multiple transaksi per bill, ambil semua evidence untuk dirender berdampingan)
 $q6 = DB::connection($conn)->select("
-    SELECT b.id AS bill_id, s.name AS santri, COALESCE(c.name,'-') AS kelas, bt.name AS tagihan, b.month, b.year, b.amount, t.paid_at, COALESCE(a.name, u_admin.name) AS admin_petugas, u_parent.name AS user_petugas, t.import_log_id, t.admin_id, t.user_id
+    SELECT b.id AS bill_id, s.name AS santri, COALESCE(c.name,'-') AS kelas, bt.name AS tagihan, b.month, b.year, b.amount, t.paid_at, a.name AS admin_petugas, il_admin.name AS import_admin, t.import_log_id, t.admin_id, t.user_id
     FROM bills b
     JOIN transaction_details td ON td.bill_id = b.id
     JOIN transactions t ON t.id = td.transaction_id
     LEFT JOIN admins a ON a.id = t.admin_id
-    LEFT JOIN users u_admin ON u_admin.id = t.admin_id
-    LEFT JOIN users u_parent ON u_parent.id = t.user_id
+    LEFT JOIN import_logs il ON il.id = t.import_log_id
+    LEFT JOIN admins il_admin ON il_admin.id = il.admin_id
     JOIN students s ON s.id = b.student_id
     LEFT JOIN classrooms c ON c.id = s.classroom_id
     JOIN bill_types bt ON bt.id = b.bill_type_id
@@ -497,21 +497,21 @@ $g_history = groupDataBySantriAndTagihan($history_repairs);
                                 <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
                                     <?php foreach($items as $item): 
                                         $is_import = !empty($item->import_log_id);
-                                        $has_parent = !empty($item->user_id);
-                                        $admin_name = !empty($item->admin_petugas) ? ucwords(strtolower($item->admin_petugas)) : 'Sistem / Admin';
+                                        $real_admin = !empty($item->admin_petugas) ? ucwords(strtolower($item->admin_petugas)) : null;
+                                        $import_admin = !empty($item->import_admin) ? ucwords(strtolower($item->import_admin)) : null;
                                         
                                         if ($is_import) {
                                             $entry_method = 'Import Data (Legal)';
                                             $entry_color = 'bg-emerald-100 text-emerald-700 border border-emerald-200';
-                                            $petugas = 'Excel Importer';
-                                        } elseif ($has_parent) {
-                                            $entry_method = 'Approval Aplikasi';
-                                            $entry_color = 'bg-blue-100 text-blue-700 border border-blue-200';
-                                            $petugas = $admin_name;
-                                        } else {
+                                            $petugas = $import_admin ?? $real_admin ?? 'Sistem / Admin';
+                                        } elseif ($real_admin) {
                                             $entry_method = 'Aksi User (Legal)';
                                             $entry_color = 'bg-emerald-100 text-emerald-700 border border-emerald-200';
-                                            $petugas = $admin_name;
+                                            $petugas = $real_admin;
+                                        } else {
+                                            $entry_method = 'Approval Aplikasi';
+                                            $entry_color = 'bg-blue-100 text-blue-700 border border-blue-200';
+                                            $petugas = 'Sistem / Admin';
                                         }
                                         $tgl = '-';
 if (!empty($item->paid_at)) {
@@ -597,21 +597,21 @@ if (!empty($item->paid_at)) {
                                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
                                     <?php foreach($items as $item): 
                                         $is_import = !empty($item->import_log_id);
-                                        $has_parent = !empty($item->user_id);
-                                        $admin_name = !empty($item->admin_petugas) ? ucwords(strtolower($item->admin_petugas)) : 'Sistem / Admin';
+                                        $real_admin = !empty($item->admin_petugas) ? ucwords(strtolower($item->admin_petugas)) : null;
+                                        $import_admin = !empty($item->import_admin) ? ucwords(strtolower($item->import_admin)) : null;
                                         
                                         if ($is_import) {
                                             $entry_method = 'Import Data (Legal)';
                                             $entry_color = 'bg-emerald-100 text-emerald-700 border border-emerald-200';
-                                            $petugas = 'Excel Importer';
-                                        } elseif ($has_parent) {
-                                            $entry_method = 'Approval Aplikasi';
-                                            $entry_color = 'bg-blue-100 text-blue-700 border border-blue-200';
-                                            $petugas = $admin_name;
-                                        } else {
+                                            $petugas = $import_admin ?? $real_admin ?? 'Sistem / Admin';
+                                        } elseif ($real_admin) {
                                             $entry_method = 'Aksi User (Legal)';
                                             $entry_color = 'bg-emerald-100 text-emerald-700 border border-emerald-200';
-                                            $petugas = $admin_name;
+                                            $petugas = $real_admin;
+                                        } else {
+                                            $entry_method = 'Approval Aplikasi';
+                                            $entry_color = 'bg-blue-100 text-blue-700 border border-blue-200';
+                                            $petugas = 'Sistem / Admin';
                                         }
                                         $tgl = '-';
 if (!empty($item->paid_at)) {
@@ -698,21 +698,21 @@ if (!empty($item->paid_at)) {
                                 <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
                                     <?php foreach($items as $item): 
                                         $is_import = !empty($item->import_log_id);
-                                        $has_parent = !empty($item->user_id);
-                                        $admin_name = !empty($item->admin_petugas) ? ucwords(strtolower($item->admin_petugas)) : 'Sistem / Admin';
+                                        $real_admin = !empty($item->admin_petugas) ? ucwords(strtolower($item->admin_petugas)) : null;
+                                        $import_admin = !empty($item->import_admin) ? ucwords(strtolower($item->import_admin)) : null;
                                         
                                         if ($is_import) {
                                             $entry_method = 'Import Data (Legal)';
                                             $entry_color = 'bg-emerald-100 text-emerald-700 border border-emerald-200';
-                                            $petugas = 'Excel Importer';
-                                        } elseif ($has_parent) {
-                                            $entry_method = 'Approval Aplikasi';
-                                            $entry_color = 'bg-blue-100 text-blue-700 border border-blue-200';
-                                            $petugas = $admin_name;
-                                        } else {
+                                            $petugas = $import_admin ?? $real_admin ?? 'Sistem / Admin';
+                                        } elseif ($real_admin) {
                                             $entry_method = 'Aksi User (Legal)';
                                             $entry_color = 'bg-emerald-100 text-emerald-700 border border-emerald-200';
-                                            $petugas = $admin_name;
+                                            $petugas = $real_admin;
+                                        } else {
+                                            $entry_method = 'Approval Aplikasi';
+                                            $entry_color = 'bg-blue-100 text-blue-700 border border-blue-200';
+                                            $petugas = 'Sistem / Admin';
                                         }
                                         $tgl = '-';
 if (!empty($item->paid_at)) {
