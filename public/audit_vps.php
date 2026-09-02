@@ -54,13 +54,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     try {
         $snapshot = [];
         if ($cat === 'cat2') {
-            DB::connection($conn)->table('bills')->where('id', $bill_id)->update(['status' => 'PAID', 'updated_at' => now()]);
-            $snapshot = ['old_status' => 'UNPAID'];
+            $old = DB::connection($conn)->table('bills')->where('id', $bill_id)->first();
+            DB::connection($conn)->table('bills')->where('id', $bill_id)->update(['status' => 'PAID', 'paid_amount' => DB::raw('amount'), 'updated_at' => now()]);
+            $snapshot = ['old_status' => 'UNPAID', 'old_paid' => $old->paid_amount];
             $msg = 'Sukses: Status tagihan berhasil divalidasi menjadi PAID.';
         } 
         elseif ($cat === 'cat3') {
-            DB::connection($conn)->table('bills')->where('id', $bill_id)->update(['status' => 'UNPAID', 'updated_at' => now()]);
-            $snapshot = ['old_status' => 'PAID'];
+            $old = DB::connection($conn)->table('bills')->where('id', $bill_id)->first();
+            $act = DB::connection($conn)->table('transaction_details')
+                ->join('transactions', 'transactions.id', '=', 'transaction_details.transaction_id')
+                ->where('transaction_details.bill_id', $bill_id)
+                ->where('transactions.status', 'PAID')
+                ->whereNull('transaction_details.deleted_at')
+                ->whereNull('transactions.deleted_at')
+                ->sum('transactions.pay_amount');
+            DB::connection($conn)->table('bills')->where('id', $bill_id)->update(['status' => 'UNPAID', 'paid_amount' => $act, 'updated_at' => now()]);
+            $snapshot = ['old_status' => 'PAID', 'old_paid' => $old->paid_amount];
             $msg = 'Sukses: Status tagihan dikembalikan ke UNPAID.';
         }
         elseif ($cat === 'cat5') {
@@ -124,11 +133,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
             $snapshot = [];
             
             if ($cat === 'cat2') {
-                DB::connection($conn)->table('bills')->where('id', $bill_id)->update(['status' => 'PAID', 'updated_at' => now()]);
-                $snapshot = ['old_status' => 'UNPAID'];
+                $old = DB::connection($conn)->table('bills')->where('id', $bill_id)->first();
+                DB::connection($conn)->table('bills')->where('id', $bill_id)->update(['status' => 'PAID', 'paid_amount' => DB::raw('amount'), 'updated_at' => now()]);
+                $snapshot = ['old_status' => 'UNPAID', 'old_paid' => $old->paid_amount];
             } elseif ($cat === 'cat3') {
-                DB::connection($conn)->table('bills')->where('id', $bill_id)->update(['status' => 'UNPAID', 'updated_at' => now()]);
-                $snapshot = ['old_status' => 'PAID'];
+                $old = DB::connection($conn)->table('bills')->where('id', $bill_id)->first();
+                $act = DB::connection($conn)->table('transaction_details')
+                    ->join('transactions', 'transactions.id', '=', 'transaction_details.transaction_id')
+                    ->where('transaction_details.bill_id', $bill_id)
+                    ->where('transactions.status', 'PAID')
+                    ->whereNull('transaction_details.deleted_at')
+                    ->whereNull('transactions.deleted_at')
+                    ->sum('transactions.pay_amount');
+                DB::connection($conn)->table('bills')->where('id', $bill_id)->update(['status' => 'UNPAID', 'paid_amount' => $act, 'updated_at' => now()]);
+                $snapshot = ['old_status' => 'PAID', 'old_paid' => $old->paid_amount];
             } elseif ($cat === 'cat5') {
                 $txs = DB::connection($conn)->select("
                     SELECT t.id as tx_id, td.id as td_id
@@ -173,7 +191,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
         
         $snap = json_decode($repair->snapshot, true);
         if ($repair->category === 'cat2' || $repair->category === 'cat3') {
-            DB::connection($conn)->table('bills')->where('id', $repair->bill_id)->update(['status' => $snap['old_status'], 'updated_at' => now()]);
+            DB::connection($conn)->table('bills')->where('id', $repair->bill_id)->update([
+                'status' => $snap['old_status'], 
+                'paid_amount' => $snap['old_paid'] ?? 0, 
+                'updated_at' => now()
+            ]);
         } elseif ($repair->category === 'cat5') {
             if(!empty($snap['deleted_txs'])) {
                 foreach($snap['deleted_txs'] as $tx_id) {
