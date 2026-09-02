@@ -39,7 +39,7 @@ DB::connection($conn)->statement("
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 ");
 
-// --- AJAX HANDLER FOR UPDATE KOREKSI ---
+// --- AJAX HANDLER FOR Update Koreksi ---
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'fix_repair') {
     header('Content-Type: application/json');
     $bill_id = $_POST['bill_id'] ?? '';
@@ -175,6 +175,49 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     } catch (\Exception $e) {
         DB::connection($conn)->rollBack();
         echo json_encode(['success' => false, 'message' => 'Gagal: ' . $e->getMessage()]);
+    }
+    exit;
+}
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'revert_repair_multi') {
+    header('Content-Type: application/json');
+    $items = json_decode($_POST['items'] ?? '[]', true);
+    if (empty($items)) { echo json_encode(['success' => false, 'message' => 'No items']); exit; }
+
+    DB::connection($conn)->beginTransaction();
+    try {
+        $count = 0;
+        foreach($items as $repair_id) {
+            $repair = DB::connection($conn)->table('anomaly_repairs')->where('id', $repair_id)->first();
+            if (!$repair || $repair->reverted_at) continue;
+            
+            $snap = json_decode($repair->snapshot, true);
+            if ($repair->category === 'cat2' || $repair->category === 'cat3') {
+                DB::connection($conn)->table('bills')->where('id', $repair->bill_id)->update([
+                    'status' => $snap['old_status'], 
+                    'paid_amount' => $snap['old_paid'] ?? 0, 
+                    'updated_at' => now()
+                ]);
+            } elseif ($repair->category === 'cat5') {
+                if(!empty($snap['deleted_txs'])) {
+                    foreach($snap['deleted_txs'] as $tx_id) {
+                        DB::connection($conn)->table('transactions')->where('id', $tx_id)->update(['deleted_at' => null, 'status' => 'PAID', 'updated_at' => now()]);
+                    }
+                }
+                if(!empty($snap['deleted_tds'])) {
+                    foreach($snap['deleted_tds'] as $td_id) {
+                        DB::connection($conn)->table('transaction_details')->where('id', $td_id)->update(['deleted_at' => null, 'updated_at' => now()]);
+                    }
+                }
+            }
+            DB::connection($conn)->table('anomaly_repairs')->where('id', $repair_id)->update(['reverted_at' => now()]);
+            $count++;
+        }
+        DB::connection($conn)->commit();
+        echo json_encode(['success' => true, 'message' => "Berhasil membatalkan $count perbaikan secara kolektif!"]);
+    } catch (\Exception $e) {
+        DB::connection($conn)->rollBack();
+        echo json_encode(['success' => false, 'message' => 'Gagal Rollback: ' . $e->getMessage()]);
     }
     exit;
 }
@@ -352,6 +395,8 @@ $history_repairs = DB::connection($conn)->select("
     WHERE ar.reverted_at IS NULL
     ORDER BY ar.created_at DESC
 ");
+$g_history = groupDataBySantriAndTagihan($history_repairs);
+
 ?>
 <!DOCTYPE html>
 <html lang="id">
@@ -365,9 +410,13 @@ $history_repairs = DB::connection($conn)->select("
         .text-h2 { font-size: 16px; font-weight: 600; color: #1e293b; }
         .text-amount { font-size: 14px; font-weight: 700; color: #10b981; }
         .text-amount-error { font-size: 14px; font-weight: 700; color: #dc2626; }
-        .text-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #94a3b8; }
+        .text-label { font-size: 11px; font-weight: 700; text-transform: capitalize; letter-spacing: 0.05em; color: #94a3b8; }
         .text-body { font-size: 14px; font-weight: 500; color: #475569; }
     </style>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+    body, div, span, h1, h2, h3, h4, h5, h6, p, a, button, input { font-family: 'Inter', sans-serif !important; }
+</style>
 </head>
 <body class="bg-slate-50 font-sans text-slate-800 pb-20">
     
@@ -377,7 +426,7 @@ $history_repairs = DB::connection($conn)->select("
             <div>
                 <div class="flex items-center gap-3">
                     <h1 class="text-h1">Audit Data Anomali VPS</h1>
-                    <span class="bg-blue-100 text-blue-700 text-[12px] font-bold px-3 py-1 rounded-full uppercase tracking-wider">T.A. 2026/2027</span>
+                    <span class="bg-blue-100 text-blue-700 text-[12px] font-bold px-3 py-1 rounded-full capitalize tracking-wider">T.A. 2026/2027</span>
                 </div>
                 <p class="text-sm text-slate-500 mt-1">Menggunakan koneksi live <strong class="text-slate-700">mysql_aplikasi</strong>. Menampilkan evidence metode entry.</p>
             </div>
@@ -418,27 +467,27 @@ $history_repairs = DB::connection($conn)->select("
                 <?php if(count($g2) > 0):?>
                     <?php $anomaly_category = "cat2"; $no = 1; foreach($g2 as $g):?>
                     <div class="student-wrapper-aktif border-b border-slate-100 p-5 hover:bg-slate-50/50" data-search="<?= strtolower(htmlspecialchars($g['santri'].' '.$g['kelas'])) ?>">
-                        <?php $stu_hash = md5($g['santri'].$g['kelas']); ?>
+                        <?php $stu_hash = md5($anomaly_category.$g['santri'].$g['kelas']); ?>
                         <div class="flex justify-between items-center mb-4">
                             <h3 class="font-bold text-slate-800 text-lg">
-                                <?= $no++ ?>. <?= htmlspecialchars($g['santri']) ?> <span class="text-sm text-slate-500 font-normal ml-2">(Kelas: <?= htmlspecialchars($g['kelas']) ?>)</span>
+                                <?= $no++ ?>. <?= htmlspecialchars(ucwords(strtolower($g['santri']))) ?> <span class="text-sm text-slate-500 font-normal ml-2">(Kelas: <?= htmlspecialchars(ucwords(strtolower($g['kelas']))) ?>)</span>
                             </h3>
-                            <button onclick="fixMultiAnomaly('<?= $stu_hash ?>', this)" class="bg-blue-600 hover:bg-blue-700 text-white text-[11px] font-bold px-4 py-2 uppercase tracking-widest rounded-lg transition-colors shadow-sm hidden btn-bulk-<?= $stu_hash ?>">
-                                UPDATE KOREKSI TERPILIH (<span class="count-<?= $stu_hash ?>">0</span>)
+                            <button onclick="fixMultiAnomaly('<?= $stu_hash ?>', this)" class="bg-blue-600 hover:bg-blue-700 text-white text-[11px] font-bold px-4 py-2 capitalize tracking-widest rounded-lg transition-colors shadow-sm hidden btn-bulk-<?= $stu_hash ?>">
+                                Update Koreksi Terpilih (<span class="count-<?= $stu_hash ?>">0</span>)
                             </button>
                         </div>
                         <div class="space-y-5 pl-4 border-l-2 border-slate-100 ml-2">
                             <?php foreach($g['tagihan_groups'] as $tagihan_name => $items):?>
                             <div>
-                                <?php $tag_hash = md5($g['santri'].$tagihan_name); ?>
+                                <?php $tag_hash = md5($anomaly_category.$g['santri'].$tagihan_name); ?>
                                 <div class="flex items-center gap-2 mb-3 mt-2">
                                     <span class="w-1.5 h-1.5 bg-blue-500 rounded-full"></span>
-                                    <h4 class="text-sm font-bold text-slate-600 uppercase tracking-wider">
-                                        <?= htmlspecialchars($tagihan_name) ?>
+                                    <h4 class="text-sm font-bold text-slate-600 capitalize tracking-wider">
+                                        <?= htmlspecialchars(ucwords(strtolower($tagihan_name))) ?>
                                     </h4>
                                     <label class="ml-auto text-[10px] font-bold text-slate-500 font-bold text-[11px] flex items-center gap-1.5 cursor-pointer hover:text-blue-600">
                                         <input type="checkbox" onchange="toggleSelectAll('<?= $tag_hash ?>', this.checked, '<?= $stu_hash ?>')" class="w-3.5 h-3.5 rounded border-slate-300 text-blue-600 focus:ring-blue-500">
-                                        PILIH SEMUA
+                                        Pilih Semua
                                     </label>
                                 </div>
                                 <!-- Grid Cards -->
@@ -474,9 +523,9 @@ if (!empty($item->paid_at)) {
                                     <div class="border border-slate-200 rounded-xl p-3 bg-white shadow-[0_2px_8px_rgb(0,0,0,0.04)] flex flex-col justify-between relative">
                                         <input type="checkbox" value="<?= $item->bill_id ?>" data-cat="<?= $anomaly_category ?>" class="chk-<?= $tag_hash ?> chk-group-<?= $stu_hash ?> w-4 h-4 text-blue-600 rounded border-slate-300 absolute top-3 right-3 cursor-pointer shadow-sm" onchange="updateBulkCount('<?= $stu_hash ?>')">
                                         <div>
-                                            <div class="text-[11px] font-bold text-slate-500 uppercase tracking-widest mb-1">Periode</div>
+                                            <div class="text-[11px] font-bold text-slate-500 capitalize tracking-widest mb-1">Periode</div>
                                             <div class="text-base font-extrabold text-slate-800 mb-2"><?= $indo_months[(int)$item->month] ?>-<?= $item->year ?></div>
-                                            <div class="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Nominal:</div>
+                                            <div class="text-[11px] font-bold text-slate-400 capitalize tracking-widest mb-0.5">Nominal:</div>
                                             <div class="text-red-600 text-lg font-extrabold">Rp <?= number_format($item->amount,0,',','.')?></div>
                                         </div>
                                         <div class="mt-3 pt-3 border-t border-slate-100 flex flex-col gap-1.5">
@@ -488,10 +537,10 @@ if (!empty($item->paid_at)) {
                                                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
                                                 <?= htmlspecialchars($petugas)?>
                                             </div>
-                                            <div class="text-[9px] <?= $entry_color?> px-1.5 py-1 rounded font-semibold text-center mt-1 uppercase tracking-wide">
+                                            <div class="text-[9px] <?= $entry_color?> px-1.5 py-1 rounded font-semibold text-center mt-1 capitalize tracking-wide">
                                                 <?= $entry_method?>
                                             </div>
-                                            <button onclick="fixAnomaly('<?= $item->bill_id?>', 'cat2', this)" class="mt-2 w-full bg-blue-600 hover:bg-blue-700 text-white text-[11px] font-bold py-2 rounded transition-colors shadow-sm flex items-center justify-center gap-1"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path></svg>UPDATE KOREKSI</button>
+                                            <button onclick="fixAnomaly('<?= $item->bill_id?>', 'cat2', this)" class="mt-2 w-full bg-blue-600 hover:bg-blue-700 text-white text-[11px] font-bold py-2 rounded transition-colors shadow-sm flex items-center justify-center gap-1"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path></svg>Update Koreksi</button>
                                         </div>
                                     </div>
                                     <?php endforeach;?>
@@ -523,27 +572,27 @@ if (!empty($item->paid_at)) {
                 <?php if(count($g3) > 0):?>
                     <?php $anomaly_category = "cat3"; $no = 1; foreach($g3 as $g):?>
                     <div class="student-wrapper-aktif border-b border-slate-100 p-5 hover:bg-slate-50/50" data-search="<?= strtolower(htmlspecialchars($g['santri'].' '.$g['kelas'])) ?>">
-                        <?php $stu_hash = md5($g['santri'].$g['kelas']); ?>
+                        <?php $stu_hash = md5($anomaly_category.$g['santri'].$g['kelas']); ?>
                         <div class="flex justify-between items-center mb-4">
                             <h3 class="font-bold text-slate-800 text-lg">
-                                <?= $no++ ?>. <?= htmlspecialchars($g['santri']) ?> <span class="text-sm text-slate-500 font-normal ml-2">(Kelas: <?= htmlspecialchars($g['kelas']) ?>)</span>
+                                <?= $no++ ?>. <?= htmlspecialchars(ucwords(strtolower($g['santri']))) ?> <span class="text-sm text-slate-500 font-normal ml-2">(Kelas: <?= htmlspecialchars(ucwords(strtolower($g['kelas']))) ?>)</span>
                             </h3>
-                            <button onclick="fixMultiAnomaly('<?= $stu_hash ?>', this)" class="bg-blue-600 hover:bg-blue-700 text-white text-[11px] font-bold px-4 py-2 uppercase tracking-widest rounded-lg transition-colors shadow-sm hidden btn-bulk-<?= $stu_hash ?>">
-                                UPDATE KOREKSI TERPILIH (<span class="count-<?= $stu_hash ?>">0</span>)
+                            <button onclick="fixMultiAnomaly('<?= $stu_hash ?>', this)" class="bg-blue-600 hover:bg-blue-700 text-white text-[11px] font-bold px-4 py-2 capitalize tracking-widest rounded-lg transition-colors shadow-sm hidden btn-bulk-<?= $stu_hash ?>">
+                                Update Koreksi Terpilih (<span class="count-<?= $stu_hash ?>">0</span>)
                             </button>
                         </div>
                         <div class="space-y-5 pl-4 border-l-2 border-slate-100 ml-2">
                             <?php foreach($g['tagihan_groups'] as $tagihan_name => $items):?>
                             <div>
-                                <?php $tag_hash = md5($g['santri'].$tagihan_name); ?>
+                                <?php $tag_hash = md5($anomaly_category.$g['santri'].$tagihan_name); ?>
                                 <div class="flex items-center gap-2 mb-3 mt-2">
                                     <span class="w-1.5 h-1.5 bg-blue-500 rounded-full"></span>
-                                    <h4 class="text-sm font-bold text-slate-600 uppercase tracking-wider">
-                                        <?= htmlspecialchars($tagihan_name) ?>
+                                    <h4 class="text-sm font-bold text-slate-600 capitalize tracking-wider">
+                                        <?= htmlspecialchars(ucwords(strtolower($tagihan_name))) ?>
                                     </h4>
                                     <label class="ml-auto text-[10px] font-bold text-slate-500 font-bold text-[11px] flex items-center gap-1.5 cursor-pointer hover:text-blue-600">
                                         <input type="checkbox" onchange="toggleSelectAll('<?= $tag_hash ?>', this.checked, '<?= $stu_hash ?>')" class="w-3.5 h-3.5 rounded border-slate-300 text-blue-600 focus:ring-blue-500">
-                                        PILIH SEMUA
+                                        Pilih Semua
                                     </label>
                                 </div>
                                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
@@ -578,7 +627,7 @@ if (!empty($item->paid_at)) {
                                     <div class="border border-slate-200 rounded-xl p-4 bg-white shadow-[0_2px_8px_rgb(0,0,0,0.04)] flex flex-col justify-between">
                                         <div>
                                             <div class="flex justify-between items-center mb-2">
-                                                <div class="text-[11px] font-bold text-slate-500 uppercase tracking-widest">Periode</div>
+                                                <div class="text-[11px] font-bold text-slate-500 capitalize tracking-widest">Periode</div>
                                                 <div class="text-sm font-extrabold text-slate-800 bg-slate-100 px-2 py-0.5 rounded"><?= $indo_months[(int)$item->month] ?>-<?= $item->year ?></div>
                                             </div>
                                             <div class="grid grid-cols-2 gap-2 text-xs mb-3 bg-slate-50 p-2 rounded-lg border border-slate-100">
@@ -592,10 +641,10 @@ if (!empty($item->paid_at)) {
                                                 <div class="text-slate-500 font-bold text-[11px] flex items-center gap-1"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg><?= $tgl?></div>
                                                 <div class="text-blue-600 font-bold text-[11px] flex items-center gap-1" title="<?= htmlspecialchars($petugas)?>"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg><?= htmlspecialchars(substr($petugas,0,10))?>..</div>
                                             </div>
-                                            <div class="text-[10px] <?= $entry_color?> px-1.5 py-1 rounded font-semibold text-center mt-1 uppercase tracking-wide">
+                                            <div class="text-[10px] <?= $entry_color?> px-1.5 py-1 rounded font-semibold text-center mt-1 capitalize tracking-wide">
                                                 <?= $entry_method?>
                                             </div>
-                                            <button onclick="fixAnomaly('<?= $item->bill_id?>', 'cat3', this)" class="mt-2 w-full bg-blue-600 hover:bg-blue-700 text-white text-[11px] font-bold py-2 rounded transition-colors shadow-sm flex items-center justify-center gap-1"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path></svg>UPDATE KOREKSI</button>
+                                            <button onclick="fixAnomaly('<?= $item->bill_id?>', 'cat3', this)" class="mt-2 w-full bg-blue-600 hover:bg-blue-700 text-white text-[11px] font-bold py-2 rounded transition-colors shadow-sm flex items-center justify-center gap-1"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path></svg>Update Koreksi</button>
                                         </div>
                                     </div>
                                     <?php endforeach;?>
@@ -627,27 +676,27 @@ if (!empty($item->paid_at)) {
                 <?php if(count($g6) > 0):?>
                     <?php $anomaly_category = "cat5"; $no = 1; foreach($g6 as $g):?>
                     <div class="student-wrapper-aktif border-b border-slate-100 p-5 hover:bg-slate-50/50" data-search="<?= strtolower(htmlspecialchars($g['santri'].' '.$g['kelas'])) ?>">
-                        <?php $stu_hash = md5($g['santri'].$g['kelas']); ?>
+                        <?php $stu_hash = md5($anomaly_category.$g['santri'].$g['kelas']); ?>
                         <div class="flex justify-between items-center mb-4">
                             <h3 class="font-bold text-slate-800 text-lg">
-                                <?= $no++ ?>. <?= htmlspecialchars($g['santri']) ?> <span class="text-sm text-slate-500 font-normal ml-2">(Kelas: <?= htmlspecialchars($g['kelas']) ?>)</span>
+                                <?= $no++ ?>. <?= htmlspecialchars(ucwords(strtolower($g['santri']))) ?> <span class="text-sm text-slate-500 font-normal ml-2">(Kelas: <?= htmlspecialchars(ucwords(strtolower($g['kelas']))) ?>)</span>
                             </h3>
-                            <button onclick="fixMultiAnomaly('<?= $stu_hash ?>', this)" class="bg-blue-600 hover:bg-blue-700 text-white text-[11px] font-bold px-4 py-2 uppercase tracking-widest rounded-lg transition-colors shadow-sm hidden btn-bulk-<?= $stu_hash ?>">
-                                UPDATE KOREKSI TERPILIH (<span class="count-<?= $stu_hash ?>">0</span>)
+                            <button onclick="fixMultiAnomaly('<?= $stu_hash ?>', this)" class="bg-blue-600 hover:bg-blue-700 text-white text-[11px] font-bold px-4 py-2 capitalize tracking-widest rounded-lg transition-colors shadow-sm hidden btn-bulk-<?= $stu_hash ?>">
+                                Update Koreksi Terpilih (<span class="count-<?= $stu_hash ?>">0</span>)
                             </button>
                         </div>
                         <div class="space-y-5 pl-4 border-l-2 border-slate-100 ml-2">
                             <?php foreach($g['tagihan_groups'] as $tagihan_name => $items):?>
                             <div>
-                                <?php $tag_hash = md5($g['santri'].$tagihan_name); ?>
+                                <?php $tag_hash = md5($anomaly_category.$g['santri'].$tagihan_name); ?>
                                 <div class="flex items-center gap-2 mb-3 mt-2">
                                     <span class="w-1.5 h-1.5 bg-blue-500 rounded-full"></span>
-                                    <h4 class="text-sm font-bold text-slate-600 uppercase tracking-wider">
-                                        <?= htmlspecialchars($tagihan_name) ?>
+                                    <h4 class="text-sm font-bold text-slate-600 capitalize tracking-wider">
+                                        <?= htmlspecialchars(ucwords(strtolower($tagihan_name))) ?>
                                     </h4>
                                     <label class="ml-auto text-[10px] font-bold text-slate-500 font-bold text-[11px] flex items-center gap-1.5 cursor-pointer hover:text-blue-600">
                                         <input type="checkbox" onchange="toggleSelectAll('<?= $tag_hash ?>', this.checked, '<?= $stu_hash ?>')" class="w-3.5 h-3.5 rounded border-slate-300 text-blue-600 focus:ring-blue-500">
-                                        PILIH SEMUA
+                                        Pilih Semua
                                     </label>
                                 </div>
                                 <!-- Grid Cards (Group duplicate transactions for the same bill together visually) -->
@@ -683,7 +732,7 @@ if (!empty($item->paid_at)) {
                                     <div class="border border-red-200 rounded-xl p-3 bg-red-50/30 shadow-[0_2px_8px_rgb(0,0,0,0.04)] flex flex-col justify-between relative">
                                         <input type="checkbox" value="<?= $item->bill_id ?>" data-cat="<?= $anomaly_category ?>" class="chk-<?= $tag_hash ?> chk-group-<?= $stu_hash ?> w-4 h-4 text-blue-600 rounded border-slate-300 absolute top-3 right-3 cursor-pointer shadow-sm" onchange="updateBulkCount('<?= $stu_hash ?>')">
                                         <div>
-                                            <div class="text-[11px] font-bold text-red-500 uppercase tracking-widest mb-1">Periode Duplikat</div>
+                                            <div class="text-[11px] font-bold text-red-500 capitalize tracking-widest mb-1">Periode Duplikat</div>
                                             <div class="text-base font-extrabold text-slate-800 mb-2"><?= $indo_months[(int)$item->month] ?>-<?= $item->year ?></div>
                                             <div class="text-red-600 text-lg font-extrabold mb-2">Rp <?= number_format($item->amount,0,',','.')?></div>
                                         </div>
@@ -696,10 +745,10 @@ if (!empty($item->paid_at)) {
                                                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
                                                 <?= htmlspecialchars($petugas)?>
                                             </div>
-                                            <div class="text-[9px] <?= $entry_color?> px-1.5 py-1 rounded font-semibold text-center mt-1 uppercase tracking-wide">
+                                            <div class="text-[9px] <?= $entry_color?> px-1.5 py-1 rounded font-semibold text-center mt-1 capitalize tracking-wide">
                                                 <?= $entry_method?>
                                             </div>
-                                            <button onclick="fixAnomaly('<?= $item->bill_id?>', 'cat5', this)" class="mt-2 w-full bg-blue-600 hover:bg-blue-700 text-white text-[11px] font-bold py-2 rounded transition-colors shadow-sm flex items-center justify-center gap-1"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path></svg>UPDATE KOREKSI</button>
+                                            <button onclick="fixAnomaly('<?= $item->bill_id?>', 'cat5', this)" class="mt-2 w-full bg-blue-600 hover:bg-blue-700 text-white text-[11px] font-bold py-2 rounded transition-colors shadow-sm flex items-center justify-center gap-1"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path></svg>Update Koreksi</button>
                                         </div>
                                     </div>
                                     <?php endforeach;?>
@@ -726,19 +775,56 @@ if (!empty($item->paid_at)) {
                 </h2>
             </div>
             <div>
-                <?php if(count($history_repairs) > 0): ?>
-                    <?php foreach($history_repairs as $r): ?>
-                    <div class="student-wrapper-riwayat border-b border-slate-100 p-5 hover:bg-slate-50/50 flex justify-between items-center" data-search="<?= strtolower(htmlspecialchars($r->santri.' '.$r->kelas.' '.$r->tagihan)) ?>">
-                        <div>
-                            <div class="text-sm font-bold text-slate-800"><?= $r->santri ?> <span class="text-xs text-slate-400 font-normal ml-2">Kelas <?= $r->kelas ?></span></div>
-                            <div class="text-xs text-slate-500 mt-1"><?= $r->tagihan ?> (<?= $indo_months[(int)$r->month] ?>-<?= $r->year ?>) - Rp <?= number_format($r->amount, 0, ',', '.') ?></div>
-                            <div class="text-[10px] text-slate-400 mt-1">
-                                Kategori Anomali: <span class="font-bold text-slate-600"><?= strtoupper($r->category) ?></span> | Waktu Fix: <?= date('d/m/Y H:i', strtotime($r->repair_time)) ?>
-                            </div>
+                <?php if(count($g_history) > 0): ?>
+                    <?php $no = 1; foreach($g_history as $g):?>
+                    <div class="student-wrapper-riwayat border-b border-slate-100 p-5 hover:bg-slate-50/50" data-search="<?= strtolower(htmlspecialchars($g['santri'].' '.$g['kelas'])) ?>">
+                        <?php $stu_hash = md5('hist'.$g['santri'].$g['kelas']); ?>
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="font-bold text-slate-800 text-lg capitalize">
+                                <?= $no++ ?>. <?= htmlspecialchars(ucwords(strtolower($g['santri']))) ?> <span class="text-sm text-slate-500 font-normal ml-2 capitalize">(Kelas: <?= htmlspecialchars(ucwords(strtolower($g['kelas']))) ?>)</span>
+                            </h3>
+                            <button onclick="revertMultiRepair('<?= $stu_hash ?>', this)" class="bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 text-[11px] font-bold px-4 py-2 tracking-widest rounded-lg transition-colors shadow-sm hidden btn-bulk-<?= $stu_hash ?>">
+                                Batalkan Terpilih (<span class="count-<?= $stu_hash ?>">0</span>)
+                            </button>
                         </div>
-                        <button onclick="revertRepair('<?= $r->repair_id ?>', this)" class="bg-red-50 hover:bg-red-100 border border-red-200 text-red-600 text-[11px] font-bold px-4 py-2 uppercase tracking-widest rounded-lg transition-colors flex items-center gap-1 shadow-sm">
-                            BATALKAN
-                        </button>
+                        <div class="space-y-5 pl-4 border-l-2 border-slate-100 ml-2">
+                            <?php foreach($g['tagihan_groups'] as $tagihan_name => $items):?>
+                            <div>
+                                <?php $tag_hash = md5('hist'.$g['santri'].$tagihan_name); ?>
+                                <div class="flex items-center gap-2 mb-3 mt-2">
+                                    <span class="w-1.5 h-1.5 bg-blue-500 rounded-full"></span>
+                                    <h4 class="text-sm font-bold text-slate-600 capitalize tracking-wider">
+                                        <?= htmlspecialchars(ucwords(strtolower($tagihan_name))) ?>
+                                    </h4>
+                                    <label class="ml-auto text-[11px] font-bold text-slate-500 flex items-center gap-1.5 cursor-pointer hover:text-blue-600">
+                                        <input type="checkbox" onchange="toggleSelectAll('<?= $tag_hash ?>', this.checked, '<?= $stu_hash ?>')" class="w-3.5 h-3.5 rounded border-slate-300 text-blue-600 focus:ring-blue-500">
+                                        Pilih Semua
+                                    </label>
+                                </div>
+                                <!-- Grid Cards -->
+                                <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
+                                    <?php foreach($items as $item): ?>
+                                    <div class="border border-slate-200 rounded-xl p-4 bg-white shadow-[0_2px_8px_rgb(0,0,0,0.04)] flex flex-col justify-between relative">
+                                        <input type="checkbox" value="<?= $item->repair_id ?>" class="chk-<?= $tag_hash ?> chk-group-<?= $stu_hash ?> w-4 h-4 text-blue-600 rounded border-slate-300 absolute top-3 right-3 cursor-pointer shadow-sm" onchange="updateBulkCount('<?= $stu_hash ?>')">
+                                        <div>
+                                            <div class="text-[11px] font-bold text-slate-500 capitalize tracking-widest mb-1">Periode</div>
+                                            <div class="text-sm font-bold text-slate-800 mb-2 capitalize"><?= $indo_months[(int)$item->month] ?> <?= $item->year ?></div>
+                                            <div class="text-[11px] font-bold text-slate-400 capitalize tracking-widest mb-0.5">Nominal</div>
+                                            <div class="text-slate-700 text-sm font-bold">Rp <?= number_format($item->amount,0,',','.')?></div>
+                                        </div>
+                                        <div class="mt-3 pt-3 border-t border-slate-100 flex flex-col gap-1.5">
+                                            <div class="text-[10px] text-slate-400">
+                                                Anomali: <span class="font-bold text-slate-600 capitalize"><?= htmlspecialchars(ucwords(strtolower($item->category))) ?></span><br>
+                                                Waktu: <?= date('d/m/Y H:i', strtotime($item->repair_time)) ?>
+                                            </div>
+                                            <button onclick="revertRepair('<?= $item->repair_id ?>', this)" class="mt-2 w-full bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 text-[11px] font-bold py-2 rounded transition-colors shadow-sm flex items-center justify-center gap-1 capitalize">Batalkan</button>
+                                        </div>
+                                    </div>
+                                    <?php endforeach;?>
+                                </div>
+                            </div>
+                            <?php endforeach;?>
+                        </div>
                     </div>
                     <?php endforeach; ?>
                 <?php else: ?>
@@ -796,6 +882,34 @@ function switchTab(tab) {
         document.getElementById('tab-riwayat').className = 'px-6 py-3 text-sm font-bold text-blue-600 border-b-2 border-blue-600';
         document.getElementById('tab-aktif').className = 'px-6 py-3 text-sm font-medium text-slate-500 hover:text-slate-700';
     }
+}
+
+function revertMultiRepair(stuHash, btn) {
+    const checkboxes = document.querySelectorAll('.chk-group-' + stuHash + ':checked');
+    if (checkboxes.length === 0) return;
+    
+    if(!confirm('Anda yakin ingin membatalkan kolektif (' + checkboxes.length + ' kartu) yang dipilih?')) return;
+    
+    const items = [];
+    checkboxes.forEach(cb => {
+        items.push(cb.value);
+    });
+    
+    const oldText = btn.innerHTML;
+    btn.innerHTML = 'Memproses...';
+    btn.disabled = true;
+    
+    const formData = new FormData();
+    formData.append('action', 'revert_repair_multi');
+    formData.append('items', JSON.stringify(items));
+    
+    fetch('audit_vps.php', { method: 'POST', body: formData })
+    .then(res => res.json())
+    .then(data => {
+        if(data.success) { alert(data.message); location.reload(); }
+        else { alert('Error: ' + data.message); btn.innerHTML = oldText; btn.disabled = false; }
+    })
+    .catch(err => { alert('Kesalahan jaringan'); btn.innerHTML = oldText; btn.disabled = false; });
 }
 
 function revertRepair(repairId, btn) {
