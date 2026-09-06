@@ -564,6 +564,17 @@ $g_history = groupDataBySantriAndTagihan($history_repairs);
                 <p><strong class="text-amber-800">Disebabkan oleh:</strong> Santri berhasil membayar (riwayat transaksi sukses ada), tetapi callback sistem gagal memperbarui status tagihan menjadi PAID.</p>
                 <p class="mt-1"><strong class="text-amber-800">Bukti Catatan:</strong> Transaksi berlabel <span class="bg-emerald-100 text-emerald-700 px-1 rounded text-xs font-bold">Legal</span> (Aksi User / Import) menandakan transaksi tersebut sah, sehingga anomali murni terletak pada <strong class="underline">status tagihannya yang nyangkut</strong>, bukan transaksinya.</p>
             </div>
+            <!-- Massive Fix Progress Bar -->
+            <div id="massive-fix-progress" class="hidden px-6 py-4 bg-white border-b border-slate-100">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-sm font-bold text-slate-700" id="progress-label">Mempersiapkan...</span>
+                    <span class="text-sm font-bold text-emerald-600" id="progress-pct">0%</span>
+                </div>
+                <div class="w-full bg-slate-200 rounded-full h-3 overflow-hidden">
+                    <div id="progress-bar" class="bg-emerald-500 h-3 rounded-full transition-all duration-500 ease-out" style="width: 0%"></div>
+                </div>
+                <div class="mt-2 text-xs text-slate-500" id="progress-detail"></div>
+            </div>
 
             <div>
                 <?php if(count($g2) > 0):?>
