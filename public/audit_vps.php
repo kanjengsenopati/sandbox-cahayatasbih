@@ -134,6 +134,153 @@ if (isset($_SERVER['REQUEST_METHOD']) && $_SERVER['REQUEST_METHOD'] === 'POST' &
     exit;
 }
 
+// --- AJAX HANDLER FOR Massive Bulk Fix CAT3 ---
+if (isset($_SERVER['REQUEST_METHOD']) && $_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'fix_all_cat3') {
+    header('Content-Type: application/json');
+    $limit = (int)($_POST['limit'] ?? 50);
+    try {
+        $bills = DB::connection($conn)->select("
+            SELECT DISTINCT b.id AS bill_id, b.paid_amount AS old_paid
+            FROM bills b
+            JOIN transaction_details td ON td.bill_id = b.id
+            JOIN transactions t ON t.id = td.transaction_id
+            JOIN academic_years ay ON ay.id = b.academic_year_id
+            WHERE b.deleted_at IS NULL AND b.status = 'PAID' AND t.status = 'PAID'
+            AND td.deleted_at IS NULL AND t.deleted_at IS NULL AND ay.name = '2026/2027'
+            AND t.pay_amount < b.amount
+            AND (SELECT COUNT(*) FROM transaction_details td2 WHERE td2.transaction_id = t.id AND td2.deleted_at IS NULL) = 1
+            ORDER BY b.id
+            LIMIT $limit OFFSET 0
+        ");
+        if (empty($bills)) {
+            echo json_encode(['success' => true, 'processed' => 0, 'remaining' => 0, 'message' => 'Tidak ada lagi anomali CAT3.']);
+            exit;
+        }
+        DB::connection($conn)->beginTransaction();
+        $processed = 0;
+        foreach ($bills as $bill) {
+            $act = DB::connection($conn)->table('transaction_details')
+                ->join('transactions', 'transactions.id', '=', 'transaction_details.transaction_id')
+                ->where('transaction_details.bill_id', $bill->bill_id)
+                ->where('transactions.status', 'PAID')
+                ->whereNull('transaction_details.deleted_at')
+                ->whereNull('transactions.deleted_at')
+                ->sum('transactions.pay_amount');
+            DB::connection($conn)->table('bills')->where('id', $bill->bill_id)->update([
+                'status' => 'UNPAID', 'paid_amount' => $act, 'updated_at' => now()
+            ]);
+            DB::connection($conn)->table('anomaly_repairs')->insert([
+                'bill_id' => $bill->bill_id, 'category' => 'cat3',
+                'snapshot' => json_encode(['old_status' => 'PAID', 'old_paid' => $bill->old_paid]),
+                'created_at' => now()
+            ]);
+            $processed++;
+        }
+        DB::connection($conn)->commit();
+        $remaining = DB::connection($conn)->selectOne("
+            SELECT COUNT(DISTINCT b.id) as cnt FROM bills b
+            JOIN transaction_details td ON td.bill_id = b.id JOIN transactions t ON t.id = td.transaction_id
+            JOIN academic_years ay ON ay.id = b.academic_year_id
+            WHERE b.deleted_at IS NULL AND b.status = 'PAID' AND t.status = 'PAID'
+            AND td.deleted_at IS NULL AND t.deleted_at IS NULL AND ay.name = '2026/2027'
+            AND t.pay_amount < b.amount
+            AND (SELECT COUNT(*) FROM transaction_details td2 WHERE td2.transaction_id = t.id AND td2.deleted_at IS NULL) = 1
+        ")->cnt;
+        echo json_encode(['success' => true, 'processed' => $processed, 'remaining' => (int)$remaining]);
+    } catch (\Exception $e) {
+        DB::connection($conn)->rollBack();
+        echo json_encode(['success' => false, 'message' => 'Gagal batch: ' . $e->getMessage()]);
+    }
+    exit;
+}
+
+// --- AJAX HANDLER FOR Massive Bulk Fix CAT5 ---
+if (isset($_SERVER['REQUEST_METHOD']) && $_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'fix_all_cat5') {
+    header('Content-Type: application/json');
+    $limit = (int)($_POST['limit'] ?? 50);
+    try {
+        $dup_bills = DB::connection($conn)->select("
+            SELECT b2.id AS bill_id FROM bills b2
+            JOIN transaction_details td2 ON td2.bill_id = b2.id
+            JOIN transactions t2 ON t2.id = td2.transaction_id
+            JOIN academic_years ay ON ay.id = b2.academic_year_id
+            WHERE b2.deleted_at IS NULL AND td2.deleted_at IS NULL AND t2.deleted_at IS NULL AND t2.status = 'PAID' AND ay.name = '2026/2027'
+            GROUP BY b2.id HAVING COUNT(t2.id) > 1
+            LIMIT $limit OFFSET 0
+        ");
+        if (empty($dup_bills)) {
+            echo json_encode(['success' => true, 'processed' => 0, 'remaining' => 0, 'message' => 'Tidak ada lagi anomali CAT5.']);
+            exit;
+        }
+        DB::connection($conn)->beginTransaction();
+        $processed = 0;
+        foreach ($dup_bills as $db) {
+            $txs = DB::connection($conn)->select("
+                SELECT t.id as tx_id, td.id as td_id FROM transactions t
+                JOIN transaction_details td ON td.transaction_id = t.id
+                WHERE td.bill_id = ? AND t.status = 'PAID' AND t.deleted_at IS NULL AND td.deleted_at IS NULL
+                ORDER BY t.created_at ASC
+            ", [$db->bill_id]);
+            if (count($txs) > 1) {
+                $del_txs = []; $del_tds = [];
+                for ($i = 1; $i < count($txs); $i++) {
+                    DB::connection($conn)->table('transactions')->where('id', $txs[$i]->tx_id)->update(['deleted_at' => now(), 'status' => 'FAILED_DUPLICATE', 'updated_at' => now()]);
+                    DB::connection($conn)->table('transaction_details')->where('id', $txs[$i]->td_id)->update(['deleted_at' => now(), 'updated_at' => now()]);
+                    $del_txs[] = $txs[$i]->tx_id; $del_tds[] = $txs[$i]->td_id;
+                }
+                DB::connection($conn)->table('anomaly_repairs')->insert([
+                    'bill_id' => $db->bill_id, 'category' => 'cat5',
+                    'snapshot' => json_encode(['deleted_txs' => $del_txs, 'deleted_tds' => $del_tds]),
+                    'created_at' => now()
+                ]);
+                $processed++;
+            }
+        }
+        DB::connection($conn)->commit();
+        $remaining = DB::connection($conn)->selectOne("
+            SELECT COUNT(DISTINCT b2.id) as cnt FROM bills b2
+            JOIN transaction_details td2 ON td2.bill_id = b2.id JOIN transactions t2 ON t2.id = td2.transaction_id
+            JOIN academic_years ay ON ay.id = b2.academic_year_id
+            WHERE b2.deleted_at IS NULL AND td2.deleted_at IS NULL AND t2.deleted_at IS NULL AND t2.status = 'PAID' AND ay.name = '2026/2027'
+            GROUP BY b2.id HAVING COUNT(t2.id) > 1
+        ");
+        $rem = $remaining ? (int)$remaining->cnt : 0;
+        echo json_encode(['success' => true, 'processed' => $processed, 'remaining' => $rem]);
+    } catch (\Exception $e) {
+        DB::connection($conn)->rollBack();
+        echo json_encode(['success' => false, 'message' => 'Gagal batch: ' . $e->getMessage()]);
+    }
+    exit;
+}
+
+// --- AJAX HANDLER FOR Pre-count CAT3 & CAT5 ---
+if (isset($_SERVER['REQUEST_METHOD']) && $_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'count_cat3') {
+    header('Content-Type: application/json');
+    $total = DB::connection($conn)->selectOne("
+        SELECT COUNT(DISTINCT b.id) as cnt FROM bills b
+        JOIN transaction_details td ON td.bill_id = b.id JOIN transactions t ON t.id = td.transaction_id
+        JOIN academic_years ay ON ay.id = b.academic_year_id
+        WHERE b.deleted_at IS NULL AND b.status = 'PAID' AND t.status = 'PAID'
+        AND td.deleted_at IS NULL AND t.deleted_at IS NULL AND ay.name = '2026/2027'
+        AND t.pay_amount < b.amount
+        AND (SELECT COUNT(*) FROM transaction_details td2 WHERE td2.transaction_id = t.id AND td2.deleted_at IS NULL) = 1
+    ")->cnt;
+    echo json_encode(['success' => true, 'total' => (int)$total]);
+    exit;
+}
+if (isset($_SERVER['REQUEST_METHOD']) && $_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'count_cat5') {
+    header('Content-Type: application/json');
+    $rows = DB::connection($conn)->select("
+        SELECT b2.id FROM bills b2
+        JOIN transaction_details td2 ON td2.bill_id = b2.id JOIN transactions t2 ON t2.id = td2.transaction_id
+        JOIN academic_years ay ON ay.id = b2.academic_year_id
+        WHERE b2.deleted_at IS NULL AND td2.deleted_at IS NULL AND t2.deleted_at IS NULL AND t2.status = 'PAID' AND ay.name = '2026/2027'
+        GROUP BY b2.id HAVING COUNT(t2.id) > 1
+    ");
+    echo json_encode(['success' => true, 'total' => count($rows)]);
+    exit;
+}
+
 // --- AJAX HANDLER FOR Update Koreksi ---
 if (isset($_SERVER['REQUEST_METHOD']) && $_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'fix_repair') {
     header('Content-Type: application/json');
@@ -672,10 +819,24 @@ if (!empty($item->paid_at)) {
                     <span class="bg-red-100 p-1.5 rounded-full"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg></span>
                     Kategori 3: Partial Salah PAID (Bayar Nyicil tapi Lunas)
                 </h2>
+                <button id="btn-fix-all-cat3" onclick="startMassiveFix('cat3','Kategori 3')" class="bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-bold px-5 py-2.5 rounded-xl transition-colors shadow-sm flex items-center gap-2 whitespace-nowrap">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                    Perbaiki Semua Cat 3
+                </button>
             </div>
             <div class="bg-rose-50 border-y border-rose-100 px-6 py-4 text-sm">
                 <p><strong class="text-rose-800">Disebabkan oleh:</strong> Santri menginput cicilan, tapi sistem memukul rata statusnya menjadi LUNAS.</p>
                 <p class="mt-1"><strong class="text-rose-800">Bukti Catatan:</strong> Jika metode entry adalah <span class="bg-emerald-100 text-emerald-700 px-1 rounded text-xs font-bold">Legal</span> (Aksi User / Import Data), maka uang cicilan tersebut <strong class="underline">SAH</strong> masuk. Anomali murni hanya pada status tagihan yang seharusnya masih berstatus UNPAID dan menyisakan sisa.</p>
+            </div>
+            <div id="progress-cat3" class="hidden px-6 py-4 bg-white border-b border-slate-100">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-sm font-bold text-slate-700" id="progress-label-cat3">Mempersiapkan...</span>
+                    <span class="text-sm font-bold text-emerald-600" id="progress-pct-cat3">0%</span>
+                </div>
+                <div class="w-full bg-slate-200 rounded-full h-3 overflow-hidden">
+                    <div id="progress-bar-cat3" class="bg-emerald-500 h-3 rounded-full transition-all duration-500 ease-out" style="width: 0%"></div>
+                </div>
+                <div class="mt-2 text-xs text-slate-500" id="progress-detail-cat3"></div>
             </div>
             <div>
                 <?php if(count($g3) > 0):?>
@@ -772,10 +933,24 @@ if (!empty($item->paid_at)) {
                     <span class="bg-amber-100 p-1.5 rounded-full"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg></span>
                     Kategori 5: Duplikat Transaksi Lunas
                 </h2>
+                <button id="btn-fix-all-cat5" onclick="startMassiveFix('cat5','Kategori 5')" class="bg-emerald-600 hover:bg-emerald-700 text-white text-[11px] font-bold px-5 py-2.5 rounded-xl transition-colors shadow-sm flex items-center gap-2 whitespace-nowrap">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                    Perbaiki Semua Cat 5
+                </button>
             </div>
             <div class="bg-amber-50 border-y border-amber-100 px-6 py-4 text-sm">
                 <p><strong class="text-amber-800">Disebabkan oleh:</strong> Terdapat lebih dari 1 riwayat transaksi lunas untuk 1 tagihan periode yang persis sama.</p>
                 <p class="mt-1"><strong class="text-amber-800">Bukti Catatan:</strong> Kartu-kartu di bawah ini berdampingan untuk <strong class="underline">tagihan yang sama</strong>. Jika ada kartu berstatus <span class="bg-emerald-100 text-emerald-700 px-1 rounded text-xs font-bold">Legal</span> (Aksi User / Import), maka transaksi tersebut sah masuk. Anda bisa melakukan cross-check secara visual mengapa terjadi duplikasi (misal: satu dari gateway, satu lagi diinput user manual).</p>
+            </div>
+            <div id="progress-cat5" class="hidden px-6 py-4 bg-white border-b border-slate-100">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-sm font-bold text-slate-700" id="progress-label-cat5">Mempersiapkan...</span>
+                    <span class="text-sm font-bold text-emerald-600" id="progress-pct-cat5">0%</span>
+                </div>
+                <div class="w-full bg-slate-200 rounded-full h-3 overflow-hidden">
+                    <div id="progress-bar-cat5" class="bg-emerald-500 h-3 rounded-full transition-all duration-500 ease-out" style="width: 0%"></div>
+                </div>
+                <div class="mt-2 text-xs text-slate-500" id="progress-detail-cat5"></div>
             </div>
             <div>
                 <?php if(count($g6) > 0):?>
@@ -1029,6 +1204,91 @@ async function startMassiveFixCat2() {
         alert('Kesalahan jaringan: ' + err.message);
         btn.innerHTML = '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg> Perbaiki Semua Cat 2';
         btn.disabled = false;
+    }
+}
+
+async function startMassiveFix(cat, label) {
+    const btn = document.getElementById('btn-fix-all-' + cat);
+    const progressEl = document.getElementById('progress-' + cat);
+    const progressBar = document.getElementById('progress-bar-' + cat);
+    const progressLabel = document.getElementById('progress-label-' + cat);
+    const progressPct = document.getElementById('progress-pct-' + cat);
+    const progressDetail = document.getElementById('progress-detail-' + cat);
+    const origHtml = btn.innerHTML;
+    
+    btn.innerHTML = '<svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg> Menghitung...';
+    btn.disabled = true;
+    
+    try {
+        const countData = new FormData();
+        countData.append('action', 'count_' + cat);
+        const countRes = await fetch('audit_vps.php', { method: 'POST', body: countData });
+        const countJson = await countRes.json();
+        
+        if (!countJson.success || countJson.total === 0) {
+            alert('Tidak ada anomali ' + label + ' yang perlu diperbaiki.');
+            btn.innerHTML = origHtml; btn.disabled = false;
+            return;
+        }
+        
+        const total = countJson.total;
+        if (!confirm(
+            'MASSIVE BULK FIX \u2014 ' + label + '\n\n' +
+            'Total tagihan anomali: ' + total + ' bills\n' +
+            'Proses akan berjalan dalam batch @50 tagihan.\n\n' +
+            'Setiap batch memiliki snapshot rollback.\n' +
+            'Lanjutkan?'
+        )) {
+            btn.innerHTML = origHtml; btn.disabled = false;
+            return;
+        }
+        
+        progressEl.classList.remove('hidden');
+        btn.classList.add('hidden');
+        
+        let totalProcessed = 0, batchNum = 0, remaining = total;
+        
+        while (remaining > 0) {
+            batchNum++;
+            progressLabel.textContent = 'Batch ' + batchNum + ': Memproses ' + Math.min(50, remaining) + ' tagihan...';
+            
+            const batchData = new FormData();
+            batchData.append('action', 'fix_all_' + cat);
+            batchData.append('limit', '50');
+            
+            const batchRes = await fetch('audit_vps.php', { method: 'POST', body: batchData });
+            const batchJson = await batchRes.json();
+            
+            if (!batchJson.success) {
+                progressBar.classList.remove('bg-emerald-500');
+                progressBar.classList.add('bg-red-500');
+                progressLabel.textContent = 'Error pada Batch ' + batchNum + ': ' + batchJson.message;
+                progressDetail.innerHTML = '<button onclick="startMassiveFix(\'' + cat + '\',\'' + label + '\')" class="mt-2 bg-blue-600 text-white text-xs font-bold px-4 py-2 rounded-lg">Retry</button>';
+                return;
+            }
+            
+            totalProcessed += batchJson.processed;
+            remaining = batchJson.remaining;
+            
+            const pct = Math.round(((total - remaining) / total) * 100);
+            progressBar.style.width = pct + '%';
+            progressPct.textContent = pct + '%';
+            progressDetail.textContent = totalProcessed + ' / ' + total + ' tagihan selesai. Sisa: ' + remaining;
+            
+            if (batchJson.processed === 0) break;
+        }
+        
+        progressBar.style.width = '100%';
+        progressBar.classList.remove('bg-emerald-500');
+        progressBar.classList.add('bg-emerald-400');
+        progressPct.textContent = '100%';
+        progressLabel.textContent = 'Selesai! ' + totalProcessed + ' tagihan berhasil diperbaiki.';
+        progressDetail.textContent = 'Halaman akan dimuat ulang dalam 3 detik...';
+        setTimeout(() => { location.reload(); }, 3000);
+        
+    } catch (err) {
+        alert('Kesalahan jaringan: ' + err.message);
+        btn.innerHTML = origHtml; btn.disabled = false;
     }
 }
 
