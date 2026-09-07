@@ -244,7 +244,7 @@
                                         <input type="text" id="custom-search" class="form-control form-control-solid w-250px ps-12 fs-7" placeholder="Cari santri (min. 3 huruf)..." />
                                     </div>
             
-                                    <div class="w-200px">
+                                    <div class="dropdown">
                                         @php
                                             $groupedClasses = [
                                                 'Kelas 7' => [],
@@ -253,8 +253,7 @@
                                                 'Kelas 10' => [],
                                                 'Kelas 11' => [],
                                                 'Kelas 12' => [],
-                                                'Pondok' => [],
-                                                'Lainnya' => []
+                                                'Pondok' => []
                                             ];
                                             foreach($classrooms as $cls) {
                                                 $name = strtoupper(trim($cls->name));
@@ -264,22 +263,33 @@
                                                 elseif (str_starts_with($name, '10')) $groupedClasses['Kelas 10'][] = $cls;
                                                 elseif (str_starts_with($name, '11')) $groupedClasses['Kelas 11'][] = $cls;
                                                 elseif (str_starts_with($name, '12')) $groupedClasses['Kelas 12'][] = $cls;
-                                                elseif (str_starts_with($name, 'PONDOK')) $groupedClasses['Pondok'][] = $cls;
-                                                else $groupedClasses['Lainnya'][] = $cls;
+                                                else $groupedClasses['Pondok'][] = $cls; // Merge Pondok & Lainnya to keep exactly 7 columns
                                             }
                                         @endphp
-                                        <select id="filter-classroom" class="form-select form-select-solid fs-7" data-control="select2" data-placeholder="Semua Kelas">
-                                            <option value="">Semua Kelas</option>
-                                            @foreach($groupedClasses as $groupName => $classes)
-                                                @if(count($classes) > 0)
-                                                    <optgroup label="{{ $groupName }}">
-                                                        @foreach($classes as $cls)
-                                                            <option value="{{ $cls->id }}">{{ $cls->name }}</option>
-                                                        @endforeach
-                                                    </optgroup>
-                                                @endif
-                                            @endforeach
-                                        </select>
+                                        <button class="btn btn-light form-select-solid form-select-sm dropdown-toggle text-start rounded-[20px] fs-7" style="width: 250px; background-color: #f5f8fa; border-color: #f5f8fa; color: #5e6278;" type="button" id="penyesuaian_classroom_btn" data-bs-toggle="dropdown" aria-expanded="false" data-bs-auto-close="outside">
+                                            Semua Kelas
+                                        </button>
+                                        <input type="hidden" id="filter-classroom" value="">
+                                        <div class="dropdown-menu p-5 shadow-lg rounded-[20px]" style="min-width: 900px; border: 1px solid #e2e8f0; margin-top: 10px;" aria-labelledby="penyesuaian_classroom_btn">
+                                            <div class="mb-4 border-bottom pb-3 d-flex justify-content-between align-items-center">
+                                                <h6 class="fw-bolder m-0 text-slate-800">Filter Berdasarkan Kelas</h6>
+                                                <button class="btn btn-sm btn-light-primary py-2 px-4 rounded-[20px]" onclick="$('#filter-classroom').val('').trigger('change'); $('#penyesuaian_classroom_btn').text('Semua Kelas');">Reset Filter</button>
+                                            </div>
+                                            <div class="row flex-nowrap" style="overflow-x: auto;">
+                                                @foreach($groupedClasses as $groupName => $classes)
+                                                    @if(count($classes) > 0)
+                                                    <div class="col" style="min-width: 120px;">
+                                                        <div class="fw-bolder text-slate-800 mb-3 border-bottom pb-2 fs-7">{{ $groupName }}</div>
+                                                        <div class="d-flex flex-column gap-2">
+                                                            @foreach($classes as $cls)
+                                                            <a href="javascript:void(0)" class="text-slate-600 text-hover-primary fs-7 text-decoration-none penyesuaian-class-item fw-medium" data-id="{{ $cls->id }}" data-name="{{ $cls->name }}">{{ $cls->name }}</a>
+                                                            @endforeach
+                                                        </div>
+                                                    </div>
+                                                    @endif
+                                                @endforeach
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                                 
@@ -1135,6 +1145,15 @@
 
             $('#filter-classroom').on('change', function() {
                 adjustTable.ajax.reload();
+            });
+
+            $(document).on('click', '.penyesuaian-class-item', function() {
+                var id = $(this).data('id');
+                var name = $(this).data('name');
+                $('#filter-classroom').val(id).trigger('change');
+                $('#penyesuaian_classroom_btn').text(name);
+                var dropdownBtn = bootstrap.Dropdown.getInstance(document.getElementById('penyesuaian_classroom_btn')) || new bootstrap.Dropdown(document.getElementById('penyesuaian_classroom_btn'));
+                dropdownBtn.hide();
             });
 
             var searchTimer;
