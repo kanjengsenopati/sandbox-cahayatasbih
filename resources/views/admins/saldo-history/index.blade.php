@@ -255,8 +255,12 @@
                                                 'Kelas 12' => [],
                                                 'Pondok' => []
                                             ];
+                                            $excludeClasses = ['7CONTOH', 'KELASDEMO', 'USTADZ/USTADZAH'];
                                             foreach($classrooms as $cls) {
                                                 $name = strtoupper(trim($cls->name));
+                                                if (in_array($name, $excludeClasses)) {
+                                                    continue;
+                                                }
                                                 if (str_starts_with($name, '7')) $groupedClasses['Kelas 7'][] = $cls;
                                                 elseif (str_starts_with($name, '8')) $groupedClasses['Kelas 8'][] = $cls;
                                                 elseif (str_starts_with($name, '9')) $groupedClasses['Kelas 9'][] = $cls;
@@ -270,19 +274,19 @@
                                             Semua Kelas
                                         </button>
                                         <input type="hidden" id="filter-classroom" value="">
-                                        <div class="dropdown-menu p-5 shadow-lg rounded-[20px]" style="min-width: 900px; border: 1px solid #e2e8f0; margin-top: 10px;" aria-labelledby="penyesuaian_classroom_btn">
-                                            <div class="mb-4 border-bottom pb-3 d-flex justify-content-between align-items-center">
+                                        <div class="dropdown-menu p-4 shadow-lg rounded-[20px]" style="min-width: 850px; border: 1px solid #e2e8f0; margin-top: 5px;" aria-labelledby="penyesuaian_classroom_btn">
+                                            <div class="mb-3 border-bottom pb-2 d-flex justify-content-between align-items-center">
                                                 <h6 class="fw-bolder m-0 text-slate-800">Filter Berdasarkan Kelas</h6>
-                                                <button class="btn btn-sm btn-light-primary py-2 px-4 rounded-[20px]" onclick="$('#filter-classroom').val('').trigger('change'); $('#penyesuaian_classroom_btn').text('Semua Kelas');">Reset Filter</button>
+                                                <button class="btn btn-sm btn-light-primary py-1 px-3 rounded-[20px]" onclick="$('#filter-classroom').val('').trigger('change'); $('#penyesuaian_classroom_btn').text('Semua Kelas');">Reset Filter</button>
                                             </div>
                                             <div class="row flex-nowrap" style="overflow-x: auto;">
                                                 @foreach($groupedClasses as $groupName => $classes)
                                                     @if(count($classes) > 0)
-                                                    <div class="col" style="min-width: 120px;">
-                                                        <div class="fw-bolder text-slate-800 mb-3 border-bottom pb-2 fs-7">{{ $groupName }}</div>
-                                                        <div class="d-flex flex-column gap-2">
+                                                    <div class="col" style="min-width: 100px;">
+                                                        <div class="fw-bolder text-slate-800 mb-2 border-bottom pb-1 fs-7">{{ $groupName }}</div>
+                                                        <div class="d-flex flex-column gap-1">
                                                             @foreach($classes as $cls)
-                                                            <a href="javascript:void(0)" class="text-slate-600 text-hover-primary fs-7 text-decoration-none penyesuaian-class-item fw-medium" data-id="{{ $cls->id }}" data-name="{{ $cls->name }}">{{ $cls->name }}</a>
+                                                            <a href="javascript:void(0)" class="text-slate-600 text-hover-primary fs-7 text-decoration-none penyesuaian-class-item fw-medium py-1" data-id="{{ $cls->id }}" data-name="{{ $cls->name }}">{{ $cls->name }}</a>
                                                             @endforeach
                                                         </div>
                                                     </div>
