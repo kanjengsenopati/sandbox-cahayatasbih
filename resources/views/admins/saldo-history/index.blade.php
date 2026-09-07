@@ -1039,10 +1039,8 @@
                                 badgeClass = 'bg-light-danger text-danger';
                             } else if (row.status === 'GRADUATED') {
                                 badgeClass = 'bg-light-warning text-warning';
-                            } else if (row.status === 'TRANSFERRED') {
-                                badgeClass = 'bg-light-info text-info';
-                            } else if (row.status === 'DROPPED_OUT') {
-                                badgeClass = 'bg-light-secondary text-secondary';
+                            } else if (row.status === 'TRANSFERRED' || row.status === 'DROPPED_OUT') {
+                                badgeClass = 'bg-danger text-white fw-bolder';
                             }
 
                             return `
