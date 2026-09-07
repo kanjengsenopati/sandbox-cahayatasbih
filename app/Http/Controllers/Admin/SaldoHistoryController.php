@@ -292,6 +292,9 @@ class SaldoHistoryController extends Controller
                 ->editColumn('saldo', function ($student) {
                     return $student->saldo ?? 0;
                 })
+                ->addColumn('saldo_awal', function ($student) {
+                    return $student->latestSaldoHistory?->balance_before ?? $student->saldo ?? 0;
+                })
                 ->orderColumn('saldo', function ($query, $order) {
                     $query->orderBy('students.saldo', $order);
                 })

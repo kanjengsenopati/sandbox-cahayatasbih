@@ -1027,7 +1027,7 @@
                         }
                     },
                     {
-                        data: 'saldo',
+                        data: 'saldo_awal',
                         name: 'saldo',
                         defaultContent: 0,
                         orderable: true,

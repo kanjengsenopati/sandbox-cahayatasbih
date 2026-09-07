@@ -100,7 +100,7 @@ class Student extends Model
 
     public function latestSaldoHistory()
     {
-        return $this->hasOne(SaldoHistory::class)->latestOfMany();
+        return $this->hasOne(SaldoHistory::class)->latestOfMany('created_at');
     }
 
     public function pointOfSaleTransactions()
