@@ -245,10 +245,39 @@
                                     </div>
             
                                     <div class="w-200px">
-                                        <select id="filter-classroom" class="form-select form-select-solid fs-7">
+                                        @php
+                                            $groupedClasses = [
+                                                'Kelas 7' => [],
+                                                'Kelas 8' => [],
+                                                'Kelas 9' => [],
+                                                'Kelas 10' => [],
+                                                'Kelas 11' => [],
+                                                'Kelas 12' => [],
+                                                'Pondok' => [],
+                                                'Lainnya' => []
+                                            ];
+                                            foreach($classrooms as $cls) {
+                                                $name = strtoupper(trim($cls->name));
+                                                if (str_starts_with($name, '7')) $groupedClasses['Kelas 7'][] = $cls;
+                                                elseif (str_starts_with($name, '8')) $groupedClasses['Kelas 8'][] = $cls;
+                                                elseif (str_starts_with($name, '9')) $groupedClasses['Kelas 9'][] = $cls;
+                                                elseif (str_starts_with($name, '10')) $groupedClasses['Kelas 10'][] = $cls;
+                                                elseif (str_starts_with($name, '11')) $groupedClasses['Kelas 11'][] = $cls;
+                                                elseif (str_starts_with($name, '12')) $groupedClasses['Kelas 12'][] = $cls;
+                                                elseif (str_starts_with($name, 'PONDOK')) $groupedClasses['Pondok'][] = $cls;
+                                                else $groupedClasses['Lainnya'][] = $cls;
+                                            }
+                                        @endphp
+                                        <select id="filter-classroom" class="form-select form-select-solid fs-7" data-control="select2" data-placeholder="Semua Kelas">
                                             <option value="">Semua Kelas</option>
-                                            @foreach($classrooms as $cls)
-                                                <option value="{{ $cls->id }}">{{ $cls->name }}</option>
+                                            @foreach($groupedClasses as $groupName => $classes)
+                                                @if(count($classes) > 0)
+                                                    <optgroup label="{{ $groupName }}">
+                                                        @foreach($classes as $cls)
+                                                            <option value="{{ $cls->id }}">{{ $cls->name }}</option>
+                                                        @endforeach
+                                                    </optgroup>
+                                                @endif
                                             @endforeach
                                         </select>
                                     </div>
