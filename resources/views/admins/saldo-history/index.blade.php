@@ -244,7 +244,7 @@
                                         <input type="text" id="custom-search" class="form-control form-control-solid w-250px ps-12 fs-7" placeholder="Cari santri (min. 3 huruf)..." />
                                     </div>
             
-                                    <div class="dropdown">
+                                    <div class="dropdown" style="z-index: 105;">
                                         @php
                                             $groupedClasses = [
                                                 'Kelas 7' => [],
@@ -267,26 +267,26 @@
                                                 elseif (str_starts_with($name, '10')) $groupedClasses['Kelas 10'][] = $cls;
                                                 elseif (str_starts_with($name, '11')) $groupedClasses['Kelas 11'][] = $cls;
                                                 elseif (str_starts_with($name, '12')) $groupedClasses['Kelas 12'][] = $cls;
-                                                else $groupedClasses['Pondok'][] = $cls; // Merge Pondok & Lainnya to keep exactly 7 columns
+                                                else $groupedClasses['Pondok'][] = $cls;
                                             }
                                         @endphp
                                         <button class="btn btn-light form-select-solid form-select-sm dropdown-toggle text-start rounded-[20px] fs-7" style="width: 250px; background-color: #f5f8fa; border-color: #f5f8fa; color: #5e6278;" type="button" id="penyesuaian_classroom_btn" data-bs-toggle="dropdown" aria-expanded="false" data-bs-auto-close="outside">
                                             Semua Kelas
                                         </button>
                                         <input type="hidden" id="filter-classroom" value="">
-                                        <div class="dropdown-menu p-4 shadow-lg rounded-[20px]" style="min-width: 850px; border: 1px solid #e2e8f0; margin-top: 5px;" aria-labelledby="penyesuaian_classroom_btn">
+                                        <div class="dropdown-menu p-4 shadow-lg rounded-[20px]" style="min-width: 850px; border: 1px solid #e2e8f0; margin-top: 5px; z-index: 9999;" aria-labelledby="penyesuaian_classroom_btn">
                                             <div class="mb-3 border-bottom pb-2 d-flex justify-content-between align-items-center">
                                                 <h6 class="fw-bolder m-0 text-slate-800">Filter Berdasarkan Kelas</h6>
                                                 <button class="btn btn-sm btn-light-primary py-1 px-3 rounded-[20px]" onclick="$('#filter-classroom').val('').trigger('change'); $('#penyesuaian_classroom_btn').text('Semua Kelas');">Reset Filter</button>
                                             </div>
-                                            <div class="row flex-nowrap" style="overflow-x: auto;">
+                                            <div class="row flex-nowrap">
                                                 @foreach($groupedClasses as $groupName => $classes)
                                                     @if(count($classes) > 0)
                                                     <div class="col" style="min-width: 100px;">
                                                         <div class="fw-bolder text-slate-800 mb-2 border-bottom pb-1 fs-7">{{ $groupName }}</div>
                                                         <div class="d-flex flex-column gap-1">
                                                             @foreach($classes as $cls)
-                                                            <a href="javascript:void(0)" class="text-slate-600 text-hover-primary fs-7 text-decoration-none penyesuaian-class-item fw-medium py-1" data-id="{{ $cls->id }}" data-name="{{ $cls->name }}">{{ $cls->name }}</a>
+                                                            <a href="javascript:void(0)" class="text-slate-600 text-hover-primary fs-7 text-decoration-none penyesuaian-class-item fw-medium py-1 d-block w-100" style="position: relative; z-index: 10000;" data-id="{{ $cls->id }}" data-name="{{ $cls->name }}">{{ $cls->name }}</a>
                                                             @endforeach
                                                         </div>
                                                     </div>
