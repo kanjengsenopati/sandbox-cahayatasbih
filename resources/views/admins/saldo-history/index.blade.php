@@ -536,9 +536,16 @@
     }
 
     function recalculateSaldo(rowId) {
-        var baseSaldo = parseInt($('#saldo-awal-' + rowId).attr('data-saldo')) || 0;
-        var type = $('#type-' + rowId).val();
         var amount = parseAmountStr($('#amount-' + rowId).val());
+
+        // Jangan overwrite tampilan Saldo Sekarang jika belum ada nominal yang diinput
+        if (amount <= 0) {
+            return;
+        }
+
+        // Gunakan saldo sekarang (aktual) sebagai basis kalkulasi, bukan saldo awal
+        var baseSaldo = parseInt($('#saldo-sekarang-' + rowId).attr('data-saldo')) || 0;
+        var type = $('#type-' + rowId).val();
         
         var newSaldo = baseSaldo;
         if (type === 'IN') {
@@ -697,6 +704,15 @@
                     awalBadge.attr('class', 'badge bg-light-primary text-primary fw-bolder fs-7 mb-1');
                 }
 
+                // Update Saldo Sekarang badge dengan nilai baru
+                var sekarangBadge = $('#saldo-sekarang-' + rowId);
+                sekarangBadge.attr('data-saldo', newSaldo).text('Rp ' + formatRupiahVal(newSaldo));
+                if (newSaldo < 0) {
+                    sekarangBadge.attr('class', 'badge bg-danger text-white fw-bolder px-3 py-2 fs-7 mb-1');
+                } else {
+                    sekarangBadge.attr('class', 'badge bg-light-success text-success fw-bolder fs-7 mb-1');
+                }
+
                 if (resData.updated_date && resData.updated_time) {
                     $('#date-awal-' + rowId).text(resData.updated_date);
                     $('#time-awal-' + rowId).text(resData.updated_time);
@@ -706,7 +722,6 @@
                 
                 $('#amount-' + rowId).val('');
                 $('#desc-' + rowId).val('');
-                recalculateSaldo(rowId);
                 
                 // Synchronize tables
                 reloadAllSaldoTables();
@@ -1110,7 +1125,7 @@
 
                             return `
                                 <div class="d-flex flex-column align-items-start">
-                                    <span class="badge ${badgeClass}" id="saldo-sekarang-${row.id}">Rp ${formatted}</span>
+                                    <span class="badge ${badgeClass}" id="saldo-sekarang-${row.id}" data-saldo="${val}">Rp ${formatted}</span>
                                     <span class="text-slate-400 fst-italic mt-1" style="font-size: 11px; line-height: 1.3; color: #94a3b8;" id="date-sekarang-${row.id}">${dateInfo}</span>
                                     <span class="text-slate-400 fst-italic" style="font-size: 11px; line-height: 1.3; color: #94a3b8;" id="time-sekarang-${row.id}">${timeInfo}</span>
                                 </div>
