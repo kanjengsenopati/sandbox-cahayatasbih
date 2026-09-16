@@ -53,15 +53,27 @@ jobs:
             chown -R www:www /www/wwwroot/sim.cahayatasbih.or.id
             chmod -R 775 bootstrap/cache storage
 
-            echo "=== CHECKING FILE ON VPS ==="
-            ls -la /www/wwwroot/sim.cahayatasbih.or.id/resources/views/admins/auth/login.blade.php || true
-            grep -n "onkeydown" /www/wwwroot/sim.cahayatasbih.or.id/resources/views/admins/auth/login.blade.php || echo "NOT IN FILE ON VPS"
+            echo "=== VPS LOCAL CURL TEST ==="
+            curl -s -k http://127.0.0.1/login -H "Host: sim.cahayatasbih.or.id" | grep -n "onkeydown" || echo "LOCAL CURL NO ONKEYDOWN"
 
-            echo "=== NGINX VHOST CONFIG FOR SIM ==="
-            cat /www/server/panel/vhost/nginx/sim.cahayatasbih.or.id.conf 2>/dev/null \
-              || cat /www/server/nginx/conf/vhost/sim.cahayatasbih.or.id.conf 2>/dev/null \
-              || cat /etc/nginx/sites-enabled/*sim* 2>/dev/null \
-              || echo "VHOST config not found in standard paths"
+            echo "=== NGINX REWRITE CONFIG ==="
+            cat /www/server/panel/vhost/rewrite/sim.cahayatasbih.or.id.conf 2>/dev/null || echo "No rewrite config"
+
+            echo "=== ALL NGINX VHOST SITES ==="
+            ls -la /www/server/panel/vhost/nginx/ 2>/dev/null || ls -la /etc/nginx/sites-enabled/ 2>/dev/null || true
+
+            echo "=== CHECKING PHP-FPM PROCESSES & SERVICES ==="
+            ps aux | grep -i "php-fpm" | head -n 10 || true
+            ls -la /etc/init.d/php* 2>/dev/null || true
+
+            echo "=== RELOADING PHP-FPM ==="
+            /etc/init.d/php-fpm-84 reload || /etc/init.d/php-fpm-84 restart || systemctl restart php-fpm-84 || pkill -USR2 -f "php-fpm: master" || true
+
+            echo "=== RE-CHECKING LOCAL CURL AFTER RELOAD ==="
+            curl -s -k http://127.0.0.1/login -H "Host: sim.cahayatasbih.or.id" | grep -n "onkeydown" || echo "AFTER RELOAD STILL NO ONKEYDOWN"
+
+            echo "=== NGINX ACCESS LOG (LAST 10 REQUESTS) ==="
+            tail -n 10 /www/wwwlogs/sim.cahayatasbih.or.id.log 2>/dev/null || echo "No access log found"
 
 
 
