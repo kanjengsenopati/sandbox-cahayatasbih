@@ -60,11 +60,7 @@ jobs:
             cat /www/server/panel/vhost/rewrite/sandbox.cahayatasbih.or.id.conf || true
 
             echo "=== CONFIGURING SIM NGINX REWRITE ==="
-            cat << 'EOF' > /www/server/panel/vhost/rewrite/sim.cahayatasbih.or.id.conf
-location / {
-    try_files $uri $uri/ /index.php?$query_string;
-}
-EOF
+            printf 'location / {\n    try_files $uri $uri/ /index.php?$query_string;\n}\n' > /www/server/panel/vhost/rewrite/sim.cahayatasbih.or.id.conf
 
             echo "=== CONFIGURING SIM NGINX VHOST ROOT TO /public ==="
             sed -i 's|root /www/wwwroot/sim.cahayatasbih.or.id;|root /www/wwwroot/sim.cahayatasbih.or.id/public;|g' /www/server/panel/vhost/nginx/sim.cahayatasbih.or.id.conf
