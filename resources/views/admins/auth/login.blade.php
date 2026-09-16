@@ -101,8 +101,9 @@
                             <!--end::Label-->
                             <!--begin::Input-->
                             <input class="form-control form-control-lg form-control-solid" type="email"
-                                placeholder="Masukkan Email Yang Terdaftar" name="email" autocomplete="off"
-                                value="{{ old('email') }}" />
+                                placeholder="Masukkan Email Yang Terdaftar" id="email" name="email" autocomplete="off"
+                                value="{{ old('email') }}"
+                                onkeydown="if(event.key==='Enter'){event.preventDefault();var p=document.getElementById('password');if(p){p.focus();p.select();}}" />
                             <!--end::Input-->
                         </div>
                         <!--end::Input group-->

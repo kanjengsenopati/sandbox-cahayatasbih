@@ -30,9 +30,16 @@ jobs:
           key: ${{ secrets.VPS_SSH_KEY }}
           script: |
             cd /www/wwwroot/sim.cahayatasbih.or.id
+            mkdir -p bootstrap/cache storage/framework/sessions storage/framework/views storage/framework/cache
+            chmod -R 777 bootstrap/cache storage
+            php artisan optimize:clear || true
+            php artisan view:clear || rm -rf storage/framework/views/* || true
             composer install --no-dev --optimize-autoloader
             php artisan migrate --force
             php artisan config:cache
             php artisan route:cache
             php artisan view:cache
             chown -R www:www /www/wwwroot/sim.cahayatasbih.or.id
+            chmod -R 775 bootstrap/cache storage
+            pkill -USR2 -u www php-fpm || systemctl reload php-fpm || systemctl reload php8.3-fpm || /etc/init.d/php-fpm reload || true
+

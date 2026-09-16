@@ -29,7 +29,7 @@
                     <div class="absolute inset-y-0 left-0 pl-5 flex items-center text-slate-400">
                         <i class="fas fa-phone-alt"></i>
                     </div>
-                    <input type="number" name="phone" value="{{ old('phone') }}" class="input-premium pl-12" placeholder="08xxxxxx" required>
+                    <input type="number" name="phone" value="{{ old('phone') }}" class="input-premium pl-12" placeholder="08xxxxxx" required onkeydown="if(event.key==='Enter'){event.preventDefault();var p=document.getElementById('password');if(p){p.focus();p.select();}}">
                 </div>
             </div>
 
