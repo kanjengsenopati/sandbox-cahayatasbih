@@ -53,11 +53,15 @@ jobs:
             chown -R www:www /www/wwwroot/sim.cahayatasbih.or.id
             chmod -R 775 bootstrap/cache storage
 
-            systemctl restart php-fpm-84 2>/dev/null \
-              || service php-fpm-84 restart 2>/dev/null \
-              || /etc/init.d/php-fpm-84 restart 2>/dev/null \
-              || systemctl reload php-fpm 2>/dev/null \
-              || pkill -USR2 -f "php-fpm" 2>/dev/null \
-              || true
+            echo "=== CHECKING FILE ON VPS ==="
+            ls -la /www/wwwroot/sim.cahayatasbih.or.id/resources/views/admins/auth/login.blade.php || true
+            grep -n "onkeydown" /www/wwwroot/sim.cahayatasbih.or.id/resources/views/admins/auth/login.blade.php || echo "NOT IN FILE ON VPS"
+
+            echo "=== NGINX VHOST CONFIG FOR SIM ==="
+            cat /www/server/panel/vhost/nginx/sim.cahayatasbih.or.id.conf 2>/dev/null \
+              || cat /www/server/nginx/conf/vhost/sim.cahayatasbih.or.id.conf 2>/dev/null \
+              || cat /etc/nginx/sites-enabled/*sim* 2>/dev/null \
+              || echo "VHOST config not found in standard paths"
+
 
 
