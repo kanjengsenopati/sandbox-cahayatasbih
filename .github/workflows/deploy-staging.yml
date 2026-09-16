@@ -20,7 +20,7 @@ jobs:
           REMOTE_HOST: ${{ secrets.VPS_HOST }}
           REMOTE_USER: ${{ secrets.VPS_USER }}
           TARGET: "/www/wwwroot/sim.cahayatasbih.or.id"
-          EXCLUDE: "/.git/, /.github/, /node_modules/, /vendor/, /.env, /storage/"
+          EXCLUDE: "/.git/, /.github/, /node_modules/, /vendor/, /.env, /storage/, /public/.user.ini"
 
       - name: Run Post-Deploy Commands on VPS
         uses: appleboy/ssh-action@v1.0.3
