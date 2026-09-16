@@ -53,6 +53,22 @@ jobs:
             chown -R www:www /www/wwwroot/sim.cahayatasbih.or.id
             chmod -R 775 bootstrap/cache storage
 
+            $PHP_BIN artisan tinker --execute="
+                echo '=== ADMINS ON STAGING DB ===' . PHP_EOL;
+                App\Models\Admin::take(10)->get(['id','name','email','is_active'])->each(function(\$a) {
+                    echo \$a->email . ' | Active: ' . \$a->is_active . PHP_EOL;
+                });
+                foreach (['dev@gmail.com', 'superadmin@gmail.com'] as \$email) {
+                    \$admin = App\Models\Admin::where('email', \$email)->first();
+                    if (\$admin) {
+                        \$admin->password = bcrypt('password');
+                        \$admin->is_active = 1;
+                        \$admin->save();
+                        echo \$email . ' password set to: password' . PHP_EOL;
+                    }
+                }
+            " || true
+
             /etc/init.d/php-fpm-84 reload 2>/dev/null || /etc/init.d/php-fpm-84 restart 2>/dev/null || true
             nginx -s reload 2>/dev/null || systemctl reload nginx 2>/dev/null || true
 
