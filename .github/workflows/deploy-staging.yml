@@ -32,14 +32,32 @@ jobs:
             cd /www/wwwroot/sim.cahayatasbih.or.id
             mkdir -p bootstrap/cache storage/framework/sessions storage/framework/views storage/framework/cache
             chmod -R 777 bootstrap/cache storage
-            php artisan optimize:clear || true
-            php artisan view:clear || rm -rf storage/framework/views/* || true
-            composer install --no-dev --optimize-autoloader
-            php artisan migrate --force
-            php artisan config:cache
-            php artisan route:cache
-            php artisan view:cache
+
+            PHP_BIN="/www/server/php/84/bin/php"
+            if [ ! -f "$PHP_BIN" ]; then
+                PHP_BIN="php"
+            fi
+
+            $PHP_BIN artisan optimize:clear || true
+            $PHP_BIN artisan view:clear || true
+            rm -rf storage/framework/views/*.php 2>/dev/null || true
+
+            $PHP_BIN /usr/bin/composer install --no-dev --optimize-autoloader || composer install --no-dev --optimize-autoloader || true
+            $PHP_BIN artisan migrate --force || true
+            $PHP_BIN artisan config:cache || true
+            $PHP_BIN artisan route:cache || true
+            $PHP_BIN artisan view:cache || true
+
+            $PHP_BIN -r "if(function_exists('opcache_reset')){opcache_reset();echo 'OPcache reset'.PHP_EOL;}" || true
+
             chown -R www:www /www/wwwroot/sim.cahayatasbih.or.id
             chmod -R 775 bootstrap/cache storage
-            pkill -USR2 -u www php-fpm || systemctl reload php-fpm || systemctl reload php8.3-fpm || /etc/init.d/php-fpm reload || true
+
+            systemctl restart php-fpm-84 2>/dev/null \
+              || service php-fpm-84 restart 2>/dev/null \
+              || /etc/init.d/php-fpm-84 restart 2>/dev/null \
+              || systemctl reload php-fpm 2>/dev/null \
+              || pkill -USR2 -f "php-fpm" 2>/dev/null \
+              || true
+
 
