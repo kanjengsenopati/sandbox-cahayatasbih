@@ -88,12 +88,20 @@ jobs:
             echo "=== RELOADING NGINX ==="
             nginx -s reload || /www/server/nginx/sbin/nginx -s reload || systemctl reload nginx || /etc/init.d/nginx reload || true
 
-            echo "=== RELOADING PHP-FPM ==="
-            /etc/init.d/php-fpm-84 reload || /etc/init.d/php-fpm-84 restart || true
+            echo "=== CURRENT SIM NGINX VHOST ==="
+            cat /www/server/panel/vhost/nginx/sim.cahayatasbih.or.id.conf || true
 
-            echo "=== TESTING LOCAL HTTP & HTTPS CURL ON VPS ==="
-            curl -s -k http://127.0.0.1/login -H "Host: sim.cahayatasbih.or.id" | grep -n "onkeydown" || echo "HTTP STILL NO ONKEYDOWN"
-            curl -s -k https://127.0.0.1/login -H "Host: sim.cahayatasbih.or.id" | grep -n "onkeydown" || echo "HTTPS STILL NO ONKEYDOWN"
+            echo "=== CURRENT SIM REWRITE ==="
+            cat /www/server/panel/vhost/rewrite/sim.cahayatasbih.or.id.conf || true
+
+            echo "=== SIM NGINX ERROR LOG ==="
+            tail -n 30 /www/wwwlogs/sim.cahayatasbih.or.id.error.log 2>/dev/null || true
+
+            echo "=== LOCAL CURL -i OUTPUT ==="
+            curl -iv -k https://127.0.0.1/login -H "Host: sim.cahayatasbih.or.id" 2>&1 | head -n 40 || true
+
+            echo "=== CHECKING public/index.php ==="
+            ls -la /www/wwwroot/sim.cahayatasbih.or.id/public/index.php || true
 
 
 
