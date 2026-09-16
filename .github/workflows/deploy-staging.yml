@@ -53,11 +53,14 @@ jobs:
             chown -R www:www /www/wwwroot/sim.cahayatasbih.or.id
             chmod -R 775 bootstrap/cache storage
 
-            echo "=== VPS LOCAL CURL TEST ==="
-            curl -s -k http://127.0.0.1/login -H "Host: sim.cahayatasbih.or.id" | grep -n "onkeydown" || echo "LOCAL CURL NO ONKEYDOWN"
+            echo "=== SIM VHOST ==="
+            cat /www/server/panel/vhost/nginx/sim.cahayatasbih.or.id.conf || true
 
-            echo "=== NGINX REWRITE CONFIG ==="
-            cat /www/server/panel/vhost/rewrite/sim.cahayatasbih.or.id.conf 2>/dev/null || echo "No rewrite config"
+            echo "=== CAHAYATASBIH VHOST ==="
+            cat /www/server/panel/vhost/nginx/cahayatasbih.or.id.conf || true
+
+            echo "=== SANDBOX VHOST ==="
+            cat /www/server/panel/vhost/nginx/sandbox.cahayatasbih.or.id.conf || true
 
             echo "=== ALL NGINX VHOST SITES ==="
             ls -la /www/server/panel/vhost/nginx/ 2>/dev/null || ls -la /etc/nginx/sites-enabled/ 2>/dev/null || true
