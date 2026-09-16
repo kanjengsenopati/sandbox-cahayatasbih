@@ -359,8 +359,9 @@ class BillController extends Controller
     {
         $proof = $transaction->activeProof ?? $transaction->transactionProofs->first();
         $proofUrl = $proof?->proof_image_url ?? $proof?->proof_image;
-        if (!$proofUrl) return '-';
-        return "<img src='{$proofUrl}' class='img-fluid img-thumbnail cursor-pointer view-proof-image' data-src='{$proofUrl}' style='max-width: 80px; height: auto; border-radius: 8px;'>";
+        if (!$proofUrl) return '<span class="text-muted fs-8 fst-italic">-</span>';
+        $fallbackSvg = "data:image/svg+xml,%3Csvg xmlns=\\'http://www.w3.org/2000/svg\\' viewBox=\\'0 0 100 100\\'%3E%3Crect width=\\'100\\' height=\\'100\\' fill=\\'%23f1f5f9\\'/%3E%3Ctext x=\\'50%25\\' y=\\'50%25\\' dominant-baseline=\\'middle\\' text-anchor=\\'middle\\' font-family=\\'sans-serif\\' font-size=\\'11\\' fill=\\'%2394a3b8\\'%3ETidak Ada%3C/text%3E%3C/svg%3E";
+        return "<img src='{$proofUrl}' class='img-fluid img-thumbnail cursor-pointer view-proof-image shadow-sm' data-src='{$proofUrl}' onerror=\"this.onerror=null; this.src='{$fallbackSvg}';\" style='max-width: 80px; height: auto; border-radius: 8px;' alt='Bukti Transfer' title='Klik untuk melihat bukti'>";
     }
 
     private function formatStatusColumn($transaction)
@@ -700,25 +701,20 @@ class BillController extends Controller
         $lockKey = "student_transaction_{$studentId}";
 
         // COBA DAPATKAN KUNCI (ATOMIC)
-        // block(0) artinya: Coba lock, jika gagal langsung return false (jangan tunggu).
-        // owner: method ini memegang kunci selama 5 menit (300 detik) jika terjadi crash.
-        $lock = Cache::lock($lockKey, 300);
+        // Kunci selama 15 detik (bukan 300 detik) untuk mencegah deadlock kasir
+        $lock = Cache::lock($lockKey, 15);
 
         if (!$lock->get()) {
             return redirect()->back()->with('error', 'Transaksi sedang diproses, mohon tunggu sebentar.');
         }
 
-        // --- MULAI AREA AMAN ---
-        // CATATAN: DB::beginTransaction dihapus karena TransactionService::createTransaction
-        // sudah menggunakan DB::transaction() secara internal.
-        // Nested manual beginTransaction + DB::transaction bisa menyebabkan partial rollback.
         try {
             $paymentMethodType = $request->payment_method;
 
-            // Validasi Logika Bisnis Tambahan (Double Check Database)
-            foreach ($request->bill_ids as $billId) {
-                $isPaid = Bill::where('id', $billId)->where('status', 'PAID')->exists();
-                if ($isPaid) throw new Exception("Tagihan dengan ID {$billId} sudah lunas");
+            // Validasi Logika Bisnis Tambahan: 1 Query Batching (Mencegah N+1 Loop)
+            $alreadyPaidCount = Bill::whereIn('id', $request->bill_ids)->where('status', Bill::STATUS_PAID)->count();
+            if ($alreadyPaidCount > 0) {
+                throw new Exception("Sebagian tagihan yang dipilih sudah berstatus lunas. Silakan muat ulang halaman.");
             }
 
             // createTransaction menggunakan DB::transaction internal — ACID terjaga
@@ -729,9 +725,6 @@ class BillController extends Controller
                 TransactionService::dispatchNotifications($transaction);
             }
 
-            // Lepas kunci agar user bisa transaksi lagi
-            $lock->release();
-
             // Invalidate sync cache agar job dipicu lagi saat santri buka tagihan
             Cache::forget("student_bills_synced_{$studentId}");
 
@@ -740,10 +733,10 @@ class BillController extends Controller
         } catch (\Throwable $th) {
             Log::error($th);
 
-            // Lepas kunci jika error, supaya user tidak terkunci 5 menit
-            $lock->release();
-
             return redirect()->back()->with('error', "Transaksi pembayaran gagal: " . $th->getMessage());
+        } finally {
+            // Selalu lepas kunci di blok finally agar kasir tidak pernah terkunci
+            optional($lock)->release();
         }
     }
 

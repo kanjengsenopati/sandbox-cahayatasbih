@@ -194,7 +194,8 @@ class SaldoHistoryController extends Controller
                     $proof = $transaction->activeProof ?? $transaction->transactionProofs->first();
                     $proofUrl = $proof?->proof_image_url ?? $proof?->proof_image;
                     if (!$proofUrl) return '<span class="text-muted fs-8 fst-italic">Belum upload</span>';
-                    return "<img src='{$proofUrl}' class='img-fluid img-thumbnail cursor-pointer view-proof-image shadow-sm' data-src='{$proofUrl}' style='max-width: 75px; max-height: 75px; object-fit: cover; border-radius: 8px;' alt='Bukti Transfer' title='Klik untuk melihat bukti full'>";
+                    $fallbackSvg = "data:image/svg+xml,%3Csvg xmlns=\\'http://www.w3.org/2000/svg\\' viewBox=\\'0 0 100 100\\'%3E%3Crect width=\\'100\\' height=\\'100\\' fill=\\'%23f1f5f9\\'/%3E%3Ctext x=\\'50%25\\' y=\\'50%25\\' dominant-baseline=\\'middle\\' text-anchor=\\'middle\\' font-family=\\'sans-serif\\' font-size=\\'11\\' fill=\\'%2394a3b8\\'%3ETidak Ada%3C/text%3E%3C/svg%3E";
+                    return "<img src='{$proofUrl}' class='img-fluid img-thumbnail cursor-pointer view-proof-image shadow-sm' data-src='{$proofUrl}' onerror=\"this.onerror=null; this.src='{$fallbackSvg}';\" style='max-width: 75px; max-height: 75px; object-fit: cover; border-radius: 8px;' alt='Bukti Transfer' title='Klik untuk melihat bukti full'>";
                 })
                 ->editColumn('pay_amount', function ($transaction) {
                     return '<span class="badge bg-light-success text-success fw-bolder fs-6 px-3 py-2">Rp ' . number_format($transaction->pay_amount ?? 0, 0, ',', '.') . '</span>';

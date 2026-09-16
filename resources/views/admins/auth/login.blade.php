@@ -265,6 +265,27 @@
                         }
                     });
                 });
+
+                // Enter key handling: Enter on email focuses password, Enter on password submits
+                var emailInput = form.querySelector('input[name="email"]');
+                var passwordInput = form.querySelector('input[name="password"]');
+
+                if (emailInput && passwordInput) {
+                    emailInput.addEventListener('keydown', function(e) {
+                        if (e.key === 'Enter') {
+                            e.preventDefault();
+                            passwordInput.focus();
+                            passwordInput.select();
+                        }
+                    });
+
+                    passwordInput.addEventListener('keydown', function(e) {
+                        if (e.key === 'Enter') {
+                            e.preventDefault();
+                            submitButton.click();
+                        }
+                    });
+                }
             }
 
             // Public functions

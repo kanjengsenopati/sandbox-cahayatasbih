@@ -64,7 +64,12 @@ class TransactionService
                         }
                     }
                     if ($bill) {
-                        $paidVal = $detail->amount ?? $bill->remaining_amount;
+                        $paidVal = ($detail->amount !== null && $detail->amount > 0)
+                            ? intval(preg_replace('/[^0-9]/', '', (string)$detail->amount))
+                            : $bill->remaining_amount;
+                        if ((!$detail->amount || $detail->amount <= 0) && $paidVal > 0) {
+                            $detail->update(['amount' => $paidVal]);
+                        }
                         $bill->paid_amount = min($bill->amount, $bill->paid_amount + $paidVal);
                         if ($bill->paid_amount >= $bill->amount) {
                             $bill->status = Bill::STATUS_PAID;
@@ -86,11 +91,16 @@ class TransactionService
                         ->exists();
 
                     if (!$exists) {
-                        $customAmount = isset($customAmounts[$billId]) ? intval($customAmounts[$billId]) : null;
+                        $rawCustom = $customAmounts[$billId] ?? null;
+                        $customAmount = $rawCustom !== null ? intval(preg_replace('/[^0-9]/', '', (string)$rawCustom)) : null;
+                        $billObj = Bill::withTrashed()->find($realBillId);
+                        $amountToSave = ($customAmount !== null && $customAmount > 0)
+                            ? $customAmount
+                            : ($billObj ? max(0, $billObj->amount - $billObj->paid_amount) : 0);
                         TransactionDetail::create([
                             'transaction_id' => $transaction->id,
                             'bill_id' => $realBillId,
-                            'amount' => $customAmount,
+                            'amount' => $amountToSave,
                         ]);
                     }
                 }
@@ -107,7 +117,12 @@ class TransactionService
                         }
                     }
                     if ($bill) {
-                        $paidVal = $detail->amount ?? $bill->remaining_amount;
+                        $paidVal = ($detail->amount !== null && $detail->amount > 0)
+                            ? intval(preg_replace('/[^0-9]/', '', (string)$detail->amount))
+                            : $bill->remaining_amount;
+                        if ((!$detail->amount || $detail->amount <= 0) && $paidVal > 0) {
+                            $detail->update(['amount' => $paidVal]);
+                        }
                         $bill->paid_amount = min($bill->amount, $bill->paid_amount + $paidVal);
                         if ($bill->paid_amount >= $bill->amount) {
                             $bill->status = Bill::STATUS_PAID;
@@ -164,11 +179,16 @@ class TransactionService
         // Hitung saldo sebelum transaksi
         $balanceBefore = $student->saldo;
 
-        // Kurangi saldo siswa dengan jumlah pembayaran
-        $student->update([
-            'saldo' => $student->saldo - $pay_amount
-        ]);
+        // Kurangi saldo siswa secara atomic dengan guard saldo mencukupi (mencegah saldo minus)
+        $affected = Student::where('id', $student->id)
+            ->where('saldo', '>=', $pay_amount)
+            ->decrement('saldo', $pay_amount);
 
+        if ($affected === 0) {
+            throw new \Exception('Maaf, Saldo Santri tidak mencukupi untuk pembayaran tagihan ini.');
+        }
+
+        $student->refresh();
         // Hitung saldo setelah transaksi
         $balanceAfter = $student->saldo;
 
@@ -203,10 +223,15 @@ class TransactionService
                 if ($detail) {
                     $detail->update(['saldo_history_id' => $saldoHistory->id]);
                 } else {
-                    $customAmount = isset($customAmounts[$billId]) ? intval($customAmounts[$billId]) : null;
+                    $rawCustom = $customAmounts[$billId] ?? null;
+                    $customAmount = $rawCustom !== null ? intval(preg_replace('/[^0-9]/', '', (string)$rawCustom)) : null;
+                    $billObj = Bill::withTrashed()->find($realBillId);
+                    $amountToSave = ($customAmount !== null && $customAmount > 0)
+                        ? $customAmount
+                        : ($billObj ? max(0, $billObj->amount - $billObj->paid_amount) : 0);
                     $transaction->transactionDetails()->create([
                         'bill_id' => $realBillId,
-                        'amount' => $customAmount,
+                        'amount' => $amountToSave,
                         'saldo_history_id' => $saldoHistory->id,
                     ]);
                 }
@@ -245,9 +270,14 @@ class TransactionService
                     $transactionCount = Transaction::whereDate('created_at', now())->count();
                     $paymentCode = 'CHT-' . now()->format('Ymd') . str_pad($transactionCount + 1, 3, '0', STR_PAD_LEFT);
                     if ($request->custom_amounts) {
-                        $pay_amount = array_sum($request->custom_amounts);
+                        $cleanCustomAmounts = [];
+                        foreach ($request->custom_amounts as $bId => $cVal) {
+                            $cleanCustomAmounts[$bId] = intval(preg_replace('/[^0-9]/', '', (string)$cVal));
+                        }
+                        $pay_amount = array_sum($cleanCustomAmounts);
                     } else {
-                        $pay_amount = $request->bill_ids != null ? self::getTotalPayAmount($request->bill_ids, $request->student_id) : $request->amount;
+                        $rawAmount = $request->bill_ids != null ? self::getTotalPayAmount($request->bill_ids, $request->student_id) : $request->amount;
+                        $pay_amount = intval(preg_replace('/[^0-9]/', '', (string)$rawAmount));
                     }
 
                     $transactionData = [
@@ -294,14 +324,39 @@ class TransactionService
                     if (($type ?? Transaction::TYPE_BILL) == Transaction::TYPE_BILL && $request->bill_ids) {
                         $customAmounts = $request->custom_amounts ?? [];
                         $studentId = $request->student_id ?? $transaction->student_id;
-                        foreach ($request->bill_ids as $billId) {
-                            $realBillId = self::ensureBillRecord($studentId, $billId);
-                            $customAmount = isset($customAmounts[$billId]) ? intval($customAmounts[$billId]) : null;
-                            TransactionDetail::create([
+
+                        // Batch preload: petakan ID asli dan muat seluruh data tagihan dalam 1 query
+                        $rawBillIds = $request->bill_ids;
+                        $realBillMap = [];
+                        foreach ($rawBillIds as $bId) {
+                            $realBillMap[$bId] = self::ensureBillRecord($studentId, $bId);
+                        }
+
+                        $existingBills = Bill::withTrashed()->whereIn('id', array_values($realBillMap))->get()->keyBy('id');
+
+                        $detailsToInsert = [];
+                        $now = now();
+                        foreach ($rawBillIds as $billId) {
+                            $realBillId = $realBillMap[$billId];
+                            $rawCustom = $customAmounts[$billId] ?? null;
+                            $customAmount = $rawCustom !== null ? intval(preg_replace('/[^0-9]/', '', (string)$rawCustom)) : null;
+                            $billObj = $existingBills->get($realBillId);
+                            $amountToSave = ($customAmount !== null && $customAmount > 0)
+                                ? $customAmount
+                                : ($billObj ? max(0, $billObj->amount - $billObj->paid_amount) : 0);
+
+                            $detailsToInsert[] = [
+                                'id' => \Illuminate\Support\Str::uuid()->toString(),
                                 'transaction_id' => $transaction->id,
                                 'bill_id' => $realBillId,
-                                'amount' => $customAmount,
-                            ]);
+                                'amount' => $amountToSave,
+                                'created_at' => $now,
+                                'updated_at' => $now,
+                            ];
+                        }
+
+                        if (!empty($detailsToInsert)) {
+                            TransactionDetail::insert($detailsToInsert);
                         }
                     }
 
@@ -552,7 +607,12 @@ class TransactionService
                             }
                         }
                         if ($bill) {
-                            $paidVal = $detail->amount ?? $bill->remaining_amount;
+                            $paidVal = ($detail->amount !== null && $detail->amount > 0)
+                                ? intval(preg_replace('/[^0-9]/', '', (string)$detail->amount))
+                                : $bill->remaining_amount;
+                            if ((!$detail->amount || $detail->amount <= 0) && $paidVal > 0) {
+                                $detail->update(['amount' => $paidVal]);
+                            }
                             $bill->paid_amount = min($bill->amount, $bill->paid_amount + $paidVal);
                             if ($bill->paid_amount >= $bill->amount) {
                                 $bill->status = Bill::STATUS_PAID;
@@ -917,9 +977,28 @@ class TransactionService
                             }
                         }
 
+                        // Jika bill sudah di-soft-delete, relink ke tagihan aktif yang sepadan
+                        if ($bill && $bill->trashed()) {
+                            $activeReplacement = Bill::where('student_id', $studentId)
+                                ->where('bill_type_id', $bill->bill_type_id)
+                                ->where('academic_year_id', $bill->academic_year_id)
+                                ->where('month', $bill->month)
+                                ->whereNull('deleted_at')
+                                ->first();
+
+                            if ($activeReplacement) {
+                                $detail->update(['bill_id' => $activeReplacement->id]);
+                                $bill = $activeReplacement;
+                            }
+                        }
+
                         if ($bill && $bill->status !== Bill::STATUS_PAID) {
-                            $detailAmount = intval($detail->amount ?? 0);
-                            $paidVal = $detailAmount > 0 ? $detailAmount : ($bill->amount > 0 ? $bill->amount : 10000);
+                            $rawDetailAmount = $detail->amount ?? 0;
+                            $detailAmount = intval(preg_replace('/[^0-9]/', '', (string)$rawDetailAmount));
+                            $paidVal = $detailAmount > 0 ? $detailAmount : ($bill->amount > 0 ? $bill->amount : ($tx->pay_amount > 0 ? $tx->pay_amount : 10000));
+                            if ((!$detail->amount || $detail->amount <= 0) && $paidVal > 0) {
+                                $detail->update(['amount' => $paidVal]);
+                            }
                             if ($bill->paid_amount < $bill->amount) {
                                 $newPaid = min($bill->amount, $bill->paid_amount + $paidVal);
                                 $newStatus = ($newPaid >= $bill->amount) ? Bill::STATUS_PAID : $bill->status;
@@ -1175,7 +1254,7 @@ class TransactionService
         $existingBills = Bill::where('student_id', $student->id)
             ->whereNull('deleted_at')
             ->get()
-            ->keyBy(fn($b) => "{$b->bill_type_id}_{$b->month}_{$b->year}");
+            ->keyBy(fn($b) => "{$b->bill_type_id}_{$b->academic_year_id}_{$b->month}");
 
         $preloadedRates = self::getCachedPreloadedRates();
 
@@ -1209,7 +1288,7 @@ class TransactionService
 
                 foreach ($months as $m) {
                     $y = ($m >= 7) ? $startYear : $endYear;
-                    $key = "{$bt->id}_{$m}_{$y}";
+                    $key = "{$bt->id}_{$bt->academic_year_id}_{$m}";
 
                     $existingBill = $existingBills->get($key);
                     $expectedItem = self::resolveStudentRateItemForBillType($student, $bt, $m, $y, $preloadedRates);
@@ -1232,11 +1311,18 @@ class TransactionService
                             'created_at' => $now,
                             'updated_at' => $now,
                         ];
-                    } elseif ($existingBill->status === Bill::STATUS_UNPAID && $existingBill->paid_amount == 0 && ($existingBill->amount != $expectedAmount || $existingBill->payment_rate_item_id != $expectedItemId)) {
-                        $existingBill->update([
-                            'amount' => $expectedAmount,
-                            'payment_rate_item_id' => $expectedItemId,
-                        ]);
+                    } else {
+                        $updates = [];
+                        if ($existingBill->year != $y) {
+                            $updates['year'] = $y;
+                        }
+                        if ($existingBill->status === Bill::STATUS_UNPAID && $existingBill->paid_amount == 0 && ($existingBill->amount != $expectedAmount || $existingBill->payment_rate_item_id != $expectedItemId)) {
+                            $updates['amount'] = $expectedAmount;
+                            $updates['payment_rate_item_id'] = $expectedItemId;
+                        }
+                        if (!empty($updates)) {
+                            $existingBill->update($updates);
+                        }
                     }
                 }
             }

@@ -22,8 +22,7 @@ class TransactionController extends Controller
      */
     public function index()
     {
-        $transactions = Transaction::with('student', 'transactionDetails.bill')->latest()->get();
-        return view('admin.transaction.index', compact('transactions'));
+        return redirect()->route('report-transaction.index');
     }
 
     /**

@@ -38,4 +38,6 @@ docker-compose.yml
 /scratch
 scratch_*.php
 database/production.sql
+*.sql
+database/*.sql
 

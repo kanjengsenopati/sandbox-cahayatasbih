@@ -69,6 +69,20 @@
         }
     });
 
+    document.addEventListener('DOMContentLoaded', function () {
+        const phoneInput = document.querySelector('input[name="phone"]');
+        const passwordInput = document.getElementById('password');
+        if (phoneInput && passwordInput) {
+            phoneInput.addEventListener('keydown', function (e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    passwordInput.focus();
+                    passwordInput.select();
+                }
+            });
+        }
+    });
+
     function togglePassword() {
         const input = document.getElementById('password');
         const icon = document.getElementById('eye-icon');

@@ -603,12 +603,17 @@
                                     <div id="collapsePayment" class="accordion-collapse collapse"
                                         aria-labelledby="headingPayment">
                                         <div class="accordion-body text-center">
-                                            <img src="{{ asset('storage/' . $registration->payment_proof) }}"
-                                                alt="Bukti Pembayaran" class="img-fluid rounded mb-3"
+                                            @php
+                                                $psbProofUrl = storage_asset($registration->payment_proof);
+                                                $fallbackSvg = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 200'%3E%3Crect width='200' height='200' fill='%23f1f5f9'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='sans-serif' font-size='12' fill='%2394a3b8'%3EBukti Tidak Ditemukan%3C/text%3E%3C/svg%3E";
+                                            @endphp
+                                            <img src="{{ $psbProofUrl }}"
+                                                onerror="this.onerror=null; this.src='{{ $fallbackSvg }}';"
+                                                alt="Bukti Pembayaran" class="img-fluid rounded mb-3 shadow-sm"
                                                 style="max-height: 300px; cursor: pointer;"
                                                 onclick="window.open(this.src, '_blank')">
                                             <div>
-                                                <a href="{{ asset('storage/' . $registration->payment_proof) }}"
+                                                <a href="{{ $psbProofUrl }}"
                                                     target="_blank" class="btn btn-sm btn-primary">
                                                     <i class="fas fa-external-link-alt me-1"></i> Buka Ukuran Penuh
                                                 </a>

@@ -123,12 +123,20 @@ class ReportBillStudentController extends Controller
             ->when(request()->filled('status'), function ($query) {
                 $query->where('status', request()->status);
             })
+            ->when(request()->filled('student_name'), function ($query) {
+                $searchTerm = strtolower(trim(request()->student_name));
+                $query->whereHas('student', function ($sub) use ($searchTerm) {
+                    $sub->whereRaw('LOWER(name) LIKE ?', ['%' . $searchTerm . '%'])
+                        ->orWhereRaw('LOWER(nis) LIKE ?', ['%' . $searchTerm . '%']);
+                });
+            })
             ->when(
-                request()->has('search') && is_array(request()->search) && isset(request()->search['value']),
+                request()->has('search') && is_array(request()->search) && isset(request()->search['value']) && !empty(request()->search['value']),
                 function ($query) {
-                    $searchTerm = request()->search['value'];
+                    $searchTerm = strtolower(trim(request()->search['value']));
                     $query->whereHas('student', function ($sub) use ($searchTerm) {
-                        $sub->where('name', 'like', '%' . $searchTerm . '%');
+                        $sub->whereRaw('LOWER(name) LIKE ?', ['%' . $searchTerm . '%'])
+                            ->orWhereRaw('LOWER(nis) LIKE ?', ['%' . $searchTerm . '%']);
                     });
                 }
             )
@@ -159,7 +167,12 @@ class ReportBillStudentController extends Controller
      */
     private function getTable()
     {
-        $data = $this->buildBillQuery();
+        $data = $this->buildBillQuery()->with([
+            'billType:id,name',
+            'student:id,name,avatar',
+            'classroom:id,name',
+            'student.studentBillNotifications',
+        ]);
 
         return DataTables::of($data)
             ->addColumn('amount', fn($row) => 'Rp' . number_format($row->amount, 0, ',', '.'))
@@ -220,10 +233,10 @@ class ReportBillStudentController extends Controller
         $query = Student::query()
             ->select([
                 'students.id',
-                'students.name',
-                'students.avatar',
-                'students.classroom_id',
-                'classrooms.name as classroom_name',
+                DB::raw('MAX(students.name) as name'),
+                DB::raw('MAX(students.avatar) as avatar'),
+                DB::raw('MAX(students.classroom_id) as classroom_id'),
+                DB::raw('MAX(classrooms.name) as classroom_name'),
                 DB::raw('COUNT(bills.id) as bill_count'),
                 DB::raw('SUM(bills.amount) as total_bill'),
                 DB::raw('SUM(bills.paid_amount) as total_paid'),
@@ -273,6 +286,21 @@ class ReportBillStudentController extends Controller
             $query->whereIn('bills.bill_type_id', request()->bill_type_id);
         }
 
+        // Student name or NIS filter
+        if (request()->filled('student_name')) {
+            $search = strtolower(trim(request()->student_name));
+            $query->where(function($q) use ($search) {
+                $q->whereRaw('LOWER(students.name) LIKE ?', ['%' . $search . '%'])
+                  ->orWhereRaw('LOWER(students.nis) LIKE ?', ['%' . $search . '%']);
+            });
+        } elseif (request()->has('search') && is_array(request()->search) && !empty(request()->search['value'])) {
+            $search = strtolower(trim(request()->search['value']));
+            $query->where(function($q) use ($search) {
+                $q->whereRaw('LOWER(students.name) LIKE ?', ['%' . $search . '%'])
+                  ->orWhereRaw('LOWER(students.nis) LIKE ?', ['%' . $search . '%']);
+            });
+        }
+
         // Status filter using HAVING (runs after GROUP BY)
         if (request()->filled('status')) {
             if (request()->status === 'PAID') {
@@ -283,7 +311,7 @@ class ReportBillStudentController extends Controller
         }
 
         // GROUP BY student
-        $query->groupBy('students.id', 'students.name', 'students.avatar', 'students.classroom_id', 'classrooms.name');
+        $query->groupBy('students.id');
 
         return $query;
     }
@@ -322,6 +350,19 @@ class ReportBillStudentController extends Controller
         }
         if (request()->filled('bill_type_id')) {
             $baseQuery->whereIn('bills.bill_type_id', request()->bill_type_id);
+        }
+        if (request()->filled('student_name')) {
+            $search = strtolower(trim(request()->student_name));
+            $baseQuery->where(function($q) use ($search) {
+                $q->whereRaw('LOWER(students.name) LIKE ?', ['%' . $search . '%'])
+                  ->orWhereRaw('LOWER(students.nis) LIKE ?', ['%' . $search . '%']);
+            });
+        } elseif (request()->has('search') && is_array(request()->search) && !empty(request()->search['value'])) {
+            $search = strtolower(trim(request()->search['value']));
+            $baseQuery->where(function($q) use ($search) {
+                $q->whereRaw('LOWER(students.name) LIKE ?', ['%' . $search . '%'])
+                  ->orWhereRaw('LOWER(students.nis) LIKE ?', ['%' . $search . '%']);
+            });
         }
 
         $stats = $baseQuery->selectRaw('
