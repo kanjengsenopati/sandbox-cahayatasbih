@@ -1331,7 +1331,20 @@ class TransactionService
         if (!empty($newBillsToInsert)) {
             DB::transaction(function () use ($newBillsToInsert) {
                 foreach (array_chunk($newBillsToInsert, 100) as $chunk) {
-                    Bill::insert($chunk);
+                    foreach ($chunk as $billData) {
+                        // Cek ulang sebelum insert untuk hindari race condition
+                        // antar concurrent SyncStudentBillsJob
+                        $alreadyExists = \App\Models\Bill::where('student_id', $billData['student_id'])
+                            ->where('bill_type_id', $billData['bill_type_id'])
+                            ->where('month', $billData['month'])
+                            ->where('year', $billData['year'])
+                            ->whereNull('deleted_at')
+                            ->exists();
+
+                        if (!$alreadyExists) {
+                            Bill::insert([$billData]);
+                        }
+                    }
                 }
             }, 5);
         }

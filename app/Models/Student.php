@@ -53,6 +53,16 @@ class Student extends Model
         'daily_limit' => 'integer',
     ];
 
+    /**
+     * Mutator: Pastikan saldo tidak pernah disimpan di bawah 0.
+     * Ini adalah guard terakhir (last-line defense) agar nilai saldo
+     * tidak pernah negatif meskipun ada bug di layer atas.
+     */
+    public function setSaldoAttribute($value): void
+    {
+        $this->attributes['saldo'] = max(0, (int) $value);
+    }
+
     protected $appends = [
         'translated_status',
         'avatar_url',

@@ -53,6 +53,13 @@ class SaldoRecalculatorService
                     $runningBalance -= $amount;
                 }
 
+                // Guard: running balance tidak boleh negatif
+                // Jika negatif, clamp ke 0 dan catat di log untuk investigasi
+                if ($runningBalance < 0) {
+                    Log::warning("[SaldoRecalculator] Running balance went negative for student {$studentId} at history #{$history->id}. Clamping to 0. (was: {$runningBalance})");
+                    $runningBalance = 0;
+                }
+
                 $balanceAfter = $runningBalance;
 
                 // Update row if values differ
@@ -65,8 +72,10 @@ class SaldoRecalculatorService
             }
 
             // Sync current student's total saldo to match latest running balance
-            if ((float) $student->saldo !== $runningBalance) {
-                DB::table('students')->where('id', $student->id)->update(['saldo' => $runningBalance]);
+            // Guard: saldo tidak boleh < 0
+            $safeSaldo = max(0, $runningBalance);
+            if ((float) $student->saldo !== $safeSaldo) {
+                DB::table('students')->where('id', $student->id)->update(['saldo' => $safeSaldo]);
             }
 
             return true;
