@@ -952,11 +952,41 @@
         var saldo = parseInt(saldoElement.value.replace(/[Rp.\s]/g, ''));
 
         if (saldo) {
-        var remainingSaldo = saldo - totalPrice;
-        remainingSaldoElement.value = `Rp. ${remainingSaldo.toLocaleString('id-ID')}`;
+            var remainingSaldo = saldo - totalPrice;
+            remainingSaldoElement.value = `Rp. ${remainingSaldo.toLocaleString('id-ID')}`;
         } else {
-        remainingSaldoElement.value = `Rp. 0`;
+            remainingSaldoElement.value = `Rp. 0`;
         }
+
+        // --- Limit Saldo Check ---
+        var btnBayar = document.getElementById('btn-bayar');
+        if (window.currentStudentLimit > 0) {
+            if (totalPrice > window.currentStudentRemainingLimit) {
+                totalPriceElement.classList.add('text-danger', 'fw-bold');
+                if (btnBayar) btnBayar.disabled = true;
+                
+                if (!window.isLimitAlertShown) {
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'LIMIT SALDO TERLAMPAUI!',
+                        html: `Siswa ini memiliki batas limit belanja: <b>Rp. ${window.currentStudentLimit.toLocaleString('id-ID')}</b> / hari.<br>
+                               Telah terpakai hari ini: <b>Rp. ${window.currentStudentTotalThisDay.toLocaleString('id-ID')}</b>.<br>
+                               Sisa kuota belanja: <b class="text-danger">Rp. ${window.currentStudentRemainingLimit.toLocaleString('id-ID')}</b>`,
+                        confirmButtonText: 'Mengerti'
+                    });
+                    window.isLimitAlertShown = true;
+                }
+            } else {
+                totalPriceElement.classList.remove('text-danger', 'fw-bold');
+                if (btnBayar) btnBayar.disabled = false;
+                window.isLimitAlertShown = false;
+            }
+        } else {
+            totalPriceElement.classList.remove('text-danger', 'fw-bold');
+            if (btnBayar) btnBayar.disabled = false;
+            window.isLimitAlertShown = false;
+        }
+        // --------------------------
         })
         .catch(function (error) {
         console.error(error);
@@ -1141,6 +1171,13 @@
                     // Add student id to form-payment
                     document.getElementById('form-payment').insertAdjacentHTML('beforeend', `<input type="hidden" name="barcode"
                         value="${student.barcode}">`);
+                        
+                    // Set global limits for alert logic
+                    window.currentStudentLimit = student.effective_daily_limit || 0;
+                    window.currentStudentRemainingLimit = student.remaining_limit || 0;
+                    window.currentStudentTotalThisDay = student.total_this_day || 0;
+                    window.isLimitAlertShown = false;
+
                     updateTotalPrice();
                     // Clear input
                     e.target.value = '';
@@ -1167,6 +1204,12 @@
         document.getElementById('remaining-saldo').closest('.fv-row').style.display = 'block';
         // set #payment_method value to 'Saldo'
         document.getElementById('payment_method').value = 'Saldo';
+        
+        window.currentStudentLimit = 0;
+        window.currentStudentRemainingLimit = 0;
+        window.currentStudentTotalThisDay = 0;
+        window.isLimitAlertShown = false;
+        updateTotalPrice();
     });
 
     document.getElementById('umum-tab').addEventListener('click', function () {
@@ -1176,6 +1219,12 @@
         document.getElementById('remaining-saldo').closest('.fv-row').style.display = 'none';
         // set #payment_method value to 'Umum'
         document.getElementById('payment_method').value = 'Tunai';
+        
+        window.currentStudentLimit = 0;
+        window.currentStudentRemainingLimit = 0;
+        window.currentStudentTotalThisDay = 0;
+        window.isLimitAlertShown = false;
+        updateTotalPrice();
     });
 </script>
 <script>
