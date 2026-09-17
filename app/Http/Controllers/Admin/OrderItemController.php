@@ -361,7 +361,9 @@ class OrderItemController extends Controller
             return false;
         }
 
-        if ($student->daily_limit > 0) {
+        $effectiveLimit = $student->getEffectiveDailyLimit();
+
+        if ($effectiveLimit > 0) {
             // Optimasi: Cek transaksi harian
             // Karena kita sudah pakai lockForUpdate di $student, 
             // kalkulasi ini relatif aman selama transaksi lain juga me-lock row student yang sama.
@@ -370,7 +372,7 @@ class OrderItemController extends Controller
                 ->where('status', PointOfSaleTransaction::STATUS_SUCCESS)
                 ->sum('pay_amount');
 
-            if ($student->daily_limit < ($totalThisDay + $total)) {
+            if ($effectiveLimit < ($totalThisDay + $total)) {
                 session()->flash('error', 'Maaf, Siswa telah mencapai batas transaksi harian.');
                 return false;
             }

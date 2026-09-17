@@ -409,6 +409,20 @@
                                                                                     {{ (!isset($school->allow_pwa_saldo_payment) || $school->allow_pwa_saldo_payment) ? 'checked' : '' }} />
                                                                                 <label class="form-check-label fw-bold text-gray-800 fs-7" for="school_pay_{{ $school->id }}">Bayar via Saldo</label>
                                                                             </div>
+                                                                            <div class="d-flex align-items-center gap-2 border border-gray-300 rounded p-1 bg-white">
+                                                                                <div class="form-check form-switch form-check-custom form-check-solid ms-2">
+                                                                                    <input class="form-check-input school-limit-toggle" type="checkbox" value="1" 
+                                                                                        name="schools[{{ $school->id }}][is_saldo_limit_active]" 
+                                                                                        id="school_limit_active_{{ $school->id }}" 
+                                                                                        data-school-id="{{ $school->id }}"
+                                                                                        {{ $school->is_saldo_limit_active ? 'checked' : '' }} />
+                                                                                    <label class="form-check-label fw-bold text-gray-800 fs-7" for="school_limit_active_{{ $school->id }}">Limit Saldo</label>
+                                                                                </div>
+                                                                                <input type="number" class="form-control form-control-sm form-control-solid w-125px" 
+                                                                                    name="schools[{{ $school->id }}][saldo_limit]" 
+                                                                                    placeholder="Rp Maksimal"
+                                                                                    value="{{ $school->saldo_limit }}" min="0" />
+                                                                            </div>
                                                                         </div>
                                                                     </div>
                                                                 </div>
@@ -511,6 +525,7 @@
                                                                                 <th class="text-center min-w-140px">Akses Login PWA</th>
                                                                                 <th class="text-center min-w-180px">Tampilkan UI Saldo (Hero & Riwayat)</th>
                                                                                 <th class="text-center min-w-150px">Bayar Tagihan Saldo</th>
+                                                                                <th class="text-center min-w-180px">Limit Saldo Harian</th>
                                                                                 <th class="text-end min-w-120px">Status Efektif</th>
                                                                             </tr>
                                                                         </thead>
@@ -571,6 +586,21 @@
                                                                                             <option value="0" {{ $class->allow_pwa_saldo_payment === false ? 'selected' : '' }}>Dinonaktifkan</option>
                                                                                         </select>
                                                                                     </td>
+                                                                                    <td class="text-center">
+                                                                                        <div class="d-flex align-items-center gap-2 justify-content-center">
+                                                                                            <div class="form-check form-switch form-check-custom form-check-solid">
+                                                                                                <input class="form-check-input class-limit-toggle" type="checkbox" value="1" 
+                                                                                                    name="classrooms[{{ $class->id }}][is_saldo_limit_active]" 
+                                                                                                    id="class_limit_active_{{ $class->id }}" 
+                                                                                                    data-class-id="{{ $class->id }}"
+                                                                                                    {{ $class->is_saldo_limit_active ? 'checked' : '' }} />
+                                                                                            </div>
+                                                                                            <input type="number" class="form-control form-control-sm form-control-solid w-100px" 
+                                                                                                name="classrooms[{{ $class->id }}][saldo_limit]" 
+                                                                                                placeholder="Maksimal"
+                                                                                                value="{{ $class->saldo_limit }}" min="0" />
+                                                                                        </div>
+                                                                                    </td>
                                                                                     <td class="text-end">
                                                                                         @if($isKelas7)
                                                                                             <span class="badge badge-light-success fw-bold">Aplikasi Baru</span>
@@ -581,7 +611,7 @@
                                                                                 </tr>
                                                                             @empty
                                                                                 <tr>
-                                                                                    <td colspan="6" class="text-center text-muted py-4">Belum ada kelas terdaftar di lembaga ini.</td>
+                                                                                    <td colspan="7" class="text-center text-muted py-4">Belum ada kelas terdaftar di lembaga ini.</td>
                                                                                 </tr>
                                                                             @endforelse
                                                                         </tbody>

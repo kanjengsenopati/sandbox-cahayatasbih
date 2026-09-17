@@ -60,6 +60,7 @@ class PaymentRateController extends Controller
                       });
                 })
                 ->where('payment_rates.type', PaymentRate::TYPE_REGULAR)
+                ->whereNull('bill_types.deleted_at')
                 ->whereNull('payment_rates.deleted_at')
                 ->whereNull('payment_rate_classrooms.deleted_at')
                 ->pluck('payment_rate_classrooms.classroom_id')
@@ -322,7 +323,8 @@ class PaymentRateController extends Controller
                         $q->where('bill_type_id', $billType->id)
                           ->orWhereHas('billType', function($sub) use ($billType) {
                               $sub->where('name', $billType->name)
-                                  ->where('academic_year_id', $billType->academic_year_id);
+                                  ->where('academic_year_id', $billType->academic_year_id)
+                                  ->whereNull('deleted_at');
                           });
                     })
                     ->where('type', PaymentRate::TYPE_REGULAR)
@@ -372,38 +374,20 @@ class PaymentRateController extends Controller
                 }
 
                 // Create Payment Rate Items
-                if ($billType->type == BillType::TYPE_MONTHLY) {
-                    $globalPrice = (int) preg_replace('/[^0-9]/', '', (string)$request->price);
-                    for ($month = 1; $month <= 12; $month++) {
-                        $year = $request->{"tahun_$month"} ?? ($billType->academicYear->start_year ?? date('Y'));
-                        $cleanAmount = 0;
-                        if ($request->has("bulan_$month") && $request->input("bulan_$month") !== null && $request->input("bulan_$month") !== '') {
-                            $cleanAmount = (int) preg_replace('/[^0-9]/', '', (string)$request->input("bulan_$month"));
-                        } elseif ($globalPrice > 0) {
-                            $cleanAmount = $globalPrice;
-                        }
+                $months = ($billType->type == BillType::TYPE_MONTHLY) ? ($request->active_months ?? []) : ($request->months ?? [7]);
+                
+                foreach ($months as $month) {
+                    $year = ($billType->type == BillType::TYPE_MONTHLY) ? $request->{"tahun_$month"} : ($request->year ?? ($billType->academicYear->start_year ?? date('Y')));
+                    
+                    $itemPrice = ($billType->type == BillType::TYPE_MONTHLY && $request->has("bulan_$month"))
+                        ? (int) preg_replace('/[^0-9]/', '', (string)$request->{"bulan_$month"})
+                        : (int) preg_replace('/[^0-9]/', '', (string)$request->price);
 
-                        if ($cleanAmount > 0) {
-                            $paymentRate->paymentRateItems()->create([
-                                'month'  => $month,
-                                'year'   => $year,
-                                'amount' => $cleanAmount,
-                            ]);
-                        }
-                    }
-                } else {
-                    $months = $request->months ?? [7];
-                    $year = $request->year ?? ($billType->academicYear->start_year ?? date('Y'));
-                    $amount = (int) preg_replace('/[^0-9]/', '', (string)$request->price);
-                    if ($amount > 0) {
-                        foreach ($months as $month) {
-                            $paymentRate->paymentRateItems()->create([
-                                'month'  => $month,
-                                'year'   => $year,
-                                'amount' => $amount,
-                            ]);
-                        }
-                    }
+                    $paymentRate->paymentRateItems()->create([
+                        'month'  => $month,
+                        'year'   => $year,
+                        'amount' => $itemPrice,
+                    ]);
                 }
                 
                 $ratesToDispatch[] = $paymentRate->id;
@@ -461,14 +445,11 @@ class PaymentRateController extends Controller
             DB::commit();
             $lock->release();
 
-            // SINKRONISASI LANGSUNG (Synchronous Execution)
+            // SINKRONISASI ASYNCHRONOUS (Background Job)
             try {
-                \Illuminate\Support\Facades\Artisan::call('bills:sync-rate', [
-                    '--bill-type' => $billType->id,
-                    '--force' => true,
-                ]);
+                \App\Jobs\SyncPaymentRateBillsJob::dispatch($billType->id);
             } catch (\Throwable $e) {
-                Log::warning("bills:sync-rate synchronous fallback warning: " . $e->getMessage());
+                \Illuminate\Support\Facades\Log::error('Failed to dispatch SyncPaymentRateBillsJob: ' . $e->getMessage());
             }
 
             return redirect()->route('bill-type.show', $billType->id)
@@ -1224,7 +1205,8 @@ class PaymentRateController extends Controller
                         $q->where('bill_type_id', $billType->id)
                           ->orWhereHas('billType', function($sub) use ($billType) {
                               $sub->where('name', $billType->name)
-                                  ->where('academic_year_id', $billType->academic_year_id);
+                                  ->where('academic_year_id', $billType->academic_year_id)
+                                  ->whereNull('deleted_at');
                           });
                     })
                     ->where('type', PaymentRate::TYPE_REGULAR)
@@ -1316,104 +1298,39 @@ class PaymentRateController extends Controller
 
             $bills = collect();
             if (!empty($relatedBillTypeIds)) {
-                $rawBills = Bill::where('student_id', $request->student_id)
+                $bills = Bill::where('student_id', $request->student_id)
                     ->whereIn('bill_type_id', $relatedBillTypeIds)
-                    ->where(function ($q) {
-                        $q->where('amount', '>', 0)
-                          ->orWhere('paid_amount', '>', 0);
-                    })
                     ->orderByRaw("CASE 
                         WHEN month >= 7 THEN month - 6 
                         ELSE month + 6 
                     END")
-                    ->orderBy('year')
-                    ->get()
-                    ->map(function ($bill) {
-                        $effectiveStatus = $bill->status;
-                        $paid = (int) ($bill->paid_amount ?? 0);
-                        $amt  = (int) ($bill->amount ?? 0);
-                        if ($paid >= $amt && $amt > 0) {
-                            $effectiveStatus = Bill::STATUS_PAID;
-                        } elseif ($paid > 0 && $paid < $amt) {
-                            $effectiveStatus = 'PARTIAL';
-                        }
-
-                        return [
-                            'id' => $bill->id,
-                            'month' => (int) $bill->month,
-                            'year' => (int) $bill->year,
-                            'amount' => $bill->amount,
-                            'paid_amount' => $paid,
-                            'status' => $effectiveStatus,
-                            'translated_month' => $bill->translated_month,
-                            'is_no_bill' => false,
-                            'status_badge' => $effectiveStatus === Bill::STATUS_PAID
-                                ? '<span class="badge bg-success">Lunas</span>'
-                                : ($effectiveStatus === 'PARTIAL'
-                                    ? '<span class="badge bg-warning">Cicilan</span>'
-                                    : '<span class="badge bg-danger">Belum Lunas</span>')
-                        ];
-                    });
-
-                // Check if bill type is monthly to provide a complete 12-month overview
-                $billType = BillType::with('academicYear')->find($request->bill_type_id);
-                if ($paymentRate && $paymentRate->billType) {
-                    $billType = $paymentRate->billType;
-                }
-
-                if ($billType && $billType->type === BillType::TYPE_MONTHLY) {
-                    $startYear = $billType->academicYear?->getStartYearSafe() ?? (int)date('Y');
-                    $endYear = (int)($billType->academicYear?->end_year ?: ($startYear + 1));
-
-                    $monthNames = [
-                        1 => 'Januari', 2 => 'Februari', 3 => 'Maret', 4 => 'April',
-                        5 => 'Mei', 6 => 'Juni', 7 => 'Juli', 8 => 'Agustus',
-                        9 => 'September', 10 => 'Oktober', 11 => 'November', 12 => 'Desember'
-                    ];
-
-                    $monthsSequence = [
-                        ['month' => 7, 'year' => $startYear],
-                        ['month' => 8, 'year' => $startYear],
-                        ['month' => 9, 'year' => $startYear],
-                        ['month' => 10, 'year' => $startYear],
-                        ['month' => 11, 'year' => $startYear],
-                        ['month' => 12, 'year' => $startYear],
-                        ['month' => 1, 'year' => $endYear],
-                        ['month' => 2, 'year' => $endYear],
-                        ['month' => 3, 'year' => $endYear],
-                        ['month' => 4, 'year' => $endYear],
-                        ['month' => 5, 'year' => $endYear],
-                        ['month' => 6, 'year' => $endYear],
-                    ];
-
-                    $billsByMonthYear = $rawBills->keyBy(function ($b) {
-                        return $b['month'] . '_' . $b['year'];
-                    });
-
-                    $full12Months = collect();
-                    foreach ($monthsSequence as $seq) {
-                        $key = $seq['month'] . '_' . $seq['year'];
-                        if ($billsByMonthYear->has($key)) {
-                            $full12Months->push($billsByMonthYear->get($key));
-                        } else {
-                            $full12Months->push([
-                                'id' => null,
-                                'month' => $seq['month'],
-                                'year' => $seq['year'],
-                                'amount' => 0,
-                                'paid_amount' => 0,
-                                'status' => 'NO_BILL',
-                                'is_no_bill' => true,
-                                'translated_month' => $monthNames[$seq['month']],
-                                'status_badge' => '<span class="badge bg-secondary">Tanpa Tagihan</span>'
-                            ]);
-                        }
+                ->orderBy('year')
+                ->get()
+                ->map(function ($bill) {
+                    $effectiveStatus = $bill->status;
+                    $paid = (int) ($bill->paid_amount ?? 0);
+                    $amt  = (int) ($bill->amount ?? 0);
+                    if ($paid >= $amt && $amt > 0) {
+                        $effectiveStatus = Bill::STATUS_PAID;
+                    } elseif ($paid > 0 && $paid < $amt) {
+                        $effectiveStatus = 'PARTIAL';
                     }
 
-                    $bills = $full12Months;
-                } else {
-                    $bills = $rawBills;
-                }
+                    return [
+                        'id' => $bill->id,
+                        'month' => $bill->month,
+                        'year' => $bill->year,
+                        'amount' => $bill->amount,
+                        'paid_amount' => $paid,
+                        'status' => $effectiveStatus,
+                        'translated_month' => $bill->translated_month,
+                        'status_badge' => $effectiveStatus === Bill::STATUS_PAID
+                            ? '<span class="badge bg-success">Lunas</span>'
+                            : ($effectiveStatus === 'PARTIAL'
+                                ? '<span class="badge bg-warning">Cicilan</span>'
+                                : '<span class="badge bg-danger">Belum Lunas</span>')
+                    ];
+                });
             }
 
             return response()->json([
