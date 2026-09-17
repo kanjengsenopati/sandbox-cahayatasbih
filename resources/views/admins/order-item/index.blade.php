@@ -960,8 +960,26 @@
 
         // --- Limit Saldo Check ---
         var btnBayar = document.getElementById('btn-bayar');
-        if (window.currentStudentLimit > 0) {
-            if (totalPrice > window.currentStudentRemainingLimit) {
+        var paymentMethod = document.getElementById('payment_method').value;
+
+        if (paymentMethod === 'Saldo') {
+            // 1. Validasi Kecukupan Saldo Aktual
+            if (!isNaN(saldo) && totalPrice > saldo) {
+                totalPriceElement.classList.add('text-danger', 'fw-bold');
+                if (btnBayar) btnBayar.disabled = true;
+                
+                if (!window.isLimitAlertShown) {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'SALDO TIDAK MENCUKUPI!',
+                        html: `Total belanja (<b>Rp. ${totalPrice.toLocaleString('id-ID')}</b>) melebihi saldo santri saat ini (<b>Rp. ${saldo.toLocaleString('id-ID')}</b>).`,
+                        confirmButtonText: 'Mengerti'
+                    });
+                    window.isLimitAlertShown = true;
+                }
+            } 
+            // 2. Validasi Limit Harian (Jika limit aktif dan lolos validasi saldo aktual)
+            else if (window.currentStudentLimit > 0 && totalPrice > window.currentStudentRemainingLimit) {
                 totalPriceElement.classList.add('text-danger', 'fw-bold');
                 if (btnBayar) btnBayar.disabled = true;
                 
@@ -976,12 +994,15 @@
                     });
                     window.isLimitAlertShown = true;
                 }
-            } else {
+            } 
+            // 3. Kondisi Aman
+            else {
                 totalPriceElement.classList.remove('text-danger', 'fw-bold');
                 if (btnBayar) btnBayar.disabled = false;
                 window.isLimitAlertShown = false;
             }
         } else {
+            // Jika Umum / Tunai
             totalPriceElement.classList.remove('text-danger', 'fw-bold');
             if (btnBayar) btnBayar.disabled = false;
             window.isLimitAlertShown = false;
