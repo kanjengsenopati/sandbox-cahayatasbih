@@ -666,8 +666,6 @@
                 button.textContent = 'Pilih';
                 button.addEventListener('click', function () {
                 addProductToCart(product);
-                appendProductToTable(product);
-                updateTotalPrice();
                 });
                 tdAction.appendChild(button);
                 tr.appendChild(tdAction);
@@ -704,8 +702,6 @@
         } else {
             clearInput(searchProductInput);
             addProductToCart(product);
-            appendProductToTable(product);
-            updateTotalPrice();
         }
     }
 
@@ -717,14 +713,32 @@
             mode: requestMode,
             outlet_id: requestOutletId
         }).then(function (response) {
-            // if success, refresh table product #list-product
-            refreshProductList();
-            // Refresh product grid to show updated stock!
-            var searchInput = document.getElementById('grid-search-product');
-            loadProductCatalog(searchInput ? searchInput.value : '');
+            // response.data.data will contain 'carts' and 'total_price'
+            var data = response.data.data;
+            refreshProductList(data.carts);
+            updateTotalPrice(data.total_price);
+            
+            // Visual stock decrement
+            changeVisualStock(product.id || product.item_id, -1);
         }).catch(function (error) {
             console.error(error);
         });
+    }
+
+    function changeVisualStock(productId, diff) {
+        var stockElement = document.getElementById('grid-stock-' + productId);
+        if (stockElement) {
+            var currentStock = parseInt(stockElement.innerText.replace(/[^0-9]/g, '')) || 0;
+            var newStock = Math.max(0, currentStock + diff);
+            
+            if (newStock <= 5) {
+                stockElement.className = "badge bg-light-danger text-danger fw-bold fs-9";
+                stockElement.innerText = 'Stok Menipis: ' + newStock;
+            } else {
+                stockElement.className = "badge bg-light-success text-success fw-bold fs-9";
+                stockElement.innerText = 'Stok: ' + newStock;
+            }
+        }
     }
 
     // Load Product Catalog Grid on page load and live search
@@ -752,8 +766,8 @@
                         
                         var imageUrl = product.image || defaultImageUrl;
                         var stockBadge = product.stock <= 5 
-                            ? `<span class="badge bg-light-danger text-danger fw-bold fs-9">Stok Menipis: ${product.stock}</span>`
-                            : `<span class="badge bg-light-success text-success fw-bold fs-9">Stok: ${product.stock}</span>`;
+                            ? `<span id="grid-stock-${product.id}" class="badge bg-light-danger text-danger fw-bold fs-9">Stok Menipis: ${product.stock}</span>`
+                            : `<span id="grid-stock-${product.id}" class="badge bg-light-success text-success fw-bold fs-9">Stok: ${product.stock}</span>`;
                         
                         var formattedPrice = `Rp. ${product.selling_price.toLocaleString('id-ID')}`;
                         
@@ -799,42 +813,49 @@
         addProductToCart(product);
     }
 
-    function refreshProductList() {
-    // Show loader
-    document.getElementById('product-loader').style.display = 'block';
-    
-    axios.get("{{ route('order-item.get-cart') }}", {
-        params: {
-            mode: requestMode,
-            outlet_id: requestOutletId
+    function refreshProductList(productsParam) {
+        if (productsParam !== undefined) {
+            renderCartTable(productsParam);
+            return;
         }
-    })
-    .then(function (response) {
-    var products = response.data.data;
-    var listProduct = document.getElementById('list-product');
-    // Clear existing rows
-    listProduct.innerHTML = '';
-    
-    if (products && products.length > 0) {
-    products.forEach(function (product, index) {
-    var tr = createTableRow(product);
-    listProduct.appendChild(tr);
-    });
-    } else {
-    // Display message if no products found
-    var tr = document.createElement('tr');
-    tr.innerHTML = `<td colspan="5" class="text-center">Barang Masih Kosong</td>`;
-    listProduct.appendChild(tr);
+
+        // Show loader
+        document.getElementById('product-loader').style.display = 'block';
+        
+        axios.get("{{ route('order-item.get-cart') }}", {
+            params: {
+                mode: requestMode,
+                outlet_id: requestOutletId
+            }
+        })
+        .then(function (response) {
+            renderCartTable(response.data.data);
+            updateTotalPrice();
+            // Hide loader
+            document.getElementById('product-loader').style.display = 'none';
+        }).catch(function (error) {
+            console.error(error);
+            // Hide loader in case of error
+            document.getElementById('product-loader').style.display = 'none';
+        });
     }
-    updateTotalPrice();
-    
-    // Hide loader
-    document.getElementById('product-loader').style.display = 'none';
-    }).catch(function (error) {
-    console.error(error);
-    // Hide loader in case of error
-    document.getElementById('product-loader').style.display = 'none';
-    });
+
+    function renderCartTable(products) {
+        var listProduct = document.getElementById('list-product');
+        // Clear existing rows
+        listProduct.innerHTML = '';
+        
+        if (products && products.length > 0) {
+            products.forEach(function (product, index) {
+                var tr = createTableRow(product);
+                listProduct.appendChild(tr);
+            });
+        } else {
+            // Display message if no products found
+            var tr = document.createElement('tr');
+            tr.innerHTML = `<td colspan="5" class="text-center">Barang Masih Kosong</td>`;
+            listProduct.appendChild(tr);
+        }
     }
 
     function createTableRow(product) {
@@ -855,12 +876,12 @@
     <td>
         <div class="d-flex justify-content-center align-items-center">
             <a class="btn btn-icon btn-light-primary btn-sm me-2 decrement-btn"
-                onclick="updateCartQuantity('${product.id}', Math.max(1, ${product.quantity - 1}))">
+                onclick="${product.quantity > 1 ? `updateCartQuantity('${product.id}', ${product.quantity - 1}, '${product.item.id}', 1)` : ''}">
                 <i class="fas fa-minus"></i>
             </a>
             <span class="quantity">${product.quantity}</span>
             <a class="btn btn-icon btn-light-primary btn-sm ms-2 increment-btn"
-                onclick="updateCartQuantity('${product.id}', Math.min(${product.item.stock}, ${product.quantity + 1}))">
+                onclick="${product.quantity < product.item.stock ? `updateCartQuantity('${product.id}', ${product.quantity + 1}, '${product.item.id}', -1)` : ''}">
                 <i class="fas fa-plus"></i>
             </a>
             <input type="hidden" value="${product.id}">
@@ -869,37 +890,47 @@
     <td>Rp. ${product.price.toLocaleString('id-ID')}</td>
     <td>Rp. ${product.total.toLocaleString('id-ID')}</td>
     <td>
-        <a class="btn btn-icon btn-light-danger btn-sm" onclick="deleteProductFromCart('${product.id}')">
+        <a class="btn btn-icon btn-light-danger btn-sm" onclick="deleteProductFromCart('${product.id}', '${product.item.id}', ${product.quantity})">
             <span class="svg-icon svg-icon-3"><i class="fas fa-trash"></i></span>
         </a>
     </td>`;
     return tr;
     }
 
-    function deleteProductFromCart(productId) {
+    function deleteProductFromCart(productId, itemId, quantity) {
         axios.post("{{ route('order-item.delete-from-cart') }}", {
             id: productId,
             mode: requestMode,
             outlet_id: requestOutletId
         }).then(function (response) {
-            refreshProductList();
-            var searchInput = document.getElementById('grid-search-product');
-            loadProductCatalog(searchInput ? searchInput.value : '');
+            var data = response.data.data;
+            refreshProductList(data.carts);
+            updateTotalPrice(data.total_price);
+            
+            // Visual stock increment
+            if (itemId && quantity) {
+                changeVisualStock(itemId, quantity);
+            }
         }).catch(function (error) {
             console.error(error);
         });
     }
 
-    function updateCartQuantity(productId, quantity) {
+    function updateCartQuantity(productId, quantity, itemId, stockDiff) {
         axios.post("{{ route('order-item.update-cart-quantity') }}", {
             id: productId,
             quantity: quantity,
             mode: requestMode,
             outlet_id: requestOutletId
         }).then(function (response) {
-            refreshProductList();
-            var searchInput = document.getElementById('grid-search-product');
-            loadProductCatalog(searchInput ? searchInput.value : '');
+            var data = response.data.data;
+            refreshProductList(data.carts);
+            updateTotalPrice(data.total_price);
+            
+            // Visual stock adjust
+            if (itemId && stockDiff) {
+                changeVisualStock(itemId, stockDiff);
+            }
         }).catch(function (error) {
             console.error(error);
         });
@@ -923,7 +954,12 @@
         listProduct.appendChild(tr);
     }
 
-    function updateTotalPrice() {
+    function updateTotalPrice(totalPriceParam) {
+        if (totalPriceParam !== undefined) {
+            _renderTotalPrice(totalPriceParam);
+            return;
+        }
+        
         axios.get("{{ route('order-item.get-total-price') }}", {
             params: {
                 mode: requestMode,
@@ -931,7 +967,13 @@
             }
         })
         .then(function (response) {
-        var totalPrice = response.data.data;
+            _renderTotalPrice(response.data.data);
+        }).catch(function (error) {
+            console.error(error);
+        });
+    }
+
+    function _renderTotalPrice(totalPrice) {
         // Ensure totalPrice is a number
         totalPrice = Number(totalPrice); // Convert to number if it's a string
         
@@ -1008,10 +1050,6 @@
             window.isLimitAlertShown = false;
         }
         // --------------------------
-        })
-        .catch(function (error) {
-        console.error(error);
-        });
     }
 
     function deleteAllProductFromCart() {
@@ -1034,10 +1072,13 @@
             outlet_id: requestOutletId
         })
         .then(function (response) {
-        // Menjalankan fungsi refreshProductList() setelah penghapusan berhasil
-        refreshProductList();
-        var searchInput = document.getElementById('grid-search-product');
-        loadProductCatalog(searchInput ? searchInput.value : '');
+            var data = response.data.data;
+            refreshProductList(data.carts);
+            updateTotalPrice(data.total_price);
+            
+            // For clear cart, reloading catalog is fine
+            var searchInput = document.getElementById('grid-search-product');
+            loadProductCatalog(searchInput ? searchInput.value : '');
         }).catch(function (error) {
         console.error(error);
         });
@@ -1086,8 +1127,6 @@
                 button.textContent = 'Pilih';
                 button.addEventListener('click', function () {
                     addProductToCart(product);
-                    appendProductToTable(product);
-                    updateTotalPrice();
                 });
                 tdAction.appendChild(button);
                 tr.appendChild(tdAction);

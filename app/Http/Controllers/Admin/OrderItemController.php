@@ -648,7 +648,7 @@ class OrderItemController extends Controller
             // Commit transaction
             DB::commit();
 
-            return $this->postSuccessResponse("Barang berhasil ditambahkan ke keranjang", $cart);
+            return $this->postSuccessResponse("Barang berhasil ditambahkan ke keranjang", $this->getCartResponseData($outletId));
         } catch (\Exception $e) {
             // Rollback transaction in case of error
             DB::rollback();
@@ -690,8 +690,9 @@ class OrderItemController extends Controller
 
             // Commit transaction
             DB::commit();
-
-            return $this->postSuccessResponse("Barang berhasil dihapus dari keranjang", null);
+            
+            $outletId = auth()->user()->getEffectiveOutletId(request('mode'), request('outlet_id'));
+            return $this->postSuccessResponse("Barang berhasil dihapus dari keranjang", $this->getCartResponseData($outletId));
         } catch (\Exception $e) {
             // Rollback transaction in case of error
             DB::rollback();
@@ -747,7 +748,8 @@ class OrderItemController extends Controller
             // Commit transaction
             DB::commit();
 
-            return $this->postSuccessResponse("Data keranjang berhasil diupdate", $cart);
+            $outletId = auth()->user()->getEffectiveOutletId(request('mode'), request('outlet_id'));
+            return $this->postSuccessResponse("Data keranjang berhasil diupdate", $this->getCartResponseData($outletId));
         } catch (\Exception $e) {
             // Rollback transaction in case of error
             DB::rollback();
@@ -796,7 +798,7 @@ class OrderItemController extends Controller
             // Commit transaction
             DB::commit();
 
-            return $this->postSuccessResponse("Keranjang berhasil dikosongkan", null);
+            return $this->postSuccessResponse("Keranjang berhasil dikosongkan", $this->getCartResponseData($outletId));
         } catch (\Exception $e) {
             // Rollback transaction in case of error
             DB::rollback();
@@ -842,5 +844,21 @@ class OrderItemController extends Controller
 
         // Mengembalikan respons dengan pesan sukses dan data yang diformat
         return $this->postSuccessResponse("Data transaksi harian berhasil diambil", $transactions);
+    }
+
+    private function getCartResponseData($outletId)
+    {
+        $carts = PointOfSaleCart::with('item')
+            ->where('admin_id', auth()->user()->id)
+            ->where('outlet_id', $outletId)
+            ->latest()
+            ->get();
+            
+        $total = $carts->sum('total');
+        
+        return [
+            'carts' => $carts,
+            'total_price' => $total
+        ];
     }
 }
