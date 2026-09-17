@@ -330,9 +330,29 @@ class OrderItemController extends Controller
 
             DB::commit();
 
-            $message = 'Yeay! Transaksi berhasil';
             if ($student) {
-                $message .= ', Saldo ' . $student->name . ' dikurangi Rp. ' . number_format($total, 0, ',', '.');
+                $saldoFormatted = number_format($student->saldo, 0, ',', '.');
+                $totalFormatted = number_format($total, 0, ',', '.');
+                
+                $message = '
+                <h2 class="fw-bolder text-success mb-0">Alhamdulillah</h2>
+                <div class="text-start mt-4 bg-light-success p-5 rounded-3">
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-gray-600 fw-bold">Nama Santri:</span>
+                        <span class="fw-bolder text-gray-800">' . $student->name . '</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-gray-600 fw-bold">Nominal Potongan:</span>
+                        <span class="fw-bolder text-danger">- Rp. ' . $totalFormatted . '</span>
+                    </div>
+                    <div class="separator border-success opacity-25 my-3"></div>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span class="fw-bolder text-gray-800">Saldo Terkini:</span>
+                        <span class="fw-bolder text-success fs-3">Rp. ' . $saldoFormatted . '</span>
+                    </div>
+                </div>';
+            } else {
+                $message = '<div class="fw-bolder fs-4 text-success">Alhamdulillah, Transaksi Berhasil!</div>';
             }
 
             return redirect()->route('order-item.index')->with('success', $message);
