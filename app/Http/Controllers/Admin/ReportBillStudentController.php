@@ -169,9 +169,9 @@ class ReportBillStudentController extends Controller
     {
         $data = $this->buildBillQuery()->with([
             'billType:id,name',
-            'student:id,name,avatar',
+            'student:id,name,avatar,classroom_id',
             'classroom:id,name',
-            'student.studentBillNotifications',
+            'student.studentBillNotifications:id,student_id,sent_at',
         ]);
 
         return DataTables::of($data)
@@ -205,7 +205,7 @@ class ReportBillStudentController extends Controller
                 return $monthName . ' ' . $row->year;
             })
             ->addColumn('notification', function ($row) {
-                $notification = $row?->student?->studentBillNotifications?->first();
+                $notification = $row?->student?->studentBillNotifications?->sortByDesc('sent_at')->first();
                 return $notification
                     ? '<span class="badge badge-success">Dikirim ' . Carbon::parse($notification->sent_at)->diffForHumans() . '</span>'
                     : '<span class="badge badge-danger">Belum Dikirim</span>';
