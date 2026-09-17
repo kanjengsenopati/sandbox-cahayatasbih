@@ -61,7 +61,8 @@ jobs:
             
             $PHP_BIN -r "if(function_exists('opcache_reset')){opcache_reset();}" || true
             
-            chown -R www:www /www/wwwroot/sim.cahayatasbih.or.id
+            # The .user.ini file is often immutable in aaPanel. Allow chown to skip errors.
+            chown -R www:www /www/wwwroot/sim.cahayatasbih.or.id 2>/dev/null || true
             chmod -R 775 bootstrap/cache storage
             
             $PHP_BIN artisan tinker --execute="
