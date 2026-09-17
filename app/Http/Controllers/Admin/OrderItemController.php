@@ -536,7 +536,14 @@ class OrderItemController extends Controller
     public function getStudentByBarcode(Request $request)
     {
         $barcode = $request->barcode;
-        $student = Student::with('classroom')->where('barcode', $barcode)->first();
+        $student = Student::with('classroom')
+            ->where(function ($query) use ($barcode) {
+                $query->where('barcode', $barcode)
+                      ->orWhere('nis', $barcode)
+                      ->orWhere('nisn', $barcode);
+            })
+            ->first();
+            
         if (!$student) {
             return $this->postSuccessResponse("Data siswa tidak ditemukan", null);
         }
