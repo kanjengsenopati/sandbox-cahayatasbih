@@ -61,7 +61,7 @@ class ApplicationSettingController extends Controller
                     'show_pwa_saldo' => !empty($schoolData['show_pwa_saldo']),
                     'allow_pwa_saldo_payment' => !empty($schoolData['allow_pwa_saldo_payment']),
                     'is_saldo_limit_active' => !empty($schoolData['is_saldo_limit_active']),
-                    'saldo_limit' => isset($schoolData['saldo_limit']) && $schoolData['saldo_limit'] !== '' ? (int)$schoolData['saldo_limit'] : null,
+                    'saldo_limit' => isset($schoolData['saldo_limit']) && $schoolData['saldo_limit'] !== '' ? (int)str_replace('.', '', $schoolData['saldo_limit']) : null,
                 ]);
             }
         }
@@ -73,7 +73,7 @@ class ApplicationSettingController extends Controller
                 $showSaldo = isset($classData['show_pwa_saldo']) && $classData['show_pwa_saldo'] !== '' ? (bool)$classData['show_pwa_saldo'] : null;
                 $allowPayment = isset($classData['allow_pwa_saldo_payment']) && $classData['allow_pwa_saldo_payment'] !== '' ? (bool)$classData['allow_pwa_saldo_payment'] : null;
                 $isSaldoLimitActive = isset($classData['is_saldo_limit_active']) && $classData['is_saldo_limit_active'] !== '' ? (bool)$classData['is_saldo_limit_active'] : false;
-                $saldoLimit = isset($classData['saldo_limit']) && $classData['saldo_limit'] !== '' ? (int)$classData['saldo_limit'] : null;
+                $saldoLimit = isset($classData['saldo_limit']) && $classData['saldo_limit'] !== '' ? (int)str_replace('.', '', $classData['saldo_limit']) : null;
 
                 \App\Models\Classroom::where('id', $classroomId)->update([
                     'allow_pwa_login' => $allowLogin,
