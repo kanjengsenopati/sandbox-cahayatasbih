@@ -29,52 +29,60 @@ jobs:
           username: ${{ secrets.VPS_USER }}
           key: ${{ secrets.VPS_SSH_KEY }}
           script: |
+            set -Eeuo pipefail
+            
             cd /www/wwwroot/sim.cahayatasbih.or.id
             mkdir -p bootstrap/cache storage/framework/sessions storage/framework/views storage/framework/cache
-            chmod -R 777 bootstrap/cache storage
-
-            PHP_BIN="/www/server/php/84/bin/php"
-            if [ ! -f "$PHP_BIN" ]; then
-                PHP_BIN="php"
+            chmod -R 775 bootstrap/cache storage
+            
+            # Switch to PHP 8.3 to avoid PHP 8.4 deprecation failures in older Laravel packages
+            PHP_BIN="/www/server/php/83/bin/php"
+            if [ ! -x "$PHP_BIN" ]; then
+                PHP_BIN="$(command -v php)"
             fi
-
-            $PHP_BIN artisan optimize:clear || true
-            $PHP_BIN artisan view:clear || true
-            rm -rf storage/framework/views/*.php 2>/dev/null || true
-
-            $PHP_BIN /usr/bin/composer install --no-dev --optimize-autoloader || composer install --no-dev --optimize-autoloader || true
-            $PHP_BIN artisan migrate --force || true
-            $PHP_BIN artisan config:cache || true
-            $PHP_BIN artisan route:cache || true
-            $PHP_BIN artisan view:cache || true
-
+            
+            # Set queue to database BEFORE caching config
+            sed -i 's/^QUEUE_CONNECTION=.*/QUEUE_CONNECTION=database/' .env
+            
+            $PHP_BIN artisan optimize:clear
+            
+            if [ -x /usr/bin/composer ]; then
+                COMPOSER_BIN=/usr/bin/composer
+            else
+                COMPOSER_BIN="$(command -v composer)"
+            fi
+            
+            "$COMPOSER_BIN" install --no-dev --prefer-dist --no-interaction --no-progress --optimize-autoloader
+            
+            $PHP_BIN artisan migrate --force
+            $PHP_BIN artisan config:cache
+            $PHP_BIN artisan route:cache
+            $PHP_BIN artisan view:cache
+            
             $PHP_BIN -r "if(function_exists('opcache_reset')){opcache_reset();}" || true
-
+            
             chown -R www:www /www/wwwroot/sim.cahayatasbih.or.id
             chmod -R 775 bootstrap/cache storage
-
+            
             $PHP_BIN artisan tinker --execute="
-                echo '=== ADMINS ON STAGING DB ===' . PHP_EOL;
-                App\Models\Admin::take(10)->get(['id','name','email','is_active'])->each(function(\$a) {
-                    echo \$a->email . ' | Active: ' . \$a->is_active . PHP_EOL;
-                });
                 foreach (['dev@gmail.com', 'superadmin@gmail.com'] as \$email) {
                     \$admin = App\Models\Admin::where('email', \$email)->first();
                     if (\$admin) {
                         \$admin->password = bcrypt('password');
                         \$admin->is_active = 1;
                         \$admin->save();
-                        echo \$email . ' password set to: password' . PHP_EOL;
                     }
                 }
-            " || true
-
-            # Set queue to database
-            sed -i 's/QUEUE_CONNECTION=sync/QUEUE_CONNECTION=database/g' .env
-
-            /etc/init.d/php-fpm-84 reload 2>/dev/null || /etc/init.d/php-fpm-84 restart 2>/dev/null || true
-            nginx -s reload 2>/dev/null || systemctl reload nginx 2>/dev/null || true
-
+            "
+            
+            if ! /etc/init.d/php-fpm-83 reload 2>/dev/null; then
+                /etc/init.d/php-fpm-83 restart 2>/dev/null || true
+            fi
+            
+            if ! nginx -s reload 2>/dev/null; then
+                systemctl reload nginx 2>/dev/null || true
+            fi
+            
             # Restart queue worker (fix SSH hang by detaching stdin/stdout)
             pkill -f "artisan queue:work" || true
             nohup $PHP_BIN artisan queue:work --sleep=3 --tries=3 --max-time=3600 </dev/null >/dev/null 2>&1 &
