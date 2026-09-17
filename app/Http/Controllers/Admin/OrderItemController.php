@@ -547,6 +547,23 @@ class OrderItemController extends Controller
         if (!$student) {
             return $this->postSuccessResponse("Data siswa tidak ditemukan", null);
         }
+
+        $effectiveLimit = $student->getEffectiveDailyLimit();
+        $student->effective_daily_limit = $effectiveLimit;
+        
+        if ($effectiveLimit > 0) {
+            $totalThisDay = PointOfSaleTransaction::where('student_id', $student->id)
+                ->whereDate('paid_at', now())
+                ->where('status', PointOfSaleTransaction::STATUS_SUCCESS)
+                ->sum('pay_amount');
+                
+            $student->total_this_day = $totalThisDay;
+            $student->remaining_limit = max(0, $effectiveLimit - $totalThisDay);
+        } else {
+            $student->total_this_day = 0;
+            $student->remaining_limit = 0;
+        }
+
         return $this->postSuccessResponse("Data siswa ditemukan", $student);
     }
 
