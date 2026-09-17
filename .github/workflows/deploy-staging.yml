@@ -72,19 +72,9 @@ jobs:
             # Set queue to database
             sed -i 's/QUEUE_CONNECTION=sync/QUEUE_CONNECTION=database/g' .env
 
-            # Sweep ghost bills once
-            $PHP_BIN artisan tinker --execute="
-                echo '=== SWEEPING GHOST BILLS ===' . PHP_EOL;
-                \$students = App\Models\Student::where('status', App\Models\Student::STATUS_ACTIVE)->get();
-                foreach(\$students as \$student) {
-                    App\Services\TransactionService::cleanupGhostBillsForStudent(\$student->id);
-                }
-                echo '=== SWEEP DONE ===' . PHP_EOL;
-            " || true
-
             /etc/init.d/php-fpm-84 reload 2>/dev/null || /etc/init.d/php-fpm-84 restart 2>/dev/null || true
             nginx -s reload 2>/dev/null || systemctl reload nginx 2>/dev/null || true
 
-            # Restart queue worker (kill old ones, start new one with nohup)
+            # Restart queue worker (fix SSH hang by detaching stdin/stdout)
             pkill -f "artisan queue:work" || true
-            nohup $PHP_BIN artisan queue:work --sleep=3 --tries=3 --max-time=3600 > /dev/null 2>&1 &
+            nohup $PHP_BIN artisan queue:work --sleep=3 --tries=3 --max-time=3600 </dev/null >/dev/null 2>&1 &
