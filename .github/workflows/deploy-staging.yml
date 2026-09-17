@@ -83,7 +83,3 @@ jobs:
             if ! nginx -s reload 2>/dev/null; then
                 systemctl reload nginx 2>/dev/null || true
             fi
-            
-            # Restart queue worker (fix SSH hang by detaching stdin/stdout)
-            pkill -f "artisan queue:work" || true
-            nohup $PHP_BIN artisan queue:work --sleep=3 --tries=3 --max-time=3600 </dev/null >/dev/null 2>&1 &
