@@ -1013,9 +1013,28 @@
                 if (!window.isLimitAlertShown) {
                     Swal.fire({
                         icon: 'error',
-                        title: 'SALDO TIDAK MENCUKUPI!',
-                        html: `Total belanja (<b>Rp. ${totalPrice.toLocaleString('id-ID')}</b>) melebihi saldo santri saat ini (<b>Rp. ${saldo.toLocaleString('id-ID')}</b>).`,
-                        confirmButtonText: 'Mengerti'
+                        title: '<h2 class="fw-bolder text-danger mb-0">SALDO KURANG</h2>',
+                        html: `
+                        <div class="text-start mt-4 bg-light-danger p-5 rounded-3">
+                            <div class="d-flex justify-content-between mb-2">
+                                <span class="text-gray-600 fw-bold">Saldo Tersedia:</span>
+                                <span class="fw-bolder text-gray-800">Rp. ${saldo.toLocaleString('id-ID')}</span>
+                            </div>
+                            <div class="d-flex justify-content-between mb-2">
+                                <span class="text-gray-600 fw-bold">Total Belanja:</span>
+                                <span class="fw-bolder text-danger">Rp. ${totalPrice.toLocaleString('id-ID')}</span>
+                            </div>
+                            <div class="separator border-danger opacity-25 my-3"></div>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span class="fw-bolder text-gray-800">Kekurangan Saldo:</span>
+                                <span class="fw-bolder text-danger fs-3">Rp. ${(totalPrice - saldo).toLocaleString('id-ID')}</span>
+                            </div>
+                        </div>`,
+                        confirmButtonText: 'Tutup & Ubah',
+                        confirmButtonColor: '#f1416c',
+                        customClass: {
+                            confirmButton: 'btn btn-danger fw-bold'
+                        }
                     });
                     window.isLimitAlertShown = true;
                 }
@@ -1028,11 +1047,31 @@
                 if (!window.isLimitAlertShown) {
                     Swal.fire({
                         icon: 'warning',
-                        title: 'LIMIT SALDO TERLAMPAUI!',
-                        html: `Siswa ini memiliki batas limit belanja: <b>Rp. ${window.currentStudentLimit.toLocaleString('id-ID')}</b> / hari.<br>
-                               Telah terpakai hari ini: <b>Rp. ${window.currentStudentTotalThisDay.toLocaleString('id-ID')}</b>.<br>
-                               Sisa kuota belanja: <b class="text-danger">Rp. ${window.currentStudentRemainingLimit.toLocaleString('id-ID')}</b>`,
-                        confirmButtonText: 'Mengerti'
+                        title: '<h2 class="fw-bolder text-warning mb-0">LIMIT TERLAMPAUI</h2>',
+                        html: `
+                        <div class="text-start mt-4 bg-light-warning p-5 rounded-3">
+                            <div class="d-flex justify-content-between mb-2">
+                                <span class="text-gray-600 fw-bold">Limit Belanja Harian:</span>
+                                <span class="fw-bolder text-gray-800">Rp. ${window.currentStudentLimit.toLocaleString('id-ID')}</span>
+                            </div>
+                            <div class="d-flex justify-content-between mb-2">
+                                <span class="text-gray-600 fw-bold">Telah Terpakai:</span>
+                                <span class="fw-bolder text-gray-800">Rp. ${window.currentStudentTotalThisDay.toLocaleString('id-ID')}</span>
+                            </div>
+                            <div class="separator border-warning opacity-25 my-3"></div>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span class="fw-bolder text-gray-800">Sisa Kuota Belanja:</span>
+                                <span class="fw-bolder text-danger fs-3">Rp. ${window.currentStudentRemainingLimit.toLocaleString('id-ID')}</span>
+                            </div>
+                        </div>
+                        <div class="mt-5 text-gray-600 fs-7 text-center">
+                            Silakan kurangi jumlah barang di keranjang.
+                        </div>`,
+                        confirmButtonText: 'Tutup & Kurangi',
+                        confirmButtonColor: '#ffc700',
+                        customClass: {
+                            confirmButton: 'btn btn-warning fw-bold'
+                        }
                     });
                     window.isLimitAlertShown = true;
                 }
