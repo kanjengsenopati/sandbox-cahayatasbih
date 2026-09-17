@@ -69,8 +69,12 @@ jobs:
                 }
             " || true
 
+            # Set queue to database
+            sed -i 's/QUEUE_CONNECTION=sync/QUEUE_CONNECTION=database/g' .env
+
             /etc/init.d/php-fpm-84 reload 2>/dev/null || /etc/init.d/php-fpm-84 restart 2>/dev/null || true
             nginx -s reload 2>/dev/null || systemctl reload nginx 2>/dev/null || true
 
-
-
+            # Restart queue worker (kill old ones, start new one with nohup)
+            pkill -f "artisan queue:work" || true
+            nohup $PHP_BIN artisan queue:work --sleep=3 --tries=3 --max-time=3600 > /dev/null 2>&1 &
