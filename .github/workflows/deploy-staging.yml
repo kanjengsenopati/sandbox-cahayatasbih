@@ -83,3 +83,12 @@ jobs:
             if ! nginx -s reload 2>/dev/null; then
                 systemctl reload nginx 2>/dev/null || true
             fi
+            
+            # Restart queue worker (using setsid to fully detach from SSH session and prevent timeout)
+            pkill -f "artisan queue:work" || true
+            if command -v setsid >/dev/null 2>&1; then
+                setsid $PHP_BIN artisan queue:work --sleep=3 --tries=3 > /dev/null 2>&1 &
+            else
+                (nohup $PHP_BIN artisan queue:work --sleep=3 --tries=3 > /dev/null 2>&1 &) &
+            fi
+            sleep 2
