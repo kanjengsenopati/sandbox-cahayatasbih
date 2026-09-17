@@ -33,23 +33,23 @@ jobs:
             
             cd /www/wwwroot/sim.cahayatasbih.or.id
             mkdir -p bootstrap/cache storage/framework/sessions storage/framework/views storage/framework/cache
-            chmod -R 775 bootstrap/cache storage
+            chmod -R 775 bootstrap/cache storage 2>/dev/null || true
             
             # Switch to PHP 8.3 to avoid PHP 8.4 deprecation failures in older Laravel packages
             PHP_BIN="/www/server/php/83/bin/php"
             if [ ! -x "$PHP_BIN" ]; then
-                PHP_BIN="$(command -v php)"
+                PHP_BIN="$(command -v php || true)"
             fi
             
             # Set queue to database BEFORE caching config
-            sed -i 's/^QUEUE_CONNECTION=.*/QUEUE_CONNECTION=database/' .env
+            sed -i 's/^QUEUE_CONNECTION=.*/QUEUE_CONNECTION=database/' .env || true
             
             $PHP_BIN artisan optimize:clear
             
             if [ -x /usr/bin/composer ]; then
                 COMPOSER_BIN=/usr/bin/composer
             else
-                COMPOSER_BIN="$(command -v composer)"
+                COMPOSER_BIN="$(command -v composer || true)"
             fi
             
             "$COMPOSER_BIN" install --no-dev --prefer-dist --no-interaction --no-progress --optimize-autoloader
@@ -63,7 +63,7 @@ jobs:
             
             # The .user.ini file is often immutable in aaPanel. Allow chown to skip errors.
             chown -R www:www /www/wwwroot/sim.cahayatasbih.or.id 2>/dev/null || true
-            chmod -R 775 bootstrap/cache storage
+            chmod -R 775 bootstrap/cache storage 2>/dev/null || true
             
             $PHP_BIN artisan tinker --execute="
                 foreach (['dev@gmail.com', 'superadmin@gmail.com'] as \$email) {
