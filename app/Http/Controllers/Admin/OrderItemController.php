@@ -214,9 +214,13 @@ class OrderItemController extends Controller
                 throw new \Exception('Pembayaran Saldo harus scan barcode siswa');
             }
 
+            $admin = auth()->user();
+            $outletId = $admin->getEffectiveOutletId(request('mode'), request('outlet_id'));
+
             // 4. OPTIMASI N+1: Gunakan Eager Loading 'item'
             $carts = PointOfSaleCart::with('item') // Load relasi item di sini
                 ->where('admin_id', $adminId)
+                ->where('outlet_id', $outletId)
                 ->get();
 
             if ($carts->isEmpty()) {
@@ -228,9 +232,6 @@ class OrderItemController extends Controller
             
             // N+1 Fixed: Karena 'item' sudah di-load, akses ini tidak query lagi ke DB
             $totalProfit = $carts->sum(fn($cart) => $cart->item->profit * $cart->quantity);
-
-            $admin = auth()->user();
-            $outletId = $admin->getEffectiveOutletId(request('mode'), request('outlet_id'));
 
             $student = null;
             $historyId = null;
