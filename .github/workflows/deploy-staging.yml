@@ -72,6 +72,16 @@ jobs:
             # Set queue to database
             sed -i 's/QUEUE_CONNECTION=sync/QUEUE_CONNECTION=database/g' .env
 
+            # Sweep ghost bills once
+            $PHP_BIN artisan tinker --execute="
+                echo '=== SWEEPING GHOST BILLS ===' . PHP_EOL;
+                \$students = App\Models\Student::where('status', App\Models\Student::STATUS_ACTIVE)->get();
+                foreach(\$students as \$student) {
+                    App\Services\TransactionService::cleanupGhostBillsForStudent(\$student->id);
+                }
+                echo '=== SWEEP DONE ===' . PHP_EOL;
+            " || true
+
             /etc/init.d/php-fpm-84 reload 2>/dev/null || /etc/init.d/php-fpm-84 restart 2>/dev/null || true
             nginx -s reload 2>/dev/null || systemctl reload nginx 2>/dev/null || true
 
