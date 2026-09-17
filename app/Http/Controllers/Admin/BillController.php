@@ -1607,6 +1607,28 @@ class BillController extends Controller
             ->make(true);
     }
 
+    public function getImportLogDetails($id)
+    {
+        $importLog = ImportLog::findOrFail($id);
+        
+        $transactions = Transaction::with(['student.classroom'])
+            ->where('import_log_id', $importLog->id)
+            ->get();
+
+        $details = $transactions->map(function ($tx) {
+            return [
+                'student_name' => $tx->student->name ?? '-',
+                'classroom' => $tx->student->classroom->name ?? '-',
+                'amount_formatted' => 'Rp ' . number_format($tx->pay_amount, 0, ',', '.')
+            ];
+        });
+
+        return response()->json([
+            'success' => true,
+            'data' => $details
+        ]);
+    }
+
     public function rollbackImport($id)
     {
         $importLog = ImportLog::where('id', $id)

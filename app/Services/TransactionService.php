@@ -448,8 +448,22 @@ class TransactionService
     {
         DB::beginTransaction();
         try {
-            $oldStatus = $transaction->status;
-            $transaction->update($data);
+            // RE-FETCH WITH PESSIMISTIC LOCK TO PREVENT DOUBLE APPROVAL / RACE CONDITIONS
+            $lockedTransaction = Transaction::where('id', $transaction->id)->lockForUpdate()->first();
+            if (!$lockedTransaction) {
+                throw new \Exception("Transaksi tidak ditemukan.");
+            }
+            
+            $oldStatus = $lockedTransaction->status;
+            
+            // IF ALREADY PAID AND REQUEST IS TO PAY AGAIN, PREVENT DOUBLE PROCESSING!
+            if ($oldStatus === Transaction::STATUS_PAID && isset($data['status']) && $data['status'] === Transaction::STATUS_PAID) {
+                DB::commit();
+                return $lockedTransaction;
+            }
+
+            $lockedTransaction->update($data);
+            $transaction = $lockedTransaction; // override variable for the rest of the method
 
             // Rollback logic: Transition from PAID to non-PAID status
             if ($oldStatus === Transaction::STATUS_PAID && $transaction->status !== Transaction::STATUS_PAID) {

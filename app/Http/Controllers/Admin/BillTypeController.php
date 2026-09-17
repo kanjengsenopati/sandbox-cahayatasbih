@@ -259,6 +259,12 @@ class BillTypeController extends Controller
                 ->latest()
                 ->get();
 
+            // Mencegah Ilusi Optik Tagihan Ganda (Memfilter Data Historis yang Duplikat)
+            $regularRates = $regularRates->unique(function ($item) {
+                $classrooms = $item->paymentRateClassrooms->pluck('classroom_id')->sort()->implode('-');
+                return $item->bill_type_id . '_' . $item->amount . '_' . $classrooms;
+            })->values();
+
             // Transfer Rates (Student Based)
             $transferRates = PaymentRate::with(['billType.academicYear', 'paymentRateStudents.student.classroom.school', 'paymentRateItems'])
                 ->withExists('bills')
@@ -349,9 +355,26 @@ class BillTypeController extends Controller
             return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk halaman tersebut');
         }
 
-        $billType->billTypeBank()->delete();
-        $billType->delete();
-        return redirect()->route('bill-type.index')->with('success', 'Data berhasil dihapus');
+        try {
+            DB::transaction(function () use ($billType) {
+                $billType->billTypeBank()->delete();
+                
+                // Cascade delete to Payment Rates & Pivot Classrooms to prevent orphaned locked data
+                $paymentRates = $billType->paymentRates()->get();
+                foreach ($paymentRates as $rate) {
+                    $rate->paymentRateClassrooms()->update(['deleted_at' => now()]);
+                    $rate->paymentRateStudents()->update(['deleted_at' => now()]);
+                    $rate->delete();
+                }
+
+                $billType->delete();
+            });
+
+            return redirect()->route('bill-type.index')->with('success', 'Data berhasil dihapus');
+        } catch (\Exception $e) {
+            Log::error('Error deleting bill type: ' . $e->getMessage());
+            return redirect()->route('bill-type.index')->with('error', 'Gagal menghapus data: ' . $e->getMessage());
+        }
     }
 
     /**

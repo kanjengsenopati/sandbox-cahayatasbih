@@ -60,6 +60,7 @@ class PaymentRateController extends Controller
                       });
                 })
                 ->where('payment_rates.type', PaymentRate::TYPE_REGULAR)
+                ->whereNull('bill_types.deleted_at')
                 ->whereNull('payment_rates.deleted_at')
                 ->whereNull('payment_rate_classrooms.deleted_at')
                 ->pluck('payment_rate_classrooms.classroom_id')
@@ -322,7 +323,8 @@ class PaymentRateController extends Controller
                         $q->where('bill_type_id', $billType->id)
                           ->orWhereHas('billType', function($sub) use ($billType) {
                               $sub->where('name', $billType->name)
-                                  ->where('academic_year_id', $billType->academic_year_id);
+                                  ->where('academic_year_id', $billType->academic_year_id)
+                                  ->whereNull('deleted_at');
                           });
                     })
                     ->where('type', PaymentRate::TYPE_REGULAR)
@@ -376,11 +378,15 @@ class PaymentRateController extends Controller
                 
                 foreach ($months as $month) {
                     $year = ($billType->type == BillType::TYPE_MONTHLY) ? $request->{"tahun_$month"} : ($request->year ?? ($billType->academicYear->start_year ?? date('Y')));
+                    
+                    $itemPrice = ($billType->type == BillType::TYPE_MONTHLY && $request->has("bulan_$month"))
+                        ? (int) preg_replace('/[^0-9]/', '', (string)$request->{"bulan_$month"})
+                        : (int) preg_replace('/[^0-9]/', '', (string)$request->price);
 
                     $paymentRate->paymentRateItems()->create([
                         'month'  => $month,
                         'year'   => $year,
-                        'amount' => (int) preg_replace('/[^0-9]/', '', (string)$request->price),
+                        'amount' => $itemPrice,
                     ]);
                 }
                 
@@ -439,14 +445,11 @@ class PaymentRateController extends Controller
             DB::commit();
             $lock->release();
 
-            // SINKRONISASI LANGSUNG (Synchronous Execution)
+            // SINKRONISASI ASYNCHRONOUS (Background Job)
             try {
-                \Illuminate\Support\Facades\Artisan::call('bills:sync-rate', [
-                    '--bill-type' => $billType->id,
-                    '--force' => true,
-                ]);
+                \App\Jobs\SyncPaymentRateBillsJob::dispatch($billType->id);
             } catch (\Throwable $e) {
-                Log::warning("bills:sync-rate synchronous fallback warning: " . $e->getMessage());
+                \Illuminate\Support\Facades\Log::error('Failed to dispatch SyncPaymentRateBillsJob: ' . $e->getMessage());
             }
 
             return redirect()->route('bill-type.show', $billType->id)
@@ -1202,7 +1205,8 @@ class PaymentRateController extends Controller
                         $q->where('bill_type_id', $billType->id)
                           ->orWhereHas('billType', function($sub) use ($billType) {
                               $sub->where('name', $billType->name)
-                                  ->where('academic_year_id', $billType->academic_year_id);
+                                  ->where('academic_year_id', $billType->academic_year_id)
+                                  ->whereNull('deleted_at');
                           });
                     })
                     ->where('type', PaymentRate::TYPE_REGULAR)

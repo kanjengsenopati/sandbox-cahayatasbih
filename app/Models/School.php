@@ -27,12 +27,16 @@ class School extends Model
         'allow_pwa_login',
         'show_pwa_saldo',
         'allow_pwa_saldo_payment',
+        'is_saldo_limit_active',
+        'saldo_limit',
     ];
 
     protected $casts = [
         'allow_pwa_login' => 'boolean',
         'show_pwa_saldo' => 'boolean',
         'allow_pwa_saldo_payment' => 'boolean',
+        'is_saldo_limit_active' => 'boolean',
+        'saldo_limit' => 'integer',
     ];
 
     public function students()
