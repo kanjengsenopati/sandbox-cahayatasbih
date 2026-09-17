@@ -540,9 +540,10 @@ class Student extends Model
             return (int) $this->classroom->saldo_limit;
         }
 
-        // 2. Check School
-        if ($this->school && $this->school->is_saldo_limit_active) {
-            return (int) $this->school->saldo_limit;
+        // 2. Check School (fallback to classroom's school if direct relation is null)
+        $school = $this->school ?? ($this->classroom ? $this->classroom->school : null);
+        if ($school && $school->is_saldo_limit_active) {
+            return (int) $school->saldo_limit;
         }
 
         // 3. Fallback to Wali's setting
@@ -558,7 +559,8 @@ class Student extends Model
             return true;
         }
 
-        if ($this->school && $this->school->is_saldo_limit_active) {
+        $school = $this->school ?? ($this->classroom ? $this->classroom->school : null);
+        if ($school && $school->is_saldo_limit_active) {
             return true;
         }
 

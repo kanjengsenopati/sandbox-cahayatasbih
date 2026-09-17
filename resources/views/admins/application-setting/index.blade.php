@@ -418,8 +418,9 @@
                                                                                         {{ $school->is_saldo_limit_active ? 'checked' : '' }} />
                                                                                     <label class="form-check-label fw-bold text-gray-800 fs-7" for="school_limit_active_{{ $school->id }}">Limit Saldo</label>
                                                                                 </div>
-                                                                                <input type="text" class="form-control form-control-sm form-control-solid w-125px input-currency" 
+                                                                                <input type="text" class="form-control form-control-sm form-control-solid w-125px input-currency school-limit-input" 
                                                                                     name="schools[{{ $school->id }}][saldo_limit]" 
+                                                                                    data-school-id="{{ $school->id }}"
                                                                                     placeholder="Rp Maksimal"
                                                                                     value="{{ $school->saldo_limit ? number_format($school->saldo_limit, 0, ',', '.') : '' }}" />
                                                                             </div>
@@ -595,9 +596,18 @@
                                                                                                     data-class-id="{{ $class->id }}"
                                                                                                     {{ $class->is_saldo_limit_active ? 'checked' : '' }} />
                                                                                             </div>
-                                                                                            <input type="text" class="form-control form-control-sm form-control-solid w-100px input-currency" 
+                                                                                            @php
+                                                                                                if ($school->is_saldo_limit_active) {
+                                                                                                    $formattedSchoolLimit = $school->saldo_limit ? number_format($school->saldo_limit, 0, ',', '.') : '0';
+                                                                                                    $placeholderText = 'Mewarisi (' . $formattedSchoolLimit . ')';
+                                                                                                } else {
+                                                                                                    $placeholderText = 'Maksimal';
+                                                                                                }
+                                                                                            @endphp
+                                                                                            <input type="text" class="form-control form-control-sm form-control-solid w-100px input-currency class-limit-input" 
                                                                                                 name="classrooms[{{ $class->id }}][saldo_limit]" 
-                                                                                                placeholder="Maksimal"
+                                                                                                placeholder="{{ $placeholderText }}"
+                                                                                                data-school-id="{{ $school->id }}"
                                                                                                 value="{{ $class->saldo_limit ? number_format($class->saldo_limit, 0, ',', '.') : '' }}" />
                                                                                         </div>
                                                                                     </td>
@@ -859,5 +869,31 @@
             }
         });
     });
+
+    // Dynamically update class placeholders when school limit is changed
+    document.querySelectorAll('.school-limit-toggle').forEach(function(toggle) {
+        toggle.addEventListener('change', updateClassPlaceholders);
+    });
+    document.querySelectorAll('.school-limit-input').forEach(function(input) {
+        input.addEventListener('input', updateClassPlaceholders);
+    });
+
+    function updateClassPlaceholders() {
+        document.querySelectorAll('.school-limit-toggle').forEach(function(toggle) {
+            let schoolId = toggle.dataset.schoolId;
+            let isActive = toggle.checked;
+            let schoolInput = document.querySelector('.school-limit-input[data-school-id="'+schoolId+'"]');
+            let schoolVal = schoolInput ? schoolInput.value : '';
+            
+            let placeholderText = 'Maksimal';
+            if (isActive) {
+                placeholderText = 'Mewarisi (' + (schoolVal || '0') + ')';
+            }
+            
+            document.querySelectorAll('.class-limit-input[data-school-id="'+schoolId+'"]').forEach(function(classInput) {
+                classInput.placeholder = placeholderText;
+            });
+        });
+    }
 </script>
 @endpush
