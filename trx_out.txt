@@ -1,0 +1,12 @@
+Array
+(
+    [0] => stdClass Object
+        (
+            [id] => 91d18b15-1c12-4633-a2a5-11fa2c6d2554
+            [user_id] => 
+            [admin_id] => c3083bb4-570d-4b1b-a1f8-3503d230b64d
+            [user_name] => 
+            [admin_name] => 
+        )
+
+)

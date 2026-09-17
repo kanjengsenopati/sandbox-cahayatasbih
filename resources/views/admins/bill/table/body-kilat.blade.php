@@ -127,9 +127,9 @@
 
         if (isset($allStudentBills) && $allStudentBills) {
             if ($isZarkasi) {
-                $existingBills = $allStudentBills->filter(fn($b) => ($b->academic_year_id == $bill->academic_year_id || $b->billType?->academic_year_id == $bill->academic_year_id) && str_contains(strtoupper($b->billType?->name ?? ''), 'ZARKASI'));
+                $existingBills = $allStudentBills->filter(fn($b) => ($b->academic_year_id == $bill->academic_year_id || $b->billType?->academic_year_id == $bill->academic_year_id) && is_null($b->billType?->deleted_at) && str_contains(strtoupper($b->billType?->name ?? ''), 'ZARKASI'));
             } elseif ($isAplikasi) {
-                $existingBills = $allStudentBills->filter(fn($b) => ($b->academic_year_id == $bill->academic_year_id || $b->billType?->academic_year_id == $bill->academic_year_id) && str_contains(strtoupper($b->billType?->name ?? ''), 'APLIKASI'));
+                $existingBills = $allStudentBills->filter(fn($b) => ($b->academic_year_id == $bill->academic_year_id || $b->billType?->academic_year_id == $bill->academic_year_id) && is_null($b->billType?->deleted_at) && str_contains(strtoupper($b->billType?->name ?? ''), 'APLIKASI'));
             } else {
                 $existingBills = $allStudentBills->where('bill_type_id', $bill->id);
             }
@@ -137,12 +137,12 @@
             if ($isZarkasi) {
                 $existingBills = \App\Models\Bill::where('student_id', $student->id)
                     ->where('academic_year_id', $bill->academic_year_id)
-                    ->whereHas('billType', fn($q) => $q->where('name', 'like', '%ZARKASI%'))
+                    ->whereHas('billType', fn($q) => $q->whereNull('deleted_at')->where('name', 'like', '%ZARKASI%'))
                     ->get();
             } elseif ($isAplikasi) {
                 $existingBills = \App\Models\Bill::where('student_id', $student->id)
                     ->where('academic_year_id', $bill->academic_year_id)
-                    ->whereHas('billType', fn($q) => $q->where('name', 'like', '%APLIKASI%'))
+                    ->whereHas('billType', fn($q) => $q->whereNull('deleted_at')->where('name', 'like', '%APLIKASI%'))
                     ->get();
             } else {
                 $existingBills = \App\Models\Bill::where('student_id', $student->id)
