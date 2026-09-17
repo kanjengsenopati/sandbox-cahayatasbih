@@ -90,8 +90,7 @@ class ReportBillStudentController extends Controller
      */
     private function buildBillQuery()
     {
-        return Bill::whereHas('billType')
-            ->whereHas('student')
+        return Bill::query()
             ->when(request()->filled('start_date'), function ($query) {
                 $startDate = Carbon::parse(request()->start_date);
                 $query->where(function ($sub) use ($startDate) {
@@ -124,23 +123,22 @@ class ReportBillStudentController extends Controller
                 $query->where('status', request()->status);
             })
             ->when(request()->filled('student_name'), function ($query) {
-                $searchTerm = strtolower(trim(request()->student_name));
+                $searchTerm = trim(request()->student_name);
                 $query->whereHas('student', function ($sub) use ($searchTerm) {
-                    $sub->whereRaw('LOWER(name) LIKE ?', ['%' . $searchTerm . '%'])
-                        ->orWhereRaw('LOWER(nis) LIKE ?', ['%' . $searchTerm . '%']);
+                    $sub->where('name', 'LIKE', '%' . $searchTerm . '%')
+                        ->orWhere('nis', 'LIKE', '%' . $searchTerm . '%');
                 });
             })
             ->when(
                 request()->has('search') && is_array(request()->search) && isset(request()->search['value']) && !empty(request()->search['value']),
                 function ($query) {
-                    $searchTerm = strtolower(trim(request()->search['value']));
+                    $searchTerm = trim(request()->search['value']);
                     $query->whereHas('student', function ($sub) use ($searchTerm) {
-                        $sub->whereRaw('LOWER(name) LIKE ?', ['%' . $searchTerm . '%'])
-                            ->orWhereRaw('LOWER(nis) LIKE ?', ['%' . $searchTerm . '%']);
+                        $sub->where('name', 'LIKE', '%' . $searchTerm . '%')
+                            ->orWhere('nis', 'LIKE', '%' . $searchTerm . '%');
                     });
                 }
-            )
-            ->latest();
+            );
     }
 
     /**
