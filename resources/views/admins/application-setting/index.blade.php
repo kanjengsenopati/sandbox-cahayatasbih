@@ -418,10 +418,10 @@
                                                                                         {{ $school->is_saldo_limit_active ? 'checked' : '' }} />
                                                                                     <label class="form-check-label fw-bold text-gray-800 fs-7" for="school_limit_active_{{ $school->id }}">Limit Saldo</label>
                                                                                 </div>
-                                                                                <input type="number" class="form-control form-control-sm form-control-solid w-125px" 
+                                                                                <input type="text" class="form-control form-control-sm form-control-solid w-125px input-currency" 
                                                                                     name="schools[{{ $school->id }}][saldo_limit]" 
                                                                                     placeholder="Rp Maksimal"
-                                                                                    value="{{ $school->saldo_limit }}" min="0" />
+                                                                                    value="{{ $school->saldo_limit ? number_format($school->saldo_limit, 0, ',', '.') : '' }}" />
                                                                             </div>
                                                                         </div>
                                                                     </div>
@@ -595,10 +595,10 @@
                                                                                                     data-class-id="{{ $class->id }}"
                                                                                                     {{ $class->is_saldo_limit_active ? 'checked' : '' }} />
                                                                                             </div>
-                                                                                            <input type="number" class="form-control form-control-sm form-control-solid w-100px" 
+                                                                                            <input type="text" class="form-control form-control-sm form-control-solid w-100px input-currency" 
                                                                                                 name="classrooms[{{ $class->id }}][saldo_limit]" 
                                                                                                 placeholder="Maksimal"
-                                                                                                value="{{ $class->saldo_limit }}" min="0" />
+                                                                                                value="{{ $class->saldo_limit ? number_format($class->saldo_limit, 0, ',', '.') : '' }}" />
                                                                                         </div>
                                                                                     </td>
                                                                                     <td class="text-end">
@@ -846,6 +846,18 @@
 <script>
     $('.time').mask('00:00', {
         reverse: true
+    });
+    
+    // Auto-format thousand separators for currency inputs
+    document.querySelectorAll('.input-currency').forEach(function(input) {
+        input.addEventListener('input', function(e) {
+            let val = this.value.replace(/[^0-9]/g, '');
+            if (val !== '') {
+                this.value = parseInt(val, 10).toLocaleString('id-ID');
+            } else {
+                this.value = '';
+            }
         });
+    });
 </script>
 @endpush
