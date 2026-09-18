@@ -26,7 +26,7 @@ class DashboardController extends Controller
     {
         try {
             $user = Auth::user();
-            if ($user && $user->isKasir()) {
+            if ($user && $user->isKasirOnly()) {
                 if ($user->isKasirKoperasi()) {
                     $effectiveOutletId = $user->getEffectiveOutletId('kantin');
                     return redirect('/order-item?mode=kantin' . ($effectiveOutletId ? '&outlet_id=' . $effectiveOutletId : ''));
@@ -36,7 +36,7 @@ class DashboardController extends Controller
                     return redirect('/order-item?mode=outlet' . ($effectiveOutletId ? '&outlet_id=' . $effectiveOutletId : ''));
                 }
             }
-            $isOutletUser = $user->hasRole('Kasir') || $user->hasRole('Karyawan Outlet ( Non Kasir )') || request()->input('mode') === 'outlet';
+            $isOutletUser = ($user && $user->isKasirOnly()) || ($user && $user->hasRole('Karyawan Outlet ( Non Kasir )')) || request()->input('mode') === 'outlet';
 
             if ($isOutletUser) {
                 $outletIds = $user->getOutletIds();

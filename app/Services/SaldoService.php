@@ -33,5 +33,7 @@ class SaldoService
         if ($status === SaldoHistory::STATUS_SUCCESS) {
             SaldoRecalculatorService::recalculateForStudent($student->id);
         }
+
+        return $history;
     }
 }

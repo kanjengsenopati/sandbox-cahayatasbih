@@ -245,9 +245,11 @@ class SyncPaymentRateBills extends Command
                                 if ($paidAmount > 0) {
                                     // There is already a payment made on this bill
                                     if ($paidAmount >= $newAmount) {
+                                        // Cegah anomali overpaid: Jangan turunkan amount di bawah paid_amount yang sudah disetor siswa
+                                        $targetAmount = $paidAmount;
                                         if (!$isDryRun) {
                                             DB::table('bills')->where('id', $existingBill->id)->update([
-                                                'amount' => $newAmount,
+                                                'amount' => $targetAmount,
                                                 'status' => \App\Models\Bill::STATUS_PAID,
                                                 'payment_rate_item_id' => $item->id,
                                                 'classroom_id'         => $targetClassroomId,

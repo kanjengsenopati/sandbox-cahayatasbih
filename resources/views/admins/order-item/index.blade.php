@@ -665,9 +665,7 @@
                 button.classList.add('btn', 'btn-primary');
                 button.textContent = 'Pilih';
                 button.addEventListener('click', function () {
-                addProductToCart(product);
-                appendProductToTable(product);
-                updateTotalPrice();
+                    addProductToCart(product);
                 });
                 tdAction.appendChild(button);
                 tr.appendChild(tdAction);
@@ -704,12 +702,67 @@
         } else {
             clearInput(searchProductInput);
             addProductToCart(product);
-            appendProductToTable(product);
-            updateTotalPrice();
         }
     }
 
-    // add product to cart use axios
+    // Update catalog stock badge without re-rendering entire grid
+    function updateCatalogStockBadge(item) {
+        if (!item || !item.id) return;
+        var badgeContainer = document.getElementById(`catalog-stock-badge-${item.id}`);
+        if (badgeContainer) {
+            var stockBadge = item.stock <= 5 
+                ? `<span class="badge bg-light-danger text-danger fw-bold fs-9">Stok Menipis: ${item.stock}</span>`
+                : `<span class="badge bg-light-success text-success fw-bold fs-9">Stok: ${item.stock}</span>`;
+            badgeContainer.innerHTML = stockBadge;
+        }
+    }
+
+    // Apply total price and update remaining saldo
+    function applyTotalPrice(totalPrice) {
+        totalPrice = Number(totalPrice);
+        var formattedTotalPrice = !isNaN(totalPrice) ? `Rp. ${totalPrice.toLocaleString('id-ID')}` : 'Rp. 0';
+        var totalPriceElement = document.getElementById('total-price');
+        if (totalPriceElement) {
+            totalPriceElement.value = formattedTotalPrice;
+        }
+
+        var remainingSaldoElement = document.getElementById('remaining-saldo');
+        var saldoElement = document.getElementById('saldo');
+
+        if (saldoElement && remainingSaldoElement) {
+            var saldo = parseInt(saldoElement.value.replace(/[Rp.\s]/g, ''));
+            if (saldo) {
+                var remainingSaldo = saldo - totalPrice;
+                remainingSaldoElement.value = `Rp. ${remainingSaldo.toLocaleString('id-ID')}`;
+            } else {
+                remainingSaldoElement.value = `Rp. 0`;
+            }
+        }
+    }
+
+    // Render cart items and total price to table #list-product
+    function renderCartData(products, totalPrice) {
+        var listProduct = document.getElementById('list-product');
+        if (!listProduct) return;
+        listProduct.innerHTML = '';
+
+        if (products && products.length > 0) {
+            products.forEach(function (product) {
+                var tr = createTableRow(product);
+                listProduct.appendChild(tr);
+            });
+        } else {
+            var tr = document.createElement('tr');
+            tr.innerHTML = `<td colspan="5" class="text-center">Barang Masih Kosong</td>`;
+            listProduct.appendChild(tr);
+        }
+
+        if (totalPrice !== undefined && totalPrice !== null) {
+            applyTotalPrice(totalPrice);
+        }
+    }
+
+    // add product to cart using axios with fast in-place update
     function addProductToCart(product) {
         axios.post("{{ route('order-item.add-to-cart') }}", {
             code: product.code,
@@ -717,13 +770,25 @@
             mode: requestMode,
             outlet_id: requestOutletId
         }).then(function (response) {
-            // if success, refresh table product #list-product
-            refreshProductList();
-            // Refresh product grid to show updated stock!
-            var searchInput = document.getElementById('grid-search-product');
-            loadProductCatalog(searchInput ? searchInput.value : '');
+            if (response.data && response.data.data) {
+                var data = response.data.data;
+                if (data.carts) {
+                    renderCartData(data.carts, data.total_price);
+                } else {
+                    refreshProductList();
+                }
+                if (data.updated_item) {
+                    updateCatalogStockBadge(data.updated_item);
+                }
+            } else {
+                refreshProductList();
+            }
         }).catch(function (error) {
             console.error(error);
+            var msg = (error.response && error.response.data && error.response.data.message) 
+                ? error.response.data.message 
+                : 'Terjadi kesalahan saat menambahkan barang ke keranjang';
+            showErrorAlert(msg);
         });
     }
 
@@ -762,12 +827,12 @@
                         
                         cardCol.innerHTML = `
                             <div class="product-card d-flex flex-column h-100" onclick="addProductFromGrid(${escapedProduct})">
-                                <img src="${imageUrl}" class="product-image" alt="${product.name}" />
+                                <img src="${imageUrl}" class="product-image" alt="${product.name}" onerror="this.onerror=null;this.src=defaultImageUrl;" />
                                 <div class="product-info d-flex flex-column justify-content-between flex-grow-1">
                                     <div class="mb-2">
                                         <div class="text-label mb-1">${product.category_item ? product.category_item.name : 'UMUM'}</div>
                                         <h4 class="text-body fw-bold mb-1 text-dark" style="display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; height: 36px;">${product.name}</h4>
-                                        <div class="mt-1">${stockBadge}</div>
+                                        <div class="mt-1" id="catalog-stock-badge-${product.id}">${stockBadge}</div>
                                     </div>
                                     <div class="d-flex justify-content-between align-items-center mt-auto pt-2">
                                         <span class="text-amount">${formattedPrice}</span>
@@ -800,80 +865,63 @@
     }
 
     function refreshProductList() {
-    // Show loader
-    document.getElementById('product-loader').style.display = 'block';
-    
-    axios.get("{{ route('order-item.get-cart') }}", {
-        params: {
-            mode: requestMode,
-            outlet_id: requestOutletId
-        }
-    })
-    .then(function (response) {
-    var products = response.data.data;
-    var listProduct = document.getElementById('list-product');
-    // Clear existing rows
-    listProduct.innerHTML = '';
-    
-    if (products && products.length > 0) {
-    products.forEach(function (product, index) {
-    var tr = createTableRow(product);
-    listProduct.appendChild(tr);
-    });
-    } else {
-    // Display message if no products found
-    var tr = document.createElement('tr');
-    tr.innerHTML = `<td colspan="5" class="text-center">Barang Masih Kosong</td>`;
-    listProduct.appendChild(tr);
-    }
-    updateTotalPrice();
-    
-    // Hide loader
-    document.getElementById('product-loader').style.display = 'none';
-    }).catch(function (error) {
-    console.error(error);
-    // Hide loader in case of error
-    document.getElementById('product-loader').style.display = 'none';
-    });
+        var loader = document.getElementById('product-loader');
+        if (loader) loader.style.display = 'block';
+        
+        axios.get("{{ route('order-item.get-cart') }}", {
+            params: {
+                mode: requestMode,
+                outlet_id: requestOutletId
+            }
+        })
+        .then(function (response) {
+            var products = response.data.data;
+            renderCartData(products);
+            updateTotalPrice();
+            if (loader) loader.style.display = 'none';
+        }).catch(function (error) {
+            console.error(error);
+            if (loader) loader.style.display = 'none';
+        });
     }
 
     function createTableRow(product) {
-    var tr = document.createElement('tr');
-    tr.innerHTML = `
-    <td>
-        <div class="d-flex align-items-center" data-kt-ecommerce-edit-order-filter="product"
-            data-kt-ecommerce-edit-order-id="product_${product?.id || 'unknown'}">
-            <a class="symbol symbol-50px">
-                <span class="symbol-label" style="background-image:url(${product?.item?.image || defaultImageUrl})"></span>
-            </a>
-            <div class="ms-5">
-                <a class="text-gray-800 text-hover-primary fs-5 fw-bolder">${product?.item?.name || 'Unknown Product'}</a>
-                <div class="text-muted fs-7">Stok: ${product?.item?.stock ?? 'N/A'}</div>
+        var tr = document.createElement('tr');
+        tr.innerHTML = `
+        <td>
+            <div class="d-flex align-items-center" data-kt-ecommerce-edit-order-filter="product"
+                data-kt-ecommerce-edit-order-id="product_${product?.id || 'unknown'}">
+                <a class="symbol symbol-50px">
+                    <span class="symbol-label" style="background-image:url(${product?.item?.image || defaultImageUrl})"></span>
+                </a>
+                <div class="ms-5">
+                    <a class="text-gray-800 text-hover-primary fs-5 fw-bolder">${product?.item?.name || 'Unknown Product'}</a>
+                    <div class="text-muted fs-7">Stok: ${product?.item?.stock ?? 'N/A'}</div>
+                </div>
             </div>
-        </div>
-    </td>
-    <td>
-        <div class="d-flex justify-content-center align-items-center">
-            <a class="btn btn-icon btn-light-primary btn-sm me-2 decrement-btn"
-                onclick="updateCartQuantity('${product.id}', Math.max(1, ${product.quantity - 1}))">
-                <i class="fas fa-minus"></i>
+        </td>
+        <td>
+            <div class="d-flex justify-content-center align-items-center">
+                <a class="btn btn-icon btn-light-primary btn-sm me-2 decrement-btn"
+                    onclick="updateCartQuantity('${product.id}', Math.max(1, ${product.quantity - 1}))">
+                    <i class="fas fa-minus"></i>
+                </a>
+                <span class="quantity">${product.quantity}</span>
+                <a class="btn btn-icon btn-light-primary btn-sm ms-2 increment-btn"
+                    onclick="updateCartQuantity('${product.id}', ${product.quantity + 1})">
+                    <i class="fas fa-plus"></i>
+                </a>
+                <input type="hidden" value="${product.id}">
+            </div>
+        </td>
+        <td>Rp. ${product.price.toLocaleString('id-ID')}</td>
+        <td>Rp. ${product.total.toLocaleString('id-ID')}</td>
+        <td>
+            <a class="btn btn-icon btn-light-danger btn-sm" onclick="deleteProductFromCart('${product.id}')">
+                <span class="svg-icon svg-icon-3"><i class="fas fa-trash"></i></span>
             </a>
-            <span class="quantity">${product.quantity}</span>
-            <a class="btn btn-icon btn-light-primary btn-sm ms-2 increment-btn"
-                onclick="updateCartQuantity('${product.id}', Math.min(${product.item.stock}, ${product.quantity + 1}))">
-                <i class="fas fa-plus"></i>
-            </a>
-            <input type="hidden" value="${product.id}">
-        </div>
-    </td>
-    <td>Rp. ${product.price.toLocaleString('id-ID')}</td>
-    <td>Rp. ${product.total.toLocaleString('id-ID')}</td>
-    <td>
-        <a class="btn btn-icon btn-light-danger btn-sm" onclick="deleteProductFromCart('${product.id}')">
-            <span class="svg-icon svg-icon-3"><i class="fas fa-trash"></i></span>
-        </a>
-    </td>`;
-    return tr;
+        </td>`;
+        return tr;
     }
 
     function deleteProductFromCart(productId) {
@@ -882,9 +930,15 @@
             mode: requestMode,
             outlet_id: requestOutletId
         }).then(function (response) {
-            refreshProductList();
-            var searchInput = document.getElementById('grid-search-product');
-            loadProductCatalog(searchInput ? searchInput.value : '');
+            if (response.data && response.data.data) {
+                var data = response.data.data;
+                renderCartData(data.carts, data.total_price);
+                if (data.updated_item) {
+                    updateCatalogStockBadge(data.updated_item);
+                }
+            } else {
+                refreshProductList();
+            }
         }).catch(function (error) {
             console.error(error);
         });
@@ -897,11 +951,21 @@
             mode: requestMode,
             outlet_id: requestOutletId
         }).then(function (response) {
-            refreshProductList();
-            var searchInput = document.getElementById('grid-search-product');
-            loadProductCatalog(searchInput ? searchInput.value : '');
+            if (response.data && response.data.data) {
+                var data = response.data.data;
+                renderCartData(data.carts, data.total_price);
+                if (data.updated_item) {
+                    updateCatalogStockBadge(data.updated_item);
+                }
+            } else {
+                refreshProductList();
+            }
         }).catch(function (error) {
             console.error(error);
+            var msg = (error.response && error.response.data && error.response.data.message) 
+                ? error.response.data.message 
+                : 'Gagal mengubah jumlah barang';
+            showErrorAlert(msg);
         });
     }
 
@@ -931,66 +995,41 @@
             }
         })
         .then(function (response) {
-        var totalPrice = response.data.data;
-        // Ensure totalPrice is a number
-        totalPrice = Number(totalPrice); // Convert to number if it's a string
-        
-        // Check if conversion is successful and totalPrice is a valid number
-        if (!isNaN(totalPrice)) {
-        var formattedTotalPrice = `Rp. ${totalPrice.toLocaleString('id-ID')}`;
-        } else {
-        console.error('totalPrice is not a valid number');
-        var formattedTotalPrice = 'Rp. 0'; // Default or error handling value
-        }
-        var totalPriceElement = document.getElementById('total-price');
-        totalPriceElement.value = formattedTotalPrice;
-
-        var remainingSaldoElement = document.getElementById('remaining-saldo');
-        var saldoElement = document.getElementById('saldo');
-
-        // Get the saldo value and remove formatting
-        var saldo = parseInt(saldoElement.value.replace(/[Rp.\s]/g, ''));
-
-        if (saldo) {
-        var remainingSaldo = saldo - totalPrice;
-        remainingSaldoElement.value = `Rp. ${remainingSaldo.toLocaleString('id-ID')}`;
-        } else {
-        remainingSaldoElement.value = `Rp. 0`;
-        }
+            applyTotalPrice(response.data.data);
         })
         .catch(function (error) {
-        console.error(error);
+            console.error(error);
         });
     }
 
     function deleteAllProductFromCart() {
-        // Menampilkan SweetAlert konfirmasi sebelum menghapus
         Swal.fire({
-        title: 'Yakin ingin menghapus semua barang?',
-        text: 'Semua barang yang ada di keranjang akan dihapus dari keranjang!',
-        icon: 'warning',
-        showCancelButton: true,
-        // confirmButtonColor: red
-        confirmButtonColor: '#d33',
-        confirmButtonText: 'Ya, hapus semua!',
-        cancelButtonText: 'Batal'
+            title: 'Yakin ingin menghapus semua barang?',
+            text: 'Semua barang yang ada di keranjang akan dihapus dari keranjang!',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            confirmButtonText: 'Ya, hapus semua!',
+            cancelButtonText: 'Batal'
         }).then((result) => {
-        // Jika pengguna menekan tombol "Ya"
-        if (result.isConfirmed) {
-        // Mengirim permintaan AJAX untuk menghapus semua barang dari keranjang
-        axios.post("{{ route('order-item.delete-all-cart') }}", {
-            mode: requestMode,
-            outlet_id: requestOutletId
-        })
-        .then(function (response) {
-        // Menjalankan fungsi refreshProductList() setelah penghapusan berhasil
-        refreshProductList();
-        var searchInput = document.getElementById('grid-search-product');
-        loadProductCatalog(searchInput ? searchInput.value : '');
-        }).catch(function (error) {
-        console.error(error);
-        });
-        }
+            if (result.isConfirmed) {
+                axios.post("{{ route('order-item.delete-all-cart') }}", {
+                    mode: requestMode,
+                    outlet_id: requestOutletId
+                })
+                .then(function (response) {
+                    if (response.data && response.data.data) {
+                        var data = response.data.data;
+                        renderCartData(data.carts || [], data.total_price || 0);
+                    } else {
+                        refreshProductList();
+                    }
+                    var searchInput = document.getElementById('grid-search-product');
+                    loadProductCatalog(searchInput ? searchInput.value : '');
+                }).catch(function (error) {
+                    console.error(error);
+                });
+            }
         });
     }
 
@@ -1035,8 +1074,6 @@
                 button.textContent = 'Pilih';
                 button.addEventListener('click', function () {
                     addProductToCart(product);
-                    appendProductToTable(product);
-                    updateTotalPrice();
                 });
                 tdAction.appendChild(button);
                 tr.appendChild(tdAction);

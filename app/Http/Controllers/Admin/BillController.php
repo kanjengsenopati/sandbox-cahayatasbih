@@ -992,30 +992,33 @@ class BillController extends Controller
                         if ($transaction) {
                             // Jika pembayaran menggunakan Saldo, kembalikan saldo siswa (Refund)
                             if ($transaction->paymentMethod?->type == \App\Models\PaymentMethod::TYPE_BALANCE || $detail->saldo_history_id) {
-                                $student = $transaction->student;
+                                $student = \App\Models\Student::where('id', $transaction->student_id)->lockForUpdate()->first();
                                 if ($student) {
-                                    $student->saldo += $detail->amount ?? $bill->amount;
-                                    $student->save();
+                                    $refundAmount = $detail->amount ?? $bill->amount;
+                                    $balanceBefore = $student->saldo;
+                                    $student->increment('saldo', $refundAmount);
+                                    $student->refresh();
+                                    $balanceAfter = $student->saldo;
 
                                     // Catat riwayat refund saldo
                                     \App\Models\SaldoHistory::create([
                                         'student_id' => $student->id,
-                                        'amount' => $detail->amount ?? $bill->amount,
+                                        'amount' => $refundAmount,
                                         'type' => \App\Models\SaldoHistory::TYPE_IN,
-                                        'description' => 'Refund Pembatalan Tagihan Sebesar Rp.' . number_format($detail->amount ?? $bill->amount, 0, ',', '.'),
+                                        'description' => 'Refund Pembatalan Tagihan ' . ($bill->billType?->name ?? '') . ' (' . ($transaction->payment_code ?? '') . ') Sebesar Rp.' . number_format($refundAmount, 0, ',', '.'),
                                         'status' => \App\Models\SaldoHistory::STATUS_SUCCESS,
                                         'usage' => \App\Models\SaldoHistory::USAGE_TOPUP,
-                                        'balance_before' => $student->saldo - ($detail->amount ?? $bill->amount),
-                                        'balance_after' => $student->saldo,
+                                        'balance_before' => $balanceBefore,
+                                        'balance_after' => $balanceAfter,
                                     ]);
+
+                                    \App\Services\SaldoRecalculatorService::recalculateForStudent($student->id);
                                 }
                             }
 
-                            // Hapus detail transaksi, dan hapus transaksi induk jika tidak memiliki detail lain
+                            // Batalkan transaksi dan soft-delete detail untuk menjaga audit trail
+                            $transaction->update(['status' => \App\Models\Transaction::STATUS_CANCELLED]);
                             $detail->delete();
-                            if ($transaction->transactionDetails()->whereNull('deleted_at')->count() == 0) {
-                                $transaction->delete();
-                            }
                         }
                     }
                 }
@@ -1686,4 +1689,86 @@ class BillController extends Controller
             ], 500);
         }
     }
+
+    /**
+     * Tampilkan hasil audit konsistensi 6 item tagihan dan keuangan.
+     */
+    public function auditConsistency()
+    {
+        $user = Auth::user();
+        $isAuthorized = $user && (
+            $user->can('Manage Tagihan') ||
+            $user->can('Edit Status Tagihan') ||
+            $user->hasRole('SUPER ADMIN') ||
+            $user->hasRole('Super Admin') ||
+            str_contains(strtoupper($user->getRoleNames()->implode(' ')), 'BENDAHARA')
+        );
+
+        if (!$isAuthorized) {
+            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses ke fitur audit konsistensi.');
+        }
+
+        $auditResults = \App\Services\BillingConsistencyAuditService::runFullAudit();
+
+        if (request()->ajax() || request()->wantsJson()) {
+            return response()->json([
+                'status' => 'success',
+                'data' => $auditResults
+            ]);
+        }
+
+        return view('admins.bill.audit-consistency', compact('auditResults'));
+    }
+
+    /**
+     * Eksekusi perbaikan otomatis konsistensi data tagihan.
+     */
+    public function repairConsistency(Request $request)
+    {
+        $user = Auth::user();
+        $isAuthorized = $user && (
+            $user->can('Manage Tagihan') ||
+            $user->can('Edit Status Tagihan') ||
+            $user->hasRole('SUPER ADMIN') ||
+            $user->hasRole('Super Admin') ||
+            str_contains(strtoupper($user->getRoleNames()->implode(' ')), 'BENDAHARA')
+        );
+
+        if (!$isAuthorized) {
+            return response()->json(['status' => 'error', 'message' => 'Unauthorized'], 403);
+        }
+
+        $options = [
+            'fix_overpaid' => $request->boolean('fix_overpaid', true),
+            'fix_ghost_inactive' => $request->boolean('fix_ghost_inactive', false),
+            'fix_ghost_deleted' => $request->boolean('fix_ghost_deleted', false),
+            'relink_rate_items' => $request->boolean('relink_rate_items', true),
+            'backfill_details' => $request->boolean('backfill_details', true),
+        ];
+
+        $dryRun = $request->boolean('dry_run', false);
+
+        DB::beginTransaction();
+        try {
+            $repairResults = \App\Services\BillingConsistencyAuditService::repair($options, $dryRun);
+
+            if ($dryRun) {
+                DB::rollBack();
+            } else {
+                DB::commit();
+            }
+
+            return response()->json([
+                'status' => 'success',
+                'message' => $dryRun ? 'Simulasi perbaikan (dry-run) berhasil diselesaikan tanpa mengubah database.' : 'Perbaikan konsistensi tagihan berhasil disimpan ke database.',
+                'results' => $repairResults,
+                'dry_run' => $dryRun
+            ]);
+        } catch (\Throwable $th) {
+            DB::rollBack();
+            Log::error($th);
+            return response()->json(['status' => 'error', 'message' => $th->getMessage()], 500);
+        }
+    }
 }
+

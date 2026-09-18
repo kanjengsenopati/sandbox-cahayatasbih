@@ -228,7 +228,14 @@ class StudentController extends Controller
         if (empty($data['nickname']) && !empty($data['name'])) {
             $data['nickname'] = explode(' ', trim($data['name']))[0];
         }
-        Student::create($data);
+        $student = Student::create($data);
+        if ($student && $student->status === Student::STATUS_ACTIVE && $student->classroom_id) {
+            try {
+                \App\Jobs\SyncStudentBillsJob::dispatch($student->id);
+            } catch (\Throwable $th) {
+                \Illuminate\Support\Facades\Log::warning("Auto-sync bills for new student {$student->id}: " . $th->getMessage());
+            }
+        }
         if ($request->ajax()) {
             return response()->json(['success' => true, 'message' => 'Siswa berhasil ditambahkan']);
         }

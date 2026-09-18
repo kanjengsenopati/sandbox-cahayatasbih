@@ -130,9 +130,19 @@ class Student extends Model
 
     public function scopeHasSchoolPlace($query)
     {
-        // if auth user have school_id, then use it
-        if (Auth::guard('web')->user()?->school_id) {
-            return $query->whereSchoolId(Auth::guard('web')->user()->school_id);
+        $admin = Auth::guard('web')->user() ?? Auth::user();
+        if (!$admin || (method_exists($admin, 'isSuperAdmin') && $admin->isSuperAdmin())) {
+            return;
+        }
+
+        $schoolIds = method_exists($admin, 'getSchoolIds') ? $admin->getSchoolIds() : ($admin->school_id ? [$admin->school_id] : []);
+        if (!empty($schoolIds)) {
+            return $query->where(function ($q) use ($schoolIds) {
+                $q->whereIn('school_id', $schoolIds)
+                  ->orWhereHas('classroom', function ($cQ) use ($schoolIds) {
+                      $cQ->whereIn('school_id', $schoolIds);
+                  });
+            });
         }
     }
 
@@ -155,7 +165,7 @@ class Student extends Model
         $departureMonth = $departureDate ? (int)date('n', strtotime($departureDate)) : (int)date('n');
 
         $this->bills()
-            ->where('status', \App\Models\Bill::STATUS_UNPAID)
+            ->where('paid_amount', 0)
             ->where(function($query) use ($departureYear, $departureMonth) {
                 $query->where('year', '>', $departureYear)
                       ->orWhere(function($sub) use ($departureYear, $departureMonth) {
@@ -227,7 +237,7 @@ class Student extends Model
         });
 
         static::deleted(function ($student) {
-            $student->bills()->where('status', \App\Models\Bill::STATUS_UNPAID)->delete();
+            $student->bills()->where('paid_amount', 0)->delete();
         });
     }
 
@@ -245,7 +255,7 @@ class Student extends Model
 
         $isSuperOrAdmin = false;
         try {
-            if (method_exists($admin, 'hasRole') && ($admin->hasRole('Super Admin') || $admin->hasRole('Admin'))) {
+            if ((method_exists($admin, 'isSuperAdmin') && $admin->isSuperAdmin()) || (method_exists($admin, 'hasRole') && ($admin->hasRole('Super Admin') || $admin->hasRole('Admin')))) {
                 $isSuperOrAdmin = true;
             }
         } catch (\Throwable $e) {}

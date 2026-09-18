@@ -202,7 +202,11 @@
             </div>
             <!--end::Page title-->
             <!--begin::Actions-->
-
+            <div class="d-flex align-items-center gap-2 gap-lg-3">
+                <a href="{{ route('bill.audit-consistency') }}" class="btn btn-sm btn-primary fw-bold">
+                    <i class="bi bi-shield-check me-1"></i> Audit Konsistensi Tagihan
+                </a>
+            </div>
             <!--end::Actions-->
         </div>
         <!--end::Container-->
@@ -675,6 +679,23 @@
                         </div>
                         <div class="tab-pane fade" id="audit_anomaly_data" role="tabpanel">
                             <!-- Audit Anomaly Data Content -->
+                            <div class="alert alert-primary d-flex align-items-center justify-content-between p-5 mb-5 rounded-4 shadow-sm" style="background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%); border: 1px solid #bfdbfe;">
+                                <div class="d-flex align-items-center">
+                                    <div class="symbol symbol-45px me-4">
+                                        <span class="symbol-label bg-primary text-white">
+                                            <i class="bi bi-shield-check fs-2"></i>
+                                        </span>
+                                    </div>
+                                    <div class="d-flex flex-column">
+                                        <h5 class="mb-1 text-slate-800 fw-bolder">Audit & Konsistensi Finansial (6 Item Kritis)</h5>
+                                        <span class="text-slate-600 fs-7">Deteksi jenis tagihan duplikat, tarif kosong, siswa tanpa tagihan, ghost billing, dan inkonsistensi status tagihan. Dilengkapi fitur safe auto-repair.</span>
+                                    </div>
+                                </div>
+                                <a href="{{ route('bill.audit-consistency') }}" class="btn btn-primary fw-bold text-nowrap ms-4 px-5">
+                                    <i class="bi bi-speedometer2 me-2"></i> Buka Dashboard Konsistensi
+                                </a>
+                            </div>
+
                             <div class="card card-flush">
                                 <div class="card-body p-0">
                                     <div class="p-0 border-0 bg-white m-0" style="width: 100%; min-height: 800px;">

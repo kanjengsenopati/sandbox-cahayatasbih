@@ -358,6 +358,16 @@ class TransactionService
                         if (!empty($detailsToInsert)) {
                             TransactionDetail::insert($detailsToInsert);
                         }
+                    } elseif (($type ?? Transaction::TYPE_BILL) == Transaction::TYPE_SALDO || ($type ?? Transaction::TYPE_BILL) == Transaction::TYPE_SAVING) {
+                        $rawAmount = $request->amount ?? $transaction->pay_amount;
+                        $amountToSave = intval(preg_replace('/[^0-9]/', '', (string)$rawAmount));
+                        TransactionDetail::create([
+                            'id' => \Illuminate\Support\Str::uuid()->toString(),
+                            'transaction_id' => $transaction->id,
+                            'amount' => $amountToSave,
+                            'created_at' => now(),
+                            'updated_at' => now(),
+                        ]);
                     }
 
                     // Logika untuk jenis pembayaran
@@ -424,27 +434,47 @@ class TransactionService
 
     public static function getTotalPayAmount($billIds, $studentId = null)
     {
-        $total = 0;
+        if (empty($billIds)) {
+            return 0;
+        }
+
+        $realIds = [];
         foreach ((array)$billIds as $billId) {
             $realId = $studentId ? self::ensureBillRecord($studentId, $billId) : $billId;
-            $bill = Bill::find($realId);
-            if ($bill) {
-                $total += $bill->remaining_amount;
+            if ($realId) {
+                $realIds[] = $realId;
             }
         }
-        return $total;
+
+        if (empty($realIds)) {
+            return 0;
+        }
+
+        return (int) Bill::whereIn('id', $realIds)->get()->sum(fn($bill) => $bill->remaining_amount);
     }
 
     public static function dispatchNotifications($transaction)
     {
-        $messageWhatsapp = SendNotifWaService::sendMessageBillNotification($transaction);
-        \App\Services\NotificationService::sendFromTemplate('payment_success', $transaction->student->user, [], $transaction);
-        dispatch(new SendToWhatsappNotificationJob($transaction->student->user->phone, $messageWhatsapp));
-        $contacts = Contact::where('type', Contact::TYPE_BENDAHARA)->orWhere('type', Contact::TYPE_SUPERADMIN)->get();
-        if ($contacts->isNotEmpty()) {
-            foreach ($contacts as $contact) {
-                dispatch(new SendToWhatsappNotificationJob($contact->phone, $messageWhatsapp));
+        try {
+            $user = $transaction->student?->user;
+            $phone = $user?->phone;
+            $messageWhatsapp = SendNotifWaService::sendMessageBillNotification($transaction);
+
+            if ($user && $phone) {
+                \App\Services\NotificationService::sendFromTemplate('payment_success', $user, [], $transaction);
+                dispatch(new SendToWhatsappNotificationJob($phone, $messageWhatsapp));
             }
+
+            $contacts = Contact::where('type', Contact::TYPE_BENDAHARA)->orWhere('type', Contact::TYPE_SUPERADMIN)->get();
+            if ($contacts->isNotEmpty()) {
+                foreach ($contacts as $contact) {
+                    if (!empty($contact->phone)) {
+                        dispatch(new SendToWhatsappNotificationJob($contact->phone, $messageWhatsapp));
+                    }
+                }
+            }
+        } catch (\Throwable $e) {
+            Log::warning("Gagal mengirim notifikasi pembayaran transaksi #{$transaction->payment_code}: " . $e->getMessage());
         }
     }
 
@@ -471,6 +501,7 @@ class TransactionService
         TransactionDetail::create([
             'transaction_id' => $transaction->id,
             'ppdb_registration_id' => $ppdbRegistration->id,
+            'amount' => $transaction->pay_amount,
         ]);
 
 
@@ -530,15 +561,36 @@ class TransactionService
                             ->decrement('saldo', $transaction->unique_payment);
                         
                         if ($affected) {
-                            Log::info("Rollback Kode Unik: Mengurangi saldo siswa {$student->name} ({$student->id}) sebesar Rp.{$transaction->unique_payment} akibat pembatalan transaksi.");
+                            Log::info("Rollback Kode Unik: Mengurangi saldo siswa {$student->name} ({$student->id}) sebesar Rp.{$transaction->unique_payment} akibat pembatalan transaksi {$transaction->payment_code}.");
                         } else {
                             Log::warning("Rollback Kode Unik: Saldo siswa {$student->name} ({$student->id}) tidak mencukupi untuk dikurangi Rp.{$transaction->unique_payment}.");
                         }
                     }
-                    \App\Models\SaldoHistory::where('student_id', $transaction->student_id)
-                        ->where('amount', (int) $transaction->unique_payment)
-                        ->where('description', 'like', '%Kode Unik%')
-                        ->forceDelete();
+
+                    $uniqueDetail = \App\Models\TransactionDetail::where('transaction_id', $transaction->id)
+                        ->whereNotNull('saldo_history_id')
+                        ->first();
+
+                    if ($uniqueDetail && $uniqueDetail->saldo_history_id) {
+                        \App\Models\SaldoHistory::where('id', $uniqueDetail->saldo_history_id)->forceDelete();
+                        $uniqueDetail->delete();
+                    } else {
+                        \App\Models\SaldoHistory::where('student_id', $transaction->student_id)
+                            ->where('amount', (int) $transaction->unique_payment)
+                            ->where(function($q) use ($transaction) {
+                                $q->where('description', 'like', '%' . $transaction->payment_code . '%')
+                                  ->orWhere('description', 'like', '%Kode Unik%');
+                            })
+                            ->when($transaction->created_at, function($q) use ($transaction) {
+                                $cAt = Carbon::parse($transaction->getRawOriginal('created_at') ?? $transaction->created_at);
+                                $q->whereBetween('created_at', [
+                                    $cAt->copy()->subMinutes(60),
+                                    now()->addMinutes(10)
+                                ]);
+                            })
+                            ->limit(1)
+                            ->forceDelete();
+                    }
                 }
 
                 if ($transaction->type == Transaction::TYPE_SALDO) {
@@ -596,18 +648,25 @@ class TransactionService
                 if ($transaction->unique_payment > 0) {
                     $student = Student::find($transaction->student_id);
 
-                    // Buat history untuk unique payment
-                    SaldoService::addHistory(
+                    // Buat history untuk unique payment (SaldoService::addHistory sudah otomatis mengupdate saldo via recalculateForStudent)
+                    $uniqueHistory = SaldoService::addHistory(
                         $student,
                         $transaction->unique_payment,
                         SaldoHistory::TYPE_IN,
                         SaldoHistory::USAGE_TOPUP,
                         SaldoHistory::STATUS_SUCCESS,
-                        'Pengembalian Kode Unik Transaksi Sebesar Rp.' . number_format($transaction->unique_payment, 0, ',', '.')
+                        'Pengembalian Kode Unik Transaksi #' . $transaction->payment_code . ' Sebesar Rp.' . number_format($transaction->unique_payment, 0, ',', '.')
                     );
 
-                    // Update saldo siswa secara atomic untuk unique payment
-                    $student->increment('saldo', $transaction->unique_payment);
+                    // Tautkan history kode unik ke TransactionDetail agar terlacak secara presisi
+                    if ($uniqueHistory) {
+                        TransactionDetail::create([
+                            'id' => \Illuminate\Support\Str::uuid()->toString(),
+                            'transaction_id' => $transaction->id,
+                            'amount' => $transaction->unique_payment,
+                            'saldo_history_id' => $uniqueHistory->id,
+                        ]);
+                    }
                 }
                 // change bill status to paid
                 if ($transaction->type == Transaction::TYPE_BILL) {
@@ -643,7 +702,14 @@ class TransactionService
                 // Proses transaksi berdasarkan tipe
                 if ($transaction->type == Transaction::TYPE_SALDO) {
                     $student = Student::find($transaction->student_id);
-                    $transactionDetail = $transaction?->transactionDetails?->first();
+                    $transactionDetail = $transaction->transactionDetails()
+                        ->where(function($q) {
+                            $q->whereNull('saldo_history_id')
+                              ->orWhereHas('saldoHistory', function($sh) {
+                                  $sh->where('description', 'not like', '%Kode Unik%');
+                              });
+                        })
+                        ->first();
 
                     // Hitung nominal pokok topup (tanpa kode unik)
                     $mainAmount = $transaction->unique_payment > 0 
@@ -662,13 +728,14 @@ class TransactionService
                             'status' => SaldoHistory::STATUS_SUCCESS,
                             'balance_before' => $saldoBefore ?? 0,
                             'balance_after' => $student->saldo ?? 0,
+                            'created_at' => now(),
                         ]);
                     } else {
                         // Fallback auto-recovery: jika TransactionDetail/SaldoHistory belum ada (kasus PWA lama)
                         $saldoBefore = $student->saldo;
                         $student->increment('saldo', $mainAmount);
 
-                        $txTimestamp = $transaction->created_at ?? \Carbon\Carbon::now();
+                        $txTimestamp = now();
                         $saldoHistory = SaldoHistory::create([
                             'student_id' => $student->id,
                             'amount' => $mainAmount,
@@ -683,11 +750,15 @@ class TransactionService
                         ]);
 
                         if ($transactionDetail) {
-                            $transactionDetail->update(['saldo_history_id' => $saldoHistory->id]);
+                            $transactionDetail->update([
+                                'saldo_history_id' => $saldoHistory->id,
+                                'amount' => $transactionDetail->amount ?: $transaction->pay_amount,
+                            ]);
                         } else {
                             TransactionDetail::create([
                                 'transaction_id' => $transaction->id,
                                 'saldo_history_id' => $saldoHistory->id,
+                                'amount' => $transaction->pay_amount,
                                 'created_at' => $txTimestamp,
                                 'updated_at' => $txTimestamp,
                             ]);
@@ -732,25 +803,50 @@ class TransactionService
                 // but the PAID→non-PAID rollback didn't clean it up properly
                 if ($transaction->unique_payment > 0) {
                     $student = Student::find($transaction->student_id);
-                    $deletedCount = \App\Models\SaldoHistory::where('student_id', $student->id)
-                        ->where('amount', (int) $transaction->unique_payment)
-                        ->where('description', 'like', '%Kode Unik%')
-                        ->count();
 
-                    if ($deletedCount > 0 && $student) {
-                        // Only decrement saldo if the rollback block above didn't already handle it
-                        // (i.e., when the old status was NOT PAID, meaning the PAID→non-PAID block didn't fire)
-                        if ($oldStatus !== Transaction::STATUS_PAID) {
+                    // Cari record spesifik transaksi ini melalui TransactionDetail
+                    $uniqueDetail = \App\Models\TransactionDetail::where('transaction_id', $transaction->id)
+                        ->whereNotNull('saldo_history_id')
+                        ->first();
+
+                    if ($uniqueDetail && $uniqueDetail->saldo_history_id) {
+                        if ($oldStatus !== Transaction::STATUS_PAID && $student) {
                             Student::where('id', $student->id)
                                 ->where('saldo', '>=', $transaction->unique_payment)
                                 ->decrement('saldo', $transaction->unique_payment);
                             Log::info("REJECTED Safety Net: Mengurangi saldo siswa {$student->name} ({$student->id}) sebesar Rp.{$transaction->unique_payment} (kode unik orphan).");
                         }
-                        \App\Models\SaldoHistory::where('student_id', $student->id)
+                        \App\Models\SaldoHistory::where('id', $uniqueDetail->saldo_history_id)->forceDelete();
+                        $uniqueDetail->delete();
+                    } else {
+                        // Fallback terarah dengan filter invoice dan timestamp
+                        $targetQuery = \App\Models\SaldoHistory::where('student_id', $student->id)
                             ->where('amount', (int) $transaction->unique_payment)
-                            ->where('description', 'like', '%Kode Unik%')
-                            ->forceDelete();
-                        Log::info("REJECTED Cleanup: Force-deleted {$deletedCount} kode unik SaldoHistory record(s) for student {$student->name} ({$student->id}).");
+                            ->where(function($q) use ($transaction) {
+                                $q->where('description', 'like', '%' . $transaction->payment_code . '%')
+                                  ->orWhere('description', 'like', '%Kode Unik%');
+                            });
+
+                        if ($transaction->created_at) {
+                            $cAt = Carbon::parse($transaction->getRawOriginal('created_at') ?? $transaction->created_at);
+                            $targetQuery->whereBetween('created_at', [
+                                $cAt->copy()->subMinutes(60),
+                                now()->addMinutes(10)
+                            ]);
+                        }
+
+                        $records = $targetQuery->limit(1)->get();
+                        if ($records->isNotEmpty() && $student) {
+                            if ($oldStatus !== Transaction::STATUS_PAID) {
+                                Student::where('id', $student->id)
+                                    ->where('saldo', '>=', $transaction->unique_payment)
+                                    ->decrement('saldo', $transaction->unique_payment);
+                                Log::info("REJECTED Safety Net: Mengurangi saldo siswa {$student->name} ({$student->id}) sebesar Rp.{$transaction->unique_payment} (kode unik orphan).");
+                            }
+                            foreach ($records as $rec) {
+                                $rec->forceDelete();
+                            }
+                        }
                     }
                 }
 
@@ -765,12 +861,26 @@ class TransactionService
                     });
                 }
                 // send notification to whatsapp
-                $messageWhatsapp = SendNotifWaService::sendMessageRejectedPayment($transaction);
-                \App\Services\NotificationService::sendFromTemplate('payment_rejected', $transaction->student->user, [], $transaction);
-                dispatch(new SendToWhatsappNotificationJob($transaction->student->user->phone, $messageWhatsapp));
-                $contacts = Contact::where('type', Contact::TYPE_BENDAHARA)->orWhere('type', Contact::TYPE_SUPERADMIN)->get();
-                foreach ($contacts as $contact) {
-                    dispatch(new SendToWhatsappNotificationJob($contact->phone, $messageWhatsapp));
+                try {
+                    $user = $transaction->student?->user;
+                    $phone = $user?->phone;
+                    $messageWhatsapp = SendNotifWaService::sendMessageRejectedPayment($transaction);
+
+                    if ($user && $phone) {
+                        \App\Services\NotificationService::sendFromTemplate('payment_rejected', $user, [], $transaction);
+                        dispatch(new SendToWhatsappNotificationJob($phone, $messageWhatsapp));
+                    }
+
+                    $contacts = Contact::where('type', Contact::TYPE_BENDAHARA)->orWhere('type', Contact::TYPE_SUPERADMIN)->get();
+                    if ($contacts->isNotEmpty()) {
+                        foreach ($contacts as $contact) {
+                            if (!empty($contact->phone)) {
+                                dispatch(new SendToWhatsappNotificationJob($contact->phone, $messageWhatsapp));
+                            }
+                        }
+                    }
+                } catch (\Throwable $e) {
+                    Log::warning("Gagal mengirim notifikasi penolakan transaksi: " . $e->getMessage());
                 }
             } elseif ($transaction->activeProof && $transaction->status !== Transaction::STATUS_PAID) {
                 $transaction->activeProof->update([

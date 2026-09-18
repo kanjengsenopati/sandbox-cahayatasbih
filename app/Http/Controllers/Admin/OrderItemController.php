@@ -566,6 +566,20 @@ class OrderItemController extends Controller
         return $this->postSuccessResponse("Data keranjang berhasil diambil", $carts);
     }
 
+    private function getCartSnapshot($outletId)
+    {
+        $carts = PointOfSaleCart::with('item')
+            ->where('admin_id', auth()->user()->id)
+            ->where('outlet_id', $outletId)
+            ->latest()
+            ->get();
+        $totalPrice = $carts->sum('total');
+        return [
+            'carts' => $carts,
+            'total_price' => $totalPrice,
+        ];
+    }
+
     public function addItemToCart(Request $request)
     {
         // Begin transaction
@@ -624,7 +638,18 @@ class OrderItemController extends Controller
             // Commit transaction
             DB::commit();
 
-            return $this->postSuccessResponse("Barang berhasil ditambahkan ke keranjang", $cart);
+            $snapshot = $this->getCartSnapshot($outletId);
+
+            return $this->postSuccessResponse("Barang berhasil ditambahkan ke keranjang", [
+                'cart' => $cart,
+                'carts' => $snapshot['carts'],
+                'total_price' => $snapshot['total_price'],
+                'updated_item' => [
+                    'id' => $item->id,
+                    'code' => $item->code,
+                    'stock' => $item->stock,
+                ],
+            ]);
         } catch (\Exception $e) {
             // Rollback transaction in case of error
             DB::rollback();
@@ -644,6 +669,9 @@ class OrderItemController extends Controller
         DB::beginTransaction();
 
         try {
+            $admin = auth()->user();
+            $outletId = $admin->getEffectiveOutletId(request('mode'), request('outlet_id'));
+
             // Find the cart
             $cart = PointOfSaleCart::where('id', $request->id)
                 ->where('admin_id', auth()->user()->id)
@@ -658,8 +686,10 @@ class OrderItemController extends Controller
 
             // Update stock on item
             $item = Item::find($cart->item_id);
-            $item->stock += $cart->quantity;
-            $item->save();
+            if ($item) {
+                $item->stock += $cart->quantity;
+                $item->save();
+            }
 
             // Delete the cart
             $cart->delete();
@@ -667,7 +697,17 @@ class OrderItemController extends Controller
             // Commit transaction
             DB::commit();
 
-            return $this->postSuccessResponse("Barang berhasil dihapus dari keranjang", null);
+            $snapshot = $this->getCartSnapshot($outletId);
+
+            return $this->postSuccessResponse("Barang berhasil dihapus dari keranjang", [
+                'carts' => $snapshot['carts'],
+                'total_price' => $snapshot['total_price'],
+                'updated_item' => $item ? [
+                    'id' => $item->id,
+                    'code' => $item->code,
+                    'stock' => $item->stock,
+                ] : null,
+            ]);
         } catch (\Exception $e) {
             // Rollback transaction in case of error
             DB::rollback();
@@ -687,6 +727,9 @@ class OrderItemController extends Controller
         DB::beginTransaction();
 
         try {
+            $admin = auth()->user();
+            $outletId = $admin->getEffectiveOutletId(request('mode'), request('outlet_id'));
+
             $cart = PointOfSaleCart::where('id', $request->id)
                 ->where('admin_id', auth()->user()->id)
                 ->lockForUpdate() // Lock the row for update to prevent race conditions
@@ -723,7 +766,18 @@ class OrderItemController extends Controller
             // Commit transaction
             DB::commit();
 
-            return $this->postSuccessResponse("Data keranjang berhasil diupdate", $cart);
+            $snapshot = $this->getCartSnapshot($outletId);
+
+            return $this->postSuccessResponse("Data keranjang berhasil diupdate", [
+                'cart' => $cart,
+                'carts' => $snapshot['carts'],
+                'total_price' => $snapshot['total_price'],
+                'updated_item' => [
+                    'id' => $item->id,
+                    'code' => $item->code,
+                    'stock' => $item->stock,
+                ],
+            ]);
         } catch (\Exception $e) {
             // Rollback transaction in case of error
             DB::rollback();
@@ -757,13 +811,13 @@ class OrderItemController extends Controller
             // Retrieve all carts belonging to the authenticated user and specific outlet
             $carts = PointOfSaleCart::where('admin_id', auth()->user()->id)->where('outlet_id', $outletId)->get();
 
-            // Update stock on items and delete carts
+            // Batch update stock on items to avoid N+1 individual queries
+            $itemIncrements = [];
             foreach ($carts as $cart) {
-                $item = Item::find($cart->item_id);
-                if ($item) {
-                    $item->stock += $cart->quantity;
-                    $item->save();
-                }
+                $itemIncrements[$cart->item_id] = ($itemIncrements[$cart->item_id] ?? 0) + $cart->quantity;
+            }
+            foreach ($itemIncrements as $itemId => $qty) {
+                Item::where('id', $itemId)->increment('stock', $qty);
             }
 
             // Delete all carts
@@ -772,7 +826,10 @@ class OrderItemController extends Controller
             // Commit transaction
             DB::commit();
 
-            return $this->postSuccessResponse("Keranjang berhasil dikosongkan", null);
+            return $this->postSuccessResponse("Keranjang berhasil dikosongkan", [
+                'carts' => [],
+                'total_price' => 0,
+            ]);
         } catch (\Exception $e) {
             // Rollback transaction in case of error
             DB::rollback();

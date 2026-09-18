@@ -115,8 +115,8 @@ class Transaction extends Model
 
     public function scopeHasSchool($query)
     {
-        $admin = Auth::user();
-        if (!$admin || $admin->hasRole('Super Admin')) {
+        $admin = Auth::guard('web')->user() ?? Auth::user();
+        if (!$admin || (method_exists($admin, 'isSuperAdmin') && $admin->isSuperAdmin()) || $admin->hasRole('Super Admin')) {
             return;
         }
 
