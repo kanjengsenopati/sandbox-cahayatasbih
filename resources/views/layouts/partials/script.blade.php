@@ -162,13 +162,13 @@
 <script>
     Swal.fire({
                 title: '{{ ucfirst($message) }}',
-                text: {!! json_encode(session($message)) !!},
+                html: {!! json_encode(session($message)) !!},
                 icon: '{{ $message }}',
                 confirmButtonText: 'Baik',
                 customClass: {
-                    confirmButton: "btn fw-bold btn-primary"
+                    confirmButton: "btn btn-primary"
                 }
-            })
+            });
 </script>
 @endif
 @endforeach

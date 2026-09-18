@@ -90,7 +90,7 @@ class ReportBillStudentController extends Controller
      */
     private function buildBillQuery()
     {
-        return Bill::whereHas('billType')
+        return Bill::whereHas('billType', fn($q) => $q->whereNull('deleted_at'))
             ->whereHas('student')
             ->when(request()->filled('start_date'), function ($query) {
                 $startDate = Carbon::parse(request()->start_date);
@@ -236,8 +236,10 @@ class ReportBillStudentController extends Controller
                 END) as current_due_amount'),
             ])
             ->join('bills', 'bills.student_id', '=', 'students.id')
+            ->join('bill_types', 'bill_types.id', '=', 'bills.bill_type_id')
             ->join('classrooms', 'classrooms.id', '=', 'students.classroom_id')
             ->whereNull('bills.deleted_at')
+            ->whereNull('bill_types.deleted_at')
             ->whereNull('students.deleted_at');
 
         // Date range filter
@@ -296,8 +298,10 @@ class ReportBillStudentController extends Controller
         // Use raw DB query for maximum performance (no model overhead)
         $baseQuery = DB::table('bills')
             ->join('students', 'students.id', '=', 'bills.student_id')
+            ->join('bill_types', 'bill_types.id', '=', 'bills.bill_type_id')
             ->join('classrooms', 'classrooms.id', '=', 'students.classroom_id')
             ->whereNull('bills.deleted_at')
+            ->whereNull('bill_types.deleted_at')
             ->whereNull('students.deleted_at');
 
         // Apply the same filters

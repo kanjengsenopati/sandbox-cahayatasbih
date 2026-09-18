@@ -195,8 +195,54 @@
     </div>
 </div>
 
+<!-- Modal Popover untuk Detail Import (UI PakRT Native) -->
+<div id="import-detail-popover" class="d-none position-fixed shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-gray-100" style="border-radius: 24px; z-index: 9999; width: 600px; max-height: 80vh; display: flex; flex-direction: column; background: rgba(255, 255, 255, 0.98); backdrop-filter: blur(16px); top: 50%; left: 50%; transform: translate(-50%, -50%);">
+    <!-- Sticky Header -->
+    <div class="px-5 py-4 border-bottom border-gray-100 sticky-top d-flex justify-content-between align-items-center" style="background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(12px); border-top-left-radius: 24px; border-top-right-radius: 24px; z-index: 10;">
+        <div class="fw-bold text-slate-800" style="font-size: 16px; color: #1e293b;">Detail Siswa & Nominal</div>
+        <button type="button" class="btn btn-icon btn-sm btn-light-danger rounded-circle" id="btn-close-import-detail" style="width: 32px; height: 32px;">
+            <i class="fas fa-times"></i>
+        </button>
+    </div>
+    
+    <!-- Search Box -->
+    <div class="px-5 py-3 border-bottom border-gray-100" style="background: #f8fafc;">
+        <div class="position-relative">
+            <i class="fas fa-search position-absolute top-50 translate-middle-y text-slate-400 ms-3"></i>
+            <input type="text" id="import-detail-search" class="form-control form-control-solid ps-10" placeholder="Cari nama siswa..." style="border-radius: 12px; font-size: 13px;">
+        </div>
+    </div>
+
+    <!-- Body -->
+    <div class="px-5 py-2 overflow-auto custom-scrollbar" id="import-detail-content" style="flex: 1;">
+        <!-- Data dirender melalui JS -->
+    </div>
+</div>
+
+<!-- Backdrop untuk efek modal -->
+<div id="import-detail-backdrop" class="d-none position-fixed top-0 start-0 w-100 h-100" style="background: rgba(15, 23, 42, 0.2); z-index: 9998; backdrop-filter: blur(2px);"></div>
+
 @push('js')
 <style>
+    /* Custom Scrollbar for Modal */
+    .custom-scrollbar::-webkit-scrollbar {
+        width: 6px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-track {
+        background: transparent;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+        background: #cbd5e1;
+        border-radius: 4px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+        background: #94a3b8;
+    }
+
+    #table-import-history tbody tr {
+        cursor: pointer;
+    }
+
     /* Custom Dropdown Grid for Classes */
     .custom-kelas-dropdown .select2-results > .select2-results__options {
         display: flex;
@@ -777,6 +823,90 @@
                 });
             }
         });
+
+        // ========================================
+        // HOVER DETIL IMPORT (UI Modal Mode)
+        // ========================================
+        var popoverTimeout;
+        var detailCache = {};
+        var currentDetailData = [];
+
+        $('#table-import-history tbody').on('click', 'tr', function(e) {
+            // Jangan buka modal jika yang diklik adalah tombol batal
+            if ($(e.target).closest('.btn-rollback-import').length) return;
+
+            var rowData = importHistoryTable.row(this).data();
+            if (!rowData || !rowData.id) return;
+
+            var logId = rowData.id;
+            var popover = $('#import-detail-popover');
+            var backdrop = $('#import-detail-backdrop');
+            
+            popover.removeClass('d-none');
+            backdrop.removeClass('d-none');
+            
+            // Reset search
+            $('#import-detail-search').val('');
+
+            $('#import-detail-content').html('<div class="text-center py-5"><div class="spinner-border text-primary" role="status" style="color: #2563EB;"></div><p class="text-slate-400 mt-3 fs-7 fst-italic">Memuat data...</p></div>');
+
+            if (detailCache[logId]) {
+                currentDetailData = detailCache[logId];
+                renderDetails(currentDetailData);
+            } else {
+                $.ajax({
+                    url: '/bill/import-logs/' + logId + '/details',
+                    type: 'GET',
+                    success: function(res) {
+                        if (res.success) {
+                            detailCache[logId] = res.data;
+                            currentDetailData = res.data;
+                            renderDetails(res.data);
+                        }
+                    }
+                });
+            }
+        });
+
+        // Close Modal Handlers
+        $('#btn-close-import-detail, #import-detail-backdrop').on('click', function() {
+            $('#import-detail-popover').addClass('d-none');
+            $('#import-detail-backdrop').addClass('d-none');
+        });
+
+        // Search Filter
+        $('#import-detail-search').on('keyup', function() {
+            var keyword = $(this).val().toLowerCase();
+            if (!currentDetailData) return;
+            
+            var filteredData = currentDetailData.filter(function(item) {
+                return item.student_name.toLowerCase().indexOf(keyword) > -1 || 
+                       item.classroom.toLowerCase().indexOf(keyword) > -1;
+            });
+            renderDetails(filteredData);
+        });
+
+        function renderDetails(data) {
+            if (!data || data.length === 0) {
+                $('#import-detail-content').html('<div class="text-center py-4 text-slate-400 fst-italic fs-7" style="color: #94a3b8;">Tidak ada data yang cocok.</div>');
+                return;
+            }
+
+            // Compact density: padding/gap minimized
+            var html = '<div class="d-flex flex-column">';
+            data.forEach(function(item) {
+                html += '<div class="d-flex justify-content-between align-items-center py-2 border-bottom border-gray-100 last:border-0">' +
+                        '<div class="d-flex flex-column gap-0">' +
+                            '<div class="fw-medium text-slate-600" style="font-size: 14px; color: #475569;">' + item.student_name + '</div>' +
+                            '<div class="fw-bold text-slate-400 text-uppercase mt-1" style="font-size: 11px; letter-spacing: 0.1em; color: #94a3b8;">Kelas ' + item.classroom + '</div>' +
+                        '</div>' +
+                        '<div class="fw-bold text-emerald-600" style="font-size: 18px; color: #10B981;">' + item.amount_formatted + '</div>' +
+                    '</div>';
+            });
+            html += '</div>';
+
+            $('#import-detail-content').html(html);
+        }
 
         // ========================================
         // ROLLBACK IMPORT - Event Handler

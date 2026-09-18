@@ -32,6 +32,14 @@ class Kernel extends ConsoleKernel
             ->monthlyOn(1, '03:00')
             ->withoutOverlapping()
             ->appendOutputTo(storage_path('logs/transaction_pruning.log'));
+            
+        // NATIVE LARAVEL WORKER DAEMON (Anti-Supervisor)
+        // Mengeksekusi antrean di latar belakang dan mematikan diri sendiri saat kosong.
+        // Berjalan setiap menit, dengan perlindungan overlap untuk mencegah duplikasi worker.
+        $schedule->command('queue:work --stop-when-empty --timeout=3600 --queue=default --sleep=3 --tries=3')
+            ->everyMinute()
+            ->withoutOverlapping()
+            ->appendOutputTo(storage_path('logs/native_queue_worker.log'));
     }
 
     /**

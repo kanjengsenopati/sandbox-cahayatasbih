@@ -214,9 +214,13 @@ class OrderItemController extends Controller
                 throw new \Exception('Pembayaran Saldo harus scan barcode siswa');
             }
 
+            $admin = auth()->user();
+            $outletId = $admin->getEffectiveOutletId(request('mode'), request('outlet_id'));
+
             // 4. OPTIMASI N+1: Gunakan Eager Loading 'item'
             $carts = PointOfSaleCart::with('item') // Load relasi item di sini
                 ->where('admin_id', $adminId)
+                ->where('outlet_id', $outletId)
                 ->get();
 
             if ($carts->isEmpty()) {
@@ -228,9 +232,6 @@ class OrderItemController extends Controller
             
             // N+1 Fixed: Karena 'item' sudah di-load, akses ini tidak query lagi ke DB
             $totalProfit = $carts->sum(fn($cart) => $cart->item->profit * $cart->quantity);
-
-            $admin = auth()->user();
-            $outletId = $admin->getEffectiveOutletId(request('mode'), request('outlet_id'));
 
             $student = null;
             $historyId = null;
@@ -332,9 +333,29 @@ class OrderItemController extends Controller
             // Release lock segera setelah sukses
             $lock->release();
 
-            $message = 'Yeay! Transaksi berhasil';
             if ($student) {
-                $message .= ', Saldo ' . $student->name . ' dikurangi Rp. ' . number_format($total, 0, ',', '.');
+                $saldoFormatted = number_format($student->saldo, 0, ',', '.');
+                $totalFormatted = number_format($total, 0, ',', '.');
+                
+                $message = '
+                <h2 class="fw-bolder text-success mb-0">Alhamdulillah</h2>
+                <div class="text-start mt-4 bg-light-success p-5 rounded-3">
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-gray-600 fw-bold">Nama Santri:</span>
+                        <span class="fw-bolder text-gray-800">' . $student->name . '</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-gray-600 fw-bold">Nominal Potongan:</span>
+                        <span class="fw-bolder text-danger">- Rp. ' . $totalFormatted . '</span>
+                    </div>
+                    <div class="separator border-success opacity-25 my-3"></div>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span class="fw-bolder text-gray-800">Saldo Terkini:</span>
+                        <span class="fw-bolder text-success fs-3">Rp. ' . $saldoFormatted . '</span>
+                    </div>
+                </div>';
+            } else {
+                $message = '<div class="fw-bolder fs-4 text-success">Alhamdulillah, Transaksi Berhasil!</div>';
             }
 
             return redirect()->route('order-item.index')->with('success', $message);
@@ -365,7 +386,9 @@ class OrderItemController extends Controller
             return false;
         }
 
-        if ($student->daily_limit > 0) {
+        $effectiveLimit = $student->getEffectiveDailyLimit();
+
+        if ($effectiveLimit > 0) {
             // Optimasi: Cek transaksi harian
             // Karena kita sudah pakai lockForUpdate di $student, 
             // kalkulasi ini relatif aman selama transaksi lain juga me-lock row student yang sama.
@@ -374,7 +397,7 @@ class OrderItemController extends Controller
                 ->where('status', PointOfSaleTransaction::STATUS_SUCCESS)
                 ->sum('pay_amount');
 
-            if ($student->daily_limit < ($totalThisDay + $total)) {
+            if ($effectiveLimit < ($totalThisDay + $total)) {
                 session()->flash('error', 'Maaf, Siswa telah mencapai batas transaksi harian.');
                 return false;
             }
@@ -538,10 +561,34 @@ class OrderItemController extends Controller
     public function getStudentByBarcode(Request $request)
     {
         $barcode = $request->barcode;
-        $student = Student::with('classroom')->where('barcode', $barcode)->first();
+        $student = Student::with('classroom')
+            ->where(function ($query) use ($barcode) {
+                $query->where('barcode', $barcode)
+                      ->orWhere('nis', $barcode)
+                      ->orWhere('nisn', $barcode);
+            })
+            ->first();
+            
         if (!$student) {
             return $this->postSuccessResponse("Data siswa tidak ditemukan", null);
         }
+
+        $effectiveLimit = $student->getEffectiveDailyLimit();
+        $student->effective_daily_limit = $effectiveLimit;
+        
+        if ($effectiveLimit > 0) {
+            $totalThisDay = PointOfSaleTransaction::where('student_id', $student->id)
+                ->whereDate('paid_at', now())
+                ->where('status', PointOfSaleTransaction::STATUS_SUCCESS)
+                ->sum('pay_amount');
+                
+            $student->total_this_day = $totalThisDay;
+            $student->remaining_limit = max(0, $effectiveLimit - $totalThisDay);
+        } else {
+            $student->total_this_day = 0;
+            $student->remaining_limit = 0;
+        }
+
         return $this->postSuccessResponse("Data siswa ditemukan", $student);
     }
 
@@ -626,7 +673,7 @@ class OrderItemController extends Controller
             // Commit transaction
             DB::commit();
 
-            return $this->postSuccessResponse("Barang berhasil ditambahkan ke keranjang", $cart);
+            return $this->postSuccessResponse("Barang berhasil ditambahkan ke keranjang", $this->getCartResponseData($outletId));
         } catch (\Exception $e) {
             // Rollback transaction in case of error
             DB::rollback();
@@ -668,8 +715,9 @@ class OrderItemController extends Controller
 
             // Commit transaction
             DB::commit();
-
-            return $this->postSuccessResponse("Barang berhasil dihapus dari keranjang", null);
+            
+            $outletId = auth()->user()->getEffectiveOutletId(request('mode'), request('outlet_id'));
+            return $this->postSuccessResponse("Barang berhasil dihapus dari keranjang", $this->getCartResponseData($outletId));
         } catch (\Exception $e) {
             // Rollback transaction in case of error
             DB::rollback();
@@ -725,7 +773,8 @@ class OrderItemController extends Controller
             // Commit transaction
             DB::commit();
 
-            return $this->postSuccessResponse("Data keranjang berhasil diupdate", $cart);
+            $outletId = auth()->user()->getEffectiveOutletId(request('mode'), request('outlet_id'));
+            return $this->postSuccessResponse("Data keranjang berhasil diupdate", $this->getCartResponseData($outletId));
         } catch (\Exception $e) {
             // Rollback transaction in case of error
             DB::rollback();
@@ -774,7 +823,7 @@ class OrderItemController extends Controller
             // Commit transaction
             DB::commit();
 
-            return $this->postSuccessResponse("Keranjang berhasil dikosongkan", null);
+            return $this->postSuccessResponse("Keranjang berhasil dikosongkan", $this->getCartResponseData($outletId));
         } catch (\Exception $e) {
             // Rollback transaction in case of error
             DB::rollback();
@@ -820,5 +869,21 @@ class OrderItemController extends Controller
 
         // Mengembalikan respons dengan pesan sukses dan data yang diformat
         return $this->postSuccessResponse("Data transaksi harian berhasil diambil", $transactions);
+    }
+
+    private function getCartResponseData($outletId)
+    {
+        $carts = PointOfSaleCart::with('item')
+            ->where('admin_id', auth()->user()->id)
+            ->where('outlet_id', $outletId)
+            ->latest()
+            ->get();
+            
+        $total = $carts->sum('total');
+        
+        return [
+            'carts' => $carts,
+            'total_price' => $total
+        ];
     }
 }

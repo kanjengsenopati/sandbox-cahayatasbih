@@ -529,5 +529,42 @@ class Student extends Model
             'school_name' => $this->school?->name,
         ];
     }
+
+    /**
+     * Get the effective daily limit based on Admin settings (Classroom > School) or Wali's setting
+     */
+    public function getEffectiveDailyLimit(): ?int
+    {
+        // 1. Check Classroom
+        if ($this->classroom && $this->classroom->is_saldo_limit_active) {
+            return (int) $this->classroom->saldo_limit;
+        }
+
+        // 2. Check School (fallback to classroom's school if direct relation is null)
+        $school = $this->school ?? ($this->classroom ? $this->classroom->school : null);
+        if ($school && $school->is_saldo_limit_active) {
+            return (int) $school->saldo_limit;
+        }
+
+        // 3. Fallback to Wali's setting
+        return $this->daily_limit > 0 ? (int) $this->daily_limit : 0;
+    }
+
+    /**
+     * Check if Admin has enforced a saldo limit
+     */
+    public function hasAdminSaldoLimitActive(): bool
+    {
+        if ($this->classroom && $this->classroom->is_saldo_limit_active) {
+            return true;
+        }
+
+        $school = $this->school ?? ($this->classroom ? $this->classroom->school : null);
+        if ($school && $school->is_saldo_limit_active) {
+            return true;
+        }
+
+        return false;
+    }
 }
 

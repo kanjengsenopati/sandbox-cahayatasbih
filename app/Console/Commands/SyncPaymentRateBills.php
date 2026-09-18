@@ -106,6 +106,7 @@ class SyncPaymentRateBills extends Command
                 $relatedBillTypeIds = DB::table('bill_types')
                     ->where('name', $billType->name)
                     ->where('academic_year_id', $billType->academic_year_id)
+                    ->whereNull('deleted_at')
                     ->pluck('id')
                     ->toArray();
 

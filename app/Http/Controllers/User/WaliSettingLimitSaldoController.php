@@ -21,15 +21,21 @@ class WaliSettingLimitSaldoController extends Controller
                     return 'Rp' . number_format($data->saldo, 0, ',', '.');
                 })
                 ->editColumn('daily_limit', function ($data) {
+                    if ($data->hasAdminSaldoLimitActive()) {
+                        return '<span class="text-danger" title="Ditentukan oleh sekolah">Rp' . number_format($data->getEffectiveDailyLimit(), 0, ',', '.') . ' (Sekolah)</span>';
+                    }
                     return 'Rp' . number_format($data->daily_limit, 0, ',', '.');
                 })
                 ->addColumn('action', function ($data) {
+                    if ($data->hasAdminSaldoLimitActive()) {
+                        return '<span class="badge badge-secondary">Dikunci Sekolah</span>';
+                    }
                     $actionEdit = route('wali.setting-limit-saldo.edit', $data->id);
                     return "<div class='d-flex justify-content-center'>" .
                         view('components.action.edit', ['action' => $actionEdit]) .
                         "</div>";
                 })
-                ->rawColumns(['action'])
+                ->rawColumns(['action', 'daily_limit'])
                 ->make(true);
         }
         return view('users.setting-limit-saldo.index');
@@ -65,6 +71,11 @@ class WaliSettingLimitSaldoController extends Controller
     public function edit(string $id)
     {
         $student = Student::findOrFail($id);
+        
+        if ($student->hasAdminSaldoLimitActive()) {
+            return redirect()->route('wali.setting-limit-saldo.index')->with('error', 'Limit saldo tidak dapat diubah karena telah diatur secara global oleh pihak sekolah (Rp' . number_format($student->getEffectiveDailyLimit(), 0, ',', '.') . ').');
+        }
+
         return view('users.setting-limit-saldo.create-edit', compact('student'));
     }
 
@@ -78,6 +89,11 @@ class WaliSettingLimitSaldoController extends Controller
         ]);
 
         $student = Student::findOrFail($id);
+        
+        if ($student->hasAdminSaldoLimitActive()) {
+            return redirect()->route('wali.setting-limit-saldo.index')->with('error', 'Limit saldo tidak dapat diubah karena telah diatur secara global oleh pihak sekolah.');
+        }
+
         $student->update($data);
         return redirect()->route('wali.setting-limit-saldo.index')->with('success', 'Limit saldo berhasil diubah');
     }
