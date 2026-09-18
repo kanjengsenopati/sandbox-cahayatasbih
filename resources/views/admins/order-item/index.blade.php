@@ -1057,18 +1057,19 @@
                         html: `
                         <div class="text-start mt-4 bg-light-warning p-5 rounded-3">
                             <div class="d-flex justify-content-between mb-2">
-                                <span class="text-gray-600 fw-bold">Limit Belanja Harian:</span>
-                                <span class="fw-bolder text-gray-800">Rp. ${window.currentStudentLimit.toLocaleString('id-ID')}</span>
-                            </div>
-                            <div class="d-flex justify-content-between mb-2">
-                                <span class="text-gray-600 fw-bold">Telah Terpakai:</span>
-                                <span class="fw-bolder text-gray-800">Rp. ${window.currentStudentTotalThisDay.toLocaleString('id-ID')}</span>
-                            </div>
-                            <div class="separator border-warning opacity-25 my-3"></div>
-                            <div class="d-flex justify-content-between align-items-center">
-                                <span class="fw-bolder text-gray-800">Sisa Kuota Belanja:</span>
-                                <span class="fw-bolder text-danger fs-3">Rp. ${window.currentStudentRemainingLimit.toLocaleString('id-ID')}</span>
-                            </div>
+                              <div class="d-flex justify-content-between mb-2">
+                                  <span class="text-gray-600 fw-bold">Limit Belanja Harian:</span>
+                                  <span class="fw-bolder text-gray-800">Rp. ${Number(window.currentStudentLimit).toLocaleString('id-ID')}</span>
+                              </div>
+                              <div class="d-flex justify-content-between mb-2">
+                                  <span class="text-gray-600 fw-bold">Telah Terpakai:</span>
+                                  <span class="fw-bolder text-gray-800">Rp. ${Number(window.currentStudentTotalThisDay).toLocaleString('id-ID')}</span>
+                              </div>
+                              <div class="separator border-warning opacity-25 my-3"></div>
+                              <div class="d-flex justify-content-between align-items-center">
+                                  <span class="text-gray-600 fw-bold">Sisa Kuota Belanja:</span>
+                                  <span class="fw-bolder text-danger fs-3">Rp. ${Number(window.currentStudentRemainingLimit).toLocaleString('id-ID')}</span>
+                              </div></div>
                         </div>
                         <div class="mt-5 text-gray-600 fs-7 text-center">
                             Silakan kurangi jumlah barang di keranjang.
@@ -1274,7 +1275,7 @@
 
                     // Replace name, saldo, and update total price
                     document.getElementById('student-name').value = student.name;
-                    document.getElementById('saldo').value = 'Rp. ' + student.saldo.toLocaleString('id-ID');
+                    document.getElementById('saldo').value = 'Rp. ' + Number(student.saldo).toLocaleString('id-ID');
                     // Add student id to form-payment
                     document.getElementById('form-payment').insertAdjacentHTML('beforeend', `<input type="hidden" name="barcode"
                         value="${student.barcode}">`);
