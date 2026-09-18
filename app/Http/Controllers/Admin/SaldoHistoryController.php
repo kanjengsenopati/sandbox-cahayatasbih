@@ -511,6 +511,7 @@ class SaldoHistoryController extends Controller
         TransactionDetail::create([
             'transaction_id' => $transaction->id,
             'saldo_history_id' => $saldoHistory->id,
+            'amount' => $transaction->pay_amount,
         ]);
     }
 
@@ -928,6 +929,7 @@ class SaldoHistoryController extends Controller
                     TransactionDetail::create([
                         'transaction_id' => $transaction->id,
                         'saldo_history_id' => $saldoHistory->id,
+                        'amount' => $amount,
                     ]);
 
                     $resetCount++;

@@ -325,6 +325,8 @@ Route::group(['middleware' => ['auth']], function () {
     Route::get('bill/import-logs', [BillController::class, 'getImportLogs'])->name('bill.import-logs');
     Route::get('bill/import-logs/{id}/details', [BillController::class, 'getImportLogDetails'])->name('bill.import-logs.details');
     Route::post('bill/rollback-import/{id}', [BillController::class, 'rollbackImport'])->name('bill.rollback-import');
+    Route::get('bill/audit-consistency', [BillController::class, 'auditConsistency'])->name('bill.audit-consistency');
+    Route::post('bill/repair-consistency', [BillController::class, 'repairConsistency'])->name('bill.repair-consistency');
     Route::post('bill.change-status', [BillController::class, 'changeStatus'])->name('bill.change-status');
     Route::resource('bill', BillController::class);
     Route::resource('payment-method', PaymentMethodController::class);

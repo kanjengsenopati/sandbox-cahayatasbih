@@ -29,13 +29,22 @@ class SaldoRecalculatorService
                 ->orderBy('id', 'asc')
                 ->get();
 
+            if ($histories->isEmpty()) {
+                return true;
+            }
+
+            // Selesaikan potensi tie pada created_at jika ada >1 transaksi pada detik yang sama
+            if ($histories->count() > 1) {
+                $histories = self::orderHistoriesContinuity($histories);
+            }
+
             $runningBalance = 0;
 
             // Deteksi siswa yang memiliki saldo awal di-set langsung tanpa riwayat TYPE_IN.
-            // Jika record pertama bukan TYPE_IN dan memiliki balance_before > 0,
+            // Jika record pertama memiliki balance_before > 0,
             // maka gunakan balance_before sebagai titik awal agar tidak menghasilkan saldo negatif.
             $firstHistory = $histories->first();
-            if ($firstHistory && $firstHistory->type !== SaldoHistory::TYPE_IN) {
+            if ($firstHistory) {
                 $initialBalance = (float) $firstHistory->balance_before;
                 if ($initialBalance > 0) {
                     $runningBalance = $initialBalance;
@@ -99,4 +108,59 @@ class SaldoRecalculatorService
 
         return $count;
     }
+
+    /**
+     * Selesaikan urutan rantai transaksi jika ada beberapa history pada detik/timestamp yang sama.
+     * Mengurutkan kontinuitas saldo: balance_before record berikutnya == balance_after record sebelumnya.
+     *
+     * @param \Illuminate\Support\Collection $histories
+     * @return \Illuminate\Support\Collection
+     */
+    public static function orderHistoriesContinuity($histories)
+    {
+        $grouped = $histories->groupBy(function ($h) {
+            return $h->created_at ? $h->created_at->format('Y-m-d H:i:s') : '1970-01-01 00:00:00';
+        });
+
+        $sorted = collect();
+        $runningTracker = null;
+
+        foreach ($grouped as $timeStr => $group) {
+            if ($group->count() === 1) {
+                $item = $group->first();
+                $sorted->push($item);
+                $runningTracker = (float) $item->balance_after;
+                continue;
+            }
+
+            // Ada multiple records dalam detik yang sama
+            $remaining = $group->values();
+            while ($remaining->isNotEmpty()) {
+                $matchIdx = false;
+
+                if ($runningTracker !== null) {
+                    $matchIdx = $remaining->search(function ($item) use ($runningTracker) {
+                        return (float) $item->balance_before === (float) $runningTracker;
+                    });
+                }
+
+                if ($matchIdx === false) {
+                    // Jika di awal (runningTracker masih null) atau gap:
+                    // Prioritaskan transaksi TYPE_OUT terlebih dahulu jika ada pasangan OUT lalu IN (seperti bayar lalu refund)
+                    $outIdx = $remaining->search(function ($item) {
+                        return $item->type === SaldoHistory::TYPE_OUT;
+                    });
+                    $matchIdx = ($outIdx !== false) ? $outIdx : 0;
+                }
+
+                $chosen = $remaining->pull($matchIdx);
+                $sorted->push($chosen);
+                $runningTracker = (float) $chosen->balance_after;
+                $remaining = $remaining->values();
+            }
+        }
+
+        return $sorted;
+    }
 }
+

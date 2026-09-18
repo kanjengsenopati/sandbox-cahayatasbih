@@ -100,12 +100,9 @@
                 }
             }
 
-            $isOutletStaffOrKasir = auth()->user()->isKasir() || 
-                                    auth()->user()->isKasirOutlet() || 
-                                    auth()->user()->isKasirKoperasi() || 
-                                    auth()->user()->hasRole('Karyawan Outlet ( Non Kasir )') || 
-                                    auth()->user()->hasRole('Kasir Karyawan Outlet') || 
-                                    auth()->user()->hasRole('Kasir');
+            $isOutletStaffOrKasir = method_exists(auth()->user(), 'isKasirOnly')
+                ? auth()->user()->isKasirOnly()
+                : (auth()->user()->isKasir() && !auth()->user()->isSuperAdmin());
 
             if ($isOutletStaffOrKasir) {
                 if ($menu->name === 'Dashboard' || str_contains(strtolower($menu->name), 'entri data') || str_contains(strtolower($menu->name), 'entry data')) {
@@ -118,7 +115,7 @@
             @if($menu->url)
                 @php
                     $menuUrl = $menu->url;
-                    if ($menu->name === 'Dashboard' && auth()->user()->isKasir()) {
+                    if ($menu->name === 'Dashboard' && method_exists(auth()->user(), 'isKasirOnly') && auth()->user()->isKasirOnly()) {
                         $mode = auth()->user()->isKasirKoperasi() ? 'kantin' : 'outlet';
                         $effectiveOutletId = auth()->user()->getEffectiveOutletId($mode);
                         $menuUrl = '/order-item?mode=' . $mode . ($effectiveOutletId ? '&outlet_id=' . $effectiveOutletId : '');
@@ -142,6 +139,9 @@
                         }
 
                         $user = auth()->user();
+                        if ($user->isSuperAdmin()) {
+                            return true;
+                        }
 
                         if ($user->isKoordinatorCahayaMart() || $user->isKasirKoperasi()) {
                             if (str_contains($sub->url, '/karyawan') || str_contains(strtolower($sub->name), 'karyawan') || str_contains(strtolower($sub->name), 'payroll')) {
