@@ -38,6 +38,7 @@ class AttendancePayrollTest extends TestCase
 
         // 1. Buat tabel-tabel secara dinamis untuk menghindari kegagalan migrasi warisan di SQLite
         if (\Illuminate\Support\Facades\DB::connection()->getDriverName() === 'sqlite') {
+            Schema::disableForeignKeyConstraints();
             Schema::dropIfExists('role_has_permissions');
             Schema::dropIfExists('model_has_roles');
             Schema::dropIfExists('model_has_permissions');
