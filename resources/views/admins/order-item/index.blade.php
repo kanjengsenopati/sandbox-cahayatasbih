@@ -237,10 +237,13 @@
                                     <!--end::Input-->
                                 </div>
                                 @if (Auth::user()->can('Create Pos Kasir'))
-                                <div class="d-flex justify-content-center">
-                                    <button type="submit" id="btn-bayar" class="btn btn-primary mt-3 w-100">
+                                <div class="d-flex flex-column justify-content-center align-items-center mt-3">
+                                    <button type="submit" id="btn-bayar" class="btn btn-primary w-100">
                                         <span class="indicator-label">Bayar</span>
                                     </button>
+                                    <div id="insufficient-saldo-badge" class="badge bg-danger text-white fs-6 fw-bolder mt-3 py-3 w-100" style="display: none;">
+                                        <i class="fas fa-exclamation-triangle text-white me-2"></i> SALDO TIDAK CUKUP
+                                    </div>
                                 </div>
                                 @endif
                             </div>
@@ -1002,6 +1005,7 @@
 
         // --- Limit Saldo Check ---
         var btnBayar = document.getElementById('btn-bayar');
+        var badgeSaldo = document.getElementById('insufficient-saldo-badge');
         var paymentMethod = document.getElementById('payment_method').value;
 
         if (paymentMethod === 'Saldo') {
@@ -1009,6 +1013,7 @@
             if (!isNaN(saldo) && totalPrice > saldo) {
                 totalPriceElement.classList.add('text-danger', 'fw-bold');
                 if (btnBayar) btnBayar.disabled = true;
+                if (badgeSaldo) badgeSaldo.style.display = 'block';
                 
                 if (!window.isLimitAlertShown) {
                     Swal.fire({
@@ -1030,7 +1035,7 @@
                                 <span class="fw-bolder text-danger fs-3">Rp. ${(totalPrice - saldo).toLocaleString('id-ID')}</span>
                             </div>
                         </div>`,
-                        confirmButtonText: 'Tutup & Ubah',
+                        confirmButtonText: 'Tutup & Topup Saldo',
                         confirmButtonColor: '#f1416c',
                         customClass: {
                             confirmButton: 'btn btn-danger fw-bold'
@@ -1043,6 +1048,7 @@
             else if (window.currentStudentLimit > 0 && totalPrice > window.currentStudentRemainingLimit) {
                 totalPriceElement.classList.add('text-danger', 'fw-bold');
                 if (btnBayar) btnBayar.disabled = true;
+                if (badgeSaldo) badgeSaldo.style.display = 'none';
                 
                 if (!window.isLimitAlertShown) {
                     Swal.fire({
@@ -1080,12 +1086,14 @@
             else {
                 totalPriceElement.classList.remove('text-danger', 'fw-bold');
                 if (btnBayar) btnBayar.disabled = false;
+                if (badgeSaldo) badgeSaldo.style.display = 'none';
                 window.isLimitAlertShown = false;
             }
         } else {
             // Jika Umum / Tunai
             totalPriceElement.classList.remove('text-danger', 'fw-bold');
             if (btnBayar) btnBayar.disabled = false;
+            if (badgeSaldo) badgeSaldo.style.display = 'none';
             window.isLimitAlertShown = false;
         }
         // --------------------------
