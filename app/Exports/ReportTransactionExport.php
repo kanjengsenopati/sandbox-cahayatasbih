@@ -12,7 +12,7 @@ use PhpOffice\PhpSpreadsheet\Style\Border;
 use Maatwebsite\Excel\Concerns\WithMapping;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use PhpOffice\PhpSpreadsheet\Style\Alignment;
-use Maatwebsite\Excel\Concerns\FromCollection;
+use Maatwebsite\Excel\Concerns\FromQuery;
 use Maatwebsite\Excel\Concerns\ShouldAutoSize;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 use Maatwebsite\Excel\Concerns\WithCustomStartCell;
@@ -20,15 +20,15 @@ use Maatwebsite\Excel\Concerns\WithColumnFormatting;
 use Illuminate\Support\Facades\DB;
 use App\Traits\CanonicalBillTypeTrait;
 
-class ReportTransactionExport implements FromCollection, WithHeadings, ShouldAutoSize, WithMapping, WithColumnFormatting, WithTitle, WithCustomStartCell, WithStyles
+class ReportTransactionExport implements FromQuery, WithHeadings, ShouldAutoSize, WithMapping, WithColumnFormatting, WithTitle, WithCustomStartCell, WithStyles
 {
     use CanonicalBillTypeTrait;
     private $rowNumber = 0;
 
     /**
-     * @return \Illuminate\Support\Collection
+     * @return \Illuminate\Database\Eloquent\Builder
      */
-    public function collection()
+    public function query()
     {
         return Transaction::where('status', Transaction::STATUS_PAID)
             ->with('student', 'student.classroom', 'paymentMethod', 'admin', 'transactionDetails.bill.billType')
@@ -82,8 +82,7 @@ class ReportTransactionExport implements FromCollection, WithHeadings, ShouldAut
                     });
             })
             ->hasSchool()
-            ->latest()
-            ->get();
+            ->latest();
     }
 
     public function map($data): array
@@ -227,16 +226,16 @@ class ReportTransactionExport implements FromCollection, WithHeadings, ShouldAut
      */
     protected function getAcademicYearYears(): array
     {
-        // 1. Dari filter tanggal jika ada
-        if (request()->filled('start_date')) {
-            $date = Carbon::parse(request()->start_date);
+        // 1. Dari filter tanggal jika ada (Prioritaskan end_date karena lebih akurat merepresentasikan tahun ajaran target)
+        if (request()->filled('end_date')) {
+            $date = Carbon::parse(request()->end_date);
             $month = (int) $date->format('n');
             $year = (int) $date->format('Y');
             $startYear = $month >= 7 ? $year : $year - 1;
             $endYear = $startYear + 1;
             return [$startYear, $endYear];
-        } elseif (request()->filled('end_date')) {
-            $date = Carbon::parse(request()->end_date);
+        } elseif (request()->filled('start_date')) {
+            $date = Carbon::parse(request()->start_date);
             $month = (int) $date->format('n');
             $year = (int) $date->format('Y');
             $startYear = $month >= 7 ? $year : $year - 1;
@@ -348,7 +347,7 @@ class ReportTransactionExport implements FromCollection, WithHeadings, ShouldAut
     public function generateTsv(): array
     {
         $headings = $this->headings();
-        $collection = $this->collection();
+        $query = $this->query();
 
         $tsvLines = [];
 
@@ -358,18 +357,20 @@ class ReportTransactionExport implements FromCollection, WithHeadings, ShouldAut
         }, $headings);
         $tsvLines[] = implode("\t", $cleanHeadings);
 
-        // Data rows
-        foreach ($collection as $item) {
-            $mapped = $this->map($item);
-            $cleanCells = array_map(function ($cell) {
-                return str_replace(["\t", "\r", "\n"], ' ', (string) $cell);
-            }, $mapped);
-            $tsvLines[] = implode("\t", $cleanCells);
-        }
+        // Data rows in chunks to prevent memory limit exhaustion
+        $query->chunk(500, function ($collection) use (&$tsvLines) {
+            foreach ($collection as $item) {
+                $mapped = $this->map($item);
+                $cleanCells = array_map(function ($cell) {
+                    return str_replace(["\t", "\r", "\n"], ' ', (string) $cell);
+                }, $mapped);
+                $tsvLines[] = implode("\t", $cleanCells);
+            }
+        });
 
         return [
             'tsv' => implode("\r\n", $tsvLines),
-            'count' => $collection->count(),
+            'count' => $this->rowNumber,
         ];
     }
 }
