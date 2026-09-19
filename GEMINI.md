@@ -8,10 +8,10 @@ Saat melakukan tugas yang mengharuskan Anda (Antigravity AI) menulis kode, membu
 * Format nama branch harus selalu: `feat/<nama-user>/<nama-fitur-singkat>`
   * **Daftar User Tim Resmi:**
     1. `siswanto` (Lead / Default untuk _environment_ ini)
-    2. `anjarabidin`
+    2. `anjar-abidin`
     3. `arsito-ari`
   * _Jika Anda (AI) sedang membantu pengguna di environment ini dan tidak ada instruksi nama spesifik, gunakan **siswanto** secara default._
-  * Contoh: `feat/siswanto/fix-laporan-excel` atau `feat/anjarabidin/tambah-tombol-pos`
+  * Contoh: `feat/siswanto/fix-laporan-excel` atau `feat/anjar-abidin/tambah-tombol-pos`
 
 ## 2. Alur Kerja (Workflow) AI
 1. Pastikan repositori lokal tersinkronisasi dengan `staging` terbaru (`git checkout staging && git pull origin staging`).
