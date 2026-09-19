@@ -405,6 +405,17 @@ class Student extends Model
         ];
     }
 
+    public function isAlumniSmpMa(): bool
+    {
+        if ($this->classroom && $this->classroom->school && str_contains(strtoupper($this->classroom->school->name), 'MA')) {
+            return \App\Models\StudentClassroomHistory::where('student_id', $this->id)
+                ->whereHas('classroom.school', function($q) {
+                    $q->where('name', 'like', '%SMP%');
+                })->exists();
+        }
+        return false;
+    }
+
     public function translatedStatus(): string
     {
         return match ($this->status) {
