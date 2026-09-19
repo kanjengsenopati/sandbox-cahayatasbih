@@ -6,8 +6,12 @@ Saat melakukan tugas yang mengharuskan Anda (Antigravity AI) menulis kode, membu
 * Dilarang keras melakukan _commit_ dan _push_ langsung ke branch `main` atau `staging` secara sepihak.
 * Anda harus membuat _branch_ baru yang ditarik dari `staging`.
 * Format nama branch harus selalu: `feat/<nama-user>/<nama-fitur-singkat>`
-  * _Tanyakan kepada pengguna siapa nama mereka (username) jika Anda belum mengetahuinya di sesi percakapan tersebut._
-  * Contoh: `feat/budi/fix-laporan-excel` atau `feat/andi/tambah-tombol-pos`
+  * **Daftar User Tim Resmi:**
+    1. `siswanto` (Lead / Default untuk _environment_ ini)
+    2. `anjarabidin`
+    3. `arsito-ari`
+  * _Jika Anda (AI) sedang membantu pengguna di environment ini dan tidak ada instruksi nama spesifik, gunakan **siswanto** secara default._
+  * Contoh: `feat/siswanto/fix-laporan-excel` atau `feat/anjarabidin/tambah-tombol-pos`
 
 ## 2. Alur Kerja (Workflow) AI
 1. Pastikan repositori lokal tersinkronisasi dengan `staging` terbaru (`git checkout staging && git pull origin staging`).
