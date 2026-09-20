@@ -1056,7 +1056,6 @@
                         title: '<h2 class="fw-bolder text-warning mb-0">LIMIT TERLAMPAUI</h2>',
                         html: `
                         <div class="text-start mt-4 bg-light-warning p-5 rounded-3">
-                            <div class="d-flex justify-content-between mb-2">
                               <div class="d-flex justify-content-between mb-2">
                                   <span class="text-gray-600 fw-bold">Limit Belanja Harian:</span>
                                   <span class="fw-bolder text-gray-800">Rp. ${Number(window.currentStudentLimit).toLocaleString('id-ID')}</span>
@@ -1069,7 +1068,7 @@
                               <div class="d-flex justify-content-between align-items-center">
                                   <span class="text-gray-600 fw-bold">Sisa Kuota Belanja:</span>
                                   <span class="fw-bolder text-danger fs-3">Rp. ${Number(window.currentStudentRemainingLimit).toLocaleString('id-ID')}</span>
-                              </div></div>
+                              </div>
                         </div>
                         <div class="mt-5 text-gray-600 fs-7 text-center">
                             Silakan kurangi jumlah barang di keranjang.
