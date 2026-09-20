@@ -24,6 +24,8 @@ class StudentController extends BaseWaliApiController
                 $s->setAttribute('show_pwa_saldo', $s->isPwaSaldoVisible());
                 $s->setAttribute('allow_pwa_login', $s->isPwaLoginAllowed());
                 $s->setAttribute('allow_pwa_saldo_payment', $s->isPwaSaldoPaymentAllowed());
+                $s->setAttribute('effective_daily_limit', $s->getEffectiveDailyLimit());
+                $s->setAttribute('is_custom_limit', $s->daily_limit > 0);
                 return $s;
             });
             
@@ -42,6 +44,8 @@ class StudentController extends BaseWaliApiController
             $activeStudent->setAttribute('show_pwa_saldo', $activeStudent->isPwaSaldoVisible());
             $activeStudent->setAttribute('allow_pwa_login', $activeStudent->isPwaLoginAllowed());
             $activeStudent->setAttribute('allow_pwa_saldo_payment', $activeStudent->isPwaSaldoPaymentAllowed());
+            $activeStudent->setAttribute('effective_daily_limit', $activeStudent->getEffectiveDailyLimit());
+            $activeStudent->setAttribute('is_custom_limit', $activeStudent->daily_limit > 0);
         }
         return response()->json($activeStudent);
     }
