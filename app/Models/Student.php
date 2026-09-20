@@ -566,19 +566,23 @@ class Student extends Model
      */
     public function getEffectiveDailyLimit(): ?int
     {
-        // 1. Check Classroom
+        // 1. Prioritas Pertama: Cek setting limit kustom dari Wali Santri (jika > 0)
+        if ($this->daily_limit > 0) {
+            return (int) $this->daily_limit;
+        }
+
+        // 2. Prioritas Kedua (Fallback): Cek setting dari Kelas
         if ($this->classroom && $this->classroom->is_saldo_limit_active) {
             return (int) $this->classroom->saldo_limit;
         }
 
-        // 2. Check School (fallback to classroom's school if direct relation is null)
+        // 3. Prioritas Ketiga (Fallback): Cek setting dari Sekolah
         $school = $this->school ?? ($this->classroom ? $this->classroom->school : null);
         if ($school && $school->is_saldo_limit_active) {
             return (int) $school->saldo_limit;
         }
 
-        // 3. Fallback to Wali's setting
-        return $this->daily_limit > 0 ? (int) $this->daily_limit : 0;
+        return 0;
     }
 
     /**
