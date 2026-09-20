@@ -566,7 +566,11 @@ class Student extends Model
      */
     public function getEffectiveDailyLimit(): ?int
     {
-        // 1. Prioritas Pertama: Cek setting limit kustom dari Wali Santri (jika > 0)
+        // 1. Prioritas Pertama: Cek setting limit kustom dari Wali Santri (jika -1 atau > 0)
+        if ($this->daily_limit == -1) {
+            return 0; // Wali secara eksplisit menonaktifkan limit (No Limit)
+        }
+        
         if ($this->daily_limit > 0) {
             return (int) $this->daily_limit;
         }

@@ -21,7 +21,7 @@ class LimitController extends BaseWaliApiController
 
     public function update(Request $request)
     {
-        $request->validate(['daily_limit' => 'required|numeric|min:0']);
+        $request->validate(['daily_limit' => 'required|numeric|min:-1']);
         $student = $this->resolveActiveStudent();
         if (!$student) return response()->json(['message' => 'Student not found'], 404);
         

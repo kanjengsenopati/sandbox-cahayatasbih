@@ -241,7 +241,7 @@ class DashboardController extends BaseWaliApiController
             $activeStudent->allow_pwa_login = $pwaPermissions['allow_pwa_login'];
             $activeStudent->allow_pwa_saldo_payment = $pwaPermissions['allow_pwa_saldo_payment'];
             $activeStudent->setAttribute('effective_daily_limit', $activeStudent->getEffectiveDailyLimit());
-            $activeStudent->setAttribute('is_custom_limit', $activeStudent->daily_limit > 0);
+            $activeStudent->setAttribute('is_custom_limit', $activeStudent->daily_limit > 0 || $activeStudent->daily_limit == -1);
         }
 
         $students->each(function ($st) {
@@ -249,7 +249,7 @@ class DashboardController extends BaseWaliApiController
             $st->allow_pwa_login = $st->isPwaLoginAllowed();
             $st->allow_pwa_saldo_payment = $st->isPwaSaldoPaymentAllowed();
             $st->setAttribute('effective_daily_limit', $st->getEffectiveDailyLimit());
-            $st->setAttribute('is_custom_limit', $st->daily_limit > 0);
+            $st->setAttribute('is_custom_limit', $st->daily_limit > 0 || $st->daily_limit == -1);
         });
 
         $appSetting = \App\Models\ApplicationSetting::first();
