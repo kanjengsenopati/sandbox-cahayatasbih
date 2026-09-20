@@ -1,5 +1,0 @@
-<<<<<<<< HEAD:public/portalwalisantri/dist/assets/triangle-alert-C7WG1XCZ.js
-import{l as e}from"./index-CsYxyiX4.js";const a=[["path",{d:"m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3",key:"wmoenq"}],["path",{d:"M12 9v4",key:"juzpu7"}],["path",{d:"M12 17h.01",key:"p32p05"}]],o=e("triangle-alert",a);export{o as T};
-========
-import{l as e}from"./index-CpDKEWgI.js";const a=[["path",{d:"m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3",key:"wmoenq"}],["path",{d:"M12 9v4",key:"juzpu7"}],["path",{d:"M12 17h.01",key:"p32p05"}]],o=e("triangle-alert",a);export{o as T};
->>>>>>>> origin/staging:public/portalwalisantri/dist/assets/triangle-alert-r4yO4D5D.js
