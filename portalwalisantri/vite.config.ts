@@ -46,7 +46,7 @@ export default defineConfig({
             urlPattern: /\.(?:js|css)$/i,
             handler: 'StaleWhileRevalidate',
             options: {
-              cacheName: 'pwa-static-resources',
+              cacheName: 'pwa-static-resources-v2',
             },
           },
         ],
