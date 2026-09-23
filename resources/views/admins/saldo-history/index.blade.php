@@ -377,15 +377,12 @@
                                         </div>
                                         <div class="d-flex align-items-center gap-2">
                                             <label class="fs-7 fw-bold text-gray-700 mb-0">Kelas:</label>
-                                            <div class="dropdown">
-                                                <button class="btn btn-light form-select-sm dropdown-toggle text-start rounded-pill" style="width: 140px; background-color: #f5f8fa; border-color: #f5f8fa; color: #5e6278;" type="button" id="saldo_history_classroom_btn" data-bs-toggle="dropdown" aria-expanded="false" data-bs-auto-close="outside">
-                                                    Semua
-                                                </button>
-                                                <input type="hidden" id="saldo-history-classroom-id" value="">
-                                                <div class="dropdown-menu p-4 shadow" style="min-width: 400px; max-height: 400px; overflow-y: auto;" aria-labelledby="saldo_history_classroom_btn" id="saldo_history_classroom_mega_menu">
-                                                    <div class="text-muted fs-7 mb-2">Pilih Lembaga terlebih dahulu</div>
-                                                </div>
-                                            </div>
+                                            <select id="saldo-history-classroom-id" class="form-select form-select-solid form-select-sm rounded-pill" style="width: 140px;">
+                                                <option value="">Semua Kelas</option>
+                                                @foreach($classrooms as $cls)
+                                                    <option value="{{ $cls->id }}" data-school="{{ $cls->school_id }}">{{ $cls->name }}</option>
+                                                @endforeach
+                                            </select>
                                         </div>
                                         <div class="d-flex align-items-center gap-2">
                                             <label class="fs-7 fw-bold text-gray-700 mb-0">Cari:</label>
@@ -1581,8 +1578,7 @@
 
         $('#saldo-history-btn-reset').on('click', function() {
             $('#saldo-history-school-id').val('');
-            $('#saldo-history-classroom-id').val('');
-            $('#saldo_history_classroom_btn').text('Semua');
+            $('#saldo-history-classroom-id').val('').find('option').show();
             $('#saldo-history-search-name').val('');
             var dates = getPresetDates('week');
             $('#saldo-history-start-date').val(dates.start);
@@ -1591,61 +1587,23 @@
             $('.history-period-btn[data-period="week"]').removeClass('btn-light-primary').addClass('btn-primary active');
             historyTable.ajax.reload();
         });
-        
-        const allHistoryClassrooms = @json($classrooms);
-
-        function renderHistoryClassroomMegaMenu(schoolId) {
-            const container = $('#saldo_history_classroom_mega_menu');
-            container.empty();
-
-            if (!schoolId) {
-                container.html('<div class="text-muted fs-7 mb-2">Pilih Lembaga terlebih dahulu</div>');
-                return;
-            }
-
-            const filteredClasses = allHistoryClassrooms.filter(c => c.school_id == schoolId);
-            if (filteredClasses.length === 0) {
-                container.html('<div class="text-muted fs-7 mb-2">Tidak ada kelas ditemukan</div>');
-                return;
-            }
-
-            const groups = {};
-            filteredClasses.forEach(c => {
-                let match = c.name.match(/^(\d+)/);
-                let key = match ? match[1] : 'Lainnya';
-                if (!groups[key]) groups[key] = [];
-                groups[key].push(c);
-            });
-
-            const row = $('<div class="row g-2"></div>');
-            
-            container.append($('<a href="#" class="dropdown-item fw-bold text-primary mb-3 history-classroom-item" data-id="" data-name="Semua">Semua</a>'));
-
-            Object.keys(groups).sort((a,b) => parseInt(a) - parseInt(b)).forEach(key => {
-                const col = $('<div class="col-4"></div>');
-                col.append(`<h6 class="dropdown-header text-uppercase text-muted fw-bolder">Kelas ${key}</h6>`);
-                groups[key].forEach(c => {
-                    col.append(`<a class="dropdown-item history-classroom-item" href="#" data-id="${c.id}" data-name="${c.name}">${c.name}</a>`);
-                });
-                row.append(col);
-            });
-
-            container.append(row);
-        }
 
         $('#saldo-history-school-id').on('change', function() {
+            var schoolId = $(this).val();
+            $('#saldo-history-classroom-id option').each(function() {
+                var clsSchool = $(this).data('school');
+                if (!schoolId || !clsSchool || clsSchool == schoolId) {
+                    $(this).show();
+                } else {
+                    $(this).hide();
+                }
+            });
             $('#saldo-history-classroom-id').val('');
-            $('#saldo_history_classroom_btn').text('Semua');
-            renderHistoryClassroomMegaMenu($(this).val());
+            historyTable.ajax.reload();
         });
 
-        $(document).on('click', '.history-classroom-item', function(e) {
-            e.preventDefault();
-            const id = $(this).data('id');
-            const name = $(this).data('name');
-            $('#saldo-history-classroom-id').val(id);
-            $('#saldo_history_classroom_btn').text(name);
-            $('#saldo_history_classroom_btn').dropdown('toggle');
+        $('#saldo-history-classroom-id').on('change', function() {
+            historyTable.ajax.reload();
         });
 
         $('#saldo-history-btn-recalculate').on('click', function() {
@@ -1684,10 +1642,17 @@
             });
         });
 
-        $('#saldo-history-search-name').on('keyup', function(e) {
+        var historySearchTimer;
+        $('#saldo-history-search-name').on('keyup input', function(e) {
             if (e.keyCode === 13) {
+                clearTimeout(historySearchTimer);
                 historyTable.ajax.reload();
+                return;
             }
+            clearTimeout(historySearchTimer);
+            historySearchTimer = setTimeout(function() {
+                historyTable.ajax.reload();
+            }, 500);
         });
 
         $(document).on('click', '.delete-history-btn', function() {
