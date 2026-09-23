@@ -387,7 +387,7 @@
                                         <div class="d-flex align-items-center gap-2">
                                             <label class="fs-7 fw-bold text-gray-700 mb-0">Cari:</label>
                                             <div class="position-relative">
-                                                <input type="text" id="saldo-history-search-name" class="form-control form-control-solid form-control-sm rounded-pill ps-8" placeholder="Nama Siswa / NIS..." style="width: 160px;">
+                                                <input type="text" id="saldo-history-search-name" class="form-control form-control-solid form-control-sm rounded-pill ps-8" placeholder="Nama Siswa / NIS..." style="width: 200px;" autocomplete="off">
                                                 <i class="fas fa-search position-absolute top-50 start-0 translate-middle-y ms-3 text-gray-400 fs-8"></i>
                                             </div>
                                         </div>
@@ -1576,9 +1576,17 @@
             historyTable.ajax.reload();
         });
 
+        // Cache original classroom options so filtering works reliably across all browsers
+        var $historyClassroomSelect = $('#saldo-history-classroom-id');
+        var originalHistoryClassrooms = $historyClassroomSelect.find('option').clone();
+
         $('#saldo-history-btn-reset').on('click', function() {
             $('#saldo-history-school-id').val('');
-            $('#saldo-history-classroom-id').val('').find('option').show();
+            $historyClassroomSelect.empty();
+            originalHistoryClassrooms.each(function() {
+                $historyClassroomSelect.append($(this).clone());
+            });
+            $historyClassroomSelect.val('');
             $('#saldo-history-search-name').val('');
             var dates = getPresetDates('week');
             $('#saldo-history-start-date').val(dates.start);
@@ -1590,15 +1598,14 @@
 
         $('#saldo-history-school-id').on('change', function() {
             var schoolId = $(this).val();
-            $('#saldo-history-classroom-id option').each(function() {
+            $historyClassroomSelect.empty();
+            originalHistoryClassrooms.each(function() {
                 var clsSchool = $(this).data('school');
                 if (!schoolId || !clsSchool || clsSchool == schoolId) {
-                    $(this).show();
-                } else {
-                    $(this).hide();
+                    $historyClassroomSelect.append($(this).clone());
                 }
             });
-            $('#saldo-history-classroom-id').val('');
+            $historyClassroomSelect.val('');
             historyTable.ajax.reload();
         });
 
@@ -1642,17 +1649,11 @@
             });
         });
 
-        var historySearchTimer;
-        $('#saldo-history-search-name').on('keyup input', function(e) {
+        $('#saldo-history-search-name').on('keydown', function(e) {
             if (e.keyCode === 13) {
-                clearTimeout(historySearchTimer);
+                e.preventDefault();
                 historyTable.ajax.reload();
-                return;
             }
-            clearTimeout(historySearchTimer);
-            historySearchTimer = setTimeout(function() {
-                historyTable.ajax.reload();
-            }, 500);
         });
 
         $(document).on('click', '.delete-history-btn', function() {

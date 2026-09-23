@@ -64,22 +64,21 @@ class SaldoHistoryController extends Controller
             $data = SaldoHistory::with(['student.classroom.school', 'outlet'])->hasSchool();
 
             if ($schoolId = request()->school_id) {
-                $data->whereHas('student.classroom', function ($q) use ($schoolId) {
-                    $q->where('school_id', $schoolId);
-                });
+                $studentIds = Student::where('school_id', $schoolId)->pluck('id');
+                $data->whereIn('student_id', $studentIds);
             }
             if ($classroomId = request()->classroom_id) {
-                $data->whereHas('student', function ($q) use ($classroomId) {
-                    $q->where('classroom_id', $classroomId);
-                });
+                $studentIds = Student::where('classroom_id', $classroomId)->pluck('id');
+                $data->whereIn('student_id', $studentIds);
             }
 
-            if ($searchName = request()->search_name) {
-                $data->whereHas('student', function ($q) use ($searchName) {
+            if ($searchName = trim(request()->search_name ?? '')) {
+                $studentIds = Student::where(function ($q) use ($searchName) {
                     $q->where('name', 'like', "%{$searchName}%")
                       ->orWhere('nis', 'like', "%{$searchName}%")
                       ->orWhere('nisn', 'like', "%{$searchName}%");
-                });
+                })->pluck('id');
+                $data->whereIn('student_id', $studentIds);
             }
             $startDate = request()->filled('start_date') ? request()->start_date : now()->subDays(6)->format('Y-m-d');
             $endDate = request()->filled('end_date') ? request()->end_date : now()->format('Y-m-d');
