@@ -256,13 +256,7 @@
                 <!--end::Breadcrumb-->
             </div>
             <!--end::Page title-->
-            <!--begin::Actions-->
-            <div class="d-flex align-items-center gap-2 gap-lg-3">
-                <a href="{{ route('bill.audit-consistency') }}" class="btn btn-sm btn-primary fw-bold">
-                    <i class="bi bi-shield-check me-1"></i> Audit Konsistensi Tagihan
-                </a>
-            </div>
-            <!--end::Actions-->
+            
         </div>
         <!--end::Container-->
     </div>
@@ -285,15 +279,9 @@
                         <li class="nav-item">
                             <a class="nav-link" data-bs-toggle="tab" href="#pembayaran_transfer">Pembayaran Transfer</a>
                         </li>
-                        <li class="nav-item">
-                            <a class="nav-link" data-bs-toggle="tab" href="#arsip_riwayat">Arsip Riwayat</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" data-bs-toggle="tab" href="#import_pembayaran">Import Pembayaran</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" data-bs-toggle="tab" href="#audit_anomaly_data">Audit Anomaly Data</a>
-                        </li>
+                        
+                        
+                        
                     </ul>
 
                     <div class="tab-content" id="myTabContent">
@@ -595,40 +583,8 @@
                             <!-- Add your content for Pembayaran Transfer here -->
                             @include('admins.bill.transfer-tab.index')
                         </div>
-                        <div class="tab-pane fade" id="arsip_riwayat" role="tabpanel">
-                            <!-- Arsip Riwayat Content -->
-                            @include('admins.bill.transfer-tab.archive')
-                        </div>
-                        <div class="tab-pane fade" id="import_pembayaran" role="tabpanel">
-                            <!-- Import Pembayaran Content -->
-                            @include('admins.bill.import-tab.index')
-                        </div>
-                        <div class="tab-pane fade" id="audit_anomaly_data" role="tabpanel">
-                            <!-- Audit Anomaly Data Content -->
-                            <div class="alert alert-primary d-flex align-items-center justify-content-between p-5 mb-5 rounded-4 shadow-sm" style="background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%); border: 1px solid #bfdbfe;">
-                                <div class="d-flex align-items-center">
-                                    <div class="symbol symbol-45px me-4">
-                                        <span class="symbol-label bg-primary text-white">
-                                            <i class="bi bi-shield-check fs-2"></i>
-                                        </span>
-                                    </div>
-                                    <div class="d-flex flex-column">
-                                        <h5 class="mb-1 text-slate-800 fw-bolder">Audit & Konsistensi Finansial (6 Item Kritis)</h5>
-                                        <span class="text-slate-600 fs-7">Deteksi jenis tagihan duplikat, tarif kosong, siswa tanpa tagihan, ghost billing, dan inkonsistensi status tagihan. Dilengkapi fitur safe auto-repair.</span>
-                                    </div>
-                                </div>
-                                <a href="{{ route('bill.audit-consistency') }}" class="btn btn-primary fw-bold text-nowrap ms-4 px-5">
-                                    <i class="bi bi-speedometer2 me-2"></i> Buka Dashboard Konsistensi
-                                </a>
-                            </div>
-
-                            <div class="card card-flush">
-                                <div class="card-body p-0">
-                                    <div class="p-0 border-0 bg-white m-0" style="width: 100%; min-height: 800px;">
-                                        <iframe src="{{ url('audit-vps-data') }}" style="width: 100%; height: 800px; border: none; border-radius: 12px; background: #fff;" title="Audit Anomaly Data" allowfullscreen></iframe>
-                                    </div>
-                                </div>
-                            </div>
+                        
+                        
                         </div>
                     </div>
                     <!--end::Card body-->
@@ -927,88 +883,7 @@
                 ]
             });
 
-            var archiveTable = $('#table-archive').DataTable({
-                ordering: true,
-                sortable: true,
-                processing: true,
-                serverSide: true,
-                pageLength: 20,
-                lengthMenu: [20, 30, 40],
-                ajax: {
-                    url: "{{ route('bill.index') }}",
-                    data: function(d) {
-                        d.tab = 'archive';
-                        d.search_student = $('#archive-search-student').val();
-                        d.start_date = $('#archive-start-date').val();
-                        d.end_date = $('#archive-end-date').val();
-                    }
-                },
-                language: {
-                    "paginate": {
-                        "next": "<i class='fa fa-angle-right'>",
-                        "previous": "<i class='fa fa-angle-left'>"
-                    },
-                    "loadingRecords": "Loading...",
-                    "processing": "Processing...",
-                },
-                columns: [
-                    {
-                        "data": null,
-                        "sortable": false,
-                        "searchable": false,
-                        render: function(data, type, row, meta) {
-                            return meta.row + meta.settings._iDisplayStart + 1;
-                        }
-                    },
-                    {
-                        data: 'student.name',
-                        name: 'student.name',
-                        orderable: false,
-                    },
-                    {
-                        data: 'pay_amount',
-                        name: 'pay_amount'
-                    },
-                    {
-                        data: 'unique_payment',
-                        name: 'unique_payment'
-                    },
-                    {
-                        data: 'bank_recipient',
-                        name: 'bank_recipient',
-                        orderable: false,
-                        searchable: false
-                    },
-                    {
-                        data: 'proof',
-                        name: 'proof',
-                        orderable: false,
-                        searchable: false
-                    },
-                    {
-                        data: 'status',
-                        name: 'status',
-                        orderable: true,
-                        searchable: false
-                    },
-                    {
-                        data: 'officer',
-                        name: 'officer',
-                        orderable: false
-                    },
-                    {
-                        data: 'updated_at_formatted',
-                        name: 'updated_at',
-                        orderable: true
-                    },
-                    {
-                        data: 'action',
-                        name: 'action',
-                        orderable: false,
-                        searchable: false
-                    }
-                ]
-            });
+            
 
             var searchTimeout = null;
             $('#archive-search-student').on('keyup input change', function() {
@@ -1088,10 +963,7 @@
                 });
             });
 
-            // Adjust columns on tab switch
-            $('a[href="#arsip_riwayat"]').on('shown.bs.tab', function (e) {
-                archiveTable.columns.adjust().draw();
-            });
+            
 
             // Click handler for viewing proof images in a modal
             $(document).on('click', '.view-proof-image', function() {
