@@ -954,6 +954,36 @@ class BillController extends Controller
     // }
 
     
+    
+    public function generateStudentBills(Request $request, $studentId)
+    {
+        $student = \App\Models\Student::findOrFail($studentId);
+        $academicYearId = $request->query('academic_year_id') ?? $request->input('academic_year_id');
+        
+        // Idempotency / Race Condition protection
+        $lockName = "generate_bill_student_{$studentId}";
+        $lock = \Illuminate\Support\Facades\Cache::lock($lockName, 15);
+        
+        if ($lock->get()) {
+            try {
+                DB::transaction(function () use ($studentId, $academicYearId) {
+                    \App\Services\TransactionService::cleanupGhostBillsForStudent($studentId);
+                    \App\Services\TransactionService::syncStudentBillsFromPaidTransactions($studentId);
+                    \App\Services\TransactionService::ensureStudentBillsSyncedFromRate($studentId, $academicYearId);
+                });
+                return redirect()->back()->with('success', 'Tagihan berhasil di-generate untuk siswa ini secara atomik.');
+            } catch (\Throwable $th) {
+                \Illuminate\Support\Facades\Log::error($th);
+                return redirect()->back()->with('error', 'Gagal memproses generasi tagihan: ' . $th->getMessage());
+            } finally {
+                $lock->release();
+                \Illuminate\Support\Facades\Cache::forget("student_bills_synced_{$studentId}");
+            }
+        } else {
+            return redirect()->back()->with('warning', 'Proses generasi tagihan sedang berjalan di latar belakang. Harap tunggu beberapa saat.');
+        }
+    }
+
     public function changeStatusBulk(Request $request)
     {
         $user = Auth::user();
