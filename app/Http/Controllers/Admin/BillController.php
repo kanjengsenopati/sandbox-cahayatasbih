@@ -913,6 +913,7 @@ class BillController extends Controller
 
         $paymentMethods = PaymentMethod::latest()->get();
 
+        if (request()->ajax()) { return view('admins.bill.summary-ajax', compact('student', 'billType', 'bills', 'summary', 'paymentMethods')); }
         return view('admins.bill.summary', compact(
             'student',
             'billType',
@@ -949,7 +950,8 @@ class BillController extends Controller
 
     //     $paymentMethods = PaymentMethod::latest()->get();
 
-    //     return view('admins.bill.summary', compact('student', 'billType', 'bills', 'paymentMethods'));
+    //     if (request()->ajax()) { return view('admins.bill.summary-ajax', compact('student', 'billType', 'bills', 'summary', 'paymentMethods')); }
+        return view('admins.bill.summary', compact('student', 'billType', 'bills', 'paymentMethods'));
     // }
 
     public function changeStatus()
