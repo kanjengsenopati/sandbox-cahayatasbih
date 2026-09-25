@@ -950,7 +950,6 @@ class BillController extends Controller
 
     //     $paymentMethods = PaymentMethod::latest()->get();
 
-
     //     return view('admins.bill.summary', compact('student', 'billType', 'bills', 'paymentMethods'));
     // }
 
