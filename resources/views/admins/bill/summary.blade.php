@@ -322,55 +322,155 @@
         </div>
     </div>
 </div>
-@endsection
 
-@push('js')
+<!-- Modal Pembayaran Multi -->
+<div class="modal fade" id="paymentModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content" style="border-radius: 24px; overflow: hidden; border: none; box-shadow: 0 10px 40px rgba(0,0,0,0.08);">
+            <form action="{{ route('bill.store') }}" method="post" id="form-multi-payment">
+                @csrf
+                <div class="modal-header border-0 bg-light px-5 py-3">
+                    <h5 class="modal-title fw-bold text-slate-800">Konfirmasi Pembayaran</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-5 bg-white">
+                    <div class="text-center bg-light-success rounded-3 p-4 mb-4 border border-success border-opacity-10">
+                        <span class="text-slate-500 fs-7 fw-bold text-uppercase tracking-wider mb-1 d-block">Total Pembayaran Tagihan</span>
+                        <span class="text-emerald-600 fw-boldest fs-2hx" id="total-amount">Rp 0</span>
+                    </div>
+
+                    <div class="row mb-4">
+                        <div class="col-md-12">
+                            <span class="fw-bold text-slate-700 fs-6 d-block mb-2">Metode Pembayaran</span>
+                            <div class="card shadow-none border border-gray-200" style="border-radius: 16px;">
+                                <div class="card-body p-3">
+                                    <select class="form-select form-select-solid" name="payment_method" id="payment-method" required>
+                                        <option value="">Pilih Metode Pembayaran</option>
+                                        <option value="BALANCE">Saldo (Rp {{ number_format($student->saldo ?? 0, 0, ',', '.') }})</option>
+                                        <option value="CASH">Tunai</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-2">
+                        <span class="fw-bold text-slate-700 fs-6 d-block mb-2">Rincian Pembayaran</span>
+                        <div style="max-height: 200px; overflow-y: auto; overflow-x: hidden; padding-right: 4px;">
+                            <div class="row g-2" id="payment-details"></div>
+                        </div>
+                    </div>
+                    
+                    <input type="hidden" name="student_id" value="{{ $student->id ?? '' }}">
+                </div>
+                <div class="modal-footer border-0 bg-light px-5 py-3">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                    <button type="submit" class="btn btn-primary px-6" id="btn-submit-payment">Bayar Sekarang</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 <script>
     $(document).ready(function() {
-        $('.btn-bayar').on('click', function(e) {
-            e.preventDefault();
-            var button = $(this);
-            var tr = button.closest('tr');
-            var paymentMethodSelect = tr.find('.payment-method-select');
-            var paymentMethod = paymentMethodSelect.val();
-            
-            if (!paymentMethod) {
-                Swal.fire({
-                    icon: 'warning',
-                    title: 'Peringatan',
-                    text: 'Silakan pilih metode pembayaran terlebih dahulu.'
-                });
-                return;
-            }
-            
-            var amountText = tr.find('td').eq(1).text().trim();
-            var periodText = tr.find('th').text().trim();
-            var methodLabel = paymentMethod === 'BALANCE' ? 'Saldo' : 'Tunai';
+        const selectAllCb = document.getElementById('select-all-summary');
+        const btnPay = document.getElementById('btn-pay-selected');
+        const countSpan = document.getElementById('selected-count');
 
-            Swal.fire({
-                title: 'Konfirmasi Pembayaran',
-                text: 'Apakah Anda yakin ingin membayar tagihan sebesar ' + amountText + ' untuk periode ' + periodText + ' menggunakan metode ' + methodLabel + '?',
-                icon: 'question',
-                showCancelButton: true,
-                confirmButtonColor: '#3085d6',
-                cancelButtonColor: '#d33',
-                confirmButtonText: 'Ya, Bayar Sekarang!',
-                cancelButtonText: 'Batal'
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    button.prop('disabled', true);
-                    button.html('<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Loading...');
-                    
-                    var nativeForm = button[0].form;
-                    if (nativeForm) {
-                        nativeForm.submit();
-                    } else {
-                        button.closest('form').submit();
+        function updateBtn() {
+            const checked = document.querySelectorAll('.bill-month-checkbox:checked');
+            if(countSpan) countSpan.innerText = checked.length;
+            if(btnPay) btnPay.style.display = checked.length > 0 ? 'inline-block' : 'none';
+        }
+
+        if (selectAllCb) {
+            selectAllCb.addEventListener('change', e => {
+                document.querySelectorAll('.bill-month-checkbox').forEach(cb => {
+                    if(!cb.disabled) cb.checked = e.target.checked;
+                });
+                updateBtn();
+            });
+        }
+
+        $(document).on('change', '.bill-month-checkbox', updateBtn);
+
+        // Trigger modal population
+        if(btnPay) {
+            btnPay.addEventListener('click', function() {
+                const checked = document.querySelectorAll('.bill-month-checkbox:checked');
+                const detailsContainer = document.getElementById('payment-details');
+                const totalEl = document.getElementById('total-amount');
+                const form = document.getElementById('form-multi-payment');
+                
+                if(detailsContainer) detailsContainer.innerHTML = '';
+                document.querySelectorAll('input[name="bill_ids[]"]').forEach(el => el.remove());
+
+                let total = 0;
+                checked.forEach(cb => {
+                    const billId = cb.getAttribute('data-bill-id');
+                    const amt = parseInt(cb.getAttribute('data-amount'));
+                    const monthName = cb.getAttribute('data-month');
+                    const year = cb.getAttribute('data-year');
+                    const billName = cb.getAttribute('data-bill-name');
+
+                    total += amt;
+
+                    const hidden = document.createElement('input');
+                    hidden.type = 'hidden';
+                    hidden.name = 'bill_ids[]';
+                    hidden.value = billId;
+                    form.appendChild(hidden);
+
+                    const col = document.createElement('div');
+                    col.className = 'col-md-6 mb-2';
+                    col.innerHTML = `
+                        <div class="card h-100 border border-gray-200 shadow-none" style="border-radius: 12px; background-color: #f8fafc;">
+                            <div class="card-body p-3 d-flex justify-content-between align-items-center">
+                                <div class="d-flex flex-column text-start">
+                                    <span class="fw-bold fs-7 text-slate-800">${billName}</span>
+                                    <span class="text-slate-500 fs-8 mt-1">${monthName} ${year}</span>
+                                </div>
+                                <div class="text-end">
+                                    <span class="fw-boldest fs-7 text-slate-900">Rp ${amt.toLocaleString('id-ID')}</span>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    detailsContainer.appendChild(col);
+                });
+
+                if(totalEl) totalEl.innerText = 'Rp ' + total.toLocaleString('id-ID');
+
+                const studentBalance = parseInt('{{ $student->saldo ?? 0 }}');
+                const paymentMethod = document.getElementById('payment-method');
+                if (paymentMethod) {
+                    const balanceOption = paymentMethod.querySelector('option[value="BALANCE"]');
+                    if (balanceOption) {
+                        if (studentBalance < total) {
+                            balanceOption.style.display = 'none';
+                            balanceOption.disabled = true;
+                            if (paymentMethod.value === 'BALANCE') paymentMethod.value = '';
+                        } else {
+                            balanceOption.style.display = 'block';
+                            balanceOption.disabled = false;
+                        }
                     }
                 }
             });
+        }
+        
+        $('#form-multi-payment').on('submit', function() {
+            const btn = $('#btn-submit-payment');
+            btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm"></span> Loading...');
         });
     });
+</script>
+
+@endsection
+
+@push('js')
+
 
    function changeStatus(billId, status) {
         var title = status === 'PAID' ? 'Ubah Status Tagihan' : 'Batalkan Pembayaran';
