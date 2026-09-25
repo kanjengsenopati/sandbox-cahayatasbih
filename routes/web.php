@@ -329,6 +329,10 @@ Route::group(['middleware' => ['auth']], function () {
     Route::post('bill/repair-consistency', [BillController::class, 'repairConsistency'])->name('bill.repair-consistency');
     Route::post('bill.change-status', [BillController::class, 'changeStatus'])->name('bill.change-status');
     Route::post('bill.change-status-bulk', [BillController::class, 'changeStatusBulk'])->name('bill.change-status-bulk');
+
+    Route::post('bill/{student_id}/generate', [BillController::class, 'generateStudentBills'])->name('bill.generate-student-bills');
+
+
     Route::resource('bill', BillController::class);
     Route::resource('payment-method', PaymentMethodController::class);
     Route::resource('transaction', TransactionController::class);
