@@ -953,6 +953,85 @@ class BillController extends Controller
     //     return view('admins.bill.summary', compact('student', 'billType', 'bills', 'paymentMethods'));
     // }
 
+    
+    public function changeStatusBulk(Request $request)
+    {
+        $user = Auth::user();
+        $isAuthorized = false;
+
+        if ($user) {
+            if ($user->hasRole('Super Admin') || $user->hasRole('Bendahara') || $user->can('Edit Status Tagihan')) {
+                $isAuthorized = true;
+            }
+        }
+
+        if (!$isAuthorized) {
+            return redirect()->back()->with('error', 'Maaf, Anda tidak memiliki akses untuk membatalkan tagihan.');
+        }
+
+        $requestData = $request->only(['bill_ids']);
+        $billIds = json_decode($requestData['bill_ids'] ?? '[]');
+
+        if (empty($billIds)) {
+            return redirect()->back()->with('error', 'Tidak ada tagihan yang dipilih.');
+        }
+
+        DB::beginTransaction();
+        try {
+            foreach ($billIds as $billId) {
+                $bill = Bill::findOrFail($billId);
+                $oldStatus = $bill->status;
+                $newStatus = Bill::STATUS_UNPAID;
+
+                if ($oldStatus != $newStatus) {
+                    $bill->status = $newStatus;
+                    $bill->paid_amount = 0;
+                    $bill->save();
+
+                    // Batalkan transaksi
+                    $transactionDetails = $bill->transactionDetails;
+                    foreach ($transactionDetails as $detail) {
+                        $transaction = $detail->transaction;
+                        if ($transaction) {
+                            if ($transaction->paymentMethod?->type == \App\Models\PaymentMethod::TYPE_BALANCE || $detail->saldo_history_id) {
+                                $student = \App\Models\Student::where('id', $transaction->student_id)->lockForUpdate()->first();
+                                if ($student) {
+                                    $refundAmount = $detail->amount ?? $bill->amount;
+                                    $balanceBefore = $student->saldo;
+                                    $student->increment('saldo', $refundAmount);
+                                    $student->refresh();
+                                    $balanceAfter = $student->saldo;
+
+                                    \App\Models\SaldoHistory::create([
+                                        'student_id' => $student->id,
+                                        'amount' => $refundAmount,
+                                        'type' => \App\Models\SaldoHistory::TYPE_IN,
+                                        'description' => 'Refund Pembatalan Tagihan ' . ($bill->billType?->name ?? '') . ' (' . ($transaction->payment_code ?? '') . ') Sebesar Rp.' . number_format($refundAmount, 0, ',', '.'),
+                                        'status' => \App\Models\SaldoHistory::STATUS_SUCCESS,
+                                        'usage' => \App\Models\SaldoHistory::USAGE_TOPUP,
+                                        'balance_before' => $balanceBefore,
+                                        'balance_after' => $balanceAfter,
+                                    ]);
+
+                                    \App\Services\SaldoRecalculatorService::recalculateForStudent($student->id);
+                                }
+                            }
+                            $transaction->update(['status' => \App\Models\Transaction::STATUS_CANCELLED]);
+                            $detail->delete();
+                        }
+                    }
+                }
+            }
+
+            DB::commit();
+            return redirect()->back()->with('success', 'Pembatalan status tagihan berhasil dilakukan.');
+        } catch (\Throwable $th) {
+            DB::rollBack();
+            Log::error($th);
+            return redirect()->back()->with('error', 'Gagal membatalkan status tagihan: ' . $th->getMessage());
+        }
+    }
+
     public function changeStatus()
     {
         $user = Auth::user();

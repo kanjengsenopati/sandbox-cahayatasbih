@@ -159,28 +159,58 @@
 
 
 <script>
-    $(document).ready(function () {
-        $(document).on('click', '.btn-lihat-rincian', function (e) {
-            e.preventDefault();
-            var url = $(this).data('url');
-            var modal = $('#modal-rincian');
-            
-            modal.find('.modal-body').html('<div class="text-center p-5"><span class="spinner-border text-primary" role="status"></span><div class="mt-2 text-muted">Memuat data...</div></div>');
-            modal.modal('show');
+    
+    });
 
-            $.ajax({
-                url: url,
-                type: 'GET',
-                success: function (data) {
-                    modal.find('.modal-body').html(data);
-                },
-                error: function () {
-                    modal.find('.modal-body').html('<div class="alert alert-danger m-5">Gagal memuat data rincian. Silakan coba lagi.</div>');
+    $(document).ready(function() {
+        $(document).on('click', '.btn-batalkan', function(e) {
+            e.preventDefault();
+            const selectedCheckboxes = document.querySelectorAll('.bill-month-checkbox:checked');
+            if (selectedCheckboxes.length === 0) {
+                Swal.fire({
+                    title: 'Pilih Tagihan',
+                    text: 'Silakan pilih tagihan yang sudah terbayar (LUNAS) untuk dibatalkan.',
+                    icon: 'warning',
+                    confirmButtonColor: '#2563EB'
+                });
+                return;
+            }
+
+            // We only want to cancel PAID bills
+            let billIds = [];
+            selectedCheckboxes.forEach(checkbox => {
+                billIds.push(checkbox.getAttribute('data-bill-id'));
+            });
+
+            Swal.fire({
+                title: 'Batalkan Pembayaran?',
+                text: 'Apakah Anda yakin ingin MEMBATALKAN pembayaran tagihan-tagihan ini? Transaksi pembayaran akan dihapus/di-rollback secara atomik.',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#DC2626',
+                cancelButtonColor: '#94a3b8',
+                confirmButtonText: 'Ya, Batalkan!',
+                cancelButtonText: 'Batal'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    const form = document.createElement('form');
+                    form.action = "{{ route('bill.change-status-bulk') }}";
+                    form.method = 'post';
+
+                    form.innerHTML = `
+                    @csrf
+                    <input type="hidden" name="bill_ids" value='${JSON.stringify(billIds)}'>
+                    `;
+
+                    document.body.appendChild(form);
+                    form.submit();
                 }
             });
         });
     });
 </script>
+
+
 
 @endpush
 @section('content')
@@ -530,6 +560,8 @@
                                                             <button class="btn btn-primary modal-pay ms-2"
                                                                 data-bs-toggle="modal" data-bs-target="#paymentModal"
                                                                 style="min-width: 100px;">Bayar</button>
+                                                            <button class="btn btn-danger btn-batalkan ms-2"
+                                                                style="min-width: 100px;">Batalkan</button>
                                                             @endif
                                                         </div>
                                                     </ul>
@@ -551,137 +583,8 @@
                                                 </div>
                                             </div>
                                         </div>
-                                        <div class="separator mb-6"></div>
-                                        <div class="accordion-item">
-                                            <h2 class="accordion-header" id="kt_accordion_1_header_1">
-                                                <button class="accordion-button fs-4 fw-boldest text-slate-800" type="button"
-                                                    data-bs-toggle="collapse"
-                                                    data-bs-target="#accordion-tagihan-bulanan" aria-expanded="true"
-                                                    aria-controls="accordion-tagihan-bulanan">
-                                                    Tagihan Bulanan
-                                                </button>
-                                            </h2>
-                                            <div id="accordion-tagihan-bulanan" class="accordion-collapse collapse show"
-                                                aria-labelledby="kt_accordion_1_header_1"
-                                                data-bs-parent="#kt_accordion_1">
-                                                <div class="accordion-body">
-                                                    <div class="table-responsive">
-                                                        <table id="table-bill-monthly"
-                                                            class="table align-middle table-row-dashed ">
-                                                            <thead>
-                                                                <tr class="text-start text-slate-500 fw-boldest fs-7 text-uppercase gs-0">
-                                                                    <th style="width: 5%">No</th>
-                                                                    <th class="min-w-70px">Tahun Ajaran</th>
-                                                                    <th class="min-w-125px">Item Pembayaran</th>
-                                                                    <th class="min-w-125px">Total Tagihan</th>
-                                                                    <th class="min-w-125px">Dibayar</th>
-                                                                    <th class="min-w-125px">Sisa Tagihan</th>
-                                                                    <th class="text-center" style="width: 22%">Status</th>
-                                                                    <th class="text-center min-w-150px">Aksi</th>
-                                                                </tr>
-                                                            </thead>
-                                                            <tbody class="text-slate-700 fw-bold">
-                                                                @forelse ($billMonth as $monthly)
-                                                                <tr>
-                                                                    <td>{{ $loop->iteration }}</td>
-                                                                    <td>{{ @$monthly->academicYear->name }}</td>
-                                                                    <td>{{ @$monthly->name }}</td>
-                                                                    <td class="text-slate-900 fw-bolder">Rp {{ number_format(@$monthly->total_bill, 0, ',', '.') }}</td>
-                                                                    <td class="text-emerald-600 fw-bolder">Rp {{ number_format(@$monthly->total_paid, 0, ',', '.') }}</td>
-                                                                    <td class="text-danger fw-bolder">Rp {{ number_format(@$monthly->total_unpaid, 0, ',', '.') }}</td>
-                                                                    <td class="text-center">
-                                                                        <span class="badge badge-{{ @$monthly->total_unpaid == 0 ? 'success' : 'danger' }} fw-bold px-3 py-1">
-                                                                            {{ @$monthly->total_unpaid == 0 ? 'Lunas' : 'Belum Lunas' }}
-                                                                        </span>
-                                                                    </td>
-                                                                    <td class="text-center">
-                                                                        <button type="button" data-url="{{ route('bill.summary-bill', ['bill_type_id' => $monthly->id, 'student_id' => $student->id]) }}" class="btn btn-custom-purple btn-sm btn-lihat-rincian">
-        <i class="bi bi-file-text me-2"></i>
-        Lihat Rincian
-    </button>
-                                                                    </td>
-                                                                </tr>
-                                                                @empty
-                                                                <tr>
-                                                                    <td colspan="8" class="text-center py-5">
-                                                                        <div class="text-muted fw-bold fs-7">
-                                                                            <i class="fas fa-info-circle me-1 text-warning"></i>
-                                                                            Belum ada tagihan bulanan yang di-generate untuk siswa ini.
-                                                                        </div>
-                                                                    </td>
-                                                                </tr>
-                                                                @endforelse
-                                                            </tbody>
-                                                        </table>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="separator mb-6"></div>
-                                        <div class="accordion-item">
-                                            <h2 class="accordion-header" id="kt_accordion_1_header_1">
-                                                <button class="accordion-button fs-4 fw-boldest text-slate-800" type="button"
-                                                    data-bs-toggle="collapse" data-bs-target="#accordion-bill-other"
-                                                    aria-expanded="true" aria-controls="accordion-bill-other">
-                                                    Tagihan Lainnya
-                                                </button>
-                                            </h2>
-                                            <div id="accordion-bill-other" class="accordion-collapse collapse show"
-                                                aria-labelledby="kt_accordion_1_header_1"
-                                                data-bs-parent="#kt_accordion_1">
-                                                <div class="accordion-body">
-                                                    <div class="table-responsive">
-                                                        <table id="table-bill-monthly"
-                                                            class="table align-middle table-row-dashed ">
-                                                            <thead>
-                                                                <tr class="text-start text-slate-500 fw-boldest fs-7 text-uppercase gs-0">
-                                                                    <th style="width: 5%">No</th>
-                                                                    <th class="min-w-70px">Tahun Ajaran</th>
-                                                                    <th class="min-w-125px">Item Pembayaran</th>
-                                                                    <th class="min-w-125px">Total Tagihan</th>
-                                                                    <th class="min-w-125px">Dibayar</th>
-                                                                    <th class="min-w-125px">Sisa Tagihan</th>
-                                                                    <th class="text-center min-w-70px" style="width: 22%">Status</th>
-                                                                    <th class="text-center min-w-150px">Aksi</th>
-                                                                </tr>
-                                                            </thead>
-                                                            <tbody class="text-slate-700 fw-bold">
-                                                                @forelse ($billOthers as $other)
-                                                                <tr>
-                                                                    <td>{{ $loop->iteration }}</td>
-                                                                    <td>{{ @$other->academicYear->name }}</td>
-                                                                    <td>{{ @$other->name }}</td>
-                                                                    <td class="text-slate-900 fw-bolder">Rp {{ number_format(@$other->total_bill, 0, ',', '.') }}</td>
-                                                                    <td class="text-emerald-600 fw-bolder">Rp {{ number_format(@$other->total_paid, 0, ',', '.') }}</td>
-                                                                    <td class="text-danger fw-bolder">Rp {{ number_format(@$other->total_unpaid, 0, ',', '.') }}</td>
-                                                                    <td class="text-center">
-                                                                        <span class="badge badge-{{ @$other->total_unpaid == 0 ? 'success' : 'danger' }} fw-bold px-3 py-1">
-                                                                            {{ @$other->total_unpaid == 0 ? 'Lunas' : 'Belum Lunas' }}
-                                                                        </span>
-                                                                    </td>
-                                                                    <td class="text-center">
-                                                                        <button type="button" data-url="{{ route('bill.summary-bill', ['bill_type_id' => $other->id, 'student_id' => $student->id]) }}" class="btn btn-custom-purple btn-sm btn-lihat-rincian">
-        <i class="bi bi-file-text me-2"></i>
-        Lihat Rincian
-    </button>
-                                                                    </td>
-                                                                </tr>
-                                                                @empty
-                                                                <tr>
-                                                                    <td colspan="8" class="text-center py-5">
-                                                                        <div class="text-muted fw-bold fs-7">
-                                                                            <i class="fas fa-info-circle me-1 text-warning"></i>
-                                                                            Belum ada tagihan lainnya yang di-generate untuk siswa ini.
-                                                                        </div>
-                                                                    </td>
-                                                                </tr>
-                                                                @endforelse
-                                                            </tbody>
-                                                        </table>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
+                                        
+                                        
                                     </div>
                                     @endif
                                 </div>
@@ -803,21 +706,7 @@
     </div>
 </div>
 
-<!-- Modal Rincian Pembayaran (AJAX) -->
-<div class="modal fade" id="modal-rincian" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered modal-xl">
-        <div class="modal-content" style="border-radius: 24px; overflow: hidden; border: none; box-shadow: 0 10px 40px rgba(0,0,0,0.08);">
-            <div class="modal-header border-0 bg-light px-6 py-4">
-                <h5 class="modal-title fw-bold text-slate-800">Rincian Pembayaran Tagihan</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body p-0 bg-white" style="max-height: 80vh; overflow-y: auto;">
-                <div class="text-center p-5">
-                    <span class="spinner-border spinner-border-sm text-primary" role="status" aria-hidden="true"></span>
-                    <span class="ms-2">Memuat data...</span>
-                </div>
-            </div>
-        </div>
+
     </div>
 </div>
 
