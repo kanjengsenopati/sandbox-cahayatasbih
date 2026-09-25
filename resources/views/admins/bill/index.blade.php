@@ -157,6 +157,31 @@
     }
 </style>
 
+
+<script>
+    $(document).ready(function () {
+        $(document).on('click', '.btn-lihat-rincian', function (e) {
+            e.preventDefault();
+            var url = $(this).data('url');
+            var modal = $('#modal-rincian');
+            
+            modal.find('.modal-body').html('<div class="text-center p-5"><span class="spinner-border text-primary" role="status"></span><div class="mt-2 text-muted">Memuat data...</div></div>');
+            modal.modal('show');
+
+            $.ajax({
+                url: url,
+                type: 'GET',
+                success: function (data) {
+                    modal.find('.modal-body').html(data);
+                },
+                error: function () {
+                    modal.find('.modal-body').html('<div class="alert alert-danger m-5">Gagal memuat data rincian. Silakan coba lagi.</div>');
+                }
+            });
+        });
+    });
+</script>
+
 @endpush
 @section('content')
 <!--begin::Content-->
@@ -570,11 +595,10 @@
                                                                         </span>
                                                                     </td>
                                                                     <td class="text-center">
-                                                                        <a href="{{ route('bill.summary-bill', ['bill_type_id' => $monthly->id, 'student_id' => $student->id]) }}"
-                                                                            class="btn btn-custom-purple btn-sm">
-                                                                            <i class="bi bi-file-text me-2"></i>
-                                                                            Lihat Rincian
-                                                                        </a>
+                                                                        <button type="button" data-url="{{ route('bill.summary-bill', ['bill_type_id' => $monthly->id, 'student_id' => $student->id]) }}" class="btn btn-custom-purple btn-sm btn-lihat-rincian">
+        <i class="bi bi-file-text me-2"></i>
+        Lihat Rincian
+    </button>
                                                                     </td>
                                                                 </tr>
                                                                 @empty
@@ -636,11 +660,10 @@
                                                                         </span>
                                                                     </td>
                                                                     <td class="text-center">
-                                                                        <a href="{{ route('bill.summary-bill', ['bill_type_id' => $other->id, 'student_id' => $student->id]) }}"
-                                                                            class="btn btn-custom-purple btn-sm">
-                                                                            <i class="bi bi-file-text me-2"></i>
-                                                                            Lihat Rincian
-                                                                        </a>
+                                                                        <button type="button" data-url="{{ route('bill.summary-bill', ['bill_type_id' => $other->id, 'student_id' => $student->id]) }}" class="btn btn-custom-purple btn-sm btn-lihat-rincian">
+        <i class="bi bi-file-text me-2"></i>
+        Lihat Rincian
+    </button>
                                                                     </td>
                                                                 </tr>
                                                                 @empty
@@ -779,6 +802,25 @@
         </div>
     </div>
 </div>
+
+<!-- Modal Rincian Pembayaran (AJAX) -->
+<div class="modal fade" id="modal-rincian" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-xl">
+        <div class="modal-content" style="border-radius: 24px; overflow: hidden; border: none; box-shadow: 0 10px 40px rgba(0,0,0,0.08);">
+            <div class="modal-header border-0 bg-light px-6 py-4">
+                <h5 class="modal-title fw-bold text-slate-800">Rincian Pembayaran Tagihan</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-0 bg-white" style="max-height: 80vh; overflow-y: auto;">
+                <div class="text-center p-5">
+                    <span class="spinner-border spinner-border-sm text-primary" role="status" aria-hidden="true"></span>
+                    <span class="ms-2">Memuat data...</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Modal View Bukti Transfer -->
 <div class="modal fade" id="imagePreviewModal" tabindex="-1" aria-labelledby="imagePreviewModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-lg">
