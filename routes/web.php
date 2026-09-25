@@ -95,6 +95,7 @@ use App\Http\Controllers\Admin\ReportStudentCounselingScoreController;
 */
 // Admin audit route
 Route::prefix('admin')->middleware(['auth'])->group(function () {
+    Route::get('audit/tagihan-pembayaran', [\App\Http\Controllers\Admin\AuditTagihanController::class, 'index'])->name('audit.tagihan');
     Route::get('audit/sync', [App\Http\Controllers\Admin\AuditController::class, 'syncIndex'])->name('admin.audit.sync');
     Route::get('audit/diagnostics', [App\Http\Controllers\Admin\AuditController::class, 'diagnosticsIndex'])->name('admin.audit.diagnostics');
     Route::get('audit/diagnostics/ai-insight', [App\Http\Controllers\Admin\AuditController::class, 'ajaxAiInsight'])->name('admin.audit.diagnostics.ai-insight');
