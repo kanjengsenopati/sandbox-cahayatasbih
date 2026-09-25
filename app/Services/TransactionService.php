@@ -1071,7 +1071,7 @@ class TransactionService
         return $billIdOrDescriptor;
     }
 
-    public static function syncStudentBillsFromPaidTransactions($studentId)
+        public static function syncStudentBillsFromPaidTransactions($studentId)
     {
         if (empty($studentId)) return;
 
@@ -1083,32 +1083,35 @@ class TransactionService
                 ->get();
 
             if ($paidTransactions->isEmpty()) return;
+            
+            // Preload all bills to avoid N+1 queries in loops
+            $allBills = \App\Models\Bill::withTrashed()->where('student_id', $studentId)->get();
+            $billsById = $allBills->keyBy('id');
+            // Active bills grouped by key to handle trashed replacements
+            $activeBillsByKey = $allBills->whereNull('deleted_at')->keyBy(fn($b) => "{$b->bill_type_id}_{$b->academic_year_id}_{$b->month}");
 
-            DB::transaction(function () use ($paidTransactions, $studentId) {
+            DB::transaction(function () use ($paidTransactions, $studentId, $billsById, $activeBillsByKey) {
                 foreach ($paidTransactions as $tx) {
                     foreach ($tx->transactionDetails as $detail) {
                         $billId = $detail->bill_id;
                         if (empty($billId)) continue;
 
-                        $bill = $detail->bill;
+                        $bill = $billsById->get($billId) ?? $detail->bill;
                         $isVirtual = str_starts_with($billId, 'generated_') || str_starts_with($billId, 'auto_');
 
                         if (!$bill || $isVirtual) {
                             $realBillId = self::ensureBillRecord($studentId, $billId);
                             if ($realBillId && $realBillId !== $billId) {
                                 $detail->update(['bill_id' => $realBillId]);
-                                $bill = Bill::find($realBillId);
+                                $bill = \App\Models\Bill::find($realBillId);
+                                if ($bill) $billsById->put($bill->id, $bill);
                             }
                         }
 
                         // Jika bill sudah di-soft-delete, relink ke tagihan aktif yang sepadan
                         if ($bill && $bill->trashed()) {
-                            $activeReplacement = Bill::where('student_id', $studentId)
-                                ->where('bill_type_id', $bill->bill_type_id)
-                                ->where('academic_year_id', $bill->academic_year_id)
-                                ->where('month', $bill->month)
-                                ->whereNull('deleted_at')
-                                ->first();
+                            $key = "{$bill->bill_type_id}_{$bill->academic_year_id}_{$bill->month}";
+                            $activeReplacement = $activeBillsByKey->get($key);
 
                             if ($activeReplacement) {
                                 $detail->update(['bill_id' => $activeReplacement->id]);
@@ -1141,86 +1144,17 @@ class TransactionService
         }
     }
 
-    public static function resolveStudentRateForBillType($studentId, $billTypeId, $month, $year, $preloadedRates = null)
+        /**
+     * Cache isAlumni per request so we don't query DB multiple times per student
+     */
+    protected static $alumniCache = [];
+
+    public static function resolveActivePaymentRate($studentInput, $billTypeInput, $preloadedRates = null)
     {
-        $student = is_object($studentId) ? $studentId : Student::with(['user', 'classroom'])->find($studentId);
-        if (!$student) return 0;
-
-        $billType = is_object($billTypeId) ? $billTypeId : \App\Models\BillType::with('billItem')->find($billTypeId);
-        if (!$billType) return 0;
-
-        if ($preloadedRates === null) {
-            $preloadedRates = self::getCachedPreloadedRates();
-        }
-
-        $ratesForBt = $preloadedRates->where('bill_type_id', $billType->id);
-
-        $transferRate = $ratesForBt->first(function ($r) use ($student) {
-            return $r->type === \App\Models\PaymentRate::TYPE_TRANSFER &&
-                   $r->paymentRateStudents->contains('student_id', $student->id);
-        });
-        if ($transferRate) {
-            $item = $transferRate->paymentRateItems->first(fn($i) => $i->month == $month && $i->year == $year);
-            if ($item) return (int) $item->amount;
-            if ($transferRate->amount > 0) return (int) ($transferRate->amount / 12);
-        }
-
-        if ($student->classroom_id) {
-            $regularRates = $ratesForBt->filter(function ($r) use ($student) {
-                return $r->type === \App\Models\PaymentRate::TYPE_REGULAR &&
-                       $r->paymentRateClassrooms->whereNull('deleted_at')->contains('classroom_id', $student->classroom_id);
-            });
-
-            foreach ($regularRates as $rate) {
-                if (!empty($rate->gender)) {
-                    $genders = array_map('trim', explode(',', $rate->gender));
-                    if (!in_array($student->gender, $genders)) continue;
-                }
-                if (!empty($rate->jamaah_status)) {
-                    $statuses = array_map('trim', explode(',', $rate->jamaah_status));
-                    $studentStatus = $student->user?->jamaah_status ?? 'NON_JAMAAH';
-                    if (!in_array($studentStatus, $statuses)) continue;
-                }
-                
-                if (!empty($rate->alumni_status)) {
-                    if (!isset($isAlumni)) {
-                        $isAlumni = false;
-                        if ($student->classroom && $student->classroom->school && str_contains(strtoupper($student->classroom->school->name), 'MA')) {
-                            $hasSmpHistory = \App\Models\StudentClassroomHistory::where('student_id', $student->id)
-                                ->whereHas('classroom.school', function($q) {
-                                    $q->where('name', 'like', '%SMP%');
-                                })->exists();
-                            $isAlumni = $hasSmpHistory;
-                        }
-                    }
-
-                    $statuses = array_map('trim', explode(',', $rate->alumni_status));
-                    $studentAlumniStatus = $isAlumni ? 'ALUMNI_SMP_MA' : 'NON_ALUMNI';
-                    if (!in_array($studentAlumniStatus, $statuses)) continue;
-                }
-
-                if (!empty($rate->student_sub_status_id)) {
-                    if ($student->student_sub_status_id !== $rate->student_sub_status_id) {
-                        continue;
-                    }
-                }
-
-                $item = $rate->paymentRateItems->first(fn($i) => $i->month == $month && $i->year == $year);
-                if ($item) return (int) $item->amount;
-                if ($rate->amount > 0) return (int) ($rate->amount / 12);
-            }
-        }
-
-        // If rates exist for this bill type, but none match the student's classroom/id, return 0 (rate belum di-generate ke kelas siswa)
-        return 0;
-    }
-
-    public static function resolveStudentRateItemForBillType($studentId, $billTypeId, $month, $year, $preloadedRates = null)
-    {
-        $student = is_object($studentId) ? $studentId : Student::with(['user', 'classroom'])->find($studentId);
+        $student = is_object($studentInput) ? $studentInput : \App\Models\Student::with(['user', 'classroom.school'])->find($studentInput);
         if (!$student) return null;
 
-        $billType = is_object($billTypeId) ? $billTypeId : \App\Models\BillType::with('billItem')->find($billTypeId);
+        $billType = is_object($billTypeInput) ? $billTypeInput : \App\Models\BillType::find($billTypeInput);
         if (!$billType) return null;
 
         if ($preloadedRates === null) {
@@ -1228,93 +1162,21 @@ class TransactionService
         }
 
         $ratesForBt = $preloadedRates->where('bill_type_id', $billType->id);
-
-        $transferRate = $ratesForBt->first(function ($r) use ($student) {
-            return $r->type === \App\Models\PaymentRate::TYPE_TRANSFER &&
-                   $r->paymentRateStudents->contains('student_id', $student->id);
-        });
-        if ($transferRate) {
-            $item = $transferRate->paymentRateItems->first(fn($i) => $i->month == $month && $i->year == $year);
-            if ($item) return $item;
-        }
-
-        if ($student->classroom_id) {
-            $regularRates = $ratesForBt->filter(function ($r) use ($student) {
-                return $r->type === \App\Models\PaymentRate::TYPE_REGULAR &&
-                       $r->paymentRateClassrooms->whereNull('deleted_at')->contains('classroom_id', $student->classroom_id);
-            });
-
-            foreach ($regularRates as $rate) {
-                if (!empty($rate->gender)) {
-                    $genders = array_map('trim', explode(',', $rate->gender));
-                    if (!in_array($student->gender, $genders)) continue;
-                }
-                if (!empty($rate->jamaah_status)) {
-                    $statuses = array_map('trim', explode(',', $rate->jamaah_status));
-                    $studentStatus = $student->user?->jamaah_status ?? 'NON_JAMAAH';
-                    if (!in_array($studentStatus, $statuses)) continue;
-                }
-                
-                if (!empty($rate->alumni_status)) {
-                    if (!isset($isAlumni)) {
-                        $isAlumni = false;
-                        if ($student->classroom && $student->classroom->school && str_contains(strtoupper($student->classroom->school->name), 'MA')) {
-                            $hasSmpHistory = \App\Models\StudentClassroomHistory::where('student_id', $student->id)
-                                ->whereHas('classroom.school', function($q) {
-                                    $q->where('name', 'like', '%SMP%');
-                                })->exists();
-                            $isAlumni = $hasSmpHistory;
-                        }
-                    }
-
-                    $statuses = array_map('trim', explode(',', $rate->alumni_status));
-                    $studentAlumniStatus = $isAlumni ? 'ALUMNI_SMP_MA' : 'NON_ALUMNI';
-                    if (!in_array($studentAlumniStatus, $statuses)) continue;
-                }
-
-                if (!empty($rate->student_sub_status_id)) {
-                    if ($student->student_sub_status_id !== $rate->student_sub_status_id) {
-                        continue;
-                    }
-                }
-
-                $item = $rate->paymentRateItems->first(fn($i) => $i->month == $month && $i->year == $year);
-                if ($item) return $item;
-            }
-        }
-
-        return null;
-    }
-
-    public static function hasActiveRateForStudent($studentInput, $billTypeInput, $preloadedRates = null): bool
-    {
-        $student = is_object($studentInput) ? $studentInput : Student::with(['user', 'classroom'])->find($studentInput);
-        if (!$student) return false;
-
-        $billType = is_object($billTypeInput) ? $billTypeInput : \App\Models\BillType::find($billTypeInput);
-        if (!$billType) return false;
-
-        if ($preloadedRates === null) {
-            $preloadedRates = self::getCachedPreloadedRates();
-        }
-
-        $ratesForBt = $preloadedRates->where('bill_type_id', $billType->id);
-        if ($ratesForBt->isEmpty()) return false;
+        if ($ratesForBt->isEmpty()) return null;
 
         // 1. Check Transfer Rate
-        $hasTransfer = $ratesForBt->contains(function ($r) use ($student) {
+        $transferRate = $ratesForBt->first(function ($r) use ($student) {
             return $r->type === \App\Models\PaymentRate::TYPE_TRANSFER &&
                    $r->paymentRateStudents->whereNull('deleted_at')->contains('student_id', $student->id);
         });
-        if ($hasTransfer) return true;
+        if ($transferRate) return $transferRate;
 
         // 2. Check Regular Rate with matching classroom
-        if (!$student->classroom_id) return false;
+        if (!$student->classroom_id) return null;
 
-        return $ratesForBt->contains(function ($r) use ($student) {
+        return $ratesForBt->first(function ($r) use ($student) {
             if ($r->type !== \App\Models\PaymentRate::TYPE_REGULAR) return false;
 
-            // Pastikan PaymentRateClassroom aktif (non-deleted) dan sesuai kelas siswa saat ini
             $classMatch = $r->paymentRateClassrooms
                 ->whereNull('deleted_at')
                 ->contains('classroom_id', $student->classroom_id);
@@ -1332,20 +1194,21 @@ class TransactionService
             }
 
             if (!empty($r->alumni_status)) {
-                if (!isset($isAlumni)) {
+                if (!isset(self::$alumniCache[$student->id])) {
                     $isAlumni = false;
                     if ($student->classroom && $student->classroom->school && str_contains(strtoupper($student->classroom->school->name), 'MA')) {
-                        $hasSmpHistory = \App\Models\StudentClassroomHistory::where('student_id', $student->id)
+                        $isAlumni = \App\Models\StudentClassroomHistory::where('student_id', $student->id)
                             ->whereHas('classroom.school', function($q) {
                                 $q->where('name', 'like', '%SMP%');
                             })->exists();
-                        $isAlumni = $hasSmpHistory;
                     }
+                    self::$alumniCache[$student->id] = $isAlumni;
                 }
-
-                $statuses = array_map('trim', explode(',', $r->alumni_status));
-                $studentAlumniStatus = $isAlumni ? 'ALUMNI_SMP_MA' : 'NON_ALUMNI';
-                if (!in_array($studentAlumniStatus, $statuses)) return false;
+                
+                $isAlumni = self::$alumniCache[$student->id];
+                $alumniStatuses = array_map('trim', explode(',', $r->alumni_status));
+                $currentAlumniStatus = $isAlumni ? 'ALUMNI_SMP_MA' : 'NON_ALUMNI';
+                if (!in_array($currentAlumniStatus, $alumniStatuses)) return false;
             }
 
             if (!empty($r->student_sub_status_id)) {
@@ -1354,9 +1217,36 @@ class TransactionService
                 }
             }
 
-
             return true;
         });
+    }
+
+    public static function hasActiveRateForStudent($studentInput, $billTypeInput, $preloadedRates = null): bool
+    {
+        return self::resolveActivePaymentRate($studentInput, $billTypeInput, $preloadedRates) !== null;
+    }
+
+    public static function resolveStudentRateItemForBillType($studentId, $billTypeId, $month, $year, $preloadedRates = null)
+    {
+        $rate = self::resolveActivePaymentRate($studentId, $billTypeId, $preloadedRates);
+        if (!$rate) return null;
+        
+        return $rate->paymentRateItems->first(fn($i) => $i->month == $month && $i->year == $year);
+    }
+
+    public static function resolveStudentRateForBillType($studentId, $billTypeId, $month, $year, $preloadedRates = null)
+    {
+        $rate = self::resolveActivePaymentRate($studentId, $billTypeId, $preloadedRates);
+        if (!$rate) return 0;
+
+        $item = $rate->paymentRateItems->first(fn($i) => $i->month == $month && $i->year == $year);
+        if ($item) return (int) $item->amount;
+
+        if ($rate->type === \App\Models\PaymentRate::TYPE_TRANSFER && $rate->amount > 0) {
+            return (int) ($rate->amount / 12);
+        }
+
+        return (int) $rate->amount;
     }
 
     public static function ensureStudentBillsSyncedFromRate($studentId, $academicYearId = null)
@@ -1452,22 +1342,26 @@ class TransactionService
             }
         }
 
-        if (!empty($newBillsToInsert)) {
-            DB::transaction(function () use ($newBillsToInsert) {
+                if (!empty($newBillsToInsert)) {
+            DB::transaction(function () use ($newBillsToInsert, $student) {
                 foreach (array_chunk($newBillsToInsert, 100) as $chunk) {
+                    $billTypeIds = array_unique(array_column($chunk, 'bill_type_id'));
+                    $existingKeys = \App\Models\Bill::where('student_id', $student->id)
+                        ->whereIn('bill_type_id', $billTypeIds)
+                        ->whereNull('deleted_at')
+                        ->get()
+                        ->keyBy(fn($b) => "{$b->bill_type_id}_{$b->academic_year_id}_{$b->month}");
+                        
+                    $validInserts = [];
                     foreach ($chunk as $billData) {
-                        // Cek ulang sebelum insert untuk hindari race condition
-                        // antar concurrent SyncStudentBillsJob
-                        $alreadyExists = \App\Models\Bill::where('student_id', $billData['student_id'])
-                            ->where('bill_type_id', $billData['bill_type_id'])
-                            ->where('month', $billData['month'])
-                            ->where('year', $billData['year'])
-                            ->whereNull('deleted_at')
-                            ->exists();
-
-                        if (!$alreadyExists) {
-                            Bill::insert([$billData]);
+                        $key = "{$billData['bill_type_id']}_{$billData['academic_year_id']}_{$billData['month']}";
+                        if (!$existingKeys->has($key)) {
+                            $validInserts[] = $billData;
                         }
+                    }
+                    
+                    if (!empty($validInserts)) {
+                        \App\Models\Bill::insert($validInserts);
                     }
                 }
             }, 5);
