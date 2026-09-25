@@ -954,7 +954,7 @@ class BillController extends Controller
     // }
 
     
-    
+
     public function generateStudentBills(Request $request, $studentId)
     {
         $student = \App\Models\Student::findOrFail($studentId);
@@ -983,6 +983,7 @@ class BillController extends Controller
             return redirect()->back()->with('warning', 'Proses generasi tagihan sedang berjalan di latar belakang. Harap tunggu beberapa saat.');
         }
     }
+
 
     public function changeStatusBulk(Request $request)
     {
