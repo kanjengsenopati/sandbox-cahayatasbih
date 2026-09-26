@@ -457,19 +457,24 @@ class MasterIngestionBridgeService
                 $mQuery->where('bill_type_id', $billTypeId);
             }
 
-            $mRows = $mQuery->select('student_id', 'status', DB::raw('COUNT(*) as total_cnt'), DB::raw('SUM(amount) as total_amt'))
+            $mRows = $mQuery->select('student_id', 'status', DB::raw('COUNT(*) as total_cnt'), DB::raw('SUM(amount) as total_amt'), DB::raw('GROUP_CONCAT(month) as months'))
                 ->groupBy('student_id', 'status')
                 ->get();
 
             foreach ($mRows as $r) {
                 $sid = (string) $r->student_id;
                 if (!isset($masterBillsGroup[$sid])) {
-                    $masterBillsGroup[$sid] = ['total_cnt' => 0, 'paid_cnt' => 0, 'paid_amt' => 0];
+                    $masterBillsGroup[$sid] = ['total_cnt' => 0, 'paid_cnt' => 0, 'paid_amt' => 0, 'paid_months' => [], 'unpaid_months' => []];
                 }
                 $masterBillsGroup[$sid]['total_cnt'] += (int) $r->total_cnt;
+                
+                $monthsArr = array_filter(explode(',', (string)$r->months));
                 if ($r->status === 'PAID') {
                     $masterBillsGroup[$sid]['paid_cnt'] += (int) $r->total_cnt;
                     $masterBillsGroup[$sid]['paid_amt'] += (int) $r->total_amt;
+                    $masterBillsGroup[$sid]['paid_months'] = array_merge($masterBillsGroup[$sid]['paid_months'], $monthsArr);
+                } else {
+                    $masterBillsGroup[$sid]['unpaid_months'] = array_merge($masterBillsGroup[$sid]['unpaid_months'], $monthsArr);
                 }
             }
         }
@@ -488,19 +493,24 @@ class MasterIngestionBridgeService
                 $lQuery->where('bill_type_id', $billTypeId);
             }
 
-            $lRows = $lQuery->select('student_id', 'status', DB::raw('COUNT(*) as total_cnt'), DB::raw('SUM(amount) as total_amt'))
+            $lRows = $lQuery->select('student_id', 'status', DB::raw('COUNT(*) as total_cnt'), DB::raw('SUM(amount) as total_amt'), DB::raw('GROUP_CONCAT(month) as months'))
                 ->groupBy('student_id', 'status')
                 ->get();
 
             foreach ($lRows as $r) {
                 $sid = (string) $r->student_id;
                 if (!isset($localBillsGroup[$sid])) {
-                    $localBillsGroup[$sid] = ['total_cnt' => 0, 'paid_cnt' => 0, 'paid_amt' => 0];
+                    $localBillsGroup[$sid] = ['total_cnt' => 0, 'paid_cnt' => 0, 'paid_amt' => 0, 'paid_months' => [], 'unpaid_months' => []];
                 }
                 $localBillsGroup[$sid]['total_cnt'] += (int) $r->total_cnt;
+                
+                $monthsArr = array_filter(explode(',', (string)$r->months));
                 if ($r->status === 'PAID') {
                     $localBillsGroup[$sid]['paid_cnt'] += (int) $r->total_cnt;
                     $localBillsGroup[$sid]['paid_amt'] += (int) $r->total_amt;
+                    $localBillsGroup[$sid]['paid_months'] = array_merge($localBillsGroup[$sid]['paid_months'], $monthsArr);
+                } else {
+                    $localBillsGroup[$sid]['unpaid_months'] = array_merge($localBillsGroup[$sid]['unpaid_months'], $monthsArr);
                 }
             }
         }
@@ -538,21 +548,34 @@ class MasterIngestionBridgeService
             $status = 'EXACT_MATCH';
             $diffs = [];
 
+            $diffInfo = [
+                'type' => 'monthly_cards',
+                'master' => [
+                    'paid_cnt' => $mPaidCount,
+                    'total_cnt' => $mBillsCount,
+                    'paid_amt' => $mPaidAmount,
+                    'paid_months' => array_values(array_unique($mSum['paid_months'] ?? [])),
+                    'unpaid_months' => array_values(array_unique($mSum['unpaid_months'] ?? []))
+                ],
+                'local' => [
+                    'paid_cnt' => $lPaidCount,
+                    'total_cnt' => $lBillsCount,
+                    'paid_amt' => $lPaidAmount,
+                    'paid_months' => array_values(array_unique($lSum['paid_months'] ?? [])),
+                    'unpaid_months' => array_values(array_unique($lSum['unpaid_months'] ?? []))
+                ]
+            ];
+
             if (!$localRec) {
                 $status = 'NEW_RECORD';
                 $result['status_summary']['new_count']++;
-                $diffs['Status Tagihan Siswa'] = [
-                    'master' => "{$mPaidCount}/{$mBillsCount} Tagihan Lunas (Rp " . number_format($mPaidAmount, 0, ',', '.') . ")",
-                    'local' => "Belum Ada Student Record"
-                ];
+                $diffInfo['local']['is_empty'] = true;
+                $diffs['Status Tagihan Siswa'] = $diffInfo;
             } else {
                 if ($mPaidCount !== $lPaidCount || $mBillsCount !== $lBillsCount || $mPaidAmount !== $lPaidAmount) {
                     $status = 'UPDATE_REQUIRED';
                     $result['status_summary']['update_count']++;
-                    $diffs['Status Tagihan Siswa'] = [
-                        'master' => "{$mPaidCount}/{$mBillsCount} Tagihan Lunas (Rp " . number_format($mPaidAmount, 0, ',', '.') . ")",
-                        'local' => "{$lPaidCount}/{$lBillsCount} Tagihan Lunas (Rp " . number_format($lPaidAmount, 0, ',', '.') . ")"
-                    ];
+                    $diffs['Status Tagihan Siswa'] = $diffInfo;
                 } else {
                     $result['status_summary']['match_count']++;
                 }
