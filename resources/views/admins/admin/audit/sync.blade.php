@@ -755,7 +755,7 @@
     window.recentlySyncedIds = @json(session('synced_ids', []));
 
         document.addEventListener('DOMContentLoaded', function () {
-            // Restore state if available
+
             var savedState = sessionStorage.getItem('syncUIState');
             if (savedState) {
                 var state = JSON.parse(savedState);
@@ -795,13 +795,12 @@
                     fetchMasterDiff(state.module, activeBtn);
                 }
             } else {
-                // Auto fetch students diff on Tab 1 initial load
+
                 if (typeof fetchMasterDiff === 'function') {
                     fetchMasterDiff('students');
                 }
             }
-            
-            // Listen to form submit to save state
+
             var mergeForm = document.getElementById('form-confirm-merge');
 
             var btnMerge = document.getElementById('btn-submit-merge');
@@ -822,7 +821,6 @@
                 });
             }
 
-            // Loading state saat form sync disubmit
             var form = document.getElementById('sync-db-form');
             if (form) {
                 form.addEventListener('submit', function () {
@@ -834,7 +832,6 @@
                 });
             }
 
-            // Check All Table logic
             var checkAll = document.getElementById('sync-check-all-tables');
             var tableCheckboxes = document.querySelectorAll('.table-checkbox');
             var groupCheckboxes = document.querySelectorAll('.group-checkbox');
@@ -851,7 +848,6 @@
                 });
             }
 
-            // Group Checkbox logic
             groupCheckboxes.forEach(function (gCb) {
                 gCb.addEventListener('change', function () {
                     var group = this.getAttribute('data-group');
@@ -863,7 +859,6 @@
                 });
             });
 
-            // Table Checkbox logic
             tableCheckboxes.forEach(function (tCb) {
                 tCb.addEventListener('change', function () {
                     var group = this.getAttribute('data-group');
@@ -1008,12 +1003,10 @@
 
         function onSchoolFilterChange() {
             var schoolId = document.getElementById('select-filter-school').value;
-            
-            // Reset Classroom Selection
+
             document.getElementById('select-filter-classroom').value = '';
             document.getElementById('btn-classroom-text').innerText = 'Semua Kelas';
 
-            // Filter the custom dropdown headers and columns
             document.querySelectorAll('.school-group-header').forEach(function(hdr) {
                 if (!schoolId || hdr.getAttribute('data-school') === schoolId) {
                     hdr.style.display = '';
@@ -1039,8 +1032,7 @@ function getMonthAbbr(m) {
 function renderMonthlyCards(info, isSynced = false) {
     var order = ['7','8','9','10','11','12','1','2','3','4','5','6'];
     var html = '<div class="d-flex flex-column gap-2">';
-    
-    // Master Row
+
     html += '<div class="d-flex align-items-center gap-1">';
     html += '<span class="badge bg-light text-dark me-2 w-75px fs-9 text-start">Lama</span>';
     order.forEach(function(m) {
@@ -1053,7 +1045,6 @@ function renderMonthlyCards(info, isSynced = false) {
     });
     html += '</div>';
 
-    // Local Row
     html += '<div class="d-flex align-items-center gap-1">';
     html += '<span class="badge bg-light text-dark me-2 w-75px fs-9 text-start">Lokal</span>';
     if (info.local.is_empty) {
@@ -1260,13 +1251,11 @@ function renderPaginationLinks(totalItems) {
     info.innerText = 'Menampilkan ' + startIdx + '-' + endIdx + ' dari ' + totalItems;
     
     var html = '';
-    
-    // Prev
+
     html += '<li class="page-item ' + (window.currentPage === 1 ? 'disabled' : '') + '">';
     html += '<a class="page-link" href="#" onclick="if(window.currentPage > 1) { window.currentPage--; renderCurrentPage(); } return false;"><i class="fas fa-chevron-left"></i></a>';
     html += '</li>';
-    
-    // Pages
+
     var startPage = Math.max(1, window.currentPage - 2);
     var endPage = Math.min(totalPages, startPage + 4);
     if (endPage - startPage < 4) {
@@ -1278,8 +1267,7 @@ function renderPaginationLinks(totalItems) {
         html += '<a class="page-link" href="#" onclick="window.currentPage = ' + i + '; renderCurrentPage(); return false;">' + i + '</a>';
         html += '</li>';
     }
-    
-    // Next
+
     html += '<li class="page-item ' + (window.currentPage === totalPages ? 'disabled' : '') + '">';
     html += '<a class="page-link" href="#" onclick="if(window.currentPage < ' + totalPages + ') { window.currentPage++; renderCurrentPage(); } return false;"><i class="fas fa-chevron-right"></i></a>';
     html += '</li>';
@@ -1296,7 +1284,6 @@ function fetchMasterDiff(module, btnEl) {
     window.currentSyncModule = module;
     window.currentPage = 1;
 
-    // Toggle filter container visibility
     var filterBox = document.getElementById('billing-filter-container');
     if (filterBox) {
         if (module === 'billing_status') {
@@ -1306,7 +1293,6 @@ function fetchMasterDiff(module, btnEl) {
         }
     }
 
-    // Reset active filter
     filterDiffTable('ALL', null);
 
     var limitSelect = document.getElementById('select-diff-limit');
@@ -1321,8 +1307,7 @@ function fetchMasterDiff(module, btnEl) {
     if (document.getElementById('hidden_bill_type_id')) document.getElementById('hidden_bill_type_id').value = billTypeId;
 
     var tbody = document.getElementById('tbody-diff-preview');
-    
-    // Setup initial header state if needed before load
+
     if (module === 'billing_status') {
         document.getElementById('table-scroll-container').style.maxHeight = 'none';
         document.getElementById('pagination-container').classList.remove('d-none');
@@ -1365,8 +1350,7 @@ function fetchMasterDiff(module, btnEl) {
             errorMsg = err.response.data.error;
         }
         tbody.innerHTML = '<tr><td colspan="5" class="text-center py-5 text-danger fw-bolder bg-light-danger border border-danger border-opacity-25 rounded-3"><i class="fas fa-exclamation-triangle fs-2x mb-3 d-block text-danger"></i> ' + errorMsg + '</td></tr>';
-        
-        // Reset counters
+
         document.getElementById('cnt-new').innerText = '🟢 Aplikasi Lama Baru: 0';
         document.getElementById('cnt-update').innerText = '🟡 Butuh Update: 0';
         document.getElementById('cnt-match').innerText = '🔵 100% Identik: 0';
