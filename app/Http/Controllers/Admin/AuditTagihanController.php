@@ -11,14 +11,47 @@ use App\Services\TransactionService;
 
 class AuditTagihanController extends Controller
 {
-    public function index(Request $request)
+        public function index(Request $request)
     {
+        $user = auth()->user();
+        $isSuperAdmin = $user->hasRole('Super Admin') || $user->hasRole('SUPER ADMIN');
+        $hasAccess = $isSuperAdmin;
+
+        // Sinkronisasi RBAC Dinamis dari tabel Pengaturan Module (SubMenuNavigation)
+        if (!$hasAccess) {
+            $menu = \App\Models\SubMenuNavigation::where('url', 'like', '%audit/tagihan-pembayaran%')->first();
+            if ($menu && $menu->permission) {
+                $permissions = explode(',', $menu->permission);
+                foreach ($permissions as $perm) {
+                    if ($user->can(trim($perm))) {
+                        $hasAccess = true;
+                        break;
+                    }
+                }
+            }
+        }
+
+        // Blokir jika tidak berhak
+        if (!$hasAccess) {
+            abort(403, 'Akses ditolak. Anda tidak memiliki izin untuk mengakses modul ini.');
+        }
+
         if ($request->ajax()) {
             if ($request->tab === 'archive') {
                 return $this->getArchiveTransactionData();
             }
         }
-        return view('admins.audit.tagihan');
+
+        // Fix Error 500: Mengambil data Schools & AcademicYears untuk dropdown import
+        $schools = \App\Models\School::orderBy('name')->hasSchool()->get();
+        $academicYears = \App\Models\AcademicYear::where(function($query) {
+            $query->where('is_active', true)
+                  ->orWhereHas('billTypes', function ($q) {
+                      $q->where('is_visible', true);
+                  });
+        })->orderBy('start_year', 'desc')->get();
+
+        return view('admins.audit.tagihan', compact('schools', 'academicYears'));
     }
 
     private function getArchiveTransactionData()
