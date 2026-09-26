@@ -1,0 +1,31 @@
+﻿name: Run Artisan Command on VPS
+
+on:
+  workflow_dispatch:
+    inputs:
+      command:
+        description: 'Artisan command to run (e.g., saldo:normalize-master -n)'
+        required: true
+        default: 'saldo:normalize-master -n'
+
+jobs:
+  run-artisan:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Execute Artisan Command on VPS
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            set -Eeuo pipefail
+            cd /www/wwwroot/sim.cahayatasbih.or.id
+            
+            PHP_BIN="/www/server/php/83/bin/php"
+            if [ ! -x "$PHP_BIN" ]; then
+                PHP_BIN="$(command -v php)"
+            fi
+            
+            echo "Running: php artisan ${{ github.event.inputs.command }}"
+            $PHP_BIN artisan ${{ github.event.inputs.command }}

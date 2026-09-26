@@ -26,10 +26,10 @@ trait HasAvatarUrl
 
         // Jika path sudah diawali 'storage/' atau 'assets/'
         if (str_starts_with($cleanPath, 'storage/') || str_starts_with($cleanPath, 'assets/')) {
-            return asset($cleanPath);
+            return function_exists('storage_asset') ? \storage_asset($cleanPath) : asset($cleanPath);
         }
 
-        return asset('storage/' . $cleanPath);
+        return function_exists('storage_asset') ? \storage_asset('storage/' . $cleanPath) : asset('storage/' . $cleanPath);
     }
 
     public function getAvatarFallbackUrlAttribute(): string

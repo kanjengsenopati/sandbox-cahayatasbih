@@ -91,7 +91,8 @@ class WaliDashboardController extends Controller
         // Link transaction to saldo history
         \App\Models\TransactionDetail::create([
             'transaction_id' => $transaction->id,
-            'saldo_history_id' => $saldoHistory->id
+            'saldo_history_id' => $saldoHistory->id,
+            'amount' => $transaction->pay_amount,
         ]);
 
         return redirect()->route('wali.history')->with('success', 'Permintaan Top Up berhasil dibuat. Silakan selesaikan pembayaran.');
@@ -299,9 +300,11 @@ class WaliDashboardController extends Controller
         ]);
 
         foreach ($bills as $bill) {
+            $billRemaining = max(0, (int)$bill->amount - (int)$bill->paid_amount);
             TransactionDetail::create([
                 'transaction_id' => $transaction->id,
                 'bill_id' => $bill->id,
+                'amount' => $billRemaining > 0 ? $billRemaining : (int)$bill->amount,
             ]);
         }
 

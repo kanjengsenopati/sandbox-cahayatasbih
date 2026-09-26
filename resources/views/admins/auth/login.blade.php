@@ -101,8 +101,9 @@
                             <!--end::Label-->
                             <!--begin::Input-->
                             <input class="form-control form-control-lg form-control-solid" type="email"
-                                placeholder="Masukkan Email Yang Terdaftar" name="email" autocomplete="off"
-                                value="{{ old('email') }}" />
+                                placeholder="Masukkan Email Yang Terdaftar" id="email" name="email" autocomplete="off"
+                                value="{{ old('email') }}"
+                                onkeydown="if(event.key==='Enter'){event.preventDefault();var p=document.getElementById('password');if(p){p.focus();p.select();}}" />
                             <!--end::Input-->
                         </div>
                         <!--end::Input group-->
@@ -265,6 +266,27 @@
                         }
                     });
                 });
+
+                // Enter key handling: Enter on email focuses password, Enter on password submits
+                var emailInput = form.querySelector('input[name="email"]');
+                var passwordInput = form.querySelector('input[name="password"]');
+
+                if (emailInput && passwordInput) {
+                    emailInput.addEventListener('keydown', function(e) {
+                        if (e.key === 'Enter') {
+                            e.preventDefault();
+                            passwordInput.focus();
+                            passwordInput.select();
+                        }
+                    });
+
+                    passwordInput.addEventListener('keydown', function(e) {
+                        if (e.key === 'Enter') {
+                            e.preventDefault();
+                            submitButton.click();
+                        }
+                    });
+                }
             }
 
             // Public functions

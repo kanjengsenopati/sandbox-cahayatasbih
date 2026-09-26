@@ -599,7 +599,7 @@
 @endsection
 
 @push('js')
-<script src="https://code.highcharts.com/highcharts.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highcharts/11.4.0/highcharts.js"></script>
 <script>
     var transactionTable;
     var handoverTable;

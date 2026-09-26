@@ -53,6 +53,16 @@ class Student extends Model
         'daily_limit' => 'integer',
     ];
 
+    /**
+     * Mutator: Pastikan saldo tidak pernah disimpan di bawah 0.
+     * Ini adalah guard terakhir (last-line defense) agar nilai saldo
+     * tidak pernah negatif meskipun ada bug di layer atas.
+     */
+    public function setSaldoAttribute($value): void
+    {
+        $this->attributes['saldo'] = max(0, (int) $value);
+    }
+
     protected $appends = [
         'translated_status',
         'avatar_url',
@@ -120,9 +130,19 @@ class Student extends Model
 
     public function scopeHasSchoolPlace($query)
     {
-        // if auth user have school_id, then use it
-        if (Auth::guard('web')->user()?->school_id) {
-            return $query->whereSchoolId(Auth::guard('web')->user()->school_id);
+        $admin = Auth::guard('web')->user() ?? Auth::user();
+        if (!$admin || (method_exists($admin, 'isSuperAdmin') && $admin->isSuperAdmin())) {
+            return;
+        }
+
+        $schoolIds = method_exists($admin, 'getSchoolIds') ? $admin->getSchoolIds() : ($admin->school_id ? [$admin->school_id] : []);
+        if (!empty($schoolIds)) {
+            return $query->where(function ($q) use ($schoolIds) {
+                $q->whereIn('school_id', $schoolIds)
+                  ->orWhereHas('classroom', function ($cQ) use ($schoolIds) {
+                      $cQ->whereIn('school_id', $schoolIds);
+                  });
+            });
         }
     }
 
@@ -145,7 +165,7 @@ class Student extends Model
         $departureMonth = $departureDate ? (int)date('n', strtotime($departureDate)) : (int)date('n');
 
         $this->bills()
-            ->where('status', \App\Models\Bill::STATUS_UNPAID)
+            ->where('paid_amount', 0)
             ->where(function($query) use ($departureYear, $departureMonth) {
                 $query->where('year', '>', $departureYear)
                       ->orWhere(function($sub) use ($departureYear, $departureMonth) {
@@ -217,7 +237,7 @@ class Student extends Model
         });
 
         static::deleted(function ($student) {
-            $student->bills()->where('status', \App\Models\Bill::STATUS_UNPAID)->delete();
+            $student->bills()->where('paid_amount', 0)->delete();
         });
     }
 
@@ -235,7 +255,7 @@ class Student extends Model
 
         $isSuperOrAdmin = false;
         try {
-            if (method_exists($admin, 'hasRole') && ($admin->hasRole('Super Admin') || $admin->hasRole('Admin'))) {
+            if ((method_exists($admin, 'isSuperAdmin') && $admin->isSuperAdmin()) || (method_exists($admin, 'hasRole') && ($admin->hasRole('Super Admin') || $admin->hasRole('Admin')))) {
                 $isSuperOrAdmin = true;
             }
         } catch (\Throwable $e) {}
@@ -383,6 +403,17 @@ class Student extends Model
             'school_name' => $schoolName,
             'is_pondok' => false
         ];
+    }
+
+    public function isAlumniSmpMa(): bool
+    {
+        if ($this->classroom && $this->classroom->school && str_contains(strtoupper($this->classroom->school->name), 'MA')) {
+            return \App\Models\StudentClassroomHistory::where('student_id', $this->id)
+                ->whereHas('classroom.school', function($q) {
+                    $q->where('name', 'like', '%SMP%');
+                })->exists();
+        }
+        return false;
     }
 
     public function translatedStatus(): string
@@ -535,19 +566,27 @@ class Student extends Model
      */
     public function getEffectiveDailyLimit(): ?int
     {
-        // 1. Check Classroom
+        // 1. Prioritas Pertama: Cek setting limit kustom dari Wali Santri (jika -1 atau > 0)
+        if ($this->daily_limit == -1) {
+            return 0; // Wali secara eksplisit menonaktifkan limit (No Limit)
+        }
+        
+        if ($this->daily_limit > 0) {
+            return (int) $this->daily_limit;
+        }
+
+        // 2. Prioritas Kedua (Fallback): Cek setting dari Kelas
         if ($this->classroom && $this->classroom->is_saldo_limit_active) {
             return (int) $this->classroom->saldo_limit;
         }
 
-        // 2. Check School (fallback to classroom's school if direct relation is null)
+        // 3. Prioritas Ketiga (Fallback): Cek setting dari Sekolah
         $school = $this->school ?? ($this->classroom ? $this->classroom->school : null);
         if ($school && $school->is_saldo_limit_active) {
             return (int) $school->saldo_limit;
         }
 
-        // 3. Fallback to Wali's setting
-        return $this->daily_limit > 0 ? (int) $this->daily_limit : 0;
+        return 0;
     }
 
     /**

@@ -95,6 +95,7 @@ use App\Http\Controllers\Admin\ReportStudentCounselingScoreController;
 */
 // Admin audit route
 Route::prefix('admin')->middleware(['auth'])->group(function () {
+    Route::get('audit/tagihan-pembayaran', [\App\Http\Controllers\Admin\AuditTagihanController::class, 'index'])->name('audit.tagihan');
     Route::get('audit/sync', [App\Http\Controllers\Admin\AuditController::class, 'syncIndex'])->name('admin.audit.sync');
     Route::get('audit/diagnostics', [App\Http\Controllers\Admin\AuditController::class, 'diagnosticsIndex'])->name('admin.audit.diagnostics');
     Route::get('audit/diagnostics/ai-insight', [App\Http\Controllers\Admin\AuditController::class, 'ajaxAiInsight'])->name('admin.audit.diagnostics.ai-insight');
@@ -325,7 +326,14 @@ Route::group(['middleware' => ['auth']], function () {
     Route::get('bill/import-logs', [BillController::class, 'getImportLogs'])->name('bill.import-logs');
     Route::get('bill/import-logs/{id}/details', [BillController::class, 'getImportLogDetails'])->name('bill.import-logs.details');
     Route::post('bill/rollback-import/{id}', [BillController::class, 'rollbackImport'])->name('bill.rollback-import');
+    Route::get('bill/audit-consistency', [BillController::class, 'auditConsistency'])->name('bill.audit-consistency');
+    Route::post('bill/repair-consistency', [BillController::class, 'repairConsistency'])->name('bill.repair-consistency');
     Route::post('bill.change-status', [BillController::class, 'changeStatus'])->name('bill.change-status');
+    Route::post('bill.change-status-bulk', [BillController::class, 'changeStatusBulk'])->name('bill.change-status-bulk');
+
+    Route::post('bill/{student_id}/generate', [BillController::class, 'generateStudentBills'])->name('bill.generate-student-bills');
+
+
     Route::resource('bill', BillController::class);
     Route::resource('payment-method', PaymentMethodController::class);
     Route::resource('transaction', TransactionController::class);

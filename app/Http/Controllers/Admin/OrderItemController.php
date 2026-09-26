@@ -329,9 +329,6 @@ class OrderItemController extends Controller
             PointOfSaleCart::where('admin_id', $adminId)->delete();
 
             DB::commit();
-            
-            // Release lock segera setelah sukses
-            $lock->release();
 
             if ($student) {
                 $saldoFormatted = number_format($student->saldo, 0, ',', '.');
@@ -360,12 +357,11 @@ class OrderItemController extends Controller
 
             return redirect()->route('order-item.index')->with('success', $message);
 
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             DB::rollback();
-            // Release lock jika gagal
-            $lock->release();
-            
             return redirect()->back()->with('error', $e->getMessage());
+        } finally {
+            optional($lock)->release();
         }
     }
 

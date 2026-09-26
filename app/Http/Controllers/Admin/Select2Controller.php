@@ -91,10 +91,9 @@ class Select2Controller extends Controller
     public function student($request)
     {
         $search = strtolower(trim($request->q ?: ($request->search ?? '')));
-        $schoolId = $request->school_id ?: auth()->user()?->school_id;
+        $schoolId = $request->school_id;
 
-        $query = Student::hasSchoolPlace()
-            ->with(['classroom.school'])
+        $query = Student::with(['classroom.school'])
             ->where(function ($q) {
                 $q->where('status', '!=', Student::STATUS_DROPPED_OUT)
                   ->orWhereHas('bills', function ($bQ) {
@@ -109,6 +108,8 @@ class Select2Controller extends Controller
                       $cQ->where('school_id', $schoolId);
                   });
             });
+        } else {
+            $query->hasSchool();
         }
 
         if (!empty($search)) {
@@ -119,8 +120,7 @@ class Select2Controller extends Controller
             });
         }
 
-        $students = $query->hasSchool()
-            ->orderBy('name')
+        $students = $query->orderBy('name')
             ->take(50)
             ->get();
 

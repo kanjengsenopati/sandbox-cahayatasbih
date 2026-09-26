@@ -34,6 +34,9 @@ class SyncPaymentRateBills extends Command
 
     public function handle(): int
     {
+        @ini_set('memory_limit', '512M');
+        @set_time_limit(0);
+
         $isDryRun = $this->option('dry-run');
         $forceUpdate = $this->option('force');
         $rateId = $this->option('rate');
@@ -161,16 +164,18 @@ class SyncPaymentRateBills extends Command
                     }
 
                     foreach ($paymentRate->paymentRateItems as $item) {
-                        $billMonth = $item->month;
-                        $billYear  = $item->year;
+                        $billMonth = (int) $item->month;
+                        $ayStart = (int) ($billType->academicYear?->start_year ?? date('Y'));
+                        $ayEnd = (int) ($billType->academicYear?->end_year ?? ($ayStart + 1));
+                        $billYear = ($billMonth >= 7) ? $ayStart : $ayEnd;
                         $billAmount = $item->amount;
 
-                        // Check existing bills across ANY identical bill type names
+                        // Check existing bills across ANY identical bill type names for this academic year and month
                         $existingBills = DB::table('bills')
                             ->where('student_id', $student->id)
                             ->whereIn('bill_type_id', $relatedBillTypeIds)
+                            ->where('academic_year_id', $billType->academic_year_id)
                             ->where('month', $billMonth)
-                            ->where('year', $billYear)
                             ->whereNull('deleted_at')
                             ->orderByDesc('paid_amount') // Prioritaskan tagihan yang sudah ada pembayaran
                             ->orderByDesc('updated_at')  // Lalu yang paling baru diupdate
@@ -185,8 +190,26 @@ class SyncPaymentRateBills extends Command
                             $this->warn("    [DUPLICATE CLEANUP] {$student->name} | Dihapus " . count($duplicateIds) . " tagihan ganda untuk bulan {$billMonth}/{$billYear}.");
                         }
 
+                        if ($existingBill && $existingBill->year != $billYear && !$isDryRun) {
+                            DB::table('bills')->where('id', $existingBill->id)->update(['year' => $billYear]);
+                        }
+
                         if ($existingBill && $existingBill->bill_type_id !== $billType->id) {
                             $this->warn("    [DUPLICATE AVOIDED] {$student->name} | Bulan {$billMonth}/{$billYear} diabaikan karena sudah ada tagihan identik dari tipe tagihan lain.");
+                            $totalSkipped++;
+                            continue;
+                        }
+
+                        // JIKA NOMINAL TARIF <= 0 (TIDAK DITAGIHKAN DI BULAN INI):
+                        if ($billAmount <= 0) {
+                            if ($existingBill && (int)$existingBill->paid_amount == 0) {
+                                // Cek apakah ada riwayat transaksi sebelum soft delete
+                                $hasTx = DB::table('transaction_details')->where('bill_id', $existingBill->id)->exists();
+                                if (!$hasTx && !$isDryRun) {
+                                    DB::table('bills')->where('id', $existingBill->id)->update(['deleted_at' => now()]);
+                                    $this->line("    [PRUNE GHOST] {$student->name} | Bulan {$billMonth}/{$billYear} dihapus karena tarif Rp 0.");
+                                }
+                            }
                             $totalSkipped++;
                             continue;
                         }
@@ -222,9 +245,11 @@ class SyncPaymentRateBills extends Command
                                 if ($paidAmount > 0) {
                                     // There is already a payment made on this bill
                                     if ($paidAmount >= $newAmount) {
+                                        // Cegah anomali overpaid: Jangan turunkan amount di bawah paid_amount yang sudah disetor siswa
+                                        $targetAmount = $paidAmount;
                                         if (!$isDryRun) {
                                             DB::table('bills')->where('id', $existingBill->id)->update([
-                                                'amount' => $newAmount,
+                                                'amount' => $targetAmount,
                                                 'status' => \App\Models\Bill::STATUS_PAID,
                                                 'payment_rate_item_id' => $item->id,
                                                 'classroom_id'         => $targetClassroomId,

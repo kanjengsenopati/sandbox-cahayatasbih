@@ -157,6 +157,61 @@
     }
 </style>
 
+
+<script>
+    
+    });
+
+    $(document).ready(function() {
+        $(document).on('click', '.btn-batalkan', function(e) {
+            e.preventDefault();
+            const selectedCheckboxes = document.querySelectorAll('.bill-month-checkbox:checked');
+            if (selectedCheckboxes.length === 0) {
+                Swal.fire({
+                    title: 'Pilih Tagihan',
+                    text: 'Silakan pilih tagihan yang sudah terbayar (LUNAS) untuk dibatalkan.',
+                    icon: 'warning',
+                    confirmButtonColor: '#2563EB'
+                });
+                return;
+            }
+
+            // We only want to cancel PAID bills
+            let billIds = [];
+            selectedCheckboxes.forEach(checkbox => {
+                billIds.push(checkbox.getAttribute('data-bill-id'));
+            });
+
+            Swal.fire({
+                title: 'Batalkan Pembayaran?',
+                text: 'Apakah Anda yakin ingin MEMBATALKAN pembayaran tagihan-tagihan ini? Transaksi pembayaran akan dihapus/di-rollback secara atomik.',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#DC2626',
+                cancelButtonColor: '#94a3b8',
+                confirmButtonText: 'Ya, Batalkan!',
+                cancelButtonText: 'Batal'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    const form = document.createElement('form');
+                    form.action = "{{ route('bill.change-status-bulk') }}";
+                    form.method = 'post';
+
+                    form.innerHTML = `
+                    @csrf
+                    <input type="hidden" name="bill_ids" value='${JSON.stringify(billIds)}'>
+                    `;
+
+                    document.body.appendChild(form);
+                    form.submit();
+                }
+            });
+        });
+    });
+</script>
+
+
+
 @endpush
 @section('content')
 <!--begin::Content-->
@@ -201,9 +256,7 @@
                 <!--end::Breadcrumb-->
             </div>
             <!--end::Page title-->
-            <!--begin::Actions-->
-
-            <!--end::Actions-->
+            
         </div>
         <!--end::Container-->
     </div>
@@ -226,15 +279,9 @@
                         <li class="nav-item">
                             <a class="nav-link" data-bs-toggle="tab" href="#pembayaran_transfer">Pembayaran Transfer</a>
                         </li>
-                        <li class="nav-item">
-                            <a class="nav-link" data-bs-toggle="tab" href="#arsip_riwayat">Arsip Riwayat</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" data-bs-toggle="tab" href="#import_pembayaran">Import Pembayaran</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" data-bs-toggle="tab" href="#audit_anomaly_data">Audit Anomaly Data</a>
-                        </li>
+                        
+                        
+                        
                     </ul>
 
                     <div class="tab-content" id="myTabContent">
@@ -501,6 +548,8 @@
                                                             <button class="btn btn-primary modal-pay ms-2"
                                                                 data-bs-toggle="modal" data-bs-target="#paymentModal"
                                                                 style="min-width: 100px;">Bayar</button>
+                                                            <button class="btn btn-danger btn-batalkan ms-2"
+                                                                style="min-width: 100px;">Batalkan</button>
                                                             @endif
                                                         </div>
                                                     </ul>
@@ -522,139 +571,8 @@
                                                 </div>
                                             </div>
                                         </div>
-                                        <div class="separator mb-6"></div>
-                                        <div class="accordion-item">
-                                            <h2 class="accordion-header" id="kt_accordion_1_header_1">
-                                                <button class="accordion-button fs-4 fw-boldest text-slate-800" type="button"
-                                                    data-bs-toggle="collapse"
-                                                    data-bs-target="#accordion-tagihan-bulanan" aria-expanded="true"
-                                                    aria-controls="accordion-tagihan-bulanan">
-                                                    Tagihan Bulanan
-                                                </button>
-                                            </h2>
-                                            <div id="accordion-tagihan-bulanan" class="accordion-collapse collapse show"
-                                                aria-labelledby="kt_accordion_1_header_1"
-                                                data-bs-parent="#kt_accordion_1">
-                                                <div class="accordion-body">
-                                                    <div class="table-responsive">
-                                                        <table id="table-bill-monthly"
-                                                            class="table align-middle table-row-dashed ">
-                                                            <thead>
-                                                                <tr class="text-start text-slate-500 fw-boldest fs-7 text-uppercase gs-0">
-                                                                    <th style="width: 5%">No</th>
-                                                                    <th class="min-w-70px">Tahun Ajaran</th>
-                                                                    <th class="min-w-125px">Item Pembayaran</th>
-                                                                    <th class="min-w-125px">Total Tagihan</th>
-                                                                    <th class="min-w-125px">Dibayar</th>
-                                                                    <th class="min-w-125px">Sisa Tagihan</th>
-                                                                    <th class="text-center" style="width: 22%">Status</th>
-                                                                    <th class="text-center min-w-150px">Aksi</th>
-                                                                </tr>
-                                                            </thead>
-                                                            <tbody class="text-slate-700 fw-bold">
-                                                                @forelse ($billMonth as $monthly)
-                                                                <tr>
-                                                                    <td>{{ $loop->iteration }}</td>
-                                                                    <td>{{ @$monthly->academicYear->name }}</td>
-                                                                    <td>{{ @$monthly->name }}</td>
-                                                                    <td class="text-slate-900 fw-bolder">Rp {{ number_format(@$monthly->total_bill, 0, ',', '.') }}</td>
-                                                                    <td class="text-emerald-600 fw-bolder">Rp {{ number_format(@$monthly->total_paid, 0, ',', '.') }}</td>
-                                                                    <td class="text-danger fw-bolder">Rp {{ number_format(@$monthly->total_unpaid, 0, ',', '.') }}</td>
-                                                                    <td class="text-center">
-                                                                        <span class="badge badge-{{ @$monthly->total_unpaid == 0 ? 'success' : 'danger' }} fw-bold px-3 py-1">
-                                                                            {{ @$monthly->total_unpaid == 0 ? 'Lunas' : 'Belum Lunas' }}
-                                                                        </span>
-                                                                    </td>
-                                                                    <td class="text-center">
-                                                                        <a href="{{ route('bill.summary-bill', ['bill_type_id' => $monthly->id, 'student_id' => $student->id]) }}"
-                                                                            class="btn btn-custom-purple btn-sm">
-                                                                            <i class="bi bi-file-text me-2"></i>
-                                                                            Lihat Rincian
-                                                                        </a>
-                                                                    </td>
-                                                                </tr>
-                                                                @empty
-                                                                <tr>
-                                                                    <td colspan="8" class="text-center py-5">
-                                                                        <div class="text-muted fw-bold fs-7">
-                                                                            <i class="fas fa-info-circle me-1 text-warning"></i>
-                                                                            Belum ada tagihan bulanan yang di-generate untuk siswa ini.
-                                                                        </div>
-                                                                    </td>
-                                                                </tr>
-                                                                @endforelse
-                                                            </tbody>
-                                                        </table>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="separator mb-6"></div>
-                                        <div class="accordion-item">
-                                            <h2 class="accordion-header" id="kt_accordion_1_header_1">
-                                                <button class="accordion-button fs-4 fw-boldest text-slate-800" type="button"
-                                                    data-bs-toggle="collapse" data-bs-target="#accordion-bill-other"
-                                                    aria-expanded="true" aria-controls="accordion-bill-other">
-                                                    Tagihan Lainnya
-                                                </button>
-                                            </h2>
-                                            <div id="accordion-bill-other" class="accordion-collapse collapse show"
-                                                aria-labelledby="kt_accordion_1_header_1"
-                                                data-bs-parent="#kt_accordion_1">
-                                                <div class="accordion-body">
-                                                    <div class="table-responsive">
-                                                        <table id="table-bill-monthly"
-                                                            class="table align-middle table-row-dashed ">
-                                                            <thead>
-                                                                <tr class="text-start text-slate-500 fw-boldest fs-7 text-uppercase gs-0">
-                                                                    <th style="width: 5%">No</th>
-                                                                    <th class="min-w-70px">Tahun Ajaran</th>
-                                                                    <th class="min-w-125px">Item Pembayaran</th>
-                                                                    <th class="min-w-125px">Total Tagihan</th>
-                                                                    <th class="min-w-125px">Dibayar</th>
-                                                                    <th class="min-w-125px">Sisa Tagihan</th>
-                                                                    <th class="text-center min-w-70px" style="width: 22%">Status</th>
-                                                                    <th class="text-center min-w-150px">Aksi</th>
-                                                                </tr>
-                                                            </thead>
-                                                            <tbody class="text-slate-700 fw-bold">
-                                                                @forelse ($billOthers as $other)
-                                                                <tr>
-                                                                    <td>{{ $loop->iteration }}</td>
-                                                                    <td>{{ @$other->academicYear->name }}</td>
-                                                                    <td>{{ @$other->name }}</td>
-                                                                    <td class="text-slate-900 fw-bolder">Rp {{ number_format(@$other->total_bill, 0, ',', '.') }}</td>
-                                                                    <td class="text-emerald-600 fw-bolder">Rp {{ number_format(@$other->total_paid, 0, ',', '.') }}</td>
-                                                                    <td class="text-danger fw-bolder">Rp {{ number_format(@$other->total_unpaid, 0, ',', '.') }}</td>
-                                                                    <td class="text-center">
-                                                                        <span class="badge badge-{{ @$other->total_unpaid == 0 ? 'success' : 'danger' }} fw-bold px-3 py-1">
-                                                                            {{ @$other->total_unpaid == 0 ? 'Lunas' : 'Belum Lunas' }}
-                                                                        </span>
-                                                                    </td>
-                                                                    <td class="text-center">
-                                                                        <a href="{{ route('bill.summary-bill', ['bill_type_id' => $other->id, 'student_id' => $student->id]) }}"
-                                                                            class="btn btn-custom-purple btn-sm">
-                                                                            <i class="bi bi-file-text me-2"></i>
-                                                                            Lihat Rincian
-                                                                        </a>
-                                                                    </td>
-                                                                </tr>
-                                                                @empty
-                                                                <tr>
-                                                                    <td colspan="8" class="text-center py-5">
-                                                                        <div class="text-muted fw-bold fs-7">
-                                                                            <i class="fas fa-info-circle me-1 text-warning"></i>
-                                                                            Belum ada tagihan lainnya yang di-generate untuk siswa ini.
-                                                                        </div>
-                                                                    </td>
-                                                                </tr>
-                                                                @endforelse
-                                                            </tbody>
-                                                        </table>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
+                                        
+                                        
                                     </div>
                                     @endif
                                 </div>
@@ -665,23 +583,8 @@
                             <!-- Add your content for Pembayaran Transfer here -->
                             @include('admins.bill.transfer-tab.index')
                         </div>
-                        <div class="tab-pane fade" id="arsip_riwayat" role="tabpanel">
-                            <!-- Arsip Riwayat Content -->
-                            @include('admins.bill.transfer-tab.archive')
-                        </div>
-                        <div class="tab-pane fade" id="import_pembayaran" role="tabpanel">
-                            <!-- Import Pembayaran Content -->
-                            @include('admins.bill.import-tab.index')
-                        </div>
-                        <div class="tab-pane fade" id="audit_anomaly_data" role="tabpanel">
-                            <!-- Audit Anomaly Data Content -->
-                            <div class="card card-flush">
-                                <div class="card-body p-0">
-                                    <div class="p-0 border-0 bg-white m-0" style="width: 100%; min-height: 800px;">
-                                        <iframe src="{{ url('audit-vps-data') }}" style="width: 100%; height: 800px; border: none; border-radius: 12px; background: #fff;" title="Audit Anomaly Data" allowfullscreen></iframe>
-                                    </div>
-                                </div>
-                            </div>
+                        
+                        
                         </div>
                     </div>
                     <!--end::Card body-->
@@ -758,6 +661,11 @@
         </div>
     </div>
 </div>
+
+
+    </div>
+</div>
+
 <!-- Modal View Bukti Transfer -->
 <div class="modal fade" id="imagePreviewModal" tabindex="-1" aria-labelledby="imagePreviewModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-lg">
@@ -767,7 +675,7 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body text-center p-6 bg-white">
-                <img id="imagePreviewSrc" src="" class="img-fluid rounded-3 shadow-sm" alt="Bukti Transfer" style="max-height: 70vh; object-fit: contain; border: 1px solid #e2e8f0;">
+                <img id="imagePreviewSrc" src="" class="img-fluid rounded-3 shadow-sm" alt="Bukti Transfer" onerror="this.onerror=null; this.src='data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 400 200\'%3E%3Crect width=\'400\' height=\'200\' fill=\'%23f1f5f9\'/%3E%3Ctext x=\'50%25\' y=\'50%25\' dominant-baseline=\'middle\' text-anchor=\'middle\' font-family=\'sans-serif\' font-size=\'14\' font-weight=\'bold\' fill=\'%2394a3b8\'%3EBukti Pembayaran Tidak Ditemukan%3C/text%3E%3C/svg%3E';" style="max-height: 70vh; object-fit: contain; border: 1px solid #e2e8f0;">
             </div>
         </div>
     </div>
@@ -975,88 +883,7 @@
                 ]
             });
 
-            var archiveTable = $('#table-archive').DataTable({
-                ordering: true,
-                sortable: true,
-                processing: true,
-                serverSide: true,
-                pageLength: 20,
-                lengthMenu: [20, 30, 40],
-                ajax: {
-                    url: "{{ route('bill.index') }}",
-                    data: function(d) {
-                        d.tab = 'archive';
-                        d.search_student = $('#archive-search-student').val();
-                        d.start_date = $('#archive-start-date').val();
-                        d.end_date = $('#archive-end-date').val();
-                    }
-                },
-                language: {
-                    "paginate": {
-                        "next": "<i class='fa fa-angle-right'>",
-                        "previous": "<i class='fa fa-angle-left'>"
-                    },
-                    "loadingRecords": "Loading...",
-                    "processing": "Processing...",
-                },
-                columns: [
-                    {
-                        "data": null,
-                        "sortable": false,
-                        "searchable": false,
-                        render: function(data, type, row, meta) {
-                            return meta.row + meta.settings._iDisplayStart + 1;
-                        }
-                    },
-                    {
-                        data: 'student.name',
-                        name: 'student.name',
-                        orderable: false,
-                    },
-                    {
-                        data: 'pay_amount',
-                        name: 'pay_amount'
-                    },
-                    {
-                        data: 'unique_payment',
-                        name: 'unique_payment'
-                    },
-                    {
-                        data: 'bank_recipient',
-                        name: 'bank_recipient',
-                        orderable: false,
-                        searchable: false
-                    },
-                    {
-                        data: 'proof',
-                        name: 'proof',
-                        orderable: false,
-                        searchable: false
-                    },
-                    {
-                        data: 'status',
-                        name: 'status',
-                        orderable: true,
-                        searchable: false
-                    },
-                    {
-                        data: 'officer',
-                        name: 'officer',
-                        orderable: false
-                    },
-                    {
-                        data: 'updated_at_formatted',
-                        name: 'updated_at',
-                        orderable: true
-                    },
-                    {
-                        data: 'action',
-                        name: 'action',
-                        orderable: false,
-                        searchable: false
-                    }
-                ]
-            });
+            
 
             var searchTimeout = null;
             $('#archive-search-student').on('keyup input change', function() {
@@ -1136,10 +963,7 @@
                 });
             });
 
-            // Adjust columns on tab switch
-            $('a[href="#arsip_riwayat"]').on('shown.bs.tab', function (e) {
-                archiveTable.columns.adjust().draw();
-            });
+            
 
             // Click handler for viewing proof images in a modal
             $(document).on('click', '.view-proof-image', function() {

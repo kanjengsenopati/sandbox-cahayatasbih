@@ -108,8 +108,11 @@
     <div class="space-y-4">
         <div class="text-label ml-1">Upload Bukti Bayar</div>
         @if($proof)
-            <div class="card-premium p-4 border-2 border-slate-100">
-                <img src="{{ asset('storage/' . $proof->proof_path) }}" class="w-full h-48 object-cover rounded-2xl mb-4" alt="Bukti Pembayaran">
+                @php
+                    $proofSrc = $proof->proof_image_url ?? $proof->proof_image ?? storage_asset($proof->proof_path ?? '');
+                    $fallbackSvg = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 200'%3E%3Crect width='400' height='200' fill='%23f1f5f9'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-family='sans-serif' font-size='14' font-weight='bold' fill='%2394a3b8'%3EBukti Pembayaran Tidak Ditemukan%3C/text%3E%3C/svg%3E";
+                @endphp
+                <img src="{{ $proofSrc }}" onerror="this.onerror=null; this.src='{{ $fallbackSvg }}';" class="w-full h-48 object-cover rounded-2xl mb-4" alt="Bukti Pembayaran">
                 <div class="text-center">
                     <p class="text-[11px] font-bold text-slate-400 mb-4 italic">Bukti telah diunggah pada {{ \Carbon\Carbon::parse($proof->created_at)->translatedFormat('d M Y, H:i') }}</p>
                     @if($proof->status != 'APPROVED')

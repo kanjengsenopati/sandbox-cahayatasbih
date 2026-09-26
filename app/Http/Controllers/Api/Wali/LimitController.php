@@ -21,15 +21,12 @@ class LimitController extends BaseWaliApiController
 
     public function update(Request $request)
     {
-        $request->validate(['daily_limit' => 'required|numeric|min:0']);
+        $request->validate(['daily_limit' => 'required|numeric|min:-1']);
         $student = $this->resolveActiveStudent();
         if (!$student) return response()->json(['message' => 'Student not found'], 404);
         
-        if ($student->hasAdminSaldoLimitActive()) {
-            return response()->json([
-                'message' => 'Pengaturan limit harian dinonaktifkan karena telah diatur secara global oleh pihak sekolah.'
-            ], 422);
-        }
+        // Blok validasi admin limit dihilangkan agar Wali Santri bisa melakukan override
+        // sesuai aturan bisnis hirarki limit terbaru (Prioritas 1: Wali).
         
         $student->update(['daily_limit' => $request->daily_limit]);
         

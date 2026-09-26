@@ -88,7 +88,7 @@ class User extends Authenticatable
     public function scopeHasSchool($query)
     {
         $admin = Auth::guard('web')->user();
-        if ($admin?->hasRole('Super Admin')) {
+        if (!$admin || (method_exists($admin, 'isSuperAdmin') && $admin->isSuperAdmin()) || $admin->hasRole('Super Admin')) {
             return;
         }
 

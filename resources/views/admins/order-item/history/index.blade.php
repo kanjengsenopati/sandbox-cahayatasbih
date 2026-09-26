@@ -689,7 +689,7 @@
 @endpush
 
 @push('js')
-    <script src="https://code.highcharts.com/highcharts.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highcharts/11.4.0/highcharts.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
         const modalEl = document.getElementById('modalDetailTransaksi');

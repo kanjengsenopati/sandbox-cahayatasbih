@@ -115,10 +115,17 @@
                         <i class="fas fa-info-circle me-1 text-primary"></i>
                         <strong>Panduan Admin:</strong> Silakan masuk ke menu <a href="{{ route('bill-type.index') }}" class="fw-bolder text-primary">Data Jenis Bayar</a>, lalu klik tombol sinkronisasi <i class="fas fa-sync text-success me-1"></i> <strong>Generasi Tagihan</strong> pada kelas siswa ini ({{ $displayClassName }}).
                     </span>
+
+                        <form action="{{ route('bill.generate-student-bills', ['student_id' => $student->id, 'academic_year_id' => request('academic_year_id')]) }}" method="POST" class="mt-3">
+                            @csrf
+                            <button type="submit" class="btn btn-sm btn-primary">
+                                <i class="fas fa-sync-alt me-1"></i> Generate Bill Bulanan
+                            </button>
+                        </form>
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
     @else
     @foreach ($billMonth as $bill)
     @php

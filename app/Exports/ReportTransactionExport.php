@@ -12,7 +12,7 @@ use PhpOffice\PhpSpreadsheet\Style\Border;
 use Maatwebsite\Excel\Concerns\WithMapping;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use PhpOffice\PhpSpreadsheet\Style\Alignment;
-use Maatwebsite\Excel\Concerns\FromCollection;
+use Maatwebsite\Excel\Concerns\FromGenerator;
 use Maatwebsite\Excel\Concerns\ShouldAutoSize;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 use Maatwebsite\Excel\Concerns\WithCustomStartCell;
@@ -20,15 +20,15 @@ use Maatwebsite\Excel\Concerns\WithColumnFormatting;
 use Illuminate\Support\Facades\DB;
 use App\Traits\CanonicalBillTypeTrait;
 
-class ReportTransactionExport implements FromCollection, WithHeadings, ShouldAutoSize, WithMapping, WithColumnFormatting, WithTitle, WithCustomStartCell, WithStyles
+class ReportTransactionExport implements FromGenerator, WithHeadings, ShouldAutoSize, WithMapping, WithColumnFormatting, WithTitle, WithCustomStartCell, WithStyles
 {
     use CanonicalBillTypeTrait;
     private $rowNumber = 0;
 
     /**
-     * @return \Illuminate\Support\Collection
+     * @return \Illuminate\Database\Eloquent\Builder
      */
-    public function collection()
+    public function baseQuery()
     {
         return Transaction::where('status', Transaction::STATUS_PAID)
             ->with('student', 'student.classroom', 'paymentMethod', 'admin', 'transactionDetails.bill.billType')
@@ -82,11 +82,38 @@ class ReportTransactionExport implements FromCollection, WithHeadings, ShouldAut
                     });
             })
             ->hasSchool()
-            ->latest()
-            ->get();
+            ->orderBy('student_id')
+            ->orderBy(DB::raw('DATE(created_at)'))
+            ->orderBy('created_at'); // memastikan urutan di dalam hari yang sama
     }
 
-    public function map($data): array
+    public function generator()
+    {
+        $query = $this->baseQuery();
+        $currentGroup = [];
+        $currentKey = null;
+
+        // Gunakan cursor untuk iterasi efisien tanpa memory exhaustion
+        foreach ($query->cursor() as $transaction) {
+            $key = $transaction->student_id . '_' . $transaction->created_at->format('Y-m-d') . '_' . $transaction->type;
+            
+            if ($currentKey !== $key) {
+                if (!empty($currentGroup)) {
+                    yield $currentGroup;
+                }
+                $currentGroup = [$transaction];
+                $currentKey = $key;
+            } else {
+                $currentGroup[] = $transaction;
+            }
+        }
+
+        if (!empty($currentGroup)) {
+            yield $currentGroup;
+        }
+    }
+
+    public function map($transactions): array
     {
         $this->rowNumber++;
         $filterTagihan = request()->input('bill_type_id');
@@ -94,65 +121,74 @@ class ReportTransactionExport implements FromCollection, WithHeadings, ShouldAut
         $matchedIds = $matchingInfo['ids'];
         $matchedNames = $matchingInfo['names'];
 
-        // Filter transaction details jika filter jenis tagihan aktif (sterilisasi data multi-item)
-        $details = $data->transactionDetails ?? collect();
-        if (!empty($filterTagihan) && $data->type === Transaction::TYPE_BILL) {
-            $details = $details->filter(function ($detail) use ($filterTagihan, $matchedIds, $matchedNames) {
-                $bt = $detail->bill?->billType;
-                $btId = $detail->bill?->bill_type_id;
-                $btName = $bt?->name;
+        // Gunakan transaksi pertama untuk data siswa, dll
+        $firstTx = $transactions[0];
+        // Gunakan transaksi terakhir untuk tanggal/petugas karena dia yang terbaru di hari itu
+        $lastTx = end($transactions);
 
-                if (!empty($matchedIds)) {
-                    return in_array($btId, $matchedIds) || in_array($btName, $matchedNames);
-                }
+        $allDetails = collect();
+        $totalNominal = 0;
 
-                if (is_array($filterTagihan)) {
-                    return in_array($btName, $filterTagihan) || in_array($btId, $filterTagihan);
+        foreach ($transactions as $tx) {
+            $details = $tx->transactionDetails ?? collect();
+            if (!empty($filterTagihan) && $tx->type === Transaction::TYPE_BILL) {
+                $details = $details->filter(function ($detail) use ($filterTagihan, $matchedIds, $matchedNames) {
+                    $bt = $detail->bill?->billType;
+                    $btId = $detail->bill?->bill_type_id;
+                    $btName = $bt?->name;
+
+                    if (!empty($matchedIds)) {
+                        return in_array($btId, $matchedIds) || in_array($btName, $matchedNames);
+                    }
+
+                    if (is_array($filterTagihan)) {
+                        return in_array($btName, $filterTagihan) || in_array($btId, $filterTagihan);
+                    }
+                    return $btName === $filterTagihan || $btId === $filterTagihan;
+                });
+            }
+
+            if ($tx->type === Transaction::TYPE_BILL) {
+                if (!empty($filterTagihan)) {
+                    foreach ($details as $detail) {
+                        $amt = $detail->amount ?: ($detail->bill?->amount ?? 0);
+                        $totalNominal += (int) $amt;
+                    }
+                } else {
+                    $totalNominal += $tx->pay_amount;
                 }
-                return $btName === $filterTagihan || $btId === $filterTagihan;
-            });
+            } else {
+                $totalNominal += $tx->pay_amount;
+            }
+
+            $allDetails = $allDetails->merge($details);
         }
 
         // Tentukan teks kolom Item Tagihan
         $itemTagihan = '-';
-        if ($data->type === Transaction::TYPE_BILL) {
-            $names = $details->map(fn($d) => $d->bill?->billType?->name)->filter()->unique()->values();
+        if ($firstTx->type === Transaction::TYPE_BILL) {
+            $names = $allDetails->map(fn($d) => $d->bill?->billType?->name)->filter()->unique()->values();
             $itemTagihan = $names->isNotEmpty() ? $names->implode(', ') : ($filterTagihan ?: '-');
-        } elseif ($data->type === Transaction::TYPE_SALDO) {
+        } elseif ($firstTx->type === Transaction::TYPE_SALDO) {
             $itemTagihan = 'Saldo';
-        } elseif ($data->type === Transaction::TYPE_SAVING) {
+        } elseif ($firstTx->type === Transaction::TYPE_SAVING) {
             $itemTagihan = 'Tabungan';
-        }
-
-        // Hitung nominal khusus item yang difilter
-        $totalNominal = 0;
-        if ($data->type === Transaction::TYPE_BILL) {
-            if (!empty($filterTagihan)) {
-                foreach ($details as $detail) {
-                    $amt = $detail->amount ?: ($detail->bill?->amount ?? 0);
-                    $totalNominal += (int) $amt;
-                }
-            } else {
-                $totalNominal = $data->pay_amount;
-            }
-        } else {
-            $totalNominal = $data->pay_amount;
         }
 
         $baseRow = [
             $this->rowNumber,
-            Carbon::parse($data->created_at)->translatedFormat('l, d F Y H:i:s'),
-            $data->student?->name ?? '-',
-            $data->student?->classroom?->name ?? '-',
-            $data->student?->classroom?->school?->name ?? '-',
-            $this->getTransactionTypeBadge($data->type),
+            Carbon::parse($lastTx->created_at)->translatedFormat('l, d F Y H:i:s'),
+            $firstTx->student?->name ?? '-',
+            $firstTx->student?->classroom?->name ?? '-',
+            $firstTx->student?->classroom?->school?->name ?? '-',
+            $this->getTransactionTypeBadge($firstTx->type),
             $itemTagihan,
             'Rp ' . number_format($totalNominal, 0, ',', '.'),
-            $data->paymentMethod?->name ?? '-',
-            $data->admin?->name ?? '-',
+            $lastTx->paymentMethod?->name ?? '-',
+            $lastTx->admin?->name ?? '-',
         ];
 
-        $monthlyColumns = $this->getMonthlyBreakdown($data, $details);
+        $monthlyColumns = $this->getMonthlyBreakdown($transactions, $filterTagihan, $matchedIds, $matchedNames);
 
         return array_merge($baseRow, $monthlyColumns);
     }
@@ -169,11 +205,9 @@ class ReportTransactionExport implements FromCollection, WithHeadings, ShouldAut
 
     /**
      * Breakdown nominal pembayaran ke 12 kolom bulan (Juli s/d Juni).
-     * Jika terbayar, muncul nominal per bulan. Jika tidak terbayar, muncul Rp 0.
      */
-    private function getMonthlyBreakdown($data, $details): array
+    private function getMonthlyBreakdown($transactions, $filterTagihan, $matchedIds, $matchedNames): array
     {
-        // Urutan bulan kalender akademik: Juli (7) s/d Juni (6)
         $monthMap = [
             7  => 0, // Juli
             8  => 1, // Agustus
@@ -191,27 +225,47 @@ class ReportTransactionExport implements FromCollection, WithHeadings, ShouldAut
 
         $monthlyTotals = array_fill(0, 12, 0);
 
-        if ($data->type === Transaction::TYPE_BILL) {
-            $detailCount = $details->count();
+        foreach ($transactions as $tx) {
+            if ($tx->type === Transaction::TYPE_BILL) {
+                $details = $tx->transactionDetails ?? collect();
+                
+                // Terapkan filter yang sama jika ada filter jenis tagihan
+                if (!empty($filterTagihan)) {
+                    $details = $details->filter(function ($detail) use ($filterTagihan, $matchedIds, $matchedNames) {
+                        $bt = $detail->bill?->billType;
+                        $btId = $detail->bill?->bill_type_id;
+                        $btName = $bt?->name;
 
-            if ($detailCount > 0) {
-                foreach ($details as $detail) {
-                    $bill = $detail->bill;
-                    $m = (int) ($bill?->month ?? 0);
+                        if (!empty($matchedIds)) {
+                            return in_array($btId, $matchedIds) || in_array($btName, $matchedNames);
+                        }
+                        if (is_array($filterTagihan)) {
+                            return in_array($btName, $filterTagihan) || in_array($btId, $filterTagihan);
+                        }
+                        return $btName === $filterTagihan || $btId === $filterTagihan;
+                    });
+                }
 
-                    // Tentukan nominal item: detail->amount -> bill->amount -> (pay_amount / detailCount)
-                    $amount = 0;
-                    if (!empty($detail->amount) && (int)$detail->amount > 0) {
-                        $amount = (int) $detail->amount;
-                    } elseif ($bill && !empty($bill->amount) && (int)$bill->amount > 0) {
-                        $amount = (int) $bill->amount;
-                    } elseif ($detailCount > 0 && !empty($data->pay_amount)) {
-                        $amount = (int) round($data->pay_amount / $detailCount);
-                    }
+                $detailCount = $details->count();
+                if ($detailCount > 0) {
+                    foreach ($details as $detail) {
+                        $bill = $detail->bill;
+                        $m = (int) ($bill?->month ?? 0);
 
-                    if (isset($monthMap[$m])) {
-                        $idx = $monthMap[$m];
-                        $monthlyTotals[$idx] += $amount;
+                        $amount = 0;
+                        if (!empty($detail->amount) && (int)$detail->amount > 0) {
+                            $amount = (int) $detail->amount;
+                        } elseif ($bill && !empty($bill->amount) && (int)$bill->amount > 0) {
+                            $amount = (int) $bill->amount;
+                        } elseif ($detailCount > 0 && !empty($tx->pay_amount)) {
+                            // Only fallback to pay_amount average if no specific item amount is found
+                            $amount = (int) round($tx->pay_amount / $detailCount);
+                        }
+
+                        if (isset($monthMap[$m])) {
+                            $idx = $monthMap[$m];
+                            $monthlyTotals[$idx] += $amount;
+                        }
                     }
                 }
             }
@@ -222,21 +276,17 @@ class ReportTransactionExport implements FromCollection, WithHeadings, ShouldAut
         }, $monthlyTotals);
     }
 
-    /**
-     * Dapatkan tahun mulai dan tahun selesai untuk kalender akademik (Juli - Juni)
-     */
     protected function getAcademicYearYears(): array
     {
-        // 1. Dari filter tanggal jika ada
-        if (request()->filled('start_date')) {
-            $date = Carbon::parse(request()->start_date);
+        if (request()->filled('end_date')) {
+            $date = Carbon::parse(request()->end_date);
             $month = (int) $date->format('n');
             $year = (int) $date->format('Y');
             $startYear = $month >= 7 ? $year : $year - 1;
             $endYear = $startYear + 1;
             return [$startYear, $endYear];
-        } elseif (request()->filled('end_date')) {
-            $date = Carbon::parse(request()->end_date);
+        } elseif (request()->filled('start_date')) {
+            $date = Carbon::parse(request()->start_date);
             $month = (int) $date->format('n');
             $year = (int) $date->format('Y');
             $startYear = $month >= 7 ? $year : $year - 1;
@@ -244,7 +294,6 @@ class ReportTransactionExport implements FromCollection, WithHeadings, ShouldAut
             return [$startYear, $endYear];
         }
 
-        // 2. Dari Tahun Ajaran aktif
         $activeAy = \App\Models\AcademicYear::where('is_active', 1)->first();
         if ($activeAy) {
             $startYear = $activeAy->getStartYearSafe() ?? (int) ($activeAy->start_year ?? date('Y'));
@@ -252,7 +301,6 @@ class ReportTransactionExport implements FromCollection, WithHeadings, ShouldAut
             return [$startYear, $endYear];
         }
 
-        // 3. Fallback kalender
         $currentMonth = (int) date('n');
         $currentYear = (int) date('Y');
         $startYear = $currentMonth >= 7 ? $currentYear : $currentYear - 1;
@@ -336,31 +384,24 @@ class ReportTransactionExport implements FromCollection, WithHeadings, ShouldAut
             'fill' => [
                 'fillType' => Fill::FILL_SOLID,
                 'startColor' => [
-                    'argb' => 'DDDDDD', // Grey background color
+                    'argb' => 'DDDDDD',
                 ],
             ],
         ]);
     }
 
-    /**
-     * Generate TSV (Tab-Separated Values) format for direct clipboard copy and paste into Google Sheets.
-     */
     public function generateTsv(): array
     {
         $headings = $this->headings();
-        $collection = $this->collection();
-
+        
         $tsvLines = [];
-
-        // Header row
         $cleanHeadings = array_map(function ($h) {
             return str_replace(["\t", "\r", "\n"], ' ', (string) $h);
         }, $headings);
         $tsvLines[] = implode("\t", $cleanHeadings);
 
-        // Data rows
-        foreach ($collection as $item) {
-            $mapped = $this->map($item);
+        foreach ($this->generator() as $groupedTransactions) {
+            $mapped = $this->map($groupedTransactions);
             $cleanCells = array_map(function ($cell) {
                 return str_replace(["\t", "\r", "\n"], ' ', (string) $cell);
             }, $mapped);
@@ -369,7 +410,7 @@ class ReportTransactionExport implements FromCollection, WithHeadings, ShouldAut
 
         return [
             'tsv' => implode("\r\n", $tsvLines),
-            'count' => $collection->count(),
+            'count' => $this->rowNumber,
         ];
     }
 }

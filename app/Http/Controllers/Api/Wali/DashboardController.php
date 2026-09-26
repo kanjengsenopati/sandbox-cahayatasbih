@@ -236,18 +236,20 @@ class DashboardController extends BaseWaliApiController
             'allow_pwa_saldo_payment' => true,
         ];
 
-        // Attach permissions to activeStudent object
         if ($activeStudent) {
             $activeStudent->show_pwa_saldo = $pwaPermissions['show_pwa_saldo'];
             $activeStudent->allow_pwa_login = $pwaPermissions['allow_pwa_login'];
             $activeStudent->allow_pwa_saldo_payment = $pwaPermissions['allow_pwa_saldo_payment'];
+            $activeStudent->setAttribute('effective_daily_limit', $activeStudent->getEffectiveDailyLimit());
+            $activeStudent->setAttribute('is_custom_limit', $activeStudent->daily_limit > 0 || $activeStudent->daily_limit == -1);
         }
 
-        // Attach permissions to each student in list
         $students->each(function ($st) {
             $st->show_pwa_saldo = $st->isPwaSaldoVisible();
             $st->allow_pwa_login = $st->isPwaLoginAllowed();
             $st->allow_pwa_saldo_payment = $st->isPwaSaldoPaymentAllowed();
+            $st->setAttribute('effective_daily_limit', $st->getEffectiveDailyLimit());
+            $st->setAttribute('is_custom_limit', $st->daily_limit > 0 || $st->daily_limit == -1);
         });
 
         $appSetting = \App\Models\ApplicationSetting::first();

@@ -228,7 +228,14 @@ class StudentController extends Controller
         if (empty($data['nickname']) && !empty($data['name'])) {
             $data['nickname'] = explode(' ', trim($data['name']))[0];
         }
-        Student::create($data);
+        $student = Student::create($data);
+        if ($student && $student->status === Student::STATUS_ACTIVE && $student->classroom_id) {
+            try {
+                \App\Jobs\SyncStudentBillsJob::dispatch($student->id);
+            } catch (\Throwable $th) {
+                \Illuminate\Support\Facades\Log::warning("Auto-sync bills for new student {$student->id}: " . $th->getMessage());
+            }
+        }
         if ($request->ajax()) {
             return response()->json(['success' => true, 'message' => 'Siswa berhasil ditambahkan']);
         }
@@ -315,7 +322,7 @@ class StudentController extends Controller
                         'billItem', 
                         'academicYear', 
                         'bills' => function ($query) use ($id) {
-                            $query->where('student_id', $id);
+                            $query->where('student_id', $id)->with('classroom');
                         }
                     ])
                     ->whereHas('bills', fn($query) => $query->where('student_id', $id))
@@ -323,6 +330,10 @@ class StudentController extends Controller
                     ->get();
 
                     return DataTables::of($data)
+                        ->addColumn('classroom', function ($data) use ($id) {
+                            $firstBill = $data->bills->where('student_id', $id)->first();
+                            return $firstBill && $firstBill->classroom ? $firstBill->classroom->name : '-';
+                        })
                         ->addColumn('total_unpaid', function ($data) use ($id) {
                             $totalUnpaid = $data->bills->where('student_id', $id)->sum('remaining_amount');
                             return 'Rp. ' . number_format($totalUnpaid, 0, ',', '.');
