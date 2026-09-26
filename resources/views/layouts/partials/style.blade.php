@@ -401,4 +401,37 @@
     }
 </style>
 
+<style>
+    /*
+     * GLOBAL FIX: Semua ikon di dalam button/anchor tidak menghalangi pointer events
+     * Ini memastikan klik pada ikon selalu bubble ke parent button/anchor,
+     * sehingga data-* attributes selalu terbaca dari elemen yang benar.
+     */
+    .btn i,
+    .btn svg,
+    .btn span.path1,
+    .btn span.path2,
+    .btn span.path3,
+    .btn span.path4,
+    .btn span.path5,
+    a.btn-delete i,
+    a.btn-delete svg,
+    [class*="btn-icon"] i,
+    [class*="btn-icon"] svg {
+        pointer-events: none !important;
+    }
+
+    /*
+     * Pastikan link WhatsApp dan link external selalu bisa diklik
+     * bahkan ketika dibungkus dalam DataTables atau container lain.
+     */
+    a[href^="https://wa.me"],
+    a[href^="https://wa.me"] *,
+    td a[target="_blank"],
+    td a[target="_blank"] * {
+        pointer-events: auto !important;
+        cursor: pointer !important;
+    }
+</style>
+
 @stack('css')

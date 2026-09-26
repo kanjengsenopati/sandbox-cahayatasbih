@@ -1,4 +1,4 @@
-<script src="{{ url('https://ajax.googleapis.com/ajax/libs/jquery/3.6.4/jquery.min.js') }}"></script>
+﻿<script src="{{ url('https://ajax.googleapis.com/ajax/libs/jquery/3.6.4/jquery.min.js') }}"></script>
 <script src="{{ asset('assets/plugins/global/plugins.bundle.js') }}"></script>
 <script src="{{ asset('assets/plugins/custom/datatables/datatables.bundle.js') }}"></script>
 <script src="{{ asset('assets/js/scripts.bundle.js') }}"></script>
@@ -53,8 +53,15 @@
                     align-items: center !important;\
                     justify-content: center !important;\
                 }\
-                .dt-processing-active {\
+                .dt-processing-active tbody td {\
                     pointer-events: none;\
+                    opacity: 0.6;\
+                }\
+                .dt-processing-active .btn,\
+                .dt-processing-active a,\
+                .dt-processing-active button {\
+                    pointer-events: auto !important;\
+                    opacity: 1 !important;\
                 }\
             ")
             .appendTo("head");
@@ -83,7 +90,12 @@
         }
     }
     $(document).on('click', '.btn-delete', function(e) {
-        var form = $("#" + $(this).data("id"));
+        e.preventDefault();
+        // Use currentTarget to always read data-id from the anchor/button, not from child icon
+        var btn = $(e.currentTarget);
+        var formId = btn.data('id') || btn.closest('[data-id]').data('id');
+        var form = $('#' + formId);
+        if (!form.length) return false;
         Swal.fire({
             title: 'Hapus Data',
             text: 'Anda yakin akan menghapus data ini ?, data yang telah dihapus tidak dapat dikembalikan',

@@ -160,7 +160,7 @@ class StudentController extends Controller
                             <div><strong>' . $userName . '</strong></div>
                             <div>' .
                         ($whatsappLink
-                            ? '<a href="' . $whatsappLink . '" target="_blank" style="text-decoration: none; color: inherit;">' . $userPhone . '</a>'
+                            ? '<a href="' . $whatsappLink . '" target="_blank" rel="noopener noreferrer" style="text-decoration: none; color: #25D366; font-weight: 500;" title="Chat via WhatsApp"><i class="fab fa-whatsapp me-1" style="pointer-events:none;"></i>' . $userPhone . '</a>'
                             : $userPhone
                         ) .
                         '</div>' . $badgeHtml . '

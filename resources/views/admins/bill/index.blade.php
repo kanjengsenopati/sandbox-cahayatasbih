@@ -456,8 +456,8 @@
                                                                         $waNumber = $cleanPhone;
                                                                     }
                                                                 @endphp
-                                                                <a href="https://wa.me/{{ $waNumber }}" target="_blank" class="text-emerald-600 fw-bold text-hover-primary d-inline-flex align-items-center gap-1">
-                                                                    <i class="fab fa-whatsapp text-emerald-600 fs-6"></i>
+                                                                <a href="https://wa.me/{{ $waNumber }}" target="_blank" rel="noopener noreferrer" class="text-emerald-600 fw-bold text-hover-primary d-inline-flex align-items-center gap-1">
+                                                                    <i class="fab fa-whatsapp text-emerald-600 fs-6" style="pointer-events:none;"></i>
                                                                     {{ $student->user->phone }}
                                                                 </a>
                                                             @else
