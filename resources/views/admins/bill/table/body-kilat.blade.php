@@ -52,6 +52,11 @@
         border-color: #2563eb !important;     /* Accent Primary */
         box-shadow: 0 4px 12px rgba(37, 99, 235, 0.08), 0 0 0 2px rgba(37, 99, 235, 0.15) !important;
     }
+    .month-card.clickable-payment-card,
+    .month-card.clickable-payment-card * {
+        cursor: pointer !important;
+        user-select: none;
+    }
     .form-check-custom .form-check-input {
         width: 1.5rem;
         height: 1.5rem;

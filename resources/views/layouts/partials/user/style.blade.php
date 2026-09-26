@@ -468,6 +468,79 @@
     @keyframes dt-spin {
         to { transform: rotate(360deg); }
     }
+
+    /*
+     * GLOBAL FIX: Cursor Pointer Konsisten untuk Semua Elemen Interaktif
+     */
+    a,
+    a:not([href]),
+    button:not([disabled]),
+    input[type="button"]:not([disabled]),
+    input[type="submit"]:not([disabled]),
+    input[type="reset"]:not([disabled]),
+    input[type="checkbox"]:not([disabled]),
+    input[type="radio"]:not([disabled]),
+    label[for],
+    .form-check-label,
+    .form-check-input,
+    [role="button"]:not([disabled]),
+    [role="tab"]:not([disabled]),
+    [onclick],
+    [data-bs-toggle],
+    [data-bs-dismiss],
+    .btn:not([disabled]):not(.disabled),
+    .nav-link:not(.disabled),
+    .nav-tabs .nav-link,
+    .nav-pills .nav-link,
+    .page-link:not(.disabled),
+    .accordion-button,
+    .dropdown-item:not(.disabled),
+    .cursor-pointer,
+    .clickable-row,
+    .product-card,
+    .month-card.clickable-payment-card,
+    .filter-badge {
+        cursor: pointer !important;
+    }
+
+    a:not(.disabled) *,
+    button:not([disabled]) *,
+    [role="button"] *,
+    [role="tab"] *,
+    [onclick] *,
+    [data-bs-toggle] *,
+    .btn:not([disabled]):not(.disabled) *,
+    .nav-link:not(.disabled) *,
+    .cursor-pointer *,
+    .product-card *,
+    .month-card.clickable-payment-card *,
+    .accordion-button *,
+    .dropdown-item:not(.disabled) *,
+    .filter-badge * {
+        cursor: pointer !important;
+    }
+
+    input[type="text"],
+    input[type="number"],
+    input[type="email"],
+    input[type="password"],
+    input[type="search"],
+    input[type="tel"],
+    input[type="url"],
+    textarea,
+    .form-control:not(.form-control-solid-bg):not([readonly]) {
+        cursor: text !important;
+    }
+
+    [disabled],
+    .disabled,
+    .btn[disabled],
+    .btn.disabled,
+    button[disabled],
+    .nav-link.disabled,
+    .page-item.disabled .page-link {
+        cursor: not-allowed !important;
+    }
 </style>
 
 @stack('css')
