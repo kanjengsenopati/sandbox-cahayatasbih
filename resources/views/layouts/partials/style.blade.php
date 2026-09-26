@@ -432,6 +432,90 @@
         pointer-events: auto !important;
         cursor: pointer !important;
     }
+
+    /*
+     * GLOBAL FIX: Cursor Pointer Konsisten untuk Semua Elemen Interaktif
+     * Memastikan setiap tombol, link, tab, card klik, accordion, badge, dan elemen interaktif
+     * memiliki cursor: pointer di SELURUH area (termasuk teks dan child-nya), bukan hanya di titik tertentu.
+     */
+    a,
+    a:not([href]),
+    button:not([disabled]),
+    input[type="button"]:not([disabled]),
+    input[type="submit"]:not([disabled]),
+    input[type="reset"]:not([disabled]),
+    input[type="checkbox"]:not([disabled]),
+    input[type="radio"]:not([disabled]),
+    label[for],
+    .form-check-label,
+    .form-check-input,
+    [role="button"]:not([disabled]),
+    [role="tab"]:not([disabled]),
+    [onclick],
+    [data-bs-toggle],
+    [data-bs-dismiss],
+    .btn:not([disabled]):not(.disabled),
+    .nav-link:not(.disabled),
+    .nav-tabs .nav-link,
+    .nav-pills .nav-link,
+    .page-link:not(.disabled),
+    .accordion-button,
+    .dropdown-item:not(.disabled),
+    .cursor-pointer,
+    .clickable-row,
+    .product-card,
+    .month-card.clickable-payment-card,
+    .filter-badge,
+    .hover-bank-trigger,
+    .hover-bank-detail-trigger,
+    table.dataTable thead th.sorting,
+    table.dataTable thead th.sorting_asc,
+    table.dataTable thead th.sorting_desc,
+    td.details-control {
+        cursor: pointer !important;
+    }
+
+    /* Memastikan child elemen di dalam container klik juga mewarisi cursor: pointer */
+    a:not(.disabled) *,
+    button:not([disabled]) *,
+    [role="button"] *,
+    [role="tab"] *,
+    [onclick] *,
+    [data-bs-toggle] *,
+    .btn:not([disabled]):not(.disabled) *,
+    .nav-link:not(.disabled) *,
+    .cursor-pointer *,
+    .product-card *,
+    .month-card.clickable-payment-card *,
+    .accordion-button *,
+    .dropdown-item:not(.disabled) *,
+    .filter-badge * {
+        cursor: pointer !important;
+    }
+
+    /* Pengecualian: Input text, textarea, dan elemen form input harus tetap cursor text */
+    input[type="text"],
+    input[type="number"],
+    input[type="email"],
+    input[type="password"],
+    input[type="search"],
+    input[type="tel"],
+    input[type="url"],
+    textarea,
+    .form-control:not(.form-control-solid-bg):not([readonly]) {
+        cursor: text !important;
+    }
+
+    /* Pengecualian: Elemen disabled harus cursor not-allowed */
+    [disabled],
+    .disabled,
+    .btn[disabled],
+    .btn.disabled,
+    button[disabled],
+    .nav-link.disabled,
+    .page-item.disabled .page-link {
+        cursor: not-allowed !important;
+    }
 </style>
 
 @stack('css')

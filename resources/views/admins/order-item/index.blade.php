@@ -62,8 +62,13 @@
         border: none !important;
         box-shadow: 0 8px 30px rgba(0, 0, 0, 0.04) !important;
         transition: all 0.2s ease-in-out;
-        cursor: pointer;
+        cursor: pointer !important;
         overflow: hidden;
+        user-select: none;
+    }
+    .product-card,
+    .product-card * {
+        cursor: pointer !important;
     }
     .product-card:hover {
         transform: translateY(-4px);

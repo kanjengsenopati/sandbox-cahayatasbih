@@ -1018,6 +1018,7 @@ window.currentSortDirection = 'asc';
             '<th class="w-50px">No.</th>' +
             '<th>ID / Code</th>' +
             '<th>Nama Record</th>' +
+
 '<th class="text-center">Status</th>' +
 '<th class="cursor-pointer text-primary" onclick="sortSyncItemsByStatus()" style="cursor: pointer;" title="Klik untuk mengurutkan Identik / Butuh Sync">Perbandingan Status Tagihan (Aplikasi Lama &rarr; Lokal) <i class="fas fa-sort ms-1" id="sort-icon-status"></i></th>' +
             '</tr>';
