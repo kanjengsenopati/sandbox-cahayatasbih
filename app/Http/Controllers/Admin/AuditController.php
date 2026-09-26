@@ -67,8 +67,25 @@ class AuditController extends Controller
         $syncHistory = \App\Models\DatabaseSyncLog::orderBy('id', 'desc')->take(10)->get();
 
         $schools = \Illuminate\Support\Facades\DB::connection('mysql_master')->table('schools')->whereNull('deleted_at')->get();
-        $classrooms = \Illuminate\Support\Facades\DB::connection('mysql_master')->table('classrooms')->whereNull('deleted_at')->get();
+        $classrooms = \Illuminate\Support\Facades\DB::connection('mysql_master')->table('classrooms')->whereNull('deleted_at')->orderBy('name', 'asc')->get();
         
+        foreach ($classrooms as $cls) {
+            $name = strtoupper(trim($cls->name));
+            $group = 'Lainnya / Tambahan';
+
+            if (preg_match('/^7/', $name)) $group = 'Kelas 7';
+            elseif (preg_match('/^8/', $name)) $group = 'Kelas 8';
+            elseif (preg_match('/^9/', $name)) $group = 'Kelas 9';
+            elseif (preg_match('/^10|^X\b|^X-/', $name)) $group = 'Kelas 10';
+            elseif (preg_match('/^11|^XI\b|^XI-/', $name)) $group = 'Kelas 11';
+            elseif (preg_match('/^12|^XII\b|^XII-/', $name)) $group = 'Kelas 12';
+            elseif (strpos($name, 'PONDOK') !== false || strpos($name, 'DEMO') !== false || strpos($name, 'CONTOH') !== false || strpos($name, 'USTADZ') !== false) {
+                $group = 'Pondok / Khusus';
+            }
+            
+            $cls->grade_group = $group;
+        }
+
         $academicYears = \Illuminate\Support\Facades\DB::connection('mysql_master')->table('academic_years')->whereNull('deleted_at')->orderBy('name', 'desc')->get();
         $billTypes = \Illuminate\Support\Facades\DB::connection('mysql_master')->table('bill_types')->whereNull('deleted_at')->orderBy('name', 'asc')->get();
 
