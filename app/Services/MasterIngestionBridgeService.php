@@ -612,6 +612,7 @@ class MasterIngestionBridgeService
         $driver = $localConn->getDriverName();
 
         try {
+            $localConn->beginTransaction();
             if ($driver === 'sqlite') {
                 $localConn->statement('PRAGMA foreign_keys = OFF;');
             } else {
@@ -639,13 +640,68 @@ class MasterIngestionBridgeService
                     if ($masterBills->isNotEmpty()) {
                         foreach ($masterBills as $mBill) {
                             $row = (array) $mBill;
-                            $rId = $row['id'];
-                            $exists = $localConn->table('bills')->where('id', $rId)->exists();
-                            if ($exists) {
+                            $targetBillTypeId = $mBill->bill_type_id;
+
+                            // Smart UUID Mapping
+                            $masterBillType = $masterConn->table('bill_types')->where('id', $mBill->bill_type_id)->first();
+                            if ($masterBillType) {
+                                $localBillType = $localConn->table('bill_types')
+                                    ->where('name', $masterBillType->name)
+                                    ->where('academic_year_id', $masterBillType->academic_year_id)
+                                    ->first();
+                                if ($localBillType) {
+                                    $targetBillTypeId = $localBillType->id;
+                                }
+                            }
+                            $row['bill_type_id'] = $targetBillTypeId;
+
+                            // Temukan bill lokal berdasarkan student_id, mapped bill_type_id, dan month
+                            $localBill = $localConn->table('bills')
+                                ->where('student_id', $mBill->student_id)
+                                ->where('bill_type_id', $targetBillTypeId)
+                                ->where('month', $mBill->month)
+                                ->first();
+
+                            $targetBillId = $mBill->id;
+
+                            if ($localBill) {
+                                $targetBillId = $localBill->id;
                                 unset($row['id']);
-                                $localConn->table('bills')->where('id', $rId)->update($row);
+                                $localConn->table('bills')->where('id', $targetBillId)->update($row);
                             } else {
+                                $targetBillId = $row['id'];
                                 $localConn->table('bills')->insert($row);
+                            }
+
+                            // Enforce Transactional Atomicity: Copy transactions when paid
+                            if ($mBill->status === 'PAID') {
+                                $mDetails = $masterConn->table('transaction_details')->where('bill_id', $mBill->id)->get();
+                                foreach ($mDetails as $mDetail) {
+                                    $mTx = $masterConn->table('transactions')->where('id', $mDetail->transaction_id)->first();
+                                    
+                                    if ($mTx && !$localConn->table('transactions')->where('id', $mTx->id)->exists()) {
+                                        $localConn->table('transactions')->insert((array) $mTx);
+                                        
+                                        // Also ingest saldo history if paid via SALDO
+                                        if ($mTx->payment_method_id) {
+                                            $mSaldoHist = $masterConn->table('saldo_histories')
+                                                ->where('transaction_id', $mTx->id)
+                                                ->get();
+                                            foreach ($mSaldoHist as $sh) {
+                                                if (!$localConn->table('saldo_histories')->where('id', $sh->id)->exists()) {
+                                                    $localConn->table('saldo_histories')->insert((array) $sh);
+                                                }
+                                            }
+                                        }
+                                    }
+                                    
+                                    $detailRow = (array) $mDetail;
+                                    $detailRow['bill_id'] = $targetBillId; // Re-map ke bill lokal
+                                    
+                                    if (!$localConn->table('transaction_details')->where('id', $detailRow['id'])->exists()) {
+                                        $localConn->table('transaction_details')->insert($detailRow);
+                                    }
+                                }
                             }
                         }
                     }
@@ -720,6 +776,7 @@ class MasterIngestionBridgeService
                 $localConn->statement('SET FOREIGN_KEY_CHECKS=1;');
             }
             Cache::forget('audit_diagnostics_results');
+            $localConn->commit();
 
             return [
                 'status' => 'success',
@@ -727,6 +784,7 @@ class MasterIngestionBridgeService
                 'message' => "Berhasil mengintegrasikan {$syncedCount} record terverifikasi untuk modul '{$module}'.",
             ];
         } catch (\Throwable $e) {
+            $localConn->rollBack();
             if ($driver === 'sqlite') {
                 $localConn->statement('PRAGMA foreign_keys = ON;');
             } else {
