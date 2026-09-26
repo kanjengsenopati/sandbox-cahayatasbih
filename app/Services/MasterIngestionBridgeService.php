@@ -699,6 +699,7 @@ class MasterIngestionBridgeService
                                 ->where('student_id', $mBill->student_id)
                                 ->where('bill_type_id', $targetBillTypeId)
                                 ->where('month', $mBill->month)
+                                ->whereNull('deleted_at')
                                 ->first();
 
                             $targetBillId = $mBill->id;
