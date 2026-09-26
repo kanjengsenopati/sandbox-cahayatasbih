@@ -479,6 +479,22 @@ class MasterIngestionBridgeService
             }
         }
 
+        // Smart UUID Mapping for Local Query
+        $localBillTypeId = $billTypeId;
+        if (!empty($billTypeId)) {
+            $masterBillTypeForAnalyze = $masterConn->table('bill_types')->where('id', $billTypeId)->first();
+            if ($masterBillTypeForAnalyze) {
+                $masterCleanName = str_replace(' ', '', $masterBillTypeForAnalyze->name);
+                $localBillTypeForAnalyze = $localConn->table('bill_types')
+                    ->whereRaw("REPLACE(name, ' ', '') = ?", [$masterCleanName])
+                    ->where('academic_year_id', $masterBillTypeForAnalyze->academic_year_id)
+                    ->first();
+                if ($localBillTypeForAnalyze) {
+                    $localBillTypeId = $localBillTypeForAnalyze->id;
+                }
+            }
+        }
+
         // 2. Bulk query for Local DB bills summary
         $localBillsGroup = [];
         if (!empty($studentIds)) {
@@ -489,8 +505,8 @@ class MasterIngestionBridgeService
             if (!empty($academicYearId)) {
                 $lQuery->where('academic_year_id', $academicYearId);
             }
-            if (!empty($billTypeId)) {
-                $lQuery->where('bill_type_id', $billTypeId);
+            if (!empty($localBillTypeId)) {
+                $lQuery->where('bill_type_id', $localBillTypeId);
             }
 
             $lRows = $lQuery->select('student_id', 'status', DB::raw('COUNT(*) as total_cnt'), DB::raw('SUM(amount) as total_amt'), DB::raw('GROUP_CONCAT(month) as months'))
@@ -645,8 +661,9 @@ class MasterIngestionBridgeService
                             // Smart UUID Mapping
                             $masterBillType = $masterConn->table('bill_types')->where('id', $mBill->bill_type_id)->first();
                             if ($masterBillType) {
+                                $masterCleanName = str_replace(' ', '', $masterBillType->name);
                                 $localBillType = $localConn->table('bill_types')
-                                    ->where('name', $masterBillType->name)
+                                    ->whereRaw("REPLACE(name, ' ', '') = ?", [$masterCleanName])
                                     ->where('academic_year_id', $masterBillType->academic_year_id)
                                     ->first();
                                 if ($localBillType) {
