@@ -72,7 +72,9 @@ class AuditController extends Controller
         $academicYears = \Illuminate\Support\Facades\DB::connection('mysql_master')->table('academic_years')->whereNull('deleted_at')->orderBy('name', 'desc')->get();
         $billTypes = \Illuminate\Support\Facades\DB::connection('mysql_master')->table('bill_types')->whereNull('deleted_at')->orderBy('name', 'asc')->get();
 
-        return view('admins.admin.audit.sync', compact('syncStatus', 'syncHistory', 'schools', 'classrooms', 'academicYears', 'billTypes'));
+        $localClassroomIds = \Illuminate\Support\Facades\DB::connection('mysql')->table('classrooms')->pluck('id')->toArray();
+
+        return view('admins.admin.audit.sync', compact('syncStatus', 'syncHistory', 'schools', 'classrooms', 'academicYears', 'billTypes', 'localClassroomIds'));
     }
 
     /**

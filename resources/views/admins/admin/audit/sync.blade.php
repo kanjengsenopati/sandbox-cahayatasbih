@@ -144,12 +144,43 @@
                                     </div>
                                     <div class="col-md-3">
                                         <label class="fs-8 fw-bolder text-gray-700 mb-1"><i class="fas fa-chalkboard-teacher text-danger me-1"></i> Filter Kelas:</label>
-                                        <select class="form-select form-select-sm fw-bold border-danger style-slim-select" id="select-filter-classroom" onchange="fetchMasterDiff(document.getElementById('current-merge-module').value)">
-                                            <option value="">Semua Kelas</option>
-                                            @foreach($classrooms ?? [] as $cls)
-                                                <option value="{{ $cls->id }}" data-school="{{ $cls->school_id }}">{{ $cls->name }}</option>
-                                            @endforeach
-                                        </select>
+                                        <div class="dropdown w-100">
+                                            <button class="btn btn-sm btn-outline btn-outline-danger w-100 text-start fw-bold d-flex justify-content-between align-items-center bg-white" type="button" id="dropdownMenuClassroom" data-bs-toggle="dropdown" aria-expanded="false">
+                                                <span id="btn-classroom-text">Semua Kelas</span>
+                                                <i class="fas fa-chevron-down fs-8"></i>
+                                            </button>
+                                            <input type="hidden" id="select-filter-classroom" value="">
+                                            <div class="dropdown-menu p-3 shadow" aria-labelledby="dropdownMenuClassroom" style="min-width: 450px; max-height: 400px; overflow-y: auto;">
+                                                <a class="dropdown-item fw-bold text-danger mb-3 p-2 rounded-2 bg-light-danger" href="#" onclick="selectClassroom('', 'Semua Kelas'); return false;">
+                                                    <i class="fas fa-times-circle me-2"></i> Reset Filter Kelas
+                                                </a>
+                                                @foreach($schools ?? [] as $sch)
+                                                    <div class="school-group-header mb-3" data-school="{{ $sch->id }}">
+                                                        <h6 class="dropdown-header px-0 text-primary fw-bolder border-bottom pb-1 mb-2">{{ $sch->name }}</h6>
+                                                        <div class="row g-2">
+                                                            @foreach($classrooms ?? [] as $cls)
+                                                                @if($cls->school_id == $sch->id)
+                                                                    @php 
+                                                                        $isLocked = in_array($cls->id, $localClassroomIds ?? []); 
+                                                                    @endphp
+                                                                    <div class="col-4 classroom-col" data-school="{{ $sch->id }}">
+                                                                        @if($isLocked)
+                                                                            <button type="button" class="btn btn-sm btn-light-secondary w-100 text-start fs-8 text-muted classroom-item" style="cursor: not-allowed; opacity: 0.7;" disabled title="Sudah disinkronisasi (Locked for idempotency)">
+                                                                                <i class="fas fa-lock me-1"></i> {{ $cls->name }}
+                                                                            </button>
+                                                                        @else
+                                                                            <button type="button" class="btn btn-sm btn-outline btn-outline-dashed btn-outline-primary w-100 text-start fs-8 classroom-item" onclick="selectClassroom('{{ $cls->id }}', '{{ addslashes($cls->name) }}'); return false;">
+                                                                                <i class="fas fa-unlock text-success me-1"></i> {{ $cls->name }}
+                                                                            </button>
+                                                                        @endif
+                                                                    </div>
+                                                                @endif
+                                                            @endforeach
+                                                        </div>
+                                                    </div>
+                                                @endforeach
+                                            </div>
+                                        </div>
                                     </div>
                                     <div class="col-md-3">
                                         <label class="fs-8 fw-bolder text-gray-700 mb-1"><i class="fas fa-calendar-alt text-danger me-1"></i> Tahun Ajaran:</label>
@@ -843,22 +874,25 @@
             fetchMasterDiff(document.getElementById('current-merge-module').value);
         }
 
+        function selectClassroom(id, name) {
+            document.getElementById('select-filter-classroom').value = id;
+            document.getElementById('btn-classroom-text').innerText = name;
+            fetchMasterDiff(document.getElementById('current-merge-module').value);
+        }
+
         function onSchoolFilterChange() {
             var schoolId = document.getElementById('select-filter-school').value;
-            var classSelect = document.getElementById('select-filter-classroom');
-            var options = classSelect.querySelectorAll('option');
+            
+            // Reset Classroom Selection
+            document.getElementById('select-filter-classroom').value = '';
+            document.getElementById('btn-classroom-text').innerText = 'Semua Kelas';
 
-            classSelect.value = '';
-            options.forEach(function(opt) {
-                if (!opt.value) {
-                    opt.style.display = '';
-                    return;
-                }
-                var optSchool = opt.getAttribute('data-school');
-                if (!schoolId || optSchool === schoolId) {
-                    opt.style.display = '';
+            // Filter the custom dropdown headers and columns
+            document.querySelectorAll('.school-group-header').forEach(function(hdr) {
+                if (!schoolId || hdr.getAttribute('data-school') === schoolId) {
+                    hdr.style.display = '';
                 } else {
-                    opt.style.display = 'none';
+                    hdr.style.display = 'none';
                 }
             });
 
