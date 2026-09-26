@@ -106,7 +106,7 @@
                                         <i class="fas fa-search-plus text-primary fs-2"></i> Preview & Verifikasi Diff Data Aplikasi Lama
                                     </h3>
                                     <span class="text-muted mt-1 fw-bold fs-7">
-                                        Menampilkan perbandingan presisi data Aplikasi Lama (<code>cahayatasbihdb</code>) vs Lokal (<code>aplikasidb</code>) tanpa menimpa data otomatis.
+                                        Menampilkan perbandingan presisi data Aplikasi Lama (<code>{{ \Illuminate\Support\Facades\DB::connection('mysql_master')->getDatabaseName() }}</code>) vs Lokal (<code>{{ \Illuminate\Support\Facades\DB::connection()->getDatabaseName() }}</code>) tanpa menimpa data otomatis.
                                     </span>
                                 </div>
                                 <div class="card-toolbar d-flex align-items-center gap-3">
@@ -212,7 +212,7 @@
                                         <h3 class="card-label fw-bolder text-dark">Sinkronisasi Database Aplikasi Lama (Full Sync)</h3>
                                         <span class="text-muted mt-1 fw-bold fs-7">
                                             Menyinkronkan data transaksi harian (30 hari terakhir) secara inkremental dari
-                                            <code>cahayatasbihdb</code> ke <code>aplikasidb</code>.
+                                            <code>{{ \Illuminate\Support\Facades\DB::connection('mysql_master')->getDatabaseName() }}</code> ke <code>{{ \Illuminate\Support\Facades\DB::connection()->getDatabaseName() }}</code>.
                                         </span>
                                     </div>
                                     <div class="card-toolbar">
