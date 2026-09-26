@@ -194,7 +194,7 @@
                                         <select class="form-select form-select-sm fw-bold border-danger style-slim-select" id="select-filter-bill-type" onchange="fetchMasterDiff(document.getElementById('current-merge-module').value)">
                                             <option value="">Semua Jenis Tagihan</option>
                                             @foreach($billTypes ?? [] as $bt)
-                                                <option value="{{ $bt->id }}" data-academic-year-id="{{ $bt->academic_year_id ?? '' }}">{{ $bt->name }}</option>
+                                                <option value="{{ $bt->id }}" data-academic-year-id="{{ $bt->academic_year_id ?? '' }}" data-school-id="{{ $bt->school_id ?? '' }}">{{ $bt->name }}</option>
                                             @endforeach
                                         </select>
                                     </div>
@@ -862,9 +862,11 @@
             updateMergeButtonState();
         }
 
-        function onAcademicYearChange() {
-            var yearId = document.getElementById('select-filter-academic-year').value;
+        function filterBillTypesDropdown() {
+            var yearId = document.getElementById('select-filter-academic-year') ? document.getElementById('select-filter-academic-year').value : '';
+            var schoolId = document.getElementById('select-filter-school') ? document.getElementById('select-filter-school').value : '';
             var billSelect = document.getElementById('select-filter-bill-type');
+            if(!billSelect) return;
             var options = billSelect.querySelectorAll('option');
 
             var currentSelectedValid = false;
@@ -875,8 +877,14 @@
                     if (billSelect.value === opt.value) currentSelectedValid = true;
                     return;
                 }
+                
                 var optYearId = opt.getAttribute('data-academic-year-id');
-                if (!yearId || optYearId === yearId) {
+                var optSchoolId = opt.getAttribute('data-school-id');
+                
+                var matchYear = !yearId || optYearId === yearId;
+                var matchSchool = !schoolId || !optSchoolId || optSchoolId === schoolId;
+
+                if (matchYear && matchSchool) {
                     opt.style.display = '';
                     if (billSelect.value === opt.value) currentSelectedValid = true;
                 } else {
@@ -887,7 +895,10 @@
             if (!currentSelectedValid) {
                 billSelect.value = '';
             }
+        }
 
+        function onAcademicYearChange() {
+            filterBillTypesDropdown();
             fetchMasterDiff(document.getElementById('current-merge-module').value);
         }
 
@@ -913,6 +924,7 @@
                 }
             });
 
+            filterBillTypesDropdown();
             fetchMasterDiff(document.getElementById('current-merge-module').value);
         }
 
@@ -964,8 +976,32 @@ function renderMonthlyCards(info) {
     return html;
 }
 
-function renderCurrentPage() {
-    var tbody = document.getElementById('tbody-diff-preview');
+window.currentSortDirection = 'asc';
+        function sortSyncItemsByStatus() {
+            if (!window.currentSyncItems || window.currentSyncItems.length === 0) return;
+            window.currentSortDirection = window.currentSortDirection === 'asc' ? 'desc' : 'asc';
+            
+            window.currentSyncItems.sort(function(a, b) {
+                var valA = a.status || '';
+                var valB = b.status || '';
+                if (valA < valB) return window.currentSortDirection === 'asc' ? -1 : 1;
+                if (valA > valB) return window.currentSortDirection === 'asc' ? 1 : -1;
+                return 0;
+            });
+            
+            window.currentPage = 1;
+            renderCurrentPage();
+            
+            setTimeout(function() {
+                var icon = document.getElementById('sort-icon-status');
+                if (icon) {
+                    icon.className = window.currentSortDirection === 'asc' ? 'fas fa-sort-up ms-1' : 'fas fa-sort-down ms-1';
+                }
+            }, 50);
+        }
+
+        function renderCurrentPage() {
+            var tbody = document.getElementById('tbody-diff-preview');
     var thead = document.getElementById('thead-diff-preview');
     var scrollContainer = document.getElementById('table-scroll-container');
     var pagContainer = document.getElementById('pagination-container');
@@ -980,7 +1016,7 @@ function renderCurrentPage() {
             '<th class="w-50px">No.</th>' +
             '<th>ID / Code</th>' +
             '<th>Nama Record</th>' +
-            '<th>Perbandingan Status Tagihan (Aplikasi Lama &rarr; Lokal)</th>' +
+            '<th class="cursor-pointer text-primary" onclick="sortSyncItemsByStatus()" style="cursor: pointer;" title="Klik untuk mengurutkan Identik / Butuh Sync">Perbandingan Status Tagihan (Aplikasi Lama &rarr; Lokal) <i class="fas fa-sort ms-1" id="sort-icon-status"></i></th>' +
             '</tr>';
     } else {
         scrollContainer.style.maxHeight = '380px';
