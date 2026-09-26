@@ -527,28 +527,37 @@
                                                     <td class="ps-4">
                                                         <span class="text-dark fw-bolder fs-6">{{ $table }}</span>
                                                     </td>
-                                                    <td class="text-center">
-                                                        @if ($info['status'] === 'success')
-                                                            <span class="badge badge-light-success fw-bolder fs-8">SUCCESS</span>
-                                                        @elseif ($info['status'] === 'skipped')
-                                                            <span class="badge badge-light-warning fw-bolder fs-8">SKIPPED</span>
-                                                        @else
-                                                            <span class="badge badge-light-danger fw-bolder fs-8">FAILED</span>
-                                                        @endif
-                                                    </td>
-                                                    <td class="text-end pe-4">
-                                                         <span class="text-dark fw-bold fs-6">
-                                                             {{ isset($info['rows_synced']) ? number_format($info['rows_synced']) . ' baris' : '-' }}
-                                                         </span>
-                                                         @if (isset($info['min_date']) && $info['min_date'])
-                                                             <div class="text-muted fs-8 mt-1">
-                                                                 <i class="far fa-calendar-alt me-1 fs-9 text-slate-400"></i>
-                                                                 {{ \Carbon\Carbon::parse($info['min_date'])->format('d M Y') }} 
-                                                                 s/d 
-                                                                 {{ \Carbon\Carbon::parse($info['max_date'])->format('d M Y') }}
-                                                             </div>
-                                                         @endif
-                                                    </td>
+                                                    @if (is_array($info))
+                                                        <td class="text-center">
+                                                            @if (isset($info['status']) && $info['status'] === 'success')
+                                                                <span class="badge badge-light-success fw-bolder fs-8">SUCCESS</span>
+                                                            @elseif (isset($info['status']) && $info['status'] === 'skipped')
+                                                                <span class="badge badge-light-warning fw-bolder fs-8">SKIPPED</span>
+                                                            @else
+                                                                <span class="badge badge-light-danger fw-bolder fs-8">FAILED</span>
+                                                            @endif
+                                                        </td>
+                                                        <td class="text-end pe-4">
+                                                             <span class="text-dark fw-bold fs-6">
+                                                                 {{ isset($info['rows_synced']) ? number_format($info['rows_synced']) . ' baris' : '-' }}
+                                                             </span>
+                                                             @if (isset($info['min_date']) && $info['min_date'])
+                                                                 <div class="text-muted fs-8 mt-1">
+                                                                     <i class="far fa-calendar-alt me-1 fs-9 text-slate-400"></i>
+                                                                     {{ \Carbon\Carbon::parse($info['min_date'])->format('d M Y') }} 
+                                                                     s/d 
+                                                                     {{ \Carbon\Carbon::parse($info['max_date'])->format('d M Y') }}
+                                                                 </div>
+                                                             @endif
+                                                        </td>
+                                                    @else
+                                                        <td class="text-center">
+                                                            <span class="badge badge-light-danger fw-bolder fs-8" title="Data corrupted">INVALID</span>
+                                                        </td>
+                                                        <td class="text-end pe-4">
+                                                            <span class="text-muted fs-7">Format data log tidak valid</span>
+                                                        </td>
+                                                    @endif
                                                 </tr>
                                             @endforeach
                                         </tbody>
