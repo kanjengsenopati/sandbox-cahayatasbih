@@ -586,16 +586,17 @@ class MasterIngestionBridgeService
                 $status = 'NEW_RECORD';
                 $result['status_summary']['new_count']++;
                 $diffInfo['local']['is_empty'] = true;
-                $diffs['Status Tagihan Siswa'] = $diffInfo;
             } else {
                 if ($mPaidCount !== $lPaidCount || $mBillsCount !== $lBillsCount || $mPaidAmount !== $lPaidAmount) {
                     $status = 'UPDATE_REQUIRED';
                     $result['status_summary']['update_count']++;
-                    $diffs['Status Tagihan Siswa'] = $diffInfo;
                 } else {
                     $result['status_summary']['match_count']++;
                 }
             }
+            
+            // ALWAYS assign diffInfo for billing_status so the UI can render the monthly cards even if EXACT_MATCH
+            $diffs['Status Tagihan Siswa'] = $diffInfo;
 
             $result['items'][] = [
                 'id' => $mRec->id,

@@ -254,7 +254,7 @@ class AuditController extends Controller
         $result = $bridgeService->executeVerifiedMerge($module, $selectedIds, $academicYearId, $billTypeId);
 
         if ($result['status'] === 'success') {
-            return redirect()->back()->with('success', $result['message']);
+            return redirect()->back()->with('success', $result['message'])->with('synced_ids', $selectedIds);
         }
 
         return redirect()->back()->with('error', $result['message']);
