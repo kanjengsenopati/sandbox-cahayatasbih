@@ -11,7 +11,7 @@ use App\Services\TransactionService;
 
 class AuditTagihanController extends Controller
 {
-        public function index(Request $request)
+    public function index(Request $request)
     {
         $user = auth()->user();
         $isSuperAdmin = $user->hasRole('Super Admin') || $user->hasRole('SUPER ADMIN');
