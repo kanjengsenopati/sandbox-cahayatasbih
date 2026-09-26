@@ -999,7 +999,17 @@
                 tbody.innerHTML = html;
                 updateMergeButtonState();
             }).catch(function(err) {
-                tbody.innerHTML = '<tr><td colspan="5" class="text-center py-5 text-danger"><i class="fas fa-exclamation-triangle me-2"></i> Gagal memuat data diff: ' + (err.message || 'Error Server') + '</td></tr>';
+                var errorMsg = err.message || 'Error Server';
+                if (err.response && err.response.data && err.response.data.error) {
+                    errorMsg = err.response.data.error;
+                }
+                tbody.innerHTML = '<tr><td colspan="5" class="text-center py-5 text-danger fw-bolder bg-light-danger border border-danger border-opacity-25 rounded-3"><i class="fas fa-exclamation-triangle fs-2x mb-3 d-block text-danger"></i> ' + errorMsg + '</td></tr>';
+                
+                // Reset counters
+                document.getElementById('cnt-new').innerText = '🟢 Aplikasi Lama Baru: 0';
+                document.getElementById('cnt-update').innerText = '🟡 Butuh Update: 0';
+                document.getElementById('cnt-match').innerText = '🔵 100% Identik: 0';
+                document.getElementById('cnt-conflict').innerText = '🔴 Konflik Mapping: 0';
             });
         }
 

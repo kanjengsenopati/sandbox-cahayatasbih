@@ -214,6 +214,15 @@ class AuditController extends Controller
         $academicYearId = $request->input('academic_year_id');
         $billTypeId = $request->input('bill_type_id');
 
+        // STRICT CONSTRAINT: Hardening data filter untuk billing_status
+        if ($module === 'billing_status') {
+            if (empty($academicYearId) || empty($billTypeId)) {
+                return response()->json([
+                    'error' => 'Validasi Gagal: Anda harus memilih Tahun Ajaran dan Jenis Tagihan untuk melihat Status Tagihan.',
+                ], 422);
+            }
+        }
+
         $diffAnalysis = $bridgeService->analyzeModuleDiff($module, $limit, $schoolId, $classroomId, $academicYearId, $billTypeId);
 
         return response()->json($diffAnalysis);
