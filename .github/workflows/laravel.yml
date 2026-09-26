@@ -33,7 +33,7 @@ jobs:
       - name: Copy .env example
         run: cp .env.example .env
       - name: Create storage directories
-        run: mkdir -p storage/framework/cache storage/framework/sessions storage/framework/views storage/app/public
+        run: mkdir -p bootstrap/cache storage/framework/cache storage/framework/sessions storage/framework/views storage/app/public
       - name: Generate app key
         run: php artisan key:generate
       - name: Run composer post-install tasks
