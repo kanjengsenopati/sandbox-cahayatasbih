@@ -216,9 +216,9 @@
                                     <input type="hidden" name="academic_year_id" id="hidden_academic_year_id" value="">
                                     <input type="hidden" name="bill_type_id" id="hidden_bill_type_id" value="">
 
-                                    <div class="table-responsive style-slim-scroll" style="max-height: 380px;">
+                                    <div class="table-responsive style-slim-scroll" id="table-scroll-container" style="max-height: 380px;">
                                         <table class="table table-hover table-striped align-middle table-row-dashed fs-7 gy-3" id="tbl-diff-preview">
-                                            <thead class="bg-light sticky-top">
+                                            <thead class="bg-light sticky-top" id="thead-diff-preview">
                                                 <tr class="text-start text-gray-500 fw-bolder text-uppercase tracking-wider">
                                                     <th class="w-40px px-3">
                                                         <input class="form-check-input" type="checkbox" id="chk-all-diff" onchange="toggleAllDiffCheckboxes(this)">
@@ -237,6 +237,25 @@
                                                 </tr>
                                             </tbody>
                                         </table>
+                                    </div>
+
+                                    <!-- Pagination Container (Khusus Status Tagihan) -->
+                                    <div id="pagination-container" class="d-none align-items-center justify-content-between pt-4 mt-2">
+                                        <div class="d-flex align-items-center">
+                                            <span class="text-muted fs-7 me-2">Tampilkan</span>
+                                            <select id="select-page-size" class="form-select form-select-sm form-select-solid w-75px" onchange="window.itemsPerPage = parseInt(this.value); window.currentPage = 1; renderCurrentPage();">
+                                                <option value="15" selected>15</option>
+                                                <option value="30">30</option>
+                                                <option value="50">50</option>
+                                            </select>
+                                            <span class="text-muted fs-7 ms-2">baris</span>
+                                        </div>
+                                        <div class="d-flex align-items-center">
+                                            <span class="text-muted fs-7 me-4" id="pagination-info">Menampilkan 0-0 dari 0</span>
+                                            <ul class="pagination pagination-sm m-0" id="pagination-links">
+                                                <!-- Links di-generate via JS -->
+                                            </ul>
+                                        </div>
                                     </div>
 
                                     <div class="d-flex align-items-center justify-content-between pt-4 mt-3 border-top">
@@ -897,121 +916,293 @@
             fetchMasterDiff(document.getElementById('current-merge-module').value);
         }
 
-        function fetchMasterDiff(module, btnEl) {
-            if (btnEl) {
-                document.querySelectorAll('.btn-mod-tab').forEach(function(b) { b.classList.remove('active'); });
-                btnEl.classList.add('active');
-            }
-            document.getElementById('current-merge-module').value = module;
+        window.currentSyncItems = [];
+window.currentSyncModule = '';
+window.currentPage = 1;
+window.itemsPerPage = 15;
 
-            // Toggle filter container visibility
-            var filterBox = document.getElementById('billing-filter-container');
-            if (filterBox) {
-                if (module === 'billing_status') {
-                    filterBox.classList.remove('d-none');
-                } else {
-                    filterBox.classList.add('d-none');
-                }
-            }
+function getMonthAbbr(m) {
+    var map = { '7':'JUL', '8':'AGU', '9':'SEP', '10':'OKT', '11':'NOV', '12':'DES', '1':'JAN', '2':'FEB', '3':'MAR', '4':'APR', '5':'MEI', '6':'JUN' };
+    return map[m] || m;
+}
 
-            // Reset active filter
-            filterDiffTable('ALL', null);
+function renderMonthlyCards(info) {
+    var order = ['7','8','9','10','11','12','1','2','3','4','5','6'];
+    var html = '<div class="d-flex flex-column gap-2">';
+    
+    // Master Row
+    html += '<div class="d-flex align-items-center gap-1">';
+    html += '<span class="badge bg-light text-dark me-2 w-75px fs-9 text-start">Lama</span>';
+    order.forEach(function(m) {
+        var isPaid = info.master.paid_months.indexOf(m) !== -1 || info.master.paid_months.indexOf(parseInt(m)) !== -1;
+        var isUnpaid = info.master.unpaid_months.indexOf(m) !== -1 || info.master.unpaid_months.indexOf(parseInt(m)) !== -1;
+        var bg = 'bg-light text-muted';
+        if (isPaid) bg = 'bg-success text-white';
+        else if (isUnpaid) bg = 'bg-light-danger text-danger';
+        html += '<div class="badge rounded px-2 py-1 fs-9 fw-bolder ' + bg + '" style="width:32px;">' + getMonthAbbr(m) + '</div>';
+    });
+    html += '</div>';
 
-            var limitSelect = document.getElementById('select-diff-limit');
-            var limitVal = limitSelect ? parseInt(limitSelect.value) : 50;
+    // Local Row
+    html += '<div class="d-flex align-items-center gap-1">';
+    html += '<span class="badge bg-light text-dark me-2 w-75px fs-9 text-start">Lokal</span>';
+    if (info.local.is_empty) {
+        html += '<span class="badge bg-light-danger text-danger px-2 py-1 fs-9 fw-bolder w-100 text-start">Belum Ada Record</span>';
+    } else {
+        order.forEach(function(m) {
+            var isPaid = info.local.paid_months.indexOf(m) !== -1 || info.local.paid_months.indexOf(parseInt(m)) !== -1;
+            var isUnpaid = info.local.unpaid_months.indexOf(m) !== -1 || info.local.unpaid_months.indexOf(parseInt(m)) !== -1;
+            var bg = 'bg-light text-muted';
+            if (isPaid) bg = 'bg-success text-white';
+            else if (isUnpaid) bg = 'bg-light-danger text-danger';
+            html += '<div class="badge rounded px-2 py-1 fs-9 fw-bolder ' + bg + '" style="width:32px;">' + getMonthAbbr(m) + '</div>';
+        });
+    }
+    html += '</div>';
 
-            var schoolId = document.getElementById('select-filter-school') ? document.getElementById('select-filter-school').value : '';
-            var classroomId = document.getElementById('select-filter-classroom') ? document.getElementById('select-filter-classroom').value : '';
-            var academicYearId = document.getElementById('select-filter-academic-year') ? document.getElementById('select-filter-academic-year').value : '';
-            var billTypeId = document.getElementById('select-filter-bill-type') ? document.getElementById('select-filter-bill-type').value : '';
+    html += '</div>';
+    return html;
+}
 
-            if (document.getElementById('hidden_academic_year_id')) document.getElementById('hidden_academic_year_id').value = academicYearId;
-            if (document.getElementById('hidden_bill_type_id')) document.getElementById('hidden_bill_type_id').value = billTypeId;
+function renderCurrentPage() {
+    var tbody = document.getElementById('tbody-diff-preview');
+    var thead = document.getElementById('thead-diff-preview');
+    var scrollContainer = document.getElementById('table-scroll-container');
+    var pagContainer = document.getElementById('pagination-container');
+    
+    if (window.currentSyncModule === 'billing_status') {
+        scrollContainer.style.maxHeight = 'none';
+        pagContainer.classList.remove('d-none');
+        pagContainer.classList.add('d-flex');
+        
+        thead.innerHTML = '<tr class="text-start text-gray-500 fw-bolder text-uppercase tracking-wider">' +
+            '<th class="w-40px px-3"><input class="form-check-input" type="checkbox" id="chk-all-diff" onchange="toggleAllDiffCheckboxes(this)"></th>' +
+            '<th class="w-50px">No.</th>' +
+            '<th>ID / Code</th>' +
+            '<th>Nama Record</th>' +
+            '<th>Perbandingan Status Tagihan (Aplikasi Lama &rarr; Lokal)</th>' +
+            '</tr>';
+    } else {
+        scrollContainer.style.maxHeight = '380px';
+        pagContainer.classList.remove('d-flex');
+        pagContainer.classList.add('d-none');
+        
+        thead.innerHTML = '<tr class="text-start text-gray-500 fw-bolder text-uppercase tracking-wider">' +
+            '<th class="w-40px px-3"><input class="form-check-input" type="checkbox" id="chk-all-diff" onchange="toggleAllDiffCheckboxes(this)"></th>' +
+            '<th>ID / Code</th>' +
+            '<th>Nama Record</th>' +
+            '<th>Status Mapping</th>' +
+            '<th>Perbandingan Kolom (Aplikasi Lama &rarr; Lokal)</th>' +
+            '</tr>';
+    }
 
-            var tbody = document.getElementById('tbody-diff-preview');
-            tbody.innerHTML = '<tr><td colspan="5" class="text-center py-5 text-muted"><i class="fas fa-spinner fa-spin me-2"></i> Memuat analisis perbandingan module ' + module + ' (' + (limitVal >= 1000 ? 'Semua Data Master' : limitVal + ' Record') + ')...</td></tr>';
+    var items = window.currentSyncItems;
+    if (items.length === 0) {
+        var colSpan = window.currentSyncModule === 'billing_status' ? 5 : 5;
+        tbody.innerHTML = '<tr><td colspan="'+colSpan+'" class="text-center py-5 text-muted">Tidak ada data ditemukan untuk filter ini.</td></tr>';
+        renderPaginationLinks(0);
+        return;
+    }
 
-            axios.post('{{ route("admin.audit.preview-pull-master") }}', {
-                module: module,
-                limit: limitVal,
-                school_id: schoolId,
-                classroom_id: classroomId,
-                academic_year_id: academicYearId,
-                bill_type_id: billTypeId
-            }).then(function(res) {
-                var data = res.data;
-                var summary = data.status_summary || {};
+    var startIndex = 0;
+    var endIndex = items.length;
+    
+    if (window.currentSyncModule === 'billing_status') {
+        startIndex = (window.currentPage - 1) * window.itemsPerPage;
+        endIndex = startIndex + window.itemsPerPage;
+    }
+    
+    var paginatedItems = items.slice(startIndex, endIndex);
+    var html = '';
+    
+    paginatedItems.forEach(function(item, idx) {
+        var badgeClass = 'bg-light-info text-info';
+        var badgeLabel = '🔵 100% IDENTIK';
 
-                document.getElementById('cnt-new').innerText = '🟢 Aplikasi Lama Baru: ' + (summary.new_count || 0);
-                document.getElementById('cnt-update').innerText = '🟡 Butuh Update: ' + (summary.update_count || 0);
-                document.getElementById('cnt-match').innerText = '🔵 100% Identik: ' + (summary.match_count || 0);
-                document.getElementById('cnt-conflict').innerText = '🔴 Konflik Mapping: ' + (summary.conflict_count || 0);
-
-                var items = data.items || [];
-                if (items.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="5" class="text-center py-5 text-muted">Tidak ada data ditemukan untuk module ini.</td></tr>';
-                    return;
-                }
-
-                var html = '';
-                items.forEach(function(item) {
-                    var badgeClass = 'bg-light-info text-info';
-                    var badgeLabel = '🔵 100% IDENTIK';
-
-                    if (item.status === 'NEW_RECORD') {
-                        badgeClass = 'bg-light-success text-success';
-                        badgeLabel = '🟢 APLIKASI LAMA BARU';
-                    } else if (item.status === 'UPDATE_REQUIRED') {
-                        badgeClass = 'bg-light-warning text-warning';
-                        badgeLabel = '🟡 BUTUH UPDATE';
-                    } else if (item.status === 'CONFLICT') {
-                        badgeClass = 'bg-light-danger text-danger';
-                        badgeLabel = '🔴 KONFLIK';
-                    }
-
-                    var diffHtml = '';
-                    if (item.diffs && Object.keys(item.diffs).length > 0) {
-                        diffHtml = '<ul class="mb-0 ps-3 fs-8" style="color: #374151; font-weight: 500;">';
-                        for (var k in item.diffs) {
-                            if (typeof item.diffs[k] === 'object') {
-                                diffHtml += '<li class="my-1"><code class="text-primary fw-bolder px-1 py-0.5 bg-light-primary rounded" style="font-size: 11px;">' + k + '</code>: Aplikasi Lama (<span class="fw-bolder text-dark bg-light-warning text-warning px-1.5 py-0.5 rounded border border-warning border-opacity-25">"' + (item.diffs[k].master||'-') + '"</span>) vs Lokal (<span class="fw-bolder text-gray-800 bg-light px-1.5 py-0.5 rounded border border-gray-300">"' + (item.diffs[k].local||'-') + '"</span>)</li>';
-                            } else {
-                                diffHtml += '<li class="my-1"><span class="text-danger fw-bold">' + item.diffs[k] + '</span></li>';
-                            }
-                        }
-                        diffHtml += '</ul>';
-                    } else {
-                        diffHtml = '<span class="fw-semibold fs-8" style="color: #4b5563;">Data aplikasi lama dan lokal presisi identik</span>';
-                    }
-
-                    var isCheckable = (item.status !== 'EXACT_MATCH');
-                    var checkAttr = isCheckable ? 'checked' : 'disabled';
-
-                    html += '<tr data-status="' + item.status + '">';
-                    html += '<td class="px-3"><input class="form-check-input chk-diff-item" type="checkbox" name="selected_ids[]" value="' + item.id + '" ' + checkAttr + ' onchange="updateMergeButtonState()"></td>';
-                    html += '<td class="fw-bold fs-7"><code>' + (item.code_or_nis || item.id) + '</code></td>';
-                    html += '<td class="fw-bolder text-dark">' + item.name + '</td>';
-                    html += '<td><span class="badge ' + badgeClass + ' fw-bolder fs-8 px-2 py-1">' + badgeLabel + '</span></td>';
-                    html += '<td>' + diffHtml + '</td>';
-                    html += '</tr>';
-                });
-
-                tbody.innerHTML = html;
-                updateMergeButtonState();
-            }).catch(function(err) {
-                var errorMsg = err.message || 'Error Server';
-                if (err.response && err.response.data && err.response.data.error) {
-                    errorMsg = err.response.data.error;
-                }
-                tbody.innerHTML = '<tr><td colspan="5" class="text-center py-5 text-danger fw-bolder bg-light-danger border border-danger border-opacity-25 rounded-3"><i class="fas fa-exclamation-triangle fs-2x mb-3 d-block text-danger"></i> ' + errorMsg + '</td></tr>';
-                
-                // Reset counters
-                document.getElementById('cnt-new').innerText = '🟢 Aplikasi Lama Baru: 0';
-                document.getElementById('cnt-update').innerText = '🟡 Butuh Update: 0';
-                document.getElementById('cnt-match').innerText = '🔵 100% Identik: 0';
-                document.getElementById('cnt-conflict').innerText = '🔴 Konflik Mapping: 0';
-            });
+        if (item.status === 'NEW_RECORD') {
+            badgeClass = 'bg-light-success text-success';
+            badgeLabel = '🟢 APLIKASI LAMA BARU';
+        } else if (item.status === 'UPDATE_REQUIRED') {
+            badgeClass = 'bg-light-warning text-warning';
+            badgeLabel = '🟡 BUTUH UPDATE';
+        } else if (item.status === 'CONFLICT') {
+            badgeClass = 'bg-light-danger text-danger';
+            badgeLabel = '🔴 KONFLIK';
         }
+
+        var diffHtml = '';
+        if (item.diffs && Object.keys(item.diffs).length > 0) {
+            if (item.diffs['Status Tagihan Siswa'] && item.diffs['Status Tagihan Siswa'].type === 'monthly_cards') {
+                diffHtml = renderMonthlyCards(item.diffs['Status Tagihan Siswa']);
+            } else {
+                diffHtml = '<ul class="mb-0 ps-3 fs-8" style="color: #374151; font-weight: 500;">';
+                for (var k in item.diffs) {
+                    if (typeof item.diffs[k] === 'object') {
+                        diffHtml += '<li class="my-1"><code class="text-primary fw-bolder px-1 py-0.5 bg-light-primary rounded" style="font-size: 11px;">' + k + '</code>: Aplikasi Lama (<span class="fw-bolder text-dark bg-light-warning text-warning px-1.5 py-0.5 rounded border border-warning border-opacity-25">"' + (item.diffs[k].master||'-') + '"</span>) vs Lokal (<span class="fw-bolder text-gray-800 bg-light px-1.5 py-0.5 rounded border border-gray-300">"' + (item.diffs[k].local||'-') + '"</span>)</li>';
+                    } else {
+                        diffHtml += '<li class="my-1"><span class="text-danger fw-bold">' + item.diffs[k] + '</span></li>';
+                    }
+                }
+                diffHtml += '</ul>';
+            }
+        } else {
+            diffHtml = '<span class="fw-semibold fs-8" style="color: #4b5563;">Data aplikasi lama dan lokal presisi identik</span>';
+        }
+
+        var isCheckable = (item.status !== 'EXACT_MATCH');
+        var checkAttr = isCheckable ? 'checked' : 'disabled';
+
+        html += '<tr data-status="' + item.status + '">';
+        html += '<td class="px-3"><input class="form-check-input chk-diff-item" type="checkbox" name="selected_ids[]" value="' + item.id + '" ' + checkAttr + ' onchange="updateMergeButtonState()"></td>';
+        
+        if (window.currentSyncModule === 'billing_status') {
+            html += '<td class="fw-bold fs-7 text-muted">' + (startIndex + idx + 1) + '</td>';
+        }
+        
+        html += '<td class="fw-bold fs-7"><code>' + (item.code_or_nis || item.id) + '</code></td>';
+        html += '<td class="fw-bolder text-dark">' + item.name + '</td>';
+        
+        if (window.currentSyncModule !== 'billing_status') {
+            html += '<td><span class="badge ' + badgeClass + ' fw-bolder fs-8 px-2 py-1">' + badgeLabel + '</span></td>';
+        }
+        
+        html += '<td>' + diffHtml + '</td>';
+        html += '</tr>';
+    });
+
+    tbody.innerHTML = html;
+    updateMergeButtonState();
+    
+    if (window.currentSyncModule === 'billing_status') {
+        renderPaginationLinks(items.length);
+    }
+}
+
+function renderPaginationLinks(totalItems) {
+    var info = document.getElementById('pagination-info');
+    var ul = document.getElementById('pagination-links');
+    
+    if (totalItems === 0) {
+        info.innerText = 'Menampilkan 0-0 dari 0';
+        ul.innerHTML = '';
+        return;
+    }
+    
+    var totalPages = Math.ceil(totalItems / window.itemsPerPage);
+    var startIdx = (window.currentPage - 1) * window.itemsPerPage + 1;
+    var endIdx = Math.min(startIdx + window.itemsPerPage - 1, totalItems);
+    
+    info.innerText = 'Menampilkan ' + startIdx + '-' + endIdx + ' dari ' + totalItems;
+    
+    var html = '';
+    
+    // Prev
+    html += '<li class="page-item ' + (window.currentPage === 1 ? 'disabled' : '') + '">';
+    html += '<a class="page-link" href="#" onclick="if(window.currentPage > 1) { window.currentPage--; renderCurrentPage(); } return false;"><i class="fas fa-chevron-left"></i></a>';
+    html += '</li>';
+    
+    // Pages
+    var startPage = Math.max(1, window.currentPage - 2);
+    var endPage = Math.min(totalPages, startPage + 4);
+    if (endPage - startPage < 4) {
+        startPage = Math.max(1, endPage - 4);
+    }
+    
+    for (var i = startPage; i <= endPage; i++) {
+        html += '<li class="page-item ' + (window.currentPage === i ? 'active' : '') + '">';
+        html += '<a class="page-link" href="#" onclick="window.currentPage = ' + i + '; renderCurrentPage(); return false;">' + i + '</a>';
+        html += '</li>';
+    }
+    
+    // Next
+    html += '<li class="page-item ' + (window.currentPage === totalPages ? 'disabled' : '') + '">';
+    html += '<a class="page-link" href="#" onclick="if(window.currentPage < ' + totalPages + ') { window.currentPage++; renderCurrentPage(); } return false;"><i class="fas fa-chevron-right"></i></a>';
+    html += '</li>';
+    
+    ul.innerHTML = html;
+}
+
+function fetchMasterDiff(module, btnEl) {
+    if (btnEl) {
+        document.querySelectorAll('.btn-mod-tab').forEach(function(b) { b.classList.remove('active'); });
+        btnEl.classList.add('active');
+    }
+    document.getElementById('current-merge-module').value = module;
+    window.currentSyncModule = module;
+    window.currentPage = 1;
+
+    // Toggle filter container visibility
+    var filterBox = document.getElementById('billing-filter-container');
+    if (filterBox) {
+        if (module === 'billing_status') {
+            filterBox.classList.remove('d-none');
+        } else {
+            filterBox.classList.add('d-none');
+        }
+    }
+
+    // Reset active filter
+    filterDiffTable('ALL', null);
+
+    var limitSelect = document.getElementById('select-diff-limit');
+    var limitVal = limitSelect ? parseInt(limitSelect.value) : 50;
+
+    var schoolId = document.getElementById('select-filter-school') ? document.getElementById('select-filter-school').value : '';
+    var classroomId = document.getElementById('select-filter-classroom') ? document.getElementById('select-filter-classroom').value : '';
+    var academicYearId = document.getElementById('select-filter-academic-year') ? document.getElementById('select-filter-academic-year').value : '';
+    var billTypeId = document.getElementById('select-filter-bill-type') ? document.getElementById('select-filter-bill-type').value : '';
+
+    if (document.getElementById('hidden_academic_year_id')) document.getElementById('hidden_academic_year_id').value = academicYearId;
+    if (document.getElementById('hidden_bill_type_id')) document.getElementById('hidden_bill_type_id').value = billTypeId;
+
+    var tbody = document.getElementById('tbody-diff-preview');
+    
+    // Setup initial header state if needed before load
+    if (module === 'billing_status') {
+        document.getElementById('table-scroll-container').style.maxHeight = 'none';
+        document.getElementById('pagination-container').classList.remove('d-none');
+        document.getElementById('pagination-container').classList.add('d-flex');
+    } else {
+        document.getElementById('table-scroll-container').style.maxHeight = '380px';
+        document.getElementById('pagination-container').classList.remove('d-flex');
+        document.getElementById('pagination-container').classList.add('d-none');
+    }
+
+    tbody.innerHTML = '<tr><td colspan="5" class="text-center py-5 text-muted"><i class="fas fa-spinner fa-spin me-2"></i> Memuat analisis perbandingan module ' + module + ' (' + (limitVal >= 1000 ? 'Semua Data Master' : limitVal + ' Record') + ')...</td></tr>';
+
+    axios.post('{{ route("admin.audit.preview-pull-master") }}', {
+        module: module,
+        limit: limitVal,
+        school_id: schoolId,
+        classroom_id: classroomId,
+        academic_year_id: academicYearId,
+        bill_type_id: billTypeId
+    }).then(function(res) {
+        var data = res.data;
+        var summary = data.status_summary || {};
+
+        document.getElementById('cnt-new').innerText = '🟢 Aplikasi Lama Baru: ' + (summary.new_count || 0);
+        document.getElementById('cnt-update').innerText = '🟡 Butuh Update: ' + (summary.update_count || 0);
+        document.getElementById('cnt-match').innerText = '🔵 100% Identik: ' + (summary.match_count || 0);
+        document.getElementById('cnt-conflict').innerText = '🔴 Konflik Mapping: ' + (summary.conflict_count || 0);
+
+        window.currentSyncItems = data.items || [];
+        renderCurrentPage();
+    }).catch(function(err) {
+        var errorMsg = err.message || 'Error Server';
+        if (err.response && err.response.data && err.response.data.error) {
+            errorMsg = err.response.data.error;
+        }
+        tbody.innerHTML = '<tr><td colspan="5" class="text-center py-5 text-danger fw-bolder bg-light-danger border border-danger border-opacity-25 rounded-3"><i class="fas fa-exclamation-triangle fs-2x mb-3 d-block text-danger"></i> ' + errorMsg + '</td></tr>';
+        
+        // Reset counters
+        document.getElementById('cnt-new').innerText = '🟢 Aplikasi Lama Baru: 0';
+        document.getElementById('cnt-update').innerText = '🟡 Butuh Update: 0';
+        document.getElementById('cnt-match').innerText = '🔵 100% Identik: 0';
+        document.getElementById('cnt-conflict').innerText = '🔴 Konflik Mapping: 0';
+    });
+}
+
 
         function toggleAllDiffCheckboxes(masterCb) {
             var items = document.querySelectorAll('.chk-diff-item:not(:disabled)');
