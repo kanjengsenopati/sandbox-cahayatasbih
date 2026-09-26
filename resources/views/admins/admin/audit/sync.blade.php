@@ -762,12 +762,14 @@
                 
                 if (document.getElementById('select-filter-school')) {
                     document.getElementById('select-filter-school').value = state.school || '';
+                    if (typeof onSchoolFilterChange === 'function') onSchoolFilterChange();
                 }
                 if (document.getElementById('select-filter-classroom')) {
                     document.getElementById('select-filter-classroom').value = state.classroom || '';
                 }
                 if (document.getElementById('select-filter-academic-year')) {
                     document.getElementById('select-filter-academic-year').value = state.academic_year || '';
+                    if (typeof onAcademicYearChange === 'function') onAcademicYearChange();
                 }
                 
                 if (typeof filterBillTypesDropdown === 'function') {
@@ -799,8 +801,9 @@
             
             // Listen to form submit to save state
             var mergeForm = document.getElementById('form-confirm-merge');
-            if (mergeForm) {
-                mergeForm.addEventListener('submit', function() {
+            var btnMerge = document.getElementById('btn-submit-merge');
+            if (btnMerge) {
+                btnMerge.addEventListener('click', function() {
                     var state = {
                         module: document.getElementById('current-merge-module') ? document.getElementById('current-merge-module').value : 'students',
                         school: document.getElementById('select-filter-school') ? document.getElementById('select-filter-school').value : '',
@@ -1107,11 +1110,7 @@ window.currentSortDirection = 'asc';
             '<th>Nama Record</th>' +
 
 '<th class="cursor-pointer text-primary text-center" onclick="sortSyncItemsBySyncStatus()" style="cursor: pointer;" title="Klik untuk mengurutkan berdasarkan Status Sinkronisasi">Status <i class="fas fa-sort ms-1" id="sort-icon-sync-status"></i></th>' +
-
-
-'<th class="text-center">Status</th>' +
-
-'<th class="cursor-pointer text-primary" onclick="sortSyncItemsByStatus()" style="cursor: pointer;" title="Klik untuk mengurutkan Identik / Butuh Sync">Perbandingan Status Tagihan (Aplikasi Lama &rarr; Lokal) <i class="fas fa-sort ms-1" id="sort-icon-status"></i></th>' +
+'<th class="cursor-pointer text-primary" onclick="sortSyncItemsByStatus()" style="cursor: pointer;" title="Klik untuk mengurutkan Identik / Butuh Sync">Perbandingan Tagihan (Lama &rarr; Lokal) <i class="fas fa-sort ms-1" id="sort-icon-status"></i></th>' +
             '</tr>';
     } else {
         scrollContainer.style.maxHeight = '380px';
