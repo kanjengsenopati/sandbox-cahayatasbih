@@ -68,8 +68,11 @@ class AuditController extends Controller
 
         $schools = \Illuminate\Support\Facades\DB::connection('mysql_master')->table('schools')->whereNull('deleted_at')->get();
         $classrooms = \Illuminate\Support\Facades\DB::connection('mysql_master')->table('classrooms')->whereNull('deleted_at')->get();
+        
+        $academicYears = \Illuminate\Support\Facades\DB::connection('mysql_master')->table('academic_years')->whereNull('deleted_at')->orderBy('name', 'desc')->get();
+        $billTypes = \Illuminate\Support\Facades\DB::connection('mysql_master')->table('bill_types')->whereNull('deleted_at')->orderBy('name', 'asc')->get();
 
-        return view('admins.admin.audit.sync', compact('syncStatus', 'syncHistory', 'schools', 'classrooms'));
+        return view('admins.admin.audit.sync', compact('syncStatus', 'syncHistory', 'schools', 'classrooms', 'academicYears', 'billTypes'));
     }
 
     /**
@@ -189,8 +192,10 @@ class AuditController extends Controller
         $limit = (int) $request->input('limit', 50);
         $schoolId = $request->input('school_id');
         $classroomId = $request->input('classroom_id');
+        $academicYearId = $request->input('academic_year_id');
+        $billTypeId = $request->input('bill_type_id');
 
-        $diffAnalysis = $bridgeService->analyzeModuleDiff($module, $limit, $schoolId, $classroomId);
+        $diffAnalysis = $bridgeService->analyzeModuleDiff($module, $limit, $schoolId, $classroomId, $academicYearId, $billTypeId);
 
         return response()->json($diffAnalysis);
     }
@@ -206,8 +211,10 @@ class AuditController extends Controller
 
         $module = $request->input('module', 'students');
         $selectedIds = $request->input('selected_ids', []);
+        $academicYearId = $request->input('academic_year_id');
+        $billTypeId = $request->input('bill_type_id');
 
-        $result = $bridgeService->executeVerifiedMerge($module, $selectedIds);
+        $result = $bridgeService->executeVerifiedMerge($module, $selectedIds, $academicYearId, $billTypeId);
 
         if ($result['status'] === 'success') {
             return redirect()->back()->with('success', $result['message']);

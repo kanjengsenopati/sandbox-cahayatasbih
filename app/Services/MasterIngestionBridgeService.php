@@ -16,7 +16,7 @@ class MasterIngestionBridgeService
      * @param int $limit
      * @return array
      */
-    public function analyzeModuleDiff(string $module = 'students', int $limit = 50, ?string $schoolId = null, ?string $classroomId = null): array
+    public function analyzeModuleDiff(string $module = 'students', int $limit = 50, ?string $schoolId = null, ?string $classroomId = null, ?string $academicYearId = null, ?string $billTypeId = null): array
     {
         $localConn = DB::connection();
         $masterConn = DB::connection('mysql_master');
@@ -51,7 +51,7 @@ class MasterIngestionBridgeService
                     $this->analyzeSaldo($masterConn, $localConn, $result, $limit);
                     break;
                 case 'billing_status':
-                    $this->analyzeBillingStatus($masterConn, $localConn, $result, $limit, $schoolId, $classroomId);
+                    $this->analyzeBillingStatus($masterConn, $localConn, $result, $limit, $schoolId, $classroomId, $academicYearId, $billTypeId);
                     break;
                 case 'students':
                 default:
@@ -409,7 +409,7 @@ class MasterIngestionBridgeService
         }
     }
 
-    private function analyzeBillingStatus($masterConn, $localConn, array &$result, int $limit, ?string $schoolId = null, ?string $classroomId = null)
+    private function analyzeBillingStatus($masterConn, $localConn, array &$result, int $limit, ?string $schoolId = null, ?string $classroomId = null, ?string $academicYearId = null, ?string $billTypeId = null)
     {
         $masterClassrooms = $masterConn->table('classrooms')->pluck('name', 'id')->toArray();
         $masterSchools = $masterConn->table('schools')->pluck('name', 'id')->toArray();
@@ -441,10 +441,18 @@ class MasterIngestionBridgeService
         // 1. Bulk query for Master DB bills summary
         $masterBillsGroup = [];
         if (!empty($studentIds)) {
-            $mRows = $masterConn->table('bills')
+            $mQuery = $masterConn->table('bills')
                 ->whereIn('student_id', $studentIds)
-                ->whereNull('deleted_at')
-                ->select('student_id', 'status', DB::raw('COUNT(*) as total_cnt'), DB::raw('SUM(amount) as total_amt'))
+                ->whereNull('deleted_at');
+            
+            if (!empty($academicYearId)) {
+                $mQuery->where('academic_year_id', $academicYearId);
+            }
+            if (!empty($billTypeId)) {
+                $mQuery->where('bill_type_id', $billTypeId);
+            }
+
+            $mRows = $mQuery->select('student_id', 'status', DB::raw('COUNT(*) as total_cnt'), DB::raw('SUM(amount) as total_amt'))
                 ->groupBy('student_id', 'status')
                 ->get();
 
@@ -464,10 +472,18 @@ class MasterIngestionBridgeService
         // 2. Bulk query for Local DB bills summary
         $localBillsGroup = [];
         if (!empty($studentIds)) {
-            $lRows = $localConn->table('bills')
+            $lQuery = $localConn->table('bills')
                 ->whereIn('student_id', $studentIds)
-                ->whereNull('deleted_at')
-                ->select('student_id', 'status', DB::raw('COUNT(*) as total_cnt'), DB::raw('SUM(amount) as total_amt'))
+                ->whereNull('deleted_at');
+
+            if (!empty($academicYearId)) {
+                $lQuery->where('academic_year_id', $academicYearId);
+            }
+            if (!empty($billTypeId)) {
+                $lQuery->where('bill_type_id', $billTypeId);
+            }
+
+            $lRows = $lQuery->select('student_id', 'status', DB::raw('COUNT(*) as total_cnt'), DB::raw('SUM(amount) as total_amt'))
                 ->groupBy('student_id', 'status')
                 ->get();
 
@@ -547,7 +563,7 @@ class MasterIngestionBridgeService
      * @param array $selectedIds
      * @return array
      */
-    public function executeVerifiedMerge(string $module, array $selectedIds): array
+    public function executeVerifiedMerge(string $module, array $selectedIds, ?string $academicYearId = null, ?string $billTypeId = null): array
     {
         if (empty($selectedIds)) {
             return ['status' => 'error', 'message' => 'Tidak ada record yang dipilih untuk digabungkan.'];
@@ -574,10 +590,15 @@ class MasterIngestionBridgeService
 
             foreach ($masterRecords as $mRec) {
                 if ($module === 'billing_status') {
-                    // Ingest / upsert all bills for selected student IDs
-                    $masterBills = $masterConn->table('bills')
-                        ->where('student_id', $mRec->id)
-                        ->get();
+                    // Ingest / upsert bills for selected student IDs matching filters
+                    $mQuery = $masterConn->table('bills')->where('student_id', $mRec->id);
+                    if (!empty($academicYearId)) {
+                        $mQuery->where('academic_year_id', $academicYearId);
+                    }
+                    if (!empty($billTypeId)) {
+                        $mQuery->where('bill_type_id', $billTypeId);
+                    }
+                    $masterBills = $mQuery->get();
 
                     if ($masterBills->isNotEmpty()) {
                         foreach ($masterBills as $mBill) {
