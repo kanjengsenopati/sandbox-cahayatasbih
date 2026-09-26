@@ -644,16 +644,29 @@ class MasterIngestionBridgeService
             foreach ($masterRecords as $mRec) {
                 if ($module === 'billing_status') {
                     // Ingest / upsert bills for selected student IDs matching filters
-                    $mQuery = $masterConn->table('bills')->where('student_id', $mRec->id);
+                    $mQuery = $masterConn->table('bills')->where('student_id', $mRec->id)->whereNull('deleted_at');
                     if (!empty($academicYearId)) {
                         $mQuery->where('academic_year_id', $academicYearId);
                     }
                     if (!empty($billTypeId)) {
                         $mQuery->where('bill_type_id', $billTypeId);
                     }
-                    $masterBills = $mQuery->get();
+                    // Handle duplicate bills in Master DB: prioritize PAID status
+                    $rawMasterBills = $mQuery->get();
+                    file_put_contents('debug_counts.log', "student: " . $mRec->id . " - rawMasterBills: " . count($rawMasterBills) . "
+", FILE_APPEND);
+                    $masterBills = [];
+                    foreach ($rawMasterBills as $b) {
+                        if (!isset($masterBills[$b->month])) {
+                            $masterBills[$b->month] = $b;
+                        } else {
+                            if ($b->status === 'PAID') {
+                                $masterBills[$b->month] = $b;
+                            }
+                        }
+                    }
 
-                    if ($masterBills->isNotEmpty()) {
+                    if (!empty($masterBills)) {
                         foreach ($masterBills as $mBill) {
                             $row = (array) $mBill;
                             $targetBillTypeId = $mBill->bill_type_id;
@@ -672,6 +685,15 @@ class MasterIngestionBridgeService
                             }
                             $row['bill_type_id'] = $targetBillTypeId;
 
+                            // Injeksi manual paid_amount karena database Master tidak memiliki field paid_amount
+                            if (isset($row['status'])) {
+                                if ($row['status'] === 'PAID') {
+                                    $row['paid_amount'] = isset($row['amount']) ? $row['amount'] : 0;
+                                } elseif ($row['status'] === 'UNPAID') {
+                                    $row['paid_amount'] = 0;
+                                }
+                            }
+
                             // Temukan bill lokal berdasarkan student_id, mapped bill_type_id, dan month
                             $localBill = $localConn->table('bills')
                                 ->where('student_id', $mBill->student_id)
@@ -684,6 +706,7 @@ class MasterIngestionBridgeService
                             if ($localBill) {
                                 $targetBillId = $localBill->id;
                                 unset($row['id']);
+                                file_put_contents('debug_sync.log', json_encode($row) . PHP_EOL, FILE_APPEND);
                                 $localConn->table('bills')->where('id', $targetBillId)->update($row);
                             } else {
                                 $targetBillId = $row['id'];
@@ -701,13 +724,21 @@ class MasterIngestionBridgeService
                                         
                                         // Also ingest saldo history if paid via SALDO
                                         if ($mTx->payment_method_id) {
-                                            $mSaldoHist = $masterConn->table('saldo_histories')
-                                                ->where('transaction_id', $mTx->id)
-                                                ->get();
-                                            foreach ($mSaldoHist as $sh) {
-                                                if (!$localConn->table('saldo_histories')->where('id', $sh->id)->exists()) {
-                                                    $localConn->table('saldo_histories')->insert((array) $sh);
+                                            try {
+                                                // Attempt to find by description or amount since transaction_id is missing
+                                                $mSaldoHist = $masterConn->table('saldo_histories')
+                                                    ->where('student_id', $mTx->student_id)
+                                                    ->where('amount', $mTx->amount)
+                                                    ->where('created_at', '>=', $mTx->created_at)
+                                                    ->get();
+                                                foreach ($mSaldoHist as $sh) {
+                                                    if (!$localConn->table('saldo_histories')->where('id', $sh->id)->exists()) {
+                                                        $localConn->table('saldo_histories')->insert((array) $sh);
+                                                    }
                                                 }
+                                            } catch (\Exception $e) {
+                                                // Log securely, don't crash the bill update
+                                                \Illuminate\Support\Facades\Log::warning("Could not sync saldo_histories for tx {$mTx->id}: " . $e->getMessage());
                                             }
                                         }
                                     }
