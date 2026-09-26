@@ -153,7 +153,7 @@
                                     </div>
                                     <div class="col-md-3">
                                         <label class="fs-8 fw-bolder text-gray-700 mb-1"><i class="fas fa-calendar-alt text-danger me-1"></i> Tahun Ajaran:</label>
-                                        <select class="form-select form-select-sm fw-bold border-danger style-slim-select" id="select-filter-academic-year" onchange="fetchMasterDiff(document.getElementById('current-merge-module').value)">
+                                        <select class="form-select form-select-sm fw-bold border-danger style-slim-select" id="select-filter-academic-year" onchange="onAcademicYearChange()">
                                             <option value="">Semua Tahun Ajaran</option>
                                             @foreach($academicYears ?? [] as $year)
                                                 <option value="{{ $year->id }}">{{ $year->name }}</option>
@@ -165,7 +165,7 @@
                                         <select class="form-select form-select-sm fw-bold border-danger style-slim-select" id="select-filter-bill-type" onchange="fetchMasterDiff(document.getElementById('current-merge-module').value)">
                                             <option value="">Semua Jenis Tagihan</option>
                                             @foreach($billTypes ?? [] as $bt)
-                                                <option value="{{ $bt->id }}">{{ $bt->name }}</option>
+                                                <option value="{{ $bt->id }}" data-academic-year-id="{{ $bt->academic_year_id ?? '' }}">{{ $bt->name }}</option>
                                             @endforeach
                                         </select>
                                     </div>
@@ -812,6 +812,35 @@
             }
 
             updateMergeButtonState();
+        }
+
+        function onAcademicYearChange() {
+            var yearId = document.getElementById('select-filter-academic-year').value;
+            var billSelect = document.getElementById('select-filter-bill-type');
+            var options = billSelect.querySelectorAll('option');
+
+            var currentSelectedValid = false;
+
+            options.forEach(function(opt) {
+                if (!opt.value) {
+                    opt.style.display = ''; // "Semua Jenis Tagihan" always visible
+                    if (billSelect.value === opt.value) currentSelectedValid = true;
+                    return;
+                }
+                var optYearId = opt.getAttribute('data-academic-year-id');
+                if (!yearId || optYearId === yearId) {
+                    opt.style.display = '';
+                    if (billSelect.value === opt.value) currentSelectedValid = true;
+                } else {
+                    opt.style.display = 'none';
+                }
+            });
+
+            if (!currentSelectedValid) {
+                billSelect.value = '';
+            }
+
+            fetchMasterDiff(document.getElementById('current-merge-module').value);
         }
 
         function onSchoolFilterChange() {
