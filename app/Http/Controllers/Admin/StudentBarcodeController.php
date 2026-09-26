@@ -32,6 +32,9 @@ class StudentBarcodeController extends Controller
                 ->when(request('status'), function ($query) {
                     $query->where('status', request('status'));
                 })
+                ->when(request('name'), function ($query) {
+                    $query->where('name', 'like', '%' . request('name') . '%');
+                })
                 ->latest();
             return DataTables::of($data)
                 ->addColumn('classroom', function ($data) {

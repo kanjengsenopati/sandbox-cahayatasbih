@@ -63,6 +63,10 @@
                                 <option value="">Semua Kelas</option>
                             </select>
                         </div>
+                        <div class="mb-3">
+                            <label for="filter_name" class="form-label fw-bold">Pencarian</label>
+                            <input type="text" class="form-control" id="filter_name" placeholder="Ketik nama santri...">
+                        </div>
                     </div>
                     <div class="d-flex flex-column flex-sm-row align-items-end">
                         <div class="me-sm-3 mb-3 mb-sm-0">
@@ -111,7 +115,8 @@
     $(document).ready(() => {
         // Initialize DataTable
         var table = $('#table-student').DataTable({
-            ordering: false,
+            ordering: true,
+            order: [[2, 'asc']], // Default order by Name ascending
             processing: true,
             serverSide: true,
             ajax: {
@@ -120,6 +125,7 @@
                     d.school_id = $('#filter_school').val();
                     d.classroom_id = $('#filter_class').val();
                     d.status = $('#filter_status').val();
+                    d.name = $('#filter_name').val();
                 }
             },
             language: {
@@ -142,6 +148,7 @@
                 {
                     data: 'nis',
                     name: 'nis',
+                    orderable: true,
                     render: function(data, type, row) {
                         return data ? data : 'Belum diisi';
                     }
@@ -149,25 +156,29 @@
                 {
                     data: 'name',
                     name: 'name',
+                    orderable: true,
                     responsivePriority: -1,
                 },
                 {
                     data: 'school',
                     name: 'school',
+                    orderable: false,
                 },
                 {
                     data: 'classroom',
                     name: 'classroom',
+                    orderable: false,
                 },
                 {
                     data: 'barcode',
                     name: 'barcode',
+                    orderable: false,
                 },
                 {
                     data: 'action',
                     name: 'action',
-                    orderable: true,
-                    searchable: true,
+                    orderable: false,
+                    searchable: false,
                     responsivePriority: -1,
                 },
             ]
@@ -191,6 +202,15 @@
         // Reload DataTable on filter change
         $('#filter_school, #filter_class, #filter_status').on('change', function() {
             table.ajax.reload();
+        });
+        
+        // Search by name with delay (debounce) to avoid spamming ajax
+        var searchTimeout;
+        $('#filter_name').on('keyup', function() {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(function() {
+                table.ajax.reload();
+            }, 500);
         });
     });
 </script>
