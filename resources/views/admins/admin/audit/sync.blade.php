@@ -157,24 +157,22 @@
                                                 @foreach($schools ?? [] as $sch)
                                                     <div class="school-group-header mb-3" data-school="{{ $sch->id }}">
                                                         <h6 class="dropdown-header px-0 text-primary fw-bolder border-bottom pb-1 mb-2">{{ $sch->name }}</h6>
-                                                        <div class="row g-2">
-                                                            @foreach($classrooms ?? [] as $cls)
-                                                                @if($cls->school_id == $sch->id)
-                                                                    @php 
-                                                                        $isLocked = in_array($cls->id, $localClassroomIds ?? []); 
-                                                                    @endphp
-                                                                    <div class="col-4 classroom-col" data-school="{{ $sch->id }}">
-                                                                        @if($isLocked)
-                                                                            <button type="button" class="btn btn-sm btn-light-secondary w-100 text-start fs-8 text-muted classroom-item" style="cursor: not-allowed; opacity: 0.7;" disabled title="Sudah disinkronisasi (Locked for idempotency)">
-                                                                                <i class="fas fa-lock me-1"></i> {{ $cls->name }}
+                                                        @php
+                                                            $schClasses = collect($classrooms ?? [])->where('school_id', $sch->id);
+                                                            $groupedClasses = $schClasses->groupBy('grade_group')->sortKeys();
+                                                        @endphp
+                                                        <div class="row g-3">
+                                                            @foreach($groupedClasses as $groupName => $classesInGroup)
+                                                                <div class="col-md-4 classroom-col" data-school="{{ $sch->id }}">
+                                                                    <div class="fw-bolder text-muted fs-8 mb-2 border-bottom pb-1 text-uppercase" style="letter-spacing: 0.5px;">{{ $groupName }}</div>
+                                                                    <div class="d-flex flex-column gap-2">
+                                                                        @foreach($classesInGroup as $cls)
+                                                                            <button type="button" class="btn btn-sm btn-outline btn-outline-dashed btn-outline-primary w-100 text-start fs-8 classroom-item" onclick="selectClassroom('{{ $cls->id }}', '{{ addslashes($cls->name) }}'); return false;" title="Pilih kelas {{ $cls->name }}">
+                                                                                <i class="fas fa-door-open text-primary me-1"></i> {{ $cls->name }}
                                                                             </button>
-                                                                        @else
-                                                                            <button type="button" class="btn btn-sm btn-outline btn-outline-dashed btn-outline-primary w-100 text-start fs-8 classroom-item" onclick="selectClassroom('{{ $cls->id }}', '{{ addslashes($cls->name) }}'); return false;">
-                                                                                <i class="fas fa-unlock text-success me-1"></i> {{ $cls->name }}
-                                                                            </button>
-                                                                        @endif
+                                                                        @endforeach
                                                                     </div>
-                                                                @endif
+                                                                </div>
                                                             @endforeach
                                                         </div>
                                                     </div>
