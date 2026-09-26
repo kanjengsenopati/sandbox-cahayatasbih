@@ -133,7 +133,7 @@
                             <div class="card-body py-4">
                                 <!-- Filter Container per Sekolah & Kelas (Hanya Tampil saat Modul Status Tagihan Aktif) -->
                                 <div class="row g-3 mb-4 d-none p-3 bg-light-danger rounded-3 border border-danger border-opacity-25" id="billing-filter-container">
-                                    <div class="col-md-6">
+                                    <div class="col-md-3">
                                         <label class="fs-8 fw-bolder text-gray-700 mb-1"><i class="fas fa-school text-danger me-1"></i> Filter Sekolah:</label>
                                         <select class="form-select form-select-sm fw-bold border-danger style-slim-select" id="select-filter-school" onchange="onSchoolFilterChange()">
                                             <option value="">Semua Sekolah</option>
@@ -142,12 +142,30 @@
                                             @endforeach
                                         </select>
                                     </div>
-                                    <div class="col-md-6">
+                                    <div class="col-md-3">
                                         <label class="fs-8 fw-bolder text-gray-700 mb-1"><i class="fas fa-chalkboard-teacher text-danger me-1"></i> Filter Kelas:</label>
                                         <select class="form-select form-select-sm fw-bold border-danger style-slim-select" id="select-filter-classroom" onchange="fetchMasterDiff(document.getElementById('current-merge-module').value)">
                                             <option value="">Semua Kelas</option>
                                             @foreach($classrooms ?? [] as $cls)
                                                 <option value="{{ $cls->id }}" data-school="{{ $cls->school_id }}">{{ $cls->name }}</option>
+                                            @endforeach
+                                        </select>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="fs-8 fw-bolder text-gray-700 mb-1"><i class="fas fa-calendar-alt text-danger me-1"></i> Tahun Ajaran:</label>
+                                        <select class="form-select form-select-sm fw-bold border-danger style-slim-select" id="select-filter-academic-year" onchange="fetchMasterDiff(document.getElementById('current-merge-module').value)">
+                                            <option value="">Semua Tahun Ajaran</option>
+                                            @foreach($academicYears ?? [] as $year)
+                                                <option value="{{ $year->id }}">{{ $year->name }}</option>
+                                            @endforeach
+                                        </select>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="fs-8 fw-bolder text-gray-700 mb-1"><i class="fas fa-file-invoice-dollar text-danger me-1"></i> Jenis Tagihan:</label>
+                                        <select class="form-select form-select-sm fw-bold border-danger style-slim-select" id="select-filter-bill-type" onchange="fetchMasterDiff(document.getElementById('current-merge-module').value)">
+                                            <option value="">Semua Jenis Tagihan</option>
+                                            @foreach($billTypes ?? [] as $bt)
+                                                <option value="{{ $bt->id }}">{{ $bt->name }}</option>
                                             @endforeach
                                         </select>
                                     </div>
@@ -166,6 +184,8 @@
                                 <form action="{{ route('admin.audit.confirm-merge-master') }}" method="POST" id="form-confirm-merge">
                                     @csrf
                                     <input type="hidden" name="module" id="current-merge-module" value="students">
+                                    <input type="hidden" name="academic_year_id" id="hidden_academic_year_id" value="">
+                                    <input type="hidden" name="bill_type_id" id="hidden_bill_type_id" value="">
 
                                     <div class="table-responsive style-slim-scroll" style="max-height: 380px;">
                                         <table class="table table-hover table-striped align-middle table-row-dashed fs-7 gy-3" id="tbl-diff-preview">
@@ -841,6 +861,11 @@
 
             var schoolId = document.getElementById('select-filter-school') ? document.getElementById('select-filter-school').value : '';
             var classroomId = document.getElementById('select-filter-classroom') ? document.getElementById('select-filter-classroom').value : '';
+            var academicYearId = document.getElementById('select-filter-academic-year') ? document.getElementById('select-filter-academic-year').value : '';
+            var billTypeId = document.getElementById('select-filter-bill-type') ? document.getElementById('select-filter-bill-type').value : '';
+
+            if (document.getElementById('hidden_academic_year_id')) document.getElementById('hidden_academic_year_id').value = academicYearId;
+            if (document.getElementById('hidden_bill_type_id')) document.getElementById('hidden_bill_type_id').value = billTypeId;
 
             var tbody = document.getElementById('tbody-diff-preview');
             tbody.innerHTML = '<tr><td colspan="5" class="text-center py-5 text-muted"><i class="fas fa-spinner fa-spin me-2"></i> Memuat analisis perbandingan module ' + module + ' (' + (limitVal >= 1000 ? 'Semua Data Master' : limitVal + ' Record') + ')...</td></tr>';
@@ -849,7 +874,9 @@
                 module: module,
                 limit: limitVal,
                 school_id: schoolId,
-                classroom_id: classroomId
+                classroom_id: classroomId,
+                academic_year_id: academicYearId,
+                bill_type_id: billTypeId
             }).then(function(res) {
                 var data = res.data;
                 var summary = data.status_summary || {};
