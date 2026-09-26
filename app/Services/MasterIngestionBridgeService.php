@@ -426,7 +426,12 @@ class MasterIngestionBridgeService
             ->whereNull('deleted_at');
 
         if (!empty($classroomId)) {
-            $query->where('classroom_id', $classroomId);
+            // STRICT CONSTRAINT: Relational cross-check
+            if (!empty($schoolId) && !in_array($classroomId, $targetClassroomIds)) {
+                $query->where('id', 'STRICT_CONSTRAINT_VIOLATION_FORCE_EMPTY');
+            } else {
+                $query->where('classroom_id', $classroomId);
+            }
         } elseif (!empty($schoolId)) {
             $query->whereIn('classroom_id', $targetClassroomIds);
         }
@@ -521,6 +526,14 @@ class MasterIngestionBridgeService
             $lBillsCount = $lSum['total_cnt'];
             $lPaidCount = $lSum['paid_cnt'];
             $lPaidAmount = $lSum['paid_amt'];
+
+            // STRICT CONSTRAINT: No Zero-Bill Leakage
+            // Jangan tampilkan siswa yang sama sekali tidak memiliki tagihan terkait filter ini
+            if ($mBillsCount === 0 && $lBillsCount === 0) {
+                // Adjust analyzed count since we skip it from being rendered
+                $result['status_summary']['total_analyzed']--;
+                continue;
+            }
 
             $status = 'EXACT_MATCH';
             $diffs = [];
