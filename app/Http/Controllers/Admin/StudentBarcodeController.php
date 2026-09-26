@@ -34,8 +34,7 @@ class StudentBarcodeController extends Controller
                 })
                 ->when(request('name'), function ($query) {
                     $query->where('name', 'like', '%' . request('name') . '%');
-                })
-                ->latest();
+                });
             return DataTables::of($data)
                 ->addColumn('classroom', function ($data) {
                     return $data->classroom->name ?? 'Belum ada kelas';
